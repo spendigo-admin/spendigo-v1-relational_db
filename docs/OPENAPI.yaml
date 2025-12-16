@@ -1,0 +1,89 @@
+openapi: 3.0.0
+info:
+  title: Spendigo SmartCart API
+  version: 1.0.0
+  description: API for Spendigo Marketplace Facilitator (Canada)
+servers:
+  - url: https://api.spendigo.ca/v1
+    description: Production Server
+  - url: http://localhost:3000/v1
+    description: Local Dev
+paths:
+  /auth/login:
+    post:
+      summary: Authenticate user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: JWT Token returned
+
+  /stores:
+    get:
+      summary: List near stores
+      parameters:
+        - name: lat
+          in: query
+          schema:
+            type: number
+        - name: lng
+          in: query
+          schema:
+            type: number
+      responses:
+        '200':
+          description: List of stores
+
+  /cart/checkout:
+    post:
+      summary: Initiate Split Payment Checkout
+      description: |
+        Creates a PaymentIntent on Stripe with `transfer_group`.
+        Calculates application fees (commission) per store.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                items:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      product_id:
+                        type: string
+                      quantity:
+                        type: integer
+      responses:
+        '200':
+          description: Client Secret for Stripe Elements
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  clientSecret:
+                    type: string
+                  orderIds:
+                    type: array
+                    items:
+                      type: string
+
+  /webhooks/stripe:
+    post:
+      summary: Stripe Webhook Endpoint
+      description: Handles `payment_intent.succeeded` etc.
+      responses:
+        '200':
+          description: Received
