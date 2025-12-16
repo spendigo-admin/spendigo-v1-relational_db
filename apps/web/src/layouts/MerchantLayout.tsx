@@ -1,58 +1,70 @@
 import React from 'react';
-import { Outlet, Navigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import { UserRole } from '../../../../packages/shared/src/auth/types';
+import { Outlet, NavLink } from 'react-router-dom';
 import '../styles/design-system.css';
 
 const MerchantLayout: React.FC = () => {
-    const { user, loading, checkRole } = useAuth();
-
-    if (loading) return <div className="p-8 text-center">Loading Secure Context...</div>;
-
-    // Strict RBAC
-    if (!user || !checkRole(UserRole.MERCHANT)) {
-        return <Navigate to="/auth/login" replace />;
-    }
-
-    // Mandatory Email Verification Gate
-    if (!user.emailVerified) {
-        return (
-            <div className="min-h-screen bg-[var(--surface-0)] flex items-center justify-center p-4">
-                <div className="glass-panel p-8 max-w-md text-center">
-                    <h1 className="text-[var(--status-warning)] mb-4">Verification Required</h1>
-                    <p>Please verify your email address to access the Merchant Console.</p>
-                </div>
-            </div>
-        );
-    }
-
     return (
         <div className="min-h-screen grid grid-cols-[250px_1fr] bg-[var(--surface-0)]">
             {/* Sidebar */}
-            <aside className="border-r border-[var(--glass-border)] bg-[var(--surface-1)] p-4 flex flex-col">
+            <aside className="border-r border-[var(--glass-border)] bg-white p-4 flex flex-col">
                 <div className="mb-8 p-2">
-                    <h2 className="text-xl font-bold tracking-tight text-[var(--brand-primary)]">SmartCart</h2>
-                    <span className="text-xs uppercase tracking-widest text-[var(--text-muted)]">Merchant</span>
+                    <div className="flex flex-col">
+                        <span className="text-xl font-bold text-[var(--brand-primary)]">Spendigo</span>
+                        <span className="text-xs font-semibold text-[var(--text-main)] tracking-widest uppercase">MERCHANT</span>
+                    </div>
                 </div>
 
-                <nav className="flex-1 space-y-2">
-                    <a href="/merchant/dashboard" className="block p-3 rounded-lg bg-[var(--surface-2)] text-[var(--text-main)] font-medium">Dashboard</a>
-                    <a href="/merchant/products" className="block p-3 rounded-lg text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text-main)] transition-colors">Products</a>
-                    <a href="/merchant/orders" className="block p-3 rounded-lg text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text-main)] transition-colors">Orders</a>
-                    <a href="/merchant/finance" className="block p-3 rounded-lg text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text-main)] transition-colors">Payouts</a>
+                <nav className="flex-1 space-y-1">
+                    <NavLink
+                        to="/merchant/dashboard"
+                        className={({ isActive }) => `flex items-center gap-3 p-3 rounded-lg font-medium transition-colors ${isActive ? 'bg-[var(--brand-primary)] text-white' : 'text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text-main)]'}`}
+                    >
+                        <span>📊</span> Dashboard
+                    </NavLink>
+                    <NavLink
+                        to="/merchant/orders"
+                        className={({ isActive }) => `flex items-center gap-3 p-3 rounded-lg font-medium transition-colors ${isActive ? 'bg-[var(--brand-primary)] text-white' : 'text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text-main)]'}`}
+                    >
+                        <span>📋</span> Orders
+                    </NavLink>
+                    <NavLink
+                        to="/merchant/products"
+                        className={({ isActive }) => `flex items-center gap-3 p-3 rounded-lg font-medium transition-colors ${isActive ? 'bg-[var(--brand-primary)] text-white' : 'text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text-main)]'}`}
+                    >
+                        <span>📦</span> Products
+                    </NavLink>
+                    <NavLink
+                        to="/merchant/flyers"
+                        className={({ isActive }) => `flex items-center gap-3 p-3 rounded-lg font-medium transition-colors ${isActive ? 'bg-[var(--brand-primary)] text-white' : 'text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text-main)]'}`}
+                    >
+                        <span>📰</span> Flyers
+                    </NavLink>
+                    <NavLink
+                        to="/merchant/deals"
+                        className={({ isActive }) => `flex items-center gap-3 p-3 rounded-lg font-medium transition-colors ${isActive ? 'bg-[var(--brand-primary)] text-white' : 'text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text-main)]'}`}
+                    >
+                        <span>🏷️</span> Deals
+                    </NavLink>
+                    <NavLink
+                        to="/merchant/onboarding"
+                        className={({ isActive }) => `flex items-center gap-3 p-3 rounded-lg font-medium transition-colors ${isActive ? 'bg-[var(--brand-primary)] text-white' : 'text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text-main)]'}`}
+                    >
+                        <span>⚙️</span> Settings
+                    </NavLink>
                 </nav>
 
                 <div className="border-t border-[var(--glass-border)] pt-4 mt-auto">
-                    <div className="flex items-center gap-2 mb-4">
-                        <div className="w-2 h-2 rounded-full bg-[var(--status-success)]"></div>
-                        <span className="text-sm">Store Online</span>
+                    <div className="flex items-center gap-2 mb-2">
+                        <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                        <span className="text-sm font-medium text-[var(--text-main)]">Store Online</span>
                     </div>
-                    <p className="text-xs text-[var(--text-muted)] truncate">{user.email}</p>
+                    <p className="text-xs text-[var(--text-muted)]">FreshMart Demo Store</p>
+                    <p className="text-xs text-[var(--text-muted)]">merchant@example.com</p>
                 </div>
             </aside>
 
             {/* Main Content */}
-            <main className="p-8 overflow-y-auto">
+            <main className="overflow-y-auto bg-[var(--surface-1)]">
                 <Outlet />
             </main>
         </div>

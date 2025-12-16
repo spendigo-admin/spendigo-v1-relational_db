@@ -1,68 +1,69 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 :root {
     /* 
-   * COLOR PALETTE (Premium, Vibrant, High-Contrast)
-   * Primary: A deep, trustworthy electric indigo.
-   * Secondary: A vibrant coral for actionable elements (Add to Cart).
-   * Background: Deep rich slightly blue-tinted dark grey for Night Mode appeal (default).
-   */
-    --brand-primary: hsl(250, 100%, 65%);
-    /* Electric Indigo */
-    --brand-primary-dark: hsl(250, 100%, 55%);
+     * COLOR PALETTE - Bright White & Blue Theme
+     * Primary: Vibrant Blue (Instacart/Trust-inspired)
+     * Secondary: Bright Green for success/savings
+     * Background: Clean white
+     */
+    --brand-primary: hsl(212, 100%, 47%);
+    /* Bright Blue */
+    --brand-primary-dark: hsl(212, 100%, 40%);
+    --brand-primary-light: hsl(212, 100%, 95%);
 
-    --brand-secondary: hsl(15, 90%, 60%);
-    /* Vibrant Coral */
-    --brand-secondary-hover: hsl(15, 90%, 50%);
+    --brand-secondary: hsl(145, 63%, 42%);
+    /* Success Green */
+    --brand-secondary-hover: hsl(145, 63%, 35%);
 
-    /* Neutral Scale (Dark Mode Default) */
-    --surface-0: hsl(240, 10%, 10%);
-    /* Deepest Background */
-    --surface-1: hsl(240, 10%, 14%);
-    /* Card Background */
-    --surface-2: hsl(240, 10%, 20%);
-    /* Hover State */
+    /* Neutral Scale (Light Mode) */
+    --surface-0: hsl(0, 0%, 100%);
+    /* Pure White Background */
+    --surface-1: hsl(210, 20%, 98%);
+    /* Slightly off-white for cards */
+    --surface-2: hsl(210, 15%, 95%);
+    /* Hover/divider state */
+    --surface-3: hsl(210, 10%, 90%);
+    /* Borders */
 
-    --text-main: hsl(0, 0%, 100%);
-    --text-muted: hsl(240, 5%, 70%);
-    --text-inverse: hsl(240, 10%, 10%);
+    --text-main: hsl(210, 20%, 15%);
+    /* Near black */
+    --text-muted: hsl(210, 10%, 50%);
+    /* Gray */
+    --text-inverse: hsl(0, 0%, 100%);
 
     /* Status Colors (Accessible) */
-    --status-success: hsl(150, 60%, 45%);
-    --status-error: hsl(0, 70%, 55%);
-    --status-warning: hsl(40, 90%, 60%);
+    --status-success: hsl(145, 63%, 42%);
+    --status-error: hsl(0, 72%, 51%);
+    --status-warning: hsl(38, 92%, 50%);
 
-    /* GLASSMORPHISM TOKENS */
-    --glass-bg: hsla(240, 10%, 20%, 0.6);
-    --glass-border: hsla(0, 0%, 100%, 0.1);
-    --glass-blur: 16px;
-    --glass-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+    /* CARD STYLES (Light Mode) */
+    --glass-bg: hsl(0, 0%, 100%);
+    --glass-border: hsl(210, 15%, 90%);
+    --glass-blur: 0px;
+    --glass-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.06);
 
     /* SPACING SCALE (4px grid) */
     --space-1: 0.25rem;
-    /* 4px */
     --space-2: 0.5rem;
-    /* 8px */
     --space-3: 0.75rem;
-    /* 12px */
     --space-4: 1rem;
-    /* 16px */
     --space-6: 1.5rem;
-    /* 24px */
     --space-8: 2rem;
-    /* 32px */
     --space-12: 3rem;
-    /* 48px */
 
     /* TYPOGRAPHY */
-    --font-sans: 'Outfit', 'Inter', system-ui, sans-serif;
+    --font-sans: 'Inter', 'Outfit', system-ui, -apple-system, sans-serif;
     --font-weight-regular: 400;
     --font-weight-medium: 500;
-    --font-weight-bold: 700;
+    --font-weight-bold: 600;
 
     /* BORDERS & RADIUS */
     --radius-sm: 8px;
     --radius-md: 12px;
-    --radius-lg: 20px;
-    /* Modern "Squircle" feel */
+    --radius-lg: 16px;
 }
 
 /* Base Styles */
@@ -70,34 +71,41 @@ body {
     background-color: var(--surface-0);
     color: var(--text-main);
     font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
 }
 
-/* Utility Class for Glassmorphism */
+/* Card/Panel Style - Clean White Cards with Subtle Shadow */
 .glass-panel {
     background: var(--glass-bg);
-    backdrop-filter: blur(var(--glass-blur));
-    -webkit-backdrop-filter: blur(var(--glass-blur));
     border: 1px solid var(--glass-border);
     box-shadow: var(--glass-shadow);
     border-radius: var(--radius-md);
 }
 
+/* Hover effect for cards */
+.glass-panel:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
 /* Typography Scale */
 h1 {
-    font-size: 2.5rem;
+    font-size: 2rem;
     font-weight: var(--font-weight-bold);
-    line-height: 1.1;
+    line-height: 1.2;
+    color: var(--text-main);
 }
 
 h2 {
-    font-size: 2rem;
+    font-size: 1.5rem;
     font-weight: var(--font-weight-bold);
     margin-bottom: var(--space-4);
+    color: var(--text-main);
 }
 
 h3 {
-    font-size: 1.5rem;
+    font-size: 1.25rem;
     font-weight: var(--font-weight-medium);
+    color: var(--text-main);
 }
 
 p {
@@ -110,4 +118,31 @@ p {
 :focus-visible {
     outline: 2px solid var(--brand-primary);
     outline-offset: 2px;
+}
+
+/* Animation */
+.animate-fade-in {
+    animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Scrollbar hiding utility */
+.scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+    display: none;
 }
