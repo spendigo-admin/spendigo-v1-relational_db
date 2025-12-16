@@ -1,0 +1,113 @@
+:root {
+    /* 
+   * COLOR PALETTE (Premium, Vibrant, High-Contrast)
+   * Primary: A deep, trustworthy electric indigo.
+   * Secondary: A vibrant coral for actionable elements (Add to Cart).
+   * Background: Deep rich slightly blue-tinted dark grey for Night Mode appeal (default).
+   */
+    --brand-primary: hsl(250, 100%, 65%);
+    /* Electric Indigo */
+    --brand-primary-dark: hsl(250, 100%, 55%);
+
+    --brand-secondary: hsl(15, 90%, 60%);
+    /* Vibrant Coral */
+    --brand-secondary-hover: hsl(15, 90%, 50%);
+
+    /* Neutral Scale (Dark Mode Default) */
+    --surface-0: hsl(240, 10%, 10%);
+    /* Deepest Background */
+    --surface-1: hsl(240, 10%, 14%);
+    /* Card Background */
+    --surface-2: hsl(240, 10%, 20%);
+    /* Hover State */
+
+    --text-main: hsl(0, 0%, 100%);
+    --text-muted: hsl(240, 5%, 70%);
+    --text-inverse: hsl(240, 10%, 10%);
+
+    /* Status Colors (Accessible) */
+    --status-success: hsl(150, 60%, 45%);
+    --status-error: hsl(0, 70%, 55%);
+    --status-warning: hsl(40, 90%, 60%);
+
+    /* GLASSMORPHISM TOKENS */
+    --glass-bg: hsla(240, 10%, 20%, 0.6);
+    --glass-border: hsla(0, 0%, 100%, 0.1);
+    --glass-blur: 16px;
+    --glass-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+
+    /* SPACING SCALE (4px grid) */
+    --space-1: 0.25rem;
+    /* 4px */
+    --space-2: 0.5rem;
+    /* 8px */
+    --space-3: 0.75rem;
+    /* 12px */
+    --space-4: 1rem;
+    /* 16px */
+    --space-6: 1.5rem;
+    /* 24px */
+    --space-8: 2rem;
+    /* 32px */
+    --space-12: 3rem;
+    /* 48px */
+
+    /* TYPOGRAPHY */
+    --font-sans: 'Outfit', 'Inter', system-ui, sans-serif;
+    --font-weight-regular: 400;
+    --font-weight-medium: 500;
+    --font-weight-bold: 700;
+
+    /* BORDERS & RADIUS */
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 20px;
+    /* Modern "Squircle" feel */
+}
+
+/* Base Styles */
+body {
+    background-color: var(--surface-0);
+    color: var(--text-main);
+    font-family: var(--font-sans);
+}
+
+/* Utility Class for Glassmorphism */
+.glass-panel {
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+    border-radius: var(--radius-md);
+}
+
+/* Typography Scale */
+h1 {
+    font-size: 2.5rem;
+    font-weight: var(--font-weight-bold);
+    line-height: 1.1;
+}
+
+h2 {
+    font-size: 2rem;
+    font-weight: var(--font-weight-bold);
+    margin-bottom: var(--space-4);
+}
+
+h3 {
+    font-size: 1.5rem;
+    font-weight: var(--font-weight-medium);
+}
+
+p {
+    font-size: 1rem;
+    line-height: 1.6;
+    color: var(--text-muted);
+}
+
+/* Accessible Focus States */
+:focus-visible {
+    outline: 2px solid var(--brand-primary);
+    outline-offset: 2px;
+}
