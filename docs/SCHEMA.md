@@ -144,6 +144,43 @@ CREATE TABLE order_items (
     price_at_purchase_cents INTEGER NOT NULL,
     total_cents INTEGER NOT NULL
 );
+
+### 2.5 Flyers & Deals (Phase 2)
+```sql
+CREATE TABLE flyers (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    store_id UUID REFERENCES stores(id) NOT NULL,
+    status VARCHAR(50) DEFAULT 'processing', -- processing, review_required, active, expired
+    active_from TIMESTAMP WITH TIME ZONE NOT NULL,
+    active_until TIMESTAMP WITH TIME ZONE NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE TABLE flyer_pages (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    flyer_id UUID REFERENCES flyers(id) NOT NULL,
+    page_number INTEGER NOT NULL,
+    image_url TEXT NOT NULL,
+    ocr_raw_text TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE TABLE extracted_deals (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    flyer_id UUID REFERENCES flyers(id) NOT NULL,
+    page_id UUID REFERENCES flyer_pages(id) NOT NULL,
+    
+    product_name VARCHAR(255) NOT NULL,
+    price_cents INTEGER,
+    unit VARCHAR(50), 
+    
+    bbox_json JSONB, -- Coordinates on the image {x,y,w,h}
+    confidence_score DECIMAL(4,3), -- 0.000 to 1.000
+    is_verified BOOLEAN DEFAULT false,
+    
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+```
 ```
 
 ## 3. RLS (Row Level Security) Policies
