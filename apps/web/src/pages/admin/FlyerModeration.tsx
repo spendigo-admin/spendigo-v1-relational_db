@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import '../styles/design-system.css';
+import '../../styles/design-system.css';
 
 // Mock Data
 const MOCK_DEALS = [
@@ -58,8 +58,8 @@ const FlyerModeration: React.FC = () => {
                             <div
                                 key={deal.id}
                                 className={`p-3 rounded-[var(--radius-sm)] border ${deal.confidence < 0.8 && !deal.verified
-                                        ? 'border-[var(--status-warning)] bg-[var(--status-warning)]/10'
-                                        : 'border-[var(--glass-border)] bg-[var(--surface-2)]'
+                                    ? 'border-[var(--status-warning)] bg-[var(--status-warning)]/10'
+                                    : 'border-[var(--glass-border)] bg-[var(--surface-2)]'
                                     }`}
                             >
                                 <div className="flex justify-between items-start mb-2">

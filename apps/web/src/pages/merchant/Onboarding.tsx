@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import '../styles/design-system.css';
+import '../../styles/design-system.css';
 
 const MerchantOnboarding: React.FC = () => {
     const [step, setStep] = useState(1);
@@ -27,8 +27,8 @@ const MerchantOnboarding: React.FC = () => {
                 <div className="absolute top-0 left-0 w-full h-1 bg-[var(--surface-2)]">
                     <div
                         className="h-full bg-[var(--brand-primary)] transition-all duration-500"
-                        style={{ width: \`\${(step / 3) * 100}%\` }}
-          />
+                        style={{ width: `${(step / 3) * 100}%` }}
+                    />
                 </div>
 
                 <h1 className="mb-2 text-3xl text-[var(--text-main)]">Setup your Store</h1>
