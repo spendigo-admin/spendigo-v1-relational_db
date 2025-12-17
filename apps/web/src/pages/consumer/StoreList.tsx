@@ -12,6 +12,11 @@ const STORES = [
     { id: '5', name: "Mac's Corner", distance: '0.2 km', image: 'https://images.unsplash.com/photo-1604719312566-8912e9227c6a?w=400&h=200&fit=crop', logo: '🏪', tags: ['Convenience', 'Snacks'], deliveryTime: '10-20 min' },
     { id: '6', name: 'Hasty Mart', distance: '0.5 km', image: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=400&h=200&fit=crop', logo: '⚡', tags: ['Convenience', '24/7'], deliveryTime: '10-15 min' },
     { id: '7', name: 'Corner Bodega', distance: '0.3 km', image: 'https://images.unsplash.com/photo-1583258292688-d0213dc5a3a8?w=400&h=200&fit=crop', logo: '🏬', tags: ['Convenience', 'Local'], deliveryTime: '10-20 min' },
+    // Local Specialty Stores
+    { id: '8', name: "Green Valley Market", distance: '1.5 km', image: 'https://images.unsplash.com/photo-1488459716781-31db52582fe9?w=400&h=200&fit=crop', logo: '🌽', tags: ['Farmers Market', 'Organic'], deliveryTime: '30-45 min' },
+    { id: '9', name: "The Daily Loaf", distance: '0.8 km', image: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=400&h=200&fit=crop', logo: '🥖', tags: ['Bakery', 'Artisan'], deliveryTime: '20-30 min' },
+    { id: '10', name: "The Butcher's Block", distance: '1.1 km', image: 'https://images.unsplash.com/photo-1607623814075-e51df1bdc82f?w=400&h=200&fit=crop', logo: '🥩', tags: ['Butcher', 'Meat'], deliveryTime: '25-40 min' },
+    { id: '11', name: "The Book Nook", distance: '2.0 km', image: 'https://images.unsplash.com/photo-1521587760476-6c12a4b040da?w=400&h=200&fit=crop', logo: '📚', tags: ['Books', 'Gifts'], deliveryTime: '40-50 min' },
 ];
 
 const CATEGORIES = ['All', 'Fastest', 'Offers', 'Low Prices', 'Grocery', 'Convenience', 'Wholesale'];

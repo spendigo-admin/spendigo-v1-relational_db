@@ -52,6 +52,30 @@ const MerchantDashboard: React.FC = () => {
                 ))}
             </div>
 
+            {/* Alerts & Tasks */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <div className="bg-orange-50 border border-orange-100 p-4 rounded-xl flex items-start gap-3">
+                    <span className="text-2xl">⚠️</span>
+                    <div>
+                        <h3 className="font-bold text-orange-900">Low Stock Alert</h3>
+                        <p className="text-sm text-orange-800 mb-2">2 products are below your threshold of 10 units.</p>
+                        <button onClick={() => navigate('/merchant/products')} className="text-xs font-bold text-orange-900 bg-orange-200 px-3 py-1 rounded-full hover:bg-orange-300">
+                            Restock Now
+                        </button>
+                    </div>
+                </div>
+                <div className="bg-blue-50 border border-blue-100 p-4 rounded-xl flex items-start gap-3">
+                    <span className="text-2xl">🔔</span>
+                    <div>
+                        <h3 className="font-bold text-blue-900">New Orders</h3>
+                        <p className="text-sm text-blue-800 mb-2">You have 3 orders waiting to be prepared.</p>
+                        <button onClick={() => navigate('/merchant/orders')} className="text-xs font-bold text-blue-900 bg-blue-200 px-3 py-1 rounded-full hover:bg-blue-300">
+                            View Orders
+                        </button>
+                    </div>
+                </div>
+            </div>
+
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Main Content Area */}
                 <div className="lg:col-span-2 space-y-8">
@@ -115,8 +139,8 @@ const MerchantDashboard: React.FC = () => {
                                         <p className="text-xs text-[var(--text-muted)]">{order.items} • {order.total}</p>
                                     </div>
                                     <span className={`text-xs px-2 py-1 rounded-full ${order.status === 'Pending' ? 'bg-yellow-100 text-yellow-700' :
-                                            order.status === 'Processing' ? 'bg-blue-100 text-blue-700' :
-                                                'bg-green-100 text-green-700'
+                                        order.status === 'Processing' ? 'bg-blue-100 text-blue-700' :
+                                            'bg-green-100 text-green-700'
                                         }`}>
                                         {order.status}
                                     </span>

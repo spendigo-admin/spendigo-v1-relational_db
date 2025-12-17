@@ -1,60 +1,99 @@
 import React from 'react';
 import { Outlet, NavLink, Link } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
 import '../styles/design-system.css';
 
 const ConsumerLayout: React.FC = () => {
-    const { itemCount } = useCart();
+    const { itemCount, notification, clearNotification } = useCart();
+    const { user, logout } = useAuth();
 
     return (
         <div className="min-h-screen bg-[var(--surface-0)] relative">
             {/* TOP NAVIGATION BAR */}
-            <header className="fixed top-0 left-0 right-0 h-14 bg-white border-b border-[var(--glass-border)] z-50 px-4 flex items-center justify-between">
-                {/* LEFT: Logo + Nav */}
-                <div className="flex items-center gap-6">
-                    <Link to="/" className="flex flex-col leading-tight">
-                        <span className="text-xl font-bold bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)] bg-clip-text text-transparent">Spendigo</span>
+            <header className="fixed top-0 left-0 right-0 h-14 bg-white border-b border-[var(--glass-border)] z-50 px-4 flex items-center justify-between gap-4">
+                {/* LEFT: Logo + Search */}
+                <div className="flex items-center gap-6 flex-1 max-w-3xl">
+                    {/* Logo (Home) */}
+                    <Link to="/" className="flex flex-col leading-tight group shrink-0">
+                        <span className="text-xl font-bold bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)] bg-clip-text text-transparent group-hover:brightness-110 transition-all">Spendigo</span>
                         <span className="text-xs font-semibold text-[var(--text-main)] tracking-widest uppercase">SmartCart</span>
                     </Link>
 
-                    {/* Desktop Nav Links */}
-                    <nav className="hidden md:flex items-center gap-1">
-                        <NavLink to="/" end className={({ isActive }) => `px-3 py-2 rounded-lg text-sm font-medium transition-colors ${isActive ? 'bg-[var(--brand-primary)]/10 text-[var(--brand-primary)]' : 'text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--surface-2)]'}`}>
-                            🏠 Home
-                        </NavLink>
-                        <NavLink to="/search" className={({ isActive }) => `px-3 py-2 rounded-lg text-sm font-medium transition-colors ${isActive ? 'bg-[var(--brand-primary)]/10 text-[var(--brand-primary)]' : 'text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--surface-2)]'}`}>
-                            🔍 Search
-                        </NavLink>
-                        <NavLink to="/smartcart" className={({ isActive }) => `px-3 py-2 rounded-lg text-sm font-medium transition-colors ${isActive ? 'bg-[var(--brand-primary)]/10 text-[var(--brand-primary)]' : 'text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--surface-2)]'}`}>
-                            ✨ SmartCart
-                        </NavLink>
-                        <NavLink to="/cart" className={({ isActive }) => `px-3 py-2 rounded-lg text-sm font-medium transition-colors ${isActive ? 'bg-[var(--brand-primary)]/10 text-[var(--brand-primary)]' : 'text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--surface-2)]'}`}>
-                            🛒 Cart {itemCount > 0 && `(${itemCount})`}
-                        </NavLink>
-                    </nav>
+                    {/* Expanded Search Bar */}
+                    <div className="hidden md:flex flex-1 relative group max-w-lg">
+                        <input
+                            type="text"
+                            placeholder="Search products, stores, etc."
+                            className="w-full h-10 pl-10 pr-4 bg-[var(--surface-1)] border border-transparent rounded-full text-sm focus:bg-white focus:border-[var(--brand-primary)] focus:ring-4 focus:ring-[var(--brand-primary)]/10 transition-all outline-none group-hover:bg-[var(--surface-2)]"
+                        />
+                        <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
+                    </div>
                 </div>
 
-                {/* CENTER: Location (Mobile) */}
-                <div className="md:hidden flex items-center gap-1 text-sm">
-                    <span>📍</span>
-                    <span className="text-[var(--text-muted)] truncate max-w-[100px]">Toronto, ON</span>
-                </div>
+                {/* RIGHT: Actions (Optimizer, Cart, Notifications, Profile) */}
+                <div className="flex items-center gap-2 shrink-0">
+                    {/* SmartCart Optimizer */}
+                    <NavLink to="/smartcart" className={({ isActive }) => `hidden lg:flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium shrink-0 transition-colors ${isActive ? 'bg-[var(--brand-primary)]/10 text-[var(--brand-primary)]' : 'text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--surface-2)]'}`}>
+                        <span className="text-base">✨</span>
+                        <span>SmartCart Optimizer</span>
+                    </NavLink>
 
-                {/* RIGHT: Actions */}
-                <div className="flex items-center gap-2">
+                    <div className="hidden md:block w-px h-6 bg-[var(--glass-border)] mx-1"></div>
+
+                    {/* Desktop Cart */}
+                    <NavLink to="/cart" className={({ isActive }) => `hidden md:flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${isActive ? 'bg-[var(--brand-primary)]/10 text-[var(--brand-primary)]' : 'text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--surface-2)]'}`}>
+                        <span className="text-lg">🛒</span>
+                        <span>Cart</span>
+                        {itemCount > 0 && (
+                            <span className="bg-[var(--brand-primary)] text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold">
+                                {itemCount}
+                            </span>
+                        )}
+                    </NavLink>
+
+                    {/* Context Links (Authorized Only) */}
+                    {user?.role === 'merchant' && (
+                        <Link to="/merchant/dashboard" className="hidden lg:flex items-center gap-1 text-xs font-bold text-[var(--brand-primary)] bg-[var(--brand-primary)]/10 px-3 py-1.5 rounded-full hover:bg-[var(--brand-primary)] hover:text-white transition-colors">
+                            <span className="text-lg">💼</span> Dashboard
+                        </Link>
+                    )}
+                    {user?.role === 'admin' && (
+                        <Link to="/admin/dashboard" className="hidden lg:flex items-center gap-1 text-xs font-bold text-purple-600 bg-purple-100 px-3 py-1.5 rounded-full hover:bg-purple-600 hover:text-white transition-colors">
+                            <span className="text-lg">🛡️</span> System
+                        </Link>
+                    )}
+
                     {/* Notifications */}
                     <Link to="/notifications" className="relative w-10 h-10 rounded-full hover:bg-[var(--surface-2)] flex items-center justify-center transition-colors">
                         <span className="text-lg">🔔</span>
                         <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
                     </Link>
 
-                    {/* Profile */}
-                    <Link to="/profile" className="hidden sm:flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-[var(--surface-2)] transition-colors">
-                        <span className="w-8 h-8 rounded-full bg-[var(--brand-primary)] text-white flex items-center justify-center text-sm font-bold">JD</span>
-                        <span className="text-sm font-medium text-[var(--text-main)]">John</span>
-                    </Link>
+                    {/* Profile / Auth */}
+                    {user ? (
+                        <div className="flex items-center gap-2">
+                            <Link to="/profile" className="hidden sm:flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-[var(--surface-2)] transition-colors">
+                                <div className="w-8 h-8 rounded-full bg-[var(--brand-primary)] text-white flex items-center justify-center text-sm font-bold">
+                                    {user.avatar || '👤'}
+                                </div>
+                                <span className="text-sm font-medium text-[var(--text-main)]">{user.name.split(' ')[0]}</span>
+                            </Link>
+                            <button
+                                onClick={logout}
+                                className="hidden sm:flex items-center justify-center w-8 h-8 rounded-lg hover:bg-red-50 text-[var(--text-muted)] hover:text-red-500 transition-colors"
+                                title="Sign Out"
+                            >
+                                🚪
+                            </button>
+                        </div>
+                    ) : (
+                        <Link to="/login" className="hidden sm:inline-flex items-center justify-center px-4 py-2 rounded-full bg-[var(--brand-primary)] text-white text-sm font-bold shadow-lg shadow-[var(--brand-primary)]/20 hover:brightness-110 transition-all">
+                            Sign In
+                        </Link>
+                    )}
 
-                    {/* Mobile Cart */}
+                    {/* Mobile Cart Icon */}
                     <Link to="/cart" className="md:hidden relative w-10 h-10 rounded-full bg-[var(--surface-2)] flex items-center justify-center">
                         <span className="text-lg">🛒</span>
                         {itemCount > 0 && (
@@ -103,6 +142,27 @@ const ConsumerLayout: React.FC = () => {
 
             {/* Bottom padding for mobile nav */}
             <div className="md:hidden h-16"></div>
+
+            {/* GLOBAL NOTIFICATION TOAST */}
+            {notification && (
+                <div className="fixed bottom-24 left-4 right-4 z-[100] animate-slide-up">
+                    <div className={`max-w-md mx-auto glass-panel p-4 text-white shadow-2xl flex items-center justify-between border-none ${notification.type === 'success' ? 'bg-[var(--status-success)]' : 'bg-orange-500'
+                        }`}>
+                        <div className="flex items-center gap-3">
+                            <span className="text-xl">
+                                {notification.type === 'success' ? '✅' : '🗑️'}
+                            </span>
+                            <p className="font-bold text-sm">{notification.message}</p>
+                        </div>
+                        <button
+                            onClick={clearNotification}
+                            className="bg-white/20 hover:bg-white/30 p-1.5 rounded-full transition-colors"
+                        >
+                            ✕
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

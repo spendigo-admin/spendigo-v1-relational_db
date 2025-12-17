@@ -1,8 +1,11 @@
 import React from 'react';
-import { Outlet, NavLink } from 'react-router-dom';
+import { NavLink, Outlet } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import '../styles/design-system.css';
 
 const MerchantLayout: React.FC = () => {
+    const { user, logout } = useAuth();
+
     return (
         <div className="min-h-screen grid grid-cols-[250px_1fr] bg-[var(--surface-0)]">
             {/* Sidebar */}
@@ -46,10 +49,21 @@ const MerchantLayout: React.FC = () => {
                         <span>🏷️</span> Deals
                     </NavLink>
                     <NavLink
-                        to="/merchant/onboarding"
+                        to="/merchant/settings"
                         className={({ isActive }) => `flex items-center gap-3 p-3 rounded-lg font-medium transition-colors ${isActive ? 'bg-[var(--brand-primary)] text-white' : 'text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text-main)]'}`}
                     >
                         <span>⚙️</span> Settings
+                    </NavLink>
+                </nav>
+
+                <div className="border-t border-[var(--glass-border)] my-2"></div>
+
+                <nav className="space-y-1">
+                    <NavLink
+                        to="/"
+                        className="flex items-center gap-3 p-3 rounded-lg font-medium text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text-main)] transition-colors"
+                    >
+                        <span>🏠</span> Back to Spendigo
                     </NavLink>
                 </nav>
 
@@ -58,8 +72,15 @@ const MerchantLayout: React.FC = () => {
                         <div className="w-2 h-2 rounded-full bg-green-500"></div>
                         <span className="text-sm font-medium text-[var(--text-main)]">Store Online</span>
                     </div>
-                    <p className="text-xs text-[var(--text-muted)]">FreshMart Demo Store</p>
-                    <p className="text-xs text-[var(--text-muted)]">merchant@example.com</p>
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="text-xs text-[var(--text-main)] font-bold truncate max-w-[150px]">{user?.storeName || 'My Store'}</p>
+                            <p className="text-xs text-[var(--text-muted)] truncate max-w-[150px]">{user?.email}</p>
+                        </div>
+                        <button onClick={logout} className="text-xs text-red-500 hover:text-red-700 font-bold" title="Logout">
+                            🚪
+                        </button>
+                    </div>
                 </div>
             </aside>
 

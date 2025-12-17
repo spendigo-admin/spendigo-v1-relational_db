@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useWishlist } from '../../context/WishlistContext';
 import { useCart } from '../../context/CartContext';
 import '../../styles/design-system.css';
@@ -94,7 +94,7 @@ const AVAILABLE_ITEMS = Object.entries(PRODUCT_PRICES).map(([id, data]) => ({
 
 const SmartCartWishlist: React.FC = () => {
     const { items: wishlistItems, addItem, removeItem, isInWishlist, clearWishlist } = useWishlist();
-    const { addToCart } = useCart();
+    const { addItemsToCart } = useCart();
     const [showAddItems, setShowAddItems] = useState(false);
 
     // Calculate optimized cart - find cheapest price for each wishlist item
@@ -143,19 +143,26 @@ const SmartCartWishlist: React.FC = () => {
     const totalCost = optimizedCart.reduce((sum, item) => sum + (item?.cheapest?.price || 0), 0);
 
     const handleAddAllToCart = () => {
-        optimizedCart.forEach(item => {
-            if (item?.cheapest) {
-                addToCart({
-                    productId: item.id,
-                    productName: item.name,
-                    price: item.cheapest.price,
-                    quantity: 1,
-                    storeId: item.cheapest.storeId,
-                    storeName: item.cheapest.storeName,
-                    image: item.image,
-                });
-            }
-        });
+        const itemsToCart = optimizedCart
+            .map(item => {
+                if (item?.cheapest) {
+                    return {
+                        productId: item.id,
+                        productName: item.name,
+                        price: item.cheapest.price,
+                        quantity: 1,
+                        storeId: item.cheapest.storeId,
+                        storeName: item.cheapest.storeName,
+                        image: item.image,
+                    };
+                }
+                return null;
+            })
+            .filter((item): item is NonNullable<typeof item> => item !== null);
+
+        if (itemsToCart.length > 0) {
+            addItemsToCart(itemsToCart);
+        }
     };
 
     return (
@@ -187,8 +194,8 @@ const SmartCartWishlist: React.FC = () => {
                                     key={item.id}
                                     onClick={() => isInWishlist(item.id) ? removeItem(item.id) : addItem(item)}
                                     className={`flex items-center gap-2 p-2 rounded-lg text-left transition-all ${isInWishlist(item.id)
-                                            ? 'bg-[var(--brand-primary)] text-white'
-                                            : 'bg-[var(--surface-1)] hover:bg-[var(--surface-2)]'
+                                        ? 'bg-[var(--brand-primary)] text-white'
+                                        : 'bg-[var(--surface-1)] hover:bg-[var(--surface-2)]'
                                         }`}
                                 >
                                     <img src={item.image} alt="" className="w-10 h-10 rounded-lg object-cover" />
@@ -243,8 +250,8 @@ const SmartCartWishlist: React.FC = () => {
                                                 <div
                                                     key={store.storeId}
                                                     className={`flex items-center justify-between p-2 rounded-lg ${store.storeId === item.cheapest?.storeId
-                                                            ? 'bg-green-50 border border-green-200'
-                                                            : 'bg-[var(--surface-1)]'
+                                                        ? 'bg-green-50 border border-green-200'
+                                                        : 'bg-[var(--surface-1)]'
                                                         }`}
                                                 >
                                                     <div className="flex items-center gap-2">
@@ -255,8 +262,8 @@ const SmartCartWishlist: React.FC = () => {
                                                         {!store.inStock && <span className="text-xs text-red-500">(Out of stock)</span>}
                                                     </div>
                                                     <span className={`font-bold ${store.storeId === item.cheapest?.storeId
-                                                            ? 'text-green-600'
-                                                            : 'text-[var(--text-main)]'
+                                                        ? 'text-green-600'
+                                                        : 'text-[var(--text-main)]'
                                                         }`}>
                                                         ${store.price.toFixed(2)}
                                                     </span>

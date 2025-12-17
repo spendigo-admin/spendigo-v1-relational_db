@@ -1,105 +1,137 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { onAuthStateChanged, signOut, GoogleAuthProvider, signInWithPopup, User } from 'firebase/auth';
-import { auth } from '../lib/firebase';
-import { UserRole, UserProfile, AuthContextType } from '../../../../packages/shared/src/auth/types';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
-// Mock function to simulate fetching extended profile from DB (Role, Ban status)
-// In production, this would call our API.
-async function fetchUserProfile(firebaseUser: User): Promise<UserProfile> {
-    // Simulate API latency
-    // await new Promise(r => setTimeout(r, 500)); 
+// Define User Types
+export interface User {
+    id: string;
+    email: string;
+    name: string;
+    role: 'consumer' | 'merchant' | 'admin';
+    avatar?: string;
+    // Merchant specific
+    storeId?: string;
+    storeName?: string;
+}
 
-    // LOGIC: In a real app, we fetch the 'users' table row here.
-    // For now, valid logic:
-    // 1. If email contains 'spendigo.admin', role = ADMIN
-    // 2. If email contains 'store', role = MERCHANT
-    // 3. Else CONSUMER
-
-    let role = UserRole.CONSUMER;
-    if (firebaseUser.email?.includes('admin')) role = UserRole.ADMIN;
-    else if (firebaseUser.email?.includes('store')) role = UserRole.MERCHANT;
-
-    return {
-        id: firebaseUser.uid,
-        email: firebaseUser.email || '',
-        role,
-        isBanned: false, // Default to false until DB integrated
-        emailVerified: firebaseUser.emailVerified,
-        createdAt: firebaseUser.metadata.creationTime || new Date().toISOString(),
-        displayName: firebaseUser.displayName || undefined
-    };
+interface AuthContextType {
+    user: User | null;
+    isAuthenticated: boolean;
+    login: (email: string, password: string) => Promise<boolean>;
+    register: (userData: Partial<User> & { password: string }) => Promise<boolean>;
+    logout: () => void;
+    loading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const [user, setUser] = useState<UserProfile | null>(null);
+// Mock Users Database
+const MOCK_USERS: Record<string, User> = {
+    'admin@spendigo.ca': {
+        id: 'admin1',
+        email: 'admin@spendigo.ca',
+        name: 'System Admin',
+        role: 'admin',
+        avatar: '🛡️'
+    },
+    'freshmart@store.com': { id: 'm1', email: 'freshmart@store.com', name: 'FreshMart Manager', role: 'merchant', storeId: '1', storeName: 'FreshMart', avatar: '🥬' },
+    'quick@pick.com': { id: 'm2', email: 'quick@pick.com', name: 'QuickPick Owner', role: 'merchant', storeId: '2', storeName: 'QuickPick', avatar: '🏪' },
+    'metro@express.com': { id: 'm3', email: 'metro@express.com', name: 'Metro Manager', role: 'merchant', storeId: '3', storeName: 'Metro Express', avatar: '🛒' },
+    'costco@biz.com': { id: 'm4', email: 'costco@biz.com', name: 'Costco Admin', role: 'merchant', storeId: '4', storeName: 'Costco Business', avatar: '📦' },
+    'macs@corner.com': { id: 'm5', email: 'macs@corner.com', name: 'Mac Manager', role: 'merchant', storeId: '5', storeName: "Mac's Corner", avatar: '🏪' },
+    'hasty@mart.com': { id: 'm6', email: 'hasty@mart.com', name: 'Hasty Owner', role: 'merchant', storeId: '6', storeName: 'Hasty Mart', avatar: '⚡' },
+    'bodega@corner.com': { id: 'm7', email: 'bodega@corner.com', name: 'Bodega Boss', role: 'merchant', storeId: '7', storeName: 'Corner Bodega', avatar: '🏬' },
+    'green@valley.com': { id: 'm8', email: 'green@valley.com', name: 'Farmer Joe', role: 'merchant', storeId: '8', storeName: 'Green Valley Market', avatar: '🌽' },
+    'daily@loaf.com': { id: 'm9', email: 'daily@loaf.com', name: 'Baker Bob', role: 'merchant', storeId: '9', storeName: 'The Daily Loaf', avatar: '🥖' },
+    'butcher@block.com': { id: 'm10', email: 'butcher@block.com', name: 'Butcher Bill', role: 'merchant', storeId: '10', storeName: "The Butcher's Block", avatar: '🥩' },
+    'book@nook.com': { id: 'm11', email: 'book@nook.com', name: 'Librarian Linda', role: 'merchant', storeId: '11', storeName: 'The Book Nook', avatar: '📚' },
+    'shopper@example.com': {
+        id: 'shop1',
+        email: 'shopper@example.com',
+        name: 'Alice Shopper',
+        role: 'consumer',
+        avatar: '🛒'
+    }
+};
+
+export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+    const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
 
+    // Initialize from localStorage
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-            setLoading(true);
-            if (firebaseUser) {
-                try {
-                    const profile = await fetchUserProfile(firebaseUser);
-                    if (profile.isBanned) {
-                        await signOut(auth);
-                        setError("Account suspended. Contact support.");
-                        setUser(null);
-                    } else {
-                        setUser(profile);
-                        setError(null);
-                    }
-                } catch (err) {
-                    console.error("Profile fetch error:", err);
-                    setError("Failed to load user profile.");
-                    setUser(null);
-                }
-            } else {
-                setUser(null);
-            }
-            setLoading(false);
-        });
-
-        return () => unsubscribe();
+        const storedUser = localStorage.getItem('spendigo_user');
+        if (storedUser) {
+            setUser(JSON.parse(storedUser));
+        }
+        setLoading(false);
     }, []);
 
-    const login = async () => {
-        try {
-            setError(null);
-            const provider = new GoogleAuthProvider();
-            await signInWithPopup(auth, provider);
-        } catch (err: any) {
-            setError(err.message || "Login failed");
-        }
+    const login = async (email: string, _password: string): Promise<boolean> => {
+        // Simulate API call
+        return new Promise((resolve) => {
+            setTimeout(() => {
+                // Check if it's a known mock user
+                const mockUser = MOCK_USERS[email];
+
+                if (mockUser) {
+                    // Success for known users
+                    setUser(mockUser);
+                    localStorage.setItem('spendigo_user', JSON.stringify(mockUser));
+                    resolve(true);
+                } else {
+                    // Default fallback for unknown credentials (treat as consumer for demo)
+                    // In a real app, this would be an error
+                    const fallbackUser: User = {
+                        id: `u-${Date.now()}`,
+                        email,
+                        name: email.split('@')[0],
+                        role: 'consumer',
+                        avatar: '👤'
+                    };
+                    setUser(fallbackUser);
+                    localStorage.setItem('spendigo_user', JSON.stringify(fallbackUser));
+                    resolve(true);
+                }
+            }, 800);
+        });
     };
 
-    const logout = async () => {
-        try {
-            await signOut(auth);
-            setUser(null);
-        } catch (err: any) {
-            setError(err.message || "Logout failed");
-        }
+    const register = async (userData: Partial<User> & { password: string }): Promise<boolean> => {
+        return new Promise((resolve) => {
+            setTimeout(() => {
+                const newUser: User = {
+                    id: `u-${Date.now()}`,
+                    email: userData.email || '',
+                    name: userData.name || 'New User',
+                    role: userData.role || 'consumer',
+                    avatar: userData.role === 'merchant' ? '🏪' : '👤',
+                    storeName: userData.storeName
+                };
+
+                setUser(newUser);
+                localStorage.setItem('spendigo_user', JSON.stringify(newUser));
+                resolve(true);
+            }, 800);
+        });
     };
 
-    const checkRole = (requiredRole: UserRole): boolean => {
-        if (!user) return false;
-        if (user.role === UserRole.ADMIN) return true; // Admin accesses everything
-        return user.role === requiredRole;
+    const logout = () => {
+        setUser(null);
+        localStorage.removeItem('spendigo_user');
+        // Optional: Redirect to login or home
+        window.location.href = '/login';
+    };
+
+    const value = {
+        user,
+        isAuthenticated: !!user,
+        login,
+        register,
+        logout,
+        loading
     };
 
     return (
-        <AuthContext.Provider value={{
-            user,
-            loading,
-            error,
-            isAuthenticated: !!user,
-            login,
-            logout,
-            checkRole
-        }}>
+        <AuthContext.Provider value={value}>
             {children}
         </AuthContext.Provider>
     );

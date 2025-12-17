@@ -168,15 +168,33 @@ const MerchantOrders: React.FC = () => {
                         </div>
 
                         <div className="flex gap-3 mt-6">
-                            {getNextStatus(selectedOrder.status) && (
-                                <button
-                                    onClick={() => updateStatus(selectedOrder.id, getNextStatus(selectedOrder.status)!)}
-                                    className="flex-1 py-3 bg-[var(--brand-primary)] text-white font-medium rounded-lg"
-                                >
-                                    {getActionLabel(selectedOrder.status)}
+                            {/* Action Buttons based on status */}
+                            {selectedOrder.status === 'new' && (
+                                <>
+                                    <button onClick={() => updateStatus(selectedOrder.id, 'preparing')} className="flex-1 py-3 bg-[var(--brand-primary)] text-white font-medium rounded-lg hover:brightness-110">
+                                        Accept & PREPARE
+                                    </button>
+                                    <button onClick={() => updateStatus(selectedOrder.id, 'cancelled')} className="flex-1 py-3 border border-red-200 text-red-600 font-medium rounded-lg hover:bg-red-50">
+                                        Reject Order
+                                    </button>
+                                </>
+                            )}
+
+                            {selectedOrder.status === 'preparing' && (
+                                <div className="flex-1 flex gap-2">
+                                    <button onClick={() => updateStatus(selectedOrder.id, 'ready')} className="flex-1 py-3 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700">
+                                        Mark Ready for Pickup
+                                    </button>
+                                </div>
+                            )}
+
+                            {selectedOrder.status === 'ready' && (
+                                <button onClick={() => updateStatus(selectedOrder.id, 'completed')} className="flex-1 py-3 bg-[var(--text-main)] text-white font-medium rounded-lg hover:bg-gray-800">
+                                    Complete Order
                                 </button>
                             )}
-                            <button onClick={() => setSelectedOrder(null)} className="flex-1 py-3 border border-[var(--glass-border)] rounded-lg">
+
+                            <button onClick={() => setSelectedOrder(null)} className="py-3 px-6 border border-[var(--glass-border)] rounded-lg hover:bg-[var(--surface-1)]">
                                 Close
                             </button>
                         </div>
