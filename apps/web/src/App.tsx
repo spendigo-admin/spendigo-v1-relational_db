@@ -4,6 +4,7 @@ import { OrderProvider } from './context/OrderContext';
 import { WishlistProvider } from './context/WishlistContext';
 import ConsumerLayout from './layouts/ConsumerLayout';
 import MerchantLayout from './layouts/MerchantLayout';
+import AdminLayout from './layouts/AdminLayout';
 
 // Consumer Pages
 import StoreList from './pages/consumer/StoreList';
@@ -29,6 +30,7 @@ import MerchantFlyers from './pages/merchant/Flyers';
 import MerchantDeals from './pages/merchant/Deals';
 
 // Admin Pages
+import AdminDashboard from './pages/admin/Dashboard';
 import AdminUserManagement from './pages/admin/UserManagement';
 
 function App() {
@@ -67,8 +69,15 @@ function App() {
                                 <Route path="/merchant/deals" element={<MerchantDeals />} />
                             </Route>
 
-                            {/* ADMIN ROUTES */}
-                            <Route path="/admin/users" element={<AdminUserManagement />} />
+                            {/* ADMIN ROUTES with Layout */}
+                            <Route element={<AdminLayout />}>
+                                <Route path="/admin/dashboard" element={<AdminDashboard />} />
+                                <Route path="/admin/users" element={<AdminUserManagement />} />
+                                {/* Placeholders for other admin pages */}
+                                <Route path="/admin/stores" element={<AdminDashboard />} />
+                                <Route path="/admin/audit-logs" element={<AdminDashboard />} />
+                                <Route path="/admin/settings" element={<AdminDashboard />} />
+                            </Route>
                         </Routes>
                     </WishlistProvider>
                 </OrderProvider>

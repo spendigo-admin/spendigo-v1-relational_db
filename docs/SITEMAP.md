@@ -37,5 +37,9 @@
 - [Login](http://192.168.2.54:5173/login) - Universal login.
 - [Register](http://192.168.2.54:5173/register) - New account creation.
 
-## 🛡️ System Admin
-- [User Management](http://192.168.2.54:5173/admin/users) - Administrator view.
+## 🛡️ System Admin (Internal)
+- [System Dashboard](http://192.168.2.54:5173/admin/dashboard) - **Overview**: Platform health, revenue stats, system alerts.
+- [User Management](http://192.168.2.54:5173/admin/users) - **Users**: View/Ban consumers and merchants.
+- [Store Management](http://192.168.2.54:5173/admin/stores) - **Stores**: Approve new merchants, oversee compliance.
+- [Audit Logs](http://192.168.2.54:5173/admin/audit-logs) - **Security**: View system access logs and critical actions.
+- [Settings](http://192.168.2.54:5173/admin/settings) - **Config**: Global platform settings.
