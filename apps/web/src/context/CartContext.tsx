@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { STORE_DATA } from '../data/productData';
 
 export interface CartItem {
     id: string;
@@ -20,7 +21,12 @@ interface CartContextType {
     clearCart: () => void;
     subtotal: number;
     itemCount: number;
-    notification: { message: string, type: 'success' | 'info' } | null;
+    notification: {
+        message: string;
+        type: 'success' | 'info';
+        savings?: number;
+        competitor?: { name: string; price: number };
+    } | null;
     clearNotification: () => void;
 }
 
@@ -32,7 +38,12 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return saved ? JSON.parse(saved) : [];
     });
 
-    const [notification, setNotification] = useState<{ message: string, type: 'success' | 'info' } | null>(null);
+    const [notification, setNotification] = useState<{
+        message: string;
+        type: 'success' | 'info';
+        savings?: number;
+        competitor?: { name: string; price: number };
+    } | null>(null);
 
     useEffect(() => {
         localStorage.setItem('spendigo_cart', JSON.stringify(items));
@@ -53,14 +64,54 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
             return [...prev, { ...newItem, id: Math.random().toString(36).substr(2, 9) }];
         });
 
+        // Price Comparison Logic
+        let savings = 0;
+        let competitor = undefined;
+
+        // Note: In a real app, this would be an API call. Here we iterate the mock data.
+        // We need to access STORE_DATA. We'll import it or assume it's available via a helper.
+        // Since we can't easily import inside the function in this tool workflow without top-level edits,
+        // we will do a basic "simulation" or rely on the fact that we can import it.
+        // Let's assume we need to import it. I will add the import in a separate step if not present.
+        // For now, I'll write the logic assuming STORE_DATA is available.
+
+        // Find competitors
+        const allStores = Object.values(STORE_DATA);
+        const competitors: { storeName: string; price: number }[] = [];
+
+        allStores.forEach((store: any) => {
+            if (store.id === newItem.storeId) return; // Skip current store
+            const match = store.products.find((p: any) => p.name === newItem.productName);
+            if (match) {
+                competitors.push({ storeName: store.name, price: match.price });
+            }
+        });
+
+        if (competitors.length > 0) {
+            // Check for savings (if we bought cheaper)
+            const expensiveCompetitor = competitors.find(c => c.price > newItem.price);
+            if (expensiveCompetitor) {
+                savings = parseFloat((expensiveCompetitor.price - newItem.price).toFixed(2));
+                competitor = { name: expensiveCompetitor.storeName, price: expensiveCompetitor.price };
+            } else {
+                // Check if we overpaid
+                const cheapCompetitor = competitors.find(c => c.price < newItem.price);
+                if (cheapCompetitor) {
+                    competitor = { name: cheapCompetitor.storeName, price: cheapCompetitor.price };
+                }
+            }
+        }
+
         // Trigger notification
         setNotification({
             message: `${newItem.productName} added to cart!`,
-            type: 'success'
+            type: 'success',
+            savings: savings > 0 ? savings : undefined,
+            competitor
         });
 
-        // Auto-clear after 3s
-        setTimeout(() => setNotification(null), 3000);
+        // Auto-clear after 4s (slightly longer to read)
+        setTimeout(() => setNotification(null), 4000);
     };
 
     const addItemsToCart = (newItems: Omit<CartItem, 'id'>[]) => {

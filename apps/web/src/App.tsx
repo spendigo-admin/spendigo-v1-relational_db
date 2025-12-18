@@ -33,8 +33,11 @@ import MerchantSettings from './pages/merchant/Settings';
 // Admin Pages
 import AdminDashboard from './pages/admin/Dashboard';
 import AdminUserManagement from './pages/admin/UserManagement';
+import AdminAuditLogs from './pages/admin/AuditLogs';
+import AdminFlyerModeration from './pages/admin/FlyerModeration';
 
 import { AuthProvider } from './context/AuthContext';
+import { NotificationProvider } from './context/NotificationContext';
 
 function App() {
     return (
@@ -42,49 +45,50 @@ function App() {
             <AuthProvider>
                 <CartProvider>
                     <OrderProvider>
-                        <WishlistProvider>
-                            <Routes>
-                                {/* CONSUMER ROUTES wrapped in Layout */}
-                                <Route element={<ConsumerLayout />}>
-                                    <Route path="/" element={<StoreList />} />
-                                    <Route path="/store/:id" element={<StoreDetail />} />
-                                    <Route path="/product/:id" element={<ProductDetail />} />
-                                    <Route path="/cart" element={<Cart />} />
-                                    <Route path="/checkout" element={<Checkout />} />
-                                    <Route path="/profile" element={<Profile />} />
-                                    <Route path="/search" element={<Search />} />
-                                    <Route path="/order/:id" element={<OrderTracking />} />
-                                    <Route path="/notifications" element={<Notifications />} />
-                                    <Route path="/smartcart" element={<SmartCartWishlist />} />
-                                    <Route path="/how-it-works" element={<HowItWorks />} />
-                                </Route>
+                        <NotificationProvider>
+                            <WishlistProvider>
+                                <Routes>
+                                    {/* CONSUMER ROUTES wrapped in Layout */}
+                                    <Route element={<ConsumerLayout />}>
+                                        <Route path="/" element={<StoreList />} />
+                                        <Route path="/store/:id" element={<StoreDetail />} />
+                                        <Route path="/product/:id" element={<ProductDetail />} />
+                                        <Route path="/cart" element={<Cart />} />
+                                        <Route path="/checkout" element={<Checkout />} />
+                                        <Route path="/profile" element={<Profile />} />
+                                        <Route path="/search" element={<Search />} />
+                                        <Route path="/order/:id" element={<OrderTracking />} />
+                                        <Route path="/notifications" element={<Notifications />} />
+                                        <Route path="/smartcart" element={<SmartCartWishlist />} />
+                                        <Route path="/how-it-works" element={<HowItWorks />} />
+                                    </Route>
 
-                                {/* AUTH ROUTES (Fullscreen) */}
-                                <Route path="/login" element={<Login />} />
-                                <Route path="/register" element={<Register />} />
+                                    {/* AUTH ROUTES (Fullscreen) */}
+                                    <Route path="/login" element={<Login />} />
+                                    <Route path="/register" element={<Register />} />
 
-                                {/* MERCHANT ROUTES with Layout */}
-                                <Route element={<MerchantLayout />}>
-                                    <Route path="/merchant/dashboard" element={<MerchantDashboard />} />
-                                    <Route path="/merchant/onboarding" element={<MerchantOnboarding />} />
-                                    <Route path="/merchant/products" element={<MerchantProducts />} />
-                                    <Route path="/merchant/orders" element={<MerchantOrders />} />
-                                    <Route path="/merchant/flyers" element={<MerchantFlyers />} />
-                                    <Route path="/merchant/deals" element={<MerchantDeals />} />
-                                    <Route path="/merchant/settings" element={<MerchantSettings />} />
-                                </Route>
+                                    {/* MERCHANT ROUTES with Layout */}
+                                    <Route element={<MerchantLayout />}>
+                                        <Route path="/merchant/dashboard" element={<MerchantDashboard />} />
+                                        <Route path="/merchant/onboarding" element={<MerchantOnboarding />} />
+                                        <Route path="/merchant/products" element={<MerchantProducts />} />
+                                        <Route path="/merchant/orders" element={<MerchantOrders />} />
+                                        <Route path="/merchant/flyers" element={<MerchantFlyers />} />
+                                        <Route path="/merchant/deals" element={<MerchantDeals />} />
+                                        <Route path="/merchant/settings" element={<MerchantSettings />} />
+                                    </Route>
 
-                                {/* ADMIN ROUTES with Layout */}
-                                <Route element={<AdminLayout />}>
-                                    <Route path="/admin/dashboard" element={<AdminDashboard />} />
-                                    <Route path="/admin/users" element={<AdminUserManagement />} />
-                                    {/* Placeholders for other admin pages */}
-                                    <Route path="/admin/stores" element={<AdminDashboard />} />
-                                    <Route path="/admin/audit-logs" element={<AdminDashboard />} />
-                                    <Route path="/admin/settings" element={<AdminDashboard />} />
-                                </Route>
-                            </Routes>
-                        </WishlistProvider>
+                                    {/* ADMIN ROUTES with Layout */}
+                                    <Route element={<AdminLayout />}>
+                                        <Route path="/admin/dashboard" element={<AdminDashboard />} />
+                                        <Route path="/admin/users" element={<AdminUserManagement />} />
+                                        <Route path="/admin/audit-logs" element={<AdminAuditLogs />} />
+                                        <Route path="/admin/flyers" element={<AdminFlyerModeration />} />
+                                        <Route path="/admin/settings" element={<AdminDashboard />} />
+                                    </Route>
+                                </Routes>
+                            </WishlistProvider>
+                        </NotificationProvider>
                     </OrderProvider>
                 </CartProvider>
             </AuthProvider>

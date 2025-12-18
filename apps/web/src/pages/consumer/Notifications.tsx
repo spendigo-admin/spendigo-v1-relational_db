@@ -1,32 +1,9 @@
-import React, { useState } from 'react';
+import React from 'react';
 import '../../styles/design-system.css';
-
-// Mock notifications data
-const MOCK_NOTIFICATIONS = [
-    { id: 'n1', type: 'price_drop', title: 'Price Drop Alert! 🔥', message: 'Organic Avocados dropped from $8.99 to $6.99 at FreshMart', time: '2 hours ago', read: false, productId: 'p1' },
-    { id: 'n2', type: 'order', title: 'Order Delivered', message: 'Your order #ORD-001 has been delivered', time: '1 day ago', read: true, orderId: 'ORD-001' },
-    { id: 'n3', type: 'promo', title: 'Weekend Flash Sale!', message: 'Get 20% off all dairy products at Metro Express', time: '2 days ago', read: true },
-    { id: 'n4', type: 'price_drop', title: 'Price Drop Alert! 🔥', message: 'Almond Milk is now $4.49 (was $5.99)', time: '3 days ago', read: true, productId: 'p2' },
-];
+import { useNotifications } from '../../context/NotificationContext';
 
 const Notifications: React.FC = () => {
-    const [notifications, setNotifications] = useState(MOCK_NOTIFICATIONS);
-    const [preferences, setPreferences] = useState({
-        priceDrop: true,
-        orderUpdates: true,
-        promotions: true,
-        newArrivals: false,
-    });
-
-    const unreadCount = notifications.filter(n => !n.read).length;
-
-    const markAsRead = (id: string) => {
-        setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
-    };
-
-    const markAllRead = () => {
-        setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-    };
+    const { notifications, unreadCount, markAsRead, markAllRead, preferences, togglePreference } = useNotifications();
 
     const getIcon = (type: string) => {
         switch (type) {
@@ -70,8 +47,8 @@ const Notifications: React.FC = () => {
                                 key={notification.id}
                                 onClick={() => markAsRead(notification.id)}
                                 className={`bg-white rounded-xl border p-4 cursor-pointer transition-all ${notification.read
-                                        ? 'border-[var(--glass-border)]'
-                                        : 'border-[var(--brand-primary)] bg-[var(--brand-primary)]/5'
+                                    ? 'border-[var(--glass-border)]'
+                                    : 'border-[var(--brand-primary)] bg-[var(--brand-primary)]/5'
                                     }`}
                             >
                                 <div className="flex gap-3">
@@ -112,10 +89,10 @@ const Notifications: React.FC = () => {
                                     <p className="text-xs text-[var(--text-muted)]">{pref.desc}</p>
                                 </div>
                                 <button
-                                    onClick={() => setPreferences(prev => ({ ...prev, [pref.key]: !prev[pref.key as keyof typeof prev] }))}
+                                    onClick={() => togglePreference(pref.key as any)}
                                     className={`w-12 h-7 rounded-full transition-colors relative ${preferences[pref.key as keyof typeof preferences]
-                                            ? 'bg-[var(--brand-primary)]'
-                                            : 'bg-[var(--surface-2)]'
+                                        ? 'bg-[var(--brand-primary)]'
+                                        : 'bg-[var(--surface-2)]'
                                         }`}
                                 >
                                     <span className={`absolute top-1 w-5 h-5 rounded-full bg-white shadow transition-all ${preferences[pref.key as keyof typeof preferences] ? 'left-6' : 'left-1'

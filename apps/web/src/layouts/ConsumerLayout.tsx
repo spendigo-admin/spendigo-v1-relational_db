@@ -2,16 +2,18 @@ import React from 'react';
 import { Outlet, NavLink, Link } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
+import { useNotifications } from '../context/NotificationContext';
 import '../styles/design-system.css';
 
 const ConsumerLayout: React.FC = () => {
     const { itemCount, notification, clearNotification } = useCart();
     const { user, logout } = useAuth();
+    const { unreadCount } = useNotifications();
 
     return (
         <div className="min-h-screen bg-[var(--surface-0)] relative">
             {/* TOP NAVIGATION BAR */}
-            <header className="fixed top-0 left-0 right-0 h-14 bg-white border-b border-[var(--glass-border)] z-50 px-4 flex items-center justify-between gap-4">
+            <header className="fixed top-0 left-0 right-0 h-[calc(3.5rem+var(--safe-area-top))] pt-safe bg-white border-b border-[var(--glass-border)] z-50 px-4 flex items-center justify-between gap-4">
                 {/* LEFT: Logo + Search */}
                 <div className="flex items-center gap-6 flex-1 max-w-3xl">
                     {/* Logo (Home) */}
@@ -67,7 +69,9 @@ const ConsumerLayout: React.FC = () => {
                     {/* Notifications */}
                     <Link to="/notifications" className="relative w-10 h-10 rounded-full hover:bg-[var(--surface-2)] flex items-center justify-center transition-colors">
                         <span className="text-lg">🔔</span>
-                        <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+                        {unreadCount > 0 && (
+                            <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+                        )}
                     </Link>
 
                     {/* Profile / Auth */}
@@ -106,12 +110,12 @@ const ConsumerLayout: React.FC = () => {
             </header>
 
             {/* MAIN CONTENT AREA */}
-            <main className="pt-14">
+            <main className="pt-[calc(3.5rem+var(--safe-area-top))]">
                 <Outlet />
             </main>
 
             {/* MOBILE BOTTOM TAB BAR */}
-            <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-white border-t border-[var(--glass-border)] z-50 flex items-center justify-around">
+            <nav className="md:hidden fixed bottom-0 left-0 right-0 h-[calc(4rem+var(--safe-area-bottom))] pb-safe bg-white border-t border-[var(--glass-border)] z-50 flex items-center justify-around">
                 <NavLink to="/" end className={({ isActive }) => `flex flex-col items-center justify-center flex-1 h-full gap-0.5 transition-colors ${isActive ? 'text-[var(--brand-primary)]' : 'text-[var(--text-muted)]'}`}>
                     <span className="text-xl">🏠</span>
                     <span className="text-[10px] font-medium">Home</span>
@@ -141,24 +145,45 @@ const ConsumerLayout: React.FC = () => {
             </nav>
 
             {/* Bottom padding for mobile nav */}
-            <div className="md:hidden h-16"></div>
+            <div className="md:hidden h-[calc(4rem+var(--safe-area-bottom))]"></div>
 
             {/* GLOBAL NOTIFICATION TOAST */}
             {notification && (
-                <div className="fixed bottom-24 left-4 right-4 z-[100] animate-slide-up">
-                    <div className={`max-w-md mx-auto glass-panel p-4 text-white shadow-2xl flex items-center justify-between border-none ${notification.type === 'success' ? 'bg-[var(--status-success)]' : 'bg-orange-500'
+                <div className="fixed bottom-24 left-4 right-4 z-[100] animate-slide-up pointer-events-none">
+                    <div className={`max-w-md mx-auto glass-panel p-4 text-white shadow-2xl flex items-center justify-between border-none pointer-events-auto ${notification.type === 'success' ? 'bg-[var(--status-success)]/95 backdrop-blur-md' : 'bg-orange-500/95 backdrop-blur-md'
                         }`}>
-                        <div className="flex items-center gap-3">
-                            <span className="text-xl">
-                                {notification.type === 'success' ? '✅' : '🗑️'}
-                            </span>
-                            <p className="font-bold text-sm">{notification.message}</p>
+                        <div className="flex-1 mr-4">
+                            <div className="flex items-center gap-2 mb-1">
+                                <span className="text-xl">
+                                    {notification.type === 'success' ? '✅' : '🗑️'}
+                                </span>
+                                <p className="font-bold text-sm">{notification.message}</p>
+                            </div>
+
+                            {/* Savings Info */}
+                            {notification.savings && notification.savings > 0 && (
+                                <div className="text-xs bg-white/20 rounded px-2 py-1 mt-1 inline-flex items-center gap-1 animate-pulse">
+                                    <span>🔥</span>
+                                    <span className="font-bold">You saved ${notification.savings}</span>
+                                    <span className="opacity-80">vs {notification.competitor?.name}</span>
+                                </div>
+                            )}
+
+                            {/* Competitor Warning (if item was more expensive) */}
+                            {!notification.savings && notification.competitor && notification.type === 'success' && (
+                                <div className="text-xs text-white/90 mt-1 flex items-center gap-1">
+                                    <span>💡</span>
+                                    <span>Available for ${notification.competitor.price} at {notification.competitor.name}</span>
+                                </div>
+                            )}
                         </div>
                         <button
                             onClick={clearNotification}
-                            className="bg-white/20 hover:bg-white/30 p-1.5 rounded-full transition-colors"
+                            className="bg-white/20 hover:bg-white/30 p-1.5 rounded-full transition-colors shrink-0"
                         >
-                            ✕
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
                         </button>
                     </div>
                 </div>

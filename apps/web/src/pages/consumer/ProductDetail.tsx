@@ -25,7 +25,6 @@ const MOCK_PRODUCT = {
 
 const ProductDetail: React.FC = () => {
     const { id } = useParams<{ id: string }>();
-    const navigate = useNavigate();
     const { addToCart } = useCart();
     const [quantity, setQuantity] = useState(1);
     const [activeImage, setActiveImage] = useState(0);
@@ -77,8 +76,8 @@ const ProductDetail: React.FC = () => {
                                     key={idx}
                                     onClick={() => setActiveImage(idx)}
                                     className={`w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${activeImage === idx
-                                            ? 'border-[var(--brand-primary)] scale-105'
-                                            : 'border-transparent opacity-60 hover:opacity-100'
+                                        ? 'border-[var(--brand-primary)] scale-105'
+                                        : 'border-transparent opacity-60 hover:opacity-100'
                                         }`}
                                 >
                                     <img src={img} alt="" className="w-full h-full object-cover" />
@@ -160,8 +159,8 @@ const ProductDetail: React.FC = () => {
                     <button
                         onClick={handleAddToCart}
                         className={`w-full py-4 rounded-2xl font-bold text-lg shadow-lg transition-all active:scale-95 flex items-center justify-between px-6 ${added
-                                ? 'bg-[var(--status-success)] text-white'
-                                : 'bg-[var(--brand-primary)] text-white hover:brightness-110 shadow-[var(--brand-primary)]/30'
+                            ? 'bg-[var(--status-success)] text-white'
+                            : 'bg-[var(--brand-primary)] text-white hover:brightness-110 shadow-[var(--brand-primary)]/30'
                             }`}
                     >
                         <span>{added ? '✓ Added to Cart!' : 'Add to Cart'}</span>

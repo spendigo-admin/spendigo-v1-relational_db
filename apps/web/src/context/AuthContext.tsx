@@ -17,6 +17,8 @@ interface AuthContextType {
     isAuthenticated: boolean;
     login: (email: string, password: string) => Promise<boolean>;
     register: (userData: Partial<User> & { password: string }) => Promise<boolean>;
+    loginWithGoogle: () => Promise<boolean>;
+    loginWithFacebook: () => Promise<boolean>;
     logout: () => void;
     loading: boolean;
 }
@@ -114,6 +116,40 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         });
     };
 
+    const loginWithGoogle = async (): Promise<boolean> => {
+        return new Promise((resolve) => {
+            setTimeout(() => {
+                const newUser: User = {
+                    id: `u-google-${Date.now()}`,
+                    email: `google_user_${Date.now()}@gmail.com`,
+                    name: 'Google User',
+                    role: 'consumer',
+                    avatar: 'https://lh3.googleusercontent.com/a/default-user=s96-c' // Placeholder
+                };
+                setUser(newUser);
+                localStorage.setItem('spendigo_user', JSON.stringify(newUser));
+                resolve(true);
+            }, 800);
+        });
+    };
+
+    const loginWithFacebook = async (): Promise<boolean> => {
+        return new Promise((resolve) => {
+            setTimeout(() => {
+                const newUser: User = {
+                    id: `u-fb-${Date.now()}`,
+                    email: `fb_user_${Date.now()}@facebook.com`,
+                    name: 'Facebook User',
+                    role: 'consumer',
+                    avatar: 'https://platform-lookaside.fbsbx.com/platform/profilepic/?asid=12345&height=100&width=100&ext=12345' // Placeholder
+                };
+                setUser(newUser);
+                localStorage.setItem('spendigo_user', JSON.stringify(newUser));
+                resolve(true);
+            }, 800);
+        });
+    };
+
     const logout = () => {
         setUser(null);
         localStorage.removeItem('spendigo_user');
@@ -126,6 +162,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         isAuthenticated: !!user,
         login,
         register,
+        loginWithGoogle,
+        loginWithFacebook,
         logout,
         loading
     };
