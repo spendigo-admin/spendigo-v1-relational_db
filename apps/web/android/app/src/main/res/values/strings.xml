@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Spendigo</string>
+    <string name="title_activity_main">Spendigo</string>
+    <string name="package_name">com.spendigo.smartcart</string>
+    <string name="custom_url_scheme">com.spendigo.smartcart</string>
+</resources>
