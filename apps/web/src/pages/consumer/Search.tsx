@@ -1,45 +1,44 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
+import { STORE_DATA } from '../../data/productData';
 import '../../styles/design-system.css';
 
-// Mock all products from all stores for search
-const ALL_PRODUCTS = [
-    // FreshMart
-    { id: 'p1', name: 'Organic Avocados (5pk)', price: 6.99, originalPrice: 8.99, storeId: '1', storeName: 'FreshMart', category: 'Fresh Produce', image: 'https://images.unsplash.com/photo-1523049673857-eb18f1d7b578?w=300&h=300&fit=crop' },
-    { id: 'p2', name: 'Almond Milk (1L)', price: 4.49, storeId: '1', storeName: 'FreshMart', category: 'Dairy', image: 'https://images.unsplash.com/photo-1550583724-b2692b85b150?w=300&h=300&fit=crop' },
-    { id: 'p3', name: 'Sourdough Loaf', price: 5.99, storeId: '1', storeName: 'FreshMart', category: 'Bakery', image: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=300&h=300&fit=crop' },
-    { id: 'p4', name: 'Organic Bananas (bunch)', price: 2.99, storeId: '1', storeName: 'FreshMart', category: 'Fresh Produce', image: 'https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e?w=300&h=300&fit=crop' },
-    { id: 'p5', name: 'Greek Yogurt (500g)', price: 5.49, storeId: '1', storeName: 'FreshMart', category: 'Dairy', image: 'https://images.unsplash.com/photo-1488477181946-6428a0291777?w=300&h=300&fit=crop' },
-    { id: 'p6', name: 'Olive Oil (750ml)', price: 12.99, storeId: '1', storeName: 'FreshMart', category: 'Pantry', image: 'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=300&h=300&fit=crop' },
-    // QuickPick
-    { id: 'p7', name: 'Energy Drink (4pk)', price: 9.99, storeId: '2', storeName: 'QuickPick', category: 'Drinks', image: 'https://images.unsplash.com/photo-1622543925917-763c34d1a86e?w=300&h=300&fit=crop' },
-    { id: 'p8', name: 'Chips Party Size', price: 4.99, storeId: '2', storeName: 'QuickPick', category: 'Snacks', image: 'https://images.unsplash.com/photo-1566478989037-eec170784d0b?w=300&h=300&fit=crop' },
-    { id: 'p9', name: 'Ice Cream Pint', price: 6.99, storeId: '2', storeName: 'QuickPick', category: 'Snacks', image: 'https://images.unsplash.com/photo-1497034825429-c343d7c6a68f?w=300&h=300&fit=crop' },
-    // Metro Express
-    { id: 'p10', name: 'Chicken Breast (1kg)', price: 14.99, storeId: '3', storeName: 'Metro Express', category: 'Meat', image: 'https://images.unsplash.com/photo-1604503468506-a8da13d82791?w=300&h=300&fit=crop' },
-    { id: 'p11', name: 'Salmon Fillet (500g)', price: 18.99, storeId: '3', storeName: 'Metro Express', category: 'Seafood', image: 'https://images.unsplash.com/photo-1499125562588-29fb8a56b5d5?w=300&h=300&fit=crop' },
-    // Costco Business
-    { id: 'p12', name: 'Paper Towels (12pk)', price: 24.99, storeId: '4', storeName: 'Costco Business', category: 'Cleaning', image: 'https://images.unsplash.com/photo-1583947215259-38e31be8751f?w=300&h=300&fit=crop' },
-    { id: 'p13', name: 'Bottled Water (24pk)', price: 8.99, storeId: '4', storeName: 'Costco Business', category: 'Bulk', image: 'https://images.unsplash.com/photo-1548839140-29a749e1cf4d?w=300&h=300&fit=crop' },
-    // Mac's Corner (Convenience)
-    { id: 'p14', name: 'Coca-Cola (2L)', price: 3.49, storeId: '5', storeName: "Mac's Corner", category: 'Drinks', image: 'https://images.unsplash.com/photo-1554866585-cd94860890b7?w=300&h=300&fit=crop' },
-    { id: 'p15', name: "Lay's Classic Chips", price: 4.29, storeId: '5', storeName: "Mac's Corner", category: 'Snacks', image: 'https://images.unsplash.com/photo-1566478989037-eec170784d0b?w=300&h=300&fit=crop' },
-    { id: 'p16', name: 'Red Bull (4pk)', price: 9.99, storeId: '5', storeName: "Mac's Corner", category: 'Drinks', image: 'https://images.unsplash.com/photo-1613214153279-af3eb67fc2c9?w=300&h=300&fit=crop' },
-    { id: 'p17', name: 'Doritos Nacho Cheese', price: 4.49, storeId: '5', storeName: "Mac's Corner", category: 'Snacks', image: 'https://images.unsplash.com/photo-1600952841320-db92ec4047ca?w=300&h=300&fit=crop' },
-    // Hasty Mart (Convenience)
-    { id: 'p20', name: 'Monster Energy', price: 3.99, storeId: '6', storeName: 'Hasty Mart', category: 'Drinks', image: 'https://images.unsplash.com/photo-1622543925917-763c34d1a86e?w=300&h=300&fit=crop' },
-    { id: 'p21', name: 'Snickers Bar', price: 1.79, storeId: '6', storeName: 'Hasty Mart', category: 'Candy', image: 'https://images.unsplash.com/photo-1534260164206-2a3a4a72891d?w=300&h=300&fit=crop' },
-    { id: 'p22', name: 'Pepsi (6pk)', price: 5.99, storeId: '6', storeName: 'Hasty Mart', category: 'Drinks', image: 'https://images.unsplash.com/photo-1629203851122-3726ecdf080e?w=300&h=300&fit=crop' },
-    { id: 'p23', name: 'Pringles Original', price: 3.49, storeId: '6', storeName: 'Hasty Mart', category: 'Snacks', image: 'https://images.unsplash.com/photo-1600952841320-db92ec4047ca?w=300&h=300&fit=crop' },
-    // Corner Bodega
-    { id: 'p26', name: 'Deli Sandwich', price: 7.99, storeId: '7', storeName: 'Corner Bodega', category: 'Deli', image: 'https://images.unsplash.com/photo-1539252554453-80ab65ce3586?w=300&h=300&fit=crop' },
-    { id: 'p27', name: 'Arizona Iced Tea', price: 1.29, storeId: '7', storeName: 'Corner Bodega', category: 'Drinks', image: 'https://images.unsplash.com/photo-1558642452-9d2a7deb7f62?w=300&h=300&fit=crop' },
-    { id: 'p28', name: 'Takis Fuego', price: 3.99, storeId: '7', storeName: 'Corner Bodega', category: 'Snacks', image: 'https://images.unsplash.com/photo-1600952841320-db92ec4047ca?w=300&h=300&fit=crop' },
-    { id: 'p30', name: 'Chopped Cheese Sandwich', price: 8.99, storeId: '7', storeName: 'Corner Bodega', category: 'Deli', image: 'https://images.unsplash.com/photo-1528735602780-2552fd46c7af?w=300&h=300&fit=crop' },
-];
+// Build all products from STORE_DATA
+const buildAllProducts = () => {
+    const products: Array<{
+        id: string;
+        name: string;
+        price: number;
+        originalPrice?: number;
+        storeId: string;
+        storeName: string;
+        category: string;
+        image: string;
+    }> = [];
 
-const CATEGORIES = ['All', 'Fresh Produce', 'Dairy', 'Bakery', 'Snacks', 'Drinks', 'Candy', 'Deli', 'Meat', 'Seafood', 'Cleaning', 'Bulk'];
+    Object.values(STORE_DATA).forEach((store: any) => {
+        store.products?.forEach((product: any) => {
+            products.push({
+                id: product.id,
+                name: product.name,
+                price: product.price,
+                originalPrice: product.originalPrice,
+                storeId: store.id,
+                storeName: store.name,
+                category: product.category,
+                image: product.image
+            });
+        });
+    });
+
+    return products;
+};
+
+const ALL_PRODUCTS = buildAllProducts();
+
+// Extract unique categories from products
+const CATEGORIES = ['All', ...Array.from(new Set(ALL_PRODUCTS.map(p => p.category))).sort()];
 
 const Search: React.FC = () => {
     const navigate = useNavigate();
@@ -47,6 +46,15 @@ const Search: React.FC = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('All');
     const [sortBy, setSortBy] = useState<'relevance' | 'price_low' | 'price_high'>('relevance');
+
+    // Read query parameter from URL on mount
+    React.useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const query = params.get('q');
+        if (query) {
+            setSearchQuery(query);
+        }
+    }, []);
 
     const filteredProducts = useMemo(() => {
         let results = ALL_PRODUCTS;

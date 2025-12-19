@@ -33,8 +33,10 @@ import MerchantSettings from './pages/merchant/Settings';
 // Admin Pages
 import AdminDashboard from './pages/admin/Dashboard';
 import AdminUserManagement from './pages/admin/UserManagement';
+import AdminStoreManagement from './pages/admin/StoreManagement';
 import AdminAuditLogs from './pages/admin/AuditLogs';
 import AdminFlyerModeration from './pages/admin/FlyerModeration';
+import AdminSettings from './pages/admin/Settings';
 
 import { AuthProvider } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
@@ -82,9 +84,10 @@ function App() {
                                     <Route element={<AdminLayout />}>
                                         <Route path="/admin/dashboard" element={<AdminDashboard />} />
                                         <Route path="/admin/users" element={<AdminUserManagement />} />
+                                        <Route path="/admin/stores" element={<AdminStoreManagement />} />
                                         <Route path="/admin/audit-logs" element={<AdminAuditLogs />} />
                                         <Route path="/admin/flyers" element={<AdminFlyerModeration />} />
-                                        <Route path="/admin/settings" element={<AdminDashboard />} />
+                                        <Route path="/admin/settings" element={<AdminSettings />} />
                                     </Route>
                                 </Routes>
                             </WishlistProvider>

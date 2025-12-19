@@ -1,29 +1,60 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import '../../styles/design-system.css';
+import { getStoreList } from '../../data/productData';
 
-// Mock Stores Data with real images
-const STORES = [
-    { id: '1', name: 'FreshMart', distance: '0.4 km', image: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=400&h=200&fit=crop', logo: '🥬', tags: ['Grocery', 'Organic'], deliveryTime: '25-35 min' },
-    { id: '2', name: 'QuickPick', distance: '1.2 km', image: 'https://images.unsplash.com/photo-1604719312566-8912e9227c6a?w=400&h=200&fit=crop', logo: '🏪', tags: ['Convenience', '24/7'], deliveryTime: '15-25 min' },
-    { id: '3', name: 'Metro Express', distance: '2.5 km', image: 'https://images.unsplash.com/photo-1534723452862-4c874018d66d?w=400&h=200&fit=crop', logo: '🛒', tags: ['Grocery', 'Deals'], deliveryTime: '30-45 min' },
-    { id: '4', name: 'Costco Business', distance: '3.8 km', image: 'https://images.unsplash.com/photo-1578916171728-46686eac8d58?w=400&h=200&fit=crop', logo: '📦', tags: ['Wholesale', 'Bulk'], deliveryTime: '45-60 min' },
-    // Local Convenience Stores
-    { id: '5', name: "Mac's Corner", distance: '0.2 km', image: 'https://images.unsplash.com/photo-1604719312566-8912e9227c6a?w=400&h=200&fit=crop', logo: '🏪', tags: ['Convenience', 'Snacks'], deliveryTime: '10-20 min' },
-    { id: '6', name: 'Hasty Mart', distance: '0.5 km', image: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=400&h=200&fit=crop', logo: '⚡', tags: ['Convenience', '24/7'], deliveryTime: '10-15 min' },
-    { id: '7', name: 'Corner Bodega', distance: '0.3 km', image: 'https://images.unsplash.com/photo-1583258292688-d0213dc5a3a8?w=400&h=200&fit=crop', logo: '🏬', tags: ['Convenience', 'Local'], deliveryTime: '10-20 min' },
-    // Local Specialty Stores
-    { id: '8', name: "Green Valley Market", distance: '1.5 km', image: 'https://images.unsplash.com/photo-1488459716781-31db52582fe9?w=400&h=200&fit=crop', logo: '🌽', tags: ['Farmers Market', 'Organic'], deliveryTime: '30-45 min' },
-    { id: '9', name: "The Daily Loaf", distance: '0.8 km', image: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=400&h=200&fit=crop', logo: '🥖', tags: ['Bakery', 'Artisan'], deliveryTime: '20-30 min' },
-    { id: '10', name: "The Butcher's Block", distance: '1.1 km', image: 'https://images.unsplash.com/photo-1607623814075-e51df1bdc82f?w=400&h=200&fit=crop', logo: '🥩', tags: ['Butcher', 'Meat'], deliveryTime: '25-40 min' },
-    { id: '11', name: "The Book Nook", distance: '2.0 km', image: 'https://images.unsplash.com/photo-1521587760476-6c12a4b040da?w=400&h=200&fit=crop', logo: '📚', tags: ['Books', 'Gifts'], deliveryTime: '40-50 min' },
-];
+// Get stores from unified data source
+const ALL_STORES = getStoreList();
 
 const CATEGORIES = ['All', 'Fastest', 'Offers', 'Low Prices', 'Grocery', 'Convenience', 'Wholesale'];
+
+// Helper to parse delivery time range and get min minutes
+const parseDeliveryTime = (timeStr: string): number => {
+    const match = timeStr.match(/(\d+)/);
+    return match ? parseInt(match[1], 10) : 60;
+};
 
 const StoreList: React.FC = () => {
     const navigate = useNavigate();
     const [activeCategory, setActiveCategory] = useState('All');
+
+    // Filter stores based on selected category
+    const filteredStores = useMemo(() => {
+        switch (activeCategory) {
+            case 'Fastest':
+                // Sort by delivery time (fastest first), show stores with < 25 min delivery
+                return [...ALL_STORES]
+                    .sort((a, b) => parseDeliveryTime(a.deliveryTime) - parseDeliveryTime(b.deliveryTime))
+                    .filter(store => parseDeliveryTime(store.deliveryTime) <= 25);
+            case 'Offers':
+                // Show stores that have special offers/deals tag or known deal stores
+                return ALL_STORES.filter(store =>
+                    store.tags.some((tag: string) =>
+                        ['Deals', 'Offers', 'Sale', 'Wholesale'].includes(tag)
+                    ) || store.rating >= 4.5
+                );
+            case 'Low Prices':
+                // Show stores with low/free delivery fees
+                return ALL_STORES.filter(store =>
+                    store.deliveryFee?.includes('Free') ||
+                    (store.deliveryFee?.includes('$') && parseFloat(store.deliveryFee.replace(/[^0-9.]/g, '')) <= 2.5)
+                );
+            case 'Grocery':
+                return ALL_STORES.filter(store =>
+                    store.tags.some((tag: string) => ['Grocery', 'Organic', 'Farmers Market'].includes(tag))
+                );
+            case 'Convenience':
+                return ALL_STORES.filter(store =>
+                    store.tags.some((tag: string) => ['Convenience', '24/7', 'Local'].includes(tag))
+                );
+            case 'Wholesale':
+                return ALL_STORES.filter(store =>
+                    store.tags.some((tag: string) => ['Wholesale', 'Bulk'].includes(tag))
+                );
+            default:
+                return ALL_STORES;
+        }
+    }, [activeCategory]);
 
     return (
         <div className="animate-fade-in">
@@ -103,56 +134,69 @@ const StoreList: React.FC = () => {
             {/* STORE GRID */}
             <section className="py-8 px-4">
                 <div className="max-w-5xl mx-auto">
-                    <h2 className="text-2xl font-bold text-[var(--text-main)] mb-6">Stores Near You</h2>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {STORES.map(store => (
-                            <div
-                                key={store.id}
-                                onClick={() => navigate(`/store/${store.id}`)}
-                                className="glass-panel overflow-hidden cursor-pointer group hover:border-[var(--brand-primary)] hover:shadow-lg hover:shadow-[var(--brand-primary)]/10 transition-all duration-300"
-                            >
-                                {/* Store Image */}
-                                <div className="h-36 bg-[var(--surface-2)] relative overflow-hidden">
-                                    <img
-                                        src={store.image}
-                                        alt={store.name}
-                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                                    />
-                                    {/* Delivery Badge */}
-                                    <div className="absolute top-3 left-3 bg-black/70 backdrop-blur-sm px-2 py-1 rounded-md text-xs text-white font-medium">
-                                        {store.deliveryTime}
-                                    </div>
-                                </div>
-
-                                {/* Store Info */}
-                                <div className="p-4 relative">
-                                    {/* Logo Avatar */}
-                                    <div className="absolute -top-6 left-4 w-12 h-12 rounded-xl bg-[var(--surface-0)] border-2 border-[var(--glass-border)] flex items-center justify-center text-2xl shadow-lg">
-                                        {store.logo}
-                                    </div>
-
-                                    <div className="ml-14">
-                                        <h3 className="font-bold text-lg text-[var(--text-main)] group-hover:text-[var(--brand-primary)] transition-colors">
-                                            {store.name}
-                                        </h3>
-                                        <p className="text-sm text-[var(--text-muted)]">{store.distance} away</p>
-                                    </div>
-
-                                    {/* Tags */}
-                                    <div className="flex gap-2 mt-3 flex-wrap">
-                                        {store.tags.map(tag => (
-                                            <span
-                                                key={tag}
-                                                className="text-xs bg-[var(--surface-2)] px-2 py-1 rounded-full text-[var(--text-muted)]"
-                                            >
-                                                {tag}
-                                            </span>
-                                        ))}
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
+                    <div className="flex items-center justify-between mb-6">
+                        <h2 className="text-2xl font-bold text-[var(--text-main)]">
+                            {activeCategory === 'All' ? 'Stores Near You' : `${activeCategory} Stores`}
+                        </h2>
+                        <span className="text-sm text-[var(--text-muted)]">{filteredStores.length} stores</span>
                     </div>
+
+                    {filteredStores.length === 0 ? (
+                        <div className="text-center py-12">
+                            <p className="text-5xl mb-4">🔍</p>
+                            <p className="text-[var(--text-muted)]">No stores match this filter</p>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {filteredStores.map(store => (
+                                <div
+                                    key={store.id}
+                                    onClick={() => navigate(`/store/${store.id}`)}
+                                    className="glass-panel overflow-hidden cursor-pointer group hover:border-[var(--brand-primary)] hover:shadow-lg hover:shadow-[var(--brand-primary)]/10 transition-all duration-300"
+                                >
+                                    {/* Store Image */}
+                                    <div className="h-36 bg-[var(--surface-2)] relative overflow-hidden">
+                                        <img
+                                            src={store.image}
+                                            alt={store.name}
+                                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                        />
+                                        {/* Delivery Badge */}
+                                        <div className="absolute top-3 left-3 bg-black/70 backdrop-blur-sm px-2 py-1 rounded-md text-xs text-white font-medium">
+                                            {store.deliveryTime}
+                                        </div>
+                                    </div>
+
+                                    {/* Store Info */}
+                                    <div className="p-4 relative">
+                                        {/* Logo Avatar */}
+                                        <div className="absolute -top-6 left-4 w-12 h-12 rounded-xl bg-[var(--surface-0)] border-2 border-[var(--glass-border)] flex items-center justify-center text-2xl shadow-lg">
+                                            {store.logo}
+                                        </div>
+
+                                        <div className="ml-14">
+                                            <h3 className="font-bold text-lg text-[var(--text-main)] group-hover:text-[var(--brand-primary)] transition-colors">
+                                                {store.name}
+                                            </h3>
+                                            <p className="text-sm text-[var(--text-muted)]">{store.distance} away</p>
+                                        </div>
+
+                                        {/* Tags */}
+                                        <div className="flex gap-2 mt-3 flex-wrap">
+                                            {store.tags.map((tag: string) => (
+                                                <span
+                                                    key={tag}
+                                                    className="text-xs bg-[var(--surface-2)] px-2 py-1 rounded-full text-[var(--text-muted)]"
+                                                >
+                                                    {tag}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
             </section>
 

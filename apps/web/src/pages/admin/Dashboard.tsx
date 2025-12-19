@@ -3,9 +3,10 @@ import '../../styles/design-system.css';
 
 const AdminDashboard: React.FC = () => {
     // Mock stats
+    // Mock stats
     const stats = [
         { label: 'Total Users', value: '12,450', change: '+125 this week', icon: '👥', color: 'bg-blue-100 text-blue-700' },
-        { label: 'Active Merchants', value: '85', change: '+3 pending approval', icon: '🏪', color: 'bg-green-100 text-green-700' },
+        { label: 'Pending Stores', value: '1', change: 'Needs action', icon: '🏪', color: 'bg-orange-100 text-orange-700' },
         { label: 'Total Revenue', value: '$45,200', change: '+12% vs last month', icon: '💰', color: 'bg-purple-100 text-purple-700' },
         { label: 'System Health', value: '99.9%', change: 'All systems operational', icon: '✅', color: 'bg-green-50 text-green-600' },
     ];

@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useWishlist } from '../../context/WishlistContext';
 import { useCart } from '../../context/CartContext';
 import '../../styles/design-system.css';
-import { STORE_DATA } from '../consumer/StoreDetail';
+import { STORE_DATA } from '../../data/productData';
 
 // Helper to group products by normalized name
 function buildGlobalProductDatabaseByName() {
@@ -39,14 +39,19 @@ function buildGlobalProductDatabaseByName() {
 
 const GLOBAL_PRODUCTS = buildGlobalProductDatabaseByName();
 
+
+
 // Available items for the localized "Add Items" panel
-const AVAILABLE_ITEMS = Object.values(GLOBAL_PRODUCTS).map(data => ({
-    // Use the first available product ID as the reference ID for the wishlist
-    id: data.stores[0].productId,
-    name: data.name,
-    category: data.category,
-    image: data.image,
-}));
+const AVAILABLE_ITEMS = Object.values(GLOBAL_PRODUCTS).map(data => {
+    // Find the cheapest option and use its product ID
+    const cheapestStore = [...data.stores].sort((a, b) => a.price - b.price)[0];
+    return {
+        id: cheapestStore.productId,
+        name: data.name,
+        category: data.category,
+        image: data.image,
+    };
+});
 
 const SmartCartWishlist: React.FC = () => {
     const { items: wishlistItems, addItem, removeItem, isInWishlist, clearWishlist } = useWishlist();
@@ -85,16 +90,33 @@ const SmartCartWishlist: React.FC = () => {
         let hasChanges = false;
 
         optimizerItems.forEach(item => {
-            if (item && !selections[item.name]) {
-                newSelections[item.name] = item.cheapest.storeId;
-                hasChanges = true;
+            if (!item) return;
+            const cheapestStoreId = item.cheapest.storeId;
+            const currentSelection = selections[item.name];
+
+
+
+            // Force update to cheapest if:
+            // 1. No selection exists
+            // 2. OR current selection is MORE EXPENSIVE (Auto-Optimize behavior)
+            // Note: This effectively makes 'Optimize' the default behavior. User can manually change it, 
+            // but if they reload or data changes, it might revert to cheapest. This is likely desired for an "Optimizer".
+            if (!currentSelection || (currentSelection !== cheapestStoreId)) {
+                // Check if we should override. For now, let's say YES because the user complained about it not optimizing.
+                // We only override if the current selection is actually *more expensive* than the cheapest.
+                const currentOption = item.options.find(o => o.storeId === currentSelection);
+                if (!currentOption || currentOption.price > item.cheapest.price) {
+
+                    newSelections[item.name] = cheapestStoreId;
+                    hasChanges = true;
+                }
             }
         });
 
         if (hasChanges) {
             setSelections(newSelections);
         }
-    }, [optimizerItems]);
+    }, [optimizerItems]); // Removing selections from dependency to avoid loop, only run when data changes
 
     const handleSelectionChange = (productName: string, storeId: string) => {
         setSelections(prev => ({ ...prev, [productName]: storeId }));

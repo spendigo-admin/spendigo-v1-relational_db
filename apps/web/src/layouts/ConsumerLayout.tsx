@@ -1,5 +1,5 @@
-import React from 'react';
-import { Outlet, NavLink, Link } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Outlet, NavLink, Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationContext';
@@ -9,6 +9,16 @@ const ConsumerLayout: React.FC = () => {
     const { itemCount, notification, clearNotification } = useCart();
     const { user, logout } = useAuth();
     const { unreadCount } = useNotifications();
+    const navigate = useNavigate();
+    const [searchQuery, setSearchQuery] = useState('');
+
+    const handleSearch = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (searchQuery.trim()) {
+            navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+            setSearchQuery('');
+        }
+    };
 
     return (
         <div className="min-h-screen bg-[var(--surface-0)] relative">
@@ -23,14 +33,16 @@ const ConsumerLayout: React.FC = () => {
                     </Link>
 
                     {/* Expanded Search Bar */}
-                    <div className="hidden md:flex flex-1 relative group max-w-lg">
+                    <form onSubmit={handleSearch} className="hidden md:flex flex-1 relative group max-w-lg">
                         <input
                             type="text"
-                            placeholder="Search products, stores, etc."
+                            placeholder="Search Products"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
                             className="w-full h-10 pl-10 pr-4 bg-[var(--surface-1)] border border-transparent rounded-full text-sm focus:bg-white focus:border-[var(--brand-primary)] focus:ring-4 focus:ring-[var(--brand-primary)]/10 transition-all outline-none group-hover:bg-[var(--surface-2)]"
                         />
                         <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
-                    </div>
+                    </form>
                 </div>
 
                 {/* RIGHT: Actions (Optimizer, Cart, Notifications, Profile) */}

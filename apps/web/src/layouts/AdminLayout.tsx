@@ -41,8 +41,8 @@ const AdminLayout: React.FC = () => {
                                 key={item.path}
                                 to={item.path}
                                 className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all ${isActive
-                                        ? 'bg-[var(--brand-primary)] text-white shadow-lg shadow-[var(--brand-primary)]/30'
-                                        : 'text-[var(--text-muted)] hover:bg-[var(--surface-1)] hover:text-[var(--text-main)]'
+                                    ? 'bg-[var(--brand-primary)] text-white shadow-lg shadow-[var(--brand-primary)]/30'
+                                    : 'text-[var(--text-muted)] hover:bg-[var(--surface-1)] hover:text-[var(--text-main)]'
                                     }`}
                             >
                                 <span className="text-lg">{item.icon}</span>
