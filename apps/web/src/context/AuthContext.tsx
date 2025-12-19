@@ -70,10 +70,10 @@ const MOCK_USERS: Record<string, User> = {
         avatar: '🛡️'
     },
     'freshmart@store.com': { id: 'm1', email: 'freshmart@store.com', name: 'FreshMart Owner', role: 'merchant', storeId: '1', storeName: 'FreshMart', merchantRole: 'OWNER', avatar: '🥬' },
-    'quick@pick.com': { id: 'm2', email: 'quick@pick.com', name: 'QuickPick Staff', role: 'merchant', storeId: '2', storeName: 'QuickPick', merchantRole: 'STAFF', avatar: '🏪' },
-    'metro@express.com': { id: 'm3', email: 'metro@express.com', name: 'Metro Manager', role: 'merchant', storeId: '3', storeName: 'Metro Express', merchantRole: 'MANAGER', avatar: '🛒' },
-    'costco@biz.com': { id: 'm4', email: 'costco@biz.com', name: 'Costco Marketing', role: 'merchant', storeId: '4', storeName: 'Costco Business', merchantRole: 'MARKETING', avatar: '📦' },
-    'macs@corner.com': { id: 'm5', email: 'macs@corner.com', name: 'Mac Manager', role: 'merchant', storeId: '5', storeName: "Mac's Corner", merchantRole: 'MANAGER', avatar: '🏪' },
+    'quick@pick.com': { id: 'm2', email: 'quick@pick.com', name: 'QuickPick Staff', role: 'merchant', storeId: '2', storeName: 'QuickPick', merchantRole: 'OWNER', avatar: '🏪' },
+    'metro@express.com': { id: 'm3', email: 'metro@express.com', name: 'Metro Manager', role: 'merchant', storeId: '3', storeName: 'Metro Express', merchantRole: 'OWNER', avatar: '🛒' },
+    'costco@biz.com': { id: 'm4', email: 'costco@biz.com', name: 'Costco Marketing', role: 'merchant', storeId: '4', storeName: 'Costco Business', merchantRole: 'OWNER', avatar: '📦' },
+    'macs@corner.com': { id: 'm5', email: 'macs@corner.com', name: 'Mac Manager', role: 'merchant', storeId: '5', storeName: "Mac's Corner", merchantRole: 'OWNER', avatar: '🏪' },
     'hasty@mart.com': { id: 'm6', email: 'hasty@mart.com', name: 'Hasty Owner', role: 'merchant', storeId: '6', storeName: 'Hasty Mart', merchantRole: 'OWNER', avatar: '⚡' },
     'bodega@corner.com': { id: 'm7', email: 'bodega@corner.com', name: 'Bodega Boss', role: 'merchant', storeId: '7', storeName: 'Corner Bodega', merchantRole: 'OWNER', avatar: '🏬' },
     'green@valley.com': { id: 'm8', email: 'green@valley.com', name: 'Farmer Joe', role: 'merchant', storeId: '8', storeName: 'Green Valley Market', merchantRole: 'OWNER', avatar: '🌽' },
@@ -141,6 +141,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                     name: userData.name || 'New User',
                     role: userData.role || 'consumer',
                     avatar: userData.role === 'merchant' ? '🏪' : '👤',
+                    merchantRole: userData.role === 'merchant' ? 'OWNER' : undefined,
                     storeName: userData.storeName
                 };
 

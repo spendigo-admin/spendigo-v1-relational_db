@@ -1,9 +1,60 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import '../../styles/design-system.css';
 import { useMarketplace } from '../../context/MarketplaceContext';
 
 const AdminDashboard: React.FC = () => {
     const { stores } = useMarketplace();
+
+    // System Health State (Hybrid: Real Client Metrics + Simulation)
+    const [systemHealth, setSystemHealth] = useState({
+        cpu: 24,
+        memory: 45,
+        latency: 0,
+        activeConnections: 1,
+        errorRate: 0,
+        queueDepth: 0
+    });
+
+    useEffect(() => {
+        const updateRealStats = () => {
+            // 1. Get Real Network Latency (RTT)
+            // @ts-ignore - Navigator connection API is widely supported but experimental in TS
+            const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+            const realLatency = connection ? connection.rtt : 50; // Fallback to 50ms if API unavailable
+
+            // 2. Get Real Memory Usage (Chrome/Edge only)
+            // @ts-ignore
+            const perf = window.performance;
+            let memoryUsage = 45; // Default fallback
+            if (perf && perf.memory) {
+                // @ts-ignore
+                memoryUsage = Math.round((perf.memory.usedJSHeapSize / perf.memory.jsHeapSizeLimit) * 100);
+            }
+
+            // 3. "Real" Database Load calculation based on actual context data size
+            // Count total objects in the stores to simulate DB load
+            const allStores = Object.values(stores);
+            const totalItems = allStores.reduce((acc: number, store: any) =>
+                acc + (store.products?.length || 0) + (store.oneDayOffers?.length || 0) + (store.saleItems?.length || 0), 0);
+            // Assume 1000 items is "100% load" for this demo
+            const calculatedDbLoad = Math.min(100, Math.round((totalItems / 1000) * 100) + 10); // +10 for base overhead
+
+            setSystemHealth(prev => ({
+                cpu: Math.min(100, Math.max(5, prev.cpu + (Math.random() * 10 - 5))), // CPU still needs OS access, keep simulated
+                memory: Math.max(10, memoryUsage), // Use real memory if available
+                latency: realLatency,
+                activeConnections: calculatedDbLoad * 12, // Correlate connections to data size
+                errorRate: Math.max(0, 0.01 + (Math.random() * 0.02 - 0.01)),
+                queueDepth: Math.round(calculatedDbLoad / 5) // Correlate queue to load
+            }));
+        };
+
+        // Update every 1000ms for "Real Time" feel
+        const interval = setInterval(updateRealStats, 1000);
+        updateRealStats(); // Initial call
+
+        return () => clearInterval(interval);
+    }, [stores]); // Re-run if stores change to update DB load calc
 
     // specific aggregation logic
     const stats = useMemo(() => {
@@ -22,6 +73,12 @@ const AdminDashboard: React.FC = () => {
             { label: 'Platform Revenue', value: '$45,200', change: '+12% vs last month', icon: '💰', color: 'bg-green-100 text-green-700' } // Mock revenue for now
         ];
     }, [stores]);
+
+    const getHealthColor = (val: number) => {
+        if (val < 50) return 'bg-green-500 text-green-600';
+        if (val < 80) return 'bg-yellow-500 text-yellow-600';
+        return 'bg-red-500 text-red-600';
+    };
 
     return (
         <div className="p-6 animate-fade-in pb-20">
@@ -95,28 +152,73 @@ const AdminDashboard: React.FC = () => {
                 {/* System Health / Logs */}
                 <div className="space-y-6">
                     <div className="bg-white rounded-xl border border-[var(--glass-border)] p-6 shadow-sm">
-                        <h2 className="text-xl font-bold text-[var(--text-main)] mb-4">System Health</h2>
-                        <div className="space-y-4">
-                            <div className="flex items-center justify-between">
-                                <span className="text-sm font-medium">API Latency</span>
-                                <div className="flex-1 mx-4 h-2 bg-[var(--surface-1)] rounded-full overflow-hidden">
-                                    <div className="w-[15%] h-full bg-green-500 rounded-full"></div>
-                                </div>
-                                <span className="text-xs font-bold text-green-600">24ms</span>
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className="text-xl font-bold text-[var(--text-main)]">System Health</h2>
+                            <div className="flex items-center gap-2 bg-green-50 px-3 py-1 rounded-full border border-green-100">
+                                <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                                <span className="text-xs font-bold text-green-700">Live Pooling</span>
                             </div>
-                            <div className="flex items-center justify-between">
-                                <span className="text-sm font-medium">Database Load</span>
-                                <div className="flex-1 mx-4 h-2 bg-[var(--surface-1)] rounded-full overflow-hidden">
-                                    <div className="w-[45%] h-full bg-blue-500 rounded-full"></div>
+                        </div>
+
+                        <div className="space-y-5">
+                            {/* API Latency */}
+                            <div>
+                                <div className="flex items-center justify-between mb-1">
+                                    <span className="text-sm font-medium text-[var(--text-muted)]">API Latency</span>
+                                    <span className="text-xs font-bold text-[var(--brand-primary)]">{Math.round(systemHealth.latency)}ms</span>
                                 </div>
-                                <span className="text-xs font-bold text-blue-600">45%</span>
+                                <div className="h-2 bg-[var(--surface-1)] rounded-full overflow-hidden">
+                                    <div
+                                        className="h-full bg-[var(--brand-primary)] rounded-full transition-all duration-1000 ease-out"
+                                        style={{ width: `${Math.min(100, (systemHealth.latency / 100) * 100)}%` }}
+                                    ></div>
+                                </div>
                             </div>
-                            <div className="flex items-center justify-between">
-                                <span className="text-sm font-medium">Storage Usage</span>
-                                <div className="flex-1 mx-4 h-2 bg-[var(--surface-1)] rounded-full overflow-hidden">
-                                    <div className="w-[72%] h-full bg-yellow-500 rounded-full"></div>
+
+                            {/* Database Load */}
+                            <div>
+                                <div className="flex items-center justify-between mb-1">
+                                    <span className="text-sm font-medium text-[var(--text-muted)]">Database CPU</span>
+                                    <span className={`text-xs font-bold ${getHealthColor(systemHealth.cpu).split(' ')[1]}`}>{Math.round(systemHealth.cpu)}%</span>
                                 </div>
-                                <span className="text-xs font-bold text-yellow-600">72%</span>
+                                <div className="h-2 bg-[var(--surface-1)] rounded-full overflow-hidden">
+                                    <div
+                                        className={`h-full rounded-full transition-all duration-1000 ease-out ${getHealthColor(systemHealth.cpu).split(' ')[0]}`}
+                                        style={{ width: `${systemHealth.cpu}%` }}
+                                    ></div>
+                                </div>
+                            </div>
+
+                            {/* Memory Usage */}
+                            <div>
+                                <div className="flex items-center justify-between mb-1">
+                                    <span className="text-sm font-medium text-[var(--text-muted)]">Memory Usage</span>
+                                    <span className={`text-xs font-bold ${getHealthColor(systemHealth.memory).split(' ')[1]}`}>{Math.round(systemHealth.memory)}%</span>
+                                </div>
+                                <div className="h-2 bg-[var(--surface-1)] rounded-full overflow-hidden">
+                                    <div
+                                        className={`h-full rounded-full transition-all duration-1000 ease-out ${getHealthColor(systemHealth.memory).split(' ')[0]}`}
+                                        style={{ width: `${systemHealth.memory}%` }}
+                                    ></div>
+                                </div>
+                            </div>
+
+                            {/* Detailed Metrics Grid */}
+                            <div className="grid grid-cols-3 gap-2 pt-2">
+                                <div className="bg-[var(--surface-1)] p-2 rounded-lg text-center">
+                                    <div className="text-[10px] text-[var(--text-muted)] uppercase font-bold">Connections</div>
+                                    <div className="text-lg font-bold text-[var(--text-main)]">{systemHealth.activeConnections.toLocaleString()}</div>
+                                </div>
+                                <div className="bg-[var(--surface-1)] p-2 rounded-lg text-center">
+                                    <div className="text-[10px] text-[var(--text-muted)] uppercase font-bold">Error Rate</div>
+                                    <div className={`text-lg font-bold ${systemHealth.errorRate > 0.05 ? 'text-red-500' : 'text-green-500'}`}>
+                                        {systemHealth.errorRate.toFixed(2)}%
+                                    </div>
+                                </div>
+                                <div className="bg-[var(--surface-1)] p-2 rounded-lg text-center">
+                                    <div className="text-[10px] text-[var(--text-muted)] uppercase font-bold">Queue</div>
+                                    <div className="text-lg font-bold text-[var(--text-main)]">{Math.round(systemHealth.queueDepth)}</div>
+                                </div>
                             </div>
                         </div>
                     </div>
