@@ -1,10 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import '../../styles/design-system.css';
-import { getStoreList } from '../../data/productData';
-
-// Get stores from unified data source
-const ALL_STORES = getStoreList();
+import { useMarketplace } from '../../context/MarketplaceContext';
 
 const CATEGORIES = ['All', 'Fastest', 'Offers', 'Low Prices', 'Grocery', 'Convenience', 'Wholesale'];
 
@@ -16,45 +13,61 @@ const parseDeliveryTime = (timeStr: string): number => {
 
 const StoreList: React.FC = () => {
     const navigate = useNavigate();
+    const { stores } = useMarketplace();
+
+    const allStores = useMemo(() => {
+        return Object.values(stores).map((store: any) => ({
+            id: store.id,
+            name: store.name,
+            distance: store.distance || '1.0 km',
+            image: store.image,
+            logo: store.logo,
+            tags: store.tags || [],
+            deliveryTime: store.deliveryTime,
+            deliveryFee: store.deliveryFee || '$3.99',
+            rating: store.rating,
+            // New dynamic fields for indicators
+            hasFlyer: store.flyer?.validUntil ? true : false,
+            activeDealsCount: (store.oneDayOffers?.length || 0) + (store.saleItems?.length || 0)
+        }));
+    }, [stores]);
+
     const [activeCategory, setActiveCategory] = useState('All');
 
     // Filter stores based on selected category
     const filteredStores = useMemo(() => {
         switch (activeCategory) {
             case 'Fastest':
-                // Sort by delivery time (fastest first), show stores with < 25 min delivery
-                return [...ALL_STORES]
+                return [...allStores]
                     .sort((a, b) => parseDeliveryTime(a.deliveryTime) - parseDeliveryTime(b.deliveryTime))
                     .filter(store => parseDeliveryTime(store.deliveryTime) <= 25);
             case 'Offers':
-                // Show stores that have special offers/deals tag or known deal stores
-                return ALL_STORES.filter(store =>
-                    store.tags.some((tag: string) =>
-                        ['Deals', 'Offers', 'Sale', 'Wholesale'].includes(tag)
-                    ) || store.rating >= 4.5
+                return allStores.filter(store =>
+                    store.activeDealsCount > 0 ||
+                    store.hasFlyer ||
+                    store.tags.some((tag: string) => ['Deals', 'Offers', 'Sale', 'Wholesale'].includes(tag))
                 );
             case 'Low Prices':
-                // Show stores with low/free delivery fees
-                return ALL_STORES.filter(store =>
+                return allStores.filter(store =>
                     store.deliveryFee?.includes('Free') ||
                     (store.deliveryFee?.includes('$') && parseFloat(store.deliveryFee.replace(/[^0-9.]/g, '')) <= 2.5)
                 );
             case 'Grocery':
-                return ALL_STORES.filter(store =>
+                return allStores.filter(store =>
                     store.tags.some((tag: string) => ['Grocery', 'Organic', 'Farmers Market'].includes(tag))
                 );
             case 'Convenience':
-                return ALL_STORES.filter(store =>
+                return allStores.filter(store =>
                     store.tags.some((tag: string) => ['Convenience', '24/7', 'Local'].includes(tag))
                 );
             case 'Wholesale':
-                return ALL_STORES.filter(store =>
+                return allStores.filter(store =>
                     store.tags.some((tag: string) => ['Wholesale', 'Bulk'].includes(tag))
                 );
             default:
-                return ALL_STORES;
+                return allStores;
         }
-    }, [activeCategory]);
+    }, [activeCategory, allStores]);
 
     return (
         <div className="animate-fade-in">
@@ -152,8 +165,22 @@ const StoreList: React.FC = () => {
                                 <div
                                     key={store.id}
                                     onClick={() => navigate(`/store/${store.id}`)}
-                                    className="glass-panel overflow-hidden cursor-pointer group hover:border-[var(--brand-primary)] hover:shadow-lg hover:shadow-[var(--brand-primary)]/10 transition-all duration-300"
+                                    className="glass-panel overflow-hidden cursor-pointer group hover:border-[var(--brand-primary)] hover:shadow-lg hover:shadow-[var(--brand-primary)]/10 transition-all duration-300 relative"
                                 >
+                                    {/* Badges for Flyer/Deals */}
+                                    <div className="absolute top-3 right-3 z-10 flex flex-col gap-1 items-end">
+                                        {store.hasFlyer && (
+                                            <span className="bg-red-500 text-white text-[10px] uppercase font-bold px-2 py-0.5 rounded shadow-sm">
+                                                New Flyer
+                                            </span>
+                                        )}
+                                        {store.activeDealsCount > 0 && (
+                                            <span className="bg-green-500 text-white text-[10px] uppercase font-bold px-2 py-0.5 rounded shadow-sm">
+                                                {store.activeDealsCount} Deals
+                                            </span>
+                                        )}
+                                    </div>
+
                                     {/* Store Image */}
                                     <div className="h-36 bg-[var(--surface-2)] relative overflow-hidden">
                                         <img

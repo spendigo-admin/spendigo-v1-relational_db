@@ -1,10 +1,16 @@
 import React from 'react';
-import { NavLink, Outlet } from 'react-router-dom';
+import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import '../styles/design-system.css';
 
 const MerchantLayout: React.FC = () => {
-    const { user, logout } = useAuth();
+    const { user, logout, can } = useAuth();
+    const location = useLocation();
+    const searchParams = new URL(window.location.href).searchParams;
+    const currentTab = searchParams.get('tab');
+
+    const isTeamActive = location.pathname === '/merchant/settings' && currentTab === 'team';
+    const isSettingsActive = location.pathname === '/merchant/settings' && currentTab !== 'team';
 
     return (
         <div className="min-h-screen grid grid-cols-[250px_1fr] bg-[var(--surface-0)]">
@@ -24,33 +30,47 @@ const MerchantLayout: React.FC = () => {
                     >
                         <span>📊</span> Dashboard
                     </NavLink>
-                    <NavLink
-                        to="/merchant/orders"
-                        className={({ isActive }) => `flex items-center gap-3 p-3 rounded-lg font-medium transition-colors ${isActive ? 'bg-[var(--brand-primary)] text-white' : 'text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text-main)]'}`}
-                    >
-                        <span>📋</span> Orders
-                    </NavLink>
+                    {can('orders:read') && (
+                        <NavLink
+                            to="/merchant/orders"
+                            className={({ isActive }) => `flex items-center gap-3 p-3 rounded-lg font-medium transition-colors ${isActive ? 'bg-[var(--brand-primary)] text-white' : 'text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text-main)]'}`}
+                        >
+                            <span>📋</span> Orders
+                        </NavLink>
+                    )}
                     <NavLink
                         to="/merchant/products"
                         className={({ isActive }) => `flex items-center gap-3 p-3 rounded-lg font-medium transition-colors ${isActive ? 'bg-[var(--brand-primary)] text-white' : 'text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text-main)]'}`}
                     >
                         <span>📦</span> Products
                     </NavLink>
-                    <NavLink
-                        to="/merchant/flyers"
-                        className={({ isActive }) => `flex items-center gap-3 p-3 rounded-lg font-medium transition-colors ${isActive ? 'bg-[var(--brand-primary)] text-white' : 'text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text-main)]'}`}
-                    >
-                        <span>📰</span> Flyers
-                    </NavLink>
-                    <NavLink
-                        to="/merchant/deals"
-                        className={({ isActive }) => `flex items-center gap-3 p-3 rounded-lg font-medium transition-colors ${isActive ? 'bg-[var(--brand-primary)] text-white' : 'text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text-main)]'}`}
-                    >
-                        <span>🏷️</span> Deals
-                    </NavLink>
+                    {can('flyers:write') && (
+                        <NavLink
+                            to="/merchant/flyers"
+                            className={({ isActive }) => `flex items-center gap-3 p-3 rounded-lg font-medium transition-colors ${isActive ? 'bg-[var(--brand-primary)] text-white' : 'text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text-main)]'}`}
+                        >
+                            <span>📰</span> Flyers
+                        </NavLink>
+                    )}
+                    {can('deals:write') && (
+                        <NavLink
+                            to="/merchant/deals"
+                            className={({ isActive }) => `flex items-center gap-3 p-3 rounded-lg font-medium transition-colors ${isActive ? 'bg-[var(--brand-primary)] text-white' : 'text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text-main)]'}`}
+                        >
+                            <span>🏷️</span> Deals
+                        </NavLink>
+                    )}
+                    {can('team:manage') && (
+                        <NavLink
+                            to="/merchant/settings?tab=team"
+                            className={`flex items-center gap-3 p-3 rounded-lg font-medium transition-colors ${isTeamActive ? 'bg-[var(--brand-primary)] text-white' : 'text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text-main)]'}`}
+                        >
+                            <span>👥</span> Team
+                        </NavLink>
+                    )}
                     <NavLink
                         to="/merchant/settings"
-                        className={({ isActive }) => `flex items-center gap-3 p-3 rounded-lg font-medium transition-colors ${isActive ? 'bg-[var(--brand-primary)] text-white' : 'text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text-main)]'}`}
+                        className={`flex items-center gap-3 p-3 rounded-lg font-medium transition-colors ${isSettingsActive ? 'bg-[var(--brand-primary)] text-white' : 'text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text-main)]'}`}
                     >
                         <span>⚙️</span> Settings
                     </NavLink>

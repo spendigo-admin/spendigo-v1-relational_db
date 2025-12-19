@@ -10,7 +10,36 @@ export interface User {
     // Merchant specific
     storeId?: string;
     storeName?: string;
+    merchantRole?: 'OWNER' | 'MANAGER' | 'STAFF' | 'MARKETING';
+    // Admin specific
+    adminRole?: 'SUPER_ADMIN' | 'SUPPORT' | 'MODERATOR' | 'AUDITOR';
 }
+
+export type Permission =
+    | 'products:write'
+    | 'orders:read'
+    | 'orders:write'
+    | 'flyers:write'
+    | 'deals:write'
+    | 'settings:write'
+    | 'team:manage'
+    | 'admin:all'
+    | 'admin:users'
+    | 'admin:stores'
+    | 'admin:audit';
+
+const ROLE_PERMISSIONS: Record<string, Permission[]> = {
+    // Merchant Roles
+    OWNER: ['products:write', 'orders:read', 'orders:write', 'flyers:write', 'deals:write', 'settings:write', 'team:manage'],
+    MANAGER: ['products:write', 'orders:read', 'orders:write', 'flyers:write', 'deals:write', 'settings:write'],
+    STAFF: ['orders:read', 'orders:write'],
+    MARKETING: ['flyers:write', 'deals:write'],
+    // Admin Roles
+    SUPER_ADMIN: ['admin:all', 'admin:users', 'admin:stores', 'admin:audit'],
+    MODERATOR: ['admin:users', 'admin:stores'],
+    SUPPORT: ['admin:users'],
+    AUDITOR: ['admin:audit']
+};
 
 interface AuthContextType {
     user: User | null;
@@ -21,7 +50,12 @@ interface AuthContextType {
     loginWithFacebook: () => Promise<boolean>;
     logout: () => void;
     loading: boolean;
+    can: (permission: Permission) => boolean;
+    switchRole: (role: MerchantRole | AdminRole) => void;
 }
+
+type MerchantRole = 'OWNER' | 'MANAGER' | 'STAFF' | 'MARKETING';
+type AdminRole = 'SUPER_ADMIN' | 'SUPPORT' | 'MODERATOR' | 'AUDITOR';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -32,19 +66,20 @@ const MOCK_USERS: Record<string, User> = {
         email: 'admin@spendigo.ca',
         name: 'System Admin',
         role: 'admin',
+        adminRole: 'SUPER_ADMIN',
         avatar: '🛡️'
     },
-    'freshmart@store.com': { id: 'm1', email: 'freshmart@store.com', name: 'FreshMart Manager', role: 'merchant', storeId: '1', storeName: 'FreshMart', avatar: '🥬' },
-    'quick@pick.com': { id: 'm2', email: 'quick@pick.com', name: 'QuickPick Owner', role: 'merchant', storeId: '2', storeName: 'QuickPick', avatar: '🏪' },
-    'metro@express.com': { id: 'm3', email: 'metro@express.com', name: 'Metro Manager', role: 'merchant', storeId: '3', storeName: 'Metro Express', avatar: '🛒' },
-    'costco@biz.com': { id: 'm4', email: 'costco@biz.com', name: 'Costco Admin', role: 'merchant', storeId: '4', storeName: 'Costco Business', avatar: '📦' },
-    'macs@corner.com': { id: 'm5', email: 'macs@corner.com', name: 'Mac Manager', role: 'merchant', storeId: '5', storeName: "Mac's Corner", avatar: '🏪' },
-    'hasty@mart.com': { id: 'm6', email: 'hasty@mart.com', name: 'Hasty Owner', role: 'merchant', storeId: '6', storeName: 'Hasty Mart', avatar: '⚡' },
-    'bodega@corner.com': { id: 'm7', email: 'bodega@corner.com', name: 'Bodega Boss', role: 'merchant', storeId: '7', storeName: 'Corner Bodega', avatar: '🏬' },
-    'green@valley.com': { id: 'm8', email: 'green@valley.com', name: 'Farmer Joe', role: 'merchant', storeId: '8', storeName: 'Green Valley Market', avatar: '🌽' },
-    'daily@loaf.com': { id: 'm9', email: 'daily@loaf.com', name: 'Baker Bob', role: 'merchant', storeId: '9', storeName: 'The Daily Loaf', avatar: '🥖' },
-    'butcher@block.com': { id: 'm10', email: 'butcher@block.com', name: 'Butcher Bill', role: 'merchant', storeId: '10', storeName: "The Butcher's Block", avatar: '🥩' },
-    'book@nook.com': { id: 'm11', email: 'book@nook.com', name: 'Librarian Linda', role: 'merchant', storeId: '11', storeName: 'The Book Nook', avatar: '📚' },
+    'freshmart@store.com': { id: 'm1', email: 'freshmart@store.com', name: 'FreshMart Owner', role: 'merchant', storeId: '1', storeName: 'FreshMart', merchantRole: 'OWNER', avatar: '🥬' },
+    'quick@pick.com': { id: 'm2', email: 'quick@pick.com', name: 'QuickPick Staff', role: 'merchant', storeId: '2', storeName: 'QuickPick', merchantRole: 'STAFF', avatar: '🏪' },
+    'metro@express.com': { id: 'm3', email: 'metro@express.com', name: 'Metro Manager', role: 'merchant', storeId: '3', storeName: 'Metro Express', merchantRole: 'MANAGER', avatar: '🛒' },
+    'costco@biz.com': { id: 'm4', email: 'costco@biz.com', name: 'Costco Marketing', role: 'merchant', storeId: '4', storeName: 'Costco Business', merchantRole: 'MARKETING', avatar: '📦' },
+    'macs@corner.com': { id: 'm5', email: 'macs@corner.com', name: 'Mac Manager', role: 'merchant', storeId: '5', storeName: "Mac's Corner", merchantRole: 'MANAGER', avatar: '🏪' },
+    'hasty@mart.com': { id: 'm6', email: 'hasty@mart.com', name: 'Hasty Owner', role: 'merchant', storeId: '6', storeName: 'Hasty Mart', merchantRole: 'OWNER', avatar: '⚡' },
+    'bodega@corner.com': { id: 'm7', email: 'bodega@corner.com', name: 'Bodega Boss', role: 'merchant', storeId: '7', storeName: 'Corner Bodega', merchantRole: 'OWNER', avatar: '🏬' },
+    'green@valley.com': { id: 'm8', email: 'green@valley.com', name: 'Farmer Joe', role: 'merchant', storeId: '8', storeName: 'Green Valley Market', merchantRole: 'OWNER', avatar: '🌽' },
+    'daily@loaf.com': { id: 'm9', email: 'daily@loaf.com', name: 'Baker Bob', role: 'merchant', storeId: '9', storeName: 'The Daily Loaf', merchantRole: 'OWNER', avatar: '🥖' },
+    'butcher@block.com': { id: 'm10', email: 'butcher@block.com', name: 'Butcher Bill', role: 'merchant', storeId: '10', storeName: "The Butcher's Block", merchantRole: 'OWNER', avatar: '🥩' },
+    'book@nook.com': { id: 'm11', email: 'book@nook.com', name: 'Librarian Linda', role: 'merchant', storeId: '11', storeName: 'The Book Nook', merchantRole: 'OWNER', avatar: '📚' },
     'shopper@example.com': {
         id: 'shop1',
         email: 'shopper@example.com',
@@ -157,6 +192,36 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         window.location.href = '/login';
     };
 
+    const can = (permission: Permission): boolean => {
+        if (!user) return false;
+
+        // Admin permissions
+        if (user.role === 'admin' && user.adminRole) {
+            const perms = ROLE_PERMISSIONS[user.adminRole] || [];
+            return perms.includes(permission) || perms.includes('admin:all');
+        }
+
+        // Merchant permissions
+        if (user.role === 'merchant' && user.merchantRole) {
+            const perms = ROLE_PERMISSIONS[user.merchantRole] || [];
+            return perms.includes(permission);
+        }
+
+        return false;
+    };
+
+    const switchRole = (role: MerchantRole | AdminRole) => {
+        if (!user) return;
+        const updatedUser = { ...user };
+        if (user.role === 'merchant') {
+            updatedUser.merchantRole = role as MerchantRole;
+        } else if (user.role === 'admin') {
+            updatedUser.adminRole = role as AdminRole;
+        }
+        setUser(updatedUser);
+        localStorage.setItem('spendigo_user', JSON.stringify(updatedUser));
+    };
+
     const value = {
         user,
         isAuthenticated: !!user,
@@ -165,7 +230,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         loginWithGoogle,
         loginWithFacebook,
         logout,
-        loading
+        loading,
+        can,
+        switchRole
     };
 
     return (

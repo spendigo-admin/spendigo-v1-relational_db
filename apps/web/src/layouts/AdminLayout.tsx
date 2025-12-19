@@ -27,7 +27,7 @@ const AdminLayout: React.FC = () => {
             <aside className="w-64 bg-white border-r border-[var(--glass-border)] hidden md:flex flex-col">
                 {/* Logo */}
                 <div className="p-6 border-b border-[var(--glass-border)]">
-                    <h1 className="text-xl font-bold bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)] bg-clip-text text-transparent">
+                    <h1 className="text-xl font-bold text-[var(--brand-primary)]">
                         Spendigo Admin
                     </h1>
                 </div>
