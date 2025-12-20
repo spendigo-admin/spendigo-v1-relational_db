@@ -26,6 +26,7 @@ const AdminDashboard: React.FC = () => {
             // @ts-ignore
             const perf = window.performance;
             let memoryUsage = 45; // Default fallback
+            // @ts-ignore
             if (perf && perf.memory) {
                 // @ts-ignore
                 memoryUsage = Math.round((perf.memory.usedJSHeapSize / perf.memory.jsHeapSizeLimit) * 100);

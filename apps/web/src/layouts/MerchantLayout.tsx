@@ -8,22 +8,45 @@ const MerchantLayout: React.FC = () => {
     const location = useLocation();
     const searchParams = new URL(window.location.href).searchParams;
     const currentTab = searchParams.get('tab');
+    const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
+
+    // Close sidebar on route change
+    React.useEffect(() => {
+        setIsSidebarOpen(false);
+    }, [location]);
 
     const isTeamActive = location.pathname === '/merchant/settings' && currentTab === 'team';
     const isSettingsActive = location.pathname === '/merchant/settings' && currentTab !== 'team';
 
     return (
-        <div className="min-h-screen grid grid-cols-[250px_1fr] bg-[var(--surface-0)]">
+        <div className="min-h-screen bg-[var(--surface-0)] flex flex-col md:grid md:grid-cols-[250px_1fr]">
+            {/* Mobile Header */}
+            <header className="md:hidden h-16 bg-white border-b border-[var(--glass-border)] flex items-center justify-between px-4 sticky top-0 z-20">
+                <div className="flex flex-col">
+                    <span className="text-lg font-bold text-[var(--brand-primary)]">Spendigo Merchant</span>
+                </div>
+                <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 text-2xl text-[var(--text-main)]">
+                    {isSidebarOpen ? '✕' : '☰'}
+                </button>
+            </header>
+
             {/* Sidebar */}
-            <aside className="border-r border-[var(--glass-border)] bg-white p-4 flex flex-col">
-                <div className="mb-8 p-2">
+            <aside className={`
+                fixed inset-y-0 left-0 z-30 w-[250px] bg-white border-r border-[var(--glass-border)] flex flex-col transition-transform duration-300 ease-in-out
+                md:translate-x-0 md:static md:h-screen
+                ${isSidebarOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'}
+            `}>
+                <div className="p-6 mb-2 hidden md:block">
                     <div className="flex flex-col">
                         <span className="text-xl font-bold text-[var(--brand-primary)]">Spendigo</span>
                         <span className="text-xs font-semibold text-[var(--text-main)] tracking-widest uppercase">MERCHANT</span>
                     </div>
                 </div>
 
-                <nav className="flex-1 space-y-1">
+                {/* Mobile-only spacer */}
+                <div className="md:hidden h-4"></div>
+
+                <nav className="flex-1 space-y-1 px-4 overflow-y-auto">
                     <NavLink
                         to="/merchant/dashboard"
                         className={({ isActive }) => `flex items-center gap-3 p-3 rounded-lg font-medium transition-colors ${isActive ? 'bg-[var(--brand-primary)] text-white' : 'text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text-main)]'}`}
@@ -76,9 +99,9 @@ const MerchantLayout: React.FC = () => {
                     </NavLink>
                 </nav>
 
-                <div className="border-t border-[var(--glass-border)] my-2"></div>
+                <div className="border-t border-[var(--glass-border)] my-2 mx-4"></div>
 
-                <nav className="space-y-1">
+                <nav className="space-y-1 px-4">
                     <NavLink
                         to="/"
                         className="flex items-center gap-3 p-3 rounded-lg font-medium text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text-main)] transition-colors"
@@ -87,7 +110,7 @@ const MerchantLayout: React.FC = () => {
                     </NavLink>
                 </nav>
 
-                <div className="border-t border-[var(--glass-border)] pt-4 mt-auto">
+                <div className="border-t border-[var(--glass-border)] pt-4 mt-auto p-4 pb-safe">
                     <div className="flex items-center gap-2 mb-2">
                         <div className="w-2 h-2 rounded-full bg-green-500"></div>
                         <span className="text-sm font-medium text-[var(--text-main)]">Store Online</span>
@@ -104,8 +127,16 @@ const MerchantLayout: React.FC = () => {
                 </div>
             </aside>
 
+            {/* Overlay for mobile sidebar */}
+            {isSidebarOpen && (
+                <div
+                    className="fixed inset-0 bg-black/50 z-20 md:hidden animate-fade-in"
+                    onClick={() => setIsSidebarOpen(false)}
+                ></div>
+            )}
+
             {/* Main Content */}
-            <main className="overflow-y-auto bg-[var(--surface-1)]">
+            <main className="flex-1 overflow-y-auto bg-[var(--surface-1)] h-[calc(100vh-64px)] md:h-screen">
                 <Outlet />
             </main>
         </div>

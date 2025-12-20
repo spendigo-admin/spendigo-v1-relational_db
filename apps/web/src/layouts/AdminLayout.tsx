@@ -7,6 +7,12 @@ const AdminLayout: React.FC = () => {
     const location = useLocation();
     const navigate = useNavigate();
     const { user, logout } = useAuth();
+    const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
+
+    // Close sidebar on navigation
+    React.useEffect(() => {
+        setIsSidebarOpen(false);
+    }, [location]);
 
     const menuItems = [
         { icon: '📊', label: 'Dashboard', path: '/admin/dashboard' },
@@ -22,15 +28,30 @@ const AdminLayout: React.FC = () => {
     };
 
     return (
-        <div className="min-h-screen bg-[var(--surface-0)] flex">
+        <div className="min-h-screen bg-[var(--surface-0)] flex flex-col md:flex-row">
+            {/* Mobile Header */}
+            <header className="md:hidden h-16 bg-white border-b border-[var(--glass-border)] flex items-center justify-between px-4 sticky top-0 z-20">
+                <span className="font-bold text-[var(--brand-primary)]">Spendigo Admin</span>
+                <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 text-2xl">
+                    {isSidebarOpen ? '✕' : '☰'}
+                </button>
+            </header>
+
             {/* SIDEBAR */}
-            <aside className="w-64 bg-white border-r border-[var(--glass-border)] hidden md:flex flex-col">
+            <aside className={`
+                fixed inset-y-0 left-0 z-30 w-64 bg-white border-r border-[var(--glass-border)] flex flex-col transition-transform duration-300 ease-in-out
+                md:translate-x-0 md:static md:h-screen
+                ${isSidebarOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'}
+            `}>
                 {/* Logo */}
-                <div className="p-6 border-b border-[var(--glass-border)]">
+                <div className="p-6 border-b border-[var(--glass-border)] hidden md:block">
                     <h1 className="text-xl font-bold text-[var(--brand-primary)]">
                         Spendigo Admin
                     </h1>
                 </div>
+
+                {/* Mobile spacer */}
+                <div className="md:hidden h-4"></div>
 
                 {/* Navigation */}
                 <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
@@ -63,7 +84,7 @@ const AdminLayout: React.FC = () => {
                 </nav>
 
                 {/* Footer User Profile */}
-                <div className="p-4 border-t border-[var(--glass-border)]">
+                <div className="p-4 border-t border-[var(--glass-border)] pb-safe">
                     <div className="flex items-center gap-3 p-2 rounded-lg bg-[var(--surface-1)]">
                         <div className="w-8 h-8 rounded-full bg-[var(--brand-secondary)] flex items-center justify-center text-white text-xs font-bold">
                             {user?.avatar || 'SA'}
@@ -79,14 +100,16 @@ const AdminLayout: React.FC = () => {
                 </div>
             </aside>
 
-            {/* MAIN CONTENT */}
-            <main className="flex-1 flex flex-col h-screen overflow-hidden">
-                {/* Mobile Header */}
-                <header className="md:hidden h-16 bg-white border-b border-[var(--glass-border)] flex items-center justify-between px-4">
-                    <span className="font-bold text-[var(--brand-primary)]">Spendigo Admin</span>
-                    <button className="p-2 text-2xl">☰</button>
-                </header>
+            {/* Mobile Overlay */}
+            {isSidebarOpen && (
+                <div
+                    className="fixed inset-0 bg-black/50 z-20 md:hidden animate-fade-in"
+                    onClick={() => setIsSidebarOpen(false)}
+                ></div>
+            )}
 
+            {/* MAIN CONTENT */}
+            <main className="flex-1 flex flex-col h-[calc(100vh-64px)] md:h-screen overflow-hidden">
                 {/* Content Scroll Area */}
                 <div className="flex-1 overflow-y-auto p-6 md:p-8">
                     <Outlet />
