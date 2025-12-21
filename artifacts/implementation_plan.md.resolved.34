@@ -1,0 +1,49 @@
+# Subscription Model Pivot Implementation Plan
+
+**Objective**: Transition Spendigo to a pure "Marketplace Facilitator" model with zero financial interaction. Monetize via Store Subscriptions.
+
+## Core Changes
+
+### 1. Checkout & Payment Flow (Simplification)
+**File**: [apps/web/src/pages/consumer/Checkout.tsx](file:///Users/shahbaz/Documents/Spendigo/apps/web/src/pages/consumer/Checkout.tsx)
+-   **Remove**: "Pay Online" (Card Input) option.
+-   **Update**: Payment Method is always "Pay at Store / Device on Delivery".
+-   **Update**: Legal Disclaimer to user-provided text:
+    > "Spendigo SmartCart is a marketplace facilitator for product discovery and order routing only. All payments, refunds, taxes, and fulfillment are handled directly by participating stores."
+
+### 2. Store Data Model (Subscription Support)
+**File**: [apps/web/src/context/OrderContext.tsx](file:///Users/shahbaz/Documents/Spendigo/apps/web/src/context/OrderContext.tsx)
+-   *Note*: Ideally we would store this in a `StoreContext`, but since we assume [OrderContext](file:///Users/shahbaz/Documents/Spendigo/apps/web/src/context/OrderContext.tsx#48-59) currently holds some mock data users/stores, we might need to find where Store Profile data is kept or mock it properly.
+-   **Action**: Create/verify a place to store `subscriptionTier: 'free' | 'core' | 'growth'`.
+    -   *Investigation*: I need to check where Store Settings are largely kept. If [StoreDetail.tsx](file:///Users/shahbaz/Documents/Spendigo/apps/web/src/pages/consumer/StoreDetail.tsx) or [AuthContext](file:///Users/shahbaz/Documents/Spendigo/apps/web/src/context/AuthContext.tsx#44-56) has it.
+
+### 3. Feature Gating (Merchant Portal)
+**File**: [apps/web/src/pages/merchant/Settings.tsx](file:///Users/shahbaz/Documents/Spendigo/apps/web/src/pages/merchant/Settings.tsx) (or equivalent)
+-   **Action**: Gate the "Delivery" toggle.
+    -   If Tier = `free` -> Delivery Toggle is locked/disabled with upgrade prompt.
+
+### 4. Subscription UI (Merchant Portal)
+**File**: [NEW] `apps/web/src/pages/merchant/Subscription.tsx`
+-   **Action**: Create a pricing table displaying:
+    -   **Starter ($0)**: Pickup only.
+    -   **Core ($49)**: + Delivery, Analytics.
+    -   **Growth ($99)**: + Featured, Promos.
+-   **Integration**: Add to Merchant Sidebar/Nav.
+
+## Proposed Code Changes
+
+### [Checkout.tsx](file:///Users/shahbaz/Documents/Spendigo/apps/web/src/pages/consumer/Checkout.tsx) Disclaimer Update
+```tsx
+<p className="text-xs text-[var(--text-muted)] leading-relaxed">
+    <strong>Legal Notice:</strong> Spendigo SmartCart is a marketplace facilitator for product discovery and order routing only. 
+    All payments, refunds, taxes, and fulfillment are handled directly by participating stores.
+</p>
+```
+
+### `Subscription.tsx` (New)
+A clean pricing table component for the merchant to select their plan.
+
+## Verification
+1.  **Checkout**: Verify no Asking for Card info. Verify Disclaimer.
+2.  **Merchant**: Verify "Free" tier cannot enable delivery.
+3.  **Merchant**: Verify "Subscription" page exists and shows tiers.

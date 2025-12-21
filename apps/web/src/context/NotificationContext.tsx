@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { useAuth } from './AuthContext';
 
 // Define Notification Type
 export interface Notification {
@@ -47,26 +48,31 @@ const DEFAULT_PREFERENCES: NotificationPreferences = {
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
 
 export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const [notifications, setNotifications] = useState<Notification[]>(() => {
-        // Load from localStorage or use Mock data
-        const saved = localStorage.getItem('spendigo_notifications');
-        return saved ? JSON.parse(saved) : MOCK_NOTIFICATIONS;
-    });
+    const { user } = useAuth();
+    const notifKey = `spendigo_notifications_${user?.id || 'guest'}`;
+    const prefKey = `spendigo_notification_prefs_${user?.id || 'guest'}`;
 
-    const [preferences, setPreferences] = useState<NotificationPreferences>(() => {
-        const saved = localStorage.getItem('spendigo_notification_prefs');
-        return saved ? JSON.parse(saved) : DEFAULT_PREFERENCES;
-    });
+    const [notifications, setNotifications] = useState<Notification[]>([]);
+    const [preferences, setPreferences] = useState<NotificationPreferences>(DEFAULT_PREFERENCES);
+
+    // Load Data on Mount or User Change
+    useEffect(() => {
+        const savedNotifs = localStorage.getItem(notifKey);
+        setNotifications(savedNotifs ? JSON.parse(savedNotifs) : MOCK_NOTIFICATIONS);
+
+        const savedPrefs = localStorage.getItem(prefKey);
+        setPreferences(savedPrefs ? JSON.parse(savedPrefs) : DEFAULT_PREFERENCES);
+    }, [notifKey, prefKey]);
 
     // Persist to localStorage whenever notifications change
     useEffect(() => {
-        localStorage.setItem('spendigo_notifications', JSON.stringify(notifications));
-    }, [notifications]);
+        localStorage.setItem(notifKey, JSON.stringify(notifications));
+    }, [notifications, notifKey]);
 
     // Persist preferences
     useEffect(() => {
-        localStorage.setItem('spendigo_notification_prefs', JSON.stringify(preferences));
-    }, [preferences]);
+        localStorage.setItem(prefKey, JSON.stringify(preferences));
+    }, [preferences, prefKey]);
 
     const unreadCount = notifications.filter(n => !n.read).length;
 

@@ -1,0 +1,32 @@
+# Implementation Plan - Global Navigation Overhaul
+
+# Goal Description
+Address "poor navigation" feedback by implementing a unified, persistent navigation structure for the Consumer App.
+
+## User Review Required
+> [!NOTE]
+> We will introduce a mobile-style Bottom Tab Bar for easier mobile navigation, in addition to a Sticky Header.
+
+## Proposed Changes
+
+### Layouts
+#### [NEW] [apps/web/src/layouts/ConsumerLayout.tsx](file:///Users/shahbaz/Documents/Spendigo/apps/web/src/layouts/ConsumerLayout.tsx)
+- **Top Bar**: Logo, Global Search, Cart Indicator.
+- **Bottom Bar**: Home, Stores, Cart, Profile.
+- **Content Area**: Scrollable area for page content.
+
+### Routing
+#### [MODIFY] [apps/web/src/App.tsx](file:///Users/shahbaz/Documents/Spendigo/apps/web/src/App.tsx)
+- Wrap all consumer routes (`/`, `/store/*`, `/product/*`, `/cart`, `/profile`) inside `ConsumerLayout`.
+
+### Page Refactoring
+#### [MODIFY] [apps/web/src/pages/consumer/StoreList.tsx](file:///Users/shahbaz/Documents/Spendigo/apps/web/src/pages/consumer/StoreList.tsx)
+- Remove ad-hoc header.
+
+#### [MODIFY] [apps/web/src/pages/consumer/ProductDetail.tsx](file:///Users/shahbaz/Documents/Spendigo/apps/web/src/pages/consumer/ProductDetail.tsx)
+- Should work within the layout (maybe hide bottom bar if needed, or keep it).
+
+## Verification Plan
+1.  Navigate between Home -> Store -> Product -> Cart.
+2.  Verify the Navigation Bar remains visible.
+3.  Verify active state highlights on the Bottom Bar.

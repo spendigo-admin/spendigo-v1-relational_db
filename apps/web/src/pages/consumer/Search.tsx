@@ -113,17 +113,31 @@ const Search: React.FC = () => {
             {/* Search Header */}
             <div className="sticky top-14 z-30 bg-white border-b border-[var(--glass-border)] p-4">
                 <div className="max-w-3xl mx-auto">
-                    <div className="relative">
+                    <form
+                        className="relative"
+                        onSubmit={(e) => { e.preventDefault(); (document.activeElement as HTMLElement)?.blur(); }}
+                    >
                         <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xl">🔍</span>
                         <input
                             type="text"
-                            placeholder="Search products across all stores..."
+                            inputMode="search"
+                            enterKeyHint="search"
+                            placeholder="Search products..."
                             value={searchQuery}
                             onChange={e => setSearchQuery(e.target.value)}
-                            className="w-full pl-12 pr-4 py-3 bg-[var(--surface-1)] border border-[var(--glass-border)] rounded-xl text-[var(--text-main)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--brand-primary)]"
+                            className="w-full pl-12 pr-10 py-3 bg-[var(--surface-1)] border border-[var(--glass-border)] rounded-xl text-[var(--text-main)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--brand-primary)]"
                             autoFocus
                         />
-                    </div>
+                        {searchQuery && (
+                            <button
+                                type="button"
+                                onClick={() => setSearchQuery('')}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center bg-gray-200 rounded-full text-xs text-gray-600 hover:bg-gray-300 transition-colors"
+                            >
+                                ✕
+                            </button>
+                        )}
+                    </form>
 
                     {/* Category Filters */}
                     <div className="mt-3 flex gap-2 overflow-x-auto scrollbar-hide pb-1">

@@ -1,0 +1,126 @@
+# Implementation Plan - Feature Build-out (5 Features)
+
+## Goal
+Implement the following features in order of dependency:
+1. **User Profile** - Account settings, addresses, order history
+2. **Search** - Global product search across stores
+3. **Order Tracking** - Order status after checkout
+4. **Notifications** - Price drop alerts UI
+5. **Merchant Dashboard** - Product management, order views
+
+---
+
+## 1. User Profile Page
+
+### [NEW] [Profile.tsx](file:///Users/shahbaz/Documents/Spendigo/apps/web/src/pages/consumer/Profile.tsx)
+- **Account Info**: Name, email, phone (editable)
+- **Saved Addresses**: List of delivery addresses with add/edit/delete
+- **Order History**: List of past orders with status
+
+### [MODIFY] App.tsx
+- Add `/profile` route
+
+---
+
+## 2. Search Functionality
+
+### [NEW] [Search.tsx](file:///Users/shahbaz/Documents/Spendigo/apps/web/src/pages/consumer/Search.tsx)
+- Search input with autocomplete
+- Results grouped by store
+- Filter by category
+
+### [MODIFY] ConsumerLayout.tsx
+- Add search icon/bar in header
+
+### [MODIFY] App.tsx
+- Add `/search` route
+
+---
+
+## 3. Order Tracking
+
+### [NEW] [OrderContext.tsx](file:///Users/shahbaz/Documents/Spendigo/apps/web/src/context/OrderContext.tsx)
+- Store order history
+- Order status: Placed → Preparing → Out for Delivery → Delivered
+
+### [NEW] [OrderTracking.tsx](file:///Users/shahbaz/Documents/Spendigo/apps/web/src/pages/consumer/OrderTracking.tsx)
+- Visual timeline of order status
+- Estimated delivery time
+- Contact store button
+
+### [MODIFY] Checkout.tsx
+- On payment, create order and redirect to tracking
+
+### [MODIFY] App.tsx
+- Add `/order/:id` route
+
+---
+
+## 4. Notifications (UI Only - Mock)
+
+### [NEW] [Notifications.tsx](file:///Users/shahbaz/Documents/Spendigo/apps/web/src/pages/consumer/Notifications.tsx)
+- List of notifications (price drops, order updates)
+- Toggle switches for notification preferences
+
+### [MODIFY] ConsumerLayout.tsx
+- Add notification bell icon
+
+### [MODIFY] App.tsx
+- Add `/notifications` route
+
+---
+
+## 5. Merchant Dashboard Improvements
+
+### [NEW] [MerchantProducts.tsx](file:///Users/shahbaz/Documents/Spendigo/apps/web/src/pages/merchant/Products.tsx)
+- Add/edit/delete products
+- Inventory management
+- Price updates
+
+### [NEW] [MerchantOrders.tsx](file:///Users/shahbaz/Documents/Spendigo/apps/web/src/pages/merchant/Orders.tsx)
+- View incoming orders
+- Update order status
+- Order details modal
+
+### [MODIFY] MerchantLayout.tsx
+### [MODIFY] MerchantLayout.tsx
+- Add navigation for Products, Orders
+
+---
+
+## 6. Merchant Admin Enhancements
+
+### [NEW] [Dashboard.tsx](file:///Users/shahbaz/Documents/Spendigo/apps/web/src/pages/merchant/Dashboard.tsx)
+- Overview stats (Sales, Orders)
+- Quick actions grid
+- Recent orders list
+
+### [NEW] [Flyers.tsx](file:///Users/shahbaz/Documents/Spendigo/apps/web/src/pages/merchant/Flyers.tsx)
+- Create/Edit/Delete digital flyers
+- Date range validity
+
+### [NEW] [Deals.tsx](file:///Users/shahbaz/Documents/Spendigo/apps/web/src/pages/merchant/Deals.tsx)
+- One-day offers and Sale items
+- Discount calculator logic
+
+- Discount calculator logic
+
+---
+
+## 7. Registration Enhancements
+
+### [MODIFY] [Register.tsx](file:///Users/shahbaz/Documents/Spendigo/apps/web/src/pages/consumer/Register.tsx)
+- Add Role Selection (Shopper vs Merchant)
+- Conditional fields:
+    - Shopper: Standard fields
+    - Merchant: Business Name, Business Type
+- Successful merchant registration -> Redirect to Merchant Dashboard
+
+---
+
+## Verification Plan
+1. Create profile, add address, view order history
+2. Search for "milk" - see results from multiple stores
+3. Complete checkout - see order tracking page
+4. View notifications page
+5. As merchant: add product, view orders

@@ -1,0 +1,42 @@
+# Order Routing & Merchant Portal Integration
+
+**Goal**: Ensure that orders placed by consumers are correctly routed to the Merchant Portal.
+**Current Gap**: Consumers save orders to `spendigo_orders_USERID` (private history), but the Merchant Portal reads isolated mock data or a separate unrelated source.
+**Solution**: Implement a "Store Inbox" mechanism. When an order is placed, [OrderContext](file:///Users/shahbaz/Documents/Spendigo/apps/web/src/context/OrderContext.tsx#45-56) will write a copy to `spendigo_store_orders_STOREID`. The Merchant Portal will then read from this key.
+
+## Proposed Changes
+
+### 1. [MODIFY] [OrderContext.tsx](file:///Users/shahbaz/Documents/Spendigo/apps/web/src/context/OrderContext.tsx)
+-   Update [addOrder](file:///Users/shahbaz/Documents/Spendigo/apps/web/src/context/OrderContext.tsx#162-171) function:
+    -   Identify the `storeId` of the order.
+    -   Read the current store inbox: `spendigo_store_orders_${storeId}`.
+    -   Append the new order.
+    -   Write back to `localStorage`.
+-   This ensures the order exists in two places:
+    1.  User's History (Private)
+    2.  Store's Inbox (Shared/Merchant view)
+
+### 2. [MODIFY] [MerchantOrders.tsx](file:///Users/shahbaz/Documents/Spendigo/apps/web/src/pages/merchant/Orders.tsx)
+-   **Unify Types**: Replace the local [Order](file:///Users/shahbaz/Documents/Spendigo/apps/web/src/context/OrderContext.tsx#22-36) and [OrderItem](file:///Users/shahbaz/Documents/Spendigo/apps/web/src/pages/merchant/Orders.tsx#6-11) interfaces with imports from [OrderContext](file:///Users/shahbaz/Documents/Spendigo/apps/web/src/context/OrderContext.tsx#45-56).
+-   **Connect to Data**:
+    -   Import [useAuth](file:///Users/shahbaz/Documents/Spendigo/apps/web/src/context/AuthContext.tsx#246-253) to get the logged-in merchant's `storeId`.
+    -   Replace `initialData` with a `useEffect` that loads from `spendigo_store_orders_${storeId}`.
+    -   Add a polling interval (or storage listener) to refresh orders automatically (simulating WebSocket).
+
+### 3. [MODIFY] [OrderContext.tsx](file:///Users/shahbaz/Documents/Spendigo/apps/web/src/context/OrderContext.tsx)
+-   Export [OrderItem](file:///Users/shahbaz/Documents/Spendigo/apps/web/src/pages/merchant/Orders.tsx#6-11) and [Order](file:///Users/shahbaz/Documents/Spendigo/apps/web/src/context/OrderContext.tsx#22-36) interfaces if not already done, to support the import in MerchantOrders.
+
+## Verification Plan
+
+### Manual Verification
+1.  **Consumer Flow**:
+    -   Login as Consumer (`consumer@example.com`).
+    -   Place an order at "FreshMart" (Store ID: 1).
+    -   Verify it appears in Consumer "My Orders".
+2.  **Merchant Flow**:
+    -   Login as "FreshMart Owner" (`owner@freshmart.ca`).
+    -   Navigate to "Orders" tab.
+    -   **Verify the new order appears in the list.**
+3.  **Isolation Check**:
+    -   Login as "QuickPick Owner" (Store ID: 2).
+    -   Verify the order does **NOT** appear.

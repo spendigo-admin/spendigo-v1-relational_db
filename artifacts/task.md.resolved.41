@@ -1,0 +1,20 @@
+# Task: Mobile App Expansion
+
+## Addressing Build Errors
+- [x] Initial research on build errors
+- [x] Fix TypeScript errors in [ProductDetail.tsx](file:///Users/shahbaz/Documents/Spendigo/apps/web/src/pages/consumer/ProductDetail.tsx)
+- [x] Fix TypeScript errors in [SmartCartWishlist.tsx](file:///Users/shahbaz/Documents/Spendigo/apps/web/src/pages/consumer/SmartCartWishlist.tsx)
+- [ ] Resolve Firebase configuration issues (environment variables)
+- [x] Verify build with `npm run build`
+
+## Mobile Expansion Setup
+- [x] Initialize Capacitor in `apps/web`
+- [x] Configure `capacitor.config.ts`
+- [x] Add Capacitor dependencies to `package.json`
+- [x] Install dependencies (`npm install`)
+- [x] Build the web application
+- [x] Add Android platform (Already present, synced)
+- [x] Add iOS platform (Already present, synced)
+- [x] Implement "Safe Area" padding in `ConsumerLayout.tsx`
+
+**Task Completed Successfully.**

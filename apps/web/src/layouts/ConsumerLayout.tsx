@@ -138,6 +138,11 @@ const ConsumerLayout: React.FC = () => {
                     <span className="text-[10px] font-medium">Search</span>
                 </NavLink>
 
+                <NavLink to="/smartcart" className={({ isActive }) => `flex flex-col items-center justify-center flex-1 h-full gap-0.5 transition-colors ${isActive ? 'text-[var(--brand-primary)]' : 'text-[var(--text-muted)]'}`}>
+                    <span className="text-xl">✨</span>
+                    <span className="text-[10px] font-medium">SmartCart</span>
+                </NavLink>
+
                 <NavLink to="/cart" className={({ isActive }) => `flex flex-col items-center justify-center flex-1 h-full gap-0.5 transition-colors ${isActive ? 'text-[var(--brand-primary)]' : 'text-[var(--text-muted)]'}`}>
                     <div className="relative">
                         <span className="text-xl">🛒</span>

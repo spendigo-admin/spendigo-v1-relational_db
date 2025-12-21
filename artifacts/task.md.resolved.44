@@ -1,0 +1,28 @@
+# Task: Mobile Expansion & System Cleanup
+
+## 1. Cleanup & Linting
+- [ ] Resolve "Unknown at rule @tailwind" lint warnings in `design-system.css`
+- [ ] Verify no other build or lint errors exist
+
+## 2. Mobile Expansion (Capacitor)
+- [ ] Check Firebase environment variables configuration for native platforms
+- [ ] Run `npx cap sync` and verify assets are correctly applied
+- [ ] Attempt CocoaPods installation and sync for iOS (if possible)
+
+## 3. Product & Cart Fixes
+- [ ] Investigate and fix broken image icons in [SmartCartWishlist.tsx](file:///Users/shahbaz/Documents/Spendigo/apps/web/src/pages/consumer/SmartCartWishlist.tsx)
+- [x] Resolve broken image links in [SmartCartWishlist](file:///Users/shahbaz/Documents/Spendigo/apps/web/src/pages/consumer/SmartCartWishlist.tsx#89-328) component
+- [ ] Audit [StoreDetail.tsx](file:///Users/shahbaz/Documents/Spendigo/apps/web/src/pages/consumer/StoreDetail.tsx) and other data files for broken image URLs
+
+## 4. System Admin Dashboard
+- [ ] Implement System Admin Dashboard (`/admin`)
+- [x] Extend System Admin Dashboard
+    - [x] Implement Audit Logs route
+    - [x] Implement Flyer Moderation routed (`/admin`)
+- [ ] Add basic stats, user management, and store management views
+- [ ] Add navigation to Admin Dashboard in the footer or profile menu
+
+## 5. Verification
+- [ ] Run `npm run build` to ensure no regressions
+- [ ] Verify UI on mobile-simulated views (browser)
+- [ ] Verify Admin Dashboard functionality

@@ -1,0 +1,6 @@
+{
+  "artifactType":  "ARTIFACT_TYPE_IMPLEMENTATION_PLAN",
+  "summary":  "Pivot to Store Subscription Model.\n- Remove Payment Processing UI (Card Inputs) from Checkout.\n- Implement strict \"Pay Store Directly\" flow.\n- Add Subscription Tiers (Free, Core, Growth).\n- Gate features (Delivery) based on Tier.",
+  "updatedAt":  "2025-12-20T22:09:10.105828Z",
+  "version":  "34"
+}

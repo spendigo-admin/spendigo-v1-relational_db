@@ -92,6 +92,12 @@ const MerchantLayout: React.FC = () => {
                         </NavLink>
                     )}
                     <NavLink
+                        to="/merchant/subscription"
+                        className={({ isActive }) => `flex items-center gap-3 p-3 rounded-lg font-medium transition-colors ${isActive ? 'bg-[var(--brand-primary)] text-white' : 'text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text-main)]'}`}
+                    >
+                        <span>💳</span> Billing & Plan
+                    </NavLink>
+                    <NavLink
                         to="/merchant/settings"
                         className={`flex items-center gap-3 p-3 rounded-lg font-medium transition-colors ${isSettingsActive ? 'bg-[var(--brand-primary)] text-white' : 'text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text-main)]'}`}
                     >

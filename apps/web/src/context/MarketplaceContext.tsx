@@ -7,6 +7,7 @@ interface MarketplaceContextType {
     updateStoreProducts: (storeId: string | number, products: any[]) => void;
     updateStoreFlyer: (storeId: string | number, flyer: any) => void;
     updateStoreDeals: (storeId: string | number, type: 'oneDayOffers' | 'saleItems', deals: any[]) => void;
+    updateStoreTeam: (storeId: string | number, team: any[]) => void;
     getStore: (storeId: string | number) => any;
 }
 
@@ -44,10 +45,17 @@ export const MarketplaceProvider: React.FC<{ children: ReactNode }> = ({ childre
         }));
     };
 
+    const updateStoreTeam = (storeId: string | number, team: any[]) => {
+        setStores(prev => ({
+            ...prev,
+            [storeId]: { ...prev[storeId], team }
+        }));
+    };
+
     const getStore = (storeId: string | number) => stores[storeId];
 
     return (
-        <MarketplaceContext.Provider value={{ stores, updateStore, updateStoreProducts, updateStoreFlyer, updateStoreDeals, getStore }}>
+        <MarketplaceContext.Provider value={{ stores, updateStore, updateStoreProducts, updateStoreFlyer, updateStoreDeals, updateStoreTeam, getStore }}>
             {children}
         </MarketplaceContext.Provider>
     );

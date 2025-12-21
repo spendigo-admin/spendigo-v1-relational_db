@@ -1,0 +1,46 @@
+# Implementation Plan - Consumer Flow Refinement
+
+# Goal Description
+Enhance the Consumer application to be fully functional and navigable, allowing users to:
+1.  Register and Login.
+2.  Browse nearby stores (mocked but navigable).
+3.  View store inventory.
+4.  Add items to a global Cart.
+
+## User Review Required
+> [!NOTE]
+> We will introduce a lightweight `CartContext` to manage state client-side for this MVP.
+
+## Proposed Changes
+
+### State Management
+#### [NEW] [apps/web/src/context/CartContext.tsx](file:///Users/shahbaz/Documents/Spendigo/apps/web/src/context/CartContext.tsx)
+- Providers `addToCart`, `removeFromCart`, `cartItems`.
+
+### Authentication
+#### [NEW] [apps/web/src/pages/consumer/Login.tsx](file:///Users/shahbaz/Documents/Spendigo/apps/web/src/pages/consumer/Login.tsx)
+- Email/Password login UI.
+
+#### [NEW] [apps/web/src/pages/consumer/Register.tsx](file:///Users/shahbaz/Documents/Spendigo/apps/web/src/pages/consumer/Register.tsx)
+- Registration form asking for Name, Email, Address.
+
+### Store Browsing
+#### [MODIFY] [apps/web/src/pages/consumer/StoreList.tsx](file:///Users/shahbaz/Documents/Spendigo/apps/web/src/pages/consumer/StoreList.tsx)
+- Make cards clickable -> Navigate to `/store/:id`.
+
+#### [NEW] [apps/web/src/pages/consumer/StoreDetail.tsx](file:///Users/shahbaz/Documents/Spendigo/apps/web/src/pages/consumer/StoreDetail.tsx)
+- Show store details and list of products.
+
+### Product Interaction
+#### [MODIFY] [apps/web/src/pages/consumer/ProductDetail.tsx](file:///Users/shahbaz/Documents/Spendigo/apps/web/src/pages/consumer/ProductDetail.tsx)
+- Hook up "Add to Cart" button to `CartContext`.
+
+### Routing
+#### [MODIFY] [apps/web/src/App.tsx](file:///Users/shahbaz/Documents/Spendigo/apps/web/src/App.tsx)
+- Add routes: `/login`, `/register`, `/store/:id`.
+
+## Verification Plan
+### Manual Verification
+1.  **Register**: Create user via UI.
+2.  **Shop**: Go to Store List -> Click Store -> Click Product -> Add to Cart.
+3.  **Cart**: Verify item appears in Cart page.

@@ -11,6 +11,7 @@ export interface User {
     storeId?: string;
     storeName?: string;
     merchantRole?: 'OWNER' | 'MANAGER' | 'STAFF' | 'MARKETING';
+    subscriptionTier?: 'free' | 'core' | 'growth';
     // Admin specific
     adminRole?: 'SUPER_ADMIN' | 'SUPPORT' | 'MODERATOR' | 'AUDITOR';
 }
@@ -23,6 +24,8 @@ export type Permission =
     | 'deals:write'
     | 'settings:write'
     | 'team:manage'
+    | 'delivery:manage'
+    | 'analytics:read'
     | 'admin:all'
     | 'admin:users'
     | 'admin:stores'
@@ -30,10 +33,10 @@ export type Permission =
 
 const ROLE_PERMISSIONS: Record<string, Permission[]> = {
     // Merchant Roles
-    OWNER: ['products:write', 'orders:read', 'orders:write', 'flyers:write', 'deals:write', 'settings:write', 'team:manage'],
-    MANAGER: ['products:write', 'orders:read', 'orders:write', 'flyers:write', 'deals:write', 'settings:write'],
-    STAFF: ['orders:read', 'orders:write'],
-    MARKETING: ['flyers:write', 'deals:write'],
+    OWNER: ['products:write', 'orders:read', 'orders:write', 'flyers:write', 'deals:write', 'settings:write', 'team:manage', 'delivery:manage', 'analytics:read'],
+    MANAGER: ['products:write', 'orders:read', 'orders:write', 'flyers:write', 'deals:write', 'settings:write', 'delivery:manage', 'analytics:read'],
+    STAFF: ['orders:read', 'orders:write', 'delivery:manage'],
+    MARKETING: ['flyers:write', 'deals:write', 'analytics:read'],
     // Admin Roles
     SUPER_ADMIN: ['admin:all', 'admin:users', 'admin:stores', 'admin:audit'],
     MODERATOR: ['admin:users', 'admin:stores'],
@@ -52,6 +55,7 @@ interface AuthContextType {
     loading: boolean;
     can: (permission: Permission) => boolean;
     switchRole: (role: MerchantRole | AdminRole) => void;
+    updateSubscription: (tier: 'free' | 'core' | 'growth') => void;
 }
 
 type MerchantRole = 'OWNER' | 'MANAGER' | 'STAFF' | 'MARKETING';
@@ -69,17 +73,17 @@ const MOCK_USERS: Record<string, User> = {
         adminRole: 'SUPER_ADMIN',
         avatar: '🛡️'
     },
-    'freshmart@store.com': { id: 'm1', email: 'freshmart@store.com', name: 'FreshMart Owner', role: 'merchant', storeId: '1', storeName: 'FreshMart', merchantRole: 'OWNER', avatar: '🥬' },
-    'quick@pick.com': { id: 'm2', email: 'quick@pick.com', name: 'QuickPick Staff', role: 'merchant', storeId: '2', storeName: 'QuickPick', merchantRole: 'OWNER', avatar: '🏪' },
-    'metro@express.com': { id: 'm3', email: 'metro@express.com', name: 'Metro Manager', role: 'merchant', storeId: '3', storeName: 'Metro Express', merchantRole: 'OWNER', avatar: '🛒' },
-    'costco@biz.com': { id: 'm4', email: 'costco@biz.com', name: 'Costco Marketing', role: 'merchant', storeId: '4', storeName: 'Costco Business', merchantRole: 'OWNER', avatar: '📦' },
-    'macs@corner.com': { id: 'm5', email: 'macs@corner.com', name: 'Mac Manager', role: 'merchant', storeId: '5', storeName: "Mac's Corner", merchantRole: 'OWNER', avatar: '🏪' },
-    'hasty@mart.com': { id: 'm6', email: 'hasty@mart.com', name: 'Hasty Owner', role: 'merchant', storeId: '6', storeName: 'Hasty Mart', merchantRole: 'OWNER', avatar: '⚡' },
-    'bodega@corner.com': { id: 'm7', email: 'bodega@corner.com', name: 'Bodega Boss', role: 'merchant', storeId: '7', storeName: 'Corner Bodega', merchantRole: 'OWNER', avatar: '🏬' },
-    'green@valley.com': { id: 'm8', email: 'green@valley.com', name: 'Farmer Joe', role: 'merchant', storeId: '8', storeName: 'Green Valley Market', merchantRole: 'OWNER', avatar: '🌽' },
-    'daily@loaf.com': { id: 'm9', email: 'daily@loaf.com', name: 'Baker Bob', role: 'merchant', storeId: '9', storeName: 'The Daily Loaf', merchantRole: 'OWNER', avatar: '🥖' },
-    'butcher@block.com': { id: 'm10', email: 'butcher@block.com', name: 'Butcher Bill', role: 'merchant', storeId: '10', storeName: "The Butcher's Block", merchantRole: 'OWNER', avatar: '🥩' },
-    'book@nook.com': { id: 'm11', email: 'book@nook.com', name: 'Librarian Linda', role: 'merchant', storeId: '11', storeName: 'The Book Nook', merchantRole: 'OWNER', avatar: '📚' },
+    'freshmart@store.com': { id: 'm1', email: 'freshmart@store.com', name: 'FreshMart Owner', role: 'merchant', storeId: '1', storeName: 'FreshMart', merchantRole: 'OWNER', subscriptionTier: 'growth', avatar: '🥬' },
+    'quick@pick.com': { id: 'm2', email: 'quick@pick.com', name: 'QuickPick Staff', role: 'merchant', storeId: '2', storeName: 'QuickPick', merchantRole: 'OWNER', subscriptionTier: 'free', avatar: '🏪' },
+    'metro@express.com': { id: 'm3', email: 'metro@express.com', name: 'Metro Manager', role: 'merchant', storeId: '3', storeName: 'Metro Express', merchantRole: 'OWNER', subscriptionTier: 'core', avatar: '🛒' },
+    'costco@biz.com': { id: 'm4', email: 'costco@biz.com', name: 'Costco Marketing', role: 'merchant', storeId: '4', storeName: 'Costco Business', merchantRole: 'OWNER', subscriptionTier: 'growth', avatar: '📦' },
+    'macs@corner.com': { id: 'm5', email: 'macs@corner.com', name: 'Mac Manager', role: 'merchant', storeId: '5', storeName: "Mac's Corner", merchantRole: 'OWNER', subscriptionTier: 'free', avatar: '🏪' },
+    'hasty@mart.com': { id: 'm6', email: 'hasty@mart.com', name: 'Hasty Owner', role: 'merchant', storeId: '6', storeName: 'Hasty Mart', merchantRole: 'OWNER', subscriptionTier: 'core', avatar: '⚡' },
+    'bodega@corner.com': { id: 'm7', email: 'bodega@corner.com', name: 'Bodega Boss', role: 'merchant', storeId: '7', storeName: 'Corner Bodega', merchantRole: 'OWNER', subscriptionTier: 'free', avatar: '🏬' },
+    'green@valley.com': { id: 'm8', email: 'green@valley.com', name: 'Farmer Joe', role: 'merchant', storeId: '8', storeName: 'Green Valley Market', merchantRole: 'OWNER', subscriptionTier: 'core', avatar: '🌽' },
+    'daily@loaf.com': { id: 'm9', email: 'daily@loaf.com', name: 'Baker Bob', role: 'merchant', storeId: '9', storeName: 'The Daily Loaf', merchantRole: 'OWNER', subscriptionTier: 'free', avatar: '🥖' },
+    'butcher@block.com': { id: 'm10', email: 'butcher@block.com', name: 'Butcher Bill', role: 'merchant', storeId: '10', storeName: "The Butcher's Block", merchantRole: 'OWNER', subscriptionTier: 'core', avatar: '🥩' },
+    'book@nook.com': { id: 'm11', email: 'book@nook.com', name: 'Librarian Linda', role: 'merchant', storeId: '11', storeName: 'The Book Nook', merchantRole: 'OWNER', subscriptionTier: 'free', avatar: '📚' },
     'shopper@example.com': {
         id: 'shop1',
         email: 'shopper@example.com',
@@ -223,6 +227,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         localStorage.setItem('spendigo_user', JSON.stringify(updatedUser));
     };
 
+    const updateSubscription = (tier: 'free' | 'core' | 'growth') => {
+        if (!user || user.role !== 'merchant') return;
+
+        const updatedUser: User = { ...user, subscriptionTier: tier };
+        setUser(updatedUser);
+        localStorage.setItem('spendigo_user', JSON.stringify(updatedUser));
+    };
+
     const value = {
         user,
         isAuthenticated: !!user,
@@ -233,7 +245,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         logout,
         loading,
         can,
-        switchRole
+        switchRole,
+        updateSubscription
     };
 
     return (

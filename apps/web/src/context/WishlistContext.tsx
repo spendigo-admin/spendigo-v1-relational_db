@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { useAuth } from './AuthContext';
 
 export interface WishlistItem {
     id: string;
@@ -19,14 +20,20 @@ interface WishlistContextType {
 const WishlistContext = createContext<WishlistContextType | undefined>(undefined);
 
 export const WishlistProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-    const [items, setItems] = useState<WishlistItem[]>(() => {
-        const saved = localStorage.getItem('spendigo_wishlist');
-        return saved ? JSON.parse(saved) : [];
-    });
+    const { user } = useAuth();
+    const listKey = `spendigo_wishlist_${user?.id || 'guest'}`;
+
+    const [items, setItems] = useState<WishlistItem[]>([]);
+
+    // Reload when user changes
+    useEffect(() => {
+        const saved = localStorage.getItem(listKey);
+        setItems(saved ? JSON.parse(saved) : []);
+    }, [listKey]);
 
     useEffect(() => {
-        localStorage.setItem('spendigo_wishlist', JSON.stringify(items));
-    }, [items]);
+        localStorage.setItem(listKey, JSON.stringify(items));
+    }, [items, listKey]);
 
     const addItem = (item: Omit<WishlistItem, 'addedAt'>) => {
         if (!items.find(i => i.id === item.id)) {

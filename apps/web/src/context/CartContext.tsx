@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { STORE_DATA } from '../data/productData';
+import { useAuth } from './AuthContext';
 
 export interface CartItem {
     id: string;
@@ -33,10 +34,16 @@ interface CartContextType {
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const [items, setItems] = useState<CartItem[]>(() => {
-        const saved = localStorage.getItem('spendigo_cart');
-        return saved ? JSON.parse(saved) : [];
-    });
+    const { user } = useAuth();
+    const cartKey = `spendigo_cart_${user?.id || 'guest'}`;
+
+    const [items, setItems] = useState<CartItem[]>([]);
+
+    // Load Items on Mount or User Change
+    useEffect(() => {
+        const saved = localStorage.getItem(cartKey);
+        setItems(saved ? JSON.parse(saved) : []);
+    }, [cartKey]);
 
     const [notification, setNotification] = useState<{
         message: string;
@@ -45,9 +52,10 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         competitor?: { name: string; price: number };
     } | null>(null);
 
+    // Save Items to Store
     useEffect(() => {
-        localStorage.setItem('spendigo_cart', JSON.stringify(items));
-    }, [items]);
+        localStorage.setItem(cartKey, JSON.stringify(items));
+    }, [items, cartKey]);
 
     const clearNotification = () => setNotification(null);
 

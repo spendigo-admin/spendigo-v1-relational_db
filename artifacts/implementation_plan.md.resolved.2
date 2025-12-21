@@ -1,0 +1,47 @@
+# Implementation Plan - Phase 2: UI/UX Design System
+
+# Goal Description
+Establish a "Premium" and "Canada-First" design system for Spendigo SmartCart. This includes defining the visual tokens (Color, Typography, Spacing), creating the global CSS architecture, and designing high-fidelity wireframes for critical flows (Onboarding, Cart, Checkout).
+**Constraint Checklist**:
+- [x] Vanilla CSS (No Tailwind unless requested - User did NOT request).
+- [x] WCAG 2.1 AA Compliance.
+- [x] Bilingual Support (EN/FR) readiness in layout.
+
+## User Review Required
+> [!IMPORTANT]
+> **Aesthetics**:
+> The prompt requires "Rich Aesthetics", "Vibrant Colors", and "Glassmorphism".
+> I will generate a **Mood Board** image and a **CSS Variables** file to demonstrate this direction.
+
+> [!WARNING]
+> **Accessibility vs Aesthetics**:
+> Glassmorphism can sometimes have contrast issues. I will ensure all text overlays meet the 4.5:1 ratio required by WCAG AA.
+
+## Proposed Changes
+
+### Design System Foundation
+#### [NEW] [apps/web/src/styles/design-system.css](file:///Users/shahbaz/Documents/Spendigo/apps/web/src/styles/design-system.css)
+- CSS Variables for:
+  - `brand-primary`, `brand-secondary` (Vibrant HSL values).
+  - `surface-glass` (Backdrop filter blur).
+  - `spacing-` unit scale.
+  - `font-` tokens (Outfit / Inter).
+
+#### [NEW] [apps/web/src/styles/reset.css](file:///Users/shahbaz/Documents/Spendigo/apps/web/src/styles/reset.css)
+- A modern CSS reset (Josh Comeau's or similar) to ensure consistency.
+
+### Artifacts (Wireframes & Mockups)
+#### [NEW] [docs/WIREFRAMES.md](file:///Users/shahbaz/Documents/Spendigo/docs/WIREFRAMES.md)
+- Mermaid User Flow diagrams for:
+  - Guest Checkout (Email -> Phone -> Split Payment).
+  - Merchant Onboarding (Stripe Connect flow).
+- Embedded mockups (generated via `generate_image` tool if approved) or detailed ASCII/Description layouts.
+
+## Verification Plan
+
+### Automated Verification
+- **CSS Linting**: Ensure valid CSS syntax.
+- **Contrast Check**: I will run a script or tool to verify the hex codes chosen pass WCAG contrast ratios.
+
+### Manual Verification
+- **Visual Review**: User must approve the "Vibe" of the design system.

@@ -1,8 +1,11 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../../styles/design-system.css';
 import { useMarketplace } from '../../context/MarketplaceContext';
 import { useAuth } from '../../context/AuthContext';
+import { Order } from '../../context/OrderContext';
+
+type TimePeriod = 'daily' | 'weekly' | 'monthly';
 
 const MerchantDashboard: React.FC = () => {
     const navigate = useNavigate();
@@ -11,17 +14,173 @@ const MerchantDashboard: React.FC = () => {
     const storeId = user?.storeId || '1';
     const store = getStore(storeId);
 
+    const [orders, setOrders] = useState<Order[]>([]);
+    const [timePeriod, setTimePeriod] = useState<TimePeriod>('daily');
+    const [stats, setStats] = useState({
+        revenue: 0,
+        orderCount: 0,
+        avgOrderValue: 0,
+        revenueGrowth: 0,
+        ordersGrowth: 0
+    });
+    const [chartData, setChartData] = useState<{ label: string; value: number }[]>([]);
+
+    // Load Orders
+    useEffect(() => {
+        const loadOrders = () => {
+            const storeKey = `spendigo_store_orders_${storeId}`;
+            const saved = localStorage.getItem(storeKey);
+            if (saved) {
+                try {
+                    setOrders(JSON.parse(saved));
+                } catch (e) {
+                    console.error("Failed to load orders", e);
+                }
+            }
+        };
+        loadOrders();
+        // Optional: polling or event listener could go here
+    }, [storeId]);
+
+    // Calculate Stats & Chart Data
+    useEffect(() => {
+        const now = new Date();
+        const startOfPeriod = new Date(now);
+        startOfPeriod.setHours(0, 0, 0, 0);
+
+        let previousStart = new Date(startOfPeriod);
+        let previousEnd = new Date(startOfPeriod);
+        let chartBuckets: { label: string; value: number }[] = [];
+
+        // Define Time Windows
+        if (timePeriod === 'daily') {
+            // No adjustment needed for startOfPeriod (Today 00:00)
+            previousStart.setDate(previousStart.getDate() - 1); // Yesterday 00:00
+            previousEnd = new Date(startOfPeriod); // Today 00:00
+
+            // Chart: Hourly (Last 24h or Today's hours?) - Let's do Today's hours 6am-10pm for simplicity or 4h blocks
+            // Use 6 buckets of 4 hours: 0-4, 4-8, 8-12, 12-16, 16-20, 20-24
+            chartBuckets = ['0-4h', '4-8h', '8-12h', '12-16h', '16-20h', '20-24h'].map(l => ({ label: l, value: 0 }));
+
+        } else if (timePeriod === 'weekly') {
+            const day = startOfPeriod.getDay(); // 0 is Sunday
+            const diff = startOfPeriod.getDate() - day + (day === 0 ? -6 : 1); // Monday start
+            startOfPeriod.setDate(diff);
+
+            previousStart = new Date(startOfPeriod);
+            previousStart.setDate(previousStart.getDate() - 7);
+            previousEnd = new Date(startOfPeriod);
+
+            // Chart: Mon-Sun
+            chartBuckets = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(l => ({ label: l, value: 0 }));
+        } else if (timePeriod === 'monthly') {
+            startOfPeriod.setDate(1); // 1st of month
+
+            previousStart = new Date(startOfPeriod);
+            previousStart.setMonth(previousStart.getMonth() - 1);
+            previousEnd = new Date(startOfPeriod);
+
+            // Chart: 4 Weeks
+            chartBuckets = ['Wk 1', 'Wk 2', 'Wk 3', 'Wk 4', 'Wk 5'].map(l => ({ label: l, value: 0 }));
+        }
+
+        // Filter Function
+        const getOrdersInWindow = (start: Date, end: Date) => {
+            return orders.filter(o => {
+                const d = new Date(o.date);
+                return d >= start && d < end;
+            });
+        };
+
+        // Current Stats
+        const currentOrders = orders.filter(o => new Date(o.date) >= startOfPeriod);
+        const currentRevenue = currentOrders
+            .filter(o => o.paymentStatus === 'paid')
+            .reduce((sum, o) => sum + o.total, 0);
+
+        // Previous Stats (for Growth)
+        const prevOrders = getOrdersInWindow(previousStart, previousEnd);
+        const prevRevenue = prevOrders
+            .filter(o => o.paymentStatus === 'paid')
+            .reduce((sum, o) => sum + o.total, 0);
+
+        // Calculate Growth %
+        const calcGrowth = (curr: number, prev: number) => {
+            if (prev === 0) return curr > 0 ? 100 : 0;
+            return ((curr - prev) / prev) * 100;
+        };
+
+        setStats({
+            revenue: currentRevenue,
+            orderCount: currentOrders.length,
+            avgOrderValue: currentOrders.length > 0 ? currentRevenue / currentOrders.length : 0,
+            revenueGrowth: calcGrowth(currentRevenue, prevRevenue),
+            ordersGrowth: calcGrowth(currentOrders.length, prevOrders.length)
+        });
+
+        // Populate Chart Buckets
+        currentOrders.forEach(o => {
+            if (o.paymentStatus !== 'paid') return;
+            const date = new Date(o.date);
+            let bucketIndex = -1;
+
+            if (timePeriod === 'daily') {
+                const hour = date.getHours();
+                bucketIndex = Math.floor(hour / 4);
+            } else if (timePeriod === 'weekly') {
+                const day = date.getDay(); // 0=Sun, 1=Mon
+                bucketIndex = day === 0 ? 6 : day - 1; // Mon=0, Sun=6
+            } else if (timePeriod === 'monthly') {
+                const day = date.getDate();
+                bucketIndex = Math.floor((day - 1) / 7);
+            }
+
+            if (bucketIndex >= 0 && bucketIndex < chartBuckets.length) {
+                chartBuckets[bucketIndex].value += o.total;
+            }
+        });
+        setChartData(chartBuckets);
+
+    }, [orders, timePeriod]);
+
+
     // Dynamic Stats Calculation
     const productCount = store?.products?.length || 0;
     const activeDealsCount = (store?.saleItems?.length || 0) + (store?.oneDayOffers?.length || 0);
-    const flyerStatus = store?.flyer?.title ? 'Active' : 'No Flyer';
 
-    // Mock Revenue Data (Visual only)
-    const stats = [
-        { label: 'Total Revenue', value: '$12,450', change: '+12%', icon: '💰', color: 'bg-green-100 text-green-700' },
-        { label: 'Active Deals', value: activeDealsCount.toString(), change: 'Live Now', icon: '🏷️', color: 'bg-purple-100 text-purple-700' },
-        { label: 'Inventory Items', value: productCount.toString(), change: 'Products', icon: '📦', color: 'bg-blue-100 text-blue-700' },
-        { label: 'Store Rating', value: store?.rating.toString() || '4.8', change: '⭐', icon: '🏆', color: 'bg-yellow-100 text-yellow-700' },
+    const displayStats = [
+        {
+            label: 'Total Revenue',
+            value: `$${stats.revenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+            change: `${stats.revenueGrowth >= 0 ? '+' : ''}${stats.revenueGrowth.toFixed(1)}%`,
+            icon: '💰',
+            color: 'bg-green-100 text-green-700',
+            trendInv: false
+        },
+        {
+            label: 'Orders',
+            value: stats.orderCount.toString(),
+            change: `${stats.ordersGrowth >= 0 ? '+' : ''}${stats.ordersGrowth.toFixed(1)}%`,
+            icon: '🧾',
+            color: 'bg-purple-100 text-purple-700',
+            trendInv: false
+        },
+        {
+            label: 'Avg. Order',
+            value: `$${stats.avgOrderValue.toFixed(2)}`,
+            change: 'n/a',
+            icon: '📊',
+            color: 'bg-blue-100 text-blue-700',
+            trendInv: false
+        },
+        {
+            label: 'Inventory',
+            value: productCount.toString(),
+            change: 'Items',
+            icon: '📦',
+            color: 'bg-yellow-100 text-yellow-700',
+            trendInv: false
+        },
     ];
 
     const quickActions = [
@@ -32,12 +191,15 @@ const MerchantDashboard: React.FC = () => {
         { label: 'Store Settings', icon: '⚙️', path: '/merchant/settings', desc: 'Manage profile & delivery', permission: 'settings:write' },
     ].filter(action => can(action.permission as any));
 
-    // Mock Recent Orders (since Orders are local state in another page)
-    const recentOrders = [
-        { id: '#ORD-8821', customer: 'Sarah Jenkins', items: 'Weekly Groceries (12 items)', total: '$84.50', status: 'Pending', time: '2 mins ago' },
-        { id: '#ORD-8820', customer: 'Mike Ross', items: 'Snacks & Drinks', total: '$22.15', status: 'Processing', time: '15 mins ago' },
-        { id: '#ORD-8819', customer: 'Jessica Pearson', items: 'Office Supplies', total: '$145.00', status: 'Ready', time: '42 mins ago' },
-    ];
+    // Mock Recent Orders (Use real if available, showing first 3)
+    const recentOrdersDisplay = orders.slice(0, 3).map(o => ({
+        id: o.id,
+        customer: o.customerName,
+        items: `${o.items.length} items`,
+        total: `$${o.total.toFixed(2)}`,
+        status: o.status,
+        time: new Date(o.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    }));
 
     return (
         <div className="p-6 animate-fade-in pb-20">
@@ -61,9 +223,27 @@ const MerchantDashboard: React.FC = () => {
                 <div className="absolute bottom-0 left-0 w-48 h-48 bg-white opacity-5 rounded-full translate-y-1/3 -translate-x-1/4"></div>
             </div>
 
+            {/* Time Period Selector */}
+            <div className="flex justify-end mb-4">
+                <div className="inline-flex bg-white border border-[var(--glass-border)] rounded-lg p-1 shadow-sm">
+                    {(['daily', 'weekly', 'monthly'] as const).map(period => (
+                        <button
+                            key={period}
+                            onClick={() => setTimePeriod(period)}
+                            className={`px-4 py-1.5 rounded-md text-sm font-bold capitalize transition-all ${timePeriod === period
+                                ? 'bg-[var(--brand-primary)] text-white shadow-sm'
+                                : 'text-[var(--text-muted)] hover:bg-[var(--surface-1)]'
+                                }`}
+                        >
+                            {period}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
             {/* Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-                {stats.map((stat, idx) => (
+                {displayStats.map((stat, idx) => (
                     <div key={idx} className="bg-white p-5 rounded-xl border border-[var(--glass-border)] shadow-sm hover:shadow-md transition-shadow">
                         <div className="flex justify-between items-start mb-2">
                             <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl ${stat.color}`}>
@@ -114,30 +294,34 @@ const MerchantDashboard: React.FC = () => {
                         <div className="flex justify-between items-center mb-8">
                             <div>
                                 <h2 className="text-xl font-bold text-[var(--text-main)]">Revenue Overview</h2>
-                                <p className="text-sm text-[var(--text-muted)]">Sales performance over the last 7 days</p>
+                                <p className="text-sm text-[var(--text-muted)]">Sales performance visualizer ({timePeriod === 'daily' ? 'Hourly' : timePeriod === 'weekly' ? 'Daily' : 'Weekly'})</p>
                             </div>
-                            <select className="bg-[var(--surface-1)] border border-[var(--glass-border)] text-sm rounded-lg p-2 font-medium outline-none">
-                                <option>Last 7 Days</option>
-                                <option>This Month</option>
-                                <option>This Year</option>
-                            </select>
                         </div>
                         <div className="h-64 flex items-end justify-between gap-3 px-2">
-                            {[40, 65, 45, 80, 55, 90, 75].map((h, i) => (
-                                <div key={i} className="w-full relative group" style={{ height: '100%' }}>
-                                    <div
-                                        className="absolute bottom-0 w-full bg-gradient-to-t from-[var(--brand-primary)] to-purple-400 rounded-t-lg transition-all duration-500 hover:opacity-90"
-                                        style={{ height: `${h}%`, opacity: 0.8 }}
-                                    ></div>
-                                    {/* Tooltip */}
-                                    <div className="absolute bottom-[calc(100%+8px)] left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-lg z-10">
-                                        ${h * 24.5}
+                            {chartData.map((data, i) => {
+                                // Calculate height percentage relative to max value in set, default to 5% if all 0
+                                const maxVal = Math.max(...chartData.map(d => d.value), 100);
+                                const heightPercent = Math.max((data.value / maxVal) * 100, 5);
+
+                                return (
+                                    <div key={i} className="w-full relative group" style={{ height: '100%' }}>
+                                        <div
+                                            className="absolute bottom-0 w-full bg-gradient-to-t from-[var(--brand-primary)] to-purple-400 rounded-t-lg transition-all duration-500 hover:opacity-90"
+                                            style={{ height: `${heightPercent}%`, opacity: data.value > 0 ? 0.8 : 0.2 }}
+                                        ></div>
+                                        {/* Tooltip */}
+                                        <div className="absolute bottom-[calc(100%+8px)] left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-lg z-10">
+                                            ${data.value.toFixed(2)}
+                                            <div className="text-[10px] opacity-60">{data.label}</div>
+                                        </div>
                                     </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                         <div className="flex justify-between mt-4 text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider border-t border-[var(--glass-border)] pt-4">
-                            <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+                            {chartData.map((d, i) => (
+                                <span key={i} className="text-center w-full truncate px-1">{d.label}</span>
+                            ))}
                         </div>
                     </section>
                 </div>
@@ -168,7 +352,7 @@ const MerchantDashboard: React.FC = () => {
                         )}
                     </div>
 
-                    {/* Recent Orders List */}
+                    {/* Recent Orders List (Real Data) */}
                     {can('orders:read') && (
                         <section className="bg-white p-6 rounded-xl border border-[var(--glass-border)] shadow-sm">
                             <div className="flex justify-between items-center mb-4">
@@ -176,10 +360,10 @@ const MerchantDashboard: React.FC = () => {
                                 <button onClick={() => navigate('/merchant/orders')} className="text-sm text-[var(--brand-primary)] font-medium hover:underline">View All</button>
                             </div>
                             <div className="space-y-4">
-                                {recentOrders.map((order, i) => (
+                                {recentOrdersDisplay.length > 0 ? recentOrdersDisplay.map((order, i) => (
                                     <div key={i} className="flex items-center justify-between p-3 hover:bg-[var(--surface-1)] rounded-lg transition-colors border border-transparent hover:border-[var(--glass-border)] cursor-pointer" onClick={() => navigate('/merchant/orders')}>
                                         <div className="flex items-center gap-3">
-                                            <div className={`w-2 h-2 rounded-full ${order.status === 'Pending' ? 'bg-yellow-400' : order.status === 'Processing' ? 'bg-blue-400' : 'bg-green-400'}`}></div>
+                                            <div className={`w-2 h-2 rounded-full ${order.status === 'delivered' ? 'bg-green-400' : 'bg-yellow-400'}`}></div>
                                             <div>
                                                 <div className="font-bold text-sm text-[var(--text-main)]">{order.customer}</div>
                                                 <div className="text-xs text-[var(--text-muted)]">{order.items}</div>
@@ -190,7 +374,11 @@ const MerchantDashboard: React.FC = () => {
                                             <div className="text-[10px] text-[var(--text-muted)] uppercase">{order.time}</div>
                                         </div>
                                     </div>
-                                ))}
+                                )) : (
+                                    <div className="text-center py-6 text-[var(--text-muted)] text-sm">
+                                        No recent orders
+                                    </div>
+                                )}
                             </div>
                         </section>
                     )}

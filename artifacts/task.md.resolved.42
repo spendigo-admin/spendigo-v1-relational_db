@@ -1,0 +1,9 @@
+# Task: Fix SmartCart Wishlist Icons
+
+## Investigation
+- [x] Identify broken image sources
+- [ ] Verify image URLs in [StoreDetail.tsx](file:///Users/shahbaz/Documents/Spendigo/apps/web/src/pages/consumer/StoreDetail.tsx)
+- [ ] Fix broken image URLs
+
+## Verification
+- [ ] Verify fix in browser

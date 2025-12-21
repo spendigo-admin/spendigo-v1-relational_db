@@ -1,0 +1,42 @@
+# Implementation Plan - Notification Persistence
+
+## Goal
+Ensure notifications maintain their 'read' status across browser refreshes and update the notification badge dynamically.
+
+## Proposed Changes
+
+### 1. New Context: `src/context/NotificationContext.tsx`
+- Create a `NotificationProvider` that mimics the existing [CartProvider](file:///Users/shahbaz/Documents/Spendigo/apps/web/src/context/CartContext.tsx#29-154).
+- **State**: `notifications` array.
+- **Initialization**:
+    - Check `localStorage` for saved notifications.
+    - If empty, initialize with the `MOCK_NOTIFICATIONS` (so the user sees something).
+- **Persistence**: `useEffect` to save to `localStorage` on change.
+- **Methods**:
+    - [markAsRead(id)](file:///Users/shahbaz/Documents/Spendigo/apps/web/src/pages/consumer/Notifications.tsx#23-26): Updates a specific notification.
+    - [markAllRead()](file:///Users/shahbaz/Documents/Spendigo/apps/web/src/pages/consumer/Notifications.tsx#27-30): Marks all as read.
+    - `unreadCount`: Derived value for the badge.
+
+### 2. Update [App.tsx](file:///Users/shahbaz/Documents/Spendigo/apps/web/src/App.tsx)
+- Wrap the application (or Consumer routes) in `NotificationProvider`.
+
+### 3. Update [src/pages/consumer/Notifications.tsx](file:///Users/shahbaz/Documents/Spendigo/apps/web/src/pages/consumer/Notifications.tsx)
+- Remove local state and mock data definition.
+- Consume `useNotifications` context.
+- Use context methods for interactions.
+
+### 4. Update [src/layouts/ConsumerLayout.tsx](file:///Users/shahbaz/Documents/Spendigo/apps/web/src/layouts/ConsumerLayout.tsx)
+- Consume `useNotifications`.
+- Replace the static red dot with a conditional check: `unreadCount > 0`.
+- Optionally, display the count if design allows, or just the dot.
+
+## Verification Plan
+
+### Manual Verification
+1.  **Initial Load**: Open app. confirm notifications exist. Badge is visible.
+2.  **Interaction**: Go to Notifications page. Click "Mark all read".
+3.  **State Check**: Badge should disappear immediately.
+4.  **Refresh**: Reload the page.
+5.  **Persistence**:
+    - Badge should STAY gone.
+    - Notifications list should show all items as 'read' (greyed out/no dot).

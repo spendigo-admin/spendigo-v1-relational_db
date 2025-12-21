@@ -1,0 +1,54 @@
+# Task: Mobile Expansion & System Cleanup
+
+## 1. Cleanup & Linting
+- [x] Resolve "Unknown at rule @tailwind" lint warnings in [design-system.css](file:///Users/shahbaz/Documents/Spendigo/apps/web/src/styles/design-system.css)
+- [x] Verify no other build or lint errors exist
+
+## 2. Mobile Expansion (Capacitor)
+- [ ] Check Firebase environment variables configuration for native platforms
+- [ ] Run `npx cap sync` and verify assets are correctly applied
+- [ ] Attempt CocoaPods installation and sync for iOS (if possible)
+
+## 3. Product & Cart Fixes
+- [x] Investigate and fix broken image icons in [SmartCartWishlist.tsx](file:///Users/shahbaz/Documents/Spendigo/apps/web/src/pages/consumer/SmartCartWishlist.tsx)
+- [x] Resolve broken image links in [SmartCartWishlist](file:///Users/shahbaz/Documents/Spendigo/apps/web/src/pages/consumer/SmartCartWishlist.tsx#7-344) component
+- [x] **SmartCart Layout & Savings Refactor**
+    - [x] Implement responsive side-by-side grid layout
+    - [x] Fix sticky summary card
+    - [x] Update savings calculation to use real price comparisons
+    - [x] Fix optimizer selection bug (cheapest store logic)
+- [x] **Product Search**
+    - [x] Enable Header Search Bar
+    - [x] Implement Search Page with dynamic data
+- [x] Audit [StoreDetail.tsx](file:///Users/shahbaz/Documents/Spendigo/apps/web/src/pages/consumer/StoreDetail.tsx) and other data files for broken image URLs (Refactored [ProductDetail.tsx](file:///Users/shahbaz/Documents/Spendigo/apps/web/src/pages/consumer/ProductDetail.tsx) to use real data)
+
+## 4. System Admin Dashboard
+- [x] Implement System Admin Dashboard (`/admin`)
+- [x] Extend System Admin Dashboard
+    - [x] Implement Audit Logs route
+    - [x] Implement Flyer Moderation routed (`/admin`)
+    - [x] Implement Store Management (`/admin/stores`)
+    - [x] Implement Admin Settings (`/admin/settings`)
+- [x] Add basic stats, user management, and store management views
+- [x] Add navigation to Admin Dashboard in the footer or profile menu
+
+## 5. Verification
+- [ ] Run `npm run build` to ensure no regressions
+- [ ] Verify UI on mobile-simulated views (browser)
+- [ ] Verify Admin Dashboard functionality
+
+## 6. Architectural Review & Remediation
+- [x] **Data Isolation (RBAC & Multi-Tenancy)**
+    - [x] Isolate [CartContext](file:///Users/shahbaz/Documents/Spendigo/apps/web/src/context/CartContext.tsx#16-33) (User-specific storage)
+    - [x] Isolate [NotificationContext](file:///Users/shahbaz/Documents/Spendigo/apps/web/src/context/NotificationContext.tsx#24-33) (User-specific storage)
+    - [x] Isolate [WishlistContext](file:///Users/shahbaz/Documents/Spendigo/apps/web/src/context/WishlistContext.tsx#12-19) (User-specific storage)
+- [ ] **Mobile & Performance Polish**
+    - [x] Verify [capacitor.config.ts](file:///Users/shahbaz/Documents/Spendigo/apps/web/capacitor.config.ts) settings applied correctly
+- [ ] Ensure all mock data is dynamic/reloadable
+
+## 7. Order Routing Fix (Consumer -> Merchant)
+- [x] **Dual-Write Architecture (OrderContext)**
+    - [x] Update [addOrder](file:///Users/shahbaz/Documents/Spendigo/apps/web/src/context/OrderContext.tsx#169-193) to write to `spendigo_store_orders_STOREID` in addition to user history.
+- [x] **Merchant Portal Integration**
+    - [x] Update [MerchantOrders](file:///Users/shahbaz/Documents/Spendigo/apps/web/src/pages/merchant/Orders.tsx#6-359) to read from `spendigo_store_orders_STOREID`.
+    - [x] Unify [Order](file:///Users/shahbaz/Documents/Spendigo/apps/web/src/context/OrderContext.tsx#22-37) TypeScript interfaces between context and page.

@@ -1,0 +1,5 @@
+{
+  "artifactType":  "ARTIFACT_TYPE_WALKTHROUGH",
+  "summary":  "Verification for Merchant Payment Status updates.\n- Create \"Pay at Store\" order.\n- Verify Merchant Dashboard shows \"Pay Pending\".\n- Use \"Mark Paid\" button (List & Modal).\n- Verify status updates.",
+  "updatedAt":  "2025-12-21T00:26:40.699536Z"
+}

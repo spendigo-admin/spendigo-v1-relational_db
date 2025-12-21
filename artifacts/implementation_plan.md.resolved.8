@@ -1,0 +1,42 @@
+# Implementation Plan - Phase 6: Verification & Deployment
+
+# Goal Description
+Verify the system's correctness using automated tests and manual walkthroughs, then prepare the deployment pipeline for "Production Launch Readiness". This is the final step before the system is considered "Ready for Executive Review".
+
+## User Review Required
+> [!IMPORTANT]
+> **Test Strategy**:
+> - **Unit Tests**: Jest/Vitest for [FraudEngine](file:///Users/shahbaz/Documents/Spendigo/services/api/src/risk/fraud-engine.ts#23-73), [TaxService](file:///Users/shahbaz/Documents/Spendigo/services/api/src/compliance/tax.ts#27-46), [StripeService](file:///Users/shahbaz/Documents/Spendigo/services/api/src/payment/stripe.ts#15-98).
+> - **End-to-End**: Playwright for the "Guest Checkout" flow.
+> - **Manual Verification**: I will generate a `walkthrough.md` report as proof of testing.
+
+> [!WARNING]
+> **Deployment**:
+> We are deploying to **Firebase Hosting** (Frontend) and **Google Cloud Functions** (Backend).
+> - **Constraint**: We will generate the `firebase.json` and `github-workflows` but NOT execute the actual `firebase deploy` commands as we lack the CLI login in this environment.
+
+## Proposed Changes
+
+### Testing Framework
+#### [NEW] [tests/unit/tax.test.ts](file:///Users/shahbaz/Documents/Spendigo/tests/unit/tax.test.ts)
+- Verify HST (13%) for Ontario.
+- Verify GST (5%) for Alberta.
+
+#### [NEW] [tests/unit/fraud.test.ts](file:///Users/shahbaz/Documents/Spendigo/tests/unit/fraud.test.ts)
+- Verify high velocity triggers `HIGH_RISK`.
+
+### Deployment Config
+#### [NEW] [firebase.json](file:///Users/shahbaz/Documents/Spendigo/firebase.json)
+- Hosting config for `apps/web`.
+- Functions config for `services/api`.
+
+#### [NEW] [.github/workflows/deploy.yml](file:///Users/shahbaz/Documents/Spendigo/.github/workflows/deploy.yml)
+- CI Pipeline: `npm install` -> `npm test` -> `npm run build`.
+
+## Verification Plan
+
+### Automated Verification
+- **Run Tests**: Execute `npm test` (simulated via running the test files directly with a test runner if available, or manual node scripts).
+
+### Manual Verification
+- **Codebase Walkthrough**: I will produce the final `walkthrough.md` artifact summarizing all implemented features linked to the Master Prompt requirements.

@@ -1,0 +1,63 @@
+# Merchant Analytics Verification
+
+Verify the Merchant Dashboard Analytics tracking (Daily, Weekly, Monthly orders and revenue).
+
+## Prerequisites
+- Logged in as Merchant (e.g., `quick@pick.com`).
+
+## 1. Baseline Check
+- **Action**: Navigate to **Dashboard** (`/merchant/dashboard`).
+- **Check**: Verify "Time Period" buttons (Daily, Weekly, Monthly) are visible in the top right of the stats area.
+- **Check**: By default ("daily"), verify "Total Revenue" matches today's sales (likely $0 if no orders today).
+
+## 2. Simulate Data (via Console or Orders Page)
+Since manual date manipulation is hard in UI, use the Browser Console to inject test data:
+
+```javascript
+const storeId = '1'; // or your store ID
+const today = new Date();
+const yesterday = new Date(today); yesterday.setDate(today.getDate() - 1);
+const lastWeek = new Date(today); lastWeek.setDate(today.getDate() - 8);
+
+const mockOrders = [
+  { 
+      id: 'TEST-TODAY', 
+      date: today.toISOString(), 
+      total: 50.00, 
+      paymentStatus: 'paid', // Counted in Revenue
+      items: [{}],
+      customerName: "Test Today" 
+  },
+  { 
+      id: 'TEST-YESTERDAY', 
+      date: yesterday.toISOString(), 
+      total: 30.00, 
+      paymentStatus: 'paid',
+      items: [{}],
+      customerName: "Test Yesterday" 
+  },
+  { 
+      id: 'TEST-LASTWEEK', 
+      date: lastWeek.toISOString(), 
+      total: 100.00, 
+      paymentStatus: 'paid',
+      items: [{}],
+      customerName: "Test Week" 
+  }
+];
+
+localStorage.setItem(`spendigo_store_orders_${storeId}`, JSON.stringify(mockOrders));
+window.location.reload();
+```
+
+## 3. Verify Aggregation
+- **Action**: Selecting **"Daily"** (Today).
+    - **Expected**: Revenue ~$50.00, Orders: 1.
+- **Action**: Selecting **"Weekly"** (This Week).
+    - **Expected**: Revenue ~$80.00 (Today + Yesterday).
+- **Action**: Selecting **"Monthly"** (This Month).
+    - **Expected**: Revenue ~$180.00 (Today + Yesterday + Last Week, assuming same month).
+
+## 4. Verify Payment Status Filtering
+- **Action**: Create an order with `paymentStatus: 'pending'`.
+- **Check**: Verify it counts towards "Orders" count but **NOT** "Total Revenue".

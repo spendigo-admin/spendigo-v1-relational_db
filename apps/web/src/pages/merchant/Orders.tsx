@@ -1,71 +1,43 @@
 import React, { useState, useEffect } from 'react';
 import '../../styles/design-system.css';
 import { useAuth } from '../../context/AuthContext';
-
-// Types
-interface OrderItem {
-    name: string;
-    qty: number;
-    notes?: string;
-}
-
-interface Order {
-    id: string;
-    customer: string;
-    items: OrderItem[];
-    total: number;
-    status: 'new' | 'preparing' | 'ready' | 'completed' | 'cancelled';
-    timePlaced: Date; // Object for timer calc
-    type: 'delivery' | 'pickup';
-    driver?: {
-        name: string;
-        phone: string;
-        plate: string;
-    };
-    address?: string;
-}
-
-// Mock Data
-const INITIAL_ORDERS: Order[] = [
-    {
-        id: 'ORD-1201',
-        customer: 'Sarah Chen',
-        items: [{ name: 'Organic Avocados', qty: 2 }, { name: 'Almond Milk (1L)', qty: 1 }],
-        total: 20.87,
-        status: 'new',
-        timePlaced: new Date(Date.now() - 1000 * 60 * 2), // 2 mins ago
-        type: 'delivery',
-        address: '123 Queen St W, Toronto'
-    },
-    {
-        id: 'ORD-1198',
-        customer: 'Mike Ross',
-        items: [{ name: 'Sourdough Loaf', qty: 1 }, { name: 'Espresso Beans', qty: 1 }],
-        total: 24.50,
-        status: 'preparing',
-        timePlaced: new Date(Date.now() - 1000 * 60 * 12), // 12 mins ago
-        type: 'pickup'
-    },
-    {
-        id: 'ORD-1195',
-        customer: 'Jessica Pearson',
-        items: [{ name: 'Greek Yogurt (500g)', qty: 3 }, { name: 'Bananas', qty: 1 }],
-        total: 18.46,
-        status: 'ready',
-        timePlaced: new Date(Date.now() - 1000 * 60 * 25), // 25 mins ago
-        type: 'delivery',
-        driver: { name: 'James D.', phone: '555-0102', plate: 'AB-1234' },
-        address: '456 King St E, Toronto'
-    },
-];
+import { Order } from '../../context/OrderContext';
 
 const MerchantOrders: React.FC = () => {
-    const { can } = useAuth();
+    const { can, user } = useAuth();
     const hasReadAccess = can('orders:read');
     const hasWriteAccess = can('orders:write');
+    const storeId = user?.storeId || '1'; // Default to 1 if missing
 
-    const [orders, setOrders] = useState<Order[]>(INITIAL_ORDERS);
+    const [orders, setOrders] = useState<Order[]>([]);
     const [viewMode, setViewMode] = useState<'kanban' | 'list'>('kanban');
+
+    // Load Orders for this Store (Poll for real-time feel)
+    useEffect(() => {
+        const loadOrders = () => {
+            const storeKey = `spendigo_store_orders_${storeId}`;
+            const saved = localStorage.getItem(storeKey);
+            if (saved) {
+                setOrders(JSON.parse(saved));
+            } else {
+                setOrders([]);
+            }
+        };
+
+        loadOrders();
+        const interval = setInterval(loadOrders, 3000); // Poll every 3s
+        return () => clearInterval(interval);
+    }, [storeId]);
+
+    const [searchQuery, setSearchQuery] = useState('');
+    const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+    const [now, setNow] = useState(new Date());
+
+    // Timer Tick
+    useEffect(() => {
+        const interval = setInterval(() => setNow(new Date()), 30000); // Update every 30s
+        return () => clearInterval(interval);
+    }, []);
 
     if (!hasReadAccess) {
         return (
@@ -77,60 +49,53 @@ const MerchantOrders: React.FC = () => {
             </div>
         );
     }
-    const [searchQuery, setSearchQuery] = useState('');
-    const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
-    const [now, setNow] = useState(new Date());
-
-    // Timer Tick
-    useEffect(() => {
-        const interval = setInterval(() => setNow(new Date()), 30000); // Update every 30s
-        return () => clearInterval(interval);
-    }, []);
 
     // Filter
     const filteredOrders = orders.filter(o =>
         o.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        o.customer.toLowerCase().includes(searchQuery.toLowerCase())
+        o.customerName.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
     // Helpers
-    const getMinutesElapsed = (date: Date) => Math.floor((now.getTime() - date.getTime()) / 60000);
+    const getMinutesElapsed = (dateStr: string) => {
+        const date = new Date(dateStr);
+        return Math.floor((now.getTime() - date.getTime()) / 60000);
+    };
 
     const getStatusColor = (status: string) => {
         switch (status) {
-            case 'new': return 'bg-blue-100 text-blue-700 border-blue-200';
+            case 'placed': return 'bg-blue-100 text-blue-700 border-blue-200';
             case 'preparing': return 'bg-orange-100 text-orange-700 border-orange-200';
-            case 'ready': return 'bg-green-100 text-green-700 border-green-200';
-            case 'completed': return 'bg-gray-100 text-gray-600 border-gray-200';
+            case 'out_for_delivery': return 'bg-purple-100 text-purple-700 border-purple-200';
+            case 'delivered': return 'bg-green-100 text-green-700 border-green-200';
+            case 'cancelled': return 'bg-red-100 text-red-700 border-red-200';
             default: return 'bg-gray-100 text-gray-600';
         }
     };
 
     const updateStatus = (id: string, newStatus: Order['status']) => {
-        setOrders(prev => prev.map(o => o.id === id ? { ...o, status: newStatus } : o));
+        // Optimistic UI Update
+        const updatedOrders = orders.map(o => o.id === id ? { ...o, status: newStatus } : o);
+        setOrders(updatedOrders);
+
+        // Update Persistence
+        const storeKey = `spendigo_store_orders_${storeId}`;
+        localStorage.setItem(storeKey, JSON.stringify(updatedOrders));
+
         if (selectedOrder?.id === id) {
             setSelectedOrder(prev => prev ? { ...prev, status: newStatus } : null);
         }
     };
 
     const addMockOrder = () => {
-        const newOrder: Order = {
-            id: `ORD-${Math.floor(1000 + Math.random() * 9000)}`,
-            customer: 'New Customer',
-            items: [{ name: 'Random Item', qty: 1 }],
-            total: 9.99,
-            status: 'new',
-            timePlaced: new Date(),
-            type: Math.random() > 0.5 ? 'delivery' : 'pickup',
-            address: '789 Bloor St'
-        };
-        setOrders(prev => [newOrder, ...prev]);
+        alert('Please simulate an order from the Consumer App to see it appear here!');
     };
 
     // Components
     const OrderCard = ({ order }: { order: Order }) => {
-        const elapsed = getMinutesElapsed(order.timePlaced);
-        const isLate = elapsed > 20 && order.status !== 'completed';
+        const elapsed = getMinutesElapsed(order.date);
+        const isLate = elapsed > 20 && order.status !== 'delivered';
+        const isDelivery = !!order.deliveryAddress;
 
         return (
             <div
@@ -144,9 +109,9 @@ const MerchantOrders: React.FC = () => {
                     <div>
                         <div className="font-bold text-[var(--text-main)] flex items-center gap-2">
                             {order.id}
-                            {order.type === 'delivery' ? <span>🛵</span> : <span>🛍️</span>}
+                            {isDelivery ? <span>🛵</span> : <span>🛍️</span>}
                         </div>
-                        <div className="text-xs text-[var(--text-muted)]">{order.customer}</div>
+                        <div className="text-xs text-[var(--text-muted)]">{order.customerName}</div>
                     </div>
                     <div className={`text-xs font-bold px-2 py-1 rounded-lg ${isLate ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-600'}`}>
                         {elapsed}m ago
@@ -156,20 +121,25 @@ const MerchantOrders: React.FC = () => {
                 <div className="space-y-1 mb-3 pl-2 border-l-2 border-transparent group-hover:border-[var(--brand-primary)]/20 transition-all">
                     {order.items.slice(0, 3).map((item, i) => (
                         <div key={i} className="text-sm flex justify-between">
-                            <span><span className="font-bold">{item.qty}x</span> {item.name}</span>
+                            <span><span className="font-bold">{item.quantity}x</span> {item.productName}</span>
                         </div>
                     ))}
                     {order.items.length > 3 && <div className="text-xs text-[var(--text-muted)]">+{order.items.length - 3} more...</div>}
                 </div>
 
-                <div className="flex justify-between items-center pl-2 pt-2 border-t border-[var(--glass-border)]">
-                    <div className="font-bold text-[var(--text-main)]">${order.total.toFixed(2)}</div>
+                <div className="mt-3 pt-3 border-t border-[var(--glass-border)] pl-2">
+                    <div className="flex justify-between items-center mb-2">
+                        <span className="font-bold text-[var(--text-main)]">${order.total.toFixed(2)}</span>
+                        <span className={`text-xs px-2 py-1 rounded-full ${order.paymentStatus === 'paid' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
+                            {order.paymentStatus === 'paid' ? (order.paymentMethod === 'card' ? 'Paid Online' : 'Paid in Store') : 'Pay Pending'}
+                        </span>
+                    </div>
 
                     {/* Quick Actions */}
-                    <div className="flex gap-2">
+                    <div className="flex justify-end gap-2">
                         {hasWriteAccess ? (
                             <>
-                                {order.status === 'new' && (
+                                {order.status === 'placed' && (
                                     <button
                                         onClick={(e) => { e.stopPropagation(); updateStatus(order.id, 'preparing'); }}
                                         className="px-3 py-1 bg-blue-600 text-white text-xs font-bold rounded-md hover:brightness-110"
@@ -179,19 +149,63 @@ const MerchantOrders: React.FC = () => {
                                 )}
                                 {order.status === 'preparing' && (
                                     <button
-                                        onClick={(e) => { e.stopPropagation(); updateStatus(order.id, 'ready'); }}
-                                        className="px-3 py-1 bg-orange-500 text-white text-xs font-bold rounded-md hover:brightness-110"
+                                        onClick={(e) => { e.stopPropagation(); updateStatus(order.id, 'out_for_delivery'); }}
+                                        className="px-3 py-1 bg-purple-500 text-white text-xs font-bold rounded-md hover:brightness-110"
                                     >
                                         Ready
                                     </button>
                                 )}
-                                {order.status === 'ready' && (
-                                    <button
-                                        onClick={(e) => { e.stopPropagation(); updateStatus(order.id, 'completed'); }}
-                                        className="px-3 py-1 bg-green-600 text-white text-xs font-bold rounded-md hover:brightness-110"
-                                    >
-                                        {order.type === 'delivery' ? 'Ship Order' : 'Picked Up'}
-                                    </button>
+                                {order.status === 'out_for_delivery' && (
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+
+                                                const auditEntry = {
+                                                    id: user?.id || 'unknown',
+                                                    name: user?.name || 'Staff',
+                                                    timestamp: new Date().toISOString()
+                                                };
+
+                                                const updatedOrders = orders.map(o => o.id === order.id ? {
+                                                    ...o,
+                                                    status: 'delivered' as const,
+                                                    paymentStatus: 'paid' as const,
+                                                    paymentCollectedBy: o.paymentStatus === 'pending' ? auditEntry : o.paymentCollectedBy
+                                                } : o);
+
+                                                setOrders(updatedOrders);
+                                                localStorage.setItem(`spendigo_store_orders_${storeId}`, JSON.stringify(updatedOrders));
+                                            }}
+                                            className="px-3 py-1 bg-green-600 text-white text-xs font-bold rounded-md hover:brightness-110"
+                                        >
+                                            Complete Order
+                                        </button>
+                                        {order.paymentStatus === 'pending' && (
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    // Update Payment Status with Audit Logic
+                                                    const auditEntry = {
+                                                        id: user?.id || 'unknown',
+                                                        name: user?.name || 'Staff',
+                                                        timestamp: new Date().toISOString()
+                                                    };
+
+                                                    const updatedOrders = orders.map(o => o.id === order.id ? {
+                                                        ...o,
+                                                        paymentStatus: 'paid' as const,
+                                                        paymentCollectedBy: auditEntry
+                                                    } : o);
+                                                    setOrders(updatedOrders);
+                                                    localStorage.setItem(`spendigo_store_orders_${storeId}`, JSON.stringify(updatedOrders));
+                                                }}
+                                                className="px-3 py-1 bg-orange-500 text-white text-xs font-bold rounded-md hover:brightness-110"
+                                            >
+                                                Mark Paid
+                                            </button>
+                                        )}
+                                    </div>
                                 )}
                             </>
                         ) : (
@@ -244,10 +258,10 @@ const MerchantOrders: React.FC = () => {
                 <div className="flex-1 grid grid-cols-4 gap-4 overflow-hidden min-h-0">
                     {/* Columns */}
                     {[
-                        { id: 'new', label: '🔔 New Orders', color: 'border-blue-500' },
+                        { id: 'placed', label: '🔔 New Orders', color: 'border-blue-500' },
                         { id: 'preparing', label: '👨‍🍳 Preparing', color: 'border-orange-500' },
-                        { id: 'ready', label: '🎒 Ready', color: 'border-green-500' },
-                        { id: 'completed', label: '✅ Done (Shipped/Picked Up)', color: 'border-gray-300' }
+                        { id: 'out_for_delivery', label: '🛵 On Route / Ready', color: 'border-purple-500' },
+                        { id: 'delivered', label: '✅ Delivered / Done', color: 'border-green-500' }
                     ].map(col => (
                         <div key={col.id} className="flex flex-col h-full bg-[var(--surface-1)]/50 rounded-xl border border-[var(--glass-border)]">
                             <div className={`p-3 font-bold text-sm border-b-2 bg-white rounded-t-xl ${col.color} flex justify-between`}>
@@ -288,7 +302,7 @@ const MerchantOrders: React.FC = () => {
                             {filteredOrders.map(order => (
                                 <tr key={order.id} onClick={() => setSelectedOrder(order)} className="hover:bg-[var(--surface-1)] cursor-pointer">
                                     <td className="p-4 font-bold">{order.id}</td>
-                                    <td className="p-4">{order.customer}</td>
+                                    <td className="p-4">{order.customerName}</td>
                                     <td className="p-4">
                                         <span className={`px-2 py-1 rounded-full text-xs font-bold border ${getStatusColor(order.status)}`}>
                                             {order.status}
@@ -296,7 +310,7 @@ const MerchantOrders: React.FC = () => {
                                     </td>
                                     <td className="p-4 text-sm text-[var(--text-muted)]">{order.items.length} items</td>
                                     <td className="p-4 font-bold">${order.total.toFixed(2)}</td>
-                                    <td className="p-4 text-sm text-[var(--text-muted)]">{getMinutesElapsed(order.timePlaced)}m</td>
+                                    <td className="p-4 text-sm text-[var(--text-muted)]">{getMinutesElapsed(order.date)}m</td>
                                     <td className="p-4">
                                         <button className="text-[var(--brand-primary)] font-bold text-sm hover:underline">View</button>
                                     </td>
@@ -314,7 +328,7 @@ const MerchantOrders: React.FC = () => {
                         <div className="p-6 border-b border-[var(--glass-border)] flex justify-between items-start bg-[var(--surface-1)]">
                             <div>
                                 <h2 className="text-2xl font-bold text-[var(--text-main)]">{selectedOrder.id}</h2>
-                                <p className="text-sm text-[var(--text-muted)]">{selectedOrder.type === 'delivery' ? '🛵 Delivery' : '🛍️ Pickup'} • {getMinutesElapsed(selectedOrder.timePlaced)}m ago</p>
+                                <p className="text-sm text-[var(--text-muted)]">{selectedOrder.deliveryAddress ? '🛵 Delivery' : '🛍️ Pickup'} • {getMinutesElapsed(selectedOrder.date)}m ago</p>
                             </div>
                             <span className={`px-3 py-1 rounded-full text-sm font-bold border ${getStatusColor(selectedOrder.status)} capitalize`}>
                                 {selectedOrder.status}
@@ -325,14 +339,63 @@ const MerchantOrders: React.FC = () => {
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="text-xs font-bold text-[var(--text-muted)] uppercase">Customer</label>
-                                    <div className="font-medium text-lg">{selectedOrder.customer}</div>
+                                    <div className="font-medium text-lg">{selectedOrder.customerName}</div>
                                     <div className="text-sm text-[var(--text-muted)]">555-0199</div>
                                 </div>
-                                {selectedOrder.type === 'delivery' && (
+                                {selectedOrder.deliveryAddress && (
                                     <div>
                                         <label className="text-xs font-bold text-[var(--text-muted)] uppercase">Delivery To</label>
-                                        <div className="font-medium">{selectedOrder.address}</div>
+                                        <div className="font-medium">{selectedOrder.deliveryAddress.street}</div>
+                                        <div className="text-sm text-[var(--text-muted)]">{selectedOrder.deliveryAddress.city}</div>
                                     </div>
+                                )}
+                            </div>
+                            <div className="flex gap-4 text-xs text-[var(--text-muted)] mt-2">
+                                <div className="flex items-center gap-1">
+                                    <span>🗓️</span>
+                                    <span>{new Date(selectedOrder.date).toLocaleDateString()}</span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                    <span>📦</span>
+                                    <span>{selectedOrder.items.length} Items</span>
+                                </div>
+                                <div className={`flex items-center gap-1 font-medium ${selectedOrder.paymentStatus === 'paid' ? 'text-green-600' : 'text-orange-600'}`}>
+                                    <span>{selectedOrder.paymentMethod === 'card' ? '💳' : '💵'}</span>
+                                    <span>
+                                        {selectedOrder.paymentMethod === 'card'
+                                            ? 'Paid Online'
+                                            : selectedOrder.paymentStatus === 'paid'
+                                                ? 'Paid in Store'
+                                                : 'Pay at Store'
+                                        }
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div className="md:hidden mt-3 pt-3 border-t border-gray-100 flex justify-between items-center">
+                                <span className="font-bold text-[var(--text-main)]">${selectedOrder.total.toFixed(2)}</span>
+                                <div className="flex gap-2">
+                                    {/* Mobile Actions if needed */}
+                                </div>
+                            </div>
+
+
+                            <div className="hidden md:block col-span-3">
+                                <div className="flex items-center gap-2 mb-1">
+                                    <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-xs">👤</div>
+                                    <span className="font-medium text-[var(--text-main)]">{selectedOrder.customerName}</span>
+                                </div>
+                                <div className="text-xs text-[var(--text-muted)] pl-8">
+                                    #{selectedOrder.id}
+                                </div>
+                            </div>
+
+                            <div className="hidden md:flex col-span-2 justify-end items-center gap-2">
+                                <span className="font-bold text-[var(--text-main)]">${selectedOrder.total.toFixed(2)}</span>
+                                {selectedOrder.paymentStatus === 'pending' && (
+                                    <span className="text-[10px] uppercase tracking-wider font-bold text-orange-600 border border-orange-200 bg-orange-50 px-2 py-0.5 rounded-full">
+                                        Collect Payment
+                                    </span>
                                 )}
                             </div>
 
@@ -343,11 +406,11 @@ const MerchantOrders: React.FC = () => {
                                         <div key={i} className="flex justify-between items-center pb-3 border-b border-[var(--glass-border)] last:border-0 last:pb-0">
                                             <div className="flex items-center gap-3">
                                                 <div className="w-8 h-8 rounded bg-white flex items-center justify-center font-bold text-[var(--brand-primary)] border border-[var(--glass-border)]">
-                                                    {item.qty}x
+                                                    {item.quantity}x
                                                 </div>
-                                                <div className="font-medium">{item.name}</div>
+                                                <div className="font-medium">{item.productName}</div>
                                             </div>
-                                            <div className="text-sm font-bold">$Mock</div>
+                                            <div className="text-sm font-bold">${item.price}</div>
                                         </div>
                                     ))}
                                 </div>
@@ -362,20 +425,80 @@ const MerchantOrders: React.FC = () => {
                         <div className="p-6 border-t border-[var(--glass-border)] bg-gray-50 flex gap-3">
                             {hasWriteAccess && (
                                 <>
-                                    {selectedOrder.status === 'new' && (
+                                    {selectedOrder.status === 'placed' && (
                                         <button onClick={() => { updateStatus(selectedOrder.id, 'preparing'); setSelectedOrder(null); }} className="flex-1 py-3 bg-blue-600 text-white font-bold rounded-xl hover:brightness-110 shadow-lg shadow-blue-600/20">
                                             Accept Order
                                         </button>
                                     )}
                                     {selectedOrder.status === 'preparing' && (
-                                        <button onClick={() => { updateStatus(selectedOrder.id, 'ready'); setSelectedOrder(null); }} className="flex-1 py-3 bg-orange-500 text-white font-bold rounded-xl hover:brightness-110 shadow-lg shadow-orange-500/20">
+                                        <button onClick={() => { updateStatus(selectedOrder.id, 'out_for_delivery'); setSelectedOrder(null); }} className="flex-1 py-3 bg-orange-500 text-white font-bold rounded-xl hover:brightness-110 shadow-lg shadow-orange-500/20">
                                             Mark Ready
                                         </button>
                                     )}
-                                    {selectedOrder.status === 'ready' && (
-                                        <button onClick={() => { updateStatus(selectedOrder.id, 'completed'); setSelectedOrder(null); }} className="flex-1 py-3 bg-green-600 text-white font-bold rounded-xl hover:brightness-110 shadow-lg shadow-green-600/20">
-                                            {selectedOrder.type === 'delivery' ? 'Mark as Shipped' : 'Mark as Picked Up'}
+                                    {selectedOrder.status === 'out_for_delivery' && (
+                                        <button onClick={() => {
+                                            // Complete Order AND Mark Paid if needed
+                                            const auditEntry = {
+                                                id: user?.id || 'unknown',
+                                                name: user?.name || 'Staff',
+                                                timestamp: new Date().toISOString()
+                                            };
+
+                                            // Update status and paymentStatus
+                                            const updatedOrders = orders.map(o => o.id === selectedOrder.id ? {
+                                                ...o,
+                                                status: 'delivered' as const,
+                                                paymentStatus: 'paid' as const,
+                                                paymentCollectedBy: o.paymentStatus === 'pending' ? auditEntry : o.paymentCollectedBy
+                                            } : o);
+
+                                            setOrders(updatedOrders);
+                                            localStorage.setItem(`spendigo_store_orders_${storeId}`, JSON.stringify(updatedOrders));
+
+                                            setSelectedOrder(null);
+                                        }} className="flex-1 py-3 bg-green-600 text-white font-bold rounded-xl hover:brightness-110 shadow-lg shadow-green-600/20">
+                                            Complete Order
                                         </button>
+                                    )}
+
+                                    {/* Payment Action */}
+                                    {selectedOrder.paymentStatus === 'pending' && (
+                                        <button
+                                            onClick={() => {
+                                                const auditEntry = {
+                                                    id: user?.id || 'unknown',
+                                                    name: user?.name || 'Staff',
+                                                    timestamp: new Date().toISOString()
+                                                };
+
+                                                const updatedOrders = orders.map(o => o.id === selectedOrder.id ? {
+                                                    ...o,
+                                                    paymentStatus: 'paid' as const,
+                                                    paymentCollectedBy: auditEntry
+                                                } : o);
+
+                                                setOrders(updatedOrders);
+                                                localStorage.setItem(`spendigo_store_orders_${storeId}`, JSON.stringify(updatedOrders));
+
+                                                // Update local state for modal
+                                                setSelectedOrder({
+                                                    ...selectedOrder,
+                                                    paymentStatus: 'paid',
+                                                    paymentCollectedBy: auditEntry
+                                                });
+                                            }}
+                                            className="px-6 py-3 bg-orange-100 text-orange-700 border border-orange-200 font-bold rounded-xl hover:bg-orange-200 transition-colors"
+                                        >
+                                            Mark Paid
+                                        </button>
+                                    )}
+
+                                    {/* Audit Log Display */}
+                                    {selectedOrder.paymentStatus === 'paid' && selectedOrder.paymentCollectedBy && (
+                                        <div className="text-xs text-[var(--text-muted)] bg-gray-50 px-3 py-1 rounded-lg border border-gray-100 flex items-center gap-1">
+                                            <span>✓ Payment collected by <strong>{selectedOrder.paymentCollectedBy.name}</strong></span>
+                                            <span className="opacity-70">at {new Date(selectedOrder.paymentCollectedBy.timestamp).toLocaleTimeString()}</span>
+                                        </div>
                                     )}
                                 </>
                             )}

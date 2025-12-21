@@ -1,43 +1,103 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
+import { useOrders } from '../../context/OrderContext';
+import { useAuth } from '../../context/AuthContext';
 import '../../styles/design-system.css';
 
 const Checkout: React.FC = () => {
     const { items, subtotal, clearCart } = useCart();
+    const { addOrder, profile } = useOrders();
+    const { user } = useAuth();
+    const navigate = useNavigate();
+
+    const [paymentMethod, setPaymentMethod] = useState<'card' | 'in_store'>('in_store');
+    const [isProcessing, setIsProcessing] = useState(false);
+    const [orderComplete, setOrderComplete] = useState(false);
 
     // Group items by store for split payment breakdown
     const groupedItems = items.reduce((acc, item) => {
         if (!acc[item.storeId]) {
-            acc[item.storeId] = { storeName: item.storeName, total: 0 };
+            acc[item.storeId] = { storeName: item.storeName, total: 0, items: [] };
         }
         acc[item.storeId].total += item.price * item.quantity;
+        acc[item.storeId].items.push(item);
         return acc;
-    }, {} as Record<string, { storeName: string; total: number }>);
+    }, {} as Record<string, { storeName: string; total: number; items: any[] }>);
 
-    const serviceFee = 2.00;
     const taxRate = 0.13; // 13% HST Ontario
-    const taxAmount = (subtotal + serviceFee) * taxRate;
-    const grandTotal = subtotal + serviceFee + taxAmount;
+    const taxAmount = subtotal * taxRate;
+    const grandTotal = subtotal + taxAmount; // No Service Fee
 
-    const handlePayment = () => {
-        // In production: Call Stripe API
-        alert('Payment processing would happen here via Stripe Connect');
+    const handlePayment = async () => {
+        setIsProcessing(true);
+
+        // Simulate processing delay
+        await new Promise(resolve => setTimeout(resolve, 1500));
+
+        // Create an order for EACH store (Split Orders)
+        Object.entries(groupedItems).forEach(([storeId, data]) => {
+            addOrder({
+                storeId,
+                storeName: data.storeName,
+                status: 'placed',
+                items: data.items.map(i => ({
+                    productId: i.id,
+                    productName: i.name,
+                    price: i.price,
+                    quantity: i.quantity,
+                    image: i.image
+                })),
+                subtotal: data.total,
+                tax: data.total * taxRate,
+                deliveryFee: 0, // Mock delivery fee
+                total: data.total * (1 + taxRate),
+                paymentMethod: paymentMethod,
+                paymentStatus: paymentMethod === 'card' ? 'paid' : 'pending',
+                deliveryAddress: profile.addresses.find(a => a.isDefault) || profile.addresses[0] || {
+                    id: 'temp', label: 'Home', street: '123 Queen St', city: 'Toronto', province: 'ON', postalCode: 'M5V 2A2', isDefault: true
+                }
+            });
+        });
+
         clearCart();
+        setIsProcessing(false);
+        setOrderComplete(true);
     };
 
-    if (items.length === 0) {
+    if (orderComplete) {
         return (
             <div className="animate-fade-in flex flex-col items-center justify-center min-h-[60vh] px-4 text-center">
                 <div className="text-6xl mb-4">✅</div>
-                <h2 className="text-2xl font-bold text-[var(--text-main)] mb-2">Order Complete!</h2>
-                <p className="text-[var(--text-muted)] mb-6">Thank you for shopping with Spendigo.</p>
-                <Link
-                    to="/"
-                    className="px-6 py-3 bg-[var(--brand-primary)] text-white font-bold rounded-full hover:brightness-110 transition-all"
-                >
-                    Continue Shopping
-                </Link>
+                <h2 className="text-2xl font-bold text-[var(--text-main)] mb-2">Order Placed!</h2>
+                <p className="text-[var(--text-muted)] mb-6">
+                    {paymentMethod === 'in_store'
+                        ? 'Please pay directly at the store or upon delivery.'
+                        : 'Your payment has been processed securely.'}
+                </p>
+                <div className="flex gap-4">
+                    <Link
+                        to="/consumer" // Redirect to Consumer Home
+                        className="px-6 py-3 bg-gray-100 text-[var(--text-main)] font-bold rounded-full hover:bg-gray-200 transition-all"
+                    >
+                        Home
+                    </Link>
+                    <Link
+                        to="/consumer/orders" // Redirect to Order Tracking
+                        className="px-6 py-3 bg-[var(--brand-primary)] text-white font-bold rounded-full hover:brightness-110 transition-all"
+                    >
+                        Track Order
+                    </Link>
+                </div>
+            </div>
+        );
+    }
+
+    if (items.length === 0) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[50vh]">
+                <p className="text-[var(--text-muted)] text-lg mb-4">Your cart is empty.</p>
+                <Link to="/consumer" className="text-[var(--brand-primary)] font-bold hover:underline">Start Shopping</Link>
             </div>
         );
     }
@@ -70,10 +130,6 @@ const Checkout: React.FC = () => {
                             <span className="text-[var(--text-main)]">${subtotal.toFixed(2)}</span>
                         </div>
                         <div className="flex justify-between">
-                            <span className="text-[var(--text-muted)]">Service Fee</span>
-                            <span className="text-[var(--text-main)]">${serviceFee.toFixed(2)}</span>
-                        </div>
-                        <div className="flex justify-between">
                             <span className="text-[var(--text-muted)]">HST (13%)</span>
                             <span className="text-[var(--text-main)]">${taxAmount.toFixed(2)}</span>
                         </div>
@@ -84,38 +140,31 @@ const Checkout: React.FC = () => {
                     </div>
                 </div>
 
-                {/* DELIVERY ADDRESS (Mock) */}
-                <div className="glass-panel p-6 mb-6">
-                    <h2 className="font-bold text-lg text-[var(--text-main)] mb-4">Delivery Address</h2>
-                    <div className="flex items-start gap-3">
-                        <span className="text-2xl">📍</span>
-                        <div>
-                            <p className="font-medium text-[var(--text-main)]">123 Queen Street West</p>
-                            <p className="text-sm text-[var(--text-muted)]">Toronto, ON M5H 2M9</p>
-                            <button className="text-[var(--brand-primary)] text-sm mt-2 hover:underline">Change</button>
-                        </div>
-                    </div>
-                </div>
-
-                {/* PAYMENT METHOD (Mock) */}
+                {/* PAYMENT METHOD (Fixed) */}
                 <div className="glass-panel p-6 mb-6">
                     <h2 className="font-bold text-lg text-[var(--text-main)] mb-4">Payment Method</h2>
-                    <div className="flex items-center gap-3 p-3 bg-[var(--surface-2)] rounded-lg">
-                        <span className="text-2xl">💳</span>
-                        <div className="flex-1">
-                            <p className="font-medium text-[var(--text-main)]">•••• •••• •••• 4242</p>
-                            <p className="text-sm text-[var(--text-muted)]">Expires 12/25</p>
+
+                    <div className="flex items-start gap-3 p-4 rounded-xl border-2 border-[var(--brand-primary)] bg-[var(--brand-primary)]/5">
+                        <div className="w-5 h-5 rounded-full border-2 border-[var(--brand-primary)] mt-1 flex items-center justify-center">
+                            <div className="w-2.5 h-2.5 rounded-full bg-[var(--brand-primary)]" />
                         </div>
-                        <button className="text-[var(--brand-primary)] text-sm hover:underline">Change</button>
+                        <div className="flex-1">
+                            <div className="font-bold text-[var(--text-main)] flex items-center gap-2">
+                                <span>💵</span> Pay at Store / On Delivery
+                            </div>
+                            <p className="text-sm text-[var(--text-muted)] mt-1">
+                                Please pay the merchant directly via Cash, Debit, or Credit upon receipt.
+                                Spendigo does not process payments.
+                            </p>
+                        </div>
                     </div>
                 </div>
 
-                {/* TRANSPARENCY DISCLAIMER */}
+                {/* LEGAL DISCLAIMER */}
                 <div className="bg-[var(--surface-1)] border border-[var(--glass-border)] rounded-lg p-4 mb-6">
                     <p className="text-xs text-[var(--text-muted)] leading-relaxed">
-                        <strong>Split Payment Notice:</strong> Your bank statement will show separate charges for each store
-                        in your order. This is how our Marketplace Facilitator model works to ensure transparent pricing
-                        and direct payment to local merchants.
+                        <strong>Legal Notice:</strong> Spendigo SmartCart is a marketplace facilitator for product discovery and order routing only.
+                        All payments, refunds, taxes, and fulfillment are handled directly by participating stores.
                     </p>
                 </div>
             </div>
@@ -125,10 +174,17 @@ const Checkout: React.FC = () => {
                 <div className="max-w-3xl mx-auto">
                     <button
                         onClick={handlePayment}
-                        className="w-full py-4 bg-[var(--brand-primary)] text-white font-bold text-lg rounded-2xl hover:brightness-110 transition-all active:scale-95 shadow-lg shadow-[var(--brand-primary)]/30 flex items-center justify-center gap-2"
+                        disabled={isProcessing}
+                        className="w-full py-4 bg-[var(--brand-primary)] text-white font-bold text-lg rounded-2xl hover:brightness-110 transition-all active:scale-95 shadow-lg shadow-[var(--brand-primary)]/30 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
                     >
-                        <span>Pay</span>
-                        <span className="font-mono">${grandTotal.toFixed(2)}</span>
+                        {isProcessing ? (
+                            <span>Processing...</span>
+                        ) : (
+                            <>
+                                <span>Place Order</span>
+                                <span className="font-mono">${grandTotal.toFixed(2)}</span>
+                            </>
+                        )}
                     </button>
                 </div>
             </div>

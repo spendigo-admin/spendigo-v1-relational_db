@@ -1,0 +1,51 @@
+# Implementation Plan - Phase 1 Extension: Closing the Gaps
+
+# Goal Description
+Complete the pending "Core Marketplace" execution tasks. This focuses on the Consumer-facing application (Browsing, Cart, Checkout UI) and the robust Order Management System (State Machine) required for the system to actually function end-to-end.
+
+## User Review Required
+> [!IMPORTANT]
+> **Order State Machine**:
+> We need to strictly enforce the state transitions: `CREATED` -> `AUTHORIZED` (Stripe Hold) -> `ACCEPTED` (Store confirms) -> `READY` -> `FULFILLED`.
+> - **Auto-Cancel**: If not accepted in 30 mins (SLA).
+
+> [!WARNING]
+> **Inventory Locking**:
+> When an order is created, we must decrement inventory. If payment fails, we must increment it back (Optimistic locking).
+
+## Proposed Changes
+
+### Consumer App UI
+#### [NEW] [apps/web/src/pages/consumer/StoreList.tsx](file:///Users/shahbaz/Documents/Spendigo/apps/web/src/pages/consumer/StoreList.tsx)
+- Grid of stores with "Distance" badge.
+
+#### [NEW] [apps/web/src/pages/consumer/ProductDetail.tsx](file:///Users/shahbaz/Documents/Spendigo/apps/web/src/pages/consumer/ProductDetail.tsx)
+- "Add to Cart" with quantity.
+- **Mandatory Disclosure**: "Sold by [Store Name]".
+
+#### [NEW] [apps/web/src/pages/consumer/Cart.tsx](file:///Users/shahbaz/Documents/Spendigo/apps/web/src/pages/consumer/Cart.tsx)
+- Split view: Store A items, Store B items.
+- "Optimize Now" button triggering the SmartCart engine.
+
+### Merchant Tools
+#### [NEW] [apps/web/src/pages/merchant/ProductManager.tsx](file:///Users/shahbaz/Documents/Spendigo/apps/web/src/pages/merchant/ProductManager.tsx)
+- Table to add/edit products (Name, Price, Inventory).
+
+#### [NEW] [apps/web/src/pages/merchant/OrderManager.tsx](file:///Users/shahbaz/Documents/Spendigo/apps/web/src/pages/merchant/OrderManager.tsx)
+- Kanban or List view of orders requiring "Acceptance".
+
+### State Machine Service
+#### [NEW] [services/api/src/orders/state-machine.ts](file:///Users/shahbaz/Documents/Spendigo/services/api/src/orders/state-machine.ts)
+- `transitionOrder(orderId, action): Promise<NewStatus>`
+
+## Verification Plan
+
+### Automated Verification
+- **State Test**: Unit test ensuring you cannot go from `CREATED` directly to `FULFILLED` without `ACCEPTED`.
+
+### Manual Verification
+- **End-to-End Flow**:
+  1. Add item to cart.
+  2. Checkout (Simulated).
+  3. Merchant sees order in `OrderManager`.
+  4. Merchant clicks "Accept".

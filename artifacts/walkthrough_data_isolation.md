@@ -1,0 +1,45 @@
+# Walkthrough: User Data Isolation
+
+This document outlines the architectural changes made to ensure data isolation between users in the Spendigo application. Previously, Cart, Notification, and Wishlist data was shared across all users (or persisted in a single local storage key). Now, each user has their own isolated data stores.
+
+## Changes Overview
+
+### 1. Data Contexts Updated
+- **[CartContext](file:///Users/shahbaz/Documents/Spendigo/apps/web/src/context/CartContext.tsx)**: Now uses `spendigo_cart_USERID`
+- **[NotificationContext](file:///Users/shahbaz/Documents/Spendigo/apps/web/src/context/NotificationContext.tsx)**: Now uses `spendigo_notifications_USERID` and `spendigo_notification_prefs_USERID`
+- **[WishlistContext](file:///Users/shahbaz/Documents/Spendigo/apps/web/src/context/WishlistContext.tsx)**: Now uses `spendigo_wishlist_USERID`
+
+### 2. Behavior Change
+- **Guest Mode**: If no user is logged in, data is saved to keys suffixed with `_guest`.
+- **User Mode**: When a user logs in, the app automatically switches to reading/writing keys suffixed with their unique `id`.
+- **Switching**: Logging out and logging in as a different user will instantly swap the displayed data (Cart, Wishlist, Notifications) without needing a page refresh.
+
+## Verification Steps
+
+### Automated Check
+- [x] `npm run build` passed successfully (TS compilation verified).
+
+### Manual Verification Scenarios
+
+**Scenario 1: Cart Isolation**
+1. **Login as User A** (e.g., `consumer@example.com`).
+2. Add an item to the cart (e.g., "Bananas").
+3. **Logout**.
+4. **Login as User B** (or any other user).
+5. Verify the cart is **EMPTY** (or contains only User B's items).
+6. **Logout** and log back in as **User A**.
+7. Verify "Bananas" are still in the cart.
+
+**Scenario 2: Wishlist Persistence**
+1. **Login as User A**.
+2. Go to `SmartCart` and click the "❤️" icon on a product.
+3. Reload the page.
+4. Verify the heart icon remains active and the item is in the wishlist.
+5. **Logout**.
+6. Verify the wishlist logic handles the guest state correctly (either empty or guest specific).
+
+**Scenario 3: Notification Preferences**
+1. **Login as Admin** (`admin@spendigo.com`).
+2. Go to Notifications settings (if available) or toggle a preference.
+3. Check `Application > Local Storage` in DevTools.
+4. Confirm a key exists like `spendigo_notification_prefs_admin_123`.

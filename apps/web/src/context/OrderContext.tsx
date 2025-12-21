@@ -26,10 +26,14 @@ export interface Order {
     items: OrderItem[];
     storeName: string;
     storeId: string;
+    customerName: string;
     subtotal: number;
     tax: number;
     deliveryFee: number;
     total: number;
+    paymentMethod: 'card' | 'in_store';
+    paymentStatus: 'paid' | 'pending';
+    paymentCollectedBy?: { id: string; name: string; timestamp: string };
     estimatedDelivery?: string;
     deliveryAddress: Address;
 }
@@ -45,8 +49,9 @@ export interface UserProfile {
 interface OrderContextType {
     orders: Order[];
     profile: UserProfile;
-    addOrder: (order: Omit<Order, 'id' | 'date'>) => string;
+    addOrder: (order: Omit<Order, 'id' | 'date' | 'customerName'>) => string;
     updateOrderStatus: (orderId: string, status: Order['status']) => void;
+    updatePaymentStatus: (orderId: string, status: Order['paymentStatus'], auditData?: { id: string; name: string; timestamp: string }) => void;
     updateProfile: (updates: Partial<UserProfile>) => void;
     addAddress: (address: Omit<Address, 'id'>) => void;
     updateAddress: (id: string, updates: Partial<Address>) => void;
@@ -75,6 +80,7 @@ const INITIAL_ORDERS: Order[] = [
         status: 'delivered',
         storeName: 'FreshMart',
         storeId: '1',
+        customerName: 'John Doe',
         items: [
             { productId: 'p1', productName: 'Organic Avocados (5pk)', price: 6.99, quantity: 2, image: 'https://images.unsplash.com/photo-1523049673857-eb18f1d7b578?w=100' },
             { productId: 'p2', productName: 'Almond Milk (1L)', price: 4.49, quantity: 1, image: 'https://images.unsplash.com/photo-1550583724-b2692b85b150?w=100' },
@@ -83,6 +89,8 @@ const INITIAL_ORDERS: Order[] = [
         tax: 2.40,
         deliveryFee: 0,
         total: 20.87,
+        paymentMethod: 'card',
+        paymentStatus: 'paid',
         deliveryAddress: INITIAL_PROFILE.addresses[0]
     },
     {
@@ -91,6 +99,7 @@ const INITIAL_ORDERS: Order[] = [
         status: 'out_for_delivery',
         storeName: 'QuickPick',
         storeId: '2',
+        customerName: 'John Doe',
         items: [
             { productId: 'p7', productName: 'Energy Drink (4pk)', price: 9.99, quantity: 1, image: 'https://images.unsplash.com/photo-1622543925917-763c34d1a86e?w=100' },
         ],
@@ -98,43 +107,107 @@ const INITIAL_ORDERS: Order[] = [
         tax: 1.30,
         deliveryFee: 2.99,
         total: 14.28,
+        paymentMethod: 'in_store',
+        paymentStatus: 'pending',
         estimatedDelivery: '2:45 PM',
         deliveryAddress: INITIAL_PROFILE.addresses[0]
     }
 ];
 
+import { useAuth } from './AuthContext';
+
 export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-    const [orders, setOrders] = useState<Order[]>(() => {
-        const saved = localStorage.getItem('spendigo_orders');
-        return saved ? JSON.parse(saved) : INITIAL_ORDERS;
-    });
+    // ... (keep start of component)
+    const { user } = useAuth();
 
-    const [profile, setProfile] = useState<UserProfile>(() => {
-        const saved = localStorage.getItem('spendigo_profile');
-        return saved ? JSON.parse(saved) : INITIAL_PROFILE;
-    });
+    // ... (keep getStorageKeys and state)
+    // Helper to get storage keys based on current user (or guest)
+    const getStorageKeys = () => {
+        const userId = user?.id || 'guest';
+        return {
+            ordersKey: `spendigo_orders_${userId}`,
+            profileKey: `spendigo_profile_${userId}`
+        };
+    };
+
+    const [orders, setOrders] = useState<Order[]>([]);
+    const [profile, setProfile] = useState<UserProfile>(INITIAL_PROFILE);
+
+    // ... (keep load/save effects)
+
+    // Load data when user changes
+    useEffect(() => {
+        const { ordersKey, profileKey } = getStorageKeys();
+
+        const savedOrders = localStorage.getItem(ordersKey);
+        const savedProfile = localStorage.getItem(profileKey);
+
+        if (savedOrders) {
+            setOrders(JSON.parse(savedOrders));
+        } else {
+            // For demo purposes, give "guest" or new users some mock data
+            // In a real app, new users would start empty
+            setOrders(user ? [] : INITIAL_ORDERS);
+        }
+
+        if (savedProfile) {
+            setProfile(JSON.parse(savedProfile));
+        } else {
+            setProfile(user ? {
+                id: user.id,
+                name: user.name,
+                email: user.email,
+                phone: '',
+                addresses: []
+            } : INITIAL_PROFILE);
+        }
+    }, [user]);
+
+    // Save data when it changes
+    useEffect(() => {
+        const { ordersKey } = getStorageKeys();
+        localStorage.setItem(ordersKey, JSON.stringify(orders));
+    }, [orders, user]);
 
     useEffect(() => {
-        localStorage.setItem('spendigo_orders', JSON.stringify(orders));
-    }, [orders]);
+        const { profileKey } = getStorageKeys();
+        localStorage.setItem(profileKey, JSON.stringify(profile));
+    }, [profile, user]);
 
-    useEffect(() => {
-        localStorage.setItem('spendigo_profile', JSON.stringify(profile));
-    }, [profile]);
-
-    const addOrder = (orderData: Omit<Order, 'id' | 'date'>): string => {
+    const addOrder = (orderData: Omit<Order, 'id' | 'date' | 'customerName'>): string => {
         const newOrder: Order = {
             ...orderData,
             id: `ORD-${String(Date.now()).slice(-6)}`,
             date: new Date().toISOString(),
+            customerName: user?.name || profile.name || 'Guest User'
         };
+
+        // 1. Update User's Order History (State + Effect handles persistence)
         setOrders(prev => [newOrder, ...prev]);
+
+        // 2. Dual-Write: Update Store's Inbox (Direct LocalStorage update)
+        // This simulates a backend push to the merchant
+        const storeKey = `spendigo_store_orders_${orderData.storeId}`;
+        try {
+            const existingStoreOrders = JSON.parse(localStorage.getItem(storeKey) || '[]');
+            const updatedStoreOrders = [newOrder, ...existingStoreOrders];
+            localStorage.setItem(storeKey, JSON.stringify(updatedStoreOrders));
+        } catch (e) {
+            console.error('Failed to route order to merchant:', e);
+        }
+
         return newOrder.id;
     };
 
     const updateOrderStatus = (orderId: string, status: Order['status']) => {
         setOrders(prev => prev.map(order =>
             order.id === orderId ? { ...order, status } : order
+        ));
+    };
+
+    const updatePaymentStatus = (orderId: string, status: Order['paymentStatus'], auditData?: { id: string; name: string; timestamp: string }) => {
+        setOrders(prev => prev.map(order =>
+            order.id === orderId ? { ...order, paymentStatus: status, paymentCollectedBy: auditData } : order
         ));
     };
 
@@ -174,6 +247,7 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             profile,
             addOrder,
             updateOrderStatus,
+            updatePaymentStatus,
             updateProfile,
             addAddress,
             updateAddress,

@@ -1,0 +1,18 @@
+# Task: Mobile App Expansion
+
+## Addressing Build Errors
+- [x] Initial research on build errors
+- [/] Fix TypeScript errors in `ProductDetail.tsx`
+- [/] Fix TypeScript errors in `SmartCartWishlist.tsx`
+- [ ] Resolve Firebase configuration issues (environment variables)
+- [ ] Verify build with `npm run build`
+
+## Mobile Expansion Setup
+- [x] Initialize Capacitor in `apps/web`
+- [x] Configure `capacitor.config.ts`
+- [x] Add Capacitor dependencies to `package.json`
+- [ ] Install dependencies (`npm install`)
+- [ ] Build the web application
+- [ ] Add Android platform (`npx cap add android`)
+- [ ] Add iOS platform (`npx cap add ios`)
+- [ ] Implement "Safe Area" padding in `ConsumerLayout.tsx`

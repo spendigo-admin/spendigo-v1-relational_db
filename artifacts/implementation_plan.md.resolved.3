@@ -1,0 +1,49 @@
+# Implementation Plan - Phase 1: Core Marketplace (Auth & Dashboard)
+
+# Goal Description
+Execute the "Core Marketplace" functionality. This includes strict Authentication with RBAC (Admin, Merchant, Consumer), Multi-Factor Authentication (MFA) for privileged roles, and the initial Merchant Onboarding and Dashboard screens.
+
+## User Review Required
+> [!IMPORTANT]
+> **Authentication Provider**:
+> We will use **Firebase Auth** (or Supabase Auth) as per Tech Stack.
+> - **Consumers**: Email/Password, Google Sign-in.
+> - **Merchants**: Email/Password + **Mandatory MFA** (TOTP/SMS).
+> - **Admins**: **Mandatory MFA + IP Whitelisting** (if possible in free tier).
+
+> [!WARNING]
+> **Stripe Connect**:
+> The "Connect" flow requires a real redirect URL. We will use `localhost:3000` for dev, but we need to provision the Stripe Test Mode keys soon.
+
+## Proposed Changes
+
+### Authentication Service
+#### [NEW] [packages/shared/src/auth/types.ts](file:///Users/shahbaz/Documents/Spendigo/packages/shared/src/auth/types.ts)
+- `UserRole` enum (`consumer`, `merchant`, `admin`).
+- `AuthContext` interface.
+
+#### [NEW] [apps/web/src/context/AuthContext.tsx](file:///Users/shahbaz/Documents/Spendigo/apps/web/src/context/AuthContext.tsx)
+- React Provider handling Login, Logout, and Token Refresh.
+- Logic to enforce `is_banned` and `role` checks.
+
+### Merchant Onboarding
+#### [NEW] [apps/web/src/pages/merchant/Onboarding.tsx](file:///Users/shahbaz/Documents/Spendigo/apps/web/src/pages/merchant/Onboarding.tsx)
+- Multi-step form:
+  1. Business Info (Legal Name, Address).
+  2. Disclaimer Acceptance (Marketplace Facilitator Terms).
+  3. Stripe Connect Button (Redirect).
+
+### Merchant Dashboard
+#### [NEW] [apps/web/src/layouts/MerchantLayout.tsx](file:///Users/shahbaz/Documents/Spendigo/apps/web/src/layouts/MerchantLayout.tsx)
+- Sidebar navigation (Products, Orders, Payouts).
+- Header with "Store Status" (Live/Offline) toggle.
+
+## Verification Plan
+
+### Automated Verification
+- **Unit Tests**: Test `AuthContext` for rol- based redirects.
+- **Component Tests**: Render `Onboarding` form and check validation rules.
+
+### Manual Verification
+- **Login Flow**: Verify Consumer login works.
+- **Role Guard**: Verify Consumer cannot access `/merchant/*` routes.

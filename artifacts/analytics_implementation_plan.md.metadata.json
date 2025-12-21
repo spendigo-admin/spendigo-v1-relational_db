@@ -1,0 +1,5 @@
+{
+  "artifactType":  "ARTIFACT_TYPE_IMPLEMENTATION_PLAN",
+  "summary":  "Plan for implementing Merchant Analytics.\n- Calculate real revenue/orders from storage.\n- Update Dashboard UI to show different time periods.",
+  "updatedAt":  "2025-12-21T00:39:47.815339Z"
+}

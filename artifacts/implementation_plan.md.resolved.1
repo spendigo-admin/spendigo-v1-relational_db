@@ -1,0 +1,51 @@
+# Implementation Plan - Phase 1: Data & Infrastructure Design
+
+# Goal Description
+Define the core data models, cloud infrastructure as code (IaC), and API specifications for Spendigo SmartCart. This establishes the "hard constraints" for the system: strict relational schema, Canada-first deployment, and explicit API contracts.
+
+## User Review Required
+> [!IMPORTANT]
+> **Database Schema**:
+> - **Stores**: Multi-tenant architecture considerations.
+> - **Products**: Store-specific inventory vs. Global catalog.
+> - **Orders**: Split-payment support (`transfer_group`).
+
+> [!WARNING]
+> **Terraform State**:
+> We will use local state for now (`terraform.tfstate`) to avoid S3 backend costs initially, but will document how to migrate to a remote backend.
+
+## Proposed Changes
+
+### Database Design
+#### [NEW] [docs/SCHEMA.md](file:///Users/shahbaz/Documents/Spendigo/docs/SCHEMA.md)
+- Entity Relationship Diagram (Mermaid).
+- SQL definitions for core tables: `users`, `stores`, `products`, `inventory`, `orders`, `order_items`, `payments`.
+- **Key Constraint**: `store_id` on almost every table for RLS.
+
+### Infrastructure (Terraform)
+#### [NEW] [infra/main.tf](file:///Users/shahbaz/Documents/Spendigo/infra/main.tf)
+- Provider configuration (Google/AWS).
+- Resource definitions: Serverless Function triggers, Storage Buckets guidelines.
+- **Cost Control**: `lifecycle_rule` for object storage (30 days delete for temp files).
+
+#### [NEW] [infra/variables.tf](file:///Users/shahbaz/Documents/Spendigo/infra/variables.tf)
+- Region variables (default `northamerica-northeast1`).
+
+### API Specification
+#### [NEW] [docs/OPENAPI.yaml](file:///Users/shahbaz/Documents/Spendigo/docs/OPENAPI.yaml)
+- Endpoints:
+  - `POST /auth/login`
+  - `GET /stores`
+  - `GET /stores/{id}/products`
+  - `POST /cart/checkout` (The complex split payment logic)
+  - `POST /webhooks/stripe`
+
+## Verification Plan
+
+### Automated Verification
+- **Validate Terraform**: Run `terraform validate` (if installed) or just ensure syntax is correct.
+- **Validate OpenAPI**: Use a linter (planning to add `spectral` later, for now manual check).
+
+### Manual Verification
+- **Schema Review**: Check against "Marketplace Facilitator" requirements (Seller of Record fields present?).
+- **API Review**: Ensure `checkout` includes `fee` and `stripe_account_id` parameters.

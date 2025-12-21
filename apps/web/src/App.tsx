@@ -29,6 +29,7 @@ import MerchantOrders from './pages/merchant/Orders';
 import MerchantFlyers from './pages/merchant/Flyers';
 import MerchantDeals from './pages/merchant/Deals';
 import MerchantSettings from './pages/merchant/Settings';
+import MerchantSubscription from './pages/merchant/Subscription';
 
 // Admin Pages
 import AdminDashboard from './pages/admin/Dashboard';
@@ -80,6 +81,7 @@ function App() {
                                             <Route path="/merchant/flyers" element={<MerchantFlyers />} />
                                             <Route path="/merchant/deals" element={<MerchantDeals />} />
                                             <Route path="/merchant/settings" element={<MerchantSettings />} />
+                                            <Route path="/merchant/subscription" element={<MerchantSubscription />} />
                                         </Route>
 
                                         {/* ADMIN ROUTES with Layout */}

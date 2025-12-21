@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import '../../styles/design-system.css';
 import { useAuth } from '../../context/AuthContext';
+import { useMarketplace } from '../../context/MarketplaceContext';
 
 // --- TYPES ---
 type MerchantRole = 'OWNER' | 'MANAGER' | 'STAFF' | 'MARKETING';
@@ -49,9 +50,11 @@ const INITIAL_TEAM: TeamMember[] = [
 ];
 
 const MerchantSettings: React.FC = () => {
-    const { can } = useAuth();
+    const { can, user } = useAuth();
+    const { stores, updateStoreTeam } = useMarketplace();
     const hasTeamAccess = can('team:manage');
     const hasSettingsAccess = can('settings:write');
+    const storeId = user?.storeId || '1'; // Fallback to 1 if missing
 
     const [searchParams] = useSearchParams();
     const [activeTab, setActiveTab] = useState<'profile' | 'operations' | 'team' | 'payments' | 'notifications'>((searchParams.get('tab') as any) || 'profile');
@@ -126,10 +129,17 @@ const MerchantSettings: React.FC = () => {
         dailyReports: true
     });
 
-    // Team State
-    const [team, setTeam] = useState<TeamMember[]>(INITIAL_TEAM);
+    // Team State - derived from MarketplaceContext
+    const team = (stores[storeId]?.team as TeamMember[]) || [];
     const [showInviteModal, setShowInviteModal] = useState(false);
     const [inviteForm, setInviteForm] = useState({ name: '', email: '', role: 'STAFF' as MerchantRole });
+
+    // Initialize team if empty (Mock behavior)
+    useEffect(() => {
+        if (!stores[storeId]?.team) {
+            updateStoreTeam(storeId, INITIAL_TEAM);
+        }
+    }, [storeId, stores]);
 
     const handleSave = () => {
         setIsSaving(true);
@@ -149,7 +159,9 @@ const MerchantSettings: React.FC = () => {
             role: inviteForm.role,
             lastActive: 'Pending Invite'
         };
-        setTeam([...team, newMember]);
+        const updatedTeam = [...team, newMember];
+        updateStoreTeam(storeId, updatedTeam); // Persist to context
+
         setShowInviteModal(false);
         setInviteForm({ name: '', email: '', role: 'STAFF' });
         alert(`Invitation sent to ${newMember.email}`);
@@ -157,7 +169,8 @@ const MerchantSettings: React.FC = () => {
 
     const removeMember = (id: string) => {
         if (confirm('Are you sure you want to remove this team member?')) {
-            setTeam(team.filter(t => t.id !== id));
+            const updatedTeam = team.filter((t: TeamMember) => t.id !== id);
+            updateStoreTeam(storeId, updatedTeam); // Persist to context
         }
     };
 
@@ -395,7 +408,19 @@ const MerchantSettings: React.FC = () => {
             {/* Delivery & Fees */}
             <section className="bg-white p-6 rounded-xl border border-[var(--glass-border)] shadow-sm">
                 <h2 className="text-lg font-bold text-[var(--text-main)] mb-4">Delivery Configuration</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                {(!user?.subscriptionTier || user.subscriptionTier === 'free') && (
+                    <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-4 flex items-start gap-3">
+                        <span className="text-2xl">🔒</span>
+                        <div>
+                            <h3 className="font-bold text-orange-800">Delivery is a Premium Feature</h3>
+                            <p className="text-sm text-orange-700 mb-2">Upgrade to Core or Growth plan to enable delivery options.</p>
+                            <a href="/merchant/subscription" className="text-sm font-bold text-orange-900 underline">View Plans & Upgrade</a>
+                        </div>
+                    </div>
+                )}
+
+                <div className={`grid grid-cols-1 md:grid-cols-2 gap-6 relative ${(!user?.subscriptionTier || user.subscriptionTier === 'free') ? 'opacity-50 pointer-events-none select-none grayscale' : ''}`}>
                     <div>
                         <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">Delivery Radius (km)</label>
                         <input

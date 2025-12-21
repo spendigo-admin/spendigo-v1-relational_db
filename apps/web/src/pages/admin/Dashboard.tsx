@@ -2,7 +2,10 @@ import React, { useMemo, useState, useEffect } from 'react';
 import '../../styles/design-system.css';
 import { useMarketplace } from '../../context/MarketplaceContext';
 
+import { useAuth } from '../../context/AuthContext';
+
 const AdminDashboard: React.FC = () => {
+    const { user } = useAuth();
     const { stores } = useMarketplace();
 
     // System Health State (Hybrid: Real Client Metrics + Simulation)
@@ -64,14 +67,15 @@ const AdminDashboard: React.FC = () => {
         const totalProducts = allStores.reduce((acc: number, store: any) => acc + (store.products?.length || 0), 0);
         const totalDeals = allStores.reduce((acc: number, store: any) =>
             acc + (store.oneDayOffers?.length || 0) + (store.saleItems?.length || 0), 0);
-        // Active flyers calculation (valid date)
-        const activeFlyers = allStores.filter((store: any) => store.flyer?.title && new Date(store.flyer.validUntil) > new Date()).length;
+
+        // Simulated Revenue based on scale
+        const estimatedRevenue = (totalProducts * 450) + (totalDeals * 120);
 
         return [
             { label: 'Registered Stores', value: totalStores.toString(), change: '+2 pending approval', icon: '🏪', color: 'bg-blue-100 text-blue-700' },
             { label: 'Total Products', value: totalProducts.toLocaleString(), change: 'Across Platform', icon: '📦', color: 'bg-purple-100 text-purple-700' },
             { label: 'Active Deals', value: totalDeals.toString(), change: 'Live Offers', icon: '🏷️', color: 'bg-orange-100 text-orange-700' },
-            { label: 'Platform Revenue', value: '$45,200', change: '+12% vs last month', icon: '💰', color: 'bg-green-100 text-green-700' } // Mock revenue for now
+            { label: 'Platform Revenue', value: `$${estimatedRevenue.toLocaleString()}`, change: '+12% vs last month', icon: '💰', color: 'bg-green-100 text-green-700' }
         ];
     }, [stores]);
 
@@ -87,7 +91,7 @@ const AdminDashboard: React.FC = () => {
             <div className="mb-8 relative overflow-hidden rounded-2xl bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-primary-dark)] p-8 text-white shadow-lg">
                 <div className="relative z-10 flex justify-between items-center">
                     <div>
-                        <h1 className="text-3xl font-bold mb-2 text-white">🛡️ System Administration</h1>
+                        <h1 className="text-3xl font-bold mb-2 text-white">🛡️ Welcome, {user?.name || 'Administrator'}</h1>
                         <p className="opacity-70 text-lg">Monitoring platform health and merchant activity.</p>
                     </div>
                     <div className="text-right">
