@@ -92,7 +92,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         try {
             const userDoc = await getDoc(doc(db, 'users', uid));
             if (userDoc.exists()) {
-                setUser(userDoc.data() as User);
+                // Ensure ID is set from the document key if missing in data
+                const data = userDoc.data();
+                setUser({ ...data, id: uid } as User);
             } else {
                 console.error('User profile not found in Firestore');
                 setUser(null);

@@ -1,6 +1,7 @@
 import React from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useOrders } from '../../context/OrderContext';
+import { useMarketplace } from '../../context/MarketplaceContext';
 import '../../styles/design-system.css';
 
 const ORDER_STEPS = ['placed', 'preparing', 'out_for_delivery', 'delivered'] as const;
@@ -8,8 +9,19 @@ const ORDER_STEPS = ['placed', 'preparing', 'out_for_delivery', 'delivered'] as 
 const OrderTracking: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const { orders, cancelOrder } = useOrders();
+    const { getStore } = useMarketplace();
+    const [showHelpModal, setShowHelpModal] = React.useState(false);
 
     const order = orders.find(o => o.id === id);
+    const store = order ? getStore(order.storeId) : null;
+
+    // Mock store contact info since it's not in the DB yet
+    const storeContact = {
+        phone: '(555) 123-4567',
+        email: store?.merchantEmail || `support@${store?.name.toLowerCase().replace(/\s/g, '') || 'spendigo'}.com`,
+        address: '123 Market Street, Toronto, ON'
+    };
+
 
     if (!order) {
         return (
@@ -168,9 +180,12 @@ const OrderTracking: React.FC = () => {
 
                 {/* Actions */}
                 <div className="flex gap-3">
-                    <button className="flex-1 py-3 border border-[var(--glass-border)] rounded-xl font-medium text-[var(--text-main)] hover:bg-gray-50 transition-colors">
-                        Contact Store
-                    </button>
+                    <Link
+                        to={`/store/${order.storeId}`}
+                        className="flex-1 py-3 border border-[var(--glass-border)] rounded-xl font-medium text-[var(--text-main)] hover:bg-gray-50 transition-colors flex items-center justify-center"
+                    >
+                        🏪 Visit Store Page
+                    </Link>
                     {order.status === 'placed' && (
                         <button
                             onClick={() => {
@@ -183,11 +198,67 @@ const OrderTracking: React.FC = () => {
                             Cancel Order
                         </button>
                     )}
-                    <button className="flex-1 py-3 border border-[var(--glass-border)] rounded-xl font-medium text-[var(--text-main)] hover:bg-gray-50 transition-colors">
-                        Get Help
+                    <button
+                        onClick={() => setShowHelpModal(true)}
+                        className="flex-1 py-3 border border-[var(--glass-border)] rounded-xl font-medium text-[var(--text-main)] hover:bg-gray-50 transition-colors flex items-center justify-center"
+                    >
+                        ❓ Get Help
                     </button>
                 </div>
             </div>
+            {/* Help Modal */}
+            {showHelpModal && (
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 animate-fade-in" onClick={() => setShowHelpModal(false)}>
+                    <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl" onClick={e => e.stopPropagation()}>
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-xl font-bold">Contact Support</h3>
+                            <button onClick={() => setShowHelpModal(false)} className="text-gray-400 hover:text-gray-600">✕</button>
+                        </div>
+
+                        <div className="space-y-6">
+                            {/* Merchant Section */}
+                            <div>
+                                <h4 className="font-semibold text-[var(--text-main)] mb-2 flex items-center gap-2">
+                                    🏪 Contact Store directly
+                                </h4>
+                                <div className="bg-gray-50 rounded-xl p-4 space-y-3 text-sm">
+                                    <p className="font-medium text-lg">{order.storeName}</p>
+                                    <div className="flex flex-col gap-2">
+                                        <a href={`tel:${storeContact.phone}`} className="flex items-center gap-3 text-[var(--text-main)] hover:text-[var(--brand-primary)]">
+                                            <span className="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-sm">📞</span>
+                                            {storeContact.phone}
+                                        </a>
+                                        <a href={`mailto:${storeContact.email}`} className="flex items-center gap-3 text-[var(--text-main)] hover:text-[var(--brand-primary)]">
+                                            <span className="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-sm">✉️</span>
+                                            {storeContact.email}
+                                        </a>
+                                        <div className="flex items-center gap-3 text-[var(--text-main)]">
+                                            <span className="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-sm">📍</span>
+                                            {storeContact.address}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="relative">
+                                <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-200"></div></div>
+                                <div className="relative flex justify-center text-sm"><span className="px-2 bg-white text-gray-500">Or</span></div>
+                            </div>
+
+                            {/* Platform Section */}
+                            <div>
+                                <h4 className="font-semibold text-[var(--text-main)] mb-2">Platform Support</h4>
+                                <a
+                                    href="mailto:support@spendigo.ca?subject=Help Request Order #${order.id}"
+                                    className="block w-full py-3 bg-[var(--surface-2)] text-[var(--text-main)] font-medium rounded-xl hover:bg-gray-200 transition-colors text-center"
+                                >
+                                    Email Spendigo Support
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

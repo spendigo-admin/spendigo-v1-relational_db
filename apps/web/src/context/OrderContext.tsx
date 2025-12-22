@@ -127,9 +127,12 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         }
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
+            console.log(`OrderContext: Snapshot update. Docs found: ${snapshot.size}`); // Debug
             const fetchedOrders: Order[] = [];
             snapshot.forEach((doc) => {
-                fetchedOrders.push({ id: doc.id, ...doc.data() } as Order);
+                const data = doc.data();
+                // console.log('Fetched Order:', doc.id, data.customerId); // Debug
+                fetchedOrders.push({ id: doc.id, ...data } as Order);
             });
             // Client-side sort since we might lack composite indexes
             fetchedOrders.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -160,16 +163,42 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     const addOrder = async (orderData: Omit<Order, 'id' | 'date' | 'customerName' | 'customerId'>): Promise<string> => {
         if (!user) throw new Error("Must be logged in");
 
-        const newOrderData = {
+        console.log('OrderContext: Creating order for user:', user.id); // Debug
+
+        // Sanitize data: Firestore throws on 'undefined'
+        // Strategy: Explicitly set nullable fields to null if they might be undefined
+        // Then use JSON parse/stringify to strip any other accidental undefineds
+        const rawOrder = {
             ...orderData,
+            deliveryAddress: orderData.deliveryAddress || null,
+            items: orderData.items.map(i => ({
+                ...i,
+                image: i.image || null
+            })),
             date: new Date().toISOString(),
             customerId: user.id,
             customerName: user.name || 'Valued Customer',
-            createdAt: serverTimestamp()
+            createdAt: serverTimestamp() // logic: serverTimestamp() is a special object, it checks out fine in JSON? wait.
         };
 
-        const docRef = await addDoc(collection(db, 'orders'), newOrderData);
-        return docRef.id;
+        // serverTimestamp() is NOT JSON serializable. We must apply it AFTER sanitization.
+        const { createdAt, ...rest } = rawOrder;
+        const sanitizedRest = JSON.parse(JSON.stringify(rest));
+
+        const newOrderData = {
+            ...sanitizedRest,
+            createdAt // Add back the special Firestore object
+        };
+
+        try {
+            console.log('OrderContext: Attempting write with data:', JSON.stringify(newOrderData, null, 2)); // Debug payload
+            const docRef = await addDoc(collection(db, 'orders'), newOrderData);
+            console.log('OrderContext: Order created with ID:', docRef.id);
+            return docRef.id;
+        } catch (e) {
+            console.error('OrderContext: Failed to create order', e);
+            throw e;
+        }
     };
 
     const updateOrderStatus = async (orderId: string, status: Order['status']) => {

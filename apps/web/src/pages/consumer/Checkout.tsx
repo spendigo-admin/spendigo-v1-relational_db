@@ -118,50 +118,62 @@ const Checkout: React.FC = () => {
         }
 
         setIsProcessing(true);
-        await new Promise(resolve => setTimeout(resolve, 1500));
 
-        // Create an order for EACH store
-        Object.entries(groupedItems).forEach(([storeId, data]) => {
-            const method = fulfillmentMethods[storeId] || 'pickup';
-            const store = getStore(storeId);
+        try {
+            // Create an order for EACH store
+            const orderPromises = Object.entries(groupedItems).map(async ([storeId, data]) => {
+                const method = fulfillmentMethods[storeId] || 'pickup';
+                const store = getStore(storeId);
 
-            // Re-calculate fee for this specific order
-            let fee = 0;
-            if (method === 'delivery' && store) {
-                fee = store.deliveryFeeValue !== undefined ? store.deliveryFeeValue : 3.99;
-                const threshold = store.freeDeliveryThreshold || 0;
-                if (threshold > 0 && data.total >= threshold) {
-                    fee = 0;
+                // Re-calculate fee for this specific order
+                let fee = 0;
+                if (method === 'delivery' && store) {
+                    fee = store.deliveryFeeValue !== undefined ? store.deliveryFeeValue : 3.99;
+                    const threshold = store.freeDeliveryThreshold || 0;
+                    if (threshold > 0 && data.total >= threshold) {
+                        fee = 0;
+                    }
                 }
-            }
 
-            addOrder({
-                storeId,
-                storeName: data.storeName,
-                status: 'placed',
-                items: data.items.map(i => ({
-                    productId: i.id,
-                    productName: i.name,
-                    price: i.price,
-                    quantity: i.quantity,
-                    image: i.image
-                })),
-                subtotal: data.total,
-                tax: data.total * taxRate,
-                deliveryFee: fee,
-                total: data.total + (data.total * taxRate) + fee,
-                paymentMethod: 'in_store', // Forced
-                paymentStatus: 'pending', // Forced
-                deliveryAddress: method === 'delivery'
-                    ? (profile.addresses.find(a => a.isDefault) || profile.addresses[0])
-                    : undefined // No address for pickup
+                console.log(`Submitting order for Store ${storeId}`); // Debug log
+
+                await addOrder({
+                    storeId,
+                    storeName: data.storeName,
+                    status: 'placed',
+                    items: data.items.map(i => ({
+                        productId: i.id,
+                        productName: i.name,
+                        price: i.price,
+                        quantity: i.quantity,
+                        image: i.image
+                    })),
+                    subtotal: data.total,
+                    tax: data.total * taxRate,
+                    deliveryFee: fee,
+                    total: data.total + (data.total * taxRate) + fee,
+                    paymentMethod: 'in_store', // Forced
+                    paymentStatus: 'pending', // Forced
+                    deliveryAddress: method === 'delivery'
+                        ? (profile.addresses.find(a => a.isDefault) || profile.addresses[0])
+                        : undefined // No address for pickup
+                });
             });
-        });
 
-        clearCart();
-        setOrderComplete(true);
-        setIsProcessing(false);
-        logEvent('checkout_completed', { total_amount: grandTotal, num_stores: Object.keys(groupedItems).length });
+            await Promise.all(orderPromises);
+            console.log('All orders submitted successfully');
+
+            clearCart();
+            setOrderComplete(true);
+            logEvent('checkout_completed', { total_amount: grandTotal, num_stores: Object.keys(groupedItems).length });
+
+        } catch (err: any) {
+            console.error('Checkout failed:', err);
+            // Show detailed error
+            alert(`Failed to place order: ${err.message || 'Unknown error'}`);
+        } finally {
+            setIsProcessing(false);
+        }
     };
 
     if (orderComplete) {
