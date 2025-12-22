@@ -11,6 +11,7 @@ export const STORE_DATA: Record<string, any> = {
         deliveryTime: '25-35 min',
         deliveryFee: 'Free over $35',
         distance: '0.4 km',
+        subscriptionTier: 'growth',
         tags: ['Grocery', 'Organic'],
         categories: ['All', 'Fresh Produce', 'Dairy', 'Bakery', 'Pantry'],
         flyer: {
@@ -55,6 +56,7 @@ export const STORE_DATA: Record<string, any> = {
         deliveryTime: '15-25 min',
         deliveryFee: '$2.99',
         distance: '0.3 km',
+        subscriptionTier: 'free',
         tags: ['Convenience', '24/7'],
         categories: ['All', 'Snacks', 'Drinks', 'Essentials'],
         flyer: {
@@ -102,6 +104,7 @@ export const STORE_DATA: Record<string, any> = {
         deliveryTime: '30-45 min',
         deliveryFee: 'Free over $50',
         distance: '1.2 km',
+        subscriptionTier: 'core',
         tags: ['Grocery', 'Butcher'],
         categories: ['All', 'Meat', 'Seafood', 'Frozen', 'Dairy'],
         flyer: {
@@ -148,6 +151,7 @@ export const STORE_DATA: Record<string, any> = {
         deliveryTime: '45-60 min',
         deliveryFee: '$4.99',
         distance: '3.5 km',
+        subscriptionTier: 'growth',
         tags: ['Wholesale', 'Bulk'],
         categories: ['All', 'Bulk', 'Office', 'Cleaning'],
         flyer: {
@@ -182,6 +186,7 @@ export const STORE_DATA: Record<string, any> = {
         deliveryTime: '10-20 min',
         deliveryFee: '$1.99',
         distance: '0.2 km',
+        subscriptionTier: 'free',
         tags: ['Convenience', 'Local'],
         categories: ['All', 'Snacks', 'Drinks', 'Tobacco', 'Lottery'],
         flyer: {
@@ -218,6 +223,7 @@ export const STORE_DATA: Record<string, any> = {
         deliveryTime: '10-15 min',
         deliveryFee: '$1.49',
         distance: '0.5 km',
+        subscriptionTier: 'core',
         tags: ['Convenience', '24/7'],
         categories: ['All', 'Snacks', 'Drinks', 'Candy', 'Essentials'],
         flyer: {
@@ -256,6 +262,7 @@ export const STORE_DATA: Record<string, any> = {
         deliveryTime: '10-20 min',
         deliveryFee: '$1.99',
         distance: '0.3 km',
+        subscriptionTier: 'free',
         tags: ['Convenience', 'Local'],
         categories: ['All', 'Deli', 'Drinks', 'Snacks', 'Grocery'],
         flyer: {
@@ -294,6 +301,7 @@ export const STORE_DATA: Record<string, any> = {
         deliveryTime: '30-45 min',
         deliveryFee: '$3.99',
         distance: '2.0 km',
+        subscriptionTier: 'core',
         tags: ['Organic', 'Farmers Market'],
         categories: ['All', 'Produce', 'Honey', 'Preserves'],
         flyer: {
@@ -329,6 +337,7 @@ export const STORE_DATA: Record<string, any> = {
         deliveryTime: '20-30 min',
         deliveryFee: '$2.49',
         distance: '0.8 km',
+        subscriptionTier: 'free',
         tags: ['Bakery', 'Coffee'],
         categories: ['All', 'Bread', 'Pastries', 'Coffee'],
         flyer: {
@@ -362,6 +371,7 @@ export const STORE_DATA: Record<string, any> = {
         deliveryTime: '25-40 min',
         deliveryFee: '$4.99',
         distance: '1.5 km',
+        subscriptionTier: 'core',
         tags: ['Butcher', 'Premium'],
         categories: ['All', 'Beef', 'Chicken', 'Pork', 'Sausages'],
         flyer: {
@@ -391,6 +401,7 @@ export const STORE_DATA: Record<string, any> = {
         deliveryTime: '40-50 min',
         deliveryFee: '$2.99',
         distance: '2.0 km',
+        subscriptionTier: 'free',
         tags: ['Books', 'Gifts'],
         categories: ['All', 'Fiction', 'Non-Fiction', 'Kids', 'Gifts'],
         flyer: {

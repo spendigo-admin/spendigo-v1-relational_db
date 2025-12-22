@@ -7,7 +7,7 @@ const ORDER_STEPS = ['placed', 'preparing', 'out_for_delivery', 'delivered'] as 
 
 const OrderTracking: React.FC = () => {
     const { id } = useParams<{ id: string }>();
-    const { orders } = useOrders();
+    const { orders, cancelOrder } = useOrders();
 
     const order = orders.find(o => o.id === id);
 
@@ -84,8 +84,8 @@ const OrderTracking: React.FC = () => {
                                 return (
                                     <div key={step} className="flex items-start gap-4">
                                         <div className={`relative z-10 w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold transition-all ${isCompleted ? 'bg-[var(--brand-primary)] text-white' :
-                                                isCurrent ? 'bg-[var(--brand-primary)] text-white ring-4 ring-[var(--brand-primary)]/20' :
-                                                    'bg-[var(--surface-2)] text-[var(--text-muted)]'
+                                            isCurrent ? 'bg-[var(--brand-primary)] text-white ring-4 ring-[var(--brand-primary)]/20' :
+                                                'bg-[var(--surface-2)] text-[var(--text-muted)]'
                                             }`}>
                                             {getStepIcon(step, isCompleted, isCurrent)}
                                         </div>
@@ -124,11 +124,23 @@ const OrderTracking: React.FC = () => {
                     </div>
                 </div>
 
-                {/* Delivery Address */}
+                {/* Delivery Address or Pickup Info */}
                 <div className="bg-white rounded-xl border border-[var(--glass-border)] p-4">
-                    <h3 className="font-bold text-[var(--text-main)] mb-2">Delivery Address</h3>
-                    <p className="text-sm text-[var(--text-muted)]">{order.deliveryAddress.street}</p>
-                    <p className="text-sm text-[var(--text-muted)]">{order.deliveryAddress.city}, {order.deliveryAddress.province} {order.deliveryAddress.postalCode}</p>
+                    <h3 className="font-bold text-[var(--text-main)] mb-2">{order.deliveryAddress ? 'Delivery Address' : 'Fulfillment Method'}</h3>
+                    {order.deliveryAddress ? (
+                        <>
+                            <p className="text-sm text-[var(--text-muted)]">{order.deliveryAddress.street}</p>
+                            <p className="text-sm text-[var(--text-muted)]">{order.deliveryAddress.city}, {order.deliveryAddress.province} {order.deliveryAddress.postalCode}</p>
+                        </>
+                    ) : (
+                        <div className="flex items-center gap-2 text-[var(--text-main)]">
+                            <span className="text-xl">🛍️</span>
+                            <div>
+                                <p className="font-medium">Store Pickup</p>
+                                <p className="text-xs text-[var(--text-muted)]">Please pick up your order at {order.storeName}.</p>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* Price Breakdown */}
@@ -156,10 +168,22 @@ const OrderTracking: React.FC = () => {
 
                 {/* Actions */}
                 <div className="flex gap-3">
-                    <button className="flex-1 py-3 border border-[var(--glass-border)] rounded-xl font-medium text-[var(--text-main)]">
+                    <button className="flex-1 py-3 border border-[var(--glass-border)] rounded-xl font-medium text-[var(--text-main)] hover:bg-gray-50 transition-colors">
                         Contact Store
                     </button>
-                    <button className="flex-1 py-3 border border-[var(--glass-border)] rounded-xl font-medium text-[var(--text-main)]">
+                    {order.status === 'placed' && (
+                        <button
+                            onClick={() => {
+                                if (window.confirm('Are you sure you want to cancel this order?')) {
+                                    cancelOrder(order.id);
+                                }
+                            }}
+                            className="flex-1 py-3 border border-red-200 text-red-600 bg-red-50 rounded-xl font-bold hover:bg-red-100 transition-colors"
+                        >
+                            Cancel Order
+                        </button>
+                    )}
+                    <button className="flex-1 py-3 border border-[var(--glass-border)] rounded-xl font-medium text-[var(--text-main)] hover:bg-gray-50 transition-colors">
                         Get Help
                     </button>
                 </div>

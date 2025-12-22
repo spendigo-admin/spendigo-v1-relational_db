@@ -15,6 +15,26 @@ const MerchantLayout: React.FC = () => {
         setIsSidebarOpen(false);
     }, [location]);
 
+    // STRICT SECURITY CHECK
+    React.useEffect(() => {
+        if (!user) {
+            // Not logged in -> Login
+            window.location.href = '/login?returnUrl=' + encodeURIComponent(location.pathname);
+            return;
+        }
+
+        if (user.role !== 'merchant') {
+            // Logged in but WRONG role -> Home
+            // using window.location to force full reload/redirect out of bad state
+            window.location.href = '/';
+        }
+    }, [user, location.pathname]);
+
+    // Don't render content if unauthorized (flicker protection)
+    if (!user || user.role !== 'merchant') {
+        return null;
+    }
+
     const isTeamActive = location.pathname === '/merchant/settings' && currentTab === 'team';
     const isSettingsActive = location.pathname === '/merchant/settings' && currentTab !== 'team';
 
@@ -107,6 +127,7 @@ const MerchantLayout: React.FC = () => {
 
                 <div className="border-t border-[var(--glass-border)] my-2 mx-4"></div>
 
+                {/* 
                 <nav className="space-y-1 px-4">
                     <NavLink
                         to="/"
@@ -114,7 +135,8 @@ const MerchantLayout: React.FC = () => {
                     >
                         <span>🏠</span> Back to Spendigo
                     </NavLink>
-                </nav>
+                </nav> 
+                */}
 
                 <div className="border-t border-[var(--glass-border)] pt-4 mt-auto p-4 pb-safe">
                     <div className="flex items-center gap-2 mb-2">
@@ -127,7 +149,10 @@ const MerchantLayout: React.FC = () => {
                             <p className="text-xs text-[var(--text-muted)] truncate max-w-[150px]">{user?.email}</p>
                         </div>
                         <button onClick={logout} className="text-xs text-red-500 hover:text-red-700 font-bold" title="Logout">
-                            🚪
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.36 6.64a9 9 0 11-12.73 0" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 2v10" />
+                            </svg>
                         </button>
                     </div>
                 </div>

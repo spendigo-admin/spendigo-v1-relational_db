@@ -14,6 +14,22 @@ const AdminLayout: React.FC = () => {
         setIsSidebarOpen(false);
     }, [location]);
 
+    // STRICT SECURITY CHECK
+    React.useEffect(() => {
+        if (!user) {
+            window.location.href = '/login?returnUrl=' + encodeURIComponent(location.pathname);
+            return;
+        }
+
+        if (user.role !== 'admin') {
+            window.location.href = '/';
+        }
+    }, [user, location.pathname]);
+
+    if (!user || user.role !== 'admin') {
+        return null;
+    }
+
     const menuItems = [
         { icon: '📊', label: 'Dashboard', path: '/admin/dashboard' },
         { icon: '👥', label: 'Users', path: '/admin/users' },
@@ -74,13 +90,15 @@ const AdminLayout: React.FC = () => {
 
                     <div className="border-t border-[var(--glass-border)] my-2 mx-4"></div>
 
+                    {/* 
                     <Link
                         to="/"
                         className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-[var(--text-muted)] hover:bg-[var(--surface-1)] hover:text-[var(--text-main)] transition-colors"
                     >
                         <span className="text-lg">🏠</span>
                         Back to Spendigo
-                    </Link>
+                    </Link> 
+                    */}
                 </nav>
 
                 {/* Footer User Profile */}
@@ -94,7 +112,10 @@ const AdminLayout: React.FC = () => {
                             <p className="text-xs text-[var(--text-muted)] truncate">{user?.email}</p>
                         </div>
                         <button onClick={handleLogout} className="text-[var(--text-muted)] hover:text-red-500">
-                            🚪
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.36 6.64a9 9 0 11-12.73 0" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 2v10" />
+                            </svg>
                         </button>
                     </div>
                 </div>

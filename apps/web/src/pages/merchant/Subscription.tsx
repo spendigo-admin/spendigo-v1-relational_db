@@ -55,6 +55,8 @@ const Subscription: React.FC = () => {
         }
     ];
 
+    const isViewOnly = user?.merchantRole === 'STAFF';
+
     return (
         <div className="p-6 h-[calc(100vh-64px)] overflow-y-auto animate-fade-in">
             <div className="max-w-6xl mx-auto">
@@ -62,6 +64,13 @@ const Subscription: React.FC = () => {
                     <h1 className="text-3xl font-bold text-[var(--text-main)] mb-2">Store Subscription</h1>
                     <p className="text-[var(--text-muted)]">Choose the plan that fits your business needs. Upgrade or downgrade anytime.</p>
                 </div>
+
+                {isViewOnly && (
+                    <div className="mb-8 p-4 bg-orange-50 border border-orange-200 rounded-lg flex items-center justify-center gap-2 text-orange-800">
+                        <span className="text-xl">🔒</span>
+                        <span className="font-medium">Subscription management is restricted to Owners and Managers. Contact your administrator to change plans.</span>
+                    </div>
+                )}
 
                 <div className="grid md:grid-cols-3 gap-6">
                     {tiers.map((tier) => (
@@ -85,13 +94,15 @@ const Subscription: React.FC = () => {
 
                             <button
                                 onClick={() => updateSubscription(tier.id as any)}
-                                disabled={currentTier === tier.id}
+                                disabled={currentTier === tier.id || isViewOnly}
                                 className={`w-full py-3 rounded-lg font-bold mb-6 transition-all ${currentTier === tier.id
-                                        ? 'bg-green-100 text-green-700 cursor-default'
+                                    ? 'bg-green-100 text-green-700 cursor-default'
+                                    : isViewOnly
+                                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                                         : 'bg-[var(--brand-primary)] text-white hover:brightness-110'
                                     }`}
                             >
-                                {currentTier === tier.id ? 'Current Plan' : 'Switch Plan'}
+                                {currentTier === tier.id ? 'Current Plan' : isViewOnly ? 'Contact Owner' : 'Switch Plan'}
                             </button>
 
                             <div className="space-y-3">

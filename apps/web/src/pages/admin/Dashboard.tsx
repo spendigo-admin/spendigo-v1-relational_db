@@ -92,7 +92,7 @@ const AdminDashboard: React.FC = () => {
                 <div className="relative z-10 flex justify-between items-center">
                     <div>
                         <h1 className="text-3xl font-bold mb-2 text-white">🛡️ Welcome, {user?.name || 'Administrator'}</h1>
-                        <p className="opacity-70 text-lg">Monitoring platform health and merchant activity.</p>
+                        <p className="text-blue-100 text-lg font-medium">Monitoring platform health and merchant activity.</p>
                     </div>
                     <div className="text-right">
                         <div className="text-sm opacity-60 uppercase tracking-wider font-medium">System Status</div>

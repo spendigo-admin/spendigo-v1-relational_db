@@ -51,7 +51,7 @@ const INITIAL_TEAM: TeamMember[] = [
 
 const MerchantSettings: React.FC = () => {
     const { can, user } = useAuth();
-    const { stores, updateStoreTeam } = useMarketplace();
+    const { stores, updateStore, updateStoreTeam } = useMarketplace();
     const hasTeamAccess = can('team:manage');
     const hasSettingsAccess = can('settings:write');
     const storeId = user?.storeId || '1'; // Fallback to 1 if missing
@@ -95,6 +95,7 @@ const MerchantSettings: React.FC = () => {
         deliveryFee: 3.99,
         freeDeliveryThreshold: 50.00,
         pickupEnabled: true,
+        defaultPrepTime: 20,
         autoAcceptOrders: false,
         taxRate: 13
     });
@@ -129,6 +130,37 @@ const MerchantSettings: React.FC = () => {
         dailyReports: true
     });
 
+    // Initialize state from Context
+    useEffect(() => {
+        const store = stores[storeId];
+        if (store) {
+            setStoreInfo({
+                name: store.name || '',
+                tagline: store.tagline || '',
+                phone: store.phone || '',
+                email: store.email || '',
+                address: store.address || '',
+                description: store.description || '',
+                website: store.website || '',
+                logoUrl: store.logoUrl || store.logo || '', // Handle emoji vs url
+                coverUrl: store.image || ''
+            });
+
+            setOperations({
+                deliveryRadiusKm: store.deliveryRadiusKm || 5,
+                minOrder: store.minDeliveryOrder || 0,
+                deliveryFee: store.deliveryFeeValue || 3.99, // New numeric field
+                freeDeliveryThreshold: store.freeDeliveryThreshold || 0,
+                pickupEnabled: store.pickupEnabled !== false, // Default true
+                defaultPrepTime: store.defaultPrepTime || 20,
+                autoAcceptOrders: store.autoAcceptOrders || false,
+                taxRate: store.taxRate || 13
+            });
+
+            // If team is managed by context, we load it there (already done below)
+        }
+    }, [storeId, stores]); // Re-run if store updates (e.g. init)
+
     // Team State - derived from MarketplaceContext
     const team = (stores[storeId]?.team as TeamMember[]) || [];
     const [showInviteModal, setShowInviteModal] = useState(false);
@@ -139,15 +171,47 @@ const MerchantSettings: React.FC = () => {
         if (!stores[storeId]?.team) {
             updateStoreTeam(storeId, INITIAL_TEAM);
         }
-    }, [storeId, stores]);
+    }, [storeId]); // Removed stores dependency to avoid loop
 
     const handleSave = () => {
         setIsSaving(true);
-        // Simulate API call
+
+        // Construct the update object
+        // We calculate the display string for backward compatibility
+        let displayFee = `$${operations.deliveryFee.toFixed(2)}`;
+        if (operations.freeDeliveryThreshold > 0) {
+            displayFee = `Free over $${operations.freeDeliveryThreshold}`;
+        }
+
+        const updates = {
+            // Profile
+            name: storeInfo.name,
+            tagline: storeInfo.tagline,
+            phone: storeInfo.phone,
+            email: storeInfo.email,
+            address: storeInfo.address,
+            description: storeInfo.description,
+            website: storeInfo.website,
+            // Operations
+            deliveryRadiusKm: operations.deliveryRadiusKm,
+            minDeliveryOrder: operations.minOrder,
+            deliveryFeeValue: operations.deliveryFee, // Numeric
+            freeDeliveryThreshold: operations.freeDeliveryThreshold,
+            pickupEnabled: operations.pickupEnabled,
+            defaultPrepTime: operations.defaultPrepTime,
+            autoAcceptOrders: operations.autoAcceptOrders,
+            taxRate: operations.taxRate,
+            // Legacy/Display Fields
+            deliveryFee: displayFee
+        };
+
+        updateStore(storeId, updates);
+
+        // Simulate network delay
         setTimeout(() => {
             setIsSaving(false);
             alert('Settings saved successfully!');
-        }, 1000);
+        }, 800);
     };
 
     const handleInvite = (e: React.FormEvent) => {
@@ -455,6 +519,15 @@ const MerchantSettings: React.FC = () => {
                             type="number"
                             value={operations.minOrder}
                             onChange={e => setOperations({ ...operations, minOrder: Number(e.target.value) })}
+                            className="w-full p-3 border border-[var(--glass-border)] rounded-lg"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">Default Prep Time (mins)</label>
+                        <input
+                            type="number"
+                            value={operations.defaultPrepTime}
+                            onChange={e => setOperations({ ...operations, defaultPrepTime: Number(e.target.value) })}
                             className="w-full p-3 border border-[var(--glass-border)] rounded-lg"
                         />
                     </div>

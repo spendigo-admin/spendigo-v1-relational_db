@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useOrders } from '../../context/OrderContext';
 import '../../styles/design-system.css';
 
 const Profile: React.FC = () => {
     const { profile, orders, updateProfile, addAddress, deleteAddress, setDefaultAddress } = useOrders();
-    const [activeTab, setActiveTab] = useState<'account' | 'addresses' | 'orders'>('account');
+    const location = useLocation();
+    const [activeTab, setActiveTab] = useState<'account' | 'addresses' | 'orders'>(
+        (location.state as any)?.activeTab || 'account'
+    );
     const [editingProfile, setEditingProfile] = useState(false);
     const [showAddAddress, setShowAddAddress] = useState(false);
 

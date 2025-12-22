@@ -20,6 +20,16 @@ const ConsumerLayout: React.FC = () => {
         }
     };
 
+    // STRICT ACCESS CONTROL: Redirect merchants/admins to their dashboards
+    // They are not allowed to view the shopper UI.
+    React.useEffect(() => {
+        if (user?.role === 'merchant') {
+            navigate('/merchant/dashboard', { replace: true });
+        } else if (user?.role === 'admin') {
+            navigate('/admin/dashboard', { replace: true });
+        }
+    }, [user, navigate]);
+
     return (
         <div className="min-h-screen bg-[var(--surface-0)] relative">
             {/* TOP NAVIGATION BAR */}
@@ -100,7 +110,10 @@ const ConsumerLayout: React.FC = () => {
                                 className="hidden sm:flex items-center justify-center w-8 h-8 rounded-lg hover:bg-red-50 text-[var(--text-muted)] hover:text-red-500 transition-colors"
                                 title="Sign Out"
                             >
-                                🚪
+                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.36 6.64a9 9 0 11-12.73 0" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 2v10" />
+                                </svg>
                             </button>
                         </div>
                     ) : (

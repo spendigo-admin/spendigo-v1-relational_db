@@ -1,31 +1,33 @@
 import React, { useState } from 'react';
 import '../../styles/design-system.css';
-
-interface Store {
-    id: string;
-    name: string;
-    merchantEmail: string;
-    status: 'active' | 'pending' | 'suspended';
-    joinedAt: string;
-    productsCount: number;
-}
+import { useMarketplace } from '../../context/MarketplaceContext';
 
 const StoreManagement: React.FC = () => {
-    // Mock Data
-    const [stores, setStores] = useState<Store[]>([
-        { id: 's1', name: 'FreshMart', merchantEmail: 'contact@freshmart.com', status: 'active', joinedAt: '2023-11-12', productsCount: 145 },
-        { id: 's2', name: 'QuickPick', merchantEmail: 'owner@quickpick.net', status: 'active', joinedAt: '2023-12-05', productsCount: 89 },
-        { id: 's3', name: 'Metro Express', merchantEmail: 'metro@express.com', status: 'pending', joinedAt: '2024-01-10', productsCount: 0 },
-        { id: 's4', name: 'Corner Bodega', merchantEmail: 'bodega@nyc.com', status: 'suspended', joinedAt: '2023-10-20', productsCount: 12 },
-    ]);
+    const { stores, updateStoreStatus, addStore } = useMarketplace();
+    const storeList = Object.values(stores);
 
-    const updateStatus = (id: string, newStatus: Store['status']) => {
-        setStores(stores.map(s => s.id === id ? { ...s, status: newStatus } : s));
-        // Status updated toast or API call would go here
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [newStore, setNewStore] = useState({
+        name: '',
+        merchantEmail: '',
+        type: 'grocery'
+    });
+
+    const handleAddStore = (e: React.FormEvent) => {
+        e.preventDefault();
+        addStore({
+            ...newStore,
+            status: 'pending', // Default to pending for approval
+            rating: 0,
+            products: [],
+            logo: `https://ui-avatars.com/api/?name=${newStore.name}&background=random`
+        });
+        setIsModalOpen(false);
+        setNewStore({ name: '', merchantEmail: '', type: 'grocery' });
     };
 
     return (
-        <div className="space-y-6 animate-fade-in">
+        <div className="space-y-6 animate-fade-in relative">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-[var(--text-main)]">Store Management</h1>
@@ -35,7 +37,10 @@ const StoreManagement: React.FC = () => {
                     <button className="px-4 py-2 bg-[var(--surface-1)] border border-[var(--glass-border)] rounded-lg text-sm font-medium hover:bg-[var(--surface-2)]">
                         Export List
                     </button>
-                    <button className="px-4 py-2 bg-[var(--brand-primary)] text-white rounded-lg text-sm font-medium hover:brightness-110">
+                    <button
+                        onClick={() => setIsModalOpen(true)}
+                        className="px-4 py-2 bg-[var(--brand-primary)] text-white rounded-lg text-sm font-medium hover:brightness-110"
+                    >
                         + Add Store
                     </button>
                 </div>
@@ -45,15 +50,15 @@ const StoreManagement: React.FC = () => {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="bg-white p-4 rounded-xl border border-[var(--glass-border)] shadow-sm">
                     <p className="text-[var(--text-muted)] text-xs uppercase font-bold tracking-wider">Total Stores</p>
-                    <p className="text-2xl font-bold text-[var(--text-main)] mt-1">{stores.length}</p>
+                    <p className="text-2xl font-bold text-[var(--text-main)] mt-1">{storeList.length}</p>
                 </div>
                 <div className="bg-white p-4 rounded-xl border border-[var(--glass-border)] shadow-sm">
                     <p className="text-[var(--text-muted)] text-xs uppercase font-bold tracking-wider">Pending Review</p>
-                    <p className="text-2xl font-bold text-orange-500 mt-1">{stores.filter(s => s.status === 'pending').length}</p>
+                    <p className="text-2xl font-bold text-orange-500 mt-1">{storeList.filter((s: any) => s.status === 'pending').length}</p>
                 </div>
                 <div className="bg-white p-4 rounded-xl border border-[var(--glass-border)] shadow-sm">
                     <p className="text-[var(--text-muted)] text-xs uppercase font-bold tracking-wider">Suspended</p>
-                    <p className="text-2xl font-bold text-red-500 mt-1">{stores.filter(s => s.status === 'suspended').length}</p>
+                    <p className="text-2xl font-bold text-red-500 mt-1">{storeList.filter((s: any) => s.status === 'suspended').length}</p>
                 </div>
             </div>
 
@@ -72,14 +77,14 @@ const StoreManagement: React.FC = () => {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-[var(--glass-border)]">
-                            {stores.map(store => (
+                            {storeList.map((store: any) => (
                                 <tr key={store.id} className="hover:bg-[var(--surface-2)] transition-colors group">
                                     <td className="p-4">
                                         <div className="font-bold text-[var(--text-main)]">{store.name}</div>
                                         <div className="text-xs text-[var(--text-muted)] md:hidden">ID: {store.id}</div>
                                     </td>
-                                    <td className="p-4 text-sm text-[var(--text-main)]">{store.merchantEmail}</td>
-                                    <td className="p-4 text-sm text-[var(--text-main)]">{store.productsCount}</td>
+                                    <td className="p-4 text-sm text-[var(--text-main)]">{store.merchantEmail || 'N/A'}</td>
+                                    <td className="p-4 text-sm text-[var(--text-main)]">{store.products?.length || 0}</td>
                                     <td className="p-4 text-sm text-[var(--text-muted)]">{store.joinedAt}</td>
                                     <td className="p-4">
                                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
@@ -89,29 +94,29 @@ const StoreManagement: React.FC = () => {
                                             {store.status === 'active' && <span className="mr-1">●</span>}
                                             {store.status === 'pending' && <span className="mr-1">○</span>}
                                             {store.status === 'suspended' && <span className="mr-1">✕</span>}
-                                            {store.status.charAt(0).toUpperCase() + store.status.slice(1)}
+                                            {(store.status || 'active').charAt(0).toUpperCase() + (store.status || 'active').slice(1)}
                                         </span>
                                     </td>
                                     <td className="p-4 text-right space-x-2">
                                         {store.status === 'pending' && (
                                             <>
                                                 <button
-                                                    onClick={() => updateStatus(store.id, 'active')}
+                                                    onClick={() => updateStoreStatus(store.id, 'active')}
                                                     className="text-xs bg-green-500 hover:bg-green-600 text-white px-3 py-1.5 rounded-lg transition-colors font-medium"
                                                 >
                                                     Approve
                                                 </button>
                                                 <button
-                                                    onClick={() => updateStatus(store.id, 'suspended')}
+                                                    onClick={() => updateStoreStatus(store.id, 'suspended')}
                                                     className="text-xs bg-[var(--surface-2)] hover:bg-red-50 text-red-600 px-3 py-1.5 rounded-lg transition-colors border border-[var(--glass-border)]"
                                                 >
                                                     Reject
                                                 </button>
                                             </>
                                         )}
-                                        {store.status === 'active' && (
+                                        {(store.status === 'active' || !store.status) && (
                                             <button
-                                                onClick={() => updateStatus(store.id, 'suspended')}
+                                                onClick={() => updateStoreStatus(store.id, 'suspended')}
                                                 className="text-xs text-red-500 hover:text-red-700 font-medium px-2 py-1"
                                             >
                                                 Suspend
@@ -119,7 +124,7 @@ const StoreManagement: React.FC = () => {
                                         )}
                                         {store.status === 'suspended' && (
                                             <button
-                                                onClick={() => updateStatus(store.id, 'active')}
+                                                onClick={() => updateStoreStatus(store.id, 'active')}
                                                 className="text-xs text-green-500 hover:text-green-700 font-medium px-2 py-1"
                                             >
                                                 Reactivate
@@ -132,6 +137,70 @@ const StoreManagement: React.FC = () => {
                     </table>
                 </div>
             </div>
+
+            {/* Add Store Modal */}
+            {isModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+                        <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+                            <h2 className="text-xl font-bold">Add New Store</h2>
+                            <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-600">✕</button>
+                        </div>
+                        <form onSubmit={handleAddStore} className="p-6 space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Store Name</label>
+                                <input
+                                    type="text"
+                                    required
+                                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--brand-primary)] focus:border-transparent outline-none"
+                                    value={newStore.name}
+                                    onChange={e => setNewStore({ ...newStore, name: e.target.value })}
+                                    placeholder="e.g. Green Valley Grocers"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Merchant Email</label>
+                                <input
+                                    type="email"
+                                    required
+                                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--brand-primary)] focus:border-transparent outline-none"
+                                    value={newStore.merchantEmail}
+                                    onChange={e => setNewStore({ ...newStore, merchantEmail: e.target.value })}
+                                    placeholder="merchant@example.com"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Store Type</label>
+                                <select
+                                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--brand-primary)] outline-none"
+                                    value={newStore.type}
+                                    onChange={e => setNewStore({ ...newStore, type: e.target.value })}
+                                >
+                                    <option value="grocery">Grocery Store</option>
+                                    <option value="convenience">Convenience Store</option>
+                                    <option value="bakery">Bakery</option>
+                                    <option value="butcher">Butcher</option>
+                                </select>
+                            </div>
+                            <div className="pt-4 flex gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setIsModalOpen(false)}
+                                    className="flex-1 py-2.5 border border-gray-300 text-gray-700 rounded-lg font-bold hover:bg-gray-50"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="flex-1 py-2.5 bg-[var(--brand-primary)] text-white rounded-lg font-bold hover:brightness-110 shadow-lg shadow-[var(--brand-primary)]/20"
+                                >
+                                    Create Store
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

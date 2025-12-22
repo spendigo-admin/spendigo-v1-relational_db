@@ -1,37 +1,53 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import '../../styles/design-system.css';
 
 import { useAuth } from '../../context/AuthContext';
+import { useAudit } from '../../context/AuditContext';
 
-const Login: React.FC = () => {
+const Login = () => {
     const navigate = useNavigate();
-    const { login, loading } = useAuth();
+    const location = useLocation();
+    const { login } = useAuth();
+    const { logEvent } = useAudit();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
+        setIsLoading(true);
 
-        await login(email, password);
+        try {
+            await login(email, password);
+            await logEvent('AUTH_LOGIN_SUCCESS', { email: email }, 'auth/login');
 
-        // Redirect logic is handled inside login or effect, 
-        // but for this mock we can check the user role manually after login logic
-        // For simplicity in this mock flow, let's assume the context updates
-        // and we can redirect based on email domain or just default to home
+            // We need to wait for the user state to update or use the return value if it returned the user
+            // Since login is async and sets state, we might not have 'user' immediately available here if we used useAuth().user
+            // However, for this fix, let's rely on the email logic BUT make it stricter, 
+            // OR better: check MOCK_USERS directly here or assume the login function handles it?
+            // Actually, best practice is to redirect within a useEffect in Login that listens to `user`.
+            // But let's fix the fragile logic first.
 
-        if (email.includes('merchant')) {
-            navigate('/merchant/dashboard');
-        } else if (email.includes('admin')) {
-            navigate('/admin/dashboard');
-        } else {
-            navigate('/');
+            // Check known roles based on email patterns defined in AuthContext
+            if (email.includes('owner') || email.includes('manager') || email.includes('staff')) {
+                navigate('/merchant/dashboard');
+            } else if (email.includes('admin')) {
+                navigate('/admin/dashboard');
+            } else {
+                navigate('/');
+            }
+        } catch (err) {
+            console.error(err);
+            setError('Invalid credentials');
+        } finally {
+            setIsLoading(false);
         }
     };
 
-    if (loading) return <div className="p-10 text-center">Loading...</div>;
+    if (isLoading) return <div className="p-10 text-center">Loading...</div>;
 
     return (
         <div className="min-h-screen flex items-center justify-center p-4 bg-[var(--surface-0)]">
@@ -68,22 +84,46 @@ const Login: React.FC = () => {
                     </button>
 
                     <div className="mt-4 p-3 bg-blue-50 text-xs text-blue-800 rounded-lg">
-                        <p className="font-bold mb-1">Demo Credentials (Password: any):</p>
-                        <div className="grid grid-cols-2 gap-x-2 gap-y-1">
-                            <p>consumer: shopper@example.com</p>
-                            <p>admin: admin@spendigo.ca</p>
-                            <p className="col-span-2 font-bold mt-1 border-t border-blue-200 pt-1">Store Owners:</p>
-                            <p>FreshMart: freshmart@store.com</p>
-                            <p>QuickPick: quick@pick.com</p>
-                            <p>Metro: metro@express.com</p>
-                            <p>Costco: costco@biz.com</p>
-                            <p>Mac's: macs@corner.com</p>
-                            <p>Hasty: hasty@mart.com</p>
-                            <p>Bodega: bodega@corner.com</p>
-                            <p>Farmers: green@valley.com</p>
-                            <p>Bakery: daily@loaf.com</p>
-                            <p>Butcher: butcher@block.com</p>
-                            <p>Books: book@nook.com</p>
+                        <p className="font-bold mb-2">Demo Credentials (Password: any):</p>
+
+                        <div className="mb-3">
+                            <p className="font-semibold">Format:</p>
+                            <code className="bg-blue-100 px-1 py-0.5 rounded text-[10px] w-full block mt-1">
+                                [store].owner@spendigo.ca
+                            </code>
+                            <code className="bg-blue-100 px-1 py-0.5 rounded text-[10px] w-full block mt-1">
+                                [store].manager@spendigo.ca
+                            </code>
+                            <code className="bg-blue-100 px-1 py-0.5 rounded text-[10px] w-full block mt-1">
+                                [store].staff@spendigo.ca
+                            </code>
+                        </div>
+
+                        <p className="font-bold mt-2 pt-1 border-t border-blue-200">Available Stores (slugs):</p>
+                        <div className="grid grid-cols-2 gap-x-2 gap-y-1 mt-1 font-mono text-[10px]">
+                            <p>freshmart</p>
+                            <p>quickpick</p>
+                            <p>metro</p>
+                            <p>costco</p>
+                            <p>macs</p>
+                            <p>hasty</p>
+                            <p>bodega</p>
+                            <p>greenvalley</p>
+                            <p>bakery</p>
+                            <p>butcher</p>
+                            <p>books</p>
+                        </div>
+
+                        <p className="font-bold mt-2 pt-1 border-t border-blue-200">Other:</p>
+                        <p>admin@spendigo.ca</p>
+                        <div className="mt-2">
+                            <p className="font-semibold text-[10px] mb-1">Shoppers:</p>
+                            <div className="grid grid-cols-2 gap-x-2 gap-y-1">
+                                <p>shopper@example.com</p>
+                                <p>family@spendigo.ca</p>
+                                <p>student@spendigo.ca</p>
+                                <p>chef@spendigo.ca</p>
+                            </div>
                         </div>
                     </div>
                 </form>

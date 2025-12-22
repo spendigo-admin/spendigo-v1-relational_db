@@ -63,35 +63,110 @@ type AdminRole = 'SUPER_ADMIN' | 'SUPPORT' | 'MODERATOR' | 'AUDITOR';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Mock Users Database
-const MOCK_USERS: Record<string, User> = {
-    'admin@spendigo.ca': {
-        id: 'admin1',
-        email: 'admin@spendigo.ca',
-        name: 'System Admin',
-        role: 'admin',
-        adminRole: 'SUPER_ADMIN',
-        avatar: '🛡️'
-    },
-    'freshmart@store.com': { id: 'm1', email: 'freshmart@store.com', name: 'FreshMart Owner', role: 'merchant', storeId: '1', storeName: 'FreshMart', merchantRole: 'OWNER', subscriptionTier: 'growth', avatar: '🥬' },
-    'quick@pick.com': { id: 'm2', email: 'quick@pick.com', name: 'QuickPick Staff', role: 'merchant', storeId: '2', storeName: 'QuickPick', merchantRole: 'OWNER', subscriptionTier: 'free', avatar: '🏪' },
-    'metro@express.com': { id: 'm3', email: 'metro@express.com', name: 'Metro Manager', role: 'merchant', storeId: '3', storeName: 'Metro Express', merchantRole: 'OWNER', subscriptionTier: 'core', avatar: '🛒' },
-    'costco@biz.com': { id: 'm4', email: 'costco@biz.com', name: 'Costco Marketing', role: 'merchant', storeId: '4', storeName: 'Costco Business', merchantRole: 'OWNER', subscriptionTier: 'growth', avatar: '📦' },
-    'macs@corner.com': { id: 'm5', email: 'macs@corner.com', name: 'Mac Manager', role: 'merchant', storeId: '5', storeName: "Mac's Corner", merchantRole: 'OWNER', subscriptionTier: 'free', avatar: '🏪' },
-    'hasty@mart.com': { id: 'm6', email: 'hasty@mart.com', name: 'Hasty Owner', role: 'merchant', storeId: '6', storeName: 'Hasty Mart', merchantRole: 'OWNER', subscriptionTier: 'core', avatar: '⚡' },
-    'bodega@corner.com': { id: 'm7', email: 'bodega@corner.com', name: 'Bodega Boss', role: 'merchant', storeId: '7', storeName: 'Corner Bodega', merchantRole: 'OWNER', subscriptionTier: 'free', avatar: '🏬' },
-    'green@valley.com': { id: 'm8', email: 'green@valley.com', name: 'Farmer Joe', role: 'merchant', storeId: '8', storeName: 'Green Valley Market', merchantRole: 'OWNER', subscriptionTier: 'core', avatar: '🌽' },
-    'daily@loaf.com': { id: 'm9', email: 'daily@loaf.com', name: 'Baker Bob', role: 'merchant', storeId: '9', storeName: 'The Daily Loaf', merchantRole: 'OWNER', subscriptionTier: 'free', avatar: '🥖' },
-    'butcher@block.com': { id: 'm10', email: 'butcher@block.com', name: 'Butcher Bill', role: 'merchant', storeId: '10', storeName: "The Butcher's Block", merchantRole: 'OWNER', subscriptionTier: 'core', avatar: '🥩' },
-    'book@nook.com': { id: 'm11', email: 'book@nook.com', name: 'Librarian Linda', role: 'merchant', storeId: '11', storeName: 'The Book Nook', merchantRole: 'OWNER', subscriptionTier: 'free', avatar: '📚' },
-    'shopper@example.com': {
-        id: 'shop1',
-        email: 'shopper@example.com',
-        name: 'Alice Shopper',
-        role: 'consumer',
-        avatar: '🛒'
-    }
+// Define Stores Data
+const STORES = [
+    { id: '1', name: 'FreshMart', slug: 'freshmart', tier: 'growth' },
+    { id: '2', name: 'QuickPick', slug: 'quickpick', tier: 'free' },
+    { id: '3', name: 'Metro Express', slug: 'metro', tier: 'core' },
+    { id: '4', name: 'Costco Business', slug: 'costco', tier: 'growth' },
+    { id: '5', name: "Mac's Corner", slug: 'macs', tier: 'free' },
+    { id: '6', name: 'Hasty Mart', slug: 'hasty', tier: 'core' },
+    { id: '7', name: 'Corner Bodega', slug: 'bodega', tier: 'free' },
+    { id: '8', name: 'Green Valley Market', slug: 'greenvalley', tier: 'core' },
+    { id: '9', name: 'The Daily Loaf', slug: 'bakery', tier: 'free' },
+    { id: '10', name: "The Butcher's Block", slug: 'butcher', tier: 'core' },
+    { id: '11', name: 'The Book Nook', slug: 'books', tier: 'free' }
+] as const;
+
+// Generate Mock Users
+const generateMockUsers = () => {
+    const users: Record<string, User> = {
+        'admin@spendigo.ca': {
+            id: 'admin1',
+            email: 'admin@spendigo.ca',
+            name: 'System Admin',
+            role: 'admin',
+            adminRole: 'SUPER_ADMIN',
+            avatar: '🛡️'
+        },
+        'shopper@example.com': {
+            id: 'shop1',
+            email: 'shopper@example.com',
+            name: 'Alice Shopper',
+            role: 'consumer',
+            avatar: '🛒'
+        },
+        'family@spendigo.ca': {
+            id: 'shop2',
+            email: 'family@spendigo.ca',
+            name: 'Sarah Family',
+            role: 'consumer',
+            avatar: '👨‍👩‍👧‍👦'
+        },
+        'student@spendigo.ca': {
+            id: 'shop3',
+            email: 'student@spendigo.ca',
+            name: 'Steve Student',
+            role: 'consumer',
+            avatar: '🎓'
+        },
+        'chef@spendigo.ca': {
+            id: 'shop4',
+            email: 'chef@spendigo.ca',
+            name: 'Chef Chris',
+            role: 'consumer',
+            avatar: '👨‍🍳'
+        }
+    };
+
+    STORES.forEach(store => {
+        // Owner
+        users[`${store.slug}.owner@spendigo.ca`] = {
+            id: `m-${store.id}-owner`,
+            email: `${store.slug}.owner@spendigo.ca`,
+            name: `${store.name} Owner`,
+            role: 'merchant',
+            storeId: store.id,
+            storeName: store.name,
+            merchantRole: 'OWNER',
+            subscriptionTier: store.tier as any,
+            avatar: '👔'
+        };
+        // Manager
+        users[`${store.slug}.manager@spendigo.ca`] = {
+            id: `m-${store.id}-manager`,
+            email: `${store.slug}.manager@spendigo.ca`,
+            name: `${store.name} Manager`,
+            role: 'merchant',
+            storeId: store.id,
+            storeName: store.name,
+            merchantRole: 'MANAGER',
+            subscriptionTier: store.tier as any,
+            avatar: '👩‍💼'
+        };
+        // Staff
+        users[`${store.slug}.staff@spendigo.ca`] = {
+            id: `m-${store.id}-staff`,
+            email: `${store.slug}.staff@spendigo.ca`,
+            name: `${store.name} Staff`,
+            role: 'merchant',
+            storeId: store.id,
+            storeName: store.name,
+            merchantRole: 'STAFF',
+            subscriptionTier: store.tier as any,
+            avatar: '🧢'
+        };
+    });
+
+    // Legacy support (optional, can be removed if we want strictly new format)
+    // mapping old emails to new format equivalent or just keeping them temporarily
+    users['freshmart@store.com'] = users['freshmart.owner@spendigo.ca'];
+    users['quick@pick.com'] = users['quickpick.staff@spendigo.ca']; // Note: Old QuickPick was Staff in description but Owner data
+
+    return users;
 };
+
+const MOCK_USERS = generateMockUsers();
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [user, setUser] = useState<User | null>(null);

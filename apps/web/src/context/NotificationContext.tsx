@@ -1,35 +1,27 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useAuth } from './AuthContext';
 
-// Define Notification Type
-export interface Notification {
+// Unified Notification Type
+export interface AppNotification {
     id: string;
-    type: 'price_drop' | 'order' | 'promo';
+    type: 'price_drop' | 'order' | 'promo' | 'system' | 'alert';
     title: string;
     message: string;
-    time: string;
+    timestamp: string; // ISO String
     read: boolean;
+    link?: string;     // Navigation link
     productId?: string;
     orderId?: string;
+    time?: string;     // Backward compatibility for display
 }
 
-// Initial Mock Data
-const MOCK_NOTIFICATIONS: Notification[] = [
-    { id: 'n1', type: 'price_drop', title: 'Price Drop Alert! 🔥', message: 'Organic Avocados dropped from $8.99 to $6.99 at FreshMart', time: '2 hours ago', read: false, productId: 'p1' },
-    { id: 'n2', type: 'order', title: 'Order Delivered', message: 'Your order #ORD-001 has been delivered', time: '1 day ago', read: false, orderId: 'ORD-001' },
-    { id: 'n3', type: 'promo', title: 'Weekend Flash Sale!', message: 'Get 20% off all dairy products at Metro Express', time: '2 days ago', read: false },
-    { id: 'n4', type: 'price_drop', title: 'Price Drop Alert! 🔥', message: 'Almond Milk is now $4.49 (was $5.99)', time: '3 days ago', read: true, productId: 'p2' },
+// Alias for backward compatibility if needed
+export type Notification = AppNotification;
+
+const MOCK_NOTIFICATIONS: AppNotification[] = [
+    { id: 'n1', type: 'price_drop', title: 'Price Drop Alert! 🔥', message: 'Organic Avocados dropped from $8.99 to $6.99', timestamp: new Date(Date.now() - 7200000).toISOString(), time: '2 hours ago', read: false, productId: 'p1' },
+    { id: 'n2', type: 'promo', title: 'Weekend Flash Sale!', message: 'Get 20% off all dairy products', timestamp: new Date(Date.now() - 172800000).toISOString(), time: '2 days ago', read: false },
 ];
-
-interface NotificationContextType {
-    notifications: Notification[];
-    unreadCount: number;
-    markAsRead: (id: string) => void;
-    markAllRead: () => void;
-    deleteNotification: (id: string) => void;
-    preferences: NotificationPreferences;
-    togglePreference: (key: keyof NotificationPreferences) => void;
-}
 
 export interface NotificationPreferences {
     priceDrop: boolean;
@@ -45,61 +37,115 @@ const DEFAULT_PREFERENCES: NotificationPreferences = {
     newArrivals: false,
 };
 
+interface NotificationContextType {
+    notifications: AppNotification[];
+    unreadCount: number;
+    preferences: NotificationPreferences;
+    markAsRead: (id: string) => void;
+    markAllAsRead: () => void;
+    markAllRead: () => void; // Deprecated alias
+    clearAll: () => void;
+    addNotification: (n: Omit<AppNotification, 'id' | 'timestamp' | 'read'>) => void;
+    deleteNotification: (id: string) => void;
+    togglePreference: (key: keyof NotificationPreferences) => void;
+}
+
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
 
 export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const { user } = useAuth();
-    const notifKey = `spendigo_notifications_${user?.id || 'guest'}`;
-    const prefKey = `spendigo_notification_prefs_${user?.id || 'guest'}`;
 
-    const [notifications, setNotifications] = useState<Notification[]>([]);
+    // Determine the storage key: Prefer storeId for merchants, otherwise userId, else guest
+    const contextId = user?.storeId || user?.id || 'guest';
+    const notifKey = `spendigo_notifications_${contextId}`;
+    const prefKey = `spendigo_notification_prefs_${contextId}`;
+
+    const [notifications, setNotifications] = useState<AppNotification[]>([]);
     const [preferences, setPreferences] = useState<NotificationPreferences>(DEFAULT_PREFERENCES);
 
-    // Load Data on Mount or User Change
-    useEffect(() => {
+    // Load Data
+    const loadNotifications = () => {
         const savedNotifs = localStorage.getItem(notifKey);
-        setNotifications(savedNotifs ? JSON.parse(savedNotifs) : MOCK_NOTIFICATIONS);
-
-        const savedPrefs = localStorage.getItem(prefKey);
-        setPreferences(savedPrefs ? JSON.parse(savedPrefs) : DEFAULT_PREFERENCES);
-    }, [notifKey, prefKey]);
-
-    // Persist to localStorage whenever notifications change
-    useEffect(() => {
-        localStorage.setItem(notifKey, JSON.stringify(notifications));
-    }, [notifications, notifKey]);
-
-    // Persist preferences
-    useEffect(() => {
-        localStorage.setItem(prefKey, JSON.stringify(preferences));
-    }, [preferences, prefKey]);
-
-    const unreadCount = notifications.filter(n => !n.read).length;
-
-    const markAsRead = (id: string) => {
-        setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+        if (savedNotifs) {
+            try {
+                setNotifications(JSON.parse(savedNotifs));
+            } catch (e) {
+                console.error("Error parsing notifications", e);
+                setNotifications([]);
+            }
+        } else {
+            // Only seed mocks for guest/consumer, maybe empty for merchant?
+            // For now, if empty, we leave empty unless it's a fresh guest
+            if (!user?.storeId) {
+                setNotifications(MOCK_NOTIFICATIONS);
+            } else {
+                setNotifications([]);
+            }
+        }
     };
 
-    const markAllRead = () => {
-        setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    useEffect(() => {
+        loadNotifications();
+
+        const savedPrefs = localStorage.getItem(prefKey);
+        if (savedPrefs) setPreferences(JSON.parse(savedPrefs));
+
+        // Poll for updates (important for Merchant receiving orders)
+        const interval = setInterval(loadNotifications, 3000);
+        return () => clearInterval(interval);
+    }, [notifKey, prefKey]);
+
+    // Persist changes
+    const saveNotifications = (newNotifs: AppNotification[]) => {
+        setNotifications(newNotifs);
+        localStorage.setItem(notifKey, JSON.stringify(newNotifs));
+    };
+
+    const markAsRead = (id: string) => {
+        saveNotifications(notifications.map(n => n.id === id ? { ...n, read: true } : n));
+    };
+
+    const markAllAsRead = () => {
+        saveNotifications(notifications.map(n => ({ ...n, read: true })));
+    };
+
+    const clearAll = () => {
+        saveNotifications([]);
     };
 
     const deleteNotification = (id: string) => {
-        setNotifications(prev => prev.filter(n => n.id !== id));
+        saveNotifications(notifications.filter(n => n.id !== id));
+    };
+
+    const addNotification = (n: Omit<AppNotification, 'id' | 'timestamp' | 'read'>) => {
+        const newNotif: AppNotification = {
+            ...n,
+            id: `notif-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+            timestamp: new Date().toISOString(),
+            read: false,
+        };
+        saveNotifications([newNotif, ...notifications]);
     };
 
     const togglePreference = (key: keyof NotificationPreferences) => {
-        setPreferences(prev => ({ ...prev, [key]: !prev[key] }));
+        const newPrefs = { ...preferences, [key]: !preferences[key] };
+        setPreferences(newPrefs);
+        localStorage.setItem(prefKey, JSON.stringify(newPrefs));
     };
+
+    const unreadCount = notifications.filter(n => !n.read).length;
 
     return (
         <NotificationContext.Provider value={{
             notifications,
             unreadCount,
-            markAsRead,
-            markAllRead,
-            deleteNotification,
             preferences,
+            markAsRead,
+            markAllAsRead,
+            markAllRead: markAllAsRead, // Alias
+            clearAll,
+            addNotification,
+            deleteNotification,
             togglePreference
         }}>
             {children}

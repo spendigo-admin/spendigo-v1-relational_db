@@ -4,6 +4,7 @@ import '../../styles/design-system.css';
 import { useMarketplace } from '../../context/MarketplaceContext';
 import { useAuth } from '../../context/AuthContext';
 import { Order } from '../../context/OrderContext';
+import NotificationPopover from '../../components/NotificationPopover';
 
 type TimePeriod = 'daily' | 'weekly' | 'monthly';
 
@@ -183,7 +184,44 @@ const MerchantDashboard: React.FC = () => {
         },
     ];
 
+    // Operational Stats Calculation (For Staff)
+    const pendingOrders = orders.filter(o => o.status === 'placed').length;
+    const preparingOrders = orders.filter(o => o.status === 'preparing').length;
+    const readyOrders = orders.filter(o => o.status === 'out_for_delivery').length;
+
+    const operationalStats = [
+        {
+            label: 'New Orders',
+            value: pendingOrders.toString(),
+            icon: '🔔',
+            color: 'bg-blue-100 text-blue-700',
+            action: () => navigate('/merchant/orders')
+        },
+        {
+            label: 'Preparing',
+            value: preparingOrders.toString(),
+            icon: '👨‍🍳',
+            color: 'bg-orange-100 text-orange-700',
+            action: () => navigate('/merchant/orders')
+        },
+        {
+            label: 'Ready / On Route',
+            value: readyOrders.toString(),
+            icon: '🛵',
+            color: 'bg-purple-100 text-purple-700',
+            action: () => navigate('/merchant/orders')
+        },
+        {
+            label: 'Completed Today',
+            value: orders.filter(o => o.status === 'delivered' && new Date(o.date) >= new Date(new Date().setHours(0, 0, 0, 0))).length.toString(),
+            icon: '✅',
+            color: 'bg-green-100 text-green-700',
+            action: () => navigate('/merchant/orders')
+        }
+    ];
+
     const quickActions = [
+        { label: 'Manage Orders', icon: '🔔', path: '/merchant/orders', desc: 'View and process active orders', permission: 'orders:read' },
         { label: 'Add Product', icon: '📦', path: '/merchant/products', desc: 'Add new items to your catalog', permission: 'products:write' },
         { label: 'Create Flyer', icon: '📰', path: '/merchant/flyers', desc: 'Upload weekly digital flyer', permission: 'flyers:write' },
         { label: 'New Deal', icon: '🏷️', path: '/merchant/deals', desc: 'Create a sale or offer', permission: 'deals:write' },
@@ -208,13 +246,18 @@ const MerchantDashboard: React.FC = () => {
                 <div className="relative z-10 flex justify-between items-center">
                     <div>
                         <h1 className="text-3xl font-bold mb-2">👋 Welcome back, {store?.name || 'Partner'}!</h1>
-                        <p className="opacity-90 text-lg">Your store is live and accepting orders.</p>
+                        <p className="text-blue-100 text-lg font-medium">Your store is live and accepting orders.</p>
                     </div>
-                    <div className="hidden md:block text-right">
-                        <div className="text-sm opacity-80 uppercase tracking-wider font-medium">Current Status</div>
-                        <div className="text-2xl font-bold flex items-center gap-2">
-                            <span className="w-3 h-3 bg-green-400 rounded-full animate-pulse shadow-[0_0_10px_rgba(74,222,128,0.5)]"></span>
-                            Online
+                    <div className="hidden md:flex items-center gap-6">
+                        <div className="text-right">
+                            <div className="text-sm opacity-80 uppercase tracking-wider font-medium">Current Status</div>
+                            <div className="text-2xl font-bold flex items-center justify-end gap-2">
+                                <span className="w-3 h-3 bg-green-400 rounded-full animate-pulse shadow-[0_0_10px_rgba(74,222,128,0.5)]"></span>
+                                Online
+                            </div>
+                        </div>
+                        <div className="bg-white/20 p-2 rounded-xl backdrop-blur-sm border border-white/20">
+                            <NotificationPopover />
                         </div>
                     </div>
                 </div>
@@ -223,45 +266,67 @@ const MerchantDashboard: React.FC = () => {
                 <div className="absolute bottom-0 left-0 w-48 h-48 bg-white opacity-5 rounded-full translate-y-1/3 -translate-x-1/4"></div>
             </div>
 
-            {/* Time Period Selector */}
-            <div className="flex justify-end mb-4">
-                <div className="inline-flex bg-white border border-[var(--glass-border)] rounded-lg p-1 shadow-sm">
-                    {(['daily', 'weekly', 'monthly'] as const).map(period => (
-                        <button
-                            key={period}
-                            onClick={() => setTimePeriod(period)}
-                            className={`px-4 py-1.5 rounded-md text-sm font-bold capitalize transition-all ${timePeriod === period
-                                ? 'bg-[var(--brand-primary)] text-white shadow-sm'
-                                : 'text-[var(--text-muted)] hover:bg-[var(--surface-1)]'
-                                }`}
-                        >
-                            {period}
-                        </button>
+            {/* Time Period Selector - Only for Analytics */}
+            {can('analytics:read') && (
+                <div className="flex justify-end mb-4">
+                    <div className="inline-flex bg-white border border-[var(--glass-border)] rounded-lg p-1 shadow-sm">
+                        {(['daily', 'weekly', 'monthly'] as const).map(period => (
+                            <button
+                                key={period}
+                                onClick={() => setTimePeriod(period)}
+                                className={`px-4 py-1.5 rounded-md text-sm font-bold capitalize transition-all ${timePeriod === period
+                                    ? 'bg-[var(--brand-primary)] text-white shadow-sm'
+                                    : 'text-[var(--text-muted)] hover:bg-[var(--surface-1)]'
+                                    }`}
+                            >
+                                {period}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* Stats Grid - Toggles based on Permission */}
+            {can('analytics:read') ? (
+                // Financial Stats (Owner/Manager)
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                    {displayStats.map((stat, idx) => (
+                        <div key={idx} className="bg-white p-5 rounded-xl border border-[var(--glass-border)] shadow-sm hover:shadow-md transition-shadow">
+                            <div className="flex justify-between items-start mb-2">
+                                <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl ${stat.color}`}>
+                                    {stat.icon}
+                                </div>
+                                {stat.change && (
+                                    <span className="text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded-full border border-green-100">
+                                        {stat.change}
+                                    </span>
+                                )}
+                            </div>
+                            <div className="mt-2">
+                                <p className="text-[var(--text-muted)] text-sm font-medium">{stat.label}</p>
+                                <h3 className="text-2xl font-bold text-[var(--text-main)]">{stat.value}</h3>
+                            </div>
+                        </div>
                     ))}
                 </div>
-            </div>
-
-            {/* Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-                {displayStats.map((stat, idx) => (
-                    <div key={idx} className="bg-white p-5 rounded-xl border border-[var(--glass-border)] shadow-sm hover:shadow-md transition-shadow">
-                        <div className="flex justify-between items-start mb-2">
-                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl ${stat.color}`}>
-                                {stat.icon}
+            ) : (
+                // Operational Stats (Staff)
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                    {operationalStats.map((stat, idx) => (
+                        <div key={idx} onClick={stat.action} className="bg-white p-5 rounded-xl border border-[var(--glass-border)] shadow-sm hover:shadow-md hover:border-[var(--brand-primary)] transition-all cursor-pointer group">
+                            <div className="flex justify-between items-start mb-2">
+                                <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl ${stat.color} group-hover:scale-110 transition-transform`}>
+                                    {stat.icon}
+                                </div>
                             </div>
-                            {stat.change && (
-                                <span className="text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded-full border border-green-100">
-                                    {stat.change}
-                                </span>
-                            )}
+                            <div className="mt-2">
+                                <p className="text-[var(--text-muted)] text-sm font-medium group-hover:text-[var(--brand-primary)] transition-colors">{stat.label}</p>
+                                <h3 className="text-3xl font-bold text-[var(--text-main)]">{stat.value}</h3>
+                            </div>
                         </div>
-                        <div className="mt-2">
-                            <p className="text-[var(--text-muted)] text-sm font-medium">{stat.label}</p>
-                            <h3 className="text-2xl font-bold text-[var(--text-main)]">{stat.value}</h3>
-                        </div>
-                    </div>
-                ))}
-            </div>
+                    ))}
+                </div>
+            )}
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Main Content Area */}
@@ -271,86 +336,96 @@ const MerchantDashboard: React.FC = () => {
                         <h2 className="text-xl font-bold text-[var(--text-main)] mb-4 flex items-center gap-2">
                             <span>⚡</span> Quick Actions
                         </h2>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            {quickActions.map((action, idx) => (
-                                <button
-                                    key={idx}
-                                    onClick={() => navigate(action.path)}
-                                    className="bg-white p-5 rounded-xl border border-[var(--glass-border)] hover:border-[var(--brand-primary)] hover:shadow-md transition-all text-left group relative overflow-hidden"
-                                >
-                                    <div className="absolute inset-0 bg-gradient-to-br from-transparent to-gray-50 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                                    <div className="relative z-10">
-                                        <div className="text-3xl mb-3 group-hover:scale-110 transition-transform origin-left">{action.icon}</div>
-                                        <p className="font-bold text-[var(--text-main)]">{action.label}</p>
-                                        <p className="text-xs text-[var(--text-muted)] mt-1 line-clamp-2">{action.desc}</p>
-                                    </div>
-                                </button>
-                            ))}
-                        </div>
-                    </section>
-
-                    {/* Revenue Chart with Animation */}
-                    <section className="bg-white p-6 rounded-xl border border-[var(--glass-border)] shadow-sm">
-                        <div className="flex justify-between items-center mb-8">
-                            <div>
-                                <h2 className="text-xl font-bold text-[var(--text-main)]">Revenue Overview</h2>
-                                <p className="text-sm text-[var(--text-muted)]">Sales performance visualizer ({timePeriod === 'daily' ? 'Hourly' : timePeriod === 'weekly' ? 'Daily' : 'Weekly'})</p>
-                            </div>
-                        </div>
-                        <div className="h-64 flex items-end justify-between gap-3 px-2">
-                            {chartData.map((data, i) => {
-                                // Calculate height percentage relative to max value in set, default to 5% if all 0
-                                const maxVal = Math.max(...chartData.map(d => d.value), 100);
-                                const heightPercent = Math.max((data.value / maxVal) * 100, 5);
-
-                                return (
-                                    <div key={i} className="w-full relative group" style={{ height: '100%' }}>
-                                        <div
-                                            className="absolute bottom-0 w-full bg-gradient-to-t from-[var(--brand-primary)] to-purple-400 rounded-t-lg transition-all duration-500 hover:opacity-90"
-                                            style={{ height: `${heightPercent}%`, opacity: data.value > 0 ? 0.8 : 0.2 }}
-                                        ></div>
-                                        {/* Tooltip */}
-                                        <div className="absolute bottom-[calc(100%+8px)] left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-lg z-10">
-                                            ${data.value.toFixed(2)}
-                                            <div className="text-[10px] opacity-60">{data.label}</div>
+                        {quickActions.length > 0 ? (
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                {quickActions.map((action, idx) => (
+                                    <button
+                                        key={idx}
+                                        onClick={() => navigate(action.path)}
+                                        className="bg-white p-5 rounded-xl border border-[var(--glass-border)] hover:border-[var(--brand-primary)] hover:shadow-md transition-all text-left group relative overflow-hidden"
+                                    >
+                                        <div className="absolute inset-0 bg-gradient-to-br from-transparent to-gray-50 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                                        <div className="relative z-10">
+                                            <div className="text-3xl mb-3 group-hover:scale-110 transition-transform origin-left">{action.icon}</div>
+                                            <p className="font-bold text-[var(--text-main)]">{action.label}</p>
+                                            <p className="text-xs text-[var(--text-muted)] mt-1 line-clamp-2">{action.desc}</p>
                                         </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                        <div className="flex justify-between mt-4 text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider border-t border-[var(--glass-border)] pt-4">
-                            {chartData.map((d, i) => (
-                                <span key={i} className="text-center w-full truncate px-1">{d.label}</span>
-                            ))}
-                        </div>
+                                    </button>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="bg-white p-8 rounded-xl border border-[var(--glass-border)] text-center text-[var(--text-muted)]">
+                                No quick actions available for your role.
+                            </div>
+                        )}
                     </section>
+
+                    {/* Revenue Chart with Animation - Only for Analytics */}
+                    {can('analytics:read') && (
+                        <section className="bg-white p-6 rounded-xl border border-[var(--glass-border)] shadow-sm">
+                            <div className="flex justify-between items-center mb-8">
+                                <div>
+                                    <h2 className="text-xl font-bold text-[var(--text-main)]">Revenue Overview</h2>
+                                    <p className="text-sm text-[var(--text-muted)]">Sales performance visualizer ({timePeriod === 'daily' ? 'Hourly' : timePeriod === 'weekly' ? 'Daily' : 'Weekly'})</p>
+                                </div>
+                            </div>
+                            <div className="h-64 flex items-end justify-between gap-3 px-2">
+                                {chartData.map((data, i) => {
+                                    // Calculate height percentage relative to max value in set, default to 5% if all 0
+                                    const maxVal = Math.max(...chartData.map(d => d.value), 100);
+                                    const heightPercent = Math.max((data.value / maxVal) * 100, 5);
+
+                                    return (
+                                        <div key={i} className="w-full relative group" style={{ height: '100%' }}>
+                                            <div
+                                                className="absolute bottom-0 w-full bg-gradient-to-t from-[var(--brand-primary)] to-purple-400 rounded-t-lg transition-all duration-500 hover:opacity-90"
+                                                style={{ height: `${heightPercent}%`, opacity: data.value > 0 ? 0.8 : 0.2 }}
+                                            ></div>
+                                            {/* Tooltip */}
+                                            <div className="absolute bottom-[calc(100%+8px)] left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-lg z-10">
+                                                ${data.value.toFixed(2)}
+                                                <div className="text-[10px] opacity-60">{data.label}</div>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                            <div className="flex justify-between mt-4 text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider border-t border-[var(--glass-border)] pt-4">
+                                {chartData.map((d, i) => (
+                                    <span key={i} className="text-center w-full truncate px-1">{d.label}</span>
+                                ))}
+                            </div>
+                        </section>
+                    )}
                 </div>
 
                 {/* Sidebar / Insights */}
                 <div className="space-y-6">
-                    {/* Flyer Status Card */}
-                    <div className="bg-white p-6 rounded-xl border border-[var(--glass-border)] shadow-sm">
-                        <div className="flex justify-between items-center mb-4">
-                            <h3 className="font-bold text-[var(--text-main)]">Weekly Flyer</h3>
-                            <span className={`text-xs font-bold px-2 py-1 rounded-full ${store?.flyer?.title ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-                                {store?.flyer?.title ? 'Active' : 'Inactive'}
-                            </span>
-                        </div>
-                        {store?.flyer?.title ? (
-                            <div className="p-3 bg-[var(--surface-1)] rounded-lg flex items-center gap-3">
-                                <img src={store.flyer.image} className="w-12 h-12 rounded-lg object-cover" alt="Flyer" />
-                                <div>
-                                    <div className="font-bold text-sm truncate w-40">{store.flyer.title}</div>
-                                    <div className="text-xs text-[var(--text-muted)]">Ends: {store.flyer.validUntil}</div>
+                    {/* Flyer Status Card - Gated */}
+                    {can('flyers:write') && (
+                        <div className="bg-white p-6 rounded-xl border border-[var(--glass-border)] shadow-sm">
+                            <div className="flex justify-between items-center mb-4">
+                                <h3 className="font-bold text-[var(--text-main)]">Weekly Flyer</h3>
+                                <span className={`text-xs font-bold px-2 py-1 rounded-full ${store?.flyer?.title ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                                    {store?.flyer?.title ? 'Active' : 'Inactive'}
+                                </span>
+                            </div>
+                            {store?.flyer?.title ? (
+                                <div className="p-3 bg-[var(--surface-1)] rounded-lg flex items-center gap-3">
+                                    <img src={store.flyer.image} className="w-12 h-12 rounded-lg object-cover" alt="Flyer" />
+                                    <div>
+                                        <div className="font-bold text-sm truncate w-40">{store.flyer.title}</div>
+                                        <div className="text-xs text-[var(--text-muted)]">Ends: {store.flyer.validUntil}</div>
+                                    </div>
                                 </div>
-                            </div>
-                        ) : (
-                            <div className="text-center py-4 text-[var(--text-muted)] text-sm">
-                                <p className="mb-2">No active flyer.</p>
-                                <button onClick={() => navigate('/merchant/flyers')} className="text-[var(--brand-primary)] font-bold hover:underline">Create one now</button>
-                            </div>
-                        )}
-                    </div>
+                            ) : (
+                                <div className="text-center py-4 text-[var(--text-muted)] text-sm">
+                                    <p className="mb-2">No active flyer.</p>
+                                    <button onClick={() => navigate('/merchant/flyers')} className="text-[var(--brand-primary)] font-bold hover:underline">Create one now</button>
+                                </div>
+                            )}
+                        </div>
+                    )}
 
                     {/* Recent Orders List (Real Data) */}
                     {can('orders:read') && (
@@ -383,8 +458,8 @@ const MerchantDashboard: React.FC = () => {
                         </section>
                     )}
 
-                    {/* Pro Tip - Dynamic based on deals */}
-                    {activeDealsCount === 0 && (
+                    {/* Pro Tip - Dynamic based on deals - Gated */}
+                    {can('deals:write') && activeDealsCount === 0 && (
                         <section className="bg-gradient-to-br from-blue-50 to-indigo-50 p-6 rounded-xl border border-blue-100">
                             <h3 className="font-bold text-blue-900 mb-2 flex items-center gap-2">🚀 Boost Sales</h3>
                             <p className="text-sm text-blue-800 mb-4 leading-relaxed">

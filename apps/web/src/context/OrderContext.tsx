@@ -35,7 +35,7 @@ export interface Order {
     paymentStatus: 'paid' | 'pending';
     paymentCollectedBy?: { id: string; name: string; timestamp: string };
     estimatedDelivery?: string;
-    deliveryAddress: Address;
+    deliveryAddress?: Address;
 }
 
 export interface UserProfile {
@@ -52,6 +52,7 @@ interface OrderContextType {
     addOrder: (order: Omit<Order, 'id' | 'date' | 'customerName'>) => string;
     updateOrderStatus: (orderId: string, status: Order['status']) => void;
     updatePaymentStatus: (orderId: string, status: Order['paymentStatus'], auditData?: { id: string; name: string; timestamp: string }) => void;
+    cancelOrder: (orderId: string) => void;
     updateProfile: (updates: Partial<UserProfile>) => void;
     addAddress: (address: Omit<Address, 'id'>) => void;
     updateAddress: (id: string, updates: Partial<Address>) => void;
@@ -71,6 +72,38 @@ const INITIAL_PROFILE: UserProfile = {
         { id: 'addr1', label: 'Home', street: '123 Queen Street West', city: 'Toronto', province: 'ON', postalCode: 'M5H 2M9', isDefault: true },
         { id: 'addr2', label: 'Work', street: '456 Bay Street', city: 'Toronto', province: 'ON', postalCode: 'M5J 2T3', isDefault: false },
     ]
+};
+
+const MOCK_PROFILES: Record<string, UserProfile> = {
+    'family@spendigo.ca': {
+        id: 'shop2',
+        name: 'Sarah Family',
+        email: 'family@spendigo.ca',
+        phone: '+1 (905) 555-0123',
+        addresses: [
+            { id: 'addr-fam-1', label: 'Home', street: '42 Maple Drive', city: 'Oakville', province: 'ON', postalCode: 'L6J 5A2', isDefault: true },
+            { id: 'addr-fam-2', label: 'Cottage', street: '12 Lakeview Path', city: 'Muskoka', province: 'ON', postalCode: 'P0B 1M0', isDefault: false }
+        ]
+    },
+    'student@spendigo.ca': {
+        id: 'shop3',
+        name: 'Steve Student',
+        email: 'student@spendigo.ca',
+        phone: '+1 (416) 555-0987',
+        addresses: [
+            { id: 'addr-stu-1', label: 'Dorm', street: '200 University Ave, Apt 404', city: 'Waterloo', province: 'ON', postalCode: 'N2L 3G1', isDefault: true }
+        ]
+    },
+    'chef@spendigo.ca': {
+        id: 'shop4',
+        name: 'Chef Chris',
+        email: 'chef@spendigo.ca',
+        phone: '+1 (416) 555-5555',
+        addresses: [
+            { id: 'addr-chef-1', label: 'Restaurant', street: '88 King St West', city: 'Toronto', province: 'ON', postalCode: 'M5X 1E2', isDefault: true },
+            { id: 'addr-chef-2', label: 'Home', street: '500 Wellington St', city: 'Toronto', province: 'ON', postalCode: 'M5V 1E3', isDefault: false }
+        ]
+    }
 };
 
 const INITIAL_ORDERS: Order[] = [
@@ -117,10 +150,10 @@ const INITIAL_ORDERS: Order[] = [
 import { useAuth } from './AuthContext';
 
 export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-    // ... (keep start of component)
+    const [orders, setOrders] = useState<Order[]>([]);
+    const [profile, setProfile] = useState<UserProfile>(INITIAL_PROFILE);
     const { user } = useAuth();
 
-    // ... (keep getStorageKeys and state)
     // Helper to get storage keys based on current user (or guest)
     const getStorageKeys = () => {
         const userId = user?.id || 'guest';
@@ -130,11 +163,6 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         };
     };
 
-    const [orders, setOrders] = useState<Order[]>([]);
-    const [profile, setProfile] = useState<UserProfile>(INITIAL_PROFILE);
-
-    // ... (keep load/save effects)
-
     // Load data when user changes
     useEffect(() => {
         const { ordersKey, profileKey } = getStorageKeys();
@@ -142,31 +170,80 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         const savedOrders = localStorage.getItem(ordersKey);
         const savedProfile = localStorage.getItem(profileKey);
 
+        let initialOrders: Order[] = [];
+
         if (savedOrders) {
-            setOrders(JSON.parse(savedOrders));
+            initialOrders = JSON.parse(savedOrders);
         } else {
-            // For demo purposes, give "guest" or new users some mock data
-            // In a real app, new users would start empty
-            setOrders(user ? [] : INITIAL_ORDERS);
+            // For demo purposes, give "guest" or the main demo shopper data
+            if (!user || user.email === 'shopper@example.com') {
+                initialOrders = INITIAL_ORDERS;
+            }
         }
+        setOrders(initialOrders);
 
         if (savedProfile) {
             setProfile(JSON.parse(savedProfile));
         } else {
-            setProfile(user ? {
-                id: user.id,
-                name: user.name,
-                email: user.email,
-                phone: '',
-                addresses: []
-            } : INITIAL_PROFILE);
+            if (user && MOCK_PROFILES[user.email]) {
+                setProfile(MOCK_PROFILES[user.email]);
+            } else {
+                setProfile(user ? {
+                    id: user.id,
+                    name: user.name,
+                    email: user.email,
+                    phone: '',
+                    addresses: []
+                } : INITIAL_PROFILE);
+            }
         }
     }, [user]);
 
-    // Save data when it changes
+    // Real-time Sync: Poll Merchant "Server" for updates
+    useEffect(() => {
+        if (orders.length === 0) return;
+
+        const syncWithMerchant = () => {
+            let hasMultiUpdates = false;
+            const updatedOrders = orders.map(order => {
+                const storeKey = `spendigo_store_orders_${order.storeId}`;
+                const storeOrdersStr = localStorage.getItem(storeKey);
+                if (storeOrdersStr) {
+                    const storeOrders = JSON.parse(storeOrdersStr) as Order[];
+                    const masterOrder = storeOrders.find(o => o.id === order.id);
+                    // If master record exists and has newer status/payment info
+                    if (masterOrder && (
+                        masterOrder.status !== order.status ||
+                        masterOrder.paymentStatus !== order.paymentStatus
+                    )) {
+                        hasMultiUpdates = true;
+                        return {
+                            ...order,
+                            status: masterOrder.status,
+                            paymentStatus: masterOrder.paymentStatus,
+                            paymentCollectedBy: masterOrder.paymentCollectedBy,
+                            estimatedDelivery: masterOrder.estimatedDelivery
+                        };
+                    }
+                }
+                return order;
+            });
+
+            if (hasMultiUpdates) {
+                setOrders(updatedOrders);
+            }
+        };
+
+        const interval = setInterval(syncWithMerchant, 2000); // 2s polling
+        return () => clearInterval(interval);
+    }, [orders]); // Depend on orders to have latest list to check
+
+    // Save data when it changes (Persist the synced updates)
     useEffect(() => {
         const { ordersKey } = getStorageKeys();
-        localStorage.setItem(ordersKey, JSON.stringify(orders));
+        if (orders.length > 0) { // Don't wipe if empty init
+            localStorage.setItem(ordersKey, JSON.stringify(orders));
+        }
     }, [orders, user]);
 
     useEffect(() => {
@@ -192,8 +269,23 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             const existingStoreOrders = JSON.parse(localStorage.getItem(storeKey) || '[]');
             const updatedStoreOrders = [newOrder, ...existingStoreOrders];
             localStorage.setItem(storeKey, JSON.stringify(updatedStoreOrders));
+
+            // 3. Trigger Notification for Merchant
+            const notifKey = `spendigo_notifications_${orderData.storeId}`;
+            const existingNotifs = JSON.parse(localStorage.getItem(notifKey) || '[]');
+            const newNotif = {
+                id: `notif-${Date.now()}`,
+                title: 'New Order Received',
+                message: `Order #${newOrder.id} from ${newOrder.customerName}`,
+                type: 'order',
+                timestamp: new Date().toISOString(),
+                read: false,
+                link: '/merchant/orders'
+            };
+            localStorage.setItem(notifKey, JSON.stringify([newNotif, ...existingNotifs]));
+
         } catch (e) {
-            console.error('Failed to route order to merchant:', e);
+            console.error('Failed to route order/notification to merchant:', e);
         }
 
         return newOrder.id;
@@ -209,6 +301,46 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         setOrders(prev => prev.map(order =>
             order.id === orderId ? { ...order, paymentStatus: status, paymentCollectedBy: auditData } : order
         ));
+    };
+
+    const cancelOrder = (orderId: string) => {
+        const orderToCancel = orders.find(o => o.id === orderId);
+        if (!orderToCancel) return;
+
+        // 1. Update Local (User) State
+        setOrders(prev => prev.map(o =>
+            o.id === orderId ? { ...o, status: 'cancelled' } : o
+        ));
+
+        // 2. Update Store Storage (Merchant View)
+        const storeKey = `spendigo_store_orders_${orderToCancel.storeId}`;
+        try {
+            const storeOrdersStr = localStorage.getItem(storeKey);
+            if (storeOrdersStr) {
+                const storeOrders = JSON.parse(storeOrdersStr) as Order[];
+                const updatedStoreOrders = storeOrders.map(o =>
+                    o.id === orderId ? { ...o, status: 'cancelled' as const } : o
+                );
+                localStorage.setItem(storeKey, JSON.stringify(updatedStoreOrders));
+            }
+
+            // 3. Notify Merchant
+            const notifKey = `spendigo_notifications_${orderToCancel.storeId}`;
+            const existingNotifs = JSON.parse(localStorage.getItem(notifKey) || '[]');
+            const newNotif = {
+                id: `notif-cancel-${Date.now()}`,
+                title: 'Order Cancelled',
+                message: `Order #${orderId} was cancelled by the customer.`,
+                type: 'alert',
+                timestamp: new Date().toISOString(),
+                read: false,
+                link: '/merchant/orders'
+            };
+            localStorage.setItem(notifKey, JSON.stringify([newNotif, ...existingNotifs]));
+
+        } catch (e) {
+            console.error('Failed to update store storage for cancellation:', e);
+        }
     };
 
     const updateProfile = (updates: Partial<UserProfile>) => {
@@ -248,6 +380,7 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             addOrder,
             updateOrderStatus,
             updatePaymentStatus,
+            cancelOrder,
             updateProfile,
             addAddress,
             updateAddress,

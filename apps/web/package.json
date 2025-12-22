@@ -22,6 +22,7 @@
         "@capacitor/ios": "^6.0.0",
         "@types/react": "^18.2.37",
         "@types/react-dom": "^18.2.15",
+        "@vitejs/plugin-basic-ssl": "^2.1.0",
         "@vitejs/plugin-react": "^4.2.0",
         "autoprefixer": "^10.0.0",
         "postcss": "^8.0.0",
