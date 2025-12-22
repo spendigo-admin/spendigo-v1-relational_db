@@ -37,7 +37,7 @@ const AdminDashboard: React.FC = () => {
 
             // 3. "Real" Database Load calculation based on actual context data size
             // Count total objects in the stores to simulate DB load
-            const allStores = Object.values(stores);
+            const allStores = Object.values(stores || {});
             const totalItems = allStores.reduce((acc: number, store: any) =>
                 acc + (store.products?.length || 0) + (store.oneDayOffers?.length || 0) + (store.saleItems?.length || 0), 0);
             // Assume 1000 items is "100% load" for this demo
@@ -62,7 +62,7 @@ const AdminDashboard: React.FC = () => {
 
     // specific aggregation logic
     const stats = useMemo(() => {
-        const allStores = Object.values(stores);
+        const allStores = Object.values(stores || {});
         const totalStores = allStores.length;
         const totalProducts = allStores.reduce((acc: number, store: any) => acc + (store.products?.length || 0), 0);
         const totalDeals = allStores.reduce((acc: number, store: any) =>

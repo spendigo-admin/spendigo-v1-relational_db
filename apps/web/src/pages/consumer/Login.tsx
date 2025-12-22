@@ -84,7 +84,7 @@ const Login = () => {
                     </button>
 
                     <div className="mt-4 p-3 bg-blue-50 text-xs text-blue-800 rounded-lg">
-                        <p className="font-bold mb-2">Demo Credentials (Password: any):</p>
+                        <p className="font-bold mb-2">Demo Credentials (Password: Spendigo123!):</p>
 
                         <div className="mb-3">
                             <p className="font-semibold">Format:</p>

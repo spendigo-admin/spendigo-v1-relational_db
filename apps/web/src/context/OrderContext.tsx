@@ -1,4 +1,17 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import {
+    collection,
+    query,
+    where,
+    onSnapshot,
+    addDoc,
+    updateDoc,
+    doc,
+    serverTimestamp,
+    orderBy
+} from 'firebase/firestore';
+import { db } from '../lib/firebase';
+import { useAuth } from './AuthContext';
 
 // Types
 export interface Address {
@@ -20,13 +33,14 @@ export interface OrderItem {
 }
 
 export interface Order {
-    id: string;
+    id: string; // Firestore Doc ID
     date: string;
     status: 'placed' | 'preparing' | 'out_for_delivery' | 'delivered' | 'cancelled';
     items: OrderItem[];
     storeName: string;
     storeId: string;
     customerName: string;
+    customerId: string; // New: Link to Auth User
     subtotal: number;
     tax: number;
     deliveryFee: number;
@@ -49,300 +63,134 @@ export interface UserProfile {
 interface OrderContextType {
     orders: Order[];
     profile: UserProfile;
-    addOrder: (order: Omit<Order, 'id' | 'date' | 'customerName'>) => string;
-    updateOrderStatus: (orderId: string, status: Order['status']) => void;
-    updatePaymentStatus: (orderId: string, status: Order['paymentStatus'], auditData?: { id: string; name: string; timestamp: string }) => void;
-    cancelOrder: (orderId: string) => void;
+    addOrder: (order: Omit<Order, 'id' | 'date' | 'customerName' | 'customerId'>) => Promise<string>;
+    updateOrderStatus: (orderId: string, status: Order['status']) => Promise<void>;
+    updatePaymentStatus: (orderId: string, status: Order['paymentStatus'], auditData?: { id: string; name: string; timestamp: string }) => Promise<void>;
+    cancelOrder: (orderId: string) => Promise<void>;
     updateProfile: (updates: Partial<UserProfile>) => void;
     addAddress: (address: Omit<Address, 'id'>) => void;
     updateAddress: (id: string, updates: Partial<Address>) => void;
     deleteAddress: (id: string) => void;
     setDefaultAddress: (id: string) => void;
+    loading: boolean;
 }
 
 const OrderContext = createContext<OrderContextType | undefined>(undefined);
 
-// Mock initial data
+// Mock Profile Data (Keep implemented as local storage/memory for now as "User Profile" wasn't explicitly migrated yet)
 const INITIAL_PROFILE: UserProfile = {
     id: 'user1',
-    name: 'John Doe',
-    email: 'john.doe@example.com',
-    phone: '+1 (416) 555-0123',
-    addresses: [
-        { id: 'addr1', label: 'Home', street: '123 Queen Street West', city: 'Toronto', province: 'ON', postalCode: 'M5H 2M9', isDefault: true },
-        { id: 'addr2', label: 'Work', street: '456 Bay Street', city: 'Toronto', province: 'ON', postalCode: 'M5J 2T3', isDefault: false },
-    ]
+    name: 'Guest User',
+    email: 'guest@example.com',
+    phone: '',
+    addresses: []
 };
-
-const MOCK_PROFILES: Record<string, UserProfile> = {
-    'family@spendigo.ca': {
-        id: 'shop2',
-        name: 'Sarah Family',
-        email: 'family@spendigo.ca',
-        phone: '+1 (905) 555-0123',
-        addresses: [
-            { id: 'addr-fam-1', label: 'Home', street: '42 Maple Drive', city: 'Oakville', province: 'ON', postalCode: 'L6J 5A2', isDefault: true },
-            { id: 'addr-fam-2', label: 'Cottage', street: '12 Lakeview Path', city: 'Muskoka', province: 'ON', postalCode: 'P0B 1M0', isDefault: false }
-        ]
-    },
-    'student@spendigo.ca': {
-        id: 'shop3',
-        name: 'Steve Student',
-        email: 'student@spendigo.ca',
-        phone: '+1 (416) 555-0987',
-        addresses: [
-            { id: 'addr-stu-1', label: 'Dorm', street: '200 University Ave, Apt 404', city: 'Waterloo', province: 'ON', postalCode: 'N2L 3G1', isDefault: true }
-        ]
-    },
-    'chef@spendigo.ca': {
-        id: 'shop4',
-        name: 'Chef Chris',
-        email: 'chef@spendigo.ca',
-        phone: '+1 (416) 555-5555',
-        addresses: [
-            { id: 'addr-chef-1', label: 'Restaurant', street: '88 King St West', city: 'Toronto', province: 'ON', postalCode: 'M5X 1E2', isDefault: true },
-            { id: 'addr-chef-2', label: 'Home', street: '500 Wellington St', city: 'Toronto', province: 'ON', postalCode: 'M5V 1E3', isDefault: false }
-        ]
-    }
-};
-
-const INITIAL_ORDERS: Order[] = [
-    {
-        id: 'ORD-001',
-        date: '2024-12-15T10:30:00',
-        status: 'delivered',
-        storeName: 'FreshMart',
-        storeId: '1',
-        customerName: 'John Doe',
-        items: [
-            { productId: 'p1', productName: 'Organic Avocados (5pk)', price: 6.99, quantity: 2, image: 'https://images.unsplash.com/photo-1523049673857-eb18f1d7b578?w=100' },
-            { productId: 'p2', productName: 'Almond Milk (1L)', price: 4.49, quantity: 1, image: 'https://images.unsplash.com/photo-1550583724-b2692b85b150?w=100' },
-        ],
-        subtotal: 18.47,
-        tax: 2.40,
-        deliveryFee: 0,
-        total: 20.87,
-        paymentMethod: 'card',
-        paymentStatus: 'paid',
-        deliveryAddress: INITIAL_PROFILE.addresses[0]
-    },
-    {
-        id: 'ORD-002',
-        date: '2024-12-16T14:00:00',
-        status: 'out_for_delivery',
-        storeName: 'QuickPick',
-        storeId: '2',
-        customerName: 'John Doe',
-        items: [
-            { productId: 'p7', productName: 'Energy Drink (4pk)', price: 9.99, quantity: 1, image: 'https://images.unsplash.com/photo-1622543925917-763c34d1a86e?w=100' },
-        ],
-        subtotal: 9.99,
-        tax: 1.30,
-        deliveryFee: 2.99,
-        total: 14.28,
-        paymentMethod: 'in_store',
-        paymentStatus: 'pending',
-        estimatedDelivery: '2:45 PM',
-        deliveryAddress: INITIAL_PROFILE.addresses[0]
-    }
-];
-
-import { useAuth } from './AuthContext';
 
 export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [orders, setOrders] = useState<Order[]>([]);
     const [profile, setProfile] = useState<UserProfile>(INITIAL_PROFILE);
+    const [loading, setLoading] = useState(true);
     const { user } = useAuth();
 
-    // Helper to get storage keys based on current user (or guest)
-    const getStorageKeys = () => {
-        const userId = user?.id || 'guest';
-        return {
-            ordersKey: `spendigo_orders_${userId}`,
-            profileKey: `spendigo_profile_${userId}`
-        };
-    };
-
-    // Load data when user changes
+    // 1. Sync Orders from Firestore
     useEffect(() => {
-        const { ordersKey, profileKey } = getStorageKeys();
-
-        const savedOrders = localStorage.getItem(ordersKey);
-        const savedProfile = localStorage.getItem(profileKey);
-
-        let initialOrders: Order[] = [];
-
-        if (savedOrders) {
-            initialOrders = JSON.parse(savedOrders);
-        } else {
-            // For demo purposes, give "guest" or the main demo shopper data
-            if (!user || user.email === 'shopper@example.com') {
-                initialOrders = INITIAL_ORDERS;
-            }
+        if (!user) {
+            setOrders([]);
+            setLoading(false);
+            return;
         }
-        setOrders(initialOrders);
 
-        if (savedProfile) {
-            setProfile(JSON.parse(savedProfile));
-        } else {
-            if (user && MOCK_PROFILES[user.email]) {
-                setProfile(MOCK_PROFILES[user.email]);
+        let q;
+
+        // Define Query based on Role
+        if (user.role === 'merchant') {
+            // Merchants see orders for their store
+            // Note: In a real app, 'user.storeId' should be strictly typed. 
+            // We assume merchants have 'storeId' in their profile or we filter client-side if query is complex.
+            // For now, let's assume we store 'storeId' on the merchant user object or they manage ONE store.
+            // A simplified approach for this demo:
+            // Query ALL orders where storeId matches the user's storeId (if set)
+            // BUT: Access rules usually prevent querying ALL orders.
+            // Let's rely on the fact we haven't implemented strict Firestore Rules yet so we can query.
+            if (user.storeId) {
+                q = query(collection(db, 'orders'), where('storeId', '==', user.storeId)); // , orderBy('date', 'desc') needs composite index
             } else {
-                setProfile(user ? {
-                    id: user.id,
-                    name: user.name,
-                    email: user.email,
-                    phone: '',
-                    addresses: []
-                } : INITIAL_PROFILE);
+                setOrders([]); // No store assigned
+                return;
             }
+        } else if (user.role === 'admin') {
+            // Admins see everything
+            q = query(collection(db, 'orders'));
+        } else {
+            // Consumers see their own orders
+            q = query(collection(db, 'orders'), where('customerId', '==', user.id));
+        }
+
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const fetchedOrders: Order[] = [];
+            snapshot.forEach((doc) => {
+                fetchedOrders.push({ id: doc.id, ...doc.data() } as Order);
+            });
+            // Client-side sort since we might lack composite indexes
+            fetchedOrders.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+            setOrders(fetchedOrders);
+            setLoading(false);
+        });
+
+        return () => unsubscribe();
+    }, [user]);
+
+    // 2. Profile Management (Simplified Sync - could be moved to AuthContext or UserContext later)
+    useEffect(() => {
+        if (user) {
+            // Initialize profile from Auth user if available
+            setProfile(prev => ({
+                ...prev,
+                id: user.id,
+                name: user.name,
+                email: user.email,
+                // Keep existing addresses if we had them in memory or load from Firestore user doc (TODO)
+            }));
         }
     }, [user]);
 
-    // Real-time Sync: Poll Merchant "Server" for updates
-    useEffect(() => {
-        if (orders.length === 0) return;
 
-        const syncWithMerchant = () => {
-            let hasMultiUpdates = false;
-            const updatedOrders = orders.map(order => {
-                const storeKey = `spendigo_store_orders_${order.storeId}`;
-                const storeOrdersStr = localStorage.getItem(storeKey);
-                if (storeOrdersStr) {
-                    const storeOrders = JSON.parse(storeOrdersStr) as Order[];
-                    const masterOrder = storeOrders.find(o => o.id === order.id);
-                    // If master record exists and has newer status/payment info
-                    if (masterOrder && (
-                        masterOrder.status !== order.status ||
-                        masterOrder.paymentStatus !== order.paymentStatus
-                    )) {
-                        hasMultiUpdates = true;
-                        return {
-                            ...order,
-                            status: masterOrder.status,
-                            paymentStatus: masterOrder.paymentStatus,
-                            paymentCollectedBy: masterOrder.paymentCollectedBy,
-                            estimatedDelivery: masterOrder.estimatedDelivery
-                        };
-                    }
-                }
-                return order;
-            });
+    // --- Actions ---
 
-            if (hasMultiUpdates) {
-                setOrders(updatedOrders);
-            }
-        };
+    const addOrder = async (orderData: Omit<Order, 'id' | 'date' | 'customerName' | 'customerId'>): Promise<string> => {
+        if (!user) throw new Error("Must be logged in");
 
-        const interval = setInterval(syncWithMerchant, 2000); // 2s polling
-        return () => clearInterval(interval);
-    }, [orders]); // Depend on orders to have latest list to check
-
-    // Save data when it changes (Persist the synced updates)
-    useEffect(() => {
-        const { ordersKey } = getStorageKeys();
-        if (orders.length > 0) { // Don't wipe if empty init
-            localStorage.setItem(ordersKey, JSON.stringify(orders));
-        }
-    }, [orders, user]);
-
-    useEffect(() => {
-        const { profileKey } = getStorageKeys();
-        localStorage.setItem(profileKey, JSON.stringify(profile));
-    }, [profile, user]);
-
-    const addOrder = (orderData: Omit<Order, 'id' | 'date' | 'customerName'>): string => {
-        const newOrder: Order = {
+        const newOrderData = {
             ...orderData,
-            id: `ORD-${String(Date.now()).slice(-6)}`,
             date: new Date().toISOString(),
-            customerName: user?.name || profile.name || 'Guest User'
+            customerId: user.id,
+            customerName: user.name || 'Valued Customer',
+            createdAt: serverTimestamp()
         };
 
-        // 1. Update User's Order History (State + Effect handles persistence)
-        setOrders(prev => [newOrder, ...prev]);
-
-        // 2. Dual-Write: Update Store's Inbox (Direct LocalStorage update)
-        // This simulates a backend push to the merchant
-        const storeKey = `spendigo_store_orders_${orderData.storeId}`;
-        try {
-            const existingStoreOrders = JSON.parse(localStorage.getItem(storeKey) || '[]');
-            const updatedStoreOrders = [newOrder, ...existingStoreOrders];
-            localStorage.setItem(storeKey, JSON.stringify(updatedStoreOrders));
-
-            // 3. Trigger Notification for Merchant
-            const notifKey = `spendigo_notifications_${orderData.storeId}`;
-            const existingNotifs = JSON.parse(localStorage.getItem(notifKey) || '[]');
-            const newNotif = {
-                id: `notif-${Date.now()}`,
-                title: 'New Order Received',
-                message: `Order #${newOrder.id} from ${newOrder.customerName}`,
-                type: 'order',
-                timestamp: new Date().toISOString(),
-                read: false,
-                link: '/merchant/orders'
-            };
-            localStorage.setItem(notifKey, JSON.stringify([newNotif, ...existingNotifs]));
-
-        } catch (e) {
-            console.error('Failed to route order/notification to merchant:', e);
-        }
-
-        return newOrder.id;
+        const docRef = await addDoc(collection(db, 'orders'), newOrderData);
+        return docRef.id;
     };
 
-    const updateOrderStatus = (orderId: string, status: Order['status']) => {
-        setOrders(prev => prev.map(order =>
-            order.id === orderId ? { ...order, status } : order
-        ));
+    const updateOrderStatus = async (orderId: string, status: Order['status']) => {
+        const orderRef = doc(db, 'orders', orderId);
+        await updateDoc(orderRef, { status });
     };
 
-    const updatePaymentStatus = (orderId: string, status: Order['paymentStatus'], auditData?: { id: string; name: string; timestamp: string }) => {
-        setOrders(prev => prev.map(order =>
-            order.id === orderId ? { ...order, paymentStatus: status, paymentCollectedBy: auditData } : order
-        ));
+    const updatePaymentStatus = async (orderId: string, status: Order['paymentStatus'], auditData?: { id: string; name: string; timestamp: string }) => {
+        const orderRef = doc(db, 'orders', orderId);
+        await updateDoc(orderRef, {
+            paymentStatus: status,
+            paymentCollectedBy: auditData
+        });
     };
 
-    const cancelOrder = (orderId: string) => {
-        const orderToCancel = orders.find(o => o.id === orderId);
-        if (!orderToCancel) return;
-
-        // 1. Update Local (User) State
-        setOrders(prev => prev.map(o =>
-            o.id === orderId ? { ...o, status: 'cancelled' } : o
-        ));
-
-        // 2. Update Store Storage (Merchant View)
-        const storeKey = `spendigo_store_orders_${orderToCancel.storeId}`;
-        try {
-            const storeOrdersStr = localStorage.getItem(storeKey);
-            if (storeOrdersStr) {
-                const storeOrders = JSON.parse(storeOrdersStr) as Order[];
-                const updatedStoreOrders = storeOrders.map(o =>
-                    o.id === orderId ? { ...o, status: 'cancelled' as const } : o
-                );
-                localStorage.setItem(storeKey, JSON.stringify(updatedStoreOrders));
-            }
-
-            // 3. Notify Merchant
-            const notifKey = `spendigo_notifications_${orderToCancel.storeId}`;
-            const existingNotifs = JSON.parse(localStorage.getItem(notifKey) || '[]');
-            const newNotif = {
-                id: `notif-cancel-${Date.now()}`,
-                title: 'Order Cancelled',
-                message: `Order #${orderId} was cancelled by the customer.`,
-                type: 'alert',
-                timestamp: new Date().toISOString(),
-                read: false,
-                link: '/merchant/orders'
-            };
-            localStorage.setItem(notifKey, JSON.stringify([newNotif, ...existingNotifs]));
-
-        } catch (e) {
-            console.error('Failed to update store storage for cancellation:', e);
-        }
+    const cancelOrder = async (orderId: string) => {
+        const orderRef = doc(db, 'orders', orderId);
+        await updateDoc(orderRef, { status: 'cancelled' });
     };
 
+    // --- Profile Actions (Local State for Demo, can be upgraded to Firestore) ---
     const updateProfile = (updates: Partial<UserProfile>) => {
         setProfile(prev => ({ ...prev, ...updates }));
     };
@@ -385,7 +233,8 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             addAddress,
             updateAddress,
             deleteAddress,
-            setDefaultAddress
+            setDefaultAddress,
+            loading
         }}>
             {children}
         </OrderContext.Provider>

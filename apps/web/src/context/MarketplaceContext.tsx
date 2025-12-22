@@ -1,95 +1,97 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { STORE_DATA } from '../data/productData';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { collection, onSnapshot, doc, updateDoc, setDoc, getDoc } from 'firebase/firestore';
+import { db } from '../lib/firebase';
+import { useAudit } from './AuditContext';
 
 interface MarketplaceContextType {
     stores: Record<string, any>;
-    updateStore: (storeId: string | number, data: any) => void;
-    updateStoreProducts: (storeId: string | number, products: any[]) => void;
-    updateStoreFlyer: (storeId: string | number, flyer: any) => void;
-    updateStoreDeals: (storeId: string | number, type: 'oneDayOffers' | 'saleItems', deals: any[]) => void;
-    updateStoreTeam: (storeId: string | number, team: any[]) => void;
-    updateStoreStatus: (storeId: string | number, status: 'active' | 'pending' | 'suspended') => void;
-    addStore: (store: any) => void;
+    updateStore: (storeId: string | number, data: any) => Promise<void>;
+    updateStoreProducts: (storeId: string | number, products: any[]) => Promise<void>;
+    updateStoreFlyer: (storeId: string | number, flyer: any) => Promise<void>;
+    updateStoreDeals: (storeId: string | number, type: 'oneDayOffers' | 'saleItems', deals: any[]) => Promise<void>;
+    updateStoreTeam: (storeId: string | number, team: any[]) => Promise<void>;
+    updateStoreStatus: (storeId: string | number, status: 'active' | 'pending' | 'suspended') => Promise<void>;
+    addStore: (store: any) => Promise<void>;
     getStore: (storeId: string | number) => any;
+    loading: boolean;
 }
 
 const MarketplaceContext = createContext<MarketplaceContextType | undefined>(undefined);
 
-import { useAudit } from './AuditContext';
-
 export const MarketplaceProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const { logEvent } = useAudit();
-    // Initialize with the static mock data, ensure they have status
-    const initialData = Object.entries(STORE_DATA).reduce((acc, [key, val]: [string, any]) => {
-        acc[key] = { ...val, status: val.status || 'active', joinedAt: val.joinedAt || '2023-01-01' };
-        return acc;
-    }, {} as Record<string, any>);
+    const [stores, setStores] = useState<Record<string, any>>({});
+    const [loading, setLoading] = useState(true);
 
-    const [stores, setStores] = useState<Record<string, any>>(initialData);
-
-    const updateStore = (storeId: string | number, data: any) => {
-        setStores(prev => ({
-            ...prev,
-            [storeId]: { ...prev[storeId], ...data }
-        }));
-    };
-
-    const updateStoreProducts = (storeId: string | number, products: any[]) => {
-        setStores(prev => ({
-            ...prev,
-            [storeId]: { ...prev[storeId], products }
-        }));
-    };
-
-    const updateStoreFlyer = (storeId: string | number, flyer: any) => {
-        setStores(prev => ({
-            ...prev,
-            [storeId]: { ...prev[storeId], flyer }
-        }));
-    };
-
-    const updateStoreDeals = (storeId: string | number, type: 'oneDayOffers' | 'saleItems', deals: any[]) => {
-        setStores(prev => ({
-            ...prev,
-            [storeId]: { ...prev[storeId], [type]: deals }
-        }));
-    };
-
-    const updateStoreTeam = (storeId: string | number, team: any[]) => {
-        setStores(prev => ({
-            ...prev,
-            [storeId]: { ...prev[storeId], team }
-        }));
-    };
-
-    const updateStoreStatus = (storeId: string | number, status: 'active' | 'pending' | 'suspended') => {
-        setStores(prev => {
-            const store = prev[storeId];
-            logEvent('STORE_STATUS_UPDATE', {
-                storeId,
-                storeName: store?.name,
-                oldStatus: store?.status,
-                newStatus: status
-            }, `store/${storeId}`);
-            return {
-                ...prev,
-                [storeId]: { ...prev[storeId], status }
-            };
+    // Sync Stores from Firestore
+    useEffect(() => {
+        const unsubscribe = onSnapshot(collection(db, 'stores'), (snapshot) => {
+            const storeData: Record<string, any> = {};
+            snapshot.forEach(doc => {
+                storeData[doc.id] = { id: doc.id, ...doc.data() };
+            });
+            setStores(storeData);
+            setLoading(false);
         });
+
+        return () => unsubscribe();
+    }, []);
+
+    const updateStore = async (storeId: string | number, data: any) => {
+        const storeRef = doc(db, 'stores', String(storeId));
+        await updateDoc(storeRef, data);
     };
 
-    const addStore = (store: any) => {
+    const updateStoreProducts = async (storeId: string | number, products: any[]) => {
+        const storeRef = doc(db, 'stores', String(storeId));
+        await updateDoc(storeRef, { products });
+    };
+
+    const updateStoreFlyer = async (storeId: string | number, flyer: any) => {
+        const storeRef = doc(db, 'stores', String(storeId));
+        await updateDoc(storeRef, { flyer });
+    };
+
+    const updateStoreDeals = async (storeId: string | number, type: 'oneDayOffers' | 'saleItems', deals: any[]) => {
+        const storeRef = doc(db, 'stores', String(storeId));
+        await updateDoc(storeRef, { [type]: deals });
+    };
+
+    const updateStoreTeam = async (storeId: string | number, team: any[]) => {
+        const storeRef = doc(db, 'stores', String(storeId));
+        await updateDoc(storeRef, { team });
+    };
+
+    const updateStoreStatus = async (storeId: string | number, status: 'active' | 'pending' | 'suspended') => {
+        const storeRef = doc(db, 'stores', String(storeId));
+        const store = stores[storeId];
+
+        logEvent('STORE_STATUS_UPDATE', {
+            storeId,
+            storeName: store?.name,
+            oldStatus: store?.status,
+            newStatus: status
+        }, `store/${storeId}`);
+
+        await updateDoc(storeRef, { status });
+    };
+
+    const addStore = async (store: any) => {
         const newId = store.id || `store-${Date.now()}`;
+
         logEvent('STORE_CREATED', {
             storeId: newId,
             storeName: store.name,
             merchantEmail: store.merchantEmail
         }, `store/${newId}`);
 
-        setStores(prev => ({
-            ...prev,
-            [newId]: { ...store, id: newId, status: store.status || 'pending', products: [], joinedAt: new Date().toISOString().split('T')[0] }
-        }));
+        await setDoc(doc(db, 'stores', newId), {
+            ...store,
+            id: newId,
+            status: store.status || 'pending',
+            products: [],
+            joinedAt: new Date().toISOString().split('T')[0]
+        });
     };
 
     const getStore = (storeId: string | number) => stores[storeId];
@@ -104,7 +106,8 @@ export const MarketplaceProvider: React.FC<{ children: ReactNode }> = ({ childre
             updateStoreTeam,
             updateStoreStatus,
             addStore,
-            getStore
+            getStore,
+            loading
         }}>
             {children}
         </MarketplaceContext.Provider>

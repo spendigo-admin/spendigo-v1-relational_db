@@ -19,6 +19,11 @@ const Register: React.FC = () => {
     const handleRegister = async (e: React.FormEvent) => {
         e.preventDefault();
 
+        if (formData.password.length < 6) {
+            alert('Password must be at least 6 characters long.');
+            return;
+        }
+
         await register({
             ...formData,
             role

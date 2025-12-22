@@ -1,7 +1,17 @@
+import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { ErrorBoundary } from 'react-error-boundary';
+import ErrorFallback from './components/ErrorFallback';
+import NotFound from './pages/NotFound';
+
 import { CartProvider } from './context/CartContext';
 import { OrderProvider } from './context/OrderContext';
 import { WishlistProvider } from './context/WishlistContext';
+import { AuthProvider } from './context/AuthContext';
+import { NotificationProvider } from './context/NotificationContext';
+import { MarketplaceProvider } from './context/MarketplaceContext';
+import { AuditProvider } from './context/AuditContext';
+
 import ConsumerLayout from './layouts/ConsumerLayout';
 import MerchantLayout from './layouts/MerchantLayout';
 import AdminLayout from './layouts/AdminLayout';
@@ -38,73 +48,75 @@ import AdminStoreManagement from './pages/admin/StoreManagement';
 import AdminAuditLogs from './pages/admin/AuditLogs';
 import AdminFlyerModeration from './pages/admin/FlyerModeration';
 import AdminSettings from './pages/admin/Settings';
-
-import { AuthProvider } from './context/AuthContext';
-import { NotificationProvider } from './context/NotificationContext';
-import { MarketplaceProvider } from './context/MarketplaceContext';
-import { AuditProvider } from './context/AuditContext';
+import SeedUsers from './pages/admin/SeedUsers';
 
 function App() {
     return (
-        <Router>
-            <AuthProvider>
-                <AuditProvider>
-                    <MarketplaceProvider>
-                        <CartProvider>
-                            <OrderProvider>
-                                <NotificationProvider>
-                                    <WishlistProvider>
-                                        <Routes>
-                                            {/* CONSUMER ROUTES wrapped in Layout */}
-                                            <Route element={<ConsumerLayout />}>
-                                                <Route path="/" element={<StoreList />} />
-                                                <Route path="/store/:id" element={<StoreDetail />} />
-                                                <Route path="/product/:id" element={<ProductDetail />} />
-                                                <Route path="/cart" element={<Cart />} />
-                                                <Route path="/checkout" element={<Checkout />} />
-                                                <Route path="/profile" element={<Profile />} />
-                                                <Route path="/search" element={<Search />} />
-                                                <Route path="/order/:id" element={<OrderTracking />} />
-                                                <Route path="/notifications" element={<Notifications />} />
-                                                <Route path="/smartcart" element={<SmartCartWishlist />} />
-                                                <Route path="/how-it-works" element={<HowItWorks />} />
-                                                <Route path="/consumer" element={<Navigate to="/" replace />} />
-                                            </Route>
+        <ErrorBoundary FallbackComponent={ErrorFallback} onReset={() => window.location.href = '/'}>
+            <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+                <AuthProvider>
+                    <AuditProvider>
+                        <MarketplaceProvider>
+                            <CartProvider>
+                                <OrderProvider>
+                                    <NotificationProvider>
+                                        <WishlistProvider>
+                                            <Routes>
+                                                {/* AUTH ROUTES (Fullscreen) */}
+                                                <Route path="/login" element={<Login />} />
+                                                <Route path="/register" element={<Register />} />
 
-                                            {/* AUTH ROUTES (Fullscreen) */}
-                                            <Route path="/login" element={<Login />} />
-                                            <Route path="/register" element={<Register />} />
+                                                {/* CONSUMER ROUTES wrapped in Layout */}
+                                                <Route element={<ConsumerLayout />}>
+                                                    <Route path="/" element={<StoreList />} />
+                                                    <Route path="/store/:id" element={<StoreDetail />} />
+                                                    <Route path="/product/:id" element={<ProductDetail />} />
+                                                    <Route path="/cart" element={<Cart />} />
+                                                    <Route path="/checkout" element={<Checkout />} />
+                                                    <Route path="/profile" element={<Profile />} />
+                                                    <Route path="/search" element={<Search />} />
+                                                    <Route path="/order/:id" element={<OrderTracking />} />
+                                                    <Route path="/notifications" element={<Notifications />} />
+                                                    <Route path="/smartcart" element={<SmartCartWishlist />} />
+                                                    <Route path="/how-it-works" element={<HowItWorks />} />
+                                                    <Route path="/consumer" element={<Navigate to="/" replace />} />
+                                                </Route>
 
-                                            {/* MERCHANT ROUTES with Layout */}
-                                            <Route element={<MerchantLayout />}>
-                                                <Route path="/merchant/dashboard" element={<MerchantDashboard />} />
-                                                <Route path="/merchant/onboarding" element={<MerchantOnboarding />} />
-                                                <Route path="/merchant/products" element={<MerchantProducts />} />
-                                                <Route path="/merchant/orders" element={<MerchantOrders />} />
-                                                <Route path="/merchant/flyers" element={<MerchantFlyers />} />
-                                                <Route path="/merchant/deals" element={<MerchantDeals />} />
-                                                <Route path="/merchant/settings" element={<MerchantSettings />} />
-                                                <Route path="/merchant/subscription" element={<MerchantSubscription />} />
-                                            </Route>
+                                                {/* MERCHANT ROUTES with Layout */}
+                                                <Route element={<MerchantLayout />}>
+                                                    <Route path="/merchant/dashboard" element={<MerchantDashboard />} />
+                                                    <Route path="/merchant/onboarding" element={<MerchantOnboarding />} />
+                                                    <Route path="/merchant/products" element={<MerchantProducts />} />
+                                                    <Route path="/merchant/orders" element={<MerchantOrders />} />
+                                                    <Route path="/merchant/flyers" element={<MerchantFlyers />} />
+                                                    <Route path="/merchant/deals" element={<MerchantDeals />} />
+                                                    <Route path="/merchant/settings" element={<MerchantSettings />} />
+                                                    <Route path="/merchant/subscription" element={<MerchantSubscription />} />
+                                                </Route>
 
-                                            {/* ADMIN ROUTES with Layout */}
-                                            <Route element={<AdminLayout />}>
-                                                <Route path="/admin/dashboard" element={<AdminDashboard />} />
-                                                <Route path="/admin/users" element={<AdminUserManagement />} />
-                                                <Route path="/admin/stores" element={<AdminStoreManagement />} />
-                                                <Route path="/admin/audit-logs" element={<AdminAuditLogs />} />
-                                                <Route path="/admin/flyers" element={<AdminFlyerModeration />} />
-                                                <Route path="/admin/settings" element={<AdminSettings />} />
-                                            </Route>
-                                        </Routes>
-                                    </WishlistProvider>
-                                </NotificationProvider>
-                            </OrderProvider>
-                        </CartProvider>
-                    </MarketplaceProvider>
-                </AuditProvider>
-            </AuthProvider>
-        </Router>
+                                                {/* ADMIN ROUTES with Layout */}
+                                                <Route element={<AdminLayout />}>
+                                                    <Route path="/admin/dashboard" element={<AdminDashboard />} />
+                                                    <Route path="/admin/users" element={<AdminUserManagement />} />
+                                                    <Route path="/admin/stores" element={<AdminStoreManagement />} />
+                                                    <Route path="/admin/settings" element={<AdminSettings />} />
+                                                </Route>
+
+                                                {/* TEMP: Public Seed Route for Migration */}
+                                                <Route path="/admin/seed" element={<SeedUsers />} />
+
+                                                {/* 404 Catch All */}
+                                                <Route path="*" element={<NotFound />} />
+                                            </Routes>
+                                        </WishlistProvider>
+                                    </NotificationProvider>
+                                </OrderProvider>
+                            </CartProvider>
+                        </MarketplaceProvider>
+                    </AuditProvider>
+                </AuthProvider>
+            </Router>
+        </ErrorBoundary>
     );
 }
 

@@ -82,8 +82,8 @@ const MerchantOnboarding: React.FC = () => {
                     <div className="space-y-6">
                         <div className="p-4 rounded-[var(--radius-sm)] bg-[var(--surface-0)] border border-[var(--glass-border)] text-sm text-[var(--text-muted)] h-48 overflow-y-auto">
                             <h3 className="font-bold text-[var(--text-main)] mb-2">Marketplace Facilitator Agreement</h3>
-                            <p>1. Relationship. You acknowledge that Spendigo is a Marketplace Facilitator and not the seller of record...</p>
-                            <p className="mt-2">2. Payouts. Payments are processed via Stripe Connect. Spendigo deducts a 5% platform commission...</p>
+                            <p>1. Relationship. You acknowledge that Spendigo is a Marketplace Facilitator platform.</p>
+                            <p className="mt-2">2. Fees. Spendigo operates on a **Subscription Model**. We do not charge a percentage commission on your sales. You receive 100% of your revenue (minus standard payment processing fees).</p>
                             {/* Truncated for brevity */}
                         </div>
 
@@ -111,8 +111,8 @@ const MerchantOnboarding: React.FC = () => {
                 {step === 3 && (
                     <div className="text-center space-y-6">
                         <div className="w-16 h-16 mx-auto rounded-full bg-[var(--surface-2)] flex items-center justify-center text-2xl">🏦</div>
-                        <h2 className="text-xl font-bold">Connect Payouts</h2>
-                        <p className="text-[var(--text-muted)]">We use Stripe to ensure secure, compliant payouts to your bank account.</p>
+                        <h2 className="text-xl font-bold">Setup Payouts</h2>
+                        <p className="text-[var(--text-muted)]">Connect your bank account to receive 100% of your sales revenue.</p>
 
                         <button
                             onClick={handleStripeConnect}

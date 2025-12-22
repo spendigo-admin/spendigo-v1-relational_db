@@ -13,9 +13,10 @@ const parseDeliveryTime = (timeStr: string): number => {
 
 const StoreList: React.FC = () => {
     const navigate = useNavigate();
-    const { stores } = useMarketplace();
+    const { stores, loading } = useMarketplace();
 
     const allStores = useMemo(() => {
+        if (!stores) return [];
         return Object.values(stores).map((store: any) => ({
             id: store.id,
             name: store.name,
@@ -71,6 +72,11 @@ const StoreList: React.FC = () => {
 
     return (
         <div className="animate-fade-in">
+            {loading && (
+                <div className="fixed inset-0 bg-white/50 backdrop-blur-sm z-50 flex items-center justify-center">
+                    <div className="animate-spin text-4xl">⏳</div>
+                </div>
+            )}
             {/* HERO SECTION - Instacart Style */}
             <section className="relative overflow-hidden bg-gradient-to-br from-[var(--brand-primary)] via-[#4f46e5] to-[var(--brand-secondary)] py-12 px-4">
                 {/* Animated background shapes */}

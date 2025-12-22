@@ -14,6 +14,9 @@ export default defineConfig({
     ],
     server: {
         host: 'spendigo.ca',
-        port: 443
+        port: 443,
+        hmr: {
+            host: 'spendigo.ca'
+        }
     }
 })
