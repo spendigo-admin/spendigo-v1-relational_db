@@ -103,14 +103,7 @@ const MerchantLayout: React.FC = () => {
                             <span>🏷️</span> Deals
                         </NavLink>
                     )}
-                    {can('team:manage') && (
-                        <NavLink
-                            to="/merchant/settings?tab=team"
-                            className={`flex items-center gap-3 p-3 rounded-lg font-medium transition-colors ${isTeamActive ? 'bg-[var(--brand-primary)] text-white' : 'text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text-main)]'}`}
-                        >
-                            <span>👥</span> Team
-                        </NavLink>
-                    )}
+
                     <NavLink
                         to="/merchant/subscription"
                         className={({ isActive }) => `flex items-center gap-3 p-3 rounded-lg font-medium transition-colors ${isActive ? 'bg-[var(--brand-primary)] text-white' : 'text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text-main)]'}`}

@@ -2,10 +2,15 @@ import React, { useState, useMemo } from 'react';
 import '../../styles/design-system.css';
 import { useMarketplace } from '../../context/MarketplaceContext';
 import { useAuth } from '../../context/AuthContext';
+import { CatalogItem, useCatalog } from '../../context/CatalogContext';
+
+import { useInventorySync } from '../../hooks/useInventorySync';
 
 const MerchantProducts: React.FC = () => {
     const { getStore, updateStoreProducts } = useMarketplace();
     const { can, user } = useAuth();
+    const { catalog, searchCatalog } = useCatalog(); // Use Catalog Context
+
     const storeId = user?.storeId || '1';
     const store = getStore(storeId);
     const hasWriteAccess = can('products:write');
@@ -13,9 +18,16 @@ const MerchantProducts: React.FC = () => {
     // Ensure products exist
     const products = useMemo(() => store?.products || [], [store?.products]);
 
+    // Inventory Sync Hook
+    const { stats, getSyncedProducts } = useInventorySync(products, catalog);
+
     const [showAddModal, setShowAddModal] = useState(false);
     const [editingProduct, setEditingProduct] = useState<any | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
+
+    // Catalog Search State for "Add Product"
+    const [catalogSearch, setCatalogSearch] = useState('');
+    const [showCatalogDropdown, setShowCatalogDropdown] = useState(false);
 
     // Form state
     const [form, setForm] = useState({
@@ -26,7 +38,9 @@ const MerchantProducts: React.FC = () => {
         stock: '',
         lowStockThreshold: '10',
         category: 'Fresh Produce',
-        image: ''
+        image: '',
+        relatedCatalogItemId: '', // Link to master catalog
+        taxable: true
     });
 
     const filteredProducts = products.filter((p: any) =>
@@ -37,6 +51,14 @@ const MerchantProducts: React.FC = () => {
     const updateProducts = (newProducts: any[]) => {
         updateStoreProducts(storeId, newProducts);
     };
+
+    const handleSyncInventory = () => {
+        if (confirm(`Update ${stats.outOfSyncCount} items from Master Catalog? Prices and stock will remain unchanged.`)) {
+            const syncedList = getSyncedProducts();
+            updateProducts(syncedList);
+        }
+    };
+
 
     const handleSaveProduct = () => {
         const price = parseFloat(form.price) || 0;
@@ -53,13 +75,15 @@ const MerchantProducts: React.FC = () => {
                 stock,
                 lowStockThreshold: lowStock,
                 category: form.category,
-                image: form.image || p.image // Keep existing or form
+                image: form.image || p.image, // Keep existing or form
+                taxable: form.taxable
             } : p);
             updateProducts(updatedList);
         } else {
             const newProduct = {
                 id: `mp${Date.now()}`,
                 name: form.name,
+                catalogItemId: form.relatedCatalogItemId, // Link to catalog
                 sku: form.sku,
                 description: form.description,
                 price,
@@ -68,6 +92,7 @@ const MerchantProducts: React.FC = () => {
                 category: form.category,
                 image: form.image || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=100',
                 active: true,
+                taxable: form.taxable
             };
             updateProducts([...products, newProduct]);
         }
@@ -84,7 +109,9 @@ const MerchantProducts: React.FC = () => {
             stock: String(product.stock !== undefined ? product.stock : 50), // Default mock stock if missing
             lowStockThreshold: String(product.lowStockThreshold || 10),
             category: product.category || 'Fresh Produce',
-            image: product.image || ''
+            image: product.image || '',
+            relatedCatalogItemId: product.catalogItemId || '',
+            taxable: product.taxable !== false // Default to true if undefined
         });
         setShowAddModal(true);
     };
@@ -92,7 +119,8 @@ const MerchantProducts: React.FC = () => {
     const closeModal = () => {
         setShowAddModal(false);
         setEditingProduct(null);
-        setForm({ name: '', sku: '', description: '', price: '', stock: '', lowStockThreshold: '10', category: 'Fresh Produce', image: '' });
+        setCatalogSearch('');
+        setForm({ name: '', sku: '', description: '', price: '', stock: '', lowStockThreshold: '10', category: 'Fresh Produce', image: '', relatedCatalogItemId: '', taxable: true });
     };
 
     const toggleProductActive = (id: string) => {
@@ -115,14 +143,25 @@ const MerchantProducts: React.FC = () => {
                     <h1 className="text-2xl font-bold text-[var(--text-main)]">Products</h1>
                     <p className="text-sm text-[var(--text-muted)]">{products.length} total products</p>
                 </div>
-                {hasWriteAccess && (
-                    <button
-                        onClick={() => setShowAddModal(true)}
-                        className="px-4 py-2 bg-[var(--brand-primary)] text-white font-medium rounded-lg hover:brightness-110 shadow-lg shadow-[var(--brand-primary)]/20"
-                    >
-                        + Add Product
-                    </button>
-                )}
+                <div className="flex gap-3">
+                    {hasWriteAccess && stats.outOfSyncCount > 0 && (
+                        <button
+                            onClick={handleSyncInventory}
+                            className="px-4 py-2 bg-orange-100 text-orange-700 font-bold rounded-lg hover:bg-orange-200 border border-orange-200 flex items-center gap-2 animate-pulse"
+                        >
+                            <span>↻</span>
+                            <span>Sync Catalog ({stats.outOfSyncCount})</span>
+                        </button>
+                    )}
+                    {hasWriteAccess && (
+                        <button
+                            onClick={() => setShowAddModal(true)}
+                            className="px-4 py-2 bg-[var(--brand-primary)] text-white font-medium rounded-lg hover:brightness-110 shadow-lg shadow-[var(--brand-primary)]/20"
+                        >
+                            + Add Product
+                        </button>
+                    )}
+                </div>
             </div>
 
             {/* Search */}
@@ -209,11 +248,90 @@ const MerchantProducts: React.FC = () => {
                         <h2 className="text-xl font-bold text-[var(--text-main)] mb-4">
                             {editingProduct ? 'Edit Product' : 'Add New Product'}
                         </h2>
+
+                        {!editingProduct && (
+                            <div className="mb-6 bg-blue-50 p-4 rounded-xl border border-blue-100">
+                                <label className="block text-sm font-bold text-blue-900 mb-2">🛍️ Select from Master Catalog</label>
+                                <div className="relative">
+                                    <input
+                                        type="text"
+                                        placeholder="Search catalog (e.g. 'Apple', 'Milk')..."
+                                        value={catalogSearch}
+                                        onChange={e => {
+                                            setCatalogSearch(e.target.value);
+                                            setShowCatalogDropdown(true);
+                                            // Also update name if user wants to type manually
+                                            if (!form.relatedCatalogItemId) {
+                                                setForm(prev => ({ ...prev, name: e.target.value }));
+                                            }
+                                        }}
+                                        onFocus={() => setShowCatalogDropdown(true)}
+                                        className="w-full px-4 py-3 border border-blue-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                    />
+                                    {showCatalogDropdown && catalogSearch && (
+                                        <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl z-20 max-h-60 overflow-y-auto">
+                                            {searchCatalog(catalogSearch).length > 0 ? (
+                                                searchCatalog(catalogSearch).map(item => (
+                                                    <div
+                                                        key={item.id}
+                                                        onClick={() => {
+                                                            setForm(prev => ({
+                                                                ...prev,
+                                                                name: item.name,
+                                                                description: item.description,
+                                                                category: item.category,
+                                                                image: item.image,
+                                                                relatedCatalogItemId: item.id,
+                                                                taxable: item.taxable !== false
+                                                            }));
+                                                            setCatalogSearch(item.name);
+                                                            setShowCatalogDropdown(false);
+                                                        }}
+                                                        className="p-3 hover:bg-blue-50 cursor-pointer border-b border-gray-50 last:border-0 flex items-center gap-3"
+                                                    >
+                                                        <img src={item.image} className="w-8 h-8 rounded object-cover" alt="" />
+                                                        <div>
+                                                            <div className="font-bold text-sm">{item.name}</div>
+                                                            <div className="text-xs text-gray-500">{item.category}</div>
+                                                        </div>
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <div className="p-3 text-sm text-gray-500 italic">No matching items found in catalog.</div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                                <p className="text-xs text-blue-600 mt-2">
+                                    Selecting from catalog ensures better visibility in search results.
+                                </p>
+                            </div>
+                        )}
+
                         <div className="space-y-4">
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="col-span-2">
                                     <label className="block text-sm text-[var(--text-muted)] mb-1">Product Name</label>
-                                    <input type="text" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} className="w-full px-4 py-3 border border-[var(--glass-border)] rounded-lg" />
+                                    <div className="relative">
+                                        <input
+                                            type="text"
+                                            value={form.name}
+                                            onChange={e => setForm({ ...form, name: e.target.value })}
+                                            className="w-full px-4 py-3 border border-[var(--glass-border)] rounded-lg bg-gray-50"
+                                            readOnly={!!form.relatedCatalogItemId && !editingProduct} // Lock name if catalog item selected (optional UX choice)
+                                        />
+                                        {form.relatedCatalogItemId && (
+                                            <button
+                                                onClick={() => {
+                                                    setForm(prev => ({ ...prev, relatedCatalogItemId: '' }));
+                                                    setCatalogSearch('');
+                                                }}
+                                                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-red-500 hover:underline"
+                                            >
+                                                Clear Selection
+                                            </button>
+                                        )}
+                                    </div>
                                 </div>
                                 <div>
                                     <label className="block text-sm text-[var(--text-muted)] mb-1">SKU</label>
@@ -249,6 +367,20 @@ const MerchantProducts: React.FC = () => {
                                 <div>
                                     <label className="block text-sm text-[var(--text-muted)] mb-1">Low Alert At</label>
                                     <input type="number" value={form.lowStockThreshold} onChange={e => setForm({ ...form, lowStockThreshold: e.target.value })} className="w-full px-4 py-3 border border-[var(--glass-border)] rounded-lg bg-yellow-50" />
+                                </div>
+                                <div className="flex items-center pt-6">
+                                    <label className="flex items-center gap-3 cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={form.taxable}
+                                            onChange={e => setForm({ ...form, taxable: e.target.checked })}
+                                            className="w-5 h-5 accent-[var(--brand-primary)]"
+                                        />
+                                        <div>
+                                            <div className="font-bold text-[var(--text-main)]">Taxable Item</div>
+                                            <div className="text-xs text-[var(--text-muted)]">Apply HST/GST (13%)</div>
+                                        </div>
+                                    </label>
                                 </div>
                             </div>
                         </div>

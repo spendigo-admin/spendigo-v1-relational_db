@@ -1,34 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import '../../styles/design-system.css';
 import { useAuth } from '../../context/AuthContext';
-import { Order } from '../../context/OrderContext';
+import { useOrders, Order } from '../../context/OrderContext';
+import { useMarketplace } from '../../context/MarketplaceContext';
+import { validateOrderIntegrity } from '../../utils/IntegrityUtils';
 import NotificationPopover from '../../components/NotificationPopover';
 
 const MerchantOrders: React.FC = () => {
     const { can, user } = useAuth();
+    const { orders: contextOrders, updateOrderStatus, updatePaymentStatus, loading } = useOrders();
+    const { getStore } = useMarketplace();
+    const store = getStore(user?.storeId || '1');
+    const storeProducts = store?.products || [];
+
     const hasReadAccess = can('orders:read');
     const hasWriteAccess = can('orders:write');
-    const storeId = user?.storeId || '1'; // Default to 1 if missing
+    // const storeId = user?.storeId || '1'; // Handled by OrderContext filtering
 
-    const [orders, setOrders] = useState<Order[]>([]);
     const [viewMode, setViewMode] = useState<'kanban' | 'list'>('kanban');
-
-    // Load Orders for this Store (Poll for real-time feel)
-    useEffect(() => {
-        const loadOrders = () => {
-            const storeKey = `spendigo_store_orders_${storeId}`;
-            const saved = localStorage.getItem(storeKey);
-            if (saved) {
-                setOrders(JSON.parse(saved));
-            } else {
-                setOrders([]);
-            }
-        };
-
-        loadOrders();
-        const interval = setInterval(loadOrders, 3000); // Poll every 3s
-        return () => clearInterval(interval);
-    }, [storeId]);
 
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
@@ -39,6 +28,14 @@ const MerchantOrders: React.FC = () => {
         const interval = setInterval(() => setNow(new Date()), 30000); // Update every 30s
         return () => clearInterval(interval);
     }, []);
+
+    // Sync selected order with live data (if it changes while modal is open)
+    useEffect(() => {
+        if (selectedOrder) {
+            const updated = contextOrders.find(o => o.id === selectedOrder.id);
+            if (updated) setSelectedOrder(updated);
+        }
+    }, [contextOrders, selectedOrder?.id]); // Watch for updates
 
     if (!hasReadAccess) {
         return (
@@ -51,8 +48,12 @@ const MerchantOrders: React.FC = () => {
         );
     }
 
+    if (loading) {
+        return <div className="p-12 text-center">Loading orders...</div>;
+    }
+
     // Filter
-    const filteredOrders = orders.filter(o =>
+    const filteredOrders = contextOrders.filter(o =>
         o.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
         o.customerName.toLowerCase().includes(searchQuery.toLowerCase())
     );
@@ -74,22 +75,52 @@ const MerchantOrders: React.FC = () => {
         }
     };
 
-    const updateStatus = (id: string, newStatus: Order['status']) => {
-        // Optimistic UI Update
-        const updatedOrders = orders.map(o => o.id === id ? { ...o, status: newStatus } : o);
-        setOrders(updatedOrders);
-
-        // Update Persistence
-        const storeKey = `spendigo_store_orders_${storeId}`;
-        localStorage.setItem(storeKey, JSON.stringify(updatedOrders));
-
-        if (selectedOrder?.id === id) {
-            setSelectedOrder(prev => prev ? { ...prev, status: newStatus } : null);
+    const handleUpdateStatus = async (id: string, newStatus: Order['status']) => {
+        try {
+            await updateOrderStatus(id, newStatus);
+        } catch (e) {
+            console.error("Failed to update status", e);
+            alert("Failed to update order status");
         }
     };
 
+    const handleUpdatePayment = async (order: Order) => {
+        const auditEntry = {
+            id: user?.id || 'unknown',
+            name: user?.name || 'Staff',
+            timestamp: new Date().toISOString()
+        };
+        try {
+            await updatePaymentStatus(order.id, 'paid', auditEntry);
+        } catch (e) {
+            console.error("Failed to update payment", e);
+            alert("Failed to mark paid");
+        }
+    };
+
+    const handleCompleteOrder = async (order: Order) => {
+        try {
+            // 1. Mark Delivered
+            await updateOrderStatus(order.id, 'delivered');
+
+            // 2. Mark Paid (if pending)
+            if (order.paymentStatus !== 'paid') {
+                const auditEntry = {
+                    id: user?.id || 'unknown',
+                    name: user?.name || 'Staff',
+                    timestamp: new Date().toISOString()
+                };
+                await updatePaymentStatus(order.id, 'paid', auditEntry);
+            }
+        } catch (e) {
+            console.error("Failed to complete order", e);
+            alert("Failed to complete order");
+        }
+    };
+
+
     const addMockOrder = () => {
-        alert('Please simulate an order from the Consumer App to see it appear here!');
+        alert('Please use the Consumer App to place a real order.');
     };
 
     // Components
@@ -109,7 +140,7 @@ const MerchantOrders: React.FC = () => {
                 <div className="flex justify-between items-start mb-2 pl-2">
                     <div>
                         <div className="font-bold text-[var(--text-main)] flex items-center gap-2">
-                            {order.id}
+                            {order.id.substr(0, 8)}...
                             {isDelivery ? <span>🛵</span> : <span>🛍️</span>}
                         </div>
                         <div className="text-xs text-[var(--text-muted)]">{order.customerName}</div>
@@ -141,7 +172,7 @@ const MerchantOrders: React.FC = () => {
                             <>
                                 {order.status === 'placed' && (
                                     <button
-                                        onClick={(e) => { e.stopPropagation(); updateStatus(order.id, 'preparing'); }}
+                                        onClick={(e) => { e.stopPropagation(); handleUpdateStatus(order.id, 'preparing'); }}
                                         className="px-3 py-1 bg-blue-600 text-white text-xs font-bold rounded-md hover:brightness-110"
                                     >
                                         Accept
@@ -149,7 +180,7 @@ const MerchantOrders: React.FC = () => {
                                 )}
                                 {order.status === 'preparing' && (
                                     <button
-                                        onClick={(e) => { e.stopPropagation(); updateStatus(order.id, 'out_for_delivery'); }}
+                                        onClick={(e) => { e.stopPropagation(); handleUpdateStatus(order.id, 'out_for_delivery'); }}
                                         className="px-3 py-1 bg-purple-500 text-white text-xs font-bold rounded-md hover:brightness-110"
                                     >
                                         Ready
@@ -160,45 +191,17 @@ const MerchantOrders: React.FC = () => {
                                         <button
                                             onClick={(e) => {
                                                 e.stopPropagation();
-
-                                                const auditEntry = {
-                                                    id: user?.id || 'unknown',
-                                                    name: user?.name || 'Staff',
-                                                    timestamp: new Date().toISOString()
-                                                };
-
-                                                const updatedOrders = orders.map(o => o.id === order.id ? {
-                                                    ...o,
-                                                    status: 'delivered' as const,
-                                                    paymentStatus: 'paid' as const,
-                                                    paymentCollectedBy: o.paymentStatus === 'pending' ? auditEntry : o.paymentCollectedBy
-                                                } : o);
-
-                                                setOrders(updatedOrders);
-                                                localStorage.setItem(`spendigo_store_orders_${storeId}`, JSON.stringify(updatedOrders));
+                                                handleCompleteOrder(order);
                                             }}
                                             className="px-3 py-1 bg-green-600 text-white text-xs font-bold rounded-md hover:brightness-110"
                                         >
-                                            Complete Order
+                                            Complete
                                         </button>
                                         {order.paymentStatus === 'pending' && (
                                             <button
                                                 onClick={(e) => {
                                                     e.stopPropagation();
-                                                    // Update Payment Status with Audit Logic
-                                                    const auditEntry = {
-                                                        id: user?.id || 'unknown',
-                                                        name: user?.name || 'Staff',
-                                                        timestamp: new Date().toISOString()
-                                                    };
-
-                                                    const updatedOrders = orders.map(o => o.id === order.id ? {
-                                                        ...o,
-                                                        paymentStatus: 'paid' as const,
-                                                        paymentCollectedBy: auditEntry
-                                                    } : o);
-                                                    setOrders(updatedOrders);
-                                                    localStorage.setItem(`spendigo_store_orders_${storeId}`, JSON.stringify(updatedOrders));
+                                                    handleUpdatePayment(order);
                                                 }}
                                                 className="px-3 py-1 bg-orange-500 text-white text-xs font-bold rounded-md hover:brightness-110"
                                             >
@@ -231,7 +234,7 @@ const MerchantOrders: React.FC = () => {
                     </div>
                     <div className="flex items-center gap-3">
                         <button onClick={addMockOrder} className="px-3 py-2 bg-[var(--surface-2)] text-xs font-bold rounded-lg hover:bg-gray-200">
-                            + Simulate Order
+                            + Test Order
                         </button>
                         <div className="h-8 w-px bg-[var(--glass-border)] mx-1"></div>
                         <div className="flex bg-[var(--surface-2)] p-1 rounded-lg">
@@ -338,6 +341,34 @@ const MerchantOrders: React.FC = () => {
                         </div>
 
                         <div className="p-6 space-y-6">
+                            {/* Integrity Check */}
+                            {(() => {
+                                const integrity = validateOrderIntegrity(selectedOrder, storeProducts);
+                                if (!integrity.isValid) {
+                                    return (
+                                        <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-4 animate-pulse">
+                                            <div className="flex items-center gap-2 text-red-700 font-bold mb-2">
+                                                <span>⚠️ Security Alert: Price Tampering Detected</span>
+                                            </div>
+                                            <p className="text-sm text-red-600 mb-2">
+                                                The prices in this order do not match your current catalog. Do not fulfill.
+                                            </p>
+                                            <div className="text-xs bg-white p-2 rounded border border-red-100">
+                                                {integrity.flaggedItems.map(item => (
+                                                    <div key={item.id} className="flex justify-between">
+                                                        <span>{item.name}:</span>
+                                                        <span>
+                                                            Order <strong>${item.orderPrice}</strong> vs
+                                                            Catalog <span className="text-green-600 font-bold">${item.catalogPrice}</span>
+                                                        </span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    );
+                                }
+                                return null;
+                            })()}
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="text-xs font-bold text-[var(--text-muted)] uppercase">Customer</label>
@@ -428,35 +459,18 @@ const MerchantOrders: React.FC = () => {
                             {hasWriteAccess && (
                                 <>
                                     {selectedOrder.status === 'placed' && (
-                                        <button onClick={() => { updateStatus(selectedOrder.id, 'preparing'); setSelectedOrder(null); }} className="flex-1 py-3 bg-blue-600 text-white font-bold rounded-xl hover:brightness-110 shadow-lg shadow-blue-600/20">
+                                        <button onClick={() => { handleUpdateStatus(selectedOrder.id, 'preparing'); setSelectedOrder(null); }} className="flex-1 py-3 bg-blue-600 text-white font-bold rounded-xl hover:brightness-110 shadow-lg shadow-blue-600/20">
                                             Accept Order
                                         </button>
                                     )}
                                     {selectedOrder.status === 'preparing' && (
-                                        <button onClick={() => { updateStatus(selectedOrder.id, 'out_for_delivery'); setSelectedOrder(null); }} className="flex-1 py-3 bg-orange-500 text-white font-bold rounded-xl hover:brightness-110 shadow-lg shadow-orange-500/20">
+                                        <button onClick={() => { handleUpdateStatus(selectedOrder.id, 'out_for_delivery'); setSelectedOrder(null); }} className="flex-1 py-3 bg-orange-500 text-white font-bold rounded-xl hover:brightness-110 shadow-lg shadow-orange-500/20">
                                             Mark Ready
                                         </button>
                                     )}
                                     {selectedOrder.status === 'out_for_delivery' && (
                                         <button onClick={() => {
-                                            // Complete Order AND Mark Paid if needed
-                                            const auditEntry = {
-                                                id: user?.id || 'unknown',
-                                                name: user?.name || 'Staff',
-                                                timestamp: new Date().toISOString()
-                                            };
-
-                                            // Update status and paymentStatus
-                                            const updatedOrders = orders.map(o => o.id === selectedOrder.id ? {
-                                                ...o,
-                                                status: 'delivered' as const,
-                                                paymentStatus: 'paid' as const,
-                                                paymentCollectedBy: o.paymentStatus === 'pending' ? auditEntry : o.paymentCollectedBy
-                                            } : o);
-
-                                            setOrders(updatedOrders);
-                                            localStorage.setItem(`spendigo_store_orders_${storeId}`, JSON.stringify(updatedOrders));
-
+                                            handleCompleteOrder(selectedOrder);
                                             setSelectedOrder(null);
                                         }} className="flex-1 py-3 bg-green-600 text-white font-bold rounded-xl hover:brightness-110 shadow-lg shadow-green-600/20">
                                             Complete Order
@@ -467,27 +481,8 @@ const MerchantOrders: React.FC = () => {
                                     {selectedOrder.paymentStatus === 'pending' && (
                                         <button
                                             onClick={() => {
-                                                const auditEntry = {
-                                                    id: user?.id || 'unknown',
-                                                    name: user?.name || 'Staff',
-                                                    timestamp: new Date().toISOString()
-                                                };
-
-                                                const updatedOrders = orders.map(o => o.id === selectedOrder.id ? {
-                                                    ...o,
-                                                    paymentStatus: 'paid' as const,
-                                                    paymentCollectedBy: auditEntry
-                                                } : o);
-
-                                                setOrders(updatedOrders);
-                                                localStorage.setItem(`spendigo_store_orders_${storeId}`, JSON.stringify(updatedOrders));
-
-                                                // Update local state for modal
-                                                setSelectedOrder({
-                                                    ...selectedOrder,
-                                                    paymentStatus: 'paid',
-                                                    paymentCollectedBy: auditEntry
-                                                });
+                                                handleUpdatePayment(selectedOrder);
+                                                // Optimistic update of local state handled by listener
                                             }}
                                             className="px-6 py-3 bg-orange-100 text-orange-700 border border-orange-200 font-bold rounded-xl hover:bg-orange-200 transition-colors"
                                         >

@@ -1,48 +1,52 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
-import { STORE_DATA } from '../../data/productData';
-import '../../styles/design-system.css';
-
-// Build all products from STORE_DATA
-const buildAllProducts = () => {
-    const products: Array<{
-        id: string;
-        name: string;
-        price: number;
-        originalPrice?: number;
-        storeId: string;
-        storeName: string;
-        category: string;
-        image: string;
-    }> = [];
-
-    Object.values(STORE_DATA).forEach((store: any) => {
-        store.products?.forEach((product: any) => {
-            products.push({
-                id: product.id,
-                name: product.name,
-                price: product.price,
-                originalPrice: product.originalPrice,
-                storeId: store.id,
-                storeName: store.name,
-                category: product.category,
-                image: product.image
-            });
-        });
-    });
-
-    return products;
-};
-
-const ALL_PRODUCTS = buildAllProducts();
-
-// Extract unique categories from products
-const CATEGORIES = ['All', ...Array.from(new Set(ALL_PRODUCTS.map(p => p.category))).sort()];
+import { useMarketplace } from '../../context/MarketplaceContext';
 
 const Search: React.FC = () => {
     const navigate = useNavigate();
     const { addToCart } = useCart();
+    const { stores, loading } = useMarketplace();
+
+    // Dynamic Product List derived from Marketplace Context
+    const { allProducts, categories } = useMemo(() => {
+        const products: Array<{
+            id: string;
+            name: string;
+            price: number;
+            originalPrice?: number;
+            storeId: string;
+            storeName: string;
+            category: string;
+            image: string;
+        }> = [];
+
+        Object.values(stores).forEach((store: any) => {
+            // Only include active stores
+            if (store.status === 'suspended') return;
+
+            store.products?.forEach((product: any) => {
+                // Only include active products
+                if (product.active === false) return;
+
+                products.push({
+                    id: product.id,
+                    name: product.name,
+                    price: product.price,
+                    originalPrice: product.originalPrice,
+                    storeId: store.id,
+                    storeName: store.name || 'Unknown Store', // Fallback
+                    category: product.category || 'Uncategorized',
+                    image: product.image
+                });
+            });
+        });
+
+        const uniqueCategories = ['All', ...Array.from(new Set(products.map(p => p.category))).sort()];
+
+        return { allProducts: products, categories: uniqueCategories };
+    }, [stores]);
+
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('All');
     const [sortBy, setSortBy] = useState<'relevance' | 'price_low' | 'price_high'>('relevance');
@@ -57,7 +61,7 @@ const Search: React.FC = () => {
     }, []);
 
     const filteredProducts = useMemo(() => {
-        let results = ALL_PRODUCTS;
+        let results = allProducts;
 
         // Filter by search query
         if (searchQuery.trim()) {
@@ -82,11 +86,11 @@ const Search: React.FC = () => {
         }
 
         return results;
-    }, [searchQuery, selectedCategory, sortBy]);
+    }, [searchQuery, selectedCategory, sortBy, allProducts]);
 
     // Group by store
     const groupedByStore = useMemo(() => {
-        const groups: Record<string, typeof ALL_PRODUCTS> = {};
+        const groups: Record<string, typeof allProducts> = {};
         filteredProducts.forEach(product => {
             if (!groups[product.storeName]) {
                 groups[product.storeName] = [];
@@ -96,7 +100,15 @@ const Search: React.FC = () => {
         return groups;
     }, [filteredProducts]);
 
-    const handleQuickAdd = (product: typeof ALL_PRODUCTS[0]) => {
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center min-h-[50vh]">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[var(--brand-primary)]"></div>
+            </div>
+        );
+    }
+
+    const handleQuickAdd = (product: any) => {
         addToCart({
             productId: product.id,
             productName: product.name,
@@ -141,7 +153,7 @@ const Search: React.FC = () => {
 
                     {/* Category Filters */}
                     <div className="mt-3 flex gap-2 overflow-x-auto scrollbar-hide pb-1">
-                        {CATEGORIES.map(cat => (
+                        {categories.map(cat => (
                             <button
                                 key={cat}
                                 onClick={() => setSelectedCategory(cat)}

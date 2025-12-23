@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import '../../styles/design-system.css';
 import { useMarketplace } from '../../context/MarketplaceContext';
 import { useAuth } from '../../context/AuthContext';
-import { Order } from '../../context/OrderContext';
+import { Order, useOrders } from '../../context/OrderContext';
 import NotificationPopover from '../../components/NotificationPopover';
 
 type TimePeriod = 'daily' | 'weekly' | 'monthly';
@@ -15,7 +15,7 @@ const MerchantDashboard: React.FC = () => {
     const storeId = user?.storeId || '1';
     const store = getStore(storeId);
 
-    const [orders, setOrders] = useState<Order[]>([]);
+    const { orders } = useOrders();
     const [timePeriod, setTimePeriod] = useState<TimePeriod>('daily');
     const [stats, setStats] = useState({
         revenue: 0,
@@ -25,23 +25,6 @@ const MerchantDashboard: React.FC = () => {
         ordersGrowth: 0
     });
     const [chartData, setChartData] = useState<{ label: string; value: number }[]>([]);
-
-    // Load Orders
-    useEffect(() => {
-        const loadOrders = () => {
-            const storeKey = `spendigo_store_orders_${storeId}`;
-            const saved = localStorage.getItem(storeKey);
-            if (saved) {
-                try {
-                    setOrders(JSON.parse(saved));
-                } catch (e) {
-                    console.error("Failed to load orders", e);
-                }
-            }
-        };
-        loadOrders();
-        // Optional: polling or event listener could go here
-    }, [storeId]);
 
     // Calculate Stats & Chart Data
     useEffect(() => {
@@ -87,23 +70,23 @@ const MerchantDashboard: React.FC = () => {
 
         // Filter Function
         const getOrdersInWindow = (start: Date, end: Date) => {
-            return orders.filter(o => {
+            return orders.filter((o: Order) => {
                 const d = new Date(o.date);
                 return d >= start && d < end;
             });
         };
 
         // Current Stats
-        const currentOrders = orders.filter(o => new Date(o.date) >= startOfPeriod);
+        const currentOrders = orders.filter((o: Order) => new Date(o.date) >= startOfPeriod);
         const currentRevenue = currentOrders
-            .filter(o => o.paymentStatus === 'paid')
-            .reduce((sum, o) => sum + o.total, 0);
+            .filter((o: Order) => o.paymentStatus === 'paid')
+            .reduce((sum: number, o: Order) => sum + o.total, 0);
 
         // Previous Stats (for Growth)
         const prevOrders = getOrdersInWindow(previousStart, previousEnd);
         const prevRevenue = prevOrders
-            .filter(o => o.paymentStatus === 'paid')
-            .reduce((sum, o) => sum + o.total, 0);
+            .filter((o: Order) => o.paymentStatus === 'paid')
+            .reduce((sum: number, o: Order) => sum + o.total, 0);
 
         // Calculate Growth %
         const calcGrowth = (curr: number, prev: number) => {
@@ -120,7 +103,7 @@ const MerchantDashboard: React.FC = () => {
         });
 
         // Populate Chart Buckets
-        currentOrders.forEach(o => {
+        currentOrders.forEach((o: Order) => {
             if (o.paymentStatus !== 'paid') return;
             const date = new Date(o.date);
             let bucketIndex = -1;
@@ -185,9 +168,9 @@ const MerchantDashboard: React.FC = () => {
     ];
 
     // Operational Stats Calculation (For Staff)
-    const pendingOrders = orders.filter(o => o.status === 'placed').length;
-    const preparingOrders = orders.filter(o => o.status === 'preparing').length;
-    const readyOrders = orders.filter(o => o.status === 'out_for_delivery').length;
+    const pendingOrders = orders.filter((o: Order) => o.status === 'placed').length;
+    const preparingOrders = orders.filter((o: Order) => o.status === 'preparing').length;
+    const readyOrders = orders.filter((o: Order) => o.status === 'out_for_delivery').length;
 
     const operationalStats = [
         {
@@ -213,7 +196,7 @@ const MerchantDashboard: React.FC = () => {
         },
         {
             label: 'Completed Today',
-            value: orders.filter(o => o.status === 'delivered' && new Date(o.date) >= new Date(new Date().setHours(0, 0, 0, 0))).length.toString(),
+            value: orders.filter((o: Order) => o.status === 'delivered' && new Date(o.date) >= new Date(new Date().setHours(0, 0, 0, 0))).length.toString(),
             icon: '✅',
             color: 'bg-green-100 text-green-700',
             action: () => navigate('/merchant/orders')

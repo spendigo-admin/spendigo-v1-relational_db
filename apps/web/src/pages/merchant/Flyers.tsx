@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import '../../styles/design-system.css';
 import { useMarketplace } from '../../context/MarketplaceContext';
 import { useAuth } from '../../context/AuthContext';
@@ -23,8 +23,6 @@ interface Flyer {
     coverImage: string; // New: Visual customization
 }
 
-// Simulate logged-in merchant (FreshMart)
-
 const COVER_PRESETS = [
     { id: 'fresh', name: 'FreshGrocer', url: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=800&h=400&fit=crop' },
     { id: 'holiday', name: 'Seasonal', url: 'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=800&h=400&fit=crop' },
@@ -32,28 +30,27 @@ const COVER_PRESETS = [
     { id: 'deals', name: 'Mega Sale', url: 'https://images.unsplash.com/photo-1607082349566-187342175e2f?w=800&h=400&fit=crop' },
 ];
 
-const INITIAL_FLYERS: Flyer[] = [
-    {
-        id: 'f1',
-        title: 'Weekly Fresh Deals',
-        validFrom: '2025-12-16',
-        validUntil: '2025-12-22',
-        status: 'active',
-        coverImage: COVER_PRESETS[0].url,
-        items: []
-    }
-];
 const MerchantFlyers: React.FC = () => {
-    const { getStore, updateStoreFlyer } = useMarketplace();
+    const { getStore, updateStoreFlyer, subscribeToFlyers, saveFlyer, deleteFlyer } = useMarketplace();
     const { can, user } = useAuth();
     const storeId = user?.storeId || '1';
     const store = getStore(storeId);
     const availableProducts = useMemo(() => store?.products || [], [store?.products]);
     const hasWriteAccess = can('flyers:write');
 
-    const [flyers, setFlyers] = useState<Flyer[]>(INITIAL_FLYERS);
+    const [flyers, setFlyers] = useState<Flyer[]>([]);
     const [view, setView] = useState<'list' | 'editor'>('list');
     const [activeFlyerId, setActiveFlyerId] = useState<string | null>(null);
+
+    // Subscribe to real-time flyer data
+    useEffect(() => {
+        if (!storeId) return;
+        const unsubscribe = subscribeToFlyers(storeId, (data) => {
+            // Map data to match Flyer interface if needed, relying on data structure consistency
+            setFlyers(data as Flyer[]);
+        });
+        return () => unsubscribe();
+    }, [storeId, subscribeToFlyers]);
 
     // Editor State
     const [formData, setFormData] = useState<Partial<Flyer>>({});
@@ -110,21 +107,22 @@ const MerchantFlyers: React.FC = () => {
         setView('editor');
     };
 
-    const handleDuplicate = (flyer: Flyer) => {
+    const handleDuplicate = async (flyer: Flyer) => {
+        const newId = `f${Date.now()}`;
         const newFlyer: Flyer = {
             ...flyer,
-            id: `f${Date.now()}`,
+            id: newId,
             title: `Copy of ${flyer.title}`,
             status: 'draft',
             items: flyer.items.map(i => ({ ...i }))
         };
-        setFlyers(prev => [newFlyer, ...prev]);
+        await saveFlyer(storeId, newFlyer);
     };
 
-    const handleDelete = (id: string) => {
+    const handleDelete = async (id: string) => {
         const flyerToDelete = flyers.find(f => f.id === id);
         if (confirm('Are you sure you want to delete this flyer?')) {
-            setFlyers(prev => prev.filter(f => f.id !== id));
+            await deleteFlyer(storeId, id);
 
             // Sync Removal with Global Store if it was the active flyer
             if (flyerToDelete && flyerToDelete.status === 'active') {
@@ -138,7 +136,7 @@ const MerchantFlyers: React.FC = () => {
     };
 
     // Editor Handlers
-    const handleSave = (publish: boolean) => {
+    const handleSave = async (publish: boolean) => {
         if (!formData.title || !formData.validFrom || !formData.validUntil) return;
 
         let status: Flyer['status'] = 'draft';
@@ -168,12 +166,7 @@ const MerchantFlyers: React.FC = () => {
             coverImage: formData.coverImage || COVER_PRESETS[0].url
         };
 
-        setFlyers(prev => {
-            if (activeFlyerId) {
-                return prev.map(f => f.id === activeFlyerId ? newFlyer : f);
-            }
-            return [...prev, newFlyer];
-        });
+        await saveFlyer(storeId, newFlyer);
 
         // Sync with Global Marketplace Context if Active
         if (status === 'active') {
@@ -548,7 +541,7 @@ const MerchantFlyers: React.FC = () => {
 
     // Default List View
     return (
-        <div className="p-6">
+        <div className="p-6 animate-fade-in">
             <div className="flex items-center justify-between mb-6">
                 <div>
                     <h1 className="text-2xl font-bold text-[var(--text-main)]">📰 Flyers</h1>
@@ -565,48 +558,64 @@ const MerchantFlyers: React.FC = () => {
             </div>
 
             <div className="space-y-4">
-                {flyers.map(flyer => (
-                    <div key={flyer.id} className="bg-white rounded-xl border border-[var(--glass-border)] p-4 shadow-sm hover:shadow-md transition-shadow">
-                        <div className="flex items-center justify-between">
-                            <div className="flex gap-4 items-center">
-                                <img src={flyer.coverImage} className="w-16 h-16 rounded-lg object-cover bg-gray-200" alt="" />
-                                <div>
-                                    <div className="flex items-center gap-2 mb-1">
-                                        <h3 className="font-bold text-[var(--text-main)] text-lg">{flyer.title}</h3>
-                                        <span className={`text-xs px-2 py-0.5 rounded-full capitalize ${getStatusColor(flyer.status)} font-medium border border-current opacity-80`}>
-                                            {flyer.status}
-                                        </span>
+                {flyers.length === 0 ? (
+                    <div className="text-center py-20 bg-white rounded-xl border border-[var(--glass-border)]">
+                        <div className="text-6xl mb-4">📰</div>
+                        <h3 className="text-xl font-bold text-[var(--text-main)] mb-2">No Flyers Created</h3>
+                        <p className="text-[var(--text-muted)] mb-6">Create your first weekly flyer to attract more customers.</p>
+                        {hasWriteAccess && (
+                            <button
+                                onClick={handleCreateNew}
+                                className="px-6 py-2 bg-[var(--brand-primary)] text-white font-bold rounded-lg hover:brightness-110 shadow-lg shadow-[var(--brand-primary)]/20"
+                            >
+                                Start Creating
+                            </button>
+                        )}
+                    </div>
+                ) : (
+                    flyers.map(flyer => (
+                        <div key={flyer.id} className="bg-white rounded-xl border border-[var(--glass-border)] p-4 shadow-sm hover:shadow-md transition-shadow">
+                            <div className="flex items-center justify-between">
+                                <div className="flex gap-4 items-center">
+                                    <img src={flyer.coverImage} className="w-16 h-16 rounded-lg object-cover bg-gray-200" alt="" />
+                                    <div>
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <h3 className="font-bold text-[var(--text-main)] text-lg">{flyer.title}</h3>
+                                            <span className={`text-xs px-2 py-0.5 rounded-full capitalize ${getStatusColor(flyer.status)} font-medium border border-current opacity-80`}>
+                                                {flyer.status}
+                                            </span>
+                                        </div>
+                                        <p className="text-sm text-[var(--text-muted)]">
+                                            {new Date(flyer.validFrom).toLocaleDateString()} - {new Date(flyer.validUntil).toLocaleDateString()}
+                                        </p>
+                                        <p className="text-sm text-[var(--text-muted)] mt-1 flex items-center gap-1">
+                                            <span>🏷️</span> {flyer.items?.length || 0} products included
+                                        </p>
                                     </div>
-                                    <p className="text-sm text-[var(--text-muted)]">
-                                        {new Date(flyer.validFrom).toLocaleDateString()} - {new Date(flyer.validUntil).toLocaleDateString()}
-                                    </p>
-                                    <p className="text-sm text-[var(--text-muted)] mt-1 flex items-center gap-1">
-                                        <span>🏷️</span> {flyer.items?.length || 0} products included
-                                    </p>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    {hasWriteAccess ? (
+                                        <>
+                                            <button onClick={() => handleDuplicate(flyer)} className="px-3 py-1.5 border border-[var(--glass-border)] text-[var(--brand-primary)] rounded-lg text-sm hover:bg-[var(--surface-1)]" title="Duplicate Flyer">
+                                                📋 Clone
+                                            </button>
+                                            <button onClick={() => handleEdit(flyer)} className="px-3 py-1.5 border border-[var(--glass-border)] rounded-lg text-sm text-[var(--text-main)] hover:bg-[var(--surface-1)]">
+                                                ✏️ Edit
+                                            </button>
+                                            <button onClick={() => handleDelete(flyer.id)} className="px-3 py-1.5 text-red-500 text-sm hover:bg-red-50 rounded-lg">
+                                                🗑️
+                                            </button>
+                                        </>
+                                    ) : (
+                                        <button onClick={() => handleEdit(flyer)} className="px-3 py-1.5 border border-[var(--glass-border)] rounded-lg text-sm text-[var(--text-main)] hover:bg-[var(--surface-1)]">
+                                            👁️ View Details
+                                        </button>
+                                    )}
                                 </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                                {hasWriteAccess ? (
-                                    <>
-                                        <button onClick={() => handleDuplicate(flyer)} className="px-3 py-1.5 border border-[var(--glass-border)] text-[var(--brand-primary)] rounded-lg text-sm hover:bg-[var(--surface-1)]" title="Duplicate Flyer">
-                                            📋 Clone
-                                        </button>
-                                        <button onClick={() => handleEdit(flyer)} className="px-3 py-1.5 border border-[var(--glass-border)] rounded-lg text-sm text-[var(--text-main)] hover:bg-[var(--surface-1)]">
-                                            ✏️ Edit
-                                        </button>
-                                        <button onClick={() => handleDelete(flyer.id)} className="px-3 py-1.5 text-red-500 text-sm hover:bg-red-50 rounded-lg">
-                                            🗑️
-                                        </button>
-                                    </>
-                                ) : (
-                                    <button onClick={() => handleEdit(flyer)} className="px-3 py-1.5 border border-[var(--glass-border)] rounded-lg text-sm text-[var(--text-main)] hover:bg-[var(--surface-1)]">
-                                        👁️ View Details
-                                    </button>
-                                )}
-                            </div>
                         </div>
-                    </div>
-                ))}
+                    ))
+                )}
             </div>
         </div>
     );

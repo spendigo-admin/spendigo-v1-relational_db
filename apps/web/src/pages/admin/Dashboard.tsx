@@ -1,8 +1,52 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import '../../styles/design-system.css';
 import { useMarketplace } from '../../context/MarketplaceContext';
+import { useAudit } from '../../context/AuditContext';
 
 import { useAuth } from '../../context/AuthContext';
+
+const RecentActivityFeed: React.FC = () => {
+    const { logs } = useAudit();
+
+    // Sort by timestamp desc (newest first)
+    const recentLogs = [...logs].sort((a, b) =>
+        new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    ).slice(0, 10);
+
+    if (recentLogs.length === 0) {
+        return <div className="p-4 text-center text-[var(--text-muted)] italic text-sm">No recent activity detected.</div>;
+    }
+
+    return (
+        <div className="space-y-4">
+            {recentLogs.map(log => (
+                <div key={log.id} className="flex gap-3 items-start p-2 hover:bg-[var(--surface-1)] rounded-lg transition-colors border-l-2 border-transparent hover:border-l-[var(--brand-primary)]">
+                    <div className="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-xs font-mono font-bold shrink-0 mt-1">
+                        {log.action.substring(0, 2)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                        <div className="flex justify-between items-start">
+                            <h4 className="font-bold text-sm text-[var(--text-main)] truncate pr-2" title={log.action}>
+                                {log.action.replace(/_/g, ' ')}
+                            </h4>
+                            <span className="text-[10px] text-[var(--text-muted)] whitespace-nowrap">
+                                {new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                        </div>
+                        <p className="text-xs text-[var(--text-muted)] truncate mb-0.5">
+                            {log.actor.email}
+                        </p>
+                        {log.metadata && (
+                            <div className="text-[10px] text-gray-500 font-mono bg-gray-50 p-1 rounded inline-block max-w-full truncate">
+                                {Object.keys(log.metadata).length > 0 ? JSON.stringify(log.metadata).substring(0, 50) + (JSON.stringify(log.metadata).length > 50 ? '...' : '') : 'No details'}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            ))}
+        </div>
+    );
+};
 
 const AdminDashboard: React.FC = () => {
     const { user } = useAuth();
@@ -64,18 +108,55 @@ const AdminDashboard: React.FC = () => {
     const stats = useMemo(() => {
         const allStores = Object.values(stores || {});
         const totalStores = allStores.length;
+
+        // Calculate Pending Stores
+        const pendingStores = allStores.filter((s: any) => s.status === 'pending').length;
+
+        // Calculate Real Product Counts
         const totalProducts = allStores.reduce((acc: number, store: any) => acc + (store.products?.length || 0), 0);
+
+        // Calculate Real Active Deals
         const totalDeals = allStores.reduce((acc: number, store: any) =>
             acc + (store.oneDayOffers?.length || 0) + (store.saleItems?.length || 0), 0);
 
-        // Simulated Revenue based on scale
-        const estimatedRevenue = (totalProducts * 450) + (totalDeals * 120);
+        // Calculate Monthly Recurring Revenue (MRR) based on Subscriptions
+        // Growth: $99/mo, Core: $49/mo, Free: $0
+        const mrr = allStores.reduce((acc: number, store: any) => {
+            const tier = store.subscriptionTier || 'free';
+            if (tier === 'growth') return acc + 99;
+            if (tier === 'core') return acc + 49;
+            return acc;
+        }, 0);
 
         return [
-            { label: 'Registered Stores', value: totalStores.toString(), change: '+2 pending approval', icon: '🏪', color: 'bg-blue-100 text-blue-700' },
-            { label: 'Total Products', value: totalProducts.toLocaleString(), change: 'Across Platform', icon: '📦', color: 'bg-purple-100 text-purple-700' },
-            { label: 'Active Deals', value: totalDeals.toString(), change: 'Live Offers', icon: '🏷️', color: 'bg-orange-100 text-orange-700' },
-            { label: 'Platform Revenue', value: `$${estimatedRevenue.toLocaleString()}`, change: '+12% vs last month', icon: '💰', color: 'bg-green-100 text-green-700' }
+            {
+                label: 'Registered Stores',
+                value: totalStores.toString(),
+                change: pendingStores > 0 ? `+${pendingStores} pending approval` : 'All active',
+                icon: '🏪',
+                color: 'bg-blue-100 text-blue-700'
+            },
+            {
+                label: 'Total Products',
+                value: totalProducts.toLocaleString(),
+                change: 'Across Platform',
+                icon: '📦',
+                color: 'bg-purple-100 text-purple-700'
+            },
+            {
+                label: 'Active Deals',
+                value: totalDeals.toString(),
+                change: 'Live Offers',
+                icon: '🏷️',
+                color: 'bg-orange-100 text-orange-700'
+            },
+            {
+                label: 'Platform Revenue',
+                value: `$${mrr.toLocaleString()}`,
+                change: 'Monthly Recurring Revenue',
+                icon: '💰',
+                color: 'bg-green-100 text-green-700'
+            }
         ];
     }, [stores]);
 
@@ -124,33 +205,54 @@ const AdminDashboard: React.FC = () => {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* Store Performance Leaderboard */}
-                <div className="bg-white rounded-xl border border-[var(--glass-border)] p-6 shadow-sm">
-                    <div className="flex justify-between items-center mb-6">
-                        <h2 className="text-xl font-bold text-[var(--text-main)]">Platform Activity</h2>
-                        <span className="text-xs font-bold bg-[var(--surface-1)] px-2 py-1 rounded text-[var(--text-muted)]">Live Feed</span>
-                    </div>
-                    <div className="space-y-4">
-                        {/* Dynamically Map top 5 stores based on stats */}
-                        {Object.values(stores).slice(0, 5).map((store: any, idx) => (
-                            <div key={store.id} className="flex items-center justify-between p-3 hover:bg-[var(--surface-1)] rounded-lg transition-colors border border-transparent hover:border-[var(--glass-border)]">
-                                <div className="flex items-center gap-3">
-                                    <div className="font-bold text-[var(--text-muted)] w-4 text-center">{idx + 1}</div>
-                                    <img src={store.logo} className="w-10 h-10 rounded-full object-cover bg-gray-100" alt={store.name} />
-                                    <div>
-                                        <div className="font-bold text-sm text-[var(--text-main)]">{store.name}</div>
-                                        <div className="text-xs text-[var(--text-muted)] flex items-center gap-2">
-                                            <span>📦 {store.products?.length || 0} Products</span>
-                                            {store.flyer?.title && <span className="text-green-600"> • Has Flyer</span>}
+                <div className="space-y-6">
+                    <div className="bg-white rounded-xl border border-[var(--glass-border)] p-6 shadow-sm">
+                        <div className="flex justify-between items-center mb-6">
+                            <h2 className="text-xl font-bold text-[var(--text-main)]">Platform Activity</h2>
+                            <span className="text-xs font-bold bg-[var(--surface-1)] px-2 py-1 rounded text-[var(--text-muted)]">Live Feed</span>
+                        </div>
+                        <div className="space-y-4">
+                            {/* Dynamically Map top stores, sorted by ID to ensure consistent 1-5 ranking match */}
+                            {Object.values(stores)
+                                .sort((a: any, b: any) => parseInt(a.id) - parseInt(b.id)) // Ensure 1,2,3,4,5...
+                                .slice(0, 5)
+                                .map((store: any, idx) => (
+                                    <div key={store.id} className="flex items-center justify-between p-3 hover:bg-[var(--surface-1)] rounded-lg transition-colors border border-transparent hover:border-[var(--glass-border)]">
+                                        <div className="flex items-center gap-3">
+                                            <div className="font-bold text-[var(--text-muted)] w-4 text-center">{idx + 1}</div>
+                                            <img src={store.logo} className="w-10 h-10 rounded-full object-cover bg-gray-100" alt={store.name} />
+                                            <div>
+                                                <div className="font-bold text-sm text-[var(--text-main)]">{store.name}</div>
+                                                <div className="text-xs text-[var(--text-muted)] flex items-center gap-2">
+                                                    <span>📦 {store.products?.length || 0} Products</span>
+                                                    {store.flyer?.title && <span className="text-green-600"> • Has Flyer</span>}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="text-right">
+                                            <div className="text-xs px-2 py-0.5 bg-yellow-100 text-yellow-700 rounded-full font-bold">
+                                                ⭐ {store.rating}
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                                <div className="text-right">
-                                    <div className="text-xs px-2 py-0.5 bg-yellow-100 text-yellow-700 rounded-full font-bold">
-                                        ⭐ {store.rating}
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
+                                ))}
+                        </div>
+                    </div>
+
+                    {/* NEW: Real Event Stream */}
+                    <div className="bg-white rounded-xl border border-[var(--glass-border)] p-6 shadow-sm">
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-xl font-bold text-[var(--text-main)]">System Events</h2>
+                            <span className="text-xs font-bold text-green-600 animate-pulse">● Realtime</span>
+                        </div>
+                        <div className="space-y-3 max-h-60 overflow-y-auto">
+                            {/* We will fetch this in a separate component or just simulate with real logs if available. 
+                                For now, let's keep it simple and just show the top list is what requested. 
+                                Actually, I'll add a 'RecentLogList' here if I can import useAudit. 
+                                Let's trust the top list is what they wanted 'Platform Activity' to allow 1,2,3,4 ranking. 
+                            */}
+                            <RecentActivityFeed />
+                        </div>
                     </div>
                 </div>
 
@@ -234,7 +336,9 @@ const AdminDashboard: React.FC = () => {
                             <div>
                                 <h3 className="font-bold text-blue-900 mb-1">Pending Actions</h3>
                                 <p className="text-sm text-blue-800 mb-3">
-                                    There are <strong>2 new merchant applications</strong> requiring review.
+                                    {Object.values(stores).filter((s: any) => s.status === 'pending').length > 0
+                                        ? `There are ${Object.values(stores).filter((s: any) => s.status === 'pending').length} new merchant applications requiring review.`
+                                        : 'No pending merchant applications.'}
                                 </p>
                                 <button className="text-xs bg-blue-600 text-white px-3 py-1.5 rounded-lg font-bold hover:bg-blue-700 transition-colors">
                                     Review Applications
@@ -249,3 +353,5 @@ const AdminDashboard: React.FC = () => {
 };
 
 export default AdminDashboard;
+
+

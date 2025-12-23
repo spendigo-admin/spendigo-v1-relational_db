@@ -57,8 +57,40 @@ const Subscription: React.FC = () => {
 
     const isViewOnly = user?.merchantRole === 'STAFF';
 
+    const [processingId, setProcessingId] = React.useState<string | null>(null);
+
+    const handleUpgrade = async (tierId: string, price: string) => {
+        if (price === '$0') {
+            // Free tier - instant switch
+            updateSubscription(tierId as any);
+            alert(`Switched to Starter plan.`);
+            return;
+        }
+
+        // Paid tier - Simulate Stripe Checkout Flow
+        if (confirm(`Subscribe to ${price}${price === '$0' ? '' : '/month'}? This will redirect you to Stripe Checkout.`)) {
+            setProcessingId(tierId);
+
+            // Mock Redirect Delay
+            setTimeout(() => {
+                // Mock Payment Success
+                updateSubscription(tierId as any);
+                setProcessingId(null);
+                alert(`🎉 Payment Successful! Welcome to the ${tierId.toUpperCase()} plan.`);
+            }, 2000);
+        }
+    };
+
     return (
-        <div className="p-6 h-[calc(100vh-64px)] overflow-y-auto animate-fade-in">
+        <div className="p-6 h-[calc(100vh-64px)] overflow-y-auto animate-fade-in relative">
+            {processingId && (
+                <div className="absolute inset-0 z-50 bg-white/80 backdrop-blur-sm flex items-center justify-center flex-col">
+                    <div className="w-16 h-16 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-4"></div>
+                    <div className="text-xl font-bold text-indigo-900">Redirecting to Stripe...</div>
+                    <p className="text-indigo-600">Secure Checkout</p>
+                </div>
+            )}
+
             <div className="max-w-6xl mx-auto">
                 <div className="text-center mb-10">
                     <h1 className="text-3xl font-bold text-[var(--text-main)] mb-2">Store Subscription</h1>
@@ -93,8 +125,8 @@ const Subscription: React.FC = () => {
                             <p className="text-sm text-[var(--text-muted)] mb-6 h-10">{tier.description}</p>
 
                             <button
-                                onClick={() => updateSubscription(tier.id as any)}
-                                disabled={currentTier === tier.id || isViewOnly}
+                                onClick={() => handleUpgrade(tier.id, tier.price)}
+                                disabled={currentTier === tier.id || isViewOnly || !!processingId}
                                 className={`w-full py-3 rounded-lg font-bold mb-6 transition-all ${currentTier === tier.id
                                     ? 'bg-green-100 text-green-700 cursor-default'
                                     : isViewOnly
@@ -102,7 +134,7 @@ const Subscription: React.FC = () => {
                                         : 'bg-[var(--brand-primary)] text-white hover:brightness-110'
                                     }`}
                             >
-                                {currentTier === tier.id ? 'Current Plan' : isViewOnly ? 'Contact Owner' : 'Switch Plan'}
+                                {currentTier === tier.id ? 'Current Plan' : isViewOnly ? 'Contact Owner' : `Subscribe (${tier.price})`}
                             </button>
 
                             <div className="space-y-3">

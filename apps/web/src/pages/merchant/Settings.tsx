@@ -81,7 +81,10 @@ const MerchantSettings: React.FC = () => {
         tagline: 'Fresh groceries, delivered fast.',
         phone: '416-555-0123',
         email: 'merchant@freshmart.ca',
-        address: '123 Queen St W, Toronto, ON',
+        address: '123 Queen St W',
+        city: 'Toronto',
+        province: 'ON',
+        postalCode: 'M5V 2H1',
         description: 'Your local source for fresh produce and daily essentials. We partner with local farmers to bring you the best quality items.',
         website: 'www.freshmart.ca',
         logoUrl: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=200',
@@ -140,6 +143,9 @@ const MerchantSettings: React.FC = () => {
                 phone: store.phone || '',
                 email: store.email || '',
                 address: store.address || '',
+                city: store.city || 'Toronto',
+                province: store.province || 'ON',
+                postalCode: store.postalCode || '',
                 description: store.description || '',
                 website: store.website || '',
                 logoUrl: store.logoUrl || store.logo || '', // Handle emoji vs url
@@ -190,6 +196,9 @@ const MerchantSettings: React.FC = () => {
             phone: storeInfo.phone,
             email: storeInfo.email,
             address: storeInfo.address,
+            city: storeInfo.city,
+            province: storeInfo.province,
+            postalCode: storeInfo.postalCode,
             description: storeInfo.description,
             website: storeInfo.website,
             // Operations
@@ -444,13 +453,71 @@ const MerchantSettings: React.FC = () => {
                             className="w-full p-3 border border-[var(--glass-border)] rounded-lg"
                         />
                     </div>
+                    <div className="md:col-span-2 mt-2 pt-4 border-t border-[var(--glass-border)]">
+                        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4 flex justify-between items-start">
+                            <div className="flex gap-3">
+                                <span className="text-xl">🔒</span>
+                                <div>
+                                    <h3 className="font-bold text-yellow-900">Location Details Locked</h3>
+                                    <p className="text-sm text-yellow-800">
+                                        Your operating province determines the tax rates charged to customers.
+                                        To prevent tax calculation errors, these fields cannot be changed directly.
+                                    </p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => alert("Please contact merchant-support@spendigo.ca to request a relocation review. Proof of new address will be required.")}
+                                className="text-xs font-bold bg-white border border-yellow-300 text-yellow-900 px-3 py-1.5 rounded-lg hover:bg-yellow-100"
+                            >
+                                Request Update
+                            </button>
+                        </div>
+                    </div>
+
                     <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">Store Address</label>
+                        <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">Street Address</label>
                         <input
                             type="text"
                             value={storeInfo.address}
-                            onChange={e => setStoreInfo({ ...storeInfo, address: e.target.value })}
-                            className="w-full p-3 border border-[var(--glass-border)] rounded-lg"
+                            disabled
+                            className="w-full p-3 border border-[var(--glass-border)] rounded-lg bg-gray-50 text-gray-500 cursor-not-allowed"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">City</label>
+                        <input
+                            type="text"
+                            value={storeInfo.city}
+                            disabled
+                            className="w-full p-3 border border-[var(--glass-border)] rounded-lg bg-gray-50 text-gray-500 cursor-not-allowed"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">Province (Sets Tax Rate)</label>
+                        <select
+                            value={storeInfo.province}
+                            disabled
+                            className="w-full p-3 border border-[var(--glass-border)] rounded-lg bg-gray-50 text-gray-500 cursor-not-allowed"
+                        >
+                            <option value="ON">ON - Ontario (13% HST)</option>
+                            <option value="BC">BC - British Columbia (12%)</option>
+                            <option value="QC">QC - Quebec (14.975%)</option>
+                            <option value="AB">AB - Alberta (5%)</option>
+                            <option value="NS">NS - Nova Scotia (15%)</option>
+                            <option value="NB">NB - New Brunswick (15%)</option>
+                            <option value="MB">MB - Manitoba (12%)</option>
+                            <option value="SK">SK - Saskatchewan (11%)</option>
+                            <option value="PE">PE - PEI (15%)</option>
+                            <option value="NL">NL - Newfoundland (15%)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">Postal Code</label>
+                        <input
+                            type="text"
+                            value={storeInfo.postalCode}
+                            disabled
+                            className="w-full p-3 border border-[var(--glass-border)] rounded-lg bg-gray-50 text-gray-500 cursor-not-allowed"
                         />
                     </div>
                     <div className="md:col-span-2">
@@ -605,52 +672,64 @@ const MerchantSettings: React.FC = () => {
 
     const renderPayments = () => (
         <div className="space-y-6 animate-fade-in">
-            <section className="bg-white p-6 rounded-xl border border-[var(--glass-border)] shadow-sm">
-                <h2 className="text-lg font-bold text-[var(--text-main)] mb-4">Accepted Payment Methods</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {[
-                        { key: 'acceptVisa', label: 'Visa' },
-                        { key: 'acceptMastercard', label: 'Mastercard' },
-                        { key: 'acceptAmex', label: 'American Express' },
-                        { key: 'acceptApplePay', label: 'Apple Pay' },
-                        { key: 'acceptCash', label: 'Cash on Delivery' },
-                    ].map((method) => (
-                        <label key={method.key} className="flex items-center gap-3 p-3 border border-[var(--glass-border)] rounded-lg cursor-pointer hover:bg-gray-50">
-                            <input
-                                type="checkbox"
-                                checked={(payments as any)[method.key]}
-                                onChange={e => setPayments({ ...payments, [method.key]: e.target.checked })}
-                                className="w-5 h-5 accent-[var(--brand-primary)]"
-                            />
-                            <span className="font-medium">{method.label}</span>
-                        </label>
-                    ))}
+            {/* Context / Information */}
+            <section className="bg-blue-50 border border-blue-200 rounded-xl p-6">
+                <div className="flex gap-4">
+                    <div className="text-3xl">🏦</div>
+                    <div>
+                        <h3 className="font-bold text-blue-900 text-lg">Direct Payouts</h3>
+                        <p className="text-blue-800 mt-1">
+                            Spendigo does not hold your funds. All payments from customers are routed directly to your connected bank account via our payment partner, Stripe.
+                        </p>
+                    </div>
                 </div>
             </section>
 
+            {/* Payout Configuration */}
             <section className="bg-white p-6 rounded-xl border border-[var(--glass-border)] shadow-sm">
-                <h2 className="text-lg font-bold text-[var(--text-main)] mb-4">Payout Settings</h2>
-                <div className="flex items-center gap-4 p-4 bg-green-50 border border-green-100 rounded-lg mb-4">
-                    <div className="w-10 h-10 rounded-full bg-green-200 flex items-center justify-center text-green-700 font-bold">✓</div>
-                    <div>
-                        <div className="font-bold text-green-900">Bank Account Connected</div>
-                        <div className="text-sm text-green-700">TD Canada Trust •••• {payments.bankLast4}</div>
+                <h2 className="text-lg font-bold text-[var(--text-main)] mb-4">Payout Configuration</h2>
+
+                {/* Mock Connected State */}
+                <div className="flex items-center gap-4 p-5 bg-green-50 border border-green-200 rounded-lg mb-6">
+                    <div className="w-12 h-12 rounded-full bg-green-200 flex items-center justify-center text-green-700 font-bold text-xl">✓</div>
+                    <div className="flex-1">
+                        <div className="font-bold text-green-900 text-lg">Stripe Connect Active</div>
+                        <div className="text-green-800">Your account is ready to receive payouts.</div>
+                        <div className="text-sm text-green-700 mt-1">Connected: TD Canada Trust •••• {payments.bankLast4}</div>
                     </div>
-                    <button className="ml-auto text-sm text-green-700 font-bold hover:underline">Edit</button>
+                    <button className="px-4 py-2 bg-white border border-green-200 text-green-800 font-bold rounded-lg hover:bg-green-100 transition-colors shadow-sm">
+                        Manage in Stripe
+                    </button>
                 </div>
 
-                <div>
-                    <label className="block text-sm font-medium text-[var(--text-muted)] mb-2">Payout Schedule</label>
-                    <select
-                        value={payments.payoutSchedule}
-                        onChange={e => setPayments({ ...payments, payoutSchedule: e.target.value })}
-                        className="w-full p-3 border border-[var(--glass-border)] rounded-lg"
-                    >
-                        <option value="daily">Daily (Next Business Day)</option>
-                        <option value="weekly">Weekly (Every Monday)</option>
-                        <option value="monthly">Monthly</option>
-                    </select>
-                    <p className="text-xs text-[var(--text-muted)] mt-2">Payouts are processed automatically according to your schedule.</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label className="block text-sm font-medium text-[var(--text-muted)] mb-2">Payout Schedule</label>
+                        <select
+                            value={payments.payoutSchedule}
+                            onChange={e => setPayments({ ...payments, payoutSchedule: e.target.value })}
+                            className="w-full p-3 border border-[var(--glass-border)] rounded-lg bg-[var(--surface-1)]"
+                        >
+                            <option value="daily">Daily (Rolling 2 Day Window)</option>
+                            <option value="weekly">Weekly (Every Monday)</option>
+                            <option value="manual">Manual Payouts</option>
+                        </select>
+                        <p className="text-xs text-[var(--text-muted)] mt-2">
+                            Funds are typically available 2 business days after transaction.
+                        </p>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-[var(--text-muted)] mb-2">Statement Descriptor</label>
+                        <input
+                            type="text"
+                            value={storeInfo.name.substring(0, 20)}
+                            readOnly
+                            className="w-full p-3 border border-[var(--glass-border)] rounded-lg bg-gray-50 text-gray-500 cursor-not-allowed"
+                        />
+                        <p className="text-xs text-[var(--text-muted)] mt-2">
+                            This is what customers will see on their bank statements.
+                        </p>
+                    </div>
                 </div>
             </section>
         </div>

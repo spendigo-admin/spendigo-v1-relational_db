@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { doc, onSnapshot, setDoc, getDoc } from 'firebase/firestore';
+import { db } from '../lib/firebase';
 import { STORE_DATA } from '../data/productData';
 import { useAuth } from './AuthContext';
 
@@ -31,19 +33,92 @@ interface CartContextType {
     clearNotification: () => void;
 }
 
+
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const { user } = useAuth();
-    const cartKey = `spendigo_cart_${user?.id || 'guest'}`;
+    // Guest key is constant, Auth users use Firestore
+    const GUEST_KEY = 'spendigo_cart_guest';
 
     const [items, setItems] = useState<CartItem[]>([]);
+    const [loading, setLoading] = useState(true);
 
-    // Load Items on Mount or User Change
+    // Hybrid Persistence Logic
     useEffect(() => {
-        const saved = localStorage.getItem(cartKey);
-        setItems(saved ? JSON.parse(saved) : []);
-    }, [cartKey]);
+        let unsubscribe: () => void;
+
+        const initializeCart = async () => {
+            if (user) {
+                // AUTHENTICATED: Sync with Firestore and Merge Guest Cart
+                const cartRef = doc(db, 'carts', user.id);
+
+                // 1. Check for Guest Items to Merge
+                const guestCartJson = localStorage.getItem(GUEST_KEY);
+                let guestItems: CartItem[] = [];
+                if (guestCartJson) {
+                    try {
+                        guestItems = JSON.parse(guestCartJson);
+                    } catch (e) { console.error(e); }
+                }
+
+                if (guestItems.length > 0) {
+                    // Fetch existing Cloud Cart to merge efficiently
+                    const docSnap = await getDoc(cartRef);
+                    const cloudItems = docSnap.exists() ? (docSnap.data().items as CartItem[]) : [];
+
+                    // Merge Logic: Guest items override or add to cloud items
+                    const mergedItems = [...cloudItems];
+                    guestItems.forEach(gItem => {
+                        const existingIdx = mergedItems.findIndex(c => c.productId === gItem.productId);
+                        if (existingIdx > -1) {
+                            mergedItems[existingIdx].quantity += gItem.quantity;
+                        } else {
+                            mergedItems.push(gItem);
+                        }
+                    });
+
+                    // Save merged cart to Firestore
+                    await setDoc(cartRef, { items: mergedItems }, { merge: true });
+
+                    // Clear Guest Cart
+                    localStorage.removeItem(GUEST_KEY);
+                }
+
+                // 2. Subscribe to Firestore Updates (Real-time & Multi-device)
+                unsubscribe = onSnapshot(cartRef, (doc) => {
+                    if (doc.exists()) {
+                        setItems(doc.data().items || []);
+                    } else {
+                        setItems([]);
+                    }
+                    setLoading(false);
+                });
+            } else {
+                // GUEST: Use LocalStorage
+                const saved = localStorage.getItem(GUEST_KEY);
+                if (saved) {
+                    setItems(JSON.parse(saved));
+                } else {
+                    setItems([]);
+                }
+                setLoading(false);
+            }
+        };
+
+        initializeCart();
+
+        return () => {
+            if (unsubscribe) unsubscribe();
+        };
+    }, [user]);
+
+    // Save to LocalStorage ONLY for Guests (Firestore saves happen in actions)
+    useEffect(() => {
+        if (!user && !loading) {
+            localStorage.setItem(GUEST_KEY, JSON.stringify(items));
+        }
+    }, [items, user, loading]);
 
     const [notification, setNotification] = useState<{
         message: string;
@@ -52,43 +127,53 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         competitor?: { name: string; price: number };
     } | null>(null);
 
-    // Save Items to Store
-    useEffect(() => {
-        localStorage.setItem(cartKey, JSON.stringify(items));
-    }, [items, cartKey]);
-
     const clearNotification = () => setNotification(null);
 
-    const addToCart = (newItem: Omit<CartItem, 'id'>) => {
-        setItems(prev => {
-            const existing = prev.find(i => i.productId === newItem.productId);
-            if (existing) {
-                return prev.map(i =>
-                    i.productId === newItem.productId
-                        ? { ...i, quantity: i.quantity + newItem.quantity }
-                        : i
-                );
-            }
-            return [...prev, { ...newItem, id: Math.random().toString(36).substr(2, 9) }];
-        });
+    const saveToCloud = async (newItems: CartItem[]) => {
+        if (!user) return;
+        try {
+            await setDoc(doc(db, 'carts', user.id), { items: newItems }, { merge: true });
+        } catch (e) {
+            console.error("Failed to sync cart", e);
+        }
+    };
 
-        // Price Comparison Logic
+    const addToCart = (newItem: Omit<CartItem, 'id'>) => {
+        let updatedItems: CartItem[] = [];
+
+        // Calculate new state logic (replicated for both flows to ensure consistency)
+        // Note: For Firestore, we use 'items' state as base because onSnapshot keeps it fresh
+        const baseItems = items;
+        const existing = baseItems.find(i => i.productId === newItem.productId);
+
+        if (existing) {
+            updatedItems = baseItems.map(i =>
+                i.productId === newItem.productId
+                    ? { ...i, quantity: i.quantity + newItem.quantity }
+                    : i
+            );
+        } else {
+            updatedItems = [...baseItems, { ...newItem, id: Math.random().toString(36).substr(2, 9) }];
+        }
+
+        if (user) {
+            // Auth: Save to Cloud (Listener updates UI)
+            saveToCloud(updatedItems);
+        } else {
+            // Guest: Update State (Effect saves to LS)
+            setItems(updatedItems);
+        }
+
+        // Price Comparison Logic (Preserved)
         let savings = 0;
         let competitor = undefined;
+        // ... (Logic remains same, assuming STORE_DATA usage is fine or will be addressed)
 
-        // Note: In a real app, this would be an API call. Here we iterate the mock data.
-        // We need to access STORE_DATA. We'll import it or assume it's available via a helper.
-        // Since we can't easily import inside the function in this tool workflow without top-level edits,
-        // we will do a basic "simulation" or rely on the fact that we can import it.
-        // Let's assume we need to import it. I will add the import in a separate step if not present.
-        // For now, I'll write the logic assuming STORE_DATA is available.
-
-        // Find competitors
         const allStores = Object.values(STORE_DATA);
         const competitors: { storeName: string; price: number }[] = [];
 
         allStores.forEach((store: any) => {
-            if (store.id === newItem.storeId) return; // Skip current store
+            if (store.id === newItem.storeId) return;
             const match = store.products.find((p: any) => p.name === newItem.productName);
             if (match) {
                 competitors.push({ storeName: store.name, price: match.price });
@@ -96,13 +181,11 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
 
         if (competitors.length > 0) {
-            // Check for savings (if we bought cheaper)
             const expensiveCompetitor = competitors.find(c => c.price > newItem.price);
             if (expensiveCompetitor) {
                 savings = parseFloat((expensiveCompetitor.price - newItem.price).toFixed(2));
                 competitor = { name: expensiveCompetitor.storeName, price: expensiveCompetitor.price };
             } else {
-                // Check if we overpaid
                 const cheapCompetitor = competitors.find(c => c.price < newItem.price);
                 if (cheapCompetitor) {
                     competitor = { name: cheapCompetitor.storeName, price: cheapCompetitor.price };
@@ -110,7 +193,6 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
         }
 
-        // Trigger notification
         setNotification({
             message: `${newItem.productName} added to cart!`,
             type: 'success',
@@ -118,44 +200,42 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
             competitor
         });
 
-        // Auto-clear after 4s (slightly longer to read)
         setTimeout(() => setNotification(null), 4000);
     };
 
     const addItemsToCart = (newItems: Omit<CartItem, 'id'>[]) => {
-        setItems(prev => {
-            let updatedItems = [...prev];
-            newItems.forEach(newItem => {
-                const existingIndex = updatedItems.findIndex(i => i.productId === newItem.productId);
-                if (existingIndex > -1) {
-                    updatedItems[existingIndex] = {
-                        ...updatedItems[existingIndex],
-                        quantity: updatedItems[existingIndex].quantity + newItem.quantity
-                    };
-                } else {
-                    updatedItems.push({ ...newItem, id: Math.random().toString(36).substr(2, 9) });
-                }
-            });
-            return updatedItems;
+        let updatedItems = [...items];
+        newItems.forEach(newItem => {
+            const existingIndex = updatedItems.findIndex(i => i.productId === newItem.productId);
+            if (existingIndex > -1) {
+                updatedItems[existingIndex] = {
+                    ...updatedItems[existingIndex],
+                    quantity: updatedItems[existingIndex].quantity + newItem.quantity
+                };
+            } else {
+                updatedItems.push({ ...newItem, id: Math.random().toString(36).substr(2, 9) });
+            }
         });
 
-        // Summary notification with item names
+        if (user) saveToCloud(updatedItems);
+        else setItems(updatedItems);
+
+        // Summary notification remains same
         const names = newItems.map(i => i.productName).join(', ');
         const message = newItems.length > 3
             ? `${newItems.length} items added: ${newItems.slice(0, 2).map(i => i.productName).join(', ')} and ${newItems.length - 2} more`
             : `${newItems.length} items added: ${names}`;
 
-        setNotification({
-            message,
-            type: 'success'
-        });
-
+        setNotification({ message, type: 'success' });
         setTimeout(() => setNotification(null), 3000);
     };
 
     const removeFromCart = (itemId: string) => {
         const itemToRemove = items.find(i => i.id === itemId);
-        setItems(prev => prev.filter(i => i.id !== itemId));
+        const updatedItems = items.filter(i => i.id !== itemId);
+
+        if (user) saveToCloud(updatedItems);
+        else setItems(updatedItems);
 
         if (itemToRemove) {
             setNotification({
@@ -168,27 +248,29 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const updateQuantity = (itemId: string, delta: number) => {
         const itemToUpdate = items.find(i => i.id === itemId);
-
-        setItems(prev => prev.map(i => {
+        const updatedItems = items.map(i => {
             if (i.id === itemId) {
-                const newQty = Math.max(0, i.quantity + delta);
-
-                // Trigger removal notification if qty hits 0
-                if (newQty === 0 && itemToUpdate) {
-                    setNotification({
-                        message: `${itemToUpdate.productName} removed from cart`,
-                        type: 'info'
-                    });
-                    setTimeout(() => setNotification(null), 3000);
-                }
-
-                return { ...i, quantity: newQty };
+                return { ...i, quantity: Math.max(0, i.quantity + delta) };
             }
             return i;
-        }).filter(i => i.quantity > 0));
+        }).filter(i => i.quantity > 0);
+
+        if (user) saveToCloud(updatedItems);
+        else setItems(updatedItems);
+
+        if (itemToUpdate && itemToUpdate.quantity + delta <= 0) {
+            setNotification({
+                message: `${itemToUpdate.productName} removed from cart`,
+                type: 'info'
+            });
+            setTimeout(() => setNotification(null), 3000);
+        }
     };
 
-    const clearCart = () => setItems([]);
+    const clearCart = () => {
+        if (user) saveToCloud([]);
+        else setItems([]);
+    };
 
     const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
     const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);

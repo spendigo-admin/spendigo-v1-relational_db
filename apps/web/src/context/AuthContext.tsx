@@ -94,6 +94,34 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             if (userDoc.exists()) {
                 // Ensure ID is set from the document key if missing in data
                 const data = userDoc.data();
+
+                // 1. Maintenance Mode Check
+                // System Admins bypass this check.
+                if (data.role !== 'admin') {
+                    const settingsDoc = await getDoc(doc(db, 'settings', 'platform'));
+                    if (settingsDoc.exists() && settingsDoc.data().maintenanceMode) {
+                        await signOut(auth);
+                        alert(`🚧 System is in Maintenance Mode. (Blocked Role: ${data.role || 'unknown'}). Please try again later.`);
+                        setUser(null);
+                        return;
+                    }
+                }
+
+                // 2. Security Check: If Merchant, verify Store Status
+                if (data.role === 'merchant' && data.storeId) {
+                    const storeDoc = await getDoc(doc(db, 'stores', data.storeId));
+                    if (storeDoc.exists()) {
+                        const storeData = storeDoc.data();
+                        if (storeData.status === 'suspended') {
+                            // BLOCK ACCESS
+                            await signOut(auth);
+                            alert('Creating a safe and trusted marketplace is our priority. Your store has been suspended. Please contact support@spendigo.ca.');
+                            setUser(null);
+                            return; // Stop execution
+                        }
+                    }
+                }
+
                 setUser({ ...data, id: uid } as User);
             } else {
                 console.error('User profile not found in Firestore');
@@ -112,6 +140,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             const userCredential = await signInWithEmailAndPassword(auth, email, password);
             // Explicitly fetch profile here to ensure 'user' state is populated before login returns true
             await fetchUserProfile(userCredential.user.uid);
+
+            // Re-check auth state (fetchUserProfile might have forced logout)
+            if (!auth.currentUser) {
+                return false; // Login blocked
+            }
+
             return true;
         } catch (error) {
             console.error('Login failed:', error);

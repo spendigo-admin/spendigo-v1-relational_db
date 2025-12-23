@@ -10,7 +10,7 @@ import '../../styles/design-system.css';
 
 const Checkout: React.FC = () => {
     const { items, subtotal, clearCart } = useCart();
-    const { addOrder, profile } = useOrders();
+    const { addOrder, createBatchOrders, profile } = useOrders();
     const { user } = useAuth();
     const navigate = useNavigate();
 
@@ -71,19 +71,38 @@ const Checkout: React.FC = () => {
     const taxRate = 0.13; // 13% HST Ontario
 
     // Calculate totals including Delivery Fees
-    const { orderSubtotal, deliveryFees, grandTotal } = React.useMemo(() => {
+    const { orderSubtotal, deliveryFees, calculatedTax, grandTotal } = React.useMemo(() => {
         let sub = 0;
+        let taxableSub = 0;
         let fees = 0;
+        let totalCalculatedTax = 0;
 
         Object.entries(groupedItems).forEach(([storeId, data]) => {
-            const storeSubtotal = data.items.reduce((acc: any, item: any) => acc + (item.price * item.quantity), 0);
+            let storeSubtotal = 0;
+            let storeTaxable = 0;
+
+            // Calculate Item Totals & Taxable Portion
+
+            // Calculate Item Totals & Taxable Portion
+            data.items.forEach((item: any) => {
+                const itemTotal = item.price * item.quantity;
+                storeSubtotal += itemTotal;
+
+                // Check if item is taxable (default true if undefined for safety)
+                // In a real app, we'd look up the product fresh from context/store, but using cart item snapshot is acceptable for now
+                if (item.taxable !== false) {
+                    storeTaxable += itemTotal;
+                }
+            });
+
             sub += storeSubtotal;
 
             const store = getStore(storeId);
             const method = fulfillmentMethods[storeId] || 'pickup';
+            let fee = 0;
 
             if (store && method === 'delivery') {
-                let fee = 3.99;
+                fee = 3.99;
                 if (store.deliveryFeeValue !== undefined) {
                     fee = store.deliveryFeeValue;
                 }
@@ -93,14 +112,26 @@ const Checkout: React.FC = () => {
                 }
                 fees += fee;
             }
+
+            // Calculate Tax for this specific store based on its province
+            const province = store?.province || STORE_DATA[storeId]?.province || 'ON';
+            const TAX_RATES: Record<string, number> = { 'ON': 0.13, 'BC': 0.12, 'QC': 0.14975, 'AB': 0.05, 'NS': 0.15, 'NB': 0.15, 'MB': 0.12, 'SK': 0.11, 'PE': 0.15, 'NL': 0.15 };
+            const rate = TAX_RATES[province] || 0.13;
+
+            // Tax is applied to taxable items + delivery fee
+            // Note: In some jurisdictions delivery might be taxed differently, but for simplicity assuming general sales tax rule
+            totalCalculatedTax += (storeTaxable + fee) * rate;
         });
 
-        const tax = sub * taxRate;
+        // Computed totals
         return {
             orderSubtotal: sub,
             deliveryFees: fees,
-            grandTotal: sub + fees + tax
+            calculatedTax: totalCalculatedTax,
+            grandTotal: sub + fees + totalCalculatedTax
         };
+
+
     }, [groupedItems, fulfillmentMethods, getStore]);
 
     const handlePayment = async () => {
@@ -120,10 +151,15 @@ const Checkout: React.FC = () => {
         setIsProcessing(true);
 
         try {
-            // Create an order for EACH store
-            const orderPromises = Object.entries(groupedItems).map(async ([storeId, data]) => {
+            // Prepare orders for batch submission
+            const ordersToCreate = Object.entries(groupedItems).map(([storeId, data]) => {
                 const method = fulfillmentMethods[storeId] || 'pickup';
-                const store = getStore(storeId);
+                const store = getStore(storeId) || STORE_DATA[storeId];
+
+                // Determine Rate
+                const province = store?.province || 'ON';
+                const TAX_RATES: Record<string, number> = { 'ON': 0.13, 'BC': 0.12, 'QC': 0.14975, 'AB': 0.05, 'NS': 0.15, 'NB': 0.15, 'MB': 0.12, 'SK': 0.11, 'PE': 0.15, 'NL': 0.15 };
+                const rate = TAX_RATES[province] || 0.13;
 
                 // Re-calculate fee for this specific order
                 let fee = 0;
@@ -135,33 +171,43 @@ const Checkout: React.FC = () => {
                     }
                 }
 
-                console.log(`Submitting order for Store ${storeId}`); // Debug log
+                // Re-calculate tax based on item taxability (OUTSIDE RETURN)
+                const taxableAmount = data.items.reduce((sum: number, i: any) => {
+                    return (i.taxable !== false) ? sum + (i.price * i.quantity) : sum;
+                }, 0);
 
-                await addOrder({
+                // Delivery fee is also taxable
+                const taxAmount = (taxableAmount + fee) * rate;
+
+                return {
                     storeId,
                     storeName: data.storeName,
-                    status: 'placed',
-                    items: data.items.map(i => ({
+                    storeProvince: province,
+                    appliedTaxRate: rate,
+                    status: 'placed' as const,
+                    items: data.items.map((i: any) => ({
                         productId: i.id,
                         productName: i.name,
                         price: i.price,
                         quantity: i.quantity,
-                        image: i.image
+                        image: i.image,
+                        taxable: i.taxable !== false
                     })),
                     subtotal: data.total,
-                    tax: data.total * taxRate,
+                    tax: taxAmount,
                     deliveryFee: fee,
-                    total: data.total + (data.total * taxRate) + fee,
-                    paymentMethod: 'in_store', // Forced
-                    paymentStatus: 'pending', // Forced
+                    total: data.total + taxAmount + fee,
+                    paymentMethod: 'in_store' as const,
+                    paymentStatus: 'pending' as const,
                     deliveryAddress: method === 'delivery'
                         ? (profile.addresses.find(a => a.isDefault) || profile.addresses[0])
-                        : undefined // No address for pickup
-                });
+                        : undefined
+                };
             });
 
-            await Promise.all(orderPromises);
-            console.log('All orders submitted successfully');
+            console.log(`Submitting batch of ${ordersToCreate.length} orders`);
+            await createBatchOrders(ordersToCreate);
+            console.log('All orders submitted successfully via batch');
 
             clearCart();
             setOrderComplete(true);
@@ -265,7 +311,17 @@ const Checkout: React.FC = () => {
                 {/* Footer Summary */}
                 <div className="mt-8 glass-panel p-6">
                     <div className="flex justify-between items-center mb-4">
-                        <span className="font-bold text-lg text-[var(--text-main)]">Total Due (Pay at Store)</span>
+                        <span className="font-bold text-lg text-[var(--text-main)]">
+                            {(() => {
+                                const methods = Object.values(fulfillmentMethods);
+                                const hasDelivery = methods.includes('delivery');
+                                const hasPickup = methods.includes('pickup');
+
+                                if (hasDelivery && hasPickup) return "Total Due (Store & Delivery)";
+                                if (hasDelivery) return "Total Due (Pay on Delivery)";
+                                return "Total Due (Pay at Store)";
+                            })()}
+                        </span>
                         <span className="font-bold text-2xl text-[var(--brand-primary)]">${grandTotal.toFixed(2)}</span>
                     </div>
                     <div>
@@ -276,6 +332,10 @@ const Checkout: React.FC = () => {
                         <div className="flex justify-between text-sm text-[var(--text-muted)] mb-3">
                             <span>Delivery Fees</span>
                             <span>${deliveryFees.toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between text-sm text-[var(--text-muted)] mb-3 pb-3 border-b border-[var(--glass-border)]">
+                            <span>Estimated Tax <span className="text-[10px] bg-gray-100 px-1 rounded">VARIES BY PROVINCE</span></span>
+                            <span>${calculatedTax.toFixed(2)}</span>
                         </div>
                     </div>
                     <p className="text-sm text-[var(--text-muted)] leading-relaxed bg-blue-50 p-4 rounded-xl border border-blue-100 text-blue-800">

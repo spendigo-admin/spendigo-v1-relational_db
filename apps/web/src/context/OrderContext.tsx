@@ -8,7 +8,8 @@ import {
     updateDoc,
     doc,
     serverTimestamp,
-    orderBy
+    orderBy,
+    writeBatch
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useAuth } from './AuthContext';
@@ -64,6 +65,7 @@ interface OrderContextType {
     orders: Order[];
     profile: UserProfile;
     addOrder: (order: Omit<Order, 'id' | 'date' | 'customerName' | 'customerId'>) => Promise<string>;
+    createBatchOrders: (orders: Omit<Order, 'id' | 'date' | 'customerName' | 'customerId'>[]) => Promise<string[]>;
     updateOrderStatus: (orderId: string, status: Order['status']) => Promise<void>;
     updatePaymentStatus: (orderId: string, status: Order['paymentStatus'], auditData?: { id: string; name: string; timestamp: string }) => Promise<void>;
     cancelOrder: (orderId: string) => Promise<void>;
@@ -113,6 +115,7 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             // BUT: Access rules usually prevent querying ALL orders.
             // Let's rely on the fact we haven't implemented strict Firestore Rules yet so we can query.
             if (user.storeId) {
+                console.log(`OrderContext: Querying orders for Store ID: ${user.storeId}`);
                 q = query(collection(db, 'orders'), where('storeId', '==', user.storeId)); // , orderBy('date', 'desc') needs composite index
             } else {
                 setOrders([]); // No store assigned
@@ -161,42 +164,48 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     // --- Actions ---
 
     const addOrder = async (orderData: Omit<Order, 'id' | 'date' | 'customerName' | 'customerId'>): Promise<string> => {
+        // Fallback for single order, acts as wrapper for batch
+        const ids = await createBatchOrders([orderData]);
+        return ids[0];
+    };
+
+    const createBatchOrders = async (ordersData: Omit<Order, 'id' | 'date' | 'customerName' | 'customerId'>[]): Promise<string[]> => {
         if (!user) throw new Error("Must be logged in");
 
-        console.log('OrderContext: Creating order for user:', user.id); // Debug
+        const batch = writeBatch(db);
+        const orderIds: string[] = [];
 
-        // Sanitize data: Firestore throws on 'undefined'
-        // Strategy: Explicitly set nullable fields to null if they might be undefined
-        // Then use JSON parse/stringify to strip any other accidental undefineds
-        const rawOrder = {
-            ...orderData,
-            deliveryAddress: orderData.deliveryAddress || null,
-            items: orderData.items.map(i => ({
-                ...i,
-                image: i.image || null
-            })),
-            date: new Date().toISOString(),
-            customerId: user.id,
-            customerName: user.name || 'Valued Customer',
-            createdAt: serverTimestamp() // logic: serverTimestamp() is a special object, it checks out fine in JSON? wait.
-        };
+        ordersData.forEach(orderData => {
+            const newOrderRef = doc(collection(db, 'orders'));
+            orderIds.push(newOrderRef.id);
 
-        // serverTimestamp() is NOT JSON serializable. We must apply it AFTER sanitization.
-        const { createdAt, ...rest } = rawOrder;
-        const sanitizedRest = JSON.parse(JSON.stringify(rest));
+            // Sanitize
+            const rawOrder = {
+                ...orderData,
+                deliveryAddress: orderData.deliveryAddress || null,
+                items: orderData.items.map(i => ({
+                    ...i,
+                    image: i.image || null
+                })),
+                date: new Date().toISOString(),
+                customerId: user.id,
+                customerName: user.name || 'Valued Customer',
+                createdAt: serverTimestamp()
+            };
 
-        const newOrderData = {
-            ...sanitizedRest,
-            createdAt // Add back the special Firestore object
-        };
+            const { createdAt, ...rest } = rawOrder;
+            const sanitizedRest = JSON.parse(JSON.stringify(rest));
+            const finalOrder = { ...sanitizedRest, createdAt };
+
+            batch.set(newOrderRef, finalOrder);
+        });
 
         try {
-            console.log('OrderContext: Attempting write with data:', JSON.stringify(newOrderData, null, 2)); // Debug payload
-            const docRef = await addDoc(collection(db, 'orders'), newOrderData);
-            console.log('OrderContext: Order created with ID:', docRef.id);
-            return docRef.id;
+            await batch.commit();
+            console.log(`OrderContext: Batch committed. Orders: ${orderIds.join(', ')}`);
+            return orderIds;
         } catch (e) {
-            console.error('OrderContext: Failed to create order', e);
+            console.error('OrderContext: Batch commit failed', e);
             throw e;
         }
     };
@@ -255,6 +264,7 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             orders,
             profile,
             addOrder,
+            createBatchOrders,
             updateOrderStatus,
             updatePaymentStatus,
             cancelOrder,
