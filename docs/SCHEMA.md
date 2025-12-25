@@ -1,192 +1,469 @@
-# Spendigo SmartCart — Database Schema (PostgreSQL)
+# Spendigo SmartCart — Database Schema
 
-## 1. Entity Relationship Diagram
+**Last Updated**: 2025-12-24  
+**Database**: Cloud Firestore (NoSQL)  
+**Status**: Production Implementation
+
+---
+
+## 1. Overview
+
+Spendigo uses **Cloud Firestore**, a NoSQL document database, instead of the originally planned PostgreSQL. This document describes the actual collection structure and data models as implemented.
+
+---
+
+## 2. Collection Structure
+
+### 2.1 Top-Level Collections
+
+```
+/users                  # User profiles and authentication
+/stores                 # Merchant store data
+/orders                 # Order documents
+/catalog                # Master product catalog
+/audit_logs             # Security audit ledger
+/notifications          # User notifications
+/carts                  # Shopping carts
+/wishlists              # User wishlists
+/settings               # Platform-wide settings
+```
+
+### 2.2 Subcollections
+
+```
+/stores/{storeId}/flyers/{flyerId}   # Digital flyers for each store
+```
+
+---
+
+## 3. Document Schemas (TypeScript Interfaces)
+
+### 3.1 Users Collection (`/users/{userId}`)
+
+```typescript
+interface User {
+  id: string;                    // Firebase Auth UID
+  email: string;
+  name: string;
+  role: 'consumer' | 'merchant' | 'admin';
+  avatar?: string;
+  
+  // Merchant-specific fields
+  storeId?: string;              // Reference to stores collection
+  storeName?: string;
+  merchantRole?: 'OWNER' | 'MANAGER' | 'STAFF' | 'MARKETING';
+  subscriptionTier?: 'free' | 'core' | 'growth';
+  
+  // Admin-specific fields
+  adminRole?: 'SUPER_ADMIN' | 'SUPPORT' | 'MODERATOR' | 'AUDITOR';
+}
+```
+
+**Indexes**: None required (Firebase Auth UID is primary key)
+
+---
+
+### 3.2 Stores Collection (`/stores/{storeId}`)
+
+```typescript
+interface Store {
+  id: string;
+  name: string;
+  merchantEmail: string;
+  location: string;
+  province: 'ON' | 'QC' | 'BC' | 'AB' | 'MB' | 'SK' | 'NB' | 'NS' | 'PE' | 'NL' | 'NT' | 'YT' | 'NU';
+  status: 'active' | 'pending' | 'suspended';
+  
+  // Products
+  products: Product[];           // Denormalized for fast reads
+  
+  // Active flyer metadata
+  flyer?: {
+    title: string;
+    image: string;
+    validUntil: string;          // ISO date
+  };
+  
+  // Settings
+  subscriptionTier: 'free' | 'core' | 'growth';
+  deliveryEnabled: boolean;
+  pickupEnabled: boolean;
+  operatingHours?: string;
+  
+  // Metadata
+  joinedAt: string;              // ISO date
+}
+
+interface Product {
+  id: string;
+  name: string;
+  price: number;
+  category: string;
+  image?: string;
+  stock?: number;
+  isTaxable?: boolean;           // For HST calculation
+}
+```
+
+**Indexes**: 
+- `status` (for admin queries)
+- `province` (for tax calculation)
+
+---
+
+### 3.3 Orders Collection (`/orders/{orderId}`)
+
+```typescript
+interface Order {
+  id: string;                    // Auto-generated doc ID
+  date: string;                  // ISO timestamp
+  status: 'placed' | 'preparing' | 'out_for_delivery' | 'delivered' | 'cancelled';
+  
+  // Parties
+  customerId: string;            // User ID
+  customerName: string;
+  storeId: string;               // Store ID
+  storeName: string;
+  
+  // Items
+  items: OrderItem[];
+  
+  // Financials
+  subtotal: number;
+  tax: number;
+  deliveryFee: number;
+  total: number;
+  
+  // Payment
+  paymentMethod: 'card' | 'in_store';
+  paymentStatus: 'paid' | 'pending';
+  paymentCollectedBy?: {         // Audit trail for in-store payments
+    id: string;
+    name: string;
+    timestamp: string;
+  };
+  
+  // Delivery
+  deliveryAddress?: Address;
+  estimatedDelivery?: string;
+  
+  // Metadata
+  createdAt: FirebaseTimestamp;
+}
+
+interface OrderItem {
+  productId: string;
+  productName: string;
+  price: number;
+  quantity: number;
+  image?: string;
+}
+
+interface Address {
+  id: string;
+  label: string;
+  street: string;
+  city: string;
+  province: string;
+  postalCode: string;
+  isDefault: boolean;
+}
+```
+
+**Indexes**:
+- `customerId` (for consumer order history)
+- `storeId` (for merchant order inbox)
+- `status` (for Kanban board filtering)
+- Composite: `storeId + status` (for merchant dashboard)
+
+---
+
+### 3.4 Catalog Collection (`/catalog/{productId}`)
+
+```typescript
+interface CatalogProduct {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+  image: string;
+  basePrice: number;             // Suggested retail price
+  isTaxable: boolean;
+  tags?: string[];
+}
+```
+
+**Purpose**: Master product database. Merchants add products from here with custom pricing.
+
+---
+
+### 3.5 Audit Logs Collection (`/audit_logs/{logId}`)
+
+```typescript
+interface AuditLog {
+  id: string;                    // Custom ID: txn_{timestamp}_{random}
+  timestamp: string;             // ISO timestamp
+  
+  actor: {
+    id: string;                  // User ID
+    email: string;
+    ip: string;                  // Simulated in dev
+  };
+  
+  action: string;                // e.g., 'AUTH_LOGIN', 'STORE_STATUS_UPDATE', 'ORDER_CREATE'
+  resource?: string;             // e.g., 'store/1', 'order/abc123'
+  metadata?: Record<string, any>;
+  
+  // Blockchain-lite hash chain
+  prevHash: string;              // SHA-256 hash of previous log
+  hash: string;                  // SHA-256 hash of this log
+}
+```
+
+**Security**: Append-only. Hash chain ensures tamper-evidence.
+
+---
+
+### 3.6 Flyers Subcollection (`/stores/{storeId}/flyers/{flyerId}`)
+
+```typescript
+interface Flyer {
+  id: string;
+  title: string;
+  image: string;                 // Cover image URL
+  validFrom: string;             // ISO date
+  validUntil: string;            // ISO date
+  status: 'draft' | 'scheduled' | 'active' | 'expired';
+  
+  products: FlyerProduct[];
+}
+
+interface FlyerProduct {
+  productId: string;
+  productName: string;
+  originalPrice: number;
+  salePrice: number;
+  discountPercent: number;
+}
+```
+
+**Lifecycle**: Draft → Scheduled → Active → Expired
+
+---
+
+### 3.7 Notifications Collection (`/notifications/{userId}`)
+
+```typescript
+interface NotificationDocument {
+  userId: string;                // User or Store ID
+  notifications: AppNotification[];
+}
+
+interface AppNotification {
+  id: string;
+  type: 'order' | 'system' | 'promotion';
+  title: string;
+  message: string;
+  timestamp: string;
+  isRead: boolean;
+  link?: string;                 // Navigation target
+}
+```
+
+---
+
+### 3.8 Carts Collection (`/carts/{userId}`)
+
+```typescript
+interface Cart {
+  userId: string;
+  items: CartItem[];
+  lastUpdated: FirebaseTimestamp;
+}
+
+interface CartItem {
+  productId: string;
+  productName: string;
+  storeId: string;
+  storeName: string;
+  price: number;
+  quantity: number;
+  image?: string;
+}
+```
+
+**Hybrid Persistence**: 
+- Guest users → LocalStorage
+- Authenticated users → Firestore (synced on login)
+
+---
+
+### 3.9 Settings Collection (`/settings/platform`)
+
+```typescript
+interface PlatformSettings {
+  maintenanceMode: boolean;
+  maintenanceMessage?: string;
+  
+  // Dual-approval system for maintenance mode
+  maintenancePending?: {
+    requestedBy: string;
+    requestedAt: string;
+    approvedBy?: string;
+    approvedAt?: string;
+  };
+}
+```
+
+---
+
+## 4. Security Rules (Firestore Rules)
+
+**Current Status**: Development mode (relaxed rules)
+
+**Production Rules** (to be implemented):
+
+```javascript
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Users: Read own, write own
+    match /users/{userId} {
+      allow read: if request.auth.uid == userId;
+      allow write: if request.auth.uid == userId;
+    }
+    
+    // Stores: Public read, owner write
+    match /stores/{storeId} {
+      allow read: if true;
+      allow write: if request.auth.token.storeId == storeId;
+    }
+    
+    // Orders: Consumer read own, Merchant read own store
+    match /orders/{orderId} {
+      allow read: if request.auth.uid == resource.data.customerId
+                  || request.auth.token.storeId == resource.data.storeId;
+      allow create: if request.auth.uid != null;
+      allow update: if request.auth.token.storeId == resource.data.storeId;
+    }
+    
+    // Catalog: Public read, admin write
+    match /catalog/{productId} {
+      allow read: if true;
+      allow write: if request.auth.token.role == 'admin';
+    }
+    
+    // Audit Logs: Append-only
+    match /audit_logs/{logId} {
+      allow read: if request.auth.token.role == 'admin';
+      allow create: if request.auth.uid != null;
+      allow update, delete: if false;  // Immutable
+    }
+  }
+}
+```
+
+---
+
+## 5. Data Relationships (Visual)
+
 ```mermaid
 erDiagram
-    Users ||--o{ Stores : manages
-    Stores ||--o{ Products : sells
-    Stores ||--o{ Inventory : tracks
-    Stores ||--o{ Orders : fulfills
-    Users ||--o{ Orders : places
-    Orders ||--o{ OrderItems : contains
-    OrderItems }|--|| Products : references
-    Orders ||--|| Payments : financed_by
-
-    Users {
-        uuid id PK
+    users ||--o{ stores : owns
+    stores ||--o{ flyers : publishes
+    stores ||--o{ products : sells
+    users ||--o{ orders : places
+    stores ||--o{ orders : fulfills
+    orders ||--o{ order_items : contains
+    users ||--o{ carts : has
+    users ||--o{ notifications : receives
+    
+    users {
+        string id PK
         string email
-        string phone
-        string role "admin,merchant,consumer"
-        jsonb preferences
-        timestamp created_at
+        string role
+        string storeId FK
     }
-
-    Stores {
-        uuid id PK
-        uuid owner_id FK
-        string legal_name
-        string stripe_account_id
-        boolean is_verified
-        jsonb policies "return_policy, fulfillment_sla"
-    }
-
-    Products {
-        uuid id PK
-        uuid store_id FK
+    
+    stores {
+        string id PK
         string name
-        string barcode
-        decimal price
-        string tax_code
-        boolean is_age_restricted
-        boolean is_recalled
+        string status
+        array products
     }
-
-    Orders {
-        uuid id PK
-        uuid consumer_id FK
-        uuid store_id FK
-        string status "created,authorized,accepted,ready,fulfilled"
-        decimal total_amount
-        decimal commission_amount
-        decimal tax_amount
-        string stripe_payment_intent_id
-        timestamp created_at
+    
+    orders {
+        string id PK
+        string customerId FK
+        string storeId FK
+        string status
+        decimal total
     }
 ```
 
-## 2. Table Definitions (SQL)
+---
 
-### 2.1 Users & Auth
-```sql
-CREATE TYPE user_role AS ENUM ('admin', 'merchant', 'consumer');
+## 6. Migration from Original Schema
 
-CREATE TABLE users (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    email VARCHAR(255) UNIQUE NOT NULL,
-    phone VARCHAR(20),
-    role user_role DEFAULT 'consumer',
-    is_banned BOOLEAN DEFAULT false,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+The original plan used **PostgreSQL** with relational tables. The current implementation uses **Firestore** for:
+- **Real-time sync**: Orders update instantly without polling
+- **Easier scaling**: Auto-scales without server management
+- **Faster development**: No ORM setup, migrations, or server config
+
+**Trade-offs**:
+- ❌ No JOIN operations (denormalization required)
+- ❌ No ACID transactions across collections (use batch writes)
+- ✅ Real-time listeners
+- ✅ Offline persistence
+- ✅ Auto-scaling
+
+---
+
+## 7. Query Patterns
+
+### Common Queries
+
+```typescript
+// Get consumer's orders
+const ordersQuery = query(
+  collection(db, 'orders'),
+  where('customerId', '==', userId),
+  orderBy('date', 'desc')
+);
+
+// Get merchant's orders by status
+const merchantOrdersQuery = query(
+  collection(db, 'orders'),
+  where('storeId', '==', storeId),
+  where('status', '==', 'placed')
+);
+
+// Get active flyers for a store
+const flyersQuery = query(
+  collection(db, `stores/${storeId}/flyers`),
+  where('status', '==', 'active')
 );
 ```
 
-### 2.2 Marketplace Core (Stores)
-```sql
-CREATE TABLE stores (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    owner_id UUID REFERENCES users(id) NOT NULL,
-    legal_name VARCHAR(255) NOT NULL,
-    display_name VARCHAR(255) NOT NULL,
-    stripe_account_id VARCHAR(255) UNIQUE, -- Stripe Connect Express/Custom ID
-    is_live BOOLEAN DEFAULT false,
-    is_verified BOOLEAN DEFAULT false,
-    commission_rate DECIMAL(5,4) DEFAULT 0.0500, -- 5% default
-    address_json JSONB NOT NULL, -- Full address for invoices
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
+**Composite Indexes Required**:
+- `storeId + status`
+- `customerId + date`
+
+---
+
+## 8. Backup & Recovery
+
+**Firebase Built-in**:
+- Automatic daily backups (14-day retention)
+- Point-in-time recovery available
+
+**Manual Export**:
+```bash
+gcloud firestore export gs://[BUCKET_NAME]
 ```
 
-### 2.3 Catalog & Inventory
-```sql
-CREATE TABLE products (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    store_id UUID REFERENCES stores(id) NOT NULL,
-    name VARCHAR(255) NOT NULL,
-    description TEXT,
-    barcode VARCHAR(100), -- UPC/EAN
-    price_cents INTEGER NOT NULL,
-    unit VARCHAR(50), -- e.g., 'kg', 'each'
-    tax_code VARCHAR(50) DEFAULT 'txcd_00000000', -- Stripe Tax Code
-    is_age_restricted BOOLEAN DEFAULT false,
-    image_url TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
+---
 
-CREATE TABLE inventory (
-    product_id UUID REFERENCES products(id) PRIMARY KEY,
-    quantity INTEGER DEFAULT 0,
-    low_stock_threshold INTEGER DEFAULT 5,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-```
-
-### 2.4 Orders & Listings
-```sql
-CREATE TYPE order_status AS ENUM (
-    'created', 'authorized', 'accepted', 'ready', 'fulfilled', 'cancelled', 'refunded'
-);
-
-CREATE TABLE orders (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    store_id UUID REFERENCES stores(id) NOT NULL,
-    consumer_id UUID REFERENCES users(id) NOT NULL,
-    
-    -- Financials
-    subtotal_cents INTEGER NOT NULL,
-    tax_cents INTEGER NOT NULL,
-    commission_cents INTEGER NOT NULL, -- Platform Fee
-    total_cents INTEGER NOT NULL,
-    
-    status order_status DEFAULT 'created',
-    stripe_payment_intent_id VARCHAR(255),
-    stripe_transfer_id VARCHAR(255),
-    
-    metadata JSONB, -- Snapshots of prices/tax rules at time of order
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
-CREATE TABLE order_items (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    order_id UUID REFERENCES orders(id) NOT NULL,
-    product_id UUID REFERENCES products(id) NOT NULL,
-    quantity INTEGER NOT NULL,
-    price_at_purchase_cents INTEGER NOT NULL,
-    total_cents INTEGER NOT NULL
-);
-
-### 2.5 Flyers & Deals (Phase 2)
-```sql
-CREATE TABLE flyers (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    store_id UUID REFERENCES stores(id) NOT NULL,
-    status VARCHAR(50) DEFAULT 'processing', -- processing, review_required, active, expired
-    active_from TIMESTAMP WITH TIME ZONE NOT NULL,
-    active_until TIMESTAMP WITH TIME ZONE NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
-CREATE TABLE flyer_pages (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    flyer_id UUID REFERENCES flyers(id) NOT NULL,
-    page_number INTEGER NOT NULL,
-    image_url TEXT NOT NULL,
-    ocr_raw_text TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
-CREATE TABLE extracted_deals (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    flyer_id UUID REFERENCES flyers(id) NOT NULL,
-    page_id UUID REFERENCES flyer_pages(id) NOT NULL,
-    
-    product_name VARCHAR(255) NOT NULL,
-    price_cents INTEGER,
-    unit VARCHAR(50), 
-    
-    bbox_json JSONB, -- Coordinates on the image {x,y,w,h}
-    confidence_score DECIMAL(4,3), -- 0.000 to 1.000
-    is_verified BOOLEAN DEFAULT false,
-    
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-```
-```
-
-## 3. RLS (Row Level Security) Policies
-*Strict enforcement required.*
-
-- **Users**: Users can read/edit their own record.
-- **Stores**: Public read. Owner write.
-- **Products**: Public read (if store is live). Store owner write.
-- **Orders**: Consumer read (own), Store owner read (own). No public access.
+**For architecture overview, see**: [ARCHITECTURE.md](./ARCHITECTURE.md)  
+**For complete tech stack, see**: [TECH_STACK.md](./TECH_STACK.md)

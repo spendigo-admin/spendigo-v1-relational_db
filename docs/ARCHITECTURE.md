@@ -1,93 +1,224 @@
 # Spendigo SmartCart — System Architecture
 
-## 1. Executive Summary
-Spendigo SmartCart is a Canada-first marketplace facilitator connecting independent convenience stores with consumers. This architecture is designed to be **serverless, scalable to zero, and strictly cost-controlled**, while maintaining production-grade security and compliance standards.
+**Last Updated**: 2025-12-24  
+**Status**: Production (Firebase-Based Implementation)
 
-## 2. C4 Model - Context Diagram
+---
+
+## 1. Executive Summary
+
+Spendigo SmartCart is a Canada-first marketplace facilitator connecting independent convenience stores with consumers. The **current implementation** uses **Firebase** as a managed backend, enabling rapid development and automatic scalability while maintaining production-grade security.
+
+---
+
+## 2. C4 Model - Context Diagram (As Implemented)
+
 ```mermaid
 graph TB
-    Consumer[Consumer]\n(Web/Mobile App)
-    StoreMgr[Store Manager]\n(Web Dashboard)
-    Admin[Spendigo Admin]\n(Admin Panel)
+    Consumer[Consumer<br/>Web/Mobile App]
+    StoreMgr[Store Manager<br/>Web Dashboard]
+    Admin[Spendigo Admin<br/>Admin Panel]
 
-    subgraph Spendigo Platform
-        API[API Gateway / Load Balancer]
-        Core[Core Services\n(Node.js Cloud Functions)]
-        Auth[Identity Provider\n(Firebase Auth)]
-        DB[(PostgreSQL\nServerless)]
-        Storage[(Object Storage\nImages/Docs)]
+    subgraph Firebase Platform
+        Auth[Firebase Auth<br/>User Authentication]
+        Firestore[(Cloud Firestore<br/>Real-time Database)]
+        Storage[(Firebase Storage<br/>Images/Files)]
+        Functions[Cloud Functions<br/>Optional serverless logic]
     end
 
-    Stripe[Stripe Connect]\n(Payments & Payouts)
-    Maps[Google Maps / Mapbox]\n(Geolocation)
-    OCR[OCR Service]\n(Flyer Processing)
+    subgraph External Services
+        Stripe[Stripe Connect<br/>Payments Integration]
+        Maps[Google Maps<br/> Geolocation]
+    end
 
-    Consumer -->|Browses, Orders| API
-    StoreMgr -->|Manages Inventory, Orders| API
-    Admin -->|Moderation, Support| API
-    API --> Core
-    Core --> Auth
-    Core --> DB
-    Core --> Storage
-    Core --> Stripe
-    Core --> Maps
-    Core --> OCR
+    Consumer -->|Browse, Order| Auth
+    StoreMgr -->|Manage Inventory| Auth
+    Admin -->|Moderate, Audit| Auth
+    
+    Auth --> Firestore
+    Auth --> Storage
+    Firestore -.->|Triggers| Functions
+    Functions --> Stripe
+    Consumer --> Maps
 ```
 
-## 3. Container Architecture
+---
+
+## 3. Container Architecture (Actual Implementation)
 
 ### 3.1 Frontend Applications
-- **Consumer Web**: React (Vite) SPA. Public facing. SEO optimization required.
-- **Consumer Mobile**: React Native (Expo). iOS/Android.
-- **Merchant Dashboard**: React (Vite) SPA. Protected routes only.
-- **Admin Panel**: React (Vite) SPA. High-security, strictly RBAC controlled.
 
-### 3.2 Backend Services (Serverless Functions)
-Built as clear domain boundaries within a monorepo, deployed as Google Cloud Functions (2nd Gen) or AWS Lambda equivalent.
+| Application | Technology | Status |
+|------------|------------|--------|
+| **Consumer Web** | React 18 + Vite 7 | ✅ Complete |
+| **Merchant Dashboard** | React 18 + Vite 7 | ✅ Complete |
+| **Admin Panel** | React 18 + Vite 7 | ✅ Complete |
+| **Mobile Apps** | Capacitor 6 (iOS/Android) | ✅ Ready for build |
 
-| Service Domain | Responsibilities |
-| :--- | :--- |
-| **Auth** | User management, RBAC, Custom Claims, MFA enforcement. |
-| **Marketplace** | Store profiles, Normalization, Search, Catalog Management. |
-| **Order** | Order State Machine, Cart Validation, Tax Calculation. |
-| **Payment** | Stripe Intents, Webhooks, Payouts, Commissions, Ledger. |
-| **Flyer** | Ingestion, OCR pipeline, Deal extraction. |
-| **Notification** | Transactional Email (SendGrid/Resend), SMS (Twilio - Critical only). |
+**Shared Codebase**: Single React app with role-based routing (`ConsumerLayout`, `MerchantLayout`, `AdminLayout`)
 
-### 3.3 Data Store
-- **Primary DB**: Serverless PostgreSQL (e.g., Neon or Supabase).
-  - Schema: Relational, strictly normalized.
-  - RLS (Row Level Security): Enforced at the DB level where possible, or strictly via API.
-- **Object Storage**: AWS S3 or Google Cloud Storage.
-  - Buckets: `public-assets` (read-only), `private-docs` (store legals), `flyer-uploads` (temp).
+### 3.2 Backend Services (Firebase)
+
+Instead of custom serverless functions, the app uses **Firebase client SDKs** with business logic in React Context providers:
+
+| Context Provider | Responsibilities | Firestore Collections |
+|-----------------|------------------|----------------------|
+| **AuthContext** | User auth, RBAC, session management | `users` |
+| **MarketplaceContext** | Store profiles, products, catalog | `stores`, `catalog` |
+| **OrderContext** | Order lifecycle, batch writes | `orders` |
+| **CartContext** | Shopping cart, guest/user sync | `carts` |
+| **NotificationContext** | Push notifications | `notifications` |
+| **AuditContext** | Security audit logs (SHA-256 chain) | `audit_logs` |
+| **CatalogContext** | Master product catalog | `catalog` |
+
+### 3.3 Data Store (Firebase Firestore)
+
+**Collection Structure**:
+```
+/users/{userId}              # User profiles + roles
+/stores/{storeId}            # Merchant stores
+  /flyers/{flyerId}          # Digital flyers (subcollection)
+/orders/{orderId}            # Order documents
+/catalog/{productId}         # Master product catalog
+/audit_logs/{logId}          # Tamper-evident security logs
+/notifications/{userId}      # User-specific notifications
+/carts/{userId}              # Shopping carts
+/wishlists/{userId}          # User wishlists
+/settings/platform           # Global settings (maintenance mode, etc.)
+```
+
+**Key Features**:
+- Real-time listeners (`onSnapshot`) for instant UI updates
+- Atomic batch writes for multi-store checkout
+- Security rules enforce RBAC at database level
+- Offline persistence enabled
+
+---
 
 ## 4. Key Data Flows
 
-### 4.1 Onboarding & Verification
-1. Store signs up (Email/Pass).
-2. Email Verification (Auth Link).
-3. Store creates Profile (Name, Address).
-4. Store connects Stripe (Redirect to Stripe Hosted Onboarding).
-5. Stripe Webhook returns `account_id` + `restricted` status.
-6. Admin validates Store (Manual/Auto).
-7. Store goes "Live".
+### 4.1 Consumer Checkout (Multi-Store)
 
-### 4.2 Checkout (Split Payment)
-1. Consumer builds cart (Items from Store A + Store B).
-2. `POST /checkout` -> Validates inventory & prices.
-3. Backend creates `PaymentIntent` with `transfer_group`.
-4. Consumer pays via Stripe Elements.
-5. Webhook `payment_intent.succeeded` -> Triggers Order Creation.
-6. Backend creates Order A and Order B.
-7. Ledger records: `(Total - Commission)` allocated to Store A/B connection.
+```mermaid
+sequenceDiagram
+    participant Consumer
+    participant CartContext
+    participant OrderContext
+    participant Firestore
+    participant Merchant
 
-## 5. Security & Compliance
-- **Authentication**: Firebase Auth or Supabase Auth. MFA required for Stores/Admins.
-- **Authorization**: RBAC (Role-Based Access Control) enforced in middleware.
-- **Secrets**: Google Secret Manager or AWS Secrets Manager. NO .env files in prod.
-- **Data Residency**: Strict adherence to `us-east` (if Canada not avail in free tier) or `ca-central-1` preference. *Note: Data residency on free tier is best-effort but architecture supports location constraints.*
+    Consumer->>CartContext: Add items from Store A + Store B
+    Consumer->>CartContext: Proceed to Checkout
+    CartContext->>OrderContext: createBatchOrders([...])
+    OrderContext->>Firestore: writeBatch (atomic)
+    Firestore-->>Merchant: Real-time update (onSnapshot)
+    Merchant->>Firestore: Update order status
+    Firestore-->>Consumer: Real-time status update
+```
 
-## 6. Infrastructure
-- **IaC**: Terraform. Reproducible environments (Dev, Staging, Prod).
-- **CI/CD**: GitHub Actions.
-- **Monitoring**: Basic CloudWatch/Stackdriver (Free tier limits).
+### 4.2 Merchant Order Management
+
+```mermaid
+sequenceDiagram
+    participant Consumer
+    participant Firestore
+    participant MerchantDashboard
+    participant NotificationContext
+
+    Consumer->>Firestore: Place order
+    Firestore->>NotificationContext: Trigger notification
+    NotificationContext->>MerchantDashboard: Real-time bell icon update
+    MerchantDashboard->>Firestore: updateOrderStatus('preparing')
+    Firestore-->>Consumer: Order status updated
+```
+
+---
+
+## 5. Security & Compliance (Implemented)
+
+| Feature | Implementation | Status |
+|---------|----------------|--------|
+| **Authentication** | Firebase Auth (Email/Password) | ✅ Complete |
+| **SSO** | Google/Facebook (mock ready) | 🔧 Planned |
+| **Authorization** | RBAC (Consumer/Merchant/Admin) | ✅ Complete |
+| **Route Guards** | Layout-level checks | ✅ Complete |
+| **Audit Logging** | SHA-256 hash chain | ✅ Complete |
+| **Data Isolation** | Per-user Firestore docs | ✅ Complete |
+| **HTTPS/SSL** | Local dev certificate | ✅ Complete |
+| **Maintenance Mode** | Global platform lockdown | ✅ Complete |
+| **Suspended Stores** | Auto-logout enforcement | ✅ Complete |
+
+---
+
+## 6. Infrastructure (Current)
+
+| Component | Technology | Configuration |
+|-----------|------------|---------------|
+| **Hosting** | Local dev server | Vite dev server on port 443 |
+| **Database** | Cloud Firestore | Auto-scaling, real-time |
+| **Storage** | Firebase Storage | 1GB free tier |
+| **CI/CD** | Manual | 🔜 GitHub Actions planned |
+| **Monitoring** | Console logs | 🔜 Sentry planned |
+| **Domain** | spendigo.ca | Local DNS mapping |
+
+---
+
+## 7. Deployment Architecture
+
+### Development
+```bash
+npm run dev
+# Runs on https://spendigo.ca:446/
+```
+
+### Production
+```bash
+npm run build
+# Output: apps/web/dist/ (876kb bundle)
+# Deploy to Firebase Hosting, Vercel, or Netlify
+```
+
+### Mobile
+```bash
+npx cap sync
+npx cap open ios     # Xcode
+npx cap open android # Android Studio
+```
+
+---
+
+## 8. Differences from Original Plan
+
+| Original Plan | Current Implementation | Rationale |
+|---------------|------------------------|-----------|
+| PostgreSQL + Drizzle | Cloud Firestore | Faster development, real-time sync |
+| Custom backend functions | Firebase client SDKs | Eliminates server management |
+| Stripe backend integration | Client-side simulation | MVP focus, backend ready for production |
+| Serverless deployment | Static site + Firebase | Simpler hosting, lower cost |
+
+---
+
+## 9. Future Enhancements
+
+### Short-Term (Q1 2025)
+- [ ] Real Stripe Connect integration
+- [ ] Firebase Cloud Functions for order processing
+- [ ] Firestore security rules hardening
+- [ ] CI/CD pipeline (GitHub Actions)
+
+### Medium-Term (Q2-Q3 2025)
+- [ ] Server-side rendering (Next.js migration)
+- [ ] Advanced analytics (Firebase Analytics)
+- [ ] Error monitoring (Sentry)
+- [ ] Push notifications (Firebase Cloud Messaging)
+
+### Long-Term (Q4 2025+)
+- [ ] GraphQL API layer (for complex queries)
+- [ ] Multi-region deployment
+- [ ] ML-based product recommendations
+- [ ] Custom backend microservices (if needed)
+
+---
+
+**For detailed collection schemas, see**: [SCHEMA.md](./SCHEMA.md)  
+**For complete tech stack, see**: [TECH_STACK.md](./TECH_STACK.md)
