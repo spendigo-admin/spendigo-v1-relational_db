@@ -165,7 +165,7 @@ export const AuditProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         const newLogData = {
             timestamp: new Date().toISOString(),
             actor: {
-                id: user?.uid || user?.id || 'anonymous', // Rules will reject 'anonymous' for writes
+                id: user?.id || 'anonymous', // Rules will reject 'anonymous' for writes
                 email: user?.email || 'unauthenticated',
                 ip: ip
             },
