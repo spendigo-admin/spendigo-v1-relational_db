@@ -153,7 +153,7 @@ npm run build
 
 **E2E Testing**: Manual browser verification (automated tests pending)
 
-**See**: Gap Analysis in `.gemini/antigravity/brain/.../gap_analysis.md`
+**See**: Gap Analysis in [docs/GAP_ANALYSIS.md](./docs/GAP_ANALYSIS.md)
 
 ---
 
@@ -257,23 +257,24 @@ Proprietary - All rights reserved.
 
 ## 🎯 Roadmap
 
-### ✅ Completed (Phase 1-7)
+### ✅ Completed (Phase 1-8)
 - Core shopping experience
-- Merchant order management
+- Merchant order management (with Hold/Resume & Rejection Reasons)
 - Admin panel with audit logs
-- Real-time Firestore sync
+- Real-time Firestore sync & In-App Notifications
+- Real-time store geocoding & proximity search
 - Production build verification
 
 ### 🔜 Q1 2025
 - Real Stripe Connect integration
-- Firestore security rules hardening
+- Firestore security rules hardening (RBAC enforcement)
 - CI/CD pipeline (GitHub Actions)
 - Error monitoring (Sentry)
 
 ### 🔮 Q2-Q3 2025
-- Server-side rendering (Next.js)
-- Advanced analytics
-- Push notifications
+- Server-side rendering (Next.js migration)
+- Advanced analytics & Demand forecasting
+- Native mobile push notifications (FCM)
 - Multi-region deployment
 
 ---
