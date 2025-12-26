@@ -216,17 +216,25 @@ const SmartCartWishlist: React.FC = () => {
                     )}
                 </div>
 
-                {/* Main Content Grid */}
-                <div className="lg:grid lg:grid-cols-12 lg:gap-8 bg relative">
-                    {/* LEFT COLUMN: Main List */}
-                    <div className="lg:col-span-8">
-                        {wishlistItems.length === 0 ? (
-                            <div className="text-center py-16 bg-white rounded-2xl border border-dashed border-gray-200">
-                                <p className="text-5xl mb-4 grayscale opacity-50">📋</p>
-                                <h2 className="text-xl font-bold text-[var(--text-main)] mb-2">Wishlist is empty</h2>
-                                <p className="text-[var(--text-muted)]">Add items to start comparing prices!</p>
-                            </div>
-                        ) : (
+                {/* Main Content */}
+                {wishlistItems.length === 0 ? (
+                    <div className="text-center py-24 bg-white rounded-[2.5rem] border-2 border-dashed border-gray-100 shadow-inner max-w-2xl mx-auto animate-fade-in">
+                        <div className="w-24 h-24 bg-gray-50 rounded-3xl flex items-center justify-center text-5xl mx-auto mb-6 shadow-sm grayscale opacity-60">
+                            📋
+                        </div>
+                        <h2 className="text-2xl font-black text-[var(--text-main)] mb-3 tracking-tight">Wishlist is empty</h2>
+                        <p className="text-[var(--text-muted)] max-w-sm mx-auto mb-8 font-medium">Add items from the selector above to start comparing prices across all stores and save big!</p>
+                        <button
+                            onClick={() => setShowAddItems(true)}
+                            className="bg-[var(--brand-primary)] text-white px-8 py-3 rounded-full font-bold shadow-lg shadow-[var(--brand-primary)]/20 hover:scale-105 transition-transform"
+                        >
+                            Get Started
+                        </button>
+                    </div>
+                ) : (
+                    <div className="lg:grid lg:grid-cols-12 lg:gap-8 relative">
+                        {/* LEFT COLUMN: Main List */}
+                        <div className="lg:col-span-8">
                             <div className="space-y-4">
                                 {optimizerItems.map((item) => {
                                     if (!item) return null;
@@ -301,12 +309,10 @@ const SmartCartWishlist: React.FC = () => {
                                     );
                                 })}
                             </div>
-                        )}
-                    </div>
+                        </div>
 
-                    {/* RIGHT COLUMN: Sticky Summary */}
-                    <div className="lg:col-span-4 mt-8 lg:mt-0">
-                        {wishlistItems.length > 0 && (
+                        {/* RIGHT COLUMN: Sticky Summary */}
+                        <div className="lg:col-span-4 mt-8 lg:mt-0">
                             <div className="glass-panel p-6 sticky top-8 border-[var(--glass-border)] shadow-xl bg-white/50 backdrop-blur-xl">
                                 <h2 className="text-xl font-bold text-[var(--text-main)] mb-4">Order Summary</h2>
 
@@ -334,9 +340,9 @@ const SmartCartWishlist: React.FC = () => {
                                     Proceed to cart to verify availability
                                 </p>
                             </div>
-                        )}
+                        </div>
                     </div>
-                </div>
+                )}
             </div>
         </div>
     );

@@ -3,6 +3,7 @@ import { Outlet, NavLink, Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationContext';
+import NotificationPopover from '../components/NotificationPopover';
 import '../styles/design-system.css';
 
 const ConsumerLayout: React.FC = () => {
@@ -88,11 +89,16 @@ const ConsumerLayout: React.FC = () => {
                         </Link>
                     )}
 
-                    {/* Notifications */}
-                    <Link to="/notifications" className="relative w-10 h-10 rounded-full hover:bg-[var(--surface-2)] flex items-center justify-center transition-colors">
+                    {/* Notifications Popover */}
+                    <div className="hidden sm:block">
+                        <NotificationPopover />
+                    </div>
+
+                    {/* Mobile Inbox Link */}
+                    <Link to="/notifications" className="sm:hidden relative w-10 h-10 rounded-full hover:bg-[var(--surface-2)] flex items-center justify-center transition-colors">
                         <span className="text-lg">🔔</span>
                         {unreadCount > 0 && (
-                            <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+                            <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full"></span>
                         )}
                     </Link>
 

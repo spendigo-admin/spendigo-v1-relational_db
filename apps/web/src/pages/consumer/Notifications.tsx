@@ -1,101 +1,163 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import '../../styles/design-system.css';
-import { useNotifications } from '../../context/NotificationContext';
+import { useNotifications, AppNotification } from '../../context/NotificationContext';
 
 const Notifications: React.FC = () => {
     const { notifications, unreadCount, markAsRead, markAllRead, preferences, togglePreference } = useNotifications();
 
-    const getIcon = (type: string) => {
+    const getIconConfig = (type: string) => {
         switch (type) {
-            case 'price_drop': return '💰';
-            case 'order': return '📦';
-            case 'promo': return '🎁';
-            default: return '🔔';
+            case 'price_drop': return { icon: '🏷️', color: 'bg-green-100 text-green-700' };
+            case 'order': return { icon: '📦', color: 'bg-blue-100 text-blue-700' };
+            case 'promo': return { icon: '✨', color: 'bg-purple-100 text-purple-700' };
+            case 'alert': return { icon: '⚠️', color: 'bg-orange-100 text-orange-700' };
+            default: return { icon: '🔔', color: 'bg-gray-100 text-gray-700' };
         }
     };
 
+    // Simple grouping logic
+    const sections = useMemo(() => {
+        const sorted = [...notifications].sort((a, b) =>
+            new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+        );
+
+        const today: AppNotification[] = [];
+        const earlier: AppNotification[] = [];
+
+        const now = new Date();
+        const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+
+        sorted.forEach(n => {
+            const time = new Date(n.timestamp).getTime();
+            if (time >= todayStart) today.push(n);
+            else earlier.push(n);
+        });
+
+        return { today, earlier };
+    }, [notifications]);
+
+    const renderNotification = (n: AppNotification) => {
+        const config = getIconConfig(n.type);
+        return (
+            <div
+                key={n.id}
+                onClick={() => markAsRead(n.id)}
+                className={`flex gap-4 p-4 rounded-2xl cursor-pointer transition-all border ${!n.read
+                        ? 'bg-blue-50/40 border-blue-100 shadow-sm'
+                        : 'bg-white border-[var(--glass-border)] opacity-80'
+                    } hover:shadow-md hover:scale-[1.01] active:scale-[0.99]`}
+            >
+                <div className={`w-12 h-12 shrink-0 rounded-2xl flex items-center justify-center text-xl shadow-inner ${config.color}`}>
+                    {config.icon}
+                </div>
+                <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-2">
+                        <h4 className={`text-sm font-bold truncate leading-tight ${!n.read ? 'text-[var(--text-main)]' : 'text-[var(--text-muted)]'}`}>
+                            {n.title}
+                        </h4>
+                        {!n.read && (
+                            <span className="w-2 h-2 shrink-0 rounded-full bg-[var(--brand-primary)] mt-1.5 shadow-[0_0_8px_rgba(37,99,235,0.4)]"></span>
+                        )}
+                    </div>
+                    <p className={`text-sm mt-1 leading-relaxed ${!n.read ? 'text-[var(--text-main)]' : 'text-[var(--text-muted)]'}`}>
+                        {n.message}
+                    </p>
+                    <div className="flex items-center gap-2 mt-3 text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] opacity-60">
+                        <span>{n.time}</span>
+                        <span>•</span>
+                        <span>{n.type.replace('_', ' ')}</span>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
     return (
-        <div className="animate-fade-in pb-20">
+        <div className="animate-fade-in pb-24 bg-[var(--surface-1)] min-h-screen">
             {/* Header */}
-            <div className="bg-white border-b border-[var(--glass-border)] p-4 sticky top-14 z-30">
-                <div className="max-w-3xl mx-auto flex items-center justify-between">
+            <div className="bg-white/80 backdrop-blur-md border-b border-[var(--glass-border)] p-5 sticky top-14 z-30 pt-safe">
+                <div className="max-w-xl mx-auto flex items-center justify-between">
                     <div>
-                        <h1 className="text-2xl font-bold text-[var(--text-main)]">Notifications</h1>
+                        <h1 className="text-2xl font-black text-[var(--text-main)] tracking-tight">Inbox</h1>
                         {unreadCount > 0 && (
-                            <p className="text-sm text-[var(--text-muted)]">{unreadCount} unread</p>
+                            <div className="inline-flex items-center gap-1.5 mt-0.5">
+                                <span className="flex h-2 w-2 rounded-full bg-[var(--brand-primary)]"></span>
+                                <p className="text-xs font-bold text-[var(--brand-primary)] uppercase tracking-wider">{unreadCount} New Messages</p>
+                            </div>
                         )}
                     </div>
                     {unreadCount > 0 && (
-                        <button onClick={markAllRead} className="text-sm text-[var(--brand-primary)] font-medium">
+                        <button
+                            onClick={markAllRead}
+                            className="bg-[var(--brand-primary-light)] text-[var(--brand-primary)] px-3 py-1.5 rounded-full text-xs font-bold transition-all hover:bg-[var(--brand-primary)] hover:text-white"
+                        >
                             Mark all read
                         </button>
                     )}
                 </div>
             </div>
 
-            <div className="max-w-3xl mx-auto p-4 space-y-6">
-                {/* Notification List */}
-                <div className="space-y-2">
-                    {notifications.length === 0 ? (
-                        <div className="text-center py-12">
-                            <p className="text-5xl mb-4">🔔</p>
-                            <p className="text-[var(--text-muted)]">No notifications yet</p>
+            <div className="max-w-xl mx-auto p-4 space-y-8">
+                {notifications.length === 0 ? (
+                    <div className="text-center py-20 animate-fade-in">
+                        <div className="w-24 h-24 bg-white rounded-3xl flex items-center justify-center text-4xl mx-auto mb-6 shadow-xl border border-[var(--glass-border)]">
+                            📭
                         </div>
-                    ) : (
-                        notifications.map(notification => (
-                            <div
-                                key={notification.id}
-                                onClick={() => markAsRead(notification.id)}
-                                className={`bg-white rounded-xl border p-4 cursor-pointer transition-all ${notification.read
-                                    ? 'border-[var(--glass-border)]'
-                                    : 'border-[var(--brand-primary)] bg-[var(--brand-primary)]/5'
-                                    }`}
-                            >
-                                <div className="flex gap-3">
-                                    <div className="w-10 h-10 rounded-full bg-[var(--surface-1)] flex items-center justify-center text-xl">
-                                        {getIcon(notification.type)}
-                                    </div>
-                                    <div className="flex-1">
-                                        <div className="flex items-start justify-between">
-                                            <p className={`font-medium ${notification.read ? 'text-[var(--text-main)]' : 'text-[var(--brand-primary)]'}`}>
-                                                {notification.title}
-                                            </p>
-                                            {!notification.read && (
-                                                <span className="w-2 h-2 rounded-full bg-[var(--brand-primary)]"></span>
-                                            )}
-                                        </div>
-                                        <p className="text-sm text-[var(--text-muted)] mt-1">{notification.message}</p>
-                                        <p className="text-xs text-[var(--text-muted)] mt-2">{notification.time}</p>
-                                    </div>
+                        <h2 className="text-xl font-bold text-[var(--text-main)]">All Caught Up!</h2>
+                        <p className="max-w-[240px] mx-auto text-sm">Your inbox is empty. We'll notify you when price drops or deals arrive.</p>
+                    </div>
+                ) : (
+                    <>
+                        {sections.today.length > 0 && (
+                            <div className="space-y-4">
+                                <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--text-muted)] ml-1">Today</h3>
+                                <div className="space-y-3">
+                                    {sections.today.map(renderNotification)}
                                 </div>
                             </div>
-                        ))
-                    )}
-                </div>
+                        )}
 
-                {/* Notification Preferences */}
-                <div className="bg-white rounded-xl border border-[var(--glass-border)] p-4">
-                    <h3 className="font-bold text-[var(--text-main)] mb-4">Notification Preferences</h3>
-                    <div className="space-y-4">
+                        {sections.earlier.length > 0 && (
+                            <div className="space-y-4">
+                                <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--text-muted)] ml-1">Earlier</h3>
+                                <div className="space-y-3">
+                                    {sections.earlier.map(renderNotification)}
+                                </div>
+                            </div>
+                        )}
+                    </>
+                )}
+
+                {/* Preferences Section Redesign */}
+                <div className="bg-white rounded-[2rem] border border-[var(--glass-border)] p-6 shadow-sm mt-12">
+                    <div className="flex items-center gap-3 mb-6">
+                        <div className="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl">⚙️</div>
+                        <div>
+                            <h3 className="font-bold text-sm text-[var(--text-main)]">Preferences</h3>
+                            <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Configure Alerts</p>
+                        </div>
+                    </div>
+
+                    <div className="space-y-5">
                         {[
-                            { key: 'priceDrop', label: 'Price Drop Alerts', desc: 'Get notified when items in your wishlist go on sale' },
-                            { key: 'orderUpdates', label: 'Order Updates', desc: 'Track your order status in real-time' },
-                            { key: 'promotions', label: 'Promotions & Deals', desc: 'Receive exclusive offers and discounts' },
-                            { key: 'newArrivals', label: 'New Arrivals', desc: 'Be the first to know about new products' },
+                            { key: 'priceDrop', label: 'Price Drop Alerts', desc: 'Alerts for wishlisted items' },
+                            { key: 'orderUpdates', label: 'Order Tracking', desc: 'Real-time status updates' },
+                            { key: 'promotions', label: 'Deals & Offers', desc: 'Exclusive store promotions' },
+                            { key: 'newArrivals', label: 'New Arrivals', desc: 'Fresh additions to catalog' },
                         ].map(pref => (
-                            <div key={pref.key} className="flex items-center justify-between">
-                                <div>
-                                    <p className="font-medium text-[var(--text-main)]">{pref.label}</p>
-                                    <p className="text-xs text-[var(--text-muted)]">{pref.desc}</p>
+                            <div key={pref.key} className="flex items-center justify-between group">
+                                <div className="min-w-0">
+                                    <p className="text-sm font-bold text-[var(--text-main)]">{pref.label}</p>
+                                    <p className="text-[11px] text-[var(--text-muted)] line-clamp-1 group-hover:text-[var(--text-main)] transition-colors">{pref.desc}</p>
                                 </div>
                                 <button
                                     onClick={() => togglePreference(pref.key as any)}
-                                    className={`w-12 h-7 rounded-full transition-colors relative ${preferences[pref.key as keyof typeof preferences]
-                                        ? 'bg-[var(--brand-primary)]'
-                                        : 'bg-[var(--surface-2)]'
+                                    className={`w-11 h-6 rounded-full transition-all relative shrink-0 ${preferences[pref.key as keyof typeof preferences]
+                                        ? 'bg-[var(--brand-primary)] shadow-[0_4px_12px_rgba(37,99,235,0.3)]'
+                                        : 'bg-[var(--surface-3)]'
                                         }`}
                                 >
-                                    <span className={`absolute top-1 w-5 h-5 rounded-full bg-white shadow transition-all ${preferences[pref.key as keyof typeof preferences] ? 'left-6' : 'left-1'
+                                    <span className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow-sm transition-all ${preferences[pref.key as keyof typeof preferences] ? 'left-6' : 'left-1'
                                         }`}></span>
                                 </button>
                             </div>

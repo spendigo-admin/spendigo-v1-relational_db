@@ -39,6 +39,7 @@ const OrderTracking: React.FC = () => {
     const currentStepIndex = ORDER_STEPS.indexOf(order.status as any);
     const isDelivered = order.status === 'delivered';
     const isCancelled = order.status === 'cancelled';
+    const isOnHold = order.status === 'on_hold';
 
     const getStepLabel = (step: string) => {
         switch (step) {
@@ -64,16 +65,41 @@ const OrderTracking: React.FC = () => {
     return (
         <div className="animate-fade-in pb-20">
             {/* Header */}
-            <div className={`p-6 ${isDelivered ? 'bg-green-500' : isCancelled ? 'bg-red-500' : 'bg-[var(--brand-primary)]'} text-white`}>
+            <div className={`p-6 ${isDelivered ? 'bg-green-500' : isCancelled ? 'bg-red-500' : isOnHold ? 'bg-yellow-500' : 'bg-[var(--brand-primary)]'} text-white transition-colors duration-500`}>
                 <div className="max-w-3xl mx-auto">
                     <p className="text-sm opacity-80 mb-1">{order.id}</p>
                     <h1 className="text-2xl font-bold mb-2">
-                        {isDelivered ? 'Order Delivered! 🎉' : isCancelled ? 'Order Cancelled' : 'Track Your Order'}
+                        {isDelivered ? 'Order Delivered! 🎉' :
+                            isCancelled ? 'Order Cancelled' :
+                                isOnHold ? 'Order On Hold ⏳' :
+                                    'Track Your Order'}
                     </h1>
-                    {!isDelivered && !isCancelled && order.estimatedDelivery && (
-                        <p className="text-white/90">Estimated delivery: <strong>{order.estimatedDelivery}</strong></p>
+                    {!isDelivered && !isCancelled && (order.estimatedTime || order.estimatedDelivery) && (
+                        <p className="text-white/90">Estimated {order.deliveryAddress ? 'delivery' : 'ready'}: <strong>{order.estimatedTime || order.estimatedDelivery}</strong></p>
                     )}
                 </div>
+            </div>
+
+            {/* Hold/Cancel Notifications */}
+            <div className="max-w-3xl mx-auto px-4 mt-6">
+                {isOnHold && (
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 flex gap-3 animate-pulse">
+                        <span className="text-2xl">⏳</span>
+                        <div>
+                            <p className="font-bold text-yellow-800">Your order is currently on hold</p>
+                            <p className="text-sm text-yellow-700">The store has briefly paused preparation. They will resume shortly.</p>
+                        </div>
+                    </div>
+                )}
+                {isCancelled && order.rejectionReason && (
+                    <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex gap-3">
+                        <span className="text-2xl">🚫</span>
+                        <div>
+                            <p className="font-bold text-red-800">Reason for Cancellation</p>
+                            <p className="text-sm text-red-700 italic">"{order.rejectionReason}"</p>
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* Progress Timeline */}

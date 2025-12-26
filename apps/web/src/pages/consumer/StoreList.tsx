@@ -1,7 +1,9 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import '../../styles/design-system.css';
 import { useMarketplace } from '../../context/MarketplaceContext';
+import { useAuth } from '../../context/AuthContext';
+import { useOrders } from '../../context/OrderContext';
 
 const CATEGORIES = ['All', 'Fastest', 'Offers', 'Low Prices', 'Grocery', 'Convenience', 'Wholesale'];
 
@@ -14,61 +16,198 @@ const parseDeliveryTime = (timeStr: string): number => {
 const StoreList: React.FC = () => {
     const navigate = useNavigate();
     const { stores, loading } = useMarketplace();
+    const { user } = useAuth();
+    const { profile } = useOrders();
+    const [userCoords, setUserCoords] = useState<{ lat: number, lng: number } | null>(null);
+    const [address, setAddress] = useState('');
+    const [isLocating, setIsLocating] = useState(false);
+
+    // Calculate distance between two points in km
+    const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+        const R = 6371; // Radius of the earth in km
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLon = (lon2 - lon1) * Math.PI / 180;
+        const a =
+            Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+            Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
+    };
+
+    // Auto-detect location from profile
+    useEffect(() => {
+        const detectProfileLocation = async () => {
+            if (user && profile.addresses.length > 0) {
+                const defaultAddr = profile.addresses.find(a => a.isDefault) || profile.addresses[0];
+                const addrStr = `${defaultAddr.street}, ${defaultAddr.city}, ${defaultAddr.province}, ${defaultAddr.postalCode}`;
+
+                // Set the display address
+                setAddress(defaultAddr.label || "Home");
+
+                try {
+                    const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(addrStr)}`);
+                    const data = await response.json();
+                    if (data && data.length > 0) {
+                        setUserCoords({
+                            lat: parseFloat(data[0].lat),
+                            lng: parseFloat(data[0].lon)
+                        });
+                    }
+                } catch (e) {
+                    console.error("Failed to geocode profile address", e);
+                }
+            }
+        };
+
+        if (!userCoords && address === '') {
+            detectProfileLocation();
+        }
+    }, [user, profile.addresses, userCoords, address]);
+
+    const handleLocateMe = () => {
+        setIsLocating(true);
+        if (!navigator.geolocation) {
+            alert('Geolocation is not supported by your browser');
+            setIsLocating(false);
+            return;
+        }
+
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                setUserCoords({
+                    lat: position.coords.latitude,
+                    lng: position.coords.longitude
+                });
+                setAddress("Current Location");
+                setIsLocating(false);
+            },
+            () => {
+                alert('Unable to retrieve your location');
+                setIsLocating(false);
+            }
+        );
+    };
+
+    const handleSearch = async () => {
+        if (!address.trim() || address === "Current Location") return;
+        setIsLocating(true);
+
+        try {
+            // Check if it's a Canadian postal code pattern
+            const postalCodeRegex = /^[A-Za-z]\d[A-Za-z][ -]?\d[A-Za-z]\d$/;
+            let query = address;
+            if (postalCodeRegex.test(address)) {
+                query = `${address}, Canada`;
+            }
+
+            const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`);
+            const data = await response.json();
+
+            if (data && data.length > 0) {
+                const { lat, lon } = data[0];
+                setUserCoords({
+                    lat: parseFloat(lat),
+                    lng: parseFloat(lon)
+                });
+                if (postalCodeRegex.test(address)) {
+                    setAddress(address.toUpperCase());
+                }
+            } else {
+                alert('Location not found. Please try a different postal code or address.');
+            }
+        } catch (error) {
+            console.error('Search error:', error);
+            alert('Error finding location. Please try again.');
+        } finally {
+            setIsLocating(false);
+        }
+    };
 
     const allStores = useMemo(() => {
         if (!stores) return [];
-        return Object.values(stores).map((store: any) => ({
-            id: store.id,
-            name: store.name,
-            distance: store.distance || '1.0 km',
-            image: store.image,
-            logo: store.logo,
-            tags: store.tags || [],
-            deliveryTime: store.deliveryTime,
-            deliveryFee: store.deliveryFee || '$3.99',
-            rating: store.rating,
-            // New dynamic fields for indicators
-            hasFlyer: store.flyer?.validUntil ? true : false,
-            activeDealsCount: (store.oneDayOffers?.length || 0) + (store.saleItems?.length || 0)
-        }));
-    }, [stores]);
+        return Object.values(stores).map((store: any) => {
+            let distanceVal = 'Distance unknown';
+            let distanceNum = 9999;
+
+            if (userCoords && store.coordinates) {
+                distanceNum = calculateDistance(
+                    userCoords.lat,
+                    userCoords.lng,
+                    store.coordinates.lat,
+                    store.coordinates.lng
+                );
+                distanceVal = `${distanceNum.toFixed(1)} km`;
+            }
+
+            return {
+                id: store.id,
+                name: store.name,
+                distance: distanceVal,
+                distanceNum: distanceNum,
+                image: store.image,
+                logo: store.logo,
+                tags: store.tags || [],
+                deliveryTime: store.deliveryTime,
+                deliveryFee: store.deliveryFee || '$3.99',
+                rating: store.rating,
+                hasFlyer: store.flyer?.validUntil ? true : false,
+                activeDealsCount: (store.oneDayOffers?.length || 0) + (store.saleItems?.length || 0)
+            };
+        });
+    }, [stores, userCoords]);
 
     const [activeCategory, setActiveCategory] = useState('All');
 
     // Filter stores based on selected category
     const filteredStores = useMemo(() => {
+        let result = [...allStores];
+
         switch (activeCategory) {
             case 'Fastest':
-                return [...allStores]
+                result = result
                     .sort((a, b) => parseDeliveryTime(a.deliveryTime) - parseDeliveryTime(b.deliveryTime))
                     .filter(store => parseDeliveryTime(store.deliveryTime) <= 25);
+                break;
             case 'Offers':
-                return allStores.filter(store =>
+                result = result.filter(store =>
                     store.activeDealsCount > 0 ||
                     store.hasFlyer ||
                     store.tags.some((tag: string) => ['Deals', 'Offers', 'Sale', 'Wholesale'].includes(tag))
                 );
+                break;
             case 'Low Prices':
-                return allStores.filter(store =>
+                result = result.filter(store =>
                     store.deliveryFee?.includes('Free') ||
                     (store.deliveryFee?.includes('$') && parseFloat(store.deliveryFee.replace(/[^0-9.]/g, '')) <= 2.5)
                 );
+                break;
             case 'Grocery':
-                return allStores.filter(store =>
+                result = result.filter(store =>
                     store.tags.some((tag: string) => ['Grocery', 'Organic', 'Farmers Market'].includes(tag))
                 );
+                break;
             case 'Convenience':
-                return allStores.filter(store =>
+                result = result.filter(store =>
                     store.tags.some((tag: string) => ['Convenience', '24/7', 'Local'].includes(tag))
                 );
+                break;
             case 'Wholesale':
-                return allStores.filter(store =>
+                result = result.filter(store =>
                     store.tags.some((tag: string) => ['Wholesale', 'Bulk'].includes(tag))
                 );
+                break;
             default:
-                return allStores;
+                break;
         }
-    }, [activeCategory, allStores]);
+
+        // If location is set, sort by distance by default
+        if (userCoords) {
+            result.sort((a, b) => a.distanceNum - b.distanceNum);
+        }
+
+        return result;
+    }, [activeCategory, allStores, userCoords]);
 
     return (
         <div className="animate-fade-in">
@@ -78,7 +217,7 @@ const StoreList: React.FC = () => {
                 </div>
             )}
             {/* HERO SECTION - Instacart Style */}
-            <section className="relative overflow-hidden bg-gradient-to-br from-[var(--brand-primary)] via-[#4f46e5] to-[var(--brand-secondary)] py-12 px-4">
+            <section className="relative overflow-hidden bg-gradient-to-br from-[var(--brand-primary)] via-[#4f46e5] to-[var(--brand-secondary)] py-12 px-4 pt-safe">
                 {/* Animated background shapes */}
                 <div className="absolute inset-0 overflow-hidden opacity-20">
                     <div className="absolute -top-20 -left-20 w-72 h-72 bg-white rounded-full blur-3xl animate-pulse"></div>
@@ -87,22 +226,35 @@ const StoreList: React.FC = () => {
 
                 <div className="relative z-10 max-w-4xl mx-auto text-center">
                     <h1 className="text-4xl md:text-5xl font-bold text-white mb-4 leading-tight">
-                        Shop Local,<br />Optimize Savings
+                        Shop Local,<br />Save Smarter
                     </h1>
-                    <p className="text-white/80 text-lg mb-6">
-                        Get groceries from nearby stores delivered in as fast as 1 hour.
+                    <p className="text-white/80 text-lg mb-6 max-w-2xl mx-auto">
+                        Browse digital flyers and automatically optimize your grocery list for the best prices across all your favorite neighborhood stores.
                     </p>
 
                     {/* Search Bar */}
                     <div className="flex items-center bg-white rounded-full p-2 max-w-xl mx-auto shadow-xl">
-                        <span className="px-4 text-gray-500">📍</span>
+                        <button
+                            onClick={handleLocateMe}
+                            className={`px-4 transition-colors ${userCoords ? 'text-[var(--brand-primary)]' : 'text-gray-400 hover:text-gray-600'}`}
+                            title="Use my current location"
+                        >
+                            {isLocating && address === "Current Location" ? '⌛' : '📍'}
+                        </button>
                         <input
                             type="text"
-                            placeholder="Enter your delivery address..."
+                            placeholder="Type postal code or address..."
                             className="flex-1 py-3 px-2 bg-transparent outline-none text-gray-800 placeholder-gray-400"
+                            value={address}
+                            onChange={(e) => setAddress(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                         />
-                        <button className="bg-[var(--brand-primary)] text-white px-6 py-3 rounded-full font-bold hover:brightness-110 transition-all">
-                            Search
+                        <button
+                            onClick={handleSearch}
+                            disabled={isLocating}
+                            className="bg-[var(--brand-primary)] text-white px-6 py-3 rounded-full font-bold hover:brightness-110 transition-all flex items-center justify-center min-w-[100px]"
+                        >
+                            {isLocating && address !== "Current Location" ? '...' : 'Search'}
                         </button>
                     </div>
                 </div>
@@ -113,19 +265,19 @@ const StoreList: React.FC = () => {
                 <div className="max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
                     <div>
                         <p className="text-3xl font-bold text-[var(--brand-primary)]">50+</p>
-                        <p className="text-sm text-[var(--text-muted)]">Local Stores</p>
+                        <p className="text-sm text-[var(--text-muted)]">Local Grocers</p>
                     </div>
                     <div>
-                        <p className="text-3xl font-bold text-[var(--brand-primary)]">10K+</p>
-                        <p className="text-sm text-[var(--text-muted)]">Products</p>
+                        <p className="text-3xl font-bold text-[var(--brand-primary)]">Real-time</p>
+                        <p className="text-sm text-[var(--text-muted)]">Digital Flyers</p>
                     </div>
                     <div>
-                        <p className="text-3xl font-bold text-[var(--brand-primary)]">1 hr</p>
-                        <p className="text-sm text-[var(--text-muted)]">Avg. Delivery</p>
+                        <p className="text-3xl font-bold text-[var(--brand-primary)]">100%</p>
+                        <p className="text-sm text-[var(--text-muted)]">Price Comparison</p>
                     </div>
                     <div>
                         <p className="text-3xl font-bold text-[var(--brand-primary)]">15%</p>
-                        <p className="text-sm text-[var(--text-muted)]">Avg. Savings</p>
+                        <p className="text-sm text-[var(--text-muted)]">Estimated Savings</p>
                     </div>
                 </div>
             </section>

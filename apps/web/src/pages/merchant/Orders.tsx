@@ -8,7 +8,14 @@ import NotificationPopover from '../../components/NotificationPopover';
 
 const MerchantOrders: React.FC = () => {
     const { can, user } = useAuth();
-    const { orders: contextOrders, updateOrderStatus, updatePaymentStatus, loading } = useOrders();
+    const {
+        orders: contextOrders,
+        updateOrderStatus,
+        updatePaymentStatus,
+        updateEstimatedTime,
+        cancelOrder,
+        loading
+    } = useOrders();
     const { getStore } = useMarketplace();
     const store = getStore(user?.storeId || '1');
     const storeProducts = store?.products || [];
@@ -23,6 +30,9 @@ const MerchantOrders: React.FC = () => {
     const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
     const [now, setNow] = useState(new Date());
 
+    const [rejectionReason, setRejectionReason] = useState('');
+    const [estTimeInput, setEstTimeInput] = useState('');
+
     // Timer Tick
     useEffect(() => {
         const interval = setInterval(() => setNow(new Date()), 30000); // Update every 30s
@@ -33,7 +43,10 @@ const MerchantOrders: React.FC = () => {
     useEffect(() => {
         if (selectedOrder) {
             const updated = contextOrders.find(o => o.id === selectedOrder.id);
-            if (updated) setSelectedOrder(updated);
+            if (updated) {
+                setSelectedOrder(updated);
+                if (!estTimeInput) setEstTimeInput(updated.estimatedTime || '');
+            }
         }
     }, [contextOrders, selectedOrder?.id]); // Watch for updates
 
@@ -68,6 +81,7 @@ const MerchantOrders: React.FC = () => {
         switch (status) {
             case 'placed': return 'bg-blue-100 text-blue-700 border-blue-200';
             case 'preparing': return 'bg-orange-100 text-orange-700 border-orange-200';
+            case 'on_hold': return 'bg-yellow-100 text-yellow-700 border-yellow-200';
             case 'out_for_delivery': return 'bg-purple-100 text-purple-700 border-purple-200';
             case 'delivered': return 'bg-green-100 text-green-700 border-green-200';
             case 'cancelled': return 'bg-red-100 text-red-700 border-red-200';
@@ -75,12 +89,35 @@ const MerchantOrders: React.FC = () => {
         }
     };
 
-    const handleUpdateStatus = async (id: string, newStatus: Order['status']) => {
+    const handleUpdateStatus = async (id: string, newStatus: Order['status'], reason?: string) => {
         try {
-            await updateOrderStatus(id, newStatus);
+            await updateOrderStatus(id, newStatus, reason);
         } catch (e) {
             console.error("Failed to update status", e);
             alert("Failed to update order status");
+        }
+    };
+
+    const handleSaveET = async (id: string) => {
+        try {
+            await updateEstimatedTime(id, estTimeInput);
+            alert("Updated estimated time");
+        } catch (e) {
+            alert("Failed to update time");
+        }
+    };
+
+    const handleCancelOrder = async (id: string) => {
+        if (!rejectionReason.trim()) {
+            alert("Please provide a reason for cancellation");
+            return;
+        }
+        try {
+            await cancelOrder(id, rejectionReason);
+            setSelectedOrder(null);
+            setRejectionReason('');
+        } catch (e) {
+            alert("Failed to cancel order");
         }
     };
 
@@ -161,6 +198,11 @@ const MerchantOrders: React.FC = () => {
                 <div className="mt-3 pt-3 border-t border-[var(--glass-border)] pl-2">
                     <div className="flex justify-between items-center mb-2">
                         <span className="font-bold text-[var(--text-main)]">${order.total.toFixed(2)}</span>
+                        {order.estimatedTime && (
+                            <span className="text-[10px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded font-bold">
+                                ⏱️ {order.estimatedTime}
+                            </span>
+                        )}
                         <span className={`text-xs px-2 py-1 rounded-full ${order.paymentStatus === 'paid' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
                             {order.paymentStatus === 'paid' ? (order.paymentMethod === 'card' ? 'Paid Online' : 'Paid in Store') : 'Pay Pending'}
                         </span>
@@ -259,11 +301,12 @@ const MerchantOrders: React.FC = () => {
             {/* Kanban Board */}
             {viewMode === 'kanban' && (
                 <div className="flex-1 min-h-0 p-6 pt-0 overflow-hidden">
-                    <div className="grid grid-cols-4 gap-4 h-full">
+                    <div className="grid grid-cols-5 gap-4 h-full">
                         {/* Columns */}
                         {[
                             { id: 'placed', label: '🔔 New Orders', color: 'border-blue-500' },
                             { id: 'preparing', label: '👨‍🍳 Preparing', color: 'border-orange-500' },
+                            { id: 'on_hold', label: '⏳ On Hold', color: 'border-yellow-500' },
                             { id: 'out_for_delivery', label: '🛵 On Route / Ready', color: 'border-purple-500' },
                             { id: 'delivered', label: '✅ Delivered / Done', color: 'border-green-500' }
                         ].map(col => (
@@ -448,6 +491,72 @@ const MerchantOrders: React.FC = () => {
                                     ))}
                                 </div>
                             </div>
+
+                            {/* Merchant Power Actions */}
+                            {hasWriteAccess && (
+                                <div className="p-4 bg-gray-50 rounded-xl border border-[var(--glass-border)] space-y-4">
+                                    <label className="text-xs font-bold text-[var(--text-muted)] uppercase block">Merchant Action Center</label>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="space-y-1">
+                                            <label className="text-[10px] text-[var(--text-muted)] font-bold">SET PICKUP/READY TIME</label>
+                                            <div className="flex gap-2">
+                                                <input
+                                                    type="text"
+                                                    value={estTimeInput}
+                                                    onChange={(e) => setEstTimeInput(e.target.value)}
+                                                    placeholder="e.g. 15 min"
+                                                    className="flex-1 p-2 text-sm border rounded-lg focus:ring-2 focus:ring-[var(--brand-primary)] min-w-0"
+                                                />
+                                                <button
+                                                    onClick={() => handleSaveET(selectedOrder.id)}
+                                                    className="px-4 py-2 bg-gray-800 text-white text-xs font-bold rounded-lg hover:bg-black whitespace-nowrap"
+                                                >
+                                                    Save
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex flex-col justify-end">
+                                            <label className="text-[10px] text-[var(--text-muted)] font-bold md:hidden mb-1">QUICK ACTION</label>
+                                            {selectedOrder.status !== 'on_hold' ? (
+                                                <button
+                                                    onClick={() => handleUpdateStatus(selectedOrder.id, 'on_hold')}
+                                                    className="w-full p-2 bg-yellow-100 text-yellow-700 border border-yellow-200 text-xs font-bold rounded-lg hover:bg-yellow-200 h-[38px] flex items-center justify-center gap-1"
+                                                >
+                                                    ⚠️ Put on Hold
+                                                </button>
+                                            ) : (
+                                                <button
+                                                    onClick={() => handleUpdateStatus(selectedOrder.id, 'preparing')}
+                                                    className="w-full p-2 bg-orange-100 text-orange-700 border border-orange-200 text-xs font-bold rounded-lg hover:bg-orange-200 h-[38px] flex items-center justify-center gap-1"
+                                                >
+                                                    👨‍🍳 Resume Prep
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div className="pt-3 border-t border-gray-200">
+                                        <label className="text-[10px] text-[var(--text-muted)] font-bold block mb-1">CANCEL ORDER (PROVIDE REASON)</label>
+                                        <div className="flex gap-2">
+                                            <input
+                                                type="text"
+                                                value={rejectionReason}
+                                                onChange={(e) => setRejectionReason(e.target.value)}
+                                                placeholder="e.g. Out of stock: Milk"
+                                                className="flex-1 p-2 text-sm border rounded-lg min-w-0"
+                                            />
+                                            <button
+                                                onClick={() => handleCancelOrder(selectedOrder.id)}
+                                                className="px-4 py-2 bg-red-100 text-red-700 text-xs font-bold rounded-lg hover:bg-red-200 whitespace-nowrap"
+                                            >
+                                                Cancel
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
 
                             <div className="flex justify-between items-center pt-2">
                                 <span className="font-bold text-lg">Total</span>

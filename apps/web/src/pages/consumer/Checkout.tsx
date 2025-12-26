@@ -186,8 +186,8 @@ const Checkout: React.FC = () => {
                     appliedTaxRate: rate,
                     status: 'placed' as const,
                     items: data.items.map((i: any) => ({
-                        productId: i.id,
-                        productName: i.name,
+                        productId: i.productId || i.id,
+                        productName: i.productName || i.name, // Fallback for safety
                         price: i.price,
                         quantity: i.quantity,
                         image: i.image,

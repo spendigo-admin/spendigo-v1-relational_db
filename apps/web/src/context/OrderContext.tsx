@@ -6,10 +6,13 @@ import {
     onSnapshot,
     addDoc,
     updateDoc,
+    setDoc,
+    getDoc,
     doc,
     serverTimestamp,
     orderBy,
-    writeBatch
+    writeBatch,
+    arrayUnion
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useAuth } from './AuthContext';
@@ -36,7 +39,7 @@ export interface OrderItem {
 export interface Order {
     id: string; // Firestore Doc ID
     date: string;
-    status: 'placed' | 'preparing' | 'out_for_delivery' | 'delivered' | 'cancelled';
+    status: 'placed' | 'preparing' | 'on_hold' | 'out_for_delivery' | 'delivered' | 'cancelled';
     items: OrderItem[];
     storeName: string;
     storeId: string;
@@ -49,7 +52,9 @@ export interface Order {
     paymentMethod: 'card' | 'in_store';
     paymentStatus: 'paid' | 'pending';
     paymentCollectedBy?: { id: string; name: string; timestamp: string };
-    estimatedDelivery?: string;
+    estimatedTime?: string; // New: "20 min", "5:30 PM", etc.
+    estimatedDelivery?: string; // Legacy
+    rejectionReason?: string; // New
     deliveryAddress?: Address;
 }
 
@@ -66,14 +71,15 @@ interface OrderContextType {
     profile: UserProfile;
     addOrder: (order: Omit<Order, 'id' | 'date' | 'customerName' | 'customerId'>) => Promise<string>;
     createBatchOrders: (orders: Omit<Order, 'id' | 'date' | 'customerName' | 'customerId'>[]) => Promise<string[]>;
-    updateOrderStatus: (orderId: string, status: Order['status']) => Promise<void>;
+    updateOrderStatus: (orderId: string, status: Order['status'], reason?: string) => Promise<void>;
+    updateEstimatedTime: (orderId: string, time: string) => Promise<void>;
     updatePaymentStatus: (orderId: string, status: Order['paymentStatus'], auditData?: { id: string; name: string; timestamp: string }) => Promise<void>;
-    cancelOrder: (orderId: string) => Promise<void>;
+    cancelOrder: (orderId: string, reason?: string) => Promise<void>;
     updateProfile: (updates: Partial<UserProfile>) => void;
-    addAddress: (address: Omit<Address, 'id'>) => void;
-    updateAddress: (id: string, updates: Partial<Address>) => void;
-    deleteAddress: (id: string) => void;
-    setDefaultAddress: (id: string) => void;
+    addAddress: (address: Omit<Address, 'id'>) => Promise<void>;
+    updateAddress: (id: string, updates: Partial<Address>) => Promise<void>;
+    deleteAddress: (id: string) => Promise<void>;
+    setDefaultAddress: (id: string) => Promise<void>;
     loading: boolean;
 }
 
@@ -146,20 +152,53 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         return () => unsubscribe();
     }, [user]);
 
-    // 2. Profile Management (Simplified Sync - could be moved to AuthContext or UserContext later)
+    // 2. Profile Management
     useEffect(() => {
-        if (user) {
-            // Initialize profile from Auth user if available
-            setProfile(prev => ({
-                ...prev,
-                id: user.id,
-                name: user.name,
-                email: user.email,
-                // Keep existing addresses if we had them in memory or load from Firestore user doc (TODO)
-            }));
-        }
+        const fetchUserData = async () => {
+            if (user?.id) {
+                try {
+                    const userDoc = await getDoc(doc(db, 'users', user.id));
+                    if (userDoc.exists()) {
+                        const data = userDoc.data();
+                        setProfile({
+                            id: user.id,
+                            name: data.name || user.name,
+                            email: data.email || user.email,
+                            phone: data.phone || '',
+                            addresses: data.addresses || []
+                        });
+                    }
+                } catch (error) {
+                    console.error('Error fetching user addresses:', error);
+                }
+            }
+        };
+
+        fetchUserData();
     }, [user]);
 
+
+    // --- Notification Helper ---
+    const sendOrderNotification = async (targetId: string, title: string, message: string, type: 'order' | 'alert' = 'order', orderId?: string) => {
+        try {
+            const notifRef = doc(db, 'notifications', targetId);
+            const newNotif = {
+                id: `notif-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+                type,
+                title,
+                message,
+                timestamp: new Date().toISOString(),
+                read: false,
+                orderId
+            };
+            await setDoc(notifRef, {
+                list: arrayUnion(newNotif),
+                updatedAt: new Date().toISOString()
+            }, { merge: true });
+        } catch (e) {
+            console.error("Failed to send notification", e);
+        }
+    };
 
     // --- Actions ---
 
@@ -198,6 +237,12 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             const finalOrder = { ...sanitizedRest, createdAt };
 
             batch.set(newOrderRef, finalOrder);
+
+            // Notify Shopper
+            sendOrderNotification(user.id, 'Order Placed! 📋', `Your order from ${orderData.storeName} has been received.`, 'order', newOrderRef.id);
+
+            // Notify Merchant
+            sendOrderNotification(orderData.storeId, 'New Order! 🔔', `New order from ${user.name} for $${orderData.total.toFixed(2)}`, 'order', newOrderRef.id);
         });
 
         try {
@@ -210,22 +255,80 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         }
     };
 
-    const updateOrderStatus = async (orderId: string, status: Order['status']) => {
+    const updateOrderStatus = async (orderId: string, status: Order['status'], reason?: string) => {
+        const order = orders.find(o => o.id === orderId);
         const orderRef = doc(db, 'orders', orderId);
-        await updateDoc(orderRef, { status });
+        await updateDoc(orderRef, {
+            status,
+            ...(reason && { rejectionReason: reason })
+        });
+
+        if (order) {
+            let title = '';
+            let message = '';
+
+            switch (status) {
+                case 'preparing':
+                    title = 'Preparing Order 👨‍🍳';
+                    message = `${order.storeName} has started preparing your order.`;
+                    break;
+                case 'on_hold':
+                    title = 'Order on Hold ⏳';
+                    message = `${order.storeName} has briefly paused your order. Check tracking for details.`;
+                    break;
+                case 'out_for_delivery':
+                    title = order.deliveryAddress ? 'Out for Delivery! 🚚' : 'Ready for Pickup! 🛍️';
+                    message = order.deliveryAddress ? 'Your order is on the way.' : 'Your order is ready to be picked up.';
+                    break;
+                case 'delivered':
+                    title = 'Order Completed! ✅';
+                    message = `Your order from ${order.storeName} is complete. Thank you!`;
+                    break;
+            }
+
+            if (title) {
+                sendOrderNotification(order.customerId, title, message, 'order', order.id);
+            }
+        }
+    };
+
+    const updateEstimatedTime = async (orderId: string, time: string) => {
+        const order = orders.find(o => o.id === orderId);
+        const orderRef = doc(db, 'orders', orderId);
+        await updateDoc(orderRef, {
+            estimatedTime: time
+        });
+
+        if (order) {
+            sendOrderNotification(order.customerId, 'Time Updated ⏱️', `${order.storeName} updated your ready time to ${time}.`, 'order', order.id);
+        }
     };
 
     const updatePaymentStatus = async (orderId: string, status: Order['paymentStatus'], auditData?: { id: string; name: string; timestamp: string }) => {
+        const order = orders.find(o => o.id === orderId);
         const orderRef = doc(db, 'orders', orderId);
         await updateDoc(orderRef, {
             paymentStatus: status,
             paymentCollectedBy: auditData
         });
+
+        if (order && status === 'paid') {
+            sendOrderNotification(order.customerId, 'Payment Confirmed 💳', `Payment for order #${orderId.substr(0, 8)} has been confirmed by ${order.storeName}.`, 'order', order.id);
+        }
     };
 
-    const cancelOrder = async (orderId: string) => {
+    const cancelOrder = async (orderId: string, reason?: string) => {
+        const order = orders.find(o => o.id === orderId);
         const orderRef = doc(db, 'orders', orderId);
-        await updateDoc(orderRef, { status: 'cancelled' });
+        await updateDoc(orderRef, {
+            status: 'cancelled',
+            ...(reason && { rejectionReason: reason })
+        });
+
+        if (order) {
+            const message = reason ? `Cancelled: ${reason}` : `Your order from ${order.storeName} was cancelled.`;
+            sendOrderNotification(order.customerId, 'Order Cancelled 🚫', message, 'alert', order.id);
+        }
     };
 
     // --- Profile Actions ---
@@ -249,30 +352,42 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         }
     };
 
-    const addAddress = (address: Omit<Address, 'id'>) => {
+    const addAddress = async (address: Omit<Address, 'id'>) => {
         const newAddress: Address = { ...address, id: `addr-${Date.now()}` };
-        setProfile(prev => ({ ...prev, addresses: [...prev.addresses, newAddress] }));
+        const updatedAddresses = [...profile.addresses, newAddress];
+
+        setProfile(prev => ({ ...prev, addresses: updatedAddresses }));
+
+        if (user?.id) {
+            await updateDoc(doc(db, 'users', user.id), { addresses: updatedAddresses });
+        }
     };
 
-    const updateAddress = (id: string, updates: Partial<Address>) => {
-        setProfile(prev => ({
-            ...prev,
-            addresses: prev.addresses.map(addr => addr.id === id ? { ...addr, ...updates } : addr)
-        }));
+    const updateAddress = async (id: string, updates: Partial<Address>) => {
+        const updatedAddresses = profile.addresses.map(addr => addr.id === id ? { ...addr, ...updates } : addr);
+        setProfile(prev => ({ ...prev, addresses: updatedAddresses }));
+
+        if (user?.id) {
+            await updateDoc(doc(db, 'users', user.id), { addresses: updatedAddresses });
+        }
     };
 
-    const deleteAddress = (id: string) => {
-        setProfile(prev => ({
-            ...prev,
-            addresses: prev.addresses.filter(addr => addr.id !== id)
-        }));
+    const deleteAddress = async (id: string) => {
+        const updatedAddresses = profile.addresses.filter(addr => addr.id !== id);
+        setProfile(prev => ({ ...prev, addresses: updatedAddresses }));
+
+        if (user?.id) {
+            await updateDoc(doc(db, 'users', user.id), { addresses: updatedAddresses });
+        }
     };
 
-    const setDefaultAddress = (id: string) => {
-        setProfile(prev => ({
-            ...prev,
-            addresses: prev.addresses.map(addr => ({ ...addr, isDefault: addr.id === id }))
-        }));
+    const setDefaultAddress = async (id: string) => {
+        const updatedAddresses = profile.addresses.map(addr => ({ ...addr, isDefault: addr.id === id }));
+        setProfile(prev => ({ ...prev, addresses: updatedAddresses }));
+
+        if (user?.id) {
+            await updateDoc(doc(db, 'users', user.id), { addresses: updatedAddresses });
+        }
     };
 
     return (
@@ -282,6 +397,7 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             addOrder,
             createBatchOrders,
             updateOrderStatus,
+            updateEstimatedTime,
             updatePaymentStatus,
             cancelOrder,
             updateProfile,

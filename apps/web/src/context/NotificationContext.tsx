@@ -19,8 +19,34 @@ export interface AppNotification {
 export type Notification = AppNotification;
 
 const MOCK_NOTIFICATIONS: AppNotification[] = [
-    { id: 'n1', type: 'price_drop', title: 'Price Drop Alert! 🔥', message: 'Organic Avocados dropped from $8.99 to $6.99', timestamp: new Date(Date.now() - 7200000).toISOString(), time: '2 hours ago', read: false, productId: 'p1' },
-    { id: 'n2', type: 'promo', title: 'Weekend Flash Sale!', message: 'Get 20% off all dairy products', timestamp: new Date(Date.now() - 172800000).toISOString(), time: '2 days ago', read: false },
+    {
+        id: 'n1',
+        type: 'price_drop',
+        title: 'Price Drop: Organic Hass Avocados 🥑',
+        message: 'FreshMart: The Organic Hass Avocados in your wishlist are now $1.99 (was $3.49). Stock up while it lasts!',
+        timestamp: new Date(Date.now() - 7200000).toISOString(),
+        time: '2 hours ago',
+        read: false,
+        productId: 'p1'
+    },
+    {
+        id: 'n2',
+        type: 'promo',
+        title: 'Flash Sale: 25% Off Dairy 🥛',
+        message: 'DailyLoaf Bakery: Today only! Enjoy 25% off all milk and yogurt products. Tap to see eligible items.',
+        timestamp: new Date(Date.now() - 172800000).toISOString(),
+        time: '2 days ago',
+        read: false
+    },
+    {
+        id: 'n3',
+        type: 'order',
+        title: 'Order Delivered! ✅',
+        message: 'Your order #ORD-8821 from Metro Express has been delivered to your doorstep. Rate your experience!',
+        timestamp: new Date(Date.now() - 86400000).toISOString(),
+        time: '1 day ago',
+        read: true
+    }
 ];
 
 export interface NotificationPreferences {

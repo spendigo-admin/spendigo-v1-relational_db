@@ -90,7 +90,8 @@ const MerchantSettings: React.FC = () => {
         description: 'Your local source for fresh produce and daily essentials. We partner with local farmers to bring you the best quality items.',
         website: 'www.freshmart.ca',
         logoUrl: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=200',
-        coverUrl: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=800&h=300&fit=crop'
+        coverUrl: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=800&h=300&fit=crop',
+        coordinates: { lat: 0, lng: 0 }
     });
 
     // Operations State
@@ -135,6 +136,21 @@ const MerchantSettings: React.FC = () => {
         dailyReports: true
     });
 
+    const [isLocatingStatus, setIsLocatingStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+
+    // Team State - derived from MarketplaceContext
+    const team = (stores[storeId]?.team as TeamMember[]) || [];
+    const [showInviteModal, setShowInviteModal] = useState(false);
+    const [inviteSuccess, setInviteSuccess] = useState<{ name: string, email: string, password: string } | null>(null);
+    const [inviteForm, setInviteForm] = useState({ name: '', email: '', role: 'STAFF' as MerchantRole });
+
+    // Initialize team if empty (Mock behavior)
+    useEffect(() => {
+        if (!stores[storeId]?.team) {
+            updateStoreTeam(storeId, INITIAL_TEAM);
+        }
+    }, [storeId]);
+
     // Initialize state from Context
     useEffect(() => {
         const store = stores[storeId];
@@ -151,7 +167,8 @@ const MerchantSettings: React.FC = () => {
                 description: store.description || '',
                 website: store.website || '',
                 logoUrl: store.logoUrl || store.logo || '', // Handle emoji vs url
-                coverUrl: store.image || ''
+                coverUrl: store.image || '',
+                coordinates: store.coordinates || { lat: 43.6510, lng: -79.3820 } // default Toronto
             });
 
             setOperations({
@@ -164,29 +181,36 @@ const MerchantSettings: React.FC = () => {
                 autoAcceptOrders: store.autoAcceptOrders || false,
                 taxRate: store.taxRate || 13
             });
-
-            // If team is managed by context, we load it there (already done below)
         }
-    }, [storeId, stores]); // Re-run if store updates (e.g. init)
+    }, [storeId, stores]);
 
-    // Team State - derived from MarketplaceContext
-    const team = (stores[storeId]?.team as TeamMember[]) || [];
-    const [showInviteModal, setShowInviteModal] = useState(false);
-    const [inviteSuccess, setInviteSuccess] = useState<{ name: string, email: string, password: string } | null>(null);
-    const [inviteForm, setInviteForm] = useState({ name: '', email: '', role: 'STAFF' as MerchantRole });
+    const handleGeocode = async () => {
+        setIsLocatingStatus('loading');
+        const fullAddress = `${storeInfo.address}, ${storeInfo.city}, ${storeInfo.province}, ${storeInfo.postalCode}, Canada`;
 
-    // Initialize team if empty (Mock behavior)
-    useEffect(() => {
-        if (!stores[storeId]?.team) {
-            updateStoreTeam(storeId, INITIAL_TEAM);
+        try {
+            const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(fullAddress)}`);
+            const data = await response.json();
+
+            if (data && data.length > 0) {
+                const { lat, lon } = data[0];
+                setStoreInfo(prev => ({
+                    ...prev,
+                    coordinates: { lat: parseFloat(lat), lng: parseFloat(lon) }
+                }));
+                setIsLocatingStatus('success');
+            } else {
+                setIsLocatingStatus('error');
+            }
+        } catch (error) {
+            console.error('Geocoding error:', error);
+            setIsLocatingStatus('error');
         }
-    }, [storeId]); // Removed stores dependency to avoid loop
+    };
 
-    const handleSave = () => {
+    const handleSave = async () => {
         setIsSaving(true);
 
-        // Construct the update object
-        // We calculate the display string for backward compatibility
         let displayFee = `$${operations.deliveryFee.toFixed(2)}`;
         if (operations.freeDeliveryThreshold > 0) {
             displayFee = `Free over $${operations.freeDeliveryThreshold}`;
@@ -204,6 +228,7 @@ const MerchantSettings: React.FC = () => {
             postalCode: storeInfo.postalCode,
             description: storeInfo.description,
             website: storeInfo.website,
+            coordinates: storeInfo.coordinates, // Save real coordinates!
             // Operations
             deliveryRadiusKm: operations.deliveryRadiusKm,
             minDeliveryOrder: operations.minOrder,
@@ -217,13 +242,9 @@ const MerchantSettings: React.FC = () => {
             deliveryFee: displayFee
         };
 
-        updateStore(storeId, updates);
-
-        // Simulate network delay
-        setTimeout(() => {
-            setIsSaving(false);
-            alert('Settings saved successfully!');
-        }, 800);
+        await updateStore(storeId, updates);
+        setIsSaving(false);
+        alert('Settings saved successfully!');
     };
 
     const handleInvite = async (e: React.FormEvent) => {
@@ -549,25 +570,24 @@ const MerchantSettings: React.FC = () => {
                             className="w-full p-3 border border-[var(--glass-border)] rounded-lg"
                         />
                     </div>
-                    <div className="md:col-span-2 mt-2 pt-4 border-t border-[var(--glass-border)]">
-                        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4 flex justify-between items-start">
-                            <div className="flex gap-3">
-                                <span className="text-xl">🔒</span>
-                                <div>
-                                    <h3 className="font-bold text-yellow-900">Location Details Locked</h3>
-                                    <p className="text-sm text-yellow-800">
-                                        Your operating province determines the tax rates charged to customers.
-                                        To prevent tax calculation errors, these fields cannot be changed directly.
-                                    </p>
-                                </div>
-                            </div>
-                            <button
-                                onClick={() => alert("Please contact merchant-support@spendigo.ca to request a relocation review. Proof of new address will be required.")}
-                                className="text-xs font-bold bg-white border border-yellow-300 text-yellow-900 px-3 py-1.5 rounded-lg hover:bg-yellow-100"
-                            >
-                                Request Update
-                            </button>
+                    <div className="md:col-span-2 mt-2 pt-4 border-t border-[var(--glass-border)] flex items-center justify-between">
+                        <div>
+                            <h3 className="font-bold text-[var(--text-main)]">Store Location</h3>
+                            <p className="text-sm text-[var(--text-muted)]">Enter your physical address to calculate delivery and distance.</p>
                         </div>
+                        <button
+                            onClick={handleGeocode}
+                            disabled={isLocatingStatus === 'loading'}
+                            className={`px-4 py-2 rounded-lg font-bold transition-all flex items-center gap-2 ${isLocatingStatus === 'success' ? 'bg-green-100 text-green-700' :
+                                    isLocatingStatus === 'error' ? 'bg-red-100 text-red-700' :
+                                        'bg-blue-600 text-white hover:brightness-110 shadow-md'
+                                }`}
+                        >
+                            {isLocatingStatus === 'loading' ? '⏳ Verifying...' :
+                                isLocatingStatus === 'success' ? '✅ Address Verified' :
+                                    isLocatingStatus === 'error' ? '❌ Address Not Found' :
+                                        '📍 Verify Address & Locate'}
+                        </button>
                     </div>
 
                     <div className="md:col-span-2">
@@ -575,8 +595,9 @@ const MerchantSettings: React.FC = () => {
                         <input
                             type="text"
                             value={storeInfo.address}
-                            disabled
-                            className="w-full p-3 border border-[var(--glass-border)] rounded-lg bg-gray-50 text-gray-500 cursor-not-allowed"
+                            onChange={e => setStoreInfo({ ...storeInfo, address: e.target.value })}
+                            className="w-full p-3 border border-[var(--glass-border)] rounded-lg"
+                            placeholder="e.g. 123 Main St"
                         />
                     </div>
                     <div>
@@ -584,16 +605,17 @@ const MerchantSettings: React.FC = () => {
                         <input
                             type="text"
                             value={storeInfo.city}
-                            disabled
-                            className="w-full p-3 border border-[var(--glass-border)] rounded-lg bg-gray-50 text-gray-500 cursor-not-allowed"
+                            onChange={e => setStoreInfo({ ...storeInfo, city: e.target.value })}
+                            className="w-full p-3 border border-[var(--glass-border)] rounded-lg"
+                            placeholder="e.g. Toronto"
                         />
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">Province (Sets Tax Rate)</label>
                         <select
                             value={storeInfo.province}
-                            disabled
-                            className="w-full p-3 border border-[var(--glass-border)] rounded-lg bg-gray-50 text-gray-500 cursor-not-allowed"
+                            onChange={e => setStoreInfo({ ...storeInfo, province: e.target.value })}
+                            className="w-full p-3 border border-[var(--glass-border)] rounded-lg bg-white"
                         >
                             <option value="ON">ON - Ontario (13% HST)</option>
                             <option value="BC">BC - British Columbia (12%)</option>
@@ -612,10 +634,22 @@ const MerchantSettings: React.FC = () => {
                         <input
                             type="text"
                             value={storeInfo.postalCode}
-                            disabled
-                            className="w-full p-3 border border-[var(--glass-border)] rounded-lg bg-gray-50 text-gray-500 cursor-not-allowed"
+                            onChange={e => setStoreInfo({ ...storeInfo, postalCode: e.target.value })}
+                            className="w-full p-3 border border-[var(--glass-border)] rounded-lg"
+                            placeholder="e.g. M5V 2H1"
                         />
                     </div>
+
+                    {storeInfo.coordinates.lat !== 0 && (
+                        <div className="md:col-span-2 p-3 bg-blue-50 rounded-lg border border-blue-100 flex items-center justify-between">
+                            <div className="flex items-center gap-2 text-blue-700 text-xs font-semibold">
+                                <span>🎯 Coordinates:</span>
+                                <code>{storeInfo.coordinates.lat.toFixed(4)}, {storeInfo.coordinates.lng.toFixed(4)}</code>
+                            </div>
+                            <span className="text-[10px] text-blue-500 italic">Automatically saved on Verify</span>
+                        </div>
+                    )}
+
                     <div className="md:col-span-2">
                         <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">Description</label>
                         <textarea

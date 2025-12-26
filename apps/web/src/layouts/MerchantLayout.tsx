@@ -1,6 +1,7 @@
 import React from 'react';
-import { NavLink, Outlet, useLocation } from 'react-router-dom';
+import { NavLink, Outlet, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import NotificationPopover from '../components/NotificationPopover';
 import '../styles/design-system.css';
 
 const MerchantLayout: React.FC = () => {
@@ -45,9 +46,12 @@ const MerchantLayout: React.FC = () => {
                 <div className="flex flex-col">
                     <span className="text-lg font-bold text-[var(--brand-primary)]">Spendigo Merchant</span>
                 </div>
-                <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 text-2xl text-[var(--text-main)]">
-                    {isSidebarOpen ? '✕' : '☰'}
-                </button>
+                <div className="flex items-center gap-2">
+                    <NotificationPopover />
+                    <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 text-2xl text-[var(--text-main)]">
+                        {isSidebarOpen ? '✕' : '☰'}
+                    </button>
+                </div>
             </header>
 
             {/* Sidebar */}
@@ -120,28 +124,26 @@ const MerchantLayout: React.FC = () => {
 
                 <div className="border-t border-[var(--glass-border)] my-2 mx-4"></div>
 
-                {/* 
-                <nav className="space-y-1 px-4">
-                    <NavLink
+                <nav className="space-y-1 px-4 mb-4">
+                    <Link
                         to="/"
                         className="flex items-center gap-3 p-3 rounded-lg font-medium text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text-main)] transition-colors"
                     >
-                        <span>🏠</span> Back to Spendigo
-                    </NavLink>
-                </nav> 
-                */}
+                        <span>🏠</span> Back to Store
+                    </Link>
+                </nav>
 
                 <div className="border-t border-[var(--glass-border)] pt-4 mt-auto p-4 pb-safe">
                     <div className="flex items-center gap-2 mb-2">
                         <div className="w-2 h-2 rounded-full bg-green-500"></div>
                         <span className="text-sm font-medium text-[var(--text-main)]">Store Online</span>
                     </div>
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between text-xs">
                         <div>
-                            <p className="text-xs text-[var(--text-main)] font-bold truncate max-w-[150px]">{user?.storeName || 'My Store'}</p>
-                            <p className="text-xs text-[var(--text-muted)] truncate max-w-[150px]">{user?.email}</p>
+                            <p className="text-[var(--text-main)] font-bold truncate max-w-[130px]">{user?.storeName || 'My Store'}</p>
+                            <p className="text-[var(--text-muted)] truncate max-w-[130px]">{user?.email}</p>
                         </div>
-                        <button onClick={logout} className="text-xs text-red-500 hover:text-red-700 font-bold" title="Logout">
+                        <button onClick={logout} className="text-red-500 hover:text-red-700 font-bold" title="Logout">
                             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.36 6.64a9 9 0 11-12.73 0" />
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 2v10" />
@@ -159,10 +161,19 @@ const MerchantLayout: React.FC = () => {
                 ></div>
             )}
 
-            {/* Main Content */}
-            <main className="flex-1 overflow-y-auto bg-[var(--surface-1)] h-[calc(100vh-64px)] md:h-screen">
-                <Outlet />
-            </main>
+            {/* Main Content Area */}
+            <div className="flex flex-col h-screen overflow-hidden">
+                {/* Desktop Top Bar */}
+                <header className="hidden md:flex h-16 bg-white border-b border-[var(--glass-border)] items-center justify-end px-8 shrink-0">
+                    <div className="flex items-center gap-4">
+                        <NotificationPopover />
+                    </div>
+                </header>
+
+                <main className="flex-1 overflow-y-auto bg-[var(--surface-1)]">
+                    <Outlet />
+                </main>
+            </div>
         </div>
     );
 };
