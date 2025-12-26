@@ -149,7 +149,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             return true;
         } catch (error) {
             console.error('Login failed:', error);
-            alert('Login failed. Check console for details.');
+            alert('Login failed. Please check your email and password.');
             return false;
         } finally {
             setLoading(false);

@@ -20,8 +20,8 @@ const Profile: React.FC = () => {
     // New address form
     const [newAddress, setNewAddress] = useState({ label: '', street: '', city: '', province: 'ON', postalCode: '', isDefault: false });
 
-    const handleSaveProfile = () => {
-        updateProfile({ name: formName, email: formEmail, phone: formPhone });
+    const handleSaveProfile = async () => {
+        await updateProfile({ name: formName, email: formEmail, phone: formPhone });
         setEditingProfile(false);
     };
 

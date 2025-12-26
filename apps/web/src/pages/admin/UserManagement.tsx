@@ -53,6 +53,7 @@ const ROLE_DEFINITIONS: Record<AdminRole, { description: string; permissions: st
 const UserManagement: React.FC = () => {
     const { user: currentUser } = useAuth();
     const [activeTab, setActiveTab] = useState<'users' | 'staff'>('staff');
+    const [userFilter, setUserFilter] = useState<'all' | 'merchant' | 'consumer'>('all');
     const [users, setUsers] = useState<User[]>([]);
     const [staff, setStaff] = useState<AdminStaff[]>([]);
     const [loading, setLoading] = useState(true);
@@ -98,6 +99,12 @@ const UserManagement: React.FC = () => {
         fetchData();
     }, [activeTab]); // Refetch on tab switch to keep fresh
 
+    // Helper function to filter users based on selected role
+    const getFilteredUsers = () => {
+        if (userFilter === 'all') return users;
+        return users.filter(u => u.role === userFilter);
+    };
+
     const toggleUserBan = (id: string) => {
         // Implement Ban Logic later
         alert('Ban functionality coming soon.');
@@ -134,19 +141,37 @@ const UserManagement: React.FC = () => {
             </div>
 
             {/* Tabs */}
-            <div className="flex gap-1 bg-[var(--surface-1)] p-1 rounded-xl mb-6 w-fit border border-[var(--glass-border)]">
-                <button
-                    onClick={() => setActiveTab('staff')}
-                    className={`px-6 py-2 rounded-lg font-medium text-sm transition-all ${activeTab === 'staff' ? 'bg-white shadow-sm text-[var(--brand-primary)]' : 'text-[var(--text-muted)] hover:bg-white/50'}`}
-                >
-                    Admin Staff
-                </button>
-                <button
-                    onClick={() => setActiveTab('users')}
-                    className={`px-6 py-2 rounded-lg font-medium text-sm transition-all ${activeTab === 'users' ? 'bg-white shadow-sm text-[var(--brand-primary)]' : 'text-[var(--text-muted)] hover:bg-white/50'}`}
-                >
-                    Platform Users
-                </button>
+            <div className="flex justify-between items-center mb-6">
+                <div className="flex gap-1 bg-[var(--surface-1)] p-1 rounded-xl w-fit border border-[var(--glass-border)]">
+                    <button
+                        onClick={() => setActiveTab('staff')}
+                        className={`px-6 py-2 rounded-lg font-medium text-sm transition-all ${activeTab === 'staff' ? 'bg-white shadow-sm text-[var(--brand-primary)]' : 'text-[var(--text-muted)] hover:bg-white/50'}`}
+                    >
+                        Admin Staff
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('users')}
+                        className={`px-6 py-2 rounded-lg font-medium text-sm transition-all ${activeTab === 'users' ? 'bg-white shadow-sm text-[var(--brand-primary)]' : 'text-[var(--text-muted)] hover:bg-white/50'}`}
+                    >
+                        Platform Users
+                    </button>
+                </div>
+
+                {/* User Filter Dropdown (only show when Platform Users tab is active) */}
+                {activeTab === 'users' && (
+                    <div className="flex items-center gap-3">
+                        <span className="text-sm font-medium text-[var(--text-muted)]">Filter by Role:</span>
+                        <select
+                            value={userFilter}
+                            onChange={(e) => setUserFilter(e.target.value as 'all' | 'merchant' | 'consumer')}
+                            className="px-4 py-2 border border-[var(--glass-border)] rounded-lg bg-white font-medium text-sm focus:ring-2 ring-[var(--brand-primary)] outline-none"
+                        >
+                            <option value="all">All Users ({users.length})</option>
+                            <option value="merchant">Merchants Only ({users.filter(u => u.role === 'merchant').length})</option>
+                            <option value="consumer">Consumers Only ({users.filter(u => u.role === 'consumer').length})</option>
+                        </select>
+                    </div>
+                )}
             </div>
 
             {activeTab === 'staff' ? (
@@ -185,28 +210,60 @@ const UserManagement: React.FC = () => {
             ) : (
                 /* ACTUAL CUSTOMER TABLE */
                 <div className="bg-white rounded-xl border border-[var(--glass-border)] overflow-hidden shadow-sm">
+                    {/* Filter Info Badge */}
+                    {userFilter !== 'all' && (
+                        <div className="bg-blue-50 border-b border-blue-100 px-4 py-2 flex items-center gap-2">
+                            <span className="text-xs font-bold text-blue-700">🔍 Filtered View:</span>
+                            <span className="text-xs text-blue-600">
+                                Showing {getFilteredUsers().length} {userFilter === 'merchant' ? 'Merchants' : 'Consumers'}
+                            </span>
+                            <button
+                                onClick={() => setUserFilter('all')}
+                                className="ml-auto text-xs text-blue-600 hover:text-blue-800 font-bold underline"
+                            >
+                                Clear Filter
+                            </button>
+                        </div>
+                    )}
+
                     <table className="w-full text-left">
                         <thead className="bg-[var(--surface-1)] text-[var(--text-muted)] text-xs uppercase font-bold border-b border-[var(--glass-border)]">
                             <tr>
                                 <th className="p-4">Email</th>
                                 <th className="p-4">Role</th>
-
+                                <th className="p-4">Store/Account</th>
+                                <th className="p-4">Joined</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {users.map(user => (
-                                <tr key={user.id} className="border-b hover:bg-gray-50">
+                            {getFilteredUsers().map(user => (
+                                <tr key={user.id} className="border-b hover:bg-gray-50 transition-colors">
                                     <td className="p-4 font-medium">{user.email}</td>
                                     <td className="p-4">
-                                        <span className={`text-xs px-2 py-1 rounded-full font-bold ${user.role === 'merchant' ? 'bg-orange-100 text-orange-700' : 'bg-blue-100 text-blue-700'}`}>
-                                            {user.role}
+                                        <span className={`text-xs px-2 py-1 rounded-full font-bold uppercase ${user.role === 'merchant' ? 'bg-orange-100 text-orange-700' : 'bg-blue-100 text-blue-700'}`}>
+                                            {user.role === 'merchant' ? '🏪 Merchant' : '🛒 Consumer'}
                                         </span>
                                     </td>
-
+                                    <td className="p-4 text-sm text-[var(--text-muted)]">
+                                        {user.role === 'merchant' ? (
+                                            <span className="text-xs bg-gray-100 px-2 py-1 rounded font-medium">Store ID: {(user as any).storeId || 'N/A'}</span>
+                                        ) : (
+                                            <span className="text-xs">-</span>
+                                        )}
+                                    </td>
+                                    <td className="p-4 text-xs text-[var(--text-muted)]">{user.joinedAt}</td>
                                 </tr>
                             ))}
                         </tbody>
                     </table>
+
+                    {/* Empty State */}
+                    {getFilteredUsers().length === 0 && (
+                        <div className="p-10 text-center text-[var(--text-muted)]">
+                            <div className="text-4xl mb-2">📭</div>
+                            <p className="font-medium">No {userFilter === 'merchant' ? 'merchants' : userFilter === 'consumer' ? 'consumers' : 'users'} found</p>
+                        </div>
+                    )}
                 </div>
             )}
 

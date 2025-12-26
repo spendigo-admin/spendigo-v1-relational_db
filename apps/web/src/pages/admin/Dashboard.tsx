@@ -220,7 +220,7 @@ const AdminDashboard: React.FC = () => {
                                     <div key={store.id} className="flex items-center justify-between p-3 hover:bg-[var(--surface-1)] rounded-lg transition-colors border border-transparent hover:border-[var(--glass-border)]">
                                         <div className="flex items-center gap-3">
                                             <div className="font-bold text-[var(--text-muted)] w-4 text-center">{idx + 1}</div>
-                                            <img src={store.logo} className="w-10 h-10 rounded-full object-cover bg-gray-100" alt={store.name} />
+                                            <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-2xl">{store.logo}</div>
                                             <div>
                                                 <div className="font-bold text-sm text-[var(--text-main)]">{store.name}</div>
                                                 <div className="text-xs text-[var(--text-muted)] flex items-center gap-2">

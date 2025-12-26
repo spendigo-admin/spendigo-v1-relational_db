@@ -1,19 +1,34 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import '../../styles/design-system.css';
 
 import { useAuth } from '../../context/AuthContext';
 import { useAudit } from '../../context/AuditContext';
+import { DEMO_USERS } from '../../data/demoUsers';
 
 const Login = () => {
     const navigate = useNavigate();
     const location = useLocation();
-    const { login } = useAuth();
+    const { login, user } = useAuth();
     const { logEvent } = useAudit();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+
+    // Redirect immediately when user is authenticated
+    useEffect(() => {
+        if (user) {
+            // User is authenticated, redirect based on role
+            if (user.role === 'admin') {
+                navigate('/admin/dashboard', { replace: true });
+            } else if (user.role === 'merchant') {
+                navigate('/merchant/dashboard', { replace: true });
+            } else {
+                navigate('/', { replace: true });
+            }
+        }
+    }, [user, navigate]);
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -21,23 +36,12 @@ const Login = () => {
         setIsLoading(true);
 
         try {
-            await login(email, password);
-            await logEvent('AUTH_LOGIN_SUCCESS', { email: email }, 'auth/login');
-
-            // We need to wait for the user state to update or use the return value if it returned the user
-            // Since login is async and sets state, we might not have 'user' immediately available here if we used useAuth().user
-            // However, for this fix, let's rely on the email logic BUT make it stricter, 
-            // OR better: check MOCK_USERS directly here or assume the login function handles it?
-            // Actually, best practice is to redirect within a useEffect in Login that listens to `user`.
-            // But let's fix the fragile logic first.
-
-            // Check known roles based on email patterns defined in AuthContext
-            if (email.includes('owner') || email.includes('manager') || email.includes('staff')) {
-                navigate('/merchant/dashboard');
-            } else if (email.includes('admin')) {
-                navigate('/admin/dashboard');
+            const success = await login(email, password);
+            if (success) {
+                await logEvent('AUTH_LOGIN_SUCCESS', { email: email }, 'auth/login');
+                // useEffect will handle redirect when user state updates
             } else {
-                navigate('/');
+                setError('Login failed. Please try again.');
             }
         } catch (err) {
             console.error(err);
@@ -83,50 +87,48 @@ const Login = () => {
                         Sign In
                     </button>
 
-                    <div className="mt-4 p-3 bg-blue-50 text-xs text-blue-800 rounded-lg">
-                        <p className="font-bold mb-2">Demo Credentials (Password: Spendigo123!):</p>
+                    <div className="mt-4 p-3 bg-blue-50 text-xs text-blue-800 rounded-lg max-h-80 overflow-y-auto border border-blue-100 shadow-inner">
+                        <p className="font-bold mb-3 sticky top-0 bg-blue-50 py-1 z-10 border-b border-blue-100">Demo Credentials (Password: Spendigo123!)</p>
 
-                        <div className="mb-3">
-                            <p className="font-semibold">Format:</p>
-                            <code className="bg-blue-100 px-1 py-0.5 rounded text-[10px] w-full block mt-1">
-                                [store].owner@spendigo.ca
-                            </code>
-                            <code className="bg-blue-100 px-1 py-0.5 rounded text-[10px] w-full block mt-1">
-                                [store].manager@spendigo.ca
-                            </code>
-                            <code className="bg-blue-100 px-1 py-0.5 rounded text-[10px] w-full block mt-1">
-                                [store].staff@spendigo.ca
-                            </code>
-                        </div>
+                        <div className="space-y-4">
+                            {[
+                                { title: '🛡️ System Admins', filter: (u: any) => u.label === 'ADMIN' },
+                                { title: '🏪 Merchant Owners', filter: (u: any) => u.label === 'OWNER' },
+                                { title: '💼 Store Managers', filter: (u: any) => u.label === 'MNGR' },
+                                { title: '👥 Store Staff', filter: (u: any) => u.label === 'STAFF' },
+                                { title: '🛒 Shoppers', filter: (u: any) => u.label === 'USER' || u.label === 'MERCH' }
+                            ].map(group => {
+                                const groupUsers = DEMO_USERS.filter(group.filter);
+                                if (groupUsers.length === 0) return null;
 
-                        <p className="font-bold mt-2 pt-1 border-t border-blue-200">Available Stores (slugs):</p>
-                        <div className="grid grid-cols-2 gap-x-2 gap-y-1 mt-1 font-mono text-[10px]">
-                            <p>freshmart</p>
-                            <p>quickpick</p>
-                            <p>metro</p>
-                            <p>costco</p>
-                            <p>macs</p>
-                            <p>hasty</p>
-                            <p>bodega</p>
-                            <p>greenvalley</p>
-                            <p>bakery</p>
-                            <p>butcher</p>
-                            <p>books</p>
-                        </div>
-
-                        <p className="font-bold mt-2 pt-1 border-t border-blue-200">Other:</p>
-                        <p>admin@spendigo.ca</p>
-                        <div className="mt-2">
-                            <p className="font-semibold text-[10px] mb-1">Shoppers:</p>
-                            <div className="grid grid-cols-2 gap-x-2 gap-y-1">
-                                <p>shopper@example.com</p>
-                                <p>family@spendigo.ca</p>
-                                <p>student@spendigo.ca</p>
-                                <p>chef@spendigo.ca</p>
-                            </div>
+                                return (
+                                    <div key={group.title} className="space-y-1">
+                                        <h4 className="text-[9px] font-bold uppercase tracking-widest text-blue-900/60 mb-1 ml-1">{group.title}</h4>
+                                        {groupUsers.map((u, i) => (
+                                            <button
+                                                key={i}
+                                                type="button"
+                                                onClick={() => { setEmail(u.email); setPassword('Spendigo123!'); }}
+                                                className="w-full text-left bg-white/60 hover:bg-white p-2 rounded flex justify-between items-center transition-all border border-blue-50 hover:border-blue-200"
+                                            >
+                                                <span className="font-mono text-[10px] truncate pr-2">{u.email}</span>
+                                                <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded uppercase tracking-tighter ${u.label === 'ADMIN' ? 'bg-red-100 text-red-700' :
+                                                    u.label === 'OWNER' ? 'bg-purple-100 text-purple-700' :
+                                                        u.label === 'MNGR' ? 'bg-indigo-100 text-indigo-700' :
+                                                            'bg-green-100 text-green-700'
+                                                    }`}>
+                                                    {u.label}
+                                                </span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                );
+                            })}
                         </div>
                     </div>
                 </form>
+
+
 
                 <p className="mt-6 text-center text-sm text-[var(--text-muted)]">
                     Don't have an account? <Link to="/register" className="text-[var(--brand-secondary)] hover:underline">Sign up</Link>

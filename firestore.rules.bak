@@ -1,0 +1,135 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // --- Helper Functions ---
+    
+    // Check if user is logged in
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Fetch the user's profile from Firestore to check roles/claims
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    // Check if the user is an Admin
+    function isAdmin() {
+      return isAuthenticated() && getUserData().role == 'admin';
+    }
+
+    // Check if user is a Merchant for the specific store
+    function isMerchantFor(storeId) {
+      let user = getUserData();
+      return isAuthenticated() && user.role == 'merchant' && user.storeId == storeId;
+    }
+
+    // Check if the action is allowed for the user's role (Integrity Whitelist)
+    function isValidLogAction(action) {
+      let role = getUserData().role;
+      return 
+        (role == 'admin') ||
+        (role == 'merchant' && action in ['AUTH_LOGIN_SUCCESS', 'STORE_STATUS_UPDATE']) ||
+        (role == 'consumer' && action in ['AUTH_LOGIN_SUCCESS', 'checkout_completed']);
+    }
+
+    // --- Collections ---
+
+    // Users: Users can read/write their own profile; Admins can read all
+    match /users/{userId} {
+      allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+      allow write: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+    }
+
+    // Stores: Public Read, Specific Merchant Write
+    match /stores/{storeId} {
+      allow read: if true; // Public for search
+      allow create: if isAdmin(); // Only admins create stores
+      allow update: if isMerchantFor(storeId) || isAdmin(); // Merchant manages own store
+      allow delete: if isAdmin();
+      
+      // Flyers Subcollection (Drafts & History)
+      match /flyers/{flyerId} {
+          allow read, write: if isMerchantFor(storeId);
+      }
+    }
+
+    // Products (Sub-collection of Stores? or Root? App uses root 'stores/{id}/products' array usually, but let's assume future root catalog)
+    // The current app stores products INSIDE the store document as an array, so the 'stores' rule covers it.
+    // BUT we also have a 'catalog' collection for the Master Catalog.
+    match /catalog/{itemId} {
+      allow read: if true; // Public
+      allow write: if isAdmin();
+    }
+
+    // Orders: Multi-sided access
+    match /orders/{orderId} {
+      // Read: Owner (Consumer) OR The Assigned Store (Merchant)
+      allow read: if isAuthenticated() && (
+        request.auth.uid == resource.data.customerId || 
+        isMerchantFor(resource.data.storeId) ||
+        isAdmin()
+      );
+
+      // Create: Any authenticated user (Consumer)
+      allow create: if isAuthenticated() && request.resource.data.customerId == request.auth.uid;
+
+      // Update: Restrict based on role
+      allow update: if isAuthenticated() && (
+        // Merchant can update status
+        isMerchantFor(resource.data.storeId) ||
+        // Admin can update anything
+        isAdmin() ||
+        // Consumer can ONLY cancel (if status is pending) - Simplified to block for now to prevent tampering
+        false 
+      );
+    }
+
+    // Carts: Private to user
+    match /carts/{userId} {
+      allow read, write: if isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Wishlists: Private to user
+    match /wishlists/{userId} {
+      allow read, write: if isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Notifications: Private to user OR Store context
+    // This is tricky because notifications are keyed by contextId (can be userId OR storeId)
+    // We will assume the contextId matches the auth.uid OR the user's storeId
+    match /notifications/{contextId} {
+        allow read, write: if isAuthenticated() && (
+            request.auth.uid == contextId ||
+            isMerchantFor(contextId)
+        );
+    }
+
+    // Audit Logs: Append Only, Strict Schema, Size Limit (DoS Protection)
+    match /audit_logs/{logId} {
+      allow read: if isAdmin();
+      allow create: if isAuthenticated() &&
+        // 1. Anti-Spoofing: Actor ID must match Auth UID
+        request.resource.data.actor.id == request.auth.uid &&
+        
+        // 2. Schema Validation: Critical fields required
+        request.resource.data.keys().hasAll(['action', 'timestamp', 'actor', 'metadata', 'hash', 'prevHash']) &&
+        
+        // 3. DoS / Storage Protection: Limit payload size
+        request.resource.data.metadata.size() < 50 && // Limit number of metadata keys
+        request.resource.data.action.size() < 100 && // Limit action string length
+
+        // 4. Integrity: Action Whitelist
+        isValidLogAction(request.resource.data.action);
+
+      allow update, delete: if false; // True Immutable Ledger
+    }
+
+    // Settings: Global Config (Maintenance Mode, Fees)
+    match /settings/platform {
+        allow read: if true; // Publicly readable for Maintenance Mode check
+        allow write: if isAdmin();
+    }
+  }
+}

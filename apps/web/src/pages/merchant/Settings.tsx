@@ -3,6 +3,8 @@ import { useSearchParams } from 'react-router-dom';
 import '../../styles/design-system.css';
 import { useAuth } from '../../context/AuthContext';
 import { useMarketplace } from '../../context/MarketplaceContext';
+import { getFunctions, httpsCallable } from 'firebase/functions';
+import { db } from '../../lib/firebase';
 
 // --- TYPES ---
 type MerchantRole = 'OWNER' | 'MANAGER' | 'STAFF' | 'MARKETING';
@@ -170,6 +172,7 @@ const MerchantSettings: React.FC = () => {
     // Team State - derived from MarketplaceContext
     const team = (stores[storeId]?.team as TeamMember[]) || [];
     const [showInviteModal, setShowInviteModal] = useState(false);
+    const [inviteSuccess, setInviteSuccess] = useState<{ name: string, email: string, password: string } | null>(null);
     const [inviteForm, setInviteForm] = useState({ name: '', email: '', role: 'STAFF' as MerchantRole });
 
     // Initialize team if empty (Mock behavior)
@@ -223,21 +226,57 @@ const MerchantSettings: React.FC = () => {
         }, 800);
     };
 
-    const handleInvite = (e: React.FormEvent) => {
+    const handleInvite = async (e: React.FormEvent) => {
         e.preventDefault();
-        const newMember: TeamMember = {
-            id: `t${Date.now()}`,
-            name: inviteForm.name,
-            email: inviteForm.email,
-            role: inviteForm.role,
-            lastActive: 'Pending Invite'
-        };
-        const updatedTeam = [...team, newMember];
-        updateStoreTeam(storeId, updatedTeam); // Persist to context
+        setIsSaving(true);
 
-        setShowInviteModal(false);
-        setInviteForm({ name: '', email: '', role: 'STAFF' });
-        alert(`Invitation sent to ${newMember.email}`);
+        try {
+            // Generate temporary password
+            const tempPassword = `Spendigo${Math.random().toString(36).slice(-8)}!`;
+
+            // Call Cloud Function to create Auth user and Firestore record
+            const functions = getFunctions();
+            const inviteFunction = httpsCallable(functions, 'inviteTeamMember');
+
+            const result = await inviteFunction({
+                email: inviteForm.email,
+                name: inviteForm.name,
+                merchantRole: inviteForm.role,
+                storeId: storeId,
+                tempPassword: tempPassword
+            }) as { data: { success: boolean; uid: string; message: string } };
+
+            if (result.data.success) {
+                // Add to local team member list
+                const newMember: TeamMember = {
+                    id: result.data.uid,
+                    name: inviteForm.name,
+                    email: inviteForm.email,
+                    role: inviteForm.role,
+                    lastActive: '🟡 Pending Invite'
+                };
+                const updatedTeam = [...team, newMember];
+                await updateStoreTeam(storeId, updatedTeam);
+
+                // Show success modal instead of alert
+                setInviteSuccess({
+                    name: inviteForm.name,
+                    email: inviteForm.email,
+                    password: tempPassword
+                });
+
+                setShowInviteModal(false);
+                setInviteForm({ name: '', email: '', role: 'STAFF' });
+            } else {
+                throw new Error('Invitation failed');
+            }
+        } catch (error: any) {
+            console.error('Error inviting team member:', error);
+            const errorMessage = error.message || 'Failed to send invitation';
+            alert(`❌ Invitation Failed\n\n${errorMessage}\n\nPlease try again or contact support.`);
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     const removeMember = (id: string) => {
@@ -378,6 +417,63 @@ const MerchantSettings: React.FC = () => {
                                 <button type="submit" className="px-4 py-2 bg-[var(--brand-primary)] text-white font-bold rounded-lg hover:brightness-110">Send Invite</button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Success Modal */}
+            {inviteSuccess && (
+                <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center animate-fade-in p-4 backdrop-blur-sm">
+                    <div className="bg-white p-6 rounded-2xl w-full max-w-md shadow-2xl border-2 border-green-100">
+                        <div className="text-center mb-6">
+                            <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-3xl mx-auto mb-4">
+                                ✅
+                            </div>
+                            <h2 className="text-2xl font-bold text-green-900">Invitation Sent!</h2>
+                            <p className="text-green-700">Account created successfully.</p>
+                        </div>
+
+                        <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 space-y-3 mb-6">
+                            <div>
+                                <span className="text-xs font-bold text-gray-500 uppercase tracking-wide">Name</span>
+                                <div className="font-medium">{inviteSuccess.name}</div>
+                            </div>
+                            <div>
+                                <span className="text-xs font-bold text-gray-500 uppercase tracking-wide">Email</span>
+                                <div className="font-medium">{inviteSuccess.email}</div>
+                            </div>
+                            <div className="pt-2 border-t border-gray-200">
+                                <span className="text-xs font-bold text-gray-500 uppercase tracking-wide">Temporary Password</span>
+                                <div className="flex items-center gap-2 mt-1">
+                                    <code className="bg-white px-3 py-1.5 rounded border border-gray-300 font-mono text-lg font-bold text-blue-600 select-all">
+                                        {inviteSuccess.password}
+                                    </code>
+                                    <button
+                                        onClick={() => {
+                                            navigator.clipboard.writeText(inviteSuccess.password);
+                                            alert('Password copied to clipboard!');
+                                        }}
+                                        className="text-sm bg-blue-100 text-blue-700 px-3 py-1.5 rounded-lg font-bold hover:bg-blue-200 transition-colors"
+                                    >
+                                        Copy
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="bg-yellow-50 p-3 rounded-lg border border-yellow-200 text-sm text-yellow-800 mb-6 flex gap-3">
+                            <span className="text-xl">⚠️</span>
+                            <p>
+                                <strong>Important:</strong> Provide these credentials to your team member immediately. For security, ask them to change their password after logging in.
+                            </p>
+                        </div>
+
+                        <button
+                            onClick={() => setInviteSuccess(null)}
+                            className="w-full py-3 bg-green-600 text-white font-bold rounded-xl hover:bg-green-700 shadow-lg shadow-green-200 transition-all"
+                        >
+                            Done
+                        </button>
                     </div>
                 </div>
             )}
@@ -766,10 +862,36 @@ const MerchantSettings: React.FC = () => {
                 <h2 className="text-lg font-bold text-red-700 mb-2">Danger Zone</h2>
                 <p className="text-sm text-red-600 mb-4">These actions can affect your store's visibility.</p>
                 <div className="flex gap-4">
-                    <button className="px-4 py-2 border border-red-300 text-red-700 rounded-lg hover:bg-red-100 font-medium">
+                    <button
+                        onClick={() => {
+                            if (confirm('⚠️ This will pause your store operations.\n\nYour store will be hidden from customers and new orders will be disabled.\n\nYou can resume operations at any time.\n\nContinue?')) {
+                                updateStore(storeId, { status: 'suspended' });
+                                alert('🔴 Store operations paused.\n\nYour store is now hidden from the marketplace.\n\nContact support@spendigo.ca or update your store status to resume.');
+                            }
+                        }}
+                        className="px-4 py-2 border border-red-300 text-red-700 rounded-lg hover:bg-red-100 font-medium transition-colors"
+                    >
                         Pause Store Operations
                     </button>
-                    <button className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium">
+                    <button
+                        onClick={() => {
+                            const storeName = storeInfo.name;
+                            const confirmation = prompt(`⚠️ PERMANENT ACTION - This cannot be undone!\n\nType your store name "${storeName}" to confirm permanent closure:`);
+
+                            if (confirmation === storeName) {
+                                if (confirm('Are you absolutely sure?\n\nThis will:\n- Delete all your products\n- Cancel pending orders\n- Remove your store from the platform\n\nThis action CANNOT be reversed.')) {
+                                    alert('🚨 Store closure initiated.\n\nOur team will process this request within 24 hours.\n\nYou will receive a final email with details.');
+                                    updateStore(storeId, { status: 'suspended' });
+                                    setTimeout(() => {
+                                        window.location.href = '/';
+                                    }, 2000);
+                                }
+                            } else if (confirmation !== null) {
+                                alert('Store name did not match. Closure cancelled.');
+                            }
+                        }}
+                        className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium transition-colors shadow-sm"
+                    >
                         Close Store Permanently
                     </button>
                 </div>

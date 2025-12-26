@@ -228,9 +228,25 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         await updateDoc(orderRef, { status: 'cancelled' });
     };
 
-    // --- Profile Actions (Local State for Demo, can be upgraded to Firestore) ---
-    const updateProfile = (updates: Partial<UserProfile>) => {
+    // --- Profile Actions ---
+    const updateProfile = async (updates: Partial<UserProfile>) => {
+        // Update local state immediately for UI responsiveness
         setProfile(prev => ({ ...prev, ...updates }));
+
+        // Persist to Firestore
+        if (user?.id) {
+            try {
+                const userRef = doc(db, 'users', user.id);
+                await updateDoc(userRef, {
+                    ...(updates.name && { name: updates.name }),
+                    ...(updates.email && { email: updates.email }),
+                    ...(updates.phone && { phone: updates.phone })
+                });
+            } catch (error) {
+                console.error('Error updating profile:', error);
+                alert('Failed to save profile changes. Please try again.');
+            }
+        }
     };
 
     const addAddress = (address: Omit<Address, 'id'>) => {
