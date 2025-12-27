@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useOrders } from '../../context/OrderContext';
 import '../../styles/design-system.css';
@@ -19,17 +19,58 @@ const Profile: React.FC = () => {
 
     // New address form
     const [newAddress, setNewAddress] = useState({ label: '', street: '', city: '', province: 'ON', postalCode: '', isDefault: false });
+    const [isValidating, setIsValidating] = useState(false);
+    const [validationError, setValidationError] = useState('');
+
+    // Sync profile data when it loads
+    useEffect(() => {
+        setFormName(profile.name);
+        setFormEmail(profile.email);
+        setFormPhone(profile.phone);
+    }, [profile]);
 
     const handleSaveProfile = async () => {
         await updateProfile({ name: formName, email: formEmail, phone: formPhone });
         setEditingProfile(false);
     };
 
-    const handleAddAddress = () => {
-        if (newAddress.street && newAddress.city && newAddress.postalCode) {
-            addAddress(newAddress);
-            setNewAddress({ label: '', street: '', city: '', province: 'ON', postalCode: '', isDefault: false });
-            setShowAddAddress(false);
+    const handleAddAddress = async () => {
+        setValidationError('');
+        if (!newAddress.street || !newAddress.city || !newAddress.postalCode) {
+            setValidationError('Please fill in all address fields.');
+            return;
+        }
+
+        setIsValidating(true);
+        try {
+            // Validate via Nominatim
+            const query = `${newAddress.street}, ${newAddress.city}, ${newAddress.province}, ${newAddress.postalCode}, Canada`;
+            const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&addressdetails=1`);
+            const data = await response.json();
+
+            if (data && data.length > 0) {
+                // Address found! Let's use the normalized data from Nominatim if possible
+                const result = data[0];
+                const addr = result.address;
+
+                // Construct normalized address
+                const validatedAddress = {
+                    ...newAddress,
+                    city: addr.city || addr.town || addr.village || newAddress.city,
+                    postalCode: addr.postcode ? addr.postcode.toUpperCase() : newAddress.postalCode.toUpperCase(),
+                };
+
+                await addAddress(validatedAddress);
+                setNewAddress({ label: '', street: '', city: '', province: 'ON', postalCode: '', isDefault: false });
+                setShowAddAddress(false);
+            } else {
+                setValidationError('We couldn\'t verify this address. Please check for typos.');
+            }
+        } catch (e) {
+            console.error("Validation error:", e);
+            setValidationError('Connection error. Could not validate address.');
+        } finally {
+            setIsValidating(false);
         }
     };
 
@@ -156,15 +197,55 @@ const Profile: React.FC = () => {
 
                         {showAddAddress ? (
                             <div className="bg-white rounded-xl border border-[var(--glass-border)] p-4 space-y-3">
-                                <input type="text" placeholder="Label (e.g., Home, Work)" value={newAddress.label} onChange={e => setNewAddress({ ...newAddress, label: e.target.value })} className="w-full px-4 py-3 border border-[var(--glass-border)] rounded-lg" />
-                                <input type="text" placeholder="Street Address" value={newAddress.street} onChange={e => setNewAddress({ ...newAddress, street: e.target.value })} className="w-full px-4 py-3 border border-[var(--glass-border)] rounded-lg" />
+                                <input type="text" placeholder="Label (e.g., Home, Work)" value={newAddress.label} onChange={e => setNewAddress({ ...newAddress, label: e.target.value })} className="w-full px-4 py-3 border border-[var(--glass-border)] rounded-lg outline-none focus:border-[var(--brand-primary)]" />
+                                <input type="text" placeholder="Street Address" value={newAddress.street} onChange={e => setNewAddress({ ...newAddress, street: e.target.value })} className="w-full px-4 py-3 border border-[var(--glass-border)] rounded-lg outline-none focus:border-[var(--brand-primary)]" />
                                 <div className="grid grid-cols-2 gap-3">
-                                    <input type="text" placeholder="City" value={newAddress.city} onChange={e => setNewAddress({ ...newAddress, city: e.target.value })} className="px-4 py-3 border border-[var(--glass-border)] rounded-lg" />
-                                    <input type="text" placeholder="Postal Code" value={newAddress.postalCode} onChange={e => setNewAddress({ ...newAddress, postalCode: e.target.value })} className="px-4 py-3 border border-[var(--glass-border)] rounded-lg" />
+                                    <input type="text" placeholder="City" value={newAddress.city} onChange={e => setNewAddress({ ...newAddress, city: e.target.value })} className="px-4 py-3 border border-[var(--glass-border)] rounded-lg outline-none focus:border-[var(--brand-primary)]" />
+                                    <select
+                                        value={newAddress.province}
+                                        onChange={e => setNewAddress({ ...newAddress, province: e.target.value })}
+                                        className="px-4 py-3 border border-[var(--glass-border)] rounded-lg outline-none focus:border-[var(--brand-primary)] bg-white"
+                                    >
+                                        <option value="ON">Ontario</option>
+                                        <option value="QC">Quebec</option>
+                                        <option value="BC">British Columbia</option>
+                                        <option value="AB">Alberta</option>
+                                        <option value="MB">Manitoba</option>
+                                        <option value="SK">Saskatchewan</option>
+                                        <option value="NS">Nova Scotia</option>
+                                        <option value="NB">New Brunswick</option>
+                                        <option value="PE">PEI</option>
+                                        <option value="NL">Newfoundland</option>
+                                    </select>
                                 </div>
+                                <input type="text" placeholder="Postal Code (e.g. M5V 2H1)" value={newAddress.postalCode} onChange={e => setNewAddress({ ...newAddress, postalCode: e.target.value })} className="w-full px-4 py-3 border border-[var(--glass-border)] rounded-lg outline-none focus:border-[var(--brand-primary)]" />
+
+                                {validationError && (
+                                    <p className="text-xs text-red-500 font-medium px-1 flex items-center gap-1">
+                                        <span>⚠️</span> {validationError}
+                                    </p>
+                                )}
+
                                 <div className="flex gap-3">
-                                    <button onClick={handleAddAddress} className="flex-1 py-3 bg-[var(--brand-primary)] text-white font-medium rounded-lg">Add Address</button>
-                                    <button onClick={() => setShowAddAddress(false)} className="flex-1 py-3 border border-[var(--glass-border)] rounded-lg">Cancel</button>
+                                    <button
+                                        onClick={handleAddAddress}
+                                        disabled={isValidating}
+                                        className="flex-1 py-3 bg-[var(--brand-primary)] text-white font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                    >
+                                        {isValidating ? (
+                                            <>
+                                                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                                                Validating...
+                                            </>
+                                        ) : 'Add Address'}
+                                    </button>
+                                    <button
+                                        onClick={() => { setShowAddAddress(false); setValidationError(''); }}
+                                        disabled={isValidating}
+                                        className="flex-1 py-3 border border-[var(--glass-border)] rounded-lg disabled:opacity-50"
+                                    >
+                                        Cancel
+                                    </button>
                                 </div>
                             </div>
                         ) : (

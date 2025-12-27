@@ -50,7 +50,7 @@ const RecentActivityFeed: React.FC = () => {
 
 const AdminDashboard: React.FC = () => {
     const { user } = useAuth();
-    const { stores } = useMarketplace();
+    const { stores, updateStore } = useMarketplace();
 
     // System Health State (Hybrid: Real Client Metrics + Simulation)
     const [systemHealth, setSystemHealth] = useState({
@@ -346,6 +346,61 @@ const AdminDashboard: React.FC = () => {
                             </div>
                         </div>
                     </div>
+                </div>
+                <div className="bg-white rounded-xl border border-[var(--glass-border)] p-6 shadow-sm">
+                    <div className="flex items-center gap-3 mb-4">
+                        <span className="text-2xl">🍁</span>
+                        <div>
+                            <h3 className="font-bold text-[var(--text-main)]">Cornwall Demo Tool</h3>
+                            <p className="text-xs text-[var(--text-muted)]">Relocate all stores to Cornwall, ON for 20KM distance testing.</p>
+                        </div>
+                    </div>
+                    <button
+                        onClick={async () => {
+                            if (confirm('Relocate all stores to Cornwall, Ontario? This will update store addresses and coordinates.')) {
+                                const cornwallAddresses = [
+                                    { street: '301 Balmoral Ave', city: 'Cornwall', postalCode: 'K6H 3G6', lat: 45.034, lng: -74.717 },
+                                    { street: '840 McConnell Ave', city: 'Cornwall', postalCode: 'K6H 4M3', lat: 45.031, lng: -74.722 },
+                                    { street: '814 Sydney St', city: 'Cornwall', postalCode: 'K6H 3K6', lat: 45.027, lng: -74.729 },
+                                    { street: '7 Ninth St E', city: 'Cornwall', postalCode: 'K6H 6R3', lat: 45.025, lng: -74.731 },
+                                    { street: '123 Ninth St E', city: 'Cornwall', postalCode: 'K6H 2R1', lat: 45.023, lng: -74.733 },
+                                    { street: '201 Ninth St E', city: 'Cornwall', postalCode: 'K6H 2R2', lat: 45.022, lng: -74.735 },
+                                    { street: '31 Ninth St E', city: 'Cornwall', postalCode: 'K6H 2M7', lat: 45.024, lng: -74.732 },
+                                    { street: '1315 Second St E', city: 'Cornwall', postalCode: 'K6H 2B7', lat: 45.018, lng: -74.715 },
+                                    { street: '1301 Second St E', city: 'Cornwall', postalCode: 'K6H 2B7', lat: 45.019, lng: -74.716 },
+                                    { street: '609 Pitt St', city: 'Cornwall', postalCode: 'K6J 3R8', lat: 45.021, lng: -74.739 }
+                                ];
+
+                                const storeIds = Object.keys(stores);
+                                let successCount = 0;
+
+                                for (let i = 0; i < storeIds.length; i++) {
+                                    const addr = cornwallAddresses[i % cornwallAddresses.length];
+                                    // Add a tiny random offset to distinguish multiple stores at same address
+                                    const offsetLat = addr.lat + (Math.random() - 0.5) * 0.002;
+                                    const offsetLng = addr.lng + (Math.random() - 0.5) * 0.002;
+
+                                    try {
+                                        await updateStore(storeIds[i], {
+                                            address: addr.street,
+                                            city: addr.city,
+                                            province: 'ON',
+                                            postalCode: addr.postalCode,
+                                            coordinates: {
+                                                lat: offsetLat,
+                                                lng: offsetLng
+                                            }
+                                        });
+                                        successCount++;
+                                    } catch (e) { console.error(e); }
+                                }
+                                alert(`Successfully relocated ${successCount} stores to Cornwall!`);
+                            }
+                        }}
+                        className="w-full py-2.5 bg-gray-900 text-white font-bold rounded-lg hover:bg-black transition-colors text-sm"
+                    >
+                        Relocate Stores to Cornwall
+                    </button>
                 </div>
             </div>
         </div>

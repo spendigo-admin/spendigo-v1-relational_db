@@ -17,6 +17,8 @@ Following the latest development sprint, Spendigo has successfully bridged the g
 | SmartCart Price Comparison | ✅ Complete | `walkthrough_smartcart_savings.md` |
 | Order Tracking (Real-time) | ✅ Complete | Updated with Fulfillment Reasons |
 | In-App Notification Inbox | ✅ Complete | *Persistent popover implemented* |
+| Google SSO Integration | ✅ Complete | *Shopper & Merchant Sign-up supported* |
+| Profile Address Validation | ✅ Complete | *Integrated Nominatim API* |
 
 ### 1.2 Merchant Operations
 | Feature | Status | Documentation |
@@ -30,10 +32,12 @@ Following the latest development sprint, Spendigo has successfully bridged the g
 ### 1.3 Security & Infrastructure
 | Feature | Status | Documentation |
 |---------|--------|---------------|
+| Administrative Staff Isolation | ✅ Complete | *Dedicated staff collection implemented* |
 | Notification Persistence | ✅ Complete | `walkthrough_notification_persistence.md` |
 | Order Data Integrity (Mapping) | ✅ Complete | *Fixed item-name bug* |
 | Responsive Action Center | ✅ Complete | *Fixed button overlap* |
 | Platform Maintenance Mode | ✅ Complete | *Verified in codebase* |
+| User Governance (Suspend/Unsuspend) | ✅ Complete | *Implemented in Admin Dashboard* |
 
 ---
 
@@ -44,7 +48,6 @@ Following the latest development sprint, Spendigo has successfully bridged the g
 - **UI Overlap**: Fixed responsive overlap in the Merchant Action Center; now supports mobile and desktop views cleanly.
 
 ### 2.2 Remaining Non-Blocking Debt
-- **Mock SSO**: Still using mock Firebase Auth providers for social login.
 - **Hash Integrity**: Transition to canonical JSON serialization for the SHA-256 chain is pending.
 - **API Rate Limits**: Nominatim geocoding relies on external server status; consider caching or paid tier for high volume.
 

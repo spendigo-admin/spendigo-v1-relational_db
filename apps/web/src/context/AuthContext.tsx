@@ -4,6 +4,8 @@ import {
     createUserWithEmailAndPassword,
     signOut,
     onAuthStateChanged,
+    GoogleAuthProvider,
+    signInWithPopup,
     User as FirebaseUser
 } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
@@ -58,7 +60,7 @@ interface AuthContextType {
     isAuthenticated: boolean;
     login: (email: string, password: string) => Promise<boolean>;
     register: (userData: Partial<User> & { password: string }) => Promise<boolean>;
-    loginWithGoogle: () => Promise<boolean>;
+    loginWithGoogle: (targetRole?: 'consumer' | 'merchant') => Promise<boolean>;
     loginWithFacebook: () => Promise<boolean>;
     logout: () => void;
     loading: boolean;
@@ -92,37 +94,62 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         try {
             const userDoc = await getDoc(doc(db, 'users', uid));
             if (userDoc.exists()) {
-                // Ensure ID is set from the document key if missing in data
                 const data = userDoc.data();
+                let finalRole = data.role || 'consumer';
+                let finalAdminRole = data.adminRole;
+
+                // --- ISOLATED STAFF CHECK ---
+                // We check the 'staff' collection by email to resolve administrative status.
+                // This keeps admin management strictly separated from the platform users list.
+                const staffDoc = await getDoc(doc(db, 'staff', data.email.toLowerCase()));
+                if (staffDoc.exists()) {
+                    const staffData = staffDoc.data();
+                    if (staffData.status === 'active') {
+                        finalRole = 'admin';
+                        finalAdminRole = staffData.role;
+                    }
+                }
 
                 // 1. Maintenance Mode Check
                 // System Admins bypass this check.
-                if (data.role !== 'admin') {
+                if (finalRole !== 'admin') {
                     const settingsDoc = await getDoc(doc(db, 'settings', 'platform'));
                     if (settingsDoc.exists() && settingsDoc.data().maintenanceMode) {
                         await signOut(auth);
-                        alert(`🚧 System is in Maintenance Mode. (Blocked Role: ${data.role || 'unknown'}). Please try again later.`);
+                        alert(`🚧 System is in Maintenance Mode. Please try again later.`);
                         setUser(null);
                         return;
                     }
                 }
 
                 // 2. Security Check: If Merchant, verify Store Status
-                if (data.role === 'merchant' && data.storeId) {
+                if (finalRole === 'merchant' && data.storeId) {
                     const storeDoc = await getDoc(doc(db, 'stores', data.storeId));
                     if (storeDoc.exists()) {
                         const storeData = storeDoc.data();
                         if (storeData.status === 'suspended') {
-                            // BLOCK ACCESS
                             await signOut(auth);
                             alert('Creating a safe and trusted marketplace is our priority. Your store has been suspended. Please contact support@spendigo.ca.');
                             setUser(null);
-                            return; // Stop execution
+                            return;
                         }
                     }
                 }
 
-                setUser({ ...data, id: uid } as User);
+                // 3. Status Check: Enforce User Suspension
+                if (data.status === 'banned') {
+                    await signOut(auth);
+                    alert('Your account has been suspended due to a violation of our terms. Please contact support@spendigo.ca.');
+                    setUser(null);
+                    return;
+                }
+
+                setUser({
+                    ...data,
+                    id: uid,
+                    role: finalRole as 'consumer' | 'merchant' | 'admin',
+                    adminRole: finalAdminRole
+                } as User);
             } else {
                 console.error('User profile not found in Firestore');
                 setUser(null);
@@ -198,14 +225,54 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
     };
 
-    // Placeholder until we add Social Auth provider logic
-    const loginWithGoogle = async (): Promise<boolean> => {
-        alert('Google Login not yet configured with Firebase Key');
-        return false;
+    const loginWithGoogle = async (targetRole: 'consumer' | 'merchant' = 'consumer'): Promise<boolean> => {
+        try {
+            setLoading(true);
+            const provider = new GoogleAuthProvider();
+            const result = await signInWithPopup(auth, provider);
+            const user = result.user;
+
+            // Check if user exists in Firestore
+            const userDocRef = doc(db, 'users', user.uid);
+            const userDoc = await getDoc(userDocRef);
+
+            if (!userDoc.exists()) {
+                // New User: Create Profile with selected role
+                const newUser: any = {
+                    id: user.uid,
+                    email: user.email!,
+                    name: user.displayName || 'New User',
+                    role: targetRole,
+                    avatar: user.photoURL || (targetRole === 'merchant' ? '🏪' : '👤'),
+                    joinedAt: new Date().toISOString()
+                };
+
+                if (targetRole === 'merchant') {
+                    newUser.merchantRole = 'OWNER';
+                    newUser.subscriptionTier = 'free';
+                    newUser.storeName = `${newUser.name}'s Store`; // Default store name
+                }
+
+                await setDoc(userDocRef, newUser);
+            }
+
+            // Fetch profile (whether new or existing)
+            await fetchUserProfile(user.uid);
+            return true;
+        } catch (error: any) {
+            console.error('Google Login failed:', error);
+            if (error.code === 'auth/popup-closed-by-user') {
+                return false;
+            }
+            alert(`Google Login failed: ${error.message}`);
+            return false;
+        } finally {
+            setLoading(false);
+        }
     };
 
     const loginWithFacebook = async (): Promise<boolean> => {
-        alert('Facebook Login not yet configured');
+        alert("🎵 Facebook login is incomplete,\nA feature that we've yet to meet.\nUse Google or Email to proceed,\nAnd get the savings that you need! 🎵");
         return false;
     };
 

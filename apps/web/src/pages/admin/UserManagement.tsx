@@ -1,4 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { collection, query, getDocs, doc, setDoc, updateDoc, where, deleteDoc } from 'firebase/firestore';
+import { db } from '../../lib/firebase';
+import { useAuth } from '../../context/AuthContext';
 import '../../styles/design-system.css';
 
 // --- TYPES ---
@@ -18,13 +21,9 @@ interface AdminStaff {
     name: string;
     email: string;
     role: AdminRole;
-    lastActive: string;
+    status: 'active' | 'inactive';
+    joinedAt: string;
 }
-
-import { useEffect } from 'react';
-import { collection, query, getDocs, doc, updateDoc, where } from 'firebase/firestore';
-import { db } from '../../lib/firebase';
-import { useAuth } from '../../context/AuthContext';
 
 // --- ROLE DEFINITIONS (Least Privilege) ---
 const ROLE_DEFINITIONS: Record<AdminRole, { description: string; permissions: string[]; color: string }> = {
@@ -52,92 +51,155 @@ const ROLE_DEFINITIONS: Record<AdminRole, { description: string; permissions: st
 
 const UserManagement: React.FC = () => {
     const { user: currentUser } = useAuth();
-    const [activeTab, setActiveTab] = useState<'users' | 'staff'>('staff');
-    const [userFilter, setUserFilter] = useState<'all' | 'merchant' | 'consumer'>('all');
-    const [users, setUsers] = useState<User[]>([]);
+    const [activeTab, setActiveTab] = useState<'staff' | 'users'>('staff');
     const [staff, setStaff] = useState<AdminStaff[]>([]);
+    const [users, setUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
-    const [showInviteModal, setShowInviteModal] = useState(false);
+    const [showStaffModal, setShowStaffModal] = useState(false);
+    const [userFilter, setUserFilter] = useState<'all' | 'merchant' | 'consumer'>('all');
 
-    // Invite Form State
+    // Form State
     const [newStaff, setNewStaff] = useState({ name: '', email: '', role: 'SUPPORT' as AdminRole });
 
-    // Fetch Users
+    // Fetch Data
     useEffect(() => {
         const fetchData = async () => {
             setLoading(true);
             try {
-                const q = query(collection(db, 'users'));
-                const snapshot = await getDocs(q);
-                const allUsers = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as any));
+                // 1. Fetch Staff (Isolated Collection)
+                const staffQuery = query(collection(db, 'staff'));
+                const staffSnap = await getDocs(staffQuery);
+                const staffMembers = staffSnap.docs.map(d => ({
+                    id: d.id,
+                    ...d.data()
+                } as AdminStaff));
 
-                const staffMembers = allUsers.filter(u => u.role === 'admin').map((u: any) => ({
-                    id: u.id,
-                    name: u.name,
-                    email: u.email,
-                    role: u.adminRole || 'SUPPORT',
-                    lastActive: 'Unknown' // We don't track this yet
-                }));
+                // 2. Fetch Platform Users (Filtering out admins from the main list for clarity)
+                const usersQuery = query(collection(db, 'users'));
+                const usersSnap = await getDocs(usersQuery);
+                const allPlatformUsers = usersSnap.docs
+                    .map(d => ({ id: d.id, ...d.data() } as any))
+                    .filter((u: any) => u.role !== 'admin')
+                    .map((u: any) => ({
+                        id: u.id,
+                        email: u.email,
+                        role: u.role,
+                        status: 'active' as 'active' | 'banned',
+                        joinedAt: '2025' // Placeholder
+                    }));
 
-                // Consumers & Merchants
-                const normalUsers = allUsers.filter(u => u.role !== 'admin').map((u: any) => ({
-                    id: u.id,
-                    email: u.email,
-                    role: u.role,
-                    status: 'active' as 'active' | 'banned', // Default for now
-                    joinedAt: '2025' // Placeholder
-                }));
-
-                setStaff(staffMembers);
-                setUsers(normalUsers);
+                setStaff(staffMembers.sort((a, b) => a.role === 'SUPER_ADMIN' ? -1 : 1));
+                setUsers(allPlatformUsers);
             } catch (err) {
-                console.error("Error fetching users:", err);
+                console.error("Error fetching data:", err);
             } finally {
                 setLoading(false);
             }
         };
         fetchData();
-    }, [activeTab]); // Refetch on tab switch to keep fresh
+    }, [activeTab]);
 
-    // Helper function to filter users based on selected role
+    const handleAddStaff = async (e: React.FormEvent) => {
+        e.preventDefault();
+        try {
+            const staffRef = doc(db, 'staff', newStaff.email.toLowerCase());
+            const staffData: AdminStaff = {
+                id: `staff-${Date.now()}`,
+                name: newStaff.name,
+                email: newStaff.email.toLowerCase(),
+                role: newStaff.role,
+                status: 'active',
+                joinedAt: new Date().toISOString()
+            };
+
+            await setDoc(staffRef, staffData);
+
+            const usersRef = collection(db, 'users');
+            const userQuery = query(usersRef, where('email', '==', newStaff.email.toLowerCase()));
+            const userSnap = await getDocs(userQuery);
+
+            if (!userSnap.empty) {
+                const userDoc = userSnap.docs[0];
+                await updateDoc(doc(db, 'users', userDoc.id), {
+                    role: 'admin',
+                    adminRole: newStaff.role
+                });
+            }
+
+            setShowStaffModal(false);
+            setNewStaff({ name: '', email: '', role: 'SUPPORT' });
+            window.location.reload();
+        } catch (e) {
+            console.error(e);
+            alert('Failed to add staff member');
+        }
+    };
+
+    const removeStaff = async (email: string) => {
+        if (confirm(`Remove ${email} from Administrative Staff Pool?`)) {
+            try {
+                await deleteDoc(doc(db, 'staff', email.toLowerCase()));
+
+                const usersRef = collection(db, 'users');
+                const userQuery = query(usersRef, where('email', '==', email.toLowerCase()));
+                const userSnap = await getDocs(userQuery);
+
+                if (!userSnap.empty) {
+                    const userDoc = userSnap.docs[0];
+                    await updateDoc(doc(db, 'users', userDoc.id), {
+                        role: 'consumer',
+                        adminRole: null
+                    });
+                }
+
+                window.location.reload();
+            } catch (e) { console.error(e); }
+        }
+    };
+
+    const toggleUserBan = async (id: string, currentStatus: 'active' | 'banned') => {
+        const newStatus = currentStatus === 'active' ? 'banned' : 'active';
+        const action = newStatus === 'banned' ? 'SUSPEND' : 'ACTIVATE';
+
+        if (confirm(`Are you sure you want to ${action} this user?`)) {
+            try {
+                await updateDoc(doc(db, 'users', id), {
+                    status: newStatus
+                });
+
+                // Update local state
+                setUsers(prev => prev.map(u =>
+                    u.id === id ? { ...u, status: newStatus } : u
+                ));
+            } catch (e) {
+                console.error("Error updating user status:", e);
+                alert("Failed to update user status.");
+            }
+        }
+    };
+
     const getFilteredUsers = () => {
         if (userFilter === 'all') return users;
         return users.filter(u => u.role === userFilter);
     };
 
-    const toggleUserBan = (id: string) => {
-        // Implement Ban Logic later
-        alert('Ban functionality coming soon.');
-    };
-
-
-
-    // ... (keep Invite Logic but update to create user in next step if needed)
-    const handleInvite = (e: React.FormEvent) => {
-        e.preventDefault();
-        alert('Invite system requires SendGrid integration. Manually create the user for now.');
-        setShowInviteModal(false);
-    };
-
-    const removeStaff = async (id: string) => {
-        if (confirm('Demote this admin to consumer?')) {
-            try {
-                await updateDoc(doc(db, 'users', id), {
-                    role: 'consumer',
-                    adminRole: null
-                });
-                setActiveTab('users');
-            } catch (e) { console.error(e); }
-        }
-    };
-
-    if (loading) return <div className="p-10 text-center">Loading Users...</div>;
+    if (loading) return <div className="p-10 text-center">Loading Management Data...</div>;
 
     return (
         <div className="p-6 animate-fade-in pb-20">
-            {/* ... keeping header ... */}
             <div className="flex justify-between items-center mb-6">
-                <h1 className="text-2xl font-bold text-[var(--text-main)]">User & Access Management</h1>
+                <div>
+                    <h1 className="text-2xl font-bold text-[var(--text-main)]">Platform Governance</h1>
+                    <p className="text-sm text-[var(--text-muted)]">Manage isolated staff and monitor external users.</p>
+                </div>
+                {activeTab === 'staff' && (
+                    <button
+                        onClick={() => setShowStaffModal(true)}
+                        className="px-5 py-2.5 bg-black text-white font-bold rounded-xl shadow-xl hover:bg-gray-800 transition-all flex items-center gap-2"
+                    >
+                        <span className="text-lg">+</span> Add Admin Staff
+                    </button>
+                )}
             </div>
 
             {/* Tabs */}
@@ -147,181 +209,227 @@ const UserManagement: React.FC = () => {
                         onClick={() => setActiveTab('staff')}
                         className={`px-6 py-2 rounded-lg font-medium text-sm transition-all ${activeTab === 'staff' ? 'bg-white shadow-sm text-[var(--brand-primary)]' : 'text-[var(--text-muted)] hover:bg-white/50'}`}
                     >
-                        Admin Staff
+                        🔒 Admin Staff
                     </button>
                     <button
                         onClick={() => setActiveTab('users')}
                         className={`px-6 py-2 rounded-lg font-medium text-sm transition-all ${activeTab === 'users' ? 'bg-white shadow-sm text-[var(--brand-primary)]' : 'text-[var(--text-muted)] hover:bg-white/50'}`}
                     >
-                        Platform Users
+                        👥 Platform Users
                     </button>
                 </div>
 
-                {/* User Filter Dropdown (only show when Platform Users tab is active) */}
                 {activeTab === 'users' && (
                     <div className="flex items-center gap-3">
-                        <span className="text-sm font-medium text-[var(--text-muted)]">Filter by Role:</span>
+                        <span className="text-xs font-bold text-[var(--text-muted)] uppercase">Filter:</span>
                         <select
                             value={userFilter}
-                            onChange={(e) => setUserFilter(e.target.value as 'all' | 'merchant' | 'consumer')}
-                            className="px-4 py-2 border border-[var(--glass-border)] rounded-lg bg-white font-medium text-sm focus:ring-2 ring-[var(--brand-primary)] outline-none"
+                            onChange={(e) => setUserFilter(e.target.value as any)}
+                            className="text-sm border rounded-lg px-3 py-1.5 focus:ring-2 ring-[var(--brand-primary)] outline-none bg-white font-medium"
                         >
-                            <option value="all">All Users ({users.length})</option>
-                            <option value="merchant">Merchants Only ({users.filter(u => u.role === 'merchant').length})</option>
-                            <option value="consumer">Consumers Only ({users.filter(u => u.role === 'consumer').length})</option>
+                            <option value="all">All ({users.length})</option>
+                            <option value="merchant">Merchants ({users.filter(u => u.role === 'merchant').length})</option>
+                            <option value="consumer">Consumers ({users.filter(u => u.role === 'consumer').length})</option>
                         </select>
                     </div>
                 )}
             </div>
 
             {activeTab === 'staff' ? (
-                <div className="space-y-6">
-                    {/* Simplified Staff List */}
-                    <div className="bg-white rounded-xl border border-[var(--glass-border)] overflow-hidden shadow-sm">
-                        <table className="w-full text-left">
-                            <thead className="bg-[var(--surface-1)] text-[var(--text-muted)] text-xs uppercase font-bold border-b border-[var(--glass-border)]">
-                                <tr>
-                                    <th className="p-4">Name</th>
-                                    <th className="p-4">Role</th>
-                                    <th className="p-4 text-right">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {staff.map(member => (
-                                    <tr key={member.id} className="border-b">
-                                        <td className="p-4">
-                                            <div className="font-bold">{member.name}</div>
-                                            <div className="text-xs text-gray-500">{member.email}</div>
-                                        </td>
-                                        <td className="p-4">
-                                            <span className="text-xs font-bold px-2 py-1 bg-purple-100 text-purple-700 rounded uppercase">{member.role}</span>
-                                        </td>
-                                        <td className="p-4 text-right">
-                                            {member.id !== currentUser?.id && (
-                                                <button onClick={() => removeStaff(member.id)} className="text-xs text-red-600 font-bold hover:underline">Demote</button>
-                                            )}
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            ) : (
-                /* ACTUAL CUSTOMER TABLE */
-                <div className="bg-white rounded-xl border border-[var(--glass-border)] overflow-hidden shadow-sm">
-                    {/* Filter Info Badge */}
-                    {userFilter !== 'all' && (
-                        <div className="bg-blue-50 border-b border-blue-100 px-4 py-2 flex items-center gap-2">
-                            <span className="text-xs font-bold text-blue-700">🔍 Filtered View:</span>
-                            <span className="text-xs text-blue-600">
-                                Showing {getFilteredUsers().length} {userFilter === 'merchant' ? 'Merchants' : 'Consumers'}
-                            </span>
-                            <button
-                                onClick={() => setUserFilter('all')}
-                                className="ml-auto text-xs text-blue-600 hover:text-blue-800 font-bold underline"
-                            >
-                                Clear Filter
-                            </button>
-                        </div>
-                    )}
-
+                <div className="bg-white rounded-2xl border border-[var(--glass-border)] overflow-hidden shadow-sm">
                     <table className="w-full text-left">
-                        <thead className="bg-[var(--surface-1)] text-[var(--text-muted)] text-xs uppercase font-bold border-b border-[var(--glass-border)]">
+                        <thead className="bg-gray-50 text-[var(--text-muted)] text-[10px] uppercase font-bold tracking-wider border-b border-[var(--glass-border)]">
                             <tr>
-                                <th className="p-4">Email</th>
-                                <th className="p-4">Role</th>
-                                <th className="p-4">Store/Account</th>
-                                <th className="p-4">Joined</th>
+                                <th className="p-5">Staff Member</th>
+                                <th className="p-5">Permissions Level</th>
+                                <th className="p-5">Status</th>
+                                <th className="p-5">Joined</th>
+                                <th className="p-5 text-right">Actions</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            {getFilteredUsers().map(user => (
-                                <tr key={user.id} className="border-b hover:bg-gray-50 transition-colors">
-                                    <td className="p-4 font-medium">{user.email}</td>
-                                    <td className="p-4">
-                                        <span className={`text-xs px-2 py-1 rounded-full font-bold uppercase ${user.role === 'merchant' ? 'bg-orange-100 text-orange-700' : 'bg-blue-100 text-blue-700'}`}>
-                                            {user.role === 'merchant' ? '🏪 Merchant' : '🛒 Consumer'}
+                        <tbody className="divide-y divide-gray-100">
+                            {staff.length > 0 ? staff.map(member => (
+                                <tr key={member.id} className="group hover:bg-gray-50/50 transition-colors">
+                                    <td className="p-5">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 rounded-full bg-[var(--brand-primary)]/10 flex items-center justify-center text-lg">
+                                                {member.role === 'SUPER_ADMIN' ? '🛡️' : '👤'}
+                                            </div>
+                                            <div>
+                                                <div className="font-bold text-[var(--text-main)]">{member.name}</div>
+                                                <div className="text-xs text-[var(--text-muted)]">{member.email}</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td className="p-5">
+                                        <span className={`text-[10px] font-bold px-2 py-1 rounded-md border uppercase inline-block ${ROLE_DEFINITIONS[member.role].color}`}>
+                                            {member.role}
                                         </span>
                                     </td>
-                                    <td className="p-4 text-sm text-[var(--text-muted)]">
-                                        {user.role === 'merchant' ? (
-                                            <span className="text-xs bg-gray-100 px-2 py-1 rounded font-medium">Store ID: {(user as any).storeId || 'N/A'}</span>
+                                    <td className="p-5">
+                                        <div className="flex items-center gap-1.5">
+                                            <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                                            <span className="text-xs font-medium capitalize">{member.status}</span>
+                                        </div>
+                                    </td>
+                                    <td className="p-5 text-xs text-[var(--text-muted)] font-medium">
+                                        {new Date(member.joinedAt).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}
+                                    </td>
+                                    <td className="p-5 text-right">
+                                        {member.email !== currentUser?.email ? (
+                                            <button
+                                                onClick={() => removeStaff(member.email)}
+                                                className="text-xs text-red-500 font-bold hover:bg-red-50 px-3 py-1.5 rounded-lg border border-transparent hover:border-red-100 transition-all opacity-0 group-hover:opacity-100"
+                                            >
+                                                De-Authorize
+                                            </button>
                                         ) : (
-                                            <span className="text-xs">-</span>
+                                            <span className="text-xs text-[var(--text-muted)] italic px-3">Current User</span>
                                         )}
                                     </td>
-                                    <td className="p-4 text-xs text-[var(--text-muted)]">{user.joinedAt}</td>
                                 </tr>
-                            ))}
+                            )) : (
+                                <tr>
+                                    <td colSpan={5} className="p-20 text-center">
+                                        <div className="text-4xl mb-4 opacity-10">🛡️</div>
+                                        <p className="text-[var(--text-muted)] font-medium">No administrative staff authorized.</p>
+                                    </td>
+                                </tr>
+                            )}
                         </tbody>
                     </table>
-
-                    {/* Empty State */}
-                    {getFilteredUsers().length === 0 && (
-                        <div className="p-10 text-center text-[var(--text-muted)]">
-                            <div className="text-4xl mb-2">📭</div>
-                            <p className="font-medium">No {userFilter === 'merchant' ? 'merchants' : userFilter === 'consumer' ? 'consumers' : 'users'} found</p>
-                        </div>
-                    )}
+                </div>
+            ) : (
+                /* Platform Users View */
+                <div className="bg-white rounded-2xl border border-[var(--glass-border)] overflow-hidden shadow-sm">
+                    <table className="w-full text-left">
+                        <thead className="bg-gray-50 text-[var(--text-muted)] text-[10px] uppercase font-bold tracking-wider border-b border-[var(--glass-border)]">
+                            <tr>
+                                <th className="p-5">Account</th>
+                                <th className="p-5">Type</th>
+                                <th className="p-5">Status</th>
+                                <th className="p-5">Member Since</th>
+                                <th className="p-5 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                            {getFilteredUsers().length > 0 ? getFilteredUsers().map(user => (
+                                <tr key={user.id} className="group hover:bg-gray-50/50 transition-colors">
+                                    <td className="p-5">
+                                        <div className="font-bold text-[var(--text-main)]">{user.email}</div>
+                                        <div className="text-[10px] text-[var(--text-muted)] font-mono">UID: {user.id.substring(0, 12)}...</div>
+                                    </td>
+                                    <td className="p-5">
+                                        <span className={`text-[10px] font-bold px-2 py-1 rounded-md border uppercase ${user.role === 'merchant' ? 'bg-orange-50 text-orange-700 border-orange-100' : 'bg-blue-50 text-blue-700 border-blue-100'}`}>
+                                            {user.role}
+                                        </span>
+                                    </td>
+                                    <td className="p-5">
+                                        <div className="flex items-center gap-1.5">
+                                            <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                                            <span className="text-xs font-medium capitalize">{user.status}</span>
+                                        </div>
+                                    </td>
+                                    <td className="p-5 text-xs text-[var(--text-muted)] font-medium">
+                                        {user.joinedAt}
+                                    </td>
+                                    <td className="p-5 text-right">
+                                        <button
+                                            onClick={() => toggleUserBan(user.id, user.status)}
+                                            className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-all ${user.status === 'banned'
+                                                    ? 'text-green-600 bg-green-50 hover:bg-green-100 hover:text-green-700'
+                                                    : 'text-red-500 hover:bg-red-50 hover:text-red-700'
+                                                }`}
+                                        >
+                                            {user.status === 'banned' ? 'Un-ban' : 'Suspend'}
+                                        </button>
+                                    </td>
+                                </tr>
+                            )) : (
+                                <tr>
+                                    <td colSpan={5} className="p-20 text-center text-[var(--text-muted)]">No users found for this filter.</td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
                 </div>
             )}
 
+            {/* Helper Section */}
+            <div className="mt-8 p-6 bg-gray-50 rounded-2xl border border-gray-200 flex gap-4 items-start">
+                <span className="text-2xl mt-1">💡</span>
+                <div>
+                    <h3 className="font-bold text-gray-900 mb-1">Administrative vs Platform Accounts</h3>
+                    <p className="text-sm text-gray-800 opacity-70 leading-relaxed">
+                        Administrators manage the platform through an authorized email pool. Platform users are consumers and merchants
+                        interacting with the marketplace. You can monitor platform activity here, while staff permissions are managed
+                        exclusively in the staff tab.
+                    </p>
+                </div>
+            </div>
 
-            {/* Invite Modal */}
-            {
-                showInviteModal && (
-                    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center animate-fade-in p-4">
-                        <div className="bg-white p-6 rounded-2xl w-full max-w-md shadow-2xl relative">
-                            <h2 className="text-xl font-bold mb-4">Invite New Administrator</h2>
-                            <form onSubmit={handleInvite} className="space-y-4">
-                                <div>
-                                    <label className="block text-sm font-medium mb-1">Full Name</label>
-                                    <input
-                                        required
-                                        className="w-full p-2 border rounded-lg focus:ring-2 ring-[var(--brand-primary)] outline-none"
-                                        value={newStaff.name} onChange={e => setNewStaff({ ...newStaff, name: e.target.value })}
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium mb-1">Email Address</label>
-                                    <input
-                                        type="email" required
-                                        className="w-full p-2 border rounded-lg focus:ring-2 ring-[var(--brand-primary)] outline-none"
-                                        value={newStaff.email} onChange={e => setNewStaff({ ...newStaff, email: e.target.value })}
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium mb-1">Assign Role</label>
-                                    <select
-                                        className="w-full p-2 border rounded-lg focus:ring-2 ring-[var(--brand-primary)] outline-none bg-white"
-                                        value={newStaff.role} onChange={e => setNewStaff({ ...newStaff, role: e.target.value as AdminRole })}
-                                    >
-                                        {Object.keys(ROLE_DEFINITIONS).map(role => (
-                                            <option key={role} value={role}>{role} - {ROLE_DEFINITIONS[role as AdminRole].description.substring(0, 30)}...</option>
-                                        ))}
-                                    </select>
-                                </div>
-
-                                <div className="pt-2">
-                                    <h4 className="text-xs font-bold text-[var(--text-muted)] uppercase mb-2">Granted Permissions:</h4>
-                                    <div className="flex flex-wrap gap-1 p-2 bg-[var(--surface-1)] rounded border border-[var(--glass-border)]">
-                                        {ROLE_DEFINITIONS[newStaff.role].permissions.map(p => (
-                                            <span key={p} className="text-[10px] bg-gray-200 text-gray-700 px-1 rounded font-mono">{p}</span>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                <div className="flex justify-end gap-3 mt-6">
-                                    <button type="button" onClick={() => setShowInviteModal(false)} className="px-4 py-2 font-bold text-gray-500 hover:bg-gray-100 rounded-lg">Cancel</button>
-                                    <button type="submit" className="px-4 py-2 bg-[var(--brand-primary)] text-white font-bold rounded-lg hover:brightness-110">Send Invite</button>
-                                </div>
-                            </form>
+            {/* Add Staff Modal */}
+            {showStaffModal && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-fade-in">
+                    <div className="bg-white p-8 rounded-3xl w-full max-w-md shadow-2xl relative border border-[var(--glass-border)]">
+                        <div className="mb-6">
+                            <h2 className="text-2xl font-bold text-[var(--text-main)] mb-1">Authorize New Staff</h2>
+                            <p className="text-sm text-[var(--text-muted)]">Grant administrative privileges to an account.</p>
                         </div>
+
+                        <form onSubmit={handleAddStaff} className="space-y-5">
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider ml-1">Staff Name</label>
+                                <input
+                                    required
+                                    placeholder="e.g. John Doe"
+                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:ring-4 ring-[var(--brand-primary)]/10 focus:border-[var(--brand-primary)] outline-none transition-all"
+                                    value={newStaff.name} onChange={e => setNewStaff({ ...newStaff, name: e.target.value })}
+                                />
+                            </div>
+
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider ml-1">Email Address (Auth ID)</label>
+                                <input
+                                    type="email" required
+                                    placeholder="admin@spendigo.ca"
+                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:ring-4 ring-[var(--brand-primary)]/10 focus:border-[var(--brand-primary)] outline-none transition-all"
+                                    value={newStaff.email} onChange={e => setNewStaff({ ...newStaff, email: e.target.value })}
+                                />
+                            </div>
+
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider ml-1">Access Level</label>
+                                <select
+                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:ring-4 ring-[var(--brand-primary)]/10 focus:border-[var(--brand-primary)] outline-none transition-all bg-white cursor-pointer"
+                                    value={newStaff.role} onChange={e => setNewStaff({ ...newStaff, role: e.target.value as AdminRole })}
+                                >
+                                    {Object.keys(ROLE_DEFINITIONS).map(role => (
+                                        <option key={role} value={role}>{role}</option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div className="flex gap-3 pt-4">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowStaffModal(false)}
+                                    className="flex-1 py-3 font-bold text-[var(--text-muted)] hover:bg-gray-100 rounded-xl transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="flex-1 py-3 bg-black text-white font-bold rounded-xl shadow-lg hover:bg-gray-800 transition-all font-bold"
+                                >
+                                    Authorize Access
+                                </button>
+                            </div>
+                        </form>
                     </div>
-                )
-            }
-        </div >
+                </div>
+            )}
+        </div>
     );
 };
 

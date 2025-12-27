@@ -46,7 +46,7 @@ const StoreList: React.FC = () => {
                 setAddress(defaultAddr.label || "Home");
 
                 try {
-                    const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(addrStr)}`);
+                    const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(addrStr)}&countrycodes=ca`);
                     const data = await response.json();
                     if (data && data.length > 0) {
                         setUserCoords({
@@ -94,14 +94,25 @@ const StoreList: React.FC = () => {
         setIsLocating(true);
 
         try {
-            // Check if it's a Canadian postal code pattern
+            // Improved Canadian Postal Code Handling
             const postalCodeRegex = /^[A-Za-z]\d[A-Za-z][ -]?\d[A-Za-z]\d$/;
             let query = address;
+
             if (postalCodeRegex.test(address)) {
-                query = `${address}, Canada`;
+                const fsa = address.substring(0, 3).toUpperCase();
+                let cityHint = "";
+
+                // Heuristic mapping for dense urban areas only
+                if (fsa.startsWith('H')) cityHint = "Montreal";
+                else if (fsa.startsWith('M')) cityHint = "Toronto";
+
+                // Search for FSA + City if confident, otherwise just FSA.
+                // Note: Adding "Canada" string sometimes confuses the geocoder when countrycodes=ca is set.
+                query = cityHint ? `${fsa} ${cityHint}` : fsa;
             }
 
-            const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`);
+            // Limit search to Canada to prevent US matches
+            const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=ca`);
             const data = await response.json();
 
             if (data && data.length > 0) {
@@ -114,7 +125,7 @@ const StoreList: React.FC = () => {
                     setAddress(address.toUpperCase());
                 }
             } else {
-                alert('Location not found. Please try a different postal code or address.');
+                alert(`Location not found for "${query}". Please try entering "City, Province" instead.`);
             }
         } catch (error) {
             console.error('Search error:', error);
