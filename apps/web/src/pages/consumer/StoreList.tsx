@@ -95,23 +95,44 @@ const StoreList: React.FC = () => {
 
         try {
             // Improved Canadian Postal Code Handling
-            const postalCodeRegex = /^[A-Za-z]\d[A-Za-z][ -]?\d[A-Za-z]\d$/;
+            // Matches: "K6V", "K6V5T3", "K6V 5T3", "K6V-5T3"
+            const postalCodeRegex = /^([A-Za-z]\d[A-Za-z])\s?[-]?\s?(\d[A-Za-z]\d)?$/;
             let query = address;
 
-            if (postalCodeRegex.test(address)) {
-                const fsa = address.substring(0, 3).toUpperCase();
-                let cityHint = "";
+            const match = address.trim().match(postalCodeRegex);
 
-                // Heuristic mapping for dense urban areas only
-                if (fsa.startsWith('H')) cityHint = "Montreal";
-                else if (fsa.startsWith('M')) cityHint = "Toronto";
+            if (match) {
+                const fsa = match[1].toUpperCase();
 
-                // Search for FSA + City if confident, otherwise just FSA.
-                // Note: Adding "Canada" string sometimes confuses the geocoder when countrycodes=ca is set.
-                query = cityHint ? `${fsa} ${cityHint}` : fsa;
+                // 1. Check Exact Local FSA Map
+                // We dynamically import to avoid loading the large object unless searching
+                const { CANADIAN_FSA_MAP } = await import('../../data/canadianFSAs');
+
+                if (CANADIAN_FSA_MAP[fsa]) {
+                    query = CANADIAN_FSA_MAP[fsa];
+                } else {
+                    // 2. Fallback: First-Letter Province Hint
+                    const PROVINCE_MAP: Record<string, string> = {
+                        'A': 'NL', 'B': 'NS', 'C': 'PE', 'E': 'NB',
+                        'G': 'QC', 'H': 'QC', 'J': 'QC',
+                        'K': 'ON', 'L': 'ON', 'M': 'ON', 'N': 'ON', 'P': 'ON',
+                        'R': 'MB', 'S': 'SK', 'T': 'AB', 'V': 'BC',
+                        'X': 'NU', 'Y': 'YT'
+                    };
+
+                    const province = PROVINCE_MAP[fsa[0]];
+                    if (province) {
+                        // "K6Z, ON, Canada" is better than just "K6Z"
+                        query = `${fsa}, ${province}, Canada`;
+                    } else {
+                        // Absolute fallback
+                        query = `${fsa}, Canada`;
+                    }
+                }
             }
 
             // Limit search to Canada to prevent US matches
+            console.log(`Searching location for: ${query}`);
             const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=ca`);
             const data = await response.json();
 
@@ -121,11 +142,24 @@ const StoreList: React.FC = () => {
                     lat: parseFloat(lat),
                     lng: parseFloat(lon)
                 });
-                if (postalCodeRegex.test(address)) {
+                // Update display to standard format if it was a postal code
+                if (match) {
                     setAddress(address.toUpperCase());
                 }
             } else {
-                alert(`Location not found for "${query}". Please try entering "City, Province" instead.`);
+                // If the mapped query failed (e.g. Nominatim doesn't know the exact string), fail gracefully.
+                // Try raw address one last time if query was modified
+                if (query !== address) {
+                    const fallbackResponse = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&countrycodes=ca`);
+                    const fallbackData = await fallbackResponse.json();
+                    if (fallbackData && fallbackData.length > 0) {
+                        const { lat, lon } = fallbackData[0];
+                        setUserCoords({ lat: parseFloat(lat), lng: parseFloat(lon) });
+                        return;
+                    }
+                }
+
+                alert(`Location not found for "${address}". \n\nTip: Try entering "City, Province" directly (e.g. "Brockville, ON").`);
             }
         } catch (error) {
             console.error('Search error:', error);
