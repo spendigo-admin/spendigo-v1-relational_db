@@ -130,7 +130,19 @@ service cloud.firestore {
       allow delete: if isAdmin() || (isAuthenticated() && resource.data.authorId == request.auth.uid);
     }
     
-    // 9. LOGS (Audit)
+    // 9. CARTS
+    // - Read/Write: Owner only.
+    match /carts/{cartId} {
+      allow read, write: if isOwner(cartId);
+    }
+
+    // 10. WISHLISTS
+    // - Read/Write: Owner only.
+    match /wishlists/{wishlistId} {
+      allow read, write: if isOwner(wishlistId);
+    }
+
+    // 10. LOGS (Audit)
     // - Read: Admin only.
     // - Write: Authenticated users (AuditContext).
     match /audit_logs/{logId} {

@@ -19,6 +19,15 @@ const Login = () => {
     // Redirect immediately when user is authenticated
     useEffect(() => {
         if (user) {
+            // Check for returnUrl to preserve navigation flow
+            const searchParams = new URLSearchParams(location.search);
+            const returnUrl = searchParams.get('returnUrl');
+
+            if (returnUrl) {
+                navigate(returnUrl, { replace: true });
+                return;
+            }
+
             // User is authenticated, redirect based on role
             if (user.role === 'admin') {
                 navigate('/admin/dashboard', { replace: true });
@@ -28,7 +37,7 @@ const Login = () => {
                 navigate('/', { replace: true });
             }
         }
-    }, [user, navigate]);
+    }, [user, navigate, location]);
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
