@@ -5,6 +5,7 @@ import { useOrders, Order } from '../../context/OrderContext';
 import { useMarketplace } from '../../context/MarketplaceContext';
 import { validateOrderIntegrity } from '../../utils/IntegrityUtils';
 import NotificationPopover from '../../components/NotificationPopover';
+import ReviewForm from '../../components/ReviewForm';
 
 const MerchantOrders: React.FC = () => {
     const { can, user } = useAuth();
@@ -555,6 +556,13 @@ const MerchantOrders: React.FC = () => {
                                             </button>
                                         </div>
                                     </div>
+                                    {/* Customer Review Section (Only independent logic) */}
+                                    {selectedOrder.status === 'delivered' && hasWriteAccess && (
+                                        <div className="pt-3 border-t border-gray-200">
+                                            <h4 className="text-[10px] text-[var(--text-muted)] font-bold mb-2 uppercase">Review Customer</h4>
+                                            <ReviewForm targetId={selectedOrder.customerId || 'unknown'} targetType="shopper" />
+                                        </div>
+                                    )}
                                 </div>
                             )}
 

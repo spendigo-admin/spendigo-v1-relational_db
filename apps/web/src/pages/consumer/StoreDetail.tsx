@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
 import { useMarketplace } from '../../context/MarketplaceContext';
+import ReviewList from '../../components/ReviewList';
+import ReviewForm from '../../components/ReviewForm';
 import '../../styles/design-system.css';
 
 const StoreDetail: React.FC = () => {
@@ -12,7 +14,7 @@ const StoreDetail: React.FC = () => {
 
     const store = getStore(id || '') || null;
 
-    const [activeTab, setActiveTab] = useState<'products' | 'flyer' | 'offers'>('products');
+    const [activeTab, setActiveTab] = useState<'products' | 'flyer' | 'offers' | 'reviews'>('products');
     const [activeCategory, setActiveCategory] = useState('All');
 
     if (!store) {
@@ -110,6 +112,12 @@ const StoreDetail: React.FC = () => {
                         className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${activeTab === 'offers' ? 'bg-[var(--brand-primary)] text-white' : 'bg-[var(--surface-2)] text-[var(--text-muted)]'}`}
                     >
                         🔥 Deals {((store.oneDayOffers?.length || 0) + (store.saleItems?.length || 0) > 0) && '🔴'}
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('reviews')}
+                        className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${activeTab === 'reviews' ? 'bg-[var(--brand-primary)] text-white' : 'bg-[var(--surface-2)] text-[var(--text-muted)]'}`}
+                    >
+                        ⭐ Reviews
                     </button>
                 </div>
             </div>
@@ -258,6 +266,19 @@ const StoreDetail: React.FC = () => {
                             <p className="text-[var(--text-muted)]">No special deals available right now.</p>
                         </div>
                     )}
+                </div>
+            )}
+
+            {activeTab === 'reviews' && (
+                <div className="p-4 max-w-2xl mx-auto space-y-8">
+                    {/* Review Form */}
+                    <ReviewForm targetId={store.id} targetType="store" />
+
+                    {/* Review List */}
+                    <div>
+                        <h3 className="text-lg font-bold text-[var(--text-main)] mb-4">Customer Reviews</h3>
+                        <ReviewList targetId={store.id} targetType="store" />
+                    </div>
                 </div>
             )}
         </div>

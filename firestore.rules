@@ -120,7 +120,17 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
     
-    // 8. LOGS (Audit)
+    // 8. REVIEWS
+    // - Read: Public.
+    // - Create: Authenticated users.
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow create: if isAuthenticated();
+      // Only author or admin can delete/edit (if we allowed editing)
+      allow delete: if isAdmin() || (isAuthenticated() && resource.data.authorId == request.auth.uid);
+    }
+    
+    // 9. LOGS (Audit)
     // - Read: Admin only.
     // - Write: Authenticated users (AuditContext).
     match /audit_logs/{logId} {

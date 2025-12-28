@@ -146,10 +146,14 @@ const MerchantSettings: React.FC = () => {
 
     // Initialize team if empty (Mock behavior)
     useEffect(() => {
-        if (!stores[storeId]?.team) {
-            updateStoreTeam(storeId, INITIAL_TEAM);
+        const store = stores[storeId];
+        if (store) {
+            // Restore team if missing OR empty (should always have at least Owner)
+            if (!store.team || store.team.length === 0) {
+                updateStoreTeam(storeId, INITIAL_TEAM);
+            }
         }
-    }, [storeId]);
+    }, [storeId, stores]);
 
     // Initialize state from Context
     useEffect(() => {
@@ -579,8 +583,8 @@ const MerchantSettings: React.FC = () => {
                             onClick={handleGeocode}
                             disabled={isLocatingStatus === 'loading'}
                             className={`px-4 py-2 rounded-lg font-bold transition-all flex items-center gap-2 ${isLocatingStatus === 'success' ? 'bg-green-100 text-green-700' :
-                                    isLocatingStatus === 'error' ? 'bg-red-100 text-red-700' :
-                                        'bg-blue-600 text-white hover:brightness-110 shadow-md'
+                                isLocatingStatus === 'error' ? 'bg-red-100 text-red-700' :
+                                    'bg-blue-600 text-white hover:brightness-110 shadow-md'
                                 }`}
                         >
                             {isLocatingStatus === 'loading' ? '⏳ Verifying...' :

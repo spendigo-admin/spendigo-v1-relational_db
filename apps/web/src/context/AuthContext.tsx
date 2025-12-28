@@ -144,10 +144,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                     return;
                 }
 
+                // Use defaults for potentially missing fields in legacy data
+                const merchantRole = data.role === 'merchant' ? (data.merchantRole || 'OWNER') : undefined;
+
                 setUser({
                     ...data,
                     id: uid,
                     role: finalRole as 'consumer' | 'merchant' | 'admin',
+                    merchantRole: merchantRole,
                     adminRole: finalAdminRole
                 } as User);
             } else {
