@@ -1,0 +1,85 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build artifacts
+dist/
+build/
+out/
+*.tsbuildinfo
+.turbo/
+
+# Firebase
+.firebase/
+.firebaserc
+firebase-debug.log
+firebase-debug.*.log
+ui-debug.log
+firestore-debug.log
+database-debug.log
+pubsub-debug.log
+
+# Secrets & Environment
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+services/api/.runtimeconfig.json
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# IDE & Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# OS
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Testing
+coverage/
+*.lcov
+.nyc_output
+
+# Capacitor
+.capacitor/
+ios/App/Pods/
+ios/App/public/
+android/app/release/
+android/app/debug/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.bak
+*.swp
+
+# Documentation artifacts
+docs/.artifacts/
+
+# User data exports (contains sensitive info)
+*-export.json
+users-export.json
+
+# Backup files
+*.backup
+*.bak
+firestore.rules.backup
+firestore.rules.bak
+firestore.seed.rules
