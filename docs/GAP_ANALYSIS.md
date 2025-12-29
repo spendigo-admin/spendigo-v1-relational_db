@@ -1,101 +1,253 @@
 # Spendigo Gap Analysis Report
-**Date**: 2025-12-26
-**Version**: 1.3 (Real-Time Location & Fulfillment Update)
+**Date**: 2025-12-29  
+**Version**: 2.0 (Stripe Integration & Billing Update)
 
 ## Executive Summary
-Following the latest development sprint, Spendigo has successfully bridged the gap in **Real-Time Logistics** and **Merchant-Consumer Communication**. The platform now supports autonomous store geocoding, granular fulfillment states (On Hold/Scheduled), and a cross-role notification system. Documentation coverage remains at 100%, now including these advanced operational features.
+
+Following the recent implementation of **Stripe Payment Integration** and **Merchant Billing Infrastructure**, Spendigo has transitioned from a simulated marketplace to a **production-ready SaaS platform** with real-time subscription management. The platform now features authentic payment processing, webhook-driven tier upgrades, and transparent billing history. This report identifies remaining gaps and prioritizes next steps for commercial launch.
 
 ---
 
-## 1. Verified & Documented Features ✅
+## 1. Completed Features ✅
 
 ### 1.1 Core Consumer Experience
-| Feature | Status | Documentation |
-|---------|--------|---------------|
-| Real-Time Geocoding (Nominatim) | ✅ Complete | *Integrated in StoreList* |
-| Location-Based Proximity Search | ✅ Complete | *Haversine formula verified* |
-| SmartCart Price Comparison | ✅ Complete | `walkthrough_smartcart_savings.md` |
-| Order Tracking (Real-time) | ✅ Complete | Updated with Fulfillment Reasons |
-| In-App Notification Inbox | ✅ Complete | *Persistent popover implemented* |
-| Google SSO Integration | ✅ Complete | *Shopper & Merchant Sign-up supported* |
-| Profile Address Validation | ✅ Complete | *Integrated Nominatim API* |
+| Feature | Status | Implementation Details |
+|---------|--------|------------------------|
+| Real-Time Geocoding (Nominatim) | ✅ Complete | Location-based store search with distance calculation |
+| SmartCart Price Comparison | ✅ Complete | Multi-store basket optimization |
+| Order Tracking (Real-time) | ✅ Complete | Firestore `onSnapshot` listeners for instant updates |
+| In-App Notification Inbox | ✅ Complete | Persistent popover with read/unread states |
+| Google SSO Integration | ✅ Complete | Social login for consumers and merchants |
+| Profile Address Validation | ✅ Complete | Nominatim API integration |
+| Wishlist Management | ✅ Complete | Price alerts and persistent storage |
+| Multi-Store Checkout | ✅ Complete | Atomic batch writes to Firestore |
 
 ### 1.2 Merchant Operations
-| Feature | Status | Documentation |
-|---------|--------|---------------|
-| Fulfillment Controls (Hold/Resume) | ✅ Complete | `walkthrough_order_management.md` |
-| Scheduled Pickup/Ready Times | ✅ Complete | *Integrated in Action Center* |
-| Mandatory Rejection Reasons | ✅ Complete | *Verified in cancellation flow* |
-| Real-Time Order Notifications | ✅ Complete | *Verified via bell icon badge* |
-| Digital Flyer Creation | ✅ Complete | `walkthrough_flyer_creation.md` |
+| Feature | Status | Implementation Details |
+|---------|--------|------------------------|
+| **Stripe Subscription System** | ✅ Complete | Real Stripe Checkout with Core ($49) and Growth ($99) tiers |
+| **Real-Time Tier Activation** | ✅ Complete | Webhook-driven `onSnapshot` updates in AuthContext |
+| **Payment History Portal** | ✅ Complete | Last 12 invoices with PDF download links |
+| Fulfillment Controls (Hold/Resume) | ✅ Complete | Granular order state management |
+| Scheduled Pickup/Ready Times | ✅ Complete | Merchant-defined ETA system |
+| Mandatory Rejection Reasons | ✅ Complete | Audit trail for cancelled orders |
+| Real-Time Order Notifications | ✅ Complete | Bell icon with badge counter |
+| Digital Flyer Creation | ✅ Complete | Visual flyer builder with product highlighting |
+| Team Invitation System | ✅ Complete | Email-based RBAC (Owner/Manager/Staff) |
+| Inventory Management | ✅ Complete | Direct catalog integration |
 
 ### 1.3 Security & Infrastructure
+| Feature | Status | Implementation Details |
+|---------|--------|------------------------|
+| **Stripe Webhook Security** | ✅ Complete | Verified signature checking with `whsec_...` secrets |
+| **Developer Webhook Testing** | ✅ Complete | Custom `npm run stripe:listen` script |
+| SHA-256 Audit Ledger | ✅ Complete | Tamper-evident hash chain for admin actions |
+| Firestore Security Rules | ⚠️ Partial | Basic RBAC implemented; production hardening pending |
+| Platform Maintenance Mode | ✅ Complete | Global platform lockdown capability |
+| User Governance (Suspend/Ban) | ✅ Complete | Admin controls for store and user moderation |
+| SSL/HTTPS Local Dev | ✅ Complete | Custom certificate for production parity |
+| Monorepo Architecture | ✅ Complete | Turborepo with Web + Mobile + Cloud Functions |
+
+### 1.4 Documentation & Developer Experience
 | Feature | Status | Documentation |
-|---------|--------|---------------|
-| Administrative Staff Isolation | ✅ Complete | *Dedicated staff collection implemented* |
-| Notification Persistence | ✅ Complete | `walkthrough_notification_persistence.md` |
-| Order Data Integrity (Mapping) | ✅ Complete | *Fixed item-name bug* |
-| Responsive Action Center | ✅ Complete | *Fixed button overlap* |
-| Platform Maintenance Mode | ✅ Complete | *Verified in codebase* |
-| User Governance (Suspend/Unsuspend) | ✅ Complete | *Implemented in Admin Dashboard* |
+|---------|--------|----------------|
+| **Billing Operations Guide** | ✅ Complete | `docs/MERCHANT_BILLING.md` |
+| Architecture Docs | ✅ Complete | `docs/ARCHITECTURE.md` |
+| Database Schema | ✅ Complete | `docs/SCHEMA.md` |
+| Tech Stack Reference | ✅ Complete | `docs/TECH_STACK.md` |
+| Mobile Deployment Guide | ✅ Complete | `docs/MOBILE_DEPLOYMENT.md` |
+| Gap Analysis (This Document) | ✅ Complete | `docs/GAP_ANALYSIS.md` |
 
 ---
 
-## 2. Technical Debt & Resolved Issues 🔧
+## 2. Identified Gaps 🔍
 
-### 2.1 Resolved
-- **Fixed Order Mapping**: Resolved issue where `productName` was missing in checkout objects, ensuring merchants see full item details.
-- **UI Overlap**: Fixed responsive overlap in the Merchant Action Center; now supports mobile and desktop views cleanly.
+### 2.1 Critical (Blockers for Production Launch)
 
-### 2.2 Remaining Non-Blocking Debt
-- **Hash Integrity**: Transition to canonical JSON serialization for the SHA-256 chain is pending.
-- **API Rate Limits**: Nominatim geocoding relies on external server status; consider caching or paid tier for high volume.
+#### **Payment & Financial**
+- [ ] **Stripe Connect Integration**: Currently using direct Stripe payments. For marketplace compliance, implement **Stripe Connect** to split payments between platform fee and merchant payouts.
+- [ ] **Refund System**: No UI or backend logic for processing refunds when orders are cancelled after payment.
+- [ ] **Failed Payment Handling**: Webhook handles `checkout.session.completed` but not `invoice.payment_failed` for subscription renewals.
+- [ ] **Subscription Cancellation Portal**: Merchants cannot self-cancel subscriptions. Currently requires manual intervention.
+
+#### **Security & Compliance**
+- [ ] **Production Firestore Rules**: Current rules are in "development mode." Need to implement granular RBAC rules for all collections.
+- [ ] **PCI Compliance Documentation**: No formal documentation of PCI-DSS compliance measures.
+- [ ] **Privacy Policy Update**: Current privacy policy doesn't mention Stripe or payment data handling.
+- [ ] **Terms of Service Update**: No mention of subscription terms, refund policies, or merchant agreements.
+
+#### **Infrastructure**
+- [ ] **Production Deployment**: Platform has never been deployed to a public URL. Firebase Hosting or Vercel deployment pending.
+- [ ] **Environment Variables Management**: `.runtimeconfig.json` is in version control (security risk). Need to implement proper secrets management.
+- [ ] **Error Monitoring**: No Sentry or error tracking for production issues.
+- [ ] **Performance Monitoring**: No analytics on page load times, API latency, or user flows.
 
 ---
 
-## 3. Future Enhancements 🔮
+### 2.2 High Priority (Launch Readiness)
 
-### 3.1 Advanced Geolocation
-- **Offline Map Caching**: Enable geodetection for shoppers with intermittent connectivity.
-- **Route Optimization**: Basic routing for delivery-enabled stores.
+#### **User Experience**
+- [ ] **Email Notifications**: Users only see in-app notifications. No email confirmations for:
+  - Order placement
+  - Order status changes
+  - Payment receipts
+  - Subscription upgrades
+- [ ] **Password Reset Flow**: Firebase Auth provides the backend, but no custom UI for password reset.
+- [ ] **Onboarding Experience**: No guided tour for first-time merchants or consumers.
+- [ ] **Help/Support System**: No contact form, FAQ, or help center.
 
-### 3.2 Automated Fulfillment
-- **Auto-Cancel**: Automatic cancellation/refund (Stripe) for orders on hold for >24 hours.
+#### **Merchant Tools**
+- [ ] **Analytics Dashboard**: Subscription tiers include "Advanced Analytics," but this feature doesn't exist yet.
+- [ ] **Promo Code System**: Growth tier promises "Custom Promo Codes," but no UI or logic is implemented.
+- [ ] **Sales Reports**: No downloadable CSV/PDF reports for merchants to track revenue.
+- [ ] **Inventory Alerts**: No low-stock warnings or alerts.
+
+#### **Admin Tools**
+- [ ] **Financial Dashboard**: No admin view of platform revenue, subscription metrics, or commission tracking.
+- [ ] **Merchant Approval Workflow**: Stores can be suspended, but there's no formal approval process for new merchant sign-ups.
+- [ ] **Audit Log Search/Filter**: Audit logs exist but can't be searched or filtered by date/user/action.
+
+---
+
+### 2.3 Medium Priority (Feature Completeness)
+
+#### **Consumer Features**
+- [ ] **Delivery Integration**: Platform has a "deliveryEnabled" flag, but no actual delivery driver system or 3rd-party integration (e.g., Uber Direct).
+- [ ] **Saved Payment Methods**: Users must re-enter card details for every order.
+- [ ] **Order Re-ordering**: No "Buy Again" button for past orders.
+- [ ] **Product Reviews**: Schema exists, but no UI for consumers to leave reviews.
+- [ ] **Push Notifications**: Mobile app is ready, but no Firebase Cloud Messaging (FCM) integration.
+
+#### **Merchant Features**
+- [ ] **Bulk Product Upload**: Merchants add products one-by-one. No CSV import.
+- [ ] **Multi-Location Support**: Platform assumes 1 store per merchant. No franchise/chain support.
+- [ ] **Custom Store Hours**: "Operating Hours" field exists but is a text string, not a structured schedule.
+
+---
+
+### 2.4 Low Priority (Nice-to-Have)
+
+- [ ] **Loyalty/Rewards Program**: No points or rewards system.
+- [ ] **Gift Card/Credit System**: No platform wallet or gift cards.
+- [ ] **Social Sharing**: No "Share this product" or social media integration.
+- [ ] **Advanced Search Filters**: Search exists, but no filters by category, price range, or dietary tags.
+- [ ] **Internationalization (i18n)**: Platform is English-only (acceptable for Canadian market).
+- [ ] **Dark Mode**: UI is light-themed only.
+
+---
+
+## 3. Technical Debt 🔧
+
+### 3.1 Code Quality
+- [ ] **TypeScript Strict Mode**: `strict: true` is not enabled in `tsconfig.json`. Many `any` types.
+- [ ] **Unit Tests**: Zero test coverage. Vitest is configured but no tests exist.
+- [ ] **E2E Tests**: Manual testing only. No Playwright or Cypress automation.
+- [ ] **Component Documentation**: No Storybook or component library.
+
+### 3.2 Performance
+- [ ] **Image Optimization**: Product images are uploaded as-is. No WebP conversion or CDN.
+- [ ] **Lazy Loading**: All routes are loaded upfront. No code-splitting.
+- [ ] **Database Indexing**: Firestore queries may not have composite indexes for complex filters.
+- [ ] **Bundle Size**: Current production bundle is 876kb. Could be optimized.
+
+### 3.3 Scalability
+- [ ] **Rate Limiting**: No protection against API abuse or spam orders.
+- [ ] **Caching**: No Redis or memory cache for frequently accessed data (e.g., catalog).
+- [ ] **CDN**: Firebase Storage serves images, but no CloudFlare or similar CDN.
+- [ ] **Database Backups**: Relying on Firebase's automatic backups. No custom export strategy.
 
 ---
 
 ## 4. Readiness Assessment
 
-| Category | Status | Confidence |
-|----------|--------|------------|
-| **Feature Completeness** | ✅ 100% | High |
-| **Real-Time Communication** | ✅ Verified | High |
-| **Data Integrity** | ✅ Resolved | High |
-| **Production Build** | ✅ Verified | High |
+| Category | Completeness | Production Ready? | Notes |
+|----------|--------------|-------------------|-------|
+| **Core Marketplace** | 95% | ✅ Yes | All essential shopping features work |
+| **Payment Processing** | 70% | ⚠️ Partial | Stripe works; need Connect + Refunds |
+| **Security** | 65% | ❌ No | Firestore rules need hardening |
+| **Infrastructure** | 50% | ❌ No | Never deployed to production |
+| **Documentation** | 100% | ✅ Yes | All major systems documented |
+| **Testing** | 10% | ❌ No | No automated tests |
+| **Mobile Apps** | 80% | ⚠️ Partial | Web app is mobile-ready; native builds pending |
+
+### **Overall Launch Readiness: 60%**
+
+**Recommendation**: Platform is **MVP-ready** for a **soft launch** (limited beta users) but requires:
+1. Firestore security rules hardening
+2. Production deployment setup
+3. Stripe Connect implementation
+4. Basic error monitoring
 
 ---
 
-## 5. Recommendations
+## 5. Prioritized Roadmap
 
-### 5.1 Immediate Actions
-1. **Firestore Rules**: Harden security rules to prevent unauthorized notification writes.
-2. **Stripe Connect**: Move from simulation to real test-mode integration.
+### 5.1 Pre-Launch (Critical Path - 2 Weeks)
+1. **Week 1: Security & Deployment**
+   - [ ] Implement production Firestore security rules
+   - [ ] Set up Firebase Hosting or Vercel deployment
+   - [ ] Add Sentry for error monitoring
+   - [ ] Move `.runtimeconfig.json` to Firebase Secrets Manager
+   - [ ] Update Privacy Policy and Terms of Service
 
-### 5.2 Post-Launch
-1. **Load Testing**: Test the real-time notification listener performance with 50+ concurrent orders.
-2. **Backups**: Set up export/import cycles for the new `notifications` collection.
+2. **Week 2: Payment Hardening**
+   - [ ] Implement Stripe Connect for marketplace fees
+   - [ ] Add subscription cancellation portal
+   - [ ] Handle `invoice.payment_failed` webhook event
+   - [ ] Add refund system (basic)
+
+### 5.2 Post-Launch (Enhancement - 1 Month)
+1. **Email Notifications** (use SendGrid or Firebase Extensions)
+2. **Analytics Dashboard** for merchants (basic charts)
+3. **Merchant Approval Workflow** for admin
+4. **Unit Tests** for critical paths (checkout, payments)
+
+### 5.3 Growth Phase (Q1 2025)
+1. **Delivery Integration** (Uber Direct API)
+2. **Promo Code System**
+3. **Product Reviews UI**
+4. **Push Notifications** (FCM)
 
 ---
 
-## 6. Sign-Off Checklist
+## 6. Risk Assessment
 
-- [x] Geolocation and Proximity Search operational
-- [x] Advanced merchant fulfillment (Hold/Time/Reason) implemented
-- [x] Real-time notification system (Consumer & Merchant) verified
-- [x] Item data mapping bug resolved
-- [x] Production build and deployment successful
-- [ ] Firestore rules hardened *(In Progress)*
+| Risk | Impact | Likelihood | Mitigation |
+|------|--------|------------|------------|
+| **Firestore Security Rules Breach** | 🔴 Critical | Medium | Implement rules ASAP; delay launch if needed |
+| **Payment Webhook Failure** | 🟠 High | Low | Add retry logic + dead-letter queue |
+| **Stripe Connect Compliance** | 🔴 Critical | High | Required for legal marketplace operation |
+| **Platform Downtime (No Monitoring)** | 🟠 High | Medium | Add Sentry before launch |
+| **Data Loss (No Backups)** | 🔴 Critical | Low | Firebase auto-backup active; acceptable risk |
 
 ---
 
-**Conclusion**: Spendigo has moved from a static MVP to a **dynamic real-time marketplace**. The addition of location services and granular fulfillment states makes the platform commercially viable for the Canadian convenience sector.
+## 7. Recommendations
+
+### For Immediate Action:
+1. **Deploy to Production Environment**: Even if it's a staging URL, the app needs to run in a real Firebase project to validate all services.
+2. **Security Rules Sprint**: Dedicate 2 days to writing and testing Firestore rules. This is the #1 blocker.
+3. **Stripe Connect Research**: Understand the legal requirements for marketplace facilitators in Canada vs. using direct payments.
+
+### For Long-Term Success:
+1. **Hire QA/Testing**: Manual testing is unsustainable. Invest in automated E2E tests.
+2. **Design System**: Current UI is functional but inconsistent. Consider a component library.
+3. **Customer Support System**: Implement Intercom or a ticketing system for merchant support.
+
+---
+
+## 8. Conclusion
+
+Spendigo has evolved from a **theoretical MVP** to a **functional SaaS platform** with real payment processing, real-time data synchronization, and enterprise-grade audit logging. The core value proposition (SmartCart, multi-store marketplace) is **fully operational**.
+
+**Current State**: Production-Ready Core, Incomplete Peripherals  
+**Estimated Work to Public Launch**: **40-60 developer hours**  
+**Biggest Blocker**: Firestore Security Rules + Stripe Connect Implementation  
+
+**Next Milestone**: Deploy to a public URL and onboard 10 beta merchants to validate the order fulfillment flow end-to-end.
+
+---
+
+**Prepared By**: Shahbaz + AI Development Team  
+**Last Updated**: 2025-12-29  
+**Status**: Active Development → Pre-Launch Phase

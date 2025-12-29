@@ -134,46 +134,6 @@ const Login = () => {
                     <button type="submit" className="w-full py-3 rounded-[var(--radius-md)] bg-[var(--brand-primary)] text-white font-bold hover:brightness-110 shadow-lg shadow-[var(--brand-primary)]/20 transition-all">
                         Sign In
                     </button>
-
-                    <div className="mt-4 p-3 bg-blue-50 text-xs text-blue-800 rounded-lg max-h-80 overflow-y-auto border border-blue-100 shadow-inner">
-                        <p className="font-bold mb-3 sticky top-0 bg-blue-50 py-1 z-10 border-b border-blue-100">Demo Credentials (Password: Spendigo123!)</p>
-
-                        <div className="space-y-4">
-                            {[
-                                { title: '🛡️ System Admins', filter: (u: any) => u.label === 'ADMIN' },
-                                { title: '🏪 Merchant Owners', filter: (u: any) => u.label === 'OWNER' },
-                                { title: '💼 Store Managers', filter: (u: any) => u.label === 'MNGR' },
-                                { title: '👥 Store Staff', filter: (u: any) => u.label === 'STAFF' },
-                                { title: '🛒 Shoppers', filter: (u: any) => u.label === 'USER' || u.label === 'MERCH' }
-                            ].map(group => {
-                                const groupUsers = DEMO_USERS.filter(group.filter);
-                                if (groupUsers.length === 0) return null;
-
-                                return (
-                                    <div key={group.title} className="space-y-1">
-                                        <h4 className="text-[9px] font-bold uppercase tracking-widest text-blue-900/60 mb-1 ml-1">{group.title}</h4>
-                                        {groupUsers.map((u, i) => (
-                                            <button
-                                                key={i}
-                                                type="button"
-                                                onClick={() => { setEmail(u.email); setPassword('Spendigo123!'); }}
-                                                className="w-full text-left bg-white/60 hover:bg-white p-2 rounded flex justify-between items-center transition-all border border-blue-50 hover:border-blue-200"
-                                            >
-                                                <span className="font-mono text-[10px] truncate pr-2">{u.email}</span>
-                                                <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded uppercase tracking-tighter ${u.label === 'ADMIN' ? 'bg-red-100 text-red-700' :
-                                                    u.label === 'OWNER' ? 'bg-purple-100 text-purple-700' :
-                                                        u.label === 'MNGR' ? 'bg-indigo-100 text-indigo-700' :
-                                                            'bg-green-100 text-green-700'
-                                                    }`}>
-                                                    {u.label}
-                                                </span>
-                                            </button>
-                                        ))}
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </div>
                 </form>
 
 
