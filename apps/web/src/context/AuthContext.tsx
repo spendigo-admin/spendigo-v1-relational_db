@@ -215,8 +215,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 id: uid,
                 email: userData.email!,
                 name: userData.name || 'New User',
-                role: userData.role || 'consumer',
-                avatar: userData.role === 'merchant' ? '🏪' : '👤'
+                role: userData.role || 'consumer'
             };
 
             // Only add merchant fields if the user is a merchant
@@ -264,7 +263,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                     email: user.email!,
                     name: user.displayName || 'New User',
                     role: targetRole,
-                    avatar: user.photoURL || (targetRole === 'merchant' ? '🏪' : '👤'),
                     joinedAt: new Date().toISOString()
                 };
 

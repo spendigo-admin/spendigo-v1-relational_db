@@ -107,7 +107,7 @@ const ConsumerLayout: React.FC = () => {
                         <div className="flex items-center gap-2">
                             <Link to="/profile" className="hidden sm:flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-[var(--surface-2)] transition-colors">
                                 <div className="w-8 h-8 rounded-full bg-[var(--brand-primary)] text-white flex items-center justify-center text-sm font-bold">
-                                    {user.avatar || '👤'}
+                                    {user.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
                                 </div>
                                 <span className="text-sm font-medium text-[var(--text-main)]">{user.name.split(' ')[0]}</span>
                             </Link>

@@ -77,7 +77,7 @@ export const ReviewProvider: React.FC<{ children: ReactNode }> = ({ children }) 
             ...reviewData,
             authorId: user.id,
             authorName: user.name,
-            authorAvatar: user.avatar || '👤',
+            authorAvatar: user.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase(),
             timestamp: serverTimestamp()
         };
 

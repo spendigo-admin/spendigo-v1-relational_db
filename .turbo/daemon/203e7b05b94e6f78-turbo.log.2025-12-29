@@ -261,3 +261,9 @@
 2025-12-29T20:38:49.179371Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
 2025-12-29T20:38:49.279296Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("docs/CI_CD_SETUP.md")}
 2025-12-29T20:38:49.279309Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-12-29T21:10:22.563721Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/web/src/context/AuthContext.tsx")}
+2025-12-29T21:10:22.563741Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("spendigo-web"), path: AnchoredSystemPathBuf("apps/web") }}))
+2025-12-29T21:10:39.764782Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/web/src/layouts/ConsumerLayout.tsx")}
+2025-12-29T21:10:39.764796Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("spendigo-web"), path: AnchoredSystemPathBuf("apps/web") }}))
+2025-12-29T21:11:04.465498Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/web/src/context/ReviewContext.tsx")}
+2025-12-29T21:11:04.465516Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("spendigo-web"), path: AnchoredSystemPathBuf("apps/web") }}))
