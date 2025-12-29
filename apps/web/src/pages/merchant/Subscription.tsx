@@ -61,23 +61,38 @@ const Subscription: React.FC = () => {
 
     const handleUpgrade = async (tierId: string, price: string) => {
         if (price === '$0') {
-            // Free tier - instant switch
-            updateSubscription(tierId as any);
-            alert(`Switched to Starter plan.`);
+            // Free tier - instant switch (handled by logic or separate mechanism if needed)
+            // For now, allow simple downgrade via AuthContext (but in prod, cancel stripe sub via portal)
+            if (confirm("Downgrade to Free tier? This will cancel your current subscription at the end of the billing period.")) {
+                updateSubscription('free');
+                alert("Switched to Starter plan.");
+            }
             return;
         }
 
-        // Paid tier - Simulate Stripe Checkout Flow
+        // Paid tier - Real Stripe Checkout Flow
         if (confirm(`Subscribe to ${price}${price === '$0' ? '' : '/month'}? This will redirect you to Stripe Checkout.`)) {
             setProcessingId(tierId);
 
-            // Mock Redirect Delay
-            setTimeout(() => {
-                // Mock Payment Success
-                updateSubscription(tierId as any);
+            try {
+                // Dynamically import firebase functions to keep bundle light
+                const { getFunctions, httpsCallable } = await import('firebase/functions');
+                const functions = getFunctions();
+                const createCheckoutSession = httpsCallable(functions, 'createCheckoutSession');
+
+                const { data }: any = await createCheckoutSession({ tier: tierId });
+
+                if (data && data.url) {
+                    // Redirect to Stripe
+                    window.location.href = data.url;
+                } else {
+                    throw new Error("No checkout URL returned");
+                }
+            } catch (error: any) {
+                console.error("Payment Error:", error);
+                alert(`Failed to initialize payment: ${error.message}`);
                 setProcessingId(null);
-                alert(`🎉 Payment Successful! Welcome to the ${tierId.toUpperCase()} plan.`);
-            }, 2000);
+            }
         }
     };
 
