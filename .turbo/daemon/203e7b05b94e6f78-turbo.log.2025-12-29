@@ -312,3 +312,5 @@
 2025-12-29T21:32:57.655755Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }, WorkspacePackage { name: Other("spendigo-web"), path: AnchoredSystemPathBuf("apps/web") }}))
 2025-12-29T21:39:21.360315Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".gitignore")}
 2025-12-29T21:39:21.360328Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-12-29T21:47:00.162752Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".github/workflows"), AnchoredSystemPathBuf(".github/workflows/firebase-deploy.yml"), AnchoredSystemPathBuf(".github/workflows/deploy.yml")}
+2025-12-29T21:47:00.162767Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
