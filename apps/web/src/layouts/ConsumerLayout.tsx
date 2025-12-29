@@ -132,7 +132,8 @@ const ConsumerLayout: React.FC = () => {
                                     👤 My Profile
                                 </Link>
                                 <Link
-                                    to="/orders"
+                                    to="/profile"
+                                    state={{ activeTab: 'orders' }}
                                     className="block px-4 py-2 text-sm text-[var(--text-main)] hover:bg-[var(--surface-2)] transition-colors"
                                 >
                                     📦 Order History

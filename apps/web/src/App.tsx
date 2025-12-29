@@ -50,7 +50,7 @@ import AdminStoreManagement from './pages/admin/StoreManagement';
 import AdminAuditLogs from './pages/admin/AuditLogs';
 import AdminFlyerModeration from './pages/admin/FlyerModeration';
 import AdminSettings from './pages/admin/Settings';
-import SeedUsers from './pages/admin/SeedUsers';
+
 
 import { useState, useEffect } from 'react';
 import { doc, onSnapshot } from 'firebase/firestore';
@@ -150,8 +150,7 @@ function App() {
                                                                 <Route path="/admin/audit-logs" element={<AdminAuditLogs />} />
                                                             </Route>
 
-                                                            {/* TEMP: Public Seed Route for Migration */}
-                                                            <Route path="/admin/seed" element={<SeedUsers />} />
+
 
                                                             {/* 404 Catch All */}
                                                             <Route path="*" element={<NotFound />} />

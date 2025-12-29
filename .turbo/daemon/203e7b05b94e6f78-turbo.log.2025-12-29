@@ -328,3 +328,10 @@
 2025-12-29T22:01:32.319979Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/mobile/.turbo")}
 2025-12-29T22:01:32.319992Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("spendigo-mobile"), path: AnchoredSystemPathBuf("apps/mobile") }}))
 2025-12-29T22:01:32.367435Z  WARN turborepo_lib::package_changes_watcher: hashes are the same, no need to rerun
+2025-12-29T22:07:24.318995Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/web/src/layouts/ConsumerLayout.tsx")}
+2025-12-29T22:07:24.319019Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("spendigo-web"), path: AnchoredSystemPathBuf("apps/web") }}))
+2025-12-29T22:07:24.457543Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/web/src/layouts/ConsumerLayout.tsx")}
+2025-12-29T22:07:24.457556Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("spendigo-web"), path: AnchoredSystemPathBuf("apps/web") }}))
+2025-12-29T22:07:24.457665Z  WARN turborepo_lib::package_changes_watcher: hashes are the same, no need to rerun
+2025-12-29T22:14:35.817944Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/web/src/App.tsx")}
+2025-12-29T22:14:35.817963Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("spendigo-web"), path: AnchoredSystemPathBuf("apps/web") }}))
