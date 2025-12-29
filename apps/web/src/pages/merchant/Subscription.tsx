@@ -1,10 +1,59 @@
 import React from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { useSearchParams } from 'react-router-dom';
 import '../../styles/design-system.css';
 
 const Subscription: React.FC = () => {
     const { user, updateSubscription } = useAuth();
+    const [searchParams, setSearchParams] = useSearchParams();
     const currentTier = user?.subscriptionTier || 'free';
+
+    const [processingId, setProcessingId] = React.useState<string | null>(null);
+    const [successMessage, setSuccessMessage] = React.useState<string | null>(null);
+    const [payments, setPayments] = React.useState<any[]>([]);
+    const [loadingPayments, setLoadingPayments] = React.useState(true);
+
+    // 1. Check for success from Stripe
+    React.useEffect(() => {
+        const sessionId = searchParams.get('session_id');
+        if (sessionId) {
+            setSuccessMessage("🎉 Payment Received! We are activating your new features...");
+            // Clean up URL
+            const newParams = new URLSearchParams(searchParams);
+            newParams.delete('session_id');
+            setSearchParams(newParams);
+
+            // Auto-hide success message after 8 seconds
+            setTimeout(() => setSuccessMessage(null), 8000);
+        }
+    }, [searchParams]);
+
+    // 2. Fetch Payment History
+    React.useEffect(() => {
+        const fetchHistory = async () => {
+            if (!user) return;
+            try {
+                const { getFunctions, httpsCallable } = await import('firebase/functions');
+                const functions = getFunctions();
+                const getPaymentHistory = httpsCallable(functions, 'getPaymentHistory');
+                const { data }: any = await getPaymentHistory();
+                setPayments(data.payments || []);
+            } catch (error) {
+                console.error("Failed to fetch payment history:", error);
+            } finally {
+                setLoadingPayments(false);
+            }
+        };
+        fetchHistory();
+    }, [user?.id, currentTier]); // Refresh when tier changes
+
+    // 3. Clear processing state if the tier changes (real-time via AuthContext)
+    React.useEffect(() => {
+        if (processingId && currentTier === processingId) {
+            setProcessingId(null);
+            setSuccessMessage("🚀 Plan Upgraded! You now have access to all features.");
+        }
+    }, [currentTier, processingId]);
 
     const tiers = [
         {
@@ -57,7 +106,7 @@ const Subscription: React.FC = () => {
 
     const isViewOnly = user?.merchantRole === 'STAFF';
 
-    const [processingId, setProcessingId] = React.useState<string | null>(null);
+
 
     const handleUpgrade = async (tierId: string, price: string) => {
         if (price === '$0') {
@@ -103,6 +152,18 @@ const Subscription: React.FC = () => {
                     <div className="w-16 h-16 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-4"></div>
                     <div className="text-xl font-bold text-indigo-900">Redirecting to Stripe...</div>
                     <p className="text-indigo-600">Secure Checkout</p>
+                </div>
+            )}
+
+            {successMessage && (
+                <div className="max-w-6xl mx-auto mb-6">
+                    <div className="bg-green-50 border border-green-200 text-green-800 p-4 rounded-xl flex items-center justify-between animate-bounce-in">
+                        <div className="flex items-center gap-2">
+                            <span className="text-xl">🌟</span>
+                            <span className="font-bold">{successMessage}</span>
+                        </div>
+                        <button onClick={() => setSuccessMessage(null)} className="text-green-600 hover:text-green-800 font-bold">Close</button>
+                    </div>
                 </div>
             )}
 
@@ -167,6 +228,83 @@ const Subscription: React.FC = () => {
                     <h3 className="font-bold text-[var(--text-main)] mb-2">Need a Custom Plan?</h3>
                     <p className="text-[var(--text-muted)] mb-4">For multi-location franchises or enterprise needs, contact our sales team.</p>
                     <button className="text-[var(--brand-primary)] font-bold hover:underline">Contact Sales</button>
+                </div>
+
+                {/* Payment History Section */}
+                <div className="mt-12">
+                    <h2 className="text-xl font-bold text-[var(--text-main)] mb-6 flex items-center gap-2">
+                        💳 Payment History
+                        <span className="text-xs font-normal text-[var(--text-muted)] bg-white px-2 py-0.5 rounded-full border">Last 12 Successful</span>
+                    </h2>
+
+                    <div className="bg-white rounded-2xl border border-[var(--glass-border)] overflow-hidden shadow-sm">
+                        {loadingPayments ? (
+                            <div className="p-12 text-center text-[var(--text-muted)]">
+                                <div className="w-8 h-8 border-2 border-[var(--brand-primary)] border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+                                Loading history...
+                            </div>
+                        ) : payments.length === 0 ? (
+                            <div className="p-12 text-center text-[var(--text-muted)]">
+                                <div className="text-3xl mb-2">📄</div>
+                                No successful payments found yet.
+                            </div>
+                        ) : (
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left border-collapse">
+                                    <thead className="bg-[var(--surface-1)] border-b border-[var(--glass-border)]">
+                                        <tr>
+                                            <th className="p-4 text-xs font-bold text-[var(--text-muted)] uppercase">Date</th>
+                                            <th className="p-4 text-xs font-bold text-[var(--text-muted)] uppercase">Plan / Description</th>
+                                            <th className="p-4 text-xs font-bold text-[var(--text-muted)] uppercase">Amount</th>
+                                            <th className="p-4 text-xs font-bold text-[var(--text-muted)] uppercase">Status</th>
+                                            <th className="p-4 text-xs font-bold text-[var(--text-muted)] uppercase">Invoice</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-[var(--glass-border)]">
+                                        {payments.map((payment) => (
+                                            <tr key={payment.id} className="hover:bg-gray-50/50 transition-colors">
+                                                <td className="p-4 text-sm whitespace-nowrap">
+                                                    {new Date(payment.date).toLocaleDateString(undefined, {
+                                                        year: 'numeric',
+                                                        month: 'short',
+                                                        day: 'numeric'
+                                                    })}
+                                                </td>
+                                                <td className="p-4 text-sm font-medium">
+                                                    <span className="capitalize">{payment.tier}</span>
+                                                </td>
+                                                <td className="p-4 text-sm font-bold">
+                                                    ${payment.amount.toFixed(2)} {payment.currency}
+                                                </td>
+                                                <td className="p-4">
+                                                    <span className="px-2 py-1 bg-green-100 text-green-700 text-[10px] font-bold rounded-full uppercase">
+                                                        {payment.status}
+                                                    </span>
+                                                </td>
+                                                <td className="p-4">
+                                                    {payment.pdf ? (
+                                                        <a
+                                                            href={payment.pdf}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="text-[var(--brand-primary)] hover:underline text-sm font-medium flex items-center gap-1"
+                                                        >
+                                                            PDF <span>↗️</span>
+                                                        </a>
+                                                    ) : (
+                                                        <span className="text-gray-400 text-sm italic">Not available</span>
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+                    </div>
+                    <p className="mt-4 text-xs text-[var(--text-muted)] text-center">
+                        Secure payments handled by Stripe. Need a formal receipt for tax purposes? Click "PDF" to download the official invoice.
+                    </p>
                 </div>
             </div>
         </div>

@@ -6,5 +6,5 @@ import * as functions from 'firebase-functions';
 const stripeSecret = functions.config().stripe?.secret_key || 'sk_test_placeholder';
 
 export const stripe = new Stripe(stripeSecret, {
-    apiVersion: '2025-01-27.acacia', // Use latest API version available or match your dashboard
+    apiVersion: '2025-12-15.clover', // Match the version expected by the installed Stripe SDK
 });

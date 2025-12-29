@@ -75,93 +75,110 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
 
-    // Bootstrap Auth Listener
+    // Bootstrap Auth Listener with Real-time Firestore Sync
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+        let unsubscribeProfile: (() => void) | null = null;
+
+        const unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {
             if (firebaseUser) {
-                // User is signed in, fetch profile from Firestore
-                await fetchUserProfile(firebaseUser.uid);
+                // Set up real-time listener for the user profile
+                const { onSnapshot, doc } = await import('firebase/firestore');
+                unsubscribeProfile = onSnapshot(doc(db, 'users', firebaseUser.uid), async (userDoc) => {
+                    if (userDoc.exists()) {
+                        await processUserData(firebaseUser.uid, userDoc.data());
+                    } else {
+                        console.error('User profile not found in Firestore');
+                        setUser(null);
+                        setLoading(false);
+                    }
+                }, (error) => {
+                    console.error('Error listening to user profile:', error);
+                    setLoading(false);
+                });
             } else {
                 // User is signed out
+                if (unsubscribeProfile) unsubscribeProfile();
                 setUser(null);
                 setLoading(false);
             }
         });
-        return () => unsubscribe();
+
+        return () => {
+            unsubscribeAuth();
+            if (unsubscribeProfile) unsubscribeProfile();
+        };
     }, []);
 
-    const fetchUserProfile = async (uid: string) => {
+    const processUserData = async (uid: string, data: any) => {
         try {
-            const userDoc = await getDoc(doc(db, 'users', uid));
-            if (userDoc.exists()) {
-                const data = userDoc.data();
-                let finalRole = data.role || 'consumer';
-                let finalAdminRole = data.adminRole;
+            let finalRole = data.role || 'consumer';
+            let finalAdminRole = data.adminRole;
 
-                // --- ISOLATED STAFF CHECK ---
-                // We check the 'staff' collection by email to resolve administrative status.
-                // This keeps admin management strictly separated from the platform users list.
-                const staffDoc = await getDoc(doc(db, 'staff', data.email.toLowerCase()));
-                if (staffDoc.exists()) {
-                    const staffData = staffDoc.data();
-                    if (staffData.status === 'active') {
-                        finalRole = 'admin';
-                        finalAdminRole = staffData.role;
-                    }
+            // --- ISOLATED STAFF CHECK ---
+            const staffDoc = await getDoc(doc(db, 'staff', data.email.toLowerCase()));
+            if (staffDoc.exists()) {
+                const staffData = staffDoc.data();
+                if (staffData.status === 'active') {
+                    finalRole = 'admin';
+                    finalAdminRole = staffData.role;
                 }
+            }
 
-                // 1. Maintenance Mode Check
-                // System Admins bypass this check.
-                if (finalRole !== 'admin') {
-                    const settingsDoc = await getDoc(doc(db, 'settings', 'platform'));
-                    if (settingsDoc.exists() && settingsDoc.data().maintenanceMode) {
+            // 1. Maintenance Mode Check
+            if (finalRole !== 'admin') {
+                const settingsDoc = await getDoc(doc(db, 'settings', 'platform'));
+                if (settingsDoc.exists() && settingsDoc.data().maintenanceMode) {
+                    await signOut(auth);
+                    alert(`🚧 System is in Maintenance Mode. Please try again later.`);
+                    setUser(null);
+                    return;
+                }
+            }
+
+            // 2. Security Check: If Merchant, verify Store Status
+            if (finalRole === 'merchant' && data.storeId) {
+                const storeDoc = await getDoc(doc(db, 'stores', data.storeId));
+                if (storeDoc.exists()) {
+                    const storeData = storeDoc.data();
+                    if (storeData.status === 'suspended') {
                         await signOut(auth);
-                        alert(`🚧 System is in Maintenance Mode. Please try again later.`);
+                        alert('Creating a safe and trusted marketplace is our priority. Your store has been suspended. Please contact support @spendigo.ca.');
                         setUser(null);
                         return;
                     }
                 }
-
-                // 2. Security Check: If Merchant, verify Store Status
-                if (finalRole === 'merchant' && data.storeId) {
-                    const storeDoc = await getDoc(doc(db, 'stores', data.storeId));
-                    if (storeDoc.exists()) {
-                        const storeData = storeDoc.data();
-                        if (storeData.status === 'suspended') {
-                            await signOut(auth);
-                            alert('Creating a safe and trusted marketplace is our priority. Your store has been suspended. Please contact support@spendigo.ca.');
-                            setUser(null);
-                            return;
-                        }
-                    }
-                }
-
-                // 3. Status Check: Enforce User Suspension
-                if (data.status === 'banned') {
-                    await signOut(auth);
-                    alert('Your account has been suspended due to a violation of our terms. Please contact support@spendigo.ca.');
-                    setUser(null);
-                    return;
-                }
-
-                // Use defaults for potentially missing fields in legacy data
-                const merchantRole = data.role === 'merchant' ? (data.merchantRole || 'OWNER') : undefined;
-
-                setUser({
-                    ...data,
-                    id: uid,
-                    role: finalRole as 'consumer' | 'merchant' | 'admin',
-                    merchantRole: merchantRole,
-                    adminRole: finalAdminRole
-                } as User);
-            } else {
-                console.error('User profile not found in Firestore');
-                setUser(null);
             }
+
+            // 3. Status Check: Enforce User Suspension
+            if (data.status === 'banned') {
+                await signOut(auth);
+                alert('Your account has been suspended due to a violation of our terms. Please contact support @spendigo.ca.');
+                setUser(null);
+                return;
+            }
+
+            const merchantRole = data.role === 'merchant' ? (data.merchantRole || 'OWNER') : undefined;
+
+            setUser({
+                ...data,
+                id: uid,
+                role: finalRole as 'consumer' | 'merchant' | 'admin',
+                merchantRole: merchantRole,
+                adminRole: finalAdminRole
+            } as User);
         } catch (error) {
-            console.error('Error fetching user profile:', error);
+            console.error('Error processing user data:', error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const fetchUserProfile = async (uid: string) => {
+        // fetchUserProfile is now primarily handled by onSnapshot, but we keep the logic 
+        // for initial loads if needed, though processUserData handles it now.
+        const userDoc = await getDoc(doc(db, 'users', uid));
+        if (userDoc.exists()) {
+            await processUserData(uid, userDoc.data());
         }
     };
 

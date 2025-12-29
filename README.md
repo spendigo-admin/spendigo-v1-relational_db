@@ -41,6 +41,20 @@ https://spendigo.ca:446/
 
 **Note**: You may need to trust the self-signed SSL certificate in your browser.
 
+### Stripe Webhook Testing (Local)
+
+To test subscription payments and real-time tier updates on your local machine:
+
+1.  **Start the Listener**: In a separate terminal, run:
+    ```bash
+    npm run stripe:listen
+    ```
+    This forwards Stripe events to your local Firebase functions emulator.
+
+2.  **Verify Webhook Secret**: Ensure your `whsec_...` secret from the terminal matches the one in `services/api/.runtimeconfig.json`.
+
+3.  **Place Test Order**: Use test card numbers (e.g., `4242...`) in the app. The listener will catch the event and trigger the local Cloud Function to upgrade your account!
+
 ### Production Build
 
 ```bash
@@ -211,6 +225,7 @@ firebase deploy
 | [SCHEMA.md](./docs/SCHEMA.md) | Database schema (Firestore) |
 | [MOBILE_DEPLOYMENT.md](./docs/MOBILE_DEPLOYMENT.md) | iOS/Android build guide |
 | [ACCESSIBILITY.md](./docs/ACCESSIBILITY.md) | A11y compliance |
+| [MERCHANT_BILLING.md](./docs/MERCHANT_BILLING.md) | Billing & Subscription guide |
 
 ---
 

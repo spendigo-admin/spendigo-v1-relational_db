@@ -373,7 +373,7 @@ const MerchantOrders: React.FC = () => {
             {/* Order Detail Modal */}
             {selectedOrder && (
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in" onClick={() => setSelectedOrder(null)}>
-                    <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
+                    <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
                         <div className="p-6 border-b border-[var(--glass-border)] flex justify-between items-start bg-[var(--surface-1)]">
                             <div>
                                 <h2 className="text-2xl font-bold text-[var(--text-main)]">{selectedOrder.id}</h2>
@@ -384,7 +384,7 @@ const MerchantOrders: React.FC = () => {
                             </span>
                         </div>
 
-                        <div className="p-6 space-y-6">
+                        <div className="flex-1 overflow-y-auto p-6 space-y-6 scrollbar-thin scrollbar-thumb-gray-200">
                             {/* Integrity Check */}
                             {(() => {
                                 const integrity = validateOrderIntegrity(selectedOrder, storeProducts);
@@ -451,29 +451,6 @@ const MerchantOrders: React.FC = () => {
 
                             <div className="md:hidden mt-3 pt-3 border-t border-gray-100 flex justify-between items-center">
                                 <span className="font-bold text-[var(--text-main)]">${selectedOrder.total.toFixed(2)}</span>
-                                <div className="flex gap-2">
-                                    {/* Mobile Actions if needed */}
-                                </div>
-                            </div>
-
-
-                            <div className="hidden md:block col-span-3">
-                                <div className="flex items-center gap-2 mb-1">
-                                    <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-xs">👤</div>
-                                    <span className="font-medium text-[var(--text-main)]">{selectedOrder.customerName}</span>
-                                </div>
-                                <div className="text-xs text-[var(--text-muted)] pl-8">
-                                    #{selectedOrder.id}
-                                </div>
-                            </div>
-
-                            <div className="hidden md:flex col-span-2 justify-end items-center gap-2">
-                                <span className="font-bold text-[var(--text-main)]">${selectedOrder.total.toFixed(2)}</span>
-                                {selectedOrder.paymentStatus === 'pending' && (
-                                    <span className="text-[10px] uppercase tracking-wider font-bold text-orange-600 border border-orange-200 bg-orange-50 px-2 py-0.5 rounded-full">
-                                        Collect Payment
-                                    </span>
-                                )}
                             </div>
 
                             <div>
@@ -572,7 +549,7 @@ const MerchantOrders: React.FC = () => {
                             </div>
                         </div>
 
-                        <div className="p-6 border-t border-[var(--glass-border)] bg-gray-50 flex gap-3">
+                        <div className="p-6 border-t border-[var(--glass-border)] bg-gray-50 flex gap-3 shrink-0">
                             {hasWriteAccess && (
                                 <>
                                     {selectedOrder.status === 'placed' && (

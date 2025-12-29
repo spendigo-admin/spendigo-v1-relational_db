@@ -32,18 +32,18 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+var _a;
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getPaymentHistory = exports.stripeWebhook = exports.createCheckoutSession = exports.inviteTeamMember = void 0;
-const admin = __importStar(require("firebase-admin"));
-// Initialize Firebase Admin
-admin.initializeApp();
-// Export all functions
-var inviteTeamMember_1 = require("./auth/inviteTeamMember");
-Object.defineProperty(exports, "inviteTeamMember", { enumerable: true, get: function () { return inviteTeamMember_1.inviteTeamMember; } });
-var createCheckoutSession_1 = require("./payments/createCheckoutSession");
-Object.defineProperty(exports, "createCheckoutSession", { enumerable: true, get: function () { return createCheckoutSession_1.createCheckoutSession; } });
-var stripeWebhook_1 = require("./payments/stripeWebhook");
-Object.defineProperty(exports, "stripeWebhook", { enumerable: true, get: function () { return stripeWebhook_1.stripeWebhook; } });
-var getPaymentHistory_1 = require("./payments/getPaymentHistory");
-Object.defineProperty(exports, "getPaymentHistory", { enumerable: true, get: function () { return getPaymentHistory_1.getPaymentHistory; } });
-//# sourceMappingURL=index.js.map
+exports.stripe = void 0;
+const stripe_1 = __importDefault(require("stripe"));
+const functions = __importStar(require("firebase-functions"));
+// Initialize Stripe with the Secret Key from Firebase Config
+// To set this run: firebase functions:config:set stripe.secret_key="sk_live_..."
+const stripeSecret = ((_a = functions.config().stripe) === null || _a === void 0 ? void 0 : _a.secret_key) || 'sk_test_placeholder';
+exports.stripe = new stripe_1.default(stripeSecret, {
+    apiVersion: '2025-12-15.clover', // Match the version expected by the installed Stripe SDK
+});
+//# sourceMappingURL=stripe.js.map
