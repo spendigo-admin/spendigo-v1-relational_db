@@ -167,6 +167,50 @@ const MerchantLayout: React.FC = () => {
                 <header className="hidden md:flex h-16 bg-white border-b border-[var(--glass-border)] items-center justify-end px-8 shrink-0">
                     <div className="flex items-center gap-4">
                         <NotificationPopover />
+
+                        {/* Profile Dropdown */}
+                        <div className="relative group">
+                            <button className="flex items-center gap-2 px-2 py-2 rounded-lg hover:bg-[var(--surface-2)] transition-colors">
+                                <div className="w-8 h-8 rounded-full bg-[var(--brand-primary)] text-white flex items-center justify-center text-sm font-bold ring-2 ring-white shadow-md">
+                                    {user?.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                                </div>
+                                <span className="text-sm font-medium text-[var(--text-main)] max-w-[120px] truncate">
+                                    {user?.name.split(' ')[0]}
+                                </span>
+                            </button>
+
+                            {/* Dropdown Menu */}
+                            <div className="absolute right-0 top-12 w-48 glass-panel opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 shadow-xl">
+                                <div className="p-3 border-b border-[var(--glass-border)]">
+                                    <p className="text-sm font-bold text-[var(--text-main)] truncate">{user?.storeName || 'My Store'}</p>
+                                    <p className="text-xs text-[var(--text-muted)] truncate">{user?.email}</p>
+                                </div>
+                                <Link
+                                    to="/merchant/settings"
+                                    className="block px-4 py-2 text-sm text-[var(--text-main)] hover:bg-[var(--surface-2)] transition-colors"
+                                >
+                                    ⚙️ Settings
+                                </Link>
+                                <Link
+                                    to="/merchant/orders"
+                                    className="block px-4 py-2 text-sm text-[var(--text-main)] hover:bg-[var(--surface-2)] transition-colors"
+                                >
+                                    📋 Orders
+                                </Link>
+                                <Link
+                                    to="/merchant/subscription"
+                                    className="block px-4 py-2 text-sm text-[var(--text-main)] hover:bg-[var(--surface-2)] transition-colors"
+                                >
+                                    💳 Billing
+                                </Link>
+                                <button
+                                    onClick={logout}
+                                    className="w-full text-left px-4 py-2 text-sm text-red-500 hover:bg-red-50 transition-colors border-t border-[var(--glass-border)]"
+                                >
+                                    🚪 Sign Out
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </header>
 

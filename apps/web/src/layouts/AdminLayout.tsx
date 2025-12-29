@@ -105,7 +105,7 @@ const AdminLayout: React.FC = () => {
                 <div className="p-4 border-t border-[var(--glass-border)] pb-safe">
                     <div className="flex items-center gap-3 p-2 rounded-lg bg-[var(--surface-1)]">
                         <div className="w-8 h-8 rounded-full bg-[var(--brand-secondary)] flex items-center justify-center text-white text-xs font-bold">
-                            {user?.avatar || 'SA'}
+                            {user?.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
                         </div>
                         <div className="flex-1 overflow-hidden">
                             <p className="text-sm font-bold text-[var(--text-main)] truncate">{user?.name || 'System Admin'}</p>

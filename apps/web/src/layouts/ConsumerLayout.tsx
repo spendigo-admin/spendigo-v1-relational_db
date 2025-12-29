@@ -104,23 +104,46 @@ const ConsumerLayout: React.FC = () => {
 
                     {/* Profile / Auth */}
                     {user ? (
-                        <div className="flex items-center gap-2">
-                            <Link to="/profile" className="hidden sm:flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-[var(--surface-2)] transition-colors">
-                                <div className="w-8 h-8 rounded-full bg-[var(--brand-primary)] text-white flex items-center justify-center text-sm font-bold">
+                        <div className="relative group">
+                            <Link
+                                to="/profile"
+                                className="flex items-center gap-2 px-2 py-2 rounded-lg hover:bg-[var(--surface-2)] transition-colors"
+                                title={user.name}
+                            >
+                                <div className="w-8 h-8 rounded-full bg-[var(--brand-primary)] text-white flex items-center justify-center text-sm font-bold ring-2 ring-white shadow-md">
                                     {user.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
                                 </div>
-                                <span className="text-sm font-medium text-[var(--text-main)]">{user.name.split(' ')[0]}</span>
+                                {/* Show name only on larger screens */}
+                                <span className="hidden lg:block text-sm font-medium text-[var(--text-main)] max-w-[120px] truncate">
+                                    {user.name.split(' ')[0]}
+                                </span>
                             </Link>
-                            <button
-                                onClick={logout}
-                                className="hidden sm:flex items-center justify-center w-8 h-8 rounded-lg hover:bg-red-50 text-[var(--text-muted)] hover:text-red-500 transition-colors"
-                                title="Sign Out"
-                            >
-                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.36 6.64a9 9 0 11-12.73 0" />
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 2v10" />
-                                </svg>
-                            </button>
+
+                            {/* Dropdown Menu (hidden on mobile, accessible on desktop) */}
+                            <div className="hidden sm:block absolute right-0 top-12 w-48 glass-panel opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 shadow-xl">
+                                <div className="p-3 border-b border-[var(--glass-border)]">
+                                    <p className="text-sm font-bold text-[var(--text-main)] truncate">{user.name}</p>
+                                    <p className="text-xs text-[var(--text-muted)] truncate">{user.email}</p>
+                                </div>
+                                <Link
+                                    to="/profile"
+                                    className="block px-4 py-2 text-sm text-[var(--text-main)] hover:bg-[var(--surface-2)] transition-colors"
+                                >
+                                    👤 My Profile
+                                </Link>
+                                <Link
+                                    to="/orders"
+                                    className="block px-4 py-2 text-sm text-[var(--text-main)] hover:bg-[var(--surface-2)] transition-colors"
+                                >
+                                    📦 Order History
+                                </Link>
+                                <button
+                                    onClick={logout}
+                                    className="w-full text-left px-4 py-2 text-sm text-red-500 hover:bg-red-50 transition-colors border-t border-[var(--glass-border)]"
+                                >
+                                    🚪 Sign Out
+                                </button>
+                            </div>
                         </div>
                     ) : (
                         <Link to="/login" className="hidden sm:inline-flex items-center justify-center px-4 py-2 rounded-full bg-[var(--brand-primary)] text-white text-sm font-bold shadow-lg shadow-[var(--brand-primary)]/20 hover:brightness-110 transition-all">
