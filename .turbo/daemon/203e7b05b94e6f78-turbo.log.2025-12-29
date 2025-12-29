@@ -267,3 +267,27 @@
 2025-12-29T21:10:39.764796Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("spendigo-web"), path: AnchoredSystemPathBuf("apps/web") }}))
 2025-12-29T21:11:04.465498Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/web/src/context/ReviewContext.tsx")}
 2025-12-29T21:11:04.465516Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("spendigo-web"), path: AnchoredSystemPathBuf("apps/web") }}))
+2025-12-29T21:15:52.974008Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".turbo/cookies/22.cookie")}
+2025-12-29T21:15:52.974026Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-12-29T21:15:53.374364Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".turbo/cookies/23.cookie"), AnchoredSystemPathBuf(".turbo/cookies/24.cookie")}
+2025-12-29T21:15:53.374379Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-12-29T21:15:53.474040Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".turbo/cookies/25.cookie"), AnchoredSystemPathBuf("services/api/.turbo"), AnchoredSystemPathBuf("apps/web/.turbo/turbo-build.log"), AnchoredSystemPathBuf("services/api/.turbo/turbo-build.log")}
+2025-12-29T21:15:53.474059Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("spendigo-cloud-functions"), path: AnchoredSystemPathBuf("services/api") }, WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }, WorkspacePackage { name: Other("spendigo-web"), path: AnchoredSystemPathBuf("apps/web") }}))
+2025-12-29T21:15:53.481429Z  WARN turborepo_lib::package_changes_watcher: hashes are the same, no need to rerun
+2025-12-29T21:15:58.175293Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/web/node_modules/.vite-temp/vite.config.ts.timestamp-1767042958107-a14d7ce3ee1bc8.mjs")}
+2025-12-29T21:15:58.175305Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("spendigo-web"), path: AnchoredSystemPathBuf("apps/web") }}))
+2025-12-29T21:15:58.225465Z  WARN turborepo_lib::package_changes_watcher: hashes are the same, no need to rerun
+2025-12-29T21:16:01.574336Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/web/dist/assets/index-Cor9L2xa.js"), AnchoredSystemPathBuf("apps/web/dist/assets/canadianFSAs-BW-4oEue.js"), AnchoredSystemPathBuf("apps/web/dist/assets"), AnchoredSystemPathBuf("apps/web/dist/assets/index-DZX3KA3r.css"), AnchoredSystemPathBuf("apps/web/dist/index.html")}
+2025-12-29T21:16:01.574348Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("spendigo-web"), path: AnchoredSystemPathBuf("apps/web") }}))
+2025-12-29T21:16:02.974494Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/web/dist/index.html"), AnchoredSystemPathBuf("apps/web/dist/assets/index-DZX3KA3r.css"), AnchoredSystemPathBuf("apps/web/dist/assets/canadianFSAs-BW-4oEue.js"), AnchoredSystemPathBuf("apps/web/dist/assets"), AnchoredSystemPathBuf("apps/web/dist/assets/index-DjXlKpCy.js")}
+2025-12-29T21:16:02.974509Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("spendigo-web"), path: AnchoredSystemPathBuf("apps/web") }}))
+2025-12-29T21:16:03.174910Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("node_modules/.cache/turbo/75501a2bbcba8180.tar.zst"), AnchoredSystemPathBuf(".turbo/cookies/26.cookie"), AnchoredSystemPathBuf("node_modules/.cache/turbo/75501a2bbcba8180-meta.json"), AnchoredSystemPathBuf("apps/web/.turbo/turbo-build.log")}
+2025-12-29T21:16:03.174924Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }, WorkspacePackage { name: Other("spendigo-web"), path: AnchoredSystemPathBuf("apps/web") }}))
+2025-12-29T21:16:44.176897Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("firebase-debug.log")}
+2025-12-29T21:16:44.176912Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-12-29T21:16:55.176581Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".firebase/hosting.YXBwcy93ZWIvZGlzdA.cache")}
+2025-12-29T21:16:55.176611Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-12-29T21:16:57.577227Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("firebase-debug.log")}
+2025-12-29T21:16:57.577241Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-12-29T21:16:57.677157Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("firebase-debug.log")}
+2025-12-29T21:16:57.677170Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
