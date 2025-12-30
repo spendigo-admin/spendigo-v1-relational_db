@@ -1,6 +1,6 @@
 # Spendigo SmartCart — System Architecture
 
-**Last Updated**: 2025-12-24  
+**Last Updated**: 2025-12-30  
 **Status**: Production (Firebase-Based Implementation)
 
 ---
@@ -27,8 +27,9 @@ graph TB
     end
 
     subgraph External Services
-        Stripe[Stripe Connect<br/>Payments Integration]
-        Maps[Google Maps<br/> Geolocation]
+        Stripe[Stripe Payments<br/>Subscription & Checkout]
+        OSM[OpenStreetMap / Nominatim<br/> Geocoding]
+        Email[Firebase Extensions<br/>Trigger Email / SMTP]
     end
 
     Consumer -->|Browse, Order| Auth
@@ -38,8 +39,9 @@ graph TB
     Auth --> Firestore
     Auth --> Storage
     Firestore -.->|Triggers| Functions
+    Firestore -.->|Write to 'mail'| Email
     Functions --> Stripe
-    Consumer --> Maps
+    Consumer --> OSM
 ```
 
 ---
@@ -57,19 +59,17 @@ graph TB
 
 **Shared Codebase**: Single React app with role-based routing (`ConsumerLayout`, `MerchantLayout`, `AdminLayout`)
 
-### 3.2 Backend Services (Firebase)
+### 3.2 Backend Services (Hybrid)
 
-Instead of custom serverless functions, the app uses **Firebase client SDKs** with business logic in React Context providers:
+The architecture uses a **Hybrid approach**:
+1.  **Client-Side**: Firebase SDKs for real-time data sync and simple CRUD (handled via React Contexts).
+2.  **Server-Side**: Cloud Functions (Node.js) for privileged operations, extensive logic, and third-party integrations.
 
-| Context Provider | Responsibilities | Firestore Collections |
-|-----------------|------------------|----------------------|
-| **AuthContext** | User auth, RBAC, session management | `users` |
-| **MarketplaceContext** | Store profiles, products, catalog | `stores`, `catalog` |
-| **OrderContext** | Order lifecycle, batch writes | `orders` |
-| **CartContext** | Shopping cart, guest/user sync | `carts` |
-| **NotificationContext** | Push notifications | `notifications` |
-| **AuditContext** | Security audit logs (SHA-256 chain) | `audit_logs` |
-| **CatalogContext** | Master product catalog | `catalog` |
+| Component | Technology | Responsibilities |
+|-----------|------------|------------------|
+| **React Contexts** | Client SDK | Auth state, realtime order listeners, cart management |
+| **Cloud Functions** | Node.js 20 | Order emails, complex admin actions (user deletion), Stripe webhooks, maintenance tasks |
+| **Firebase Extensions** | Trigger Email | Outbound transactional emails via Firestore `mail` collection |
 
 ### 3.3 Data Store (Firebase Firestore)
 
@@ -81,7 +81,8 @@ Instead of custom serverless functions, the app uses **Firebase client SDKs** wi
 /orders/{orderId}            # Order documents
 /catalog/{productId}         # Master product catalog
 /audit_logs/{logId}          # Tamper-evident security logs
-/notifications/{userId}      # User-specific notifications
+/notifications/{userId}      # In-app notifications
+/mail/{mailId}               # Outbound emails (Trigger Email Extension)
 /carts/{userId}              # Shopping carts
 /wishlists/{userId}          # User wishlists
 /settings/platform           # Global settings (maintenance mode, etc.)

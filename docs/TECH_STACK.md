@@ -1,6 +1,6 @@
 # Spendigo SmartCart — Tech Stack
 
-**Last Updated**: 2025-12-24  
+**Last Updated**: 2025-12-30  
 **Status**: Production-Ready
 
 ---
@@ -26,7 +26,9 @@
   - **Authentication**: Firebase Auth (Email/Password + SSO ready)
   - **Database**: Cloud Firestore (NoSQL, real-time)
   - **Storage**: Firebase Storage (Images, files)
-- **Runtime**: Node.js 20+ (Client-side only, no custom backend server)
+  - **Logic**: Cloud Functions (Node.js 20)
+  - **Email**: Trigger Email Extension (SMTP via Firestore)
+- **Runtime**: Hybrid (Client Direct + Serverless Functions)
 
 ### Security
 - **HTTPS/SSL**: @vitejs/plugin-basic-ssl 2.1.0 (Local dev: spendigo.ca)
@@ -86,7 +88,9 @@ The current implementation uses **Firebase** instead of the originally planned P
 | **Storage** | Firebase Storage | ✅ Implemented |
 | **Analytics** | Firebase Analytics | 🔜 Planned |
 | **Monitoring** | Sentry / LogRocket | 🔜 Planned |
-| **Payments** | Stripe Connect | 🔧 Simulated (Backend ready) |
+| **Payments** | Stripe Connect | ✅ Implemented (Test Mode) |
+| **Geocoding** | OpenStreetMap (Nominatim) | ✅ Implemented |
+| **Email** | Trigger Email Extension | ✅ Implemented |
 
 ---
 
@@ -150,7 +154,7 @@ The initial tech stack document planned for:
 **Current implementation uses**:
 - Firebase (managed backend)
 - Firestore (NoSQL)
-- No custom server
+- Serverless Cloud Functions (Node.js)
 
 **Rationale**: Firebase accelerated development by 3-4 weeks and provides better real-time capabilities for the order management system.
 
