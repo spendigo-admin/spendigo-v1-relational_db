@@ -1,6 +1,17 @@
-# Email System Setup Instructions
+# Email System Setup Guide (Firebase Extension)
 
 **Last Updated**: 2025-12-30
+
+---
+
+## Overview
+
+We are using the **Trigger Email** Firebase Extension (`firebase/firestore-send-email`). This allows us to send emails simply by writing to the `mail` collection in Firestore.
+
+**Why this is better:**
+- No API keys in your code
+- Handles email delivery automatically
+- Official Google/Firebase solution
 
 ---
 
@@ -12,63 +23,38 @@
 
 ---
 
-## 🔧 Backend Setup Required
+## 🔧 Setup Required
 
-### Step 1: Install SendGrid Package
+### Step 1: Install the Extension
 
-```bash
-cd services/api
-npm install @sendgrid/mail
-cd ../..
-```
+1. Go to the **Firebase Console**:
+   - [Extensions Marketplace](https://console.firebase.google.com/project/spendigo-8540c/extensions)
 
-### Step 2: Get SendGrid API Key
+2. Search for **"Trigger Email"** (published by Firebase).
+   - Click **Install**.
 
-1. **Sign up for SendGrid**:
-   - Go to: https://signup.sendgrid.com/
-   - Free plan: 100 emails/day forever
+3. **Configure the Extension**:
+   - **Cloud Functions location**: `us-central1` (or match your other functions)
+   - **SMTP Connection URI**:
+     - *If using Gmail*: `smtps://your-email@gmail.com:YOUR_APP_PASSWORD@smtp.gmail.com:465` (See Note below about App Passwords)
+     - *If using other provider*: Get the SMTP string from them.
+   - **Email documents collection**: `mail` (Default)
+   - **Default FROM address**: `orders@spendigo.ca` (or your email)
+   - **Default REPLY-TO address**: `support@spendigo.ca`
 
-2. **Create API Key**:
-   - Login to SendGrid Dashboard
-   - Go to: Settings → API Keys
-   - Click "Create API Key"
-   - Name: `Spendigo Production`
-   - Permissions: `Full Access`
-   - **Copy the key** (starts with `SG.`)
+   **NOTE about Gmail:**
+   - You **cannot** use your regular password.
+   - You must enable **2-Step Verification** on your Google Account.
+   - Then generate an **App Password**: [https://myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords)
+   - Use that 16-character code in the connection URI.
 
-3. **Add to Firebase**:
-```bash
-firebase functions:config:set sendgrid.api_key="SG.YOUR_API_KEY_HERE"
-```
+### Step 2: Deploy Updated Functions
 
-### Step 3: Verify Sender Email
-
-SendGrid requires sender verification:
-
-1. Go to: https://app.sendgrid.com/settings/sender_auth/senders
-2. Click "Create New Sender"
-3. Fill in:
-   - **From Name**: Spendigo
-   - **From Email**: orders@spendigo.ca (use your actual domain)
-   - **Reply To**: support@spendigo.ca
-   - Address: Your business address
-4. Verify email (check inbox for verification link)
-
-**Note**: If you don't have a custom domain, use a Gmail address temporarily:
-- From Email: yourname+spendigo@gmail.com
-- This works but looks less professional
-
-### Step 4: Deploy Functions
+We updated the cloud functions to write to the `mail` collection instead of calling SendGrid directly.
 
 ```bash
 npm run build
 firebase deploy --only functions
-```
-
-Expected output:
-```
-✔ functions[sendOrderConfirmation(us-central1)] Successful create operation.
-✔ functions[sendOrderStatusUpdate(us-central1)] Successful create operation.
 ```
 
 ---
@@ -77,142 +63,65 @@ Expected output:
 
 ### Test Email Verification:
 
-1. Register a new account with your real email
-2. Check inbox for verification email
-3. Click link
-4. Confirm you can access the platform
+1. Register a new account
+2. Check inbox for verification link
 
 ### Test Order Emails:
 
-Option A: Place a real test order through the UI
+Manually create a test order in Firestore (or place one in the app):
 
-Option B: Manually trigger via Firestore:
-
-```typescript
-// In Firebase Console → Firestore
-// Add a test order document:
+```javascript
+// In Firebase Console -> Firestore -> 'orders' collection -> Add Document
 {
-  id: "TEST_" + Date.now(),
   customerEmail: "your@email.com",
   customerName: "Test User",
-  date: new Date().toISOString(),
   storeName: "Test Store",
-  items: [
-    {
-      name: "Test Product",
-      quantity: 2,
-      price: 9.99
-    }
-  ],
-  total: 19.98,
+  date: "2023-12-30T10:00:00Z",
   status: "placed",
-  deliveryAddress: "123 Test St, Toronto, ON M1M 1M1"
+  total: 10.00,
+  items: [
+    { name: "Test Item", quantity: 1, price: 10.00 }
+  ]
 }
 ```
 
-This will automatically trigger the email function!
+Wait a few seconds, look at the **`mail`** collection in Firestore.
+- You should see a new document created by our Cloud Function.
+- The extension will pick it up and update it with a `delivery` status field (e.g. `state: "SUCCESS"`).
 
 ---
 
 ## 📧 Email Features
 
-### Verification Email:
-- Sent immediately on registration
-- Link expires after 1 hour (Firebase default)
-- Can be resent with 60-second cooldown
-
 ### Order Confirmation:
-- Sent when order is created
-- Includes all order details
-- Has "Track Order" button
+- Triggered when a new order is created
+- Cloud Function creates a document in `mail`
+- Extension sends the email
 
 ### Status Updates:
-- Sent when order status changes:
-  - `preparing` → "Your order is being prepared"
-  - `out_for_delivery` → "Your order is out for delivery"
-  - `delivered` → "Your order has been delivered"
-  - `cancelled` → "Your order has been cancelled"
+- Triggered when order status changes (e.g., `preparing` -> `out_for_delivery`)
+- Cloud Function creates a document in `mail`
+- Extension sends the email
 
 ---
 
-## 🔐 Firebase Email Template Configuration
+## � Troubleshooting
 
-1. Go to: https://console.firebase.google.com/project/spendigo-8540c/authentication/emails
-2. Click "Templates" tab
-3. Customize "Email address verification":
-   - **From name**: Spendigo
-   - **Reply-to**: support@spendigo.ca
-   - **Subject**: Verify your Spendigo account
-   - **Body**: Customize the message
+### Email not sending?
 
----
+1. **Check Firestore `mail` collection**:
+   - Is a document created there?
+     - **No?** Issue with Cloud Function (check logs).
+     - **Yes?** Check the `delivery` field on that document.
+       - If `state: "ERROR"`, read the `error` field to see why (usually SMTP auth fail).
 
-## 💰 Costs
+2. **Check Extension Logs**:
+   - Go to Extensions tab in Firebase Console -> Trigger Email -> Logs.
 
-### SendGrid Free Tier:
-- 100 emails/day
-- 40,000 emails first 30 days
-- Forever free
-
-### Upgrade if needed:
-- Essentials: $19.95/mo (50K emails)
-- Pro: $89.95/mo (100K emails)
-
-### Estimated Usage:
-- 10 sign-ups/day = 10 verification emails
-- 20 orders/day = 20 order confirmations + 40 status updates
-- **Total**: ~70 emails/day (well within free tier)
+### "Auth Error" with Gmail?
+- Ensure you used an **App Password**, not your normal password.
+- Ensure the connection URI format is correct: `smtps://user:pass@host:465`
 
 ---
 
-## 🐛 Troubleshooting
-
-### Emails not sending?
-
-**Check Cloud Function logs**:
-```bash
-firebase functions:log --only sendOrderConfirmation
-```
-
-**Common issues**:
-1. SendGrid API key not set: Run `firebase functions:config:get`
-2. Sender not verified: Check SendGrid dashboard
-3. Email in spam: Add SPF/DKIM records in your domain
-
-### Verification emails not arriving?
-
-1. Check spam folder
-2. Try with different email provider (Gmail, Outlook)
-3. Check Firebase Auth settings
-
----
-
-## 📝 Next Steps
-
-1. **Install SendGrid package** (see Step 1)
-2. **Get API key** (see Step 2)
-3. **Deploy functions** (see Step 4)
-4. **Test end-to-end**
-
----
-
-## 🚀 Quick Start Commands
-
-```bash
-# 1. Install SendGrid
-cd services/api && npm install @sendgrid/mail && cd ../..
-
-# 2. Set API key (replace with your key)
-firebase functions:config:set sendgrid.api_key="SG.YOUR_KEY"
-
-# 3. Build and deploy
-npm run build
-firebase deploy --only functions
-
-# 4. Test
-# Register a new account and check email!
-```
-
----
-
-**Ready to deploy?** Run the commands above and you'll have a complete email system! 📧✅
+**Ready to deploy?** Just install the extension and run `firebase deploy --only functions`! �

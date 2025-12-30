@@ -1,28 +1,11 @@
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 
-// Note: Install sendgrid with: npm install @sendgrid/mail
-// Configure with: firebase functions:config:set sendgrid.api_key="YOUR_KEY"
-
-interface OrderEmailData {
-    customerEmail: string;
-    customerName: string;
-    orderId: string;
-    orderDate: string;
-    storeName: string;
-    items: Array<{
-        name: string;
-        quantity: number;
-        price: number;
-    }>;
-    subtotal: number;
-    total: number;
-    deliveryAddress: string;
-}
+// No external dependencies needed! We just write to Firestore.
 
 /**
  * Send Order Confirmation Email
- * Triggered when a new order is created in Firestore
+ * Creates a document in the 'mail' collection which triggers the Firebase Extension
  */
 export const sendOrderConfirmation = functions.firestore
     .document('orders/{orderId}')
@@ -31,56 +14,18 @@ export const sendOrderConfirmation = functions.firestore
         const orderId = context.params.orderId;
 
         try {
-            // Get SendGrid API key from config
-            const apiKey = functions.config().sendgrid?.api_key;
-
-            if (!apiKey) {
-                console.warn('SendGrid API key not configured. Skipping email.');
-                return null;
-            }
-
-            const sgMail = require('@sendgrid/mail');
-            sgMail.setApiKey(apiKey);
-
-            // Build email content
+            // Build the HTML content
             const itemsList = order.items
                 .map((item: any) => `
                     <tr>
-                        <td style="padding: 10px; border-bottom: 1px solid #eee;">
-                            ${item.name}
-                        </td>
-                        <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: center;">
-                            ${item.quantity}
-                        </td>
-                        <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">
-                            $${item.price.toFixed(2)}
-                        </td>
+                        <td style="padding: 10px; border-bottom: 1px solid #eee;">${item.name}</td>
+                        <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: center;">${item.quantity}</td>
+                        <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">$${item.price.toFixed(2)}</td>
                     </tr>
                 `)
                 .join('');
 
-            const msg = {
-                to: order.customerEmail,
-                from: {
-                    email: 'orders@spendigo.ca',
-                    name: 'Spendigo Orders'
-                },
-                subject: `Order Confirmation - #${orderId}`,
-                text: `
-Thank you for your order!
-
-Order Details:
-- Order ID: ${orderId}
-- Date: ${new Date(order.date).toLocaleDateString()}
-- Store: ${order.storeName}
-- Total: $${order.total.toFixed(2)}
-
-Track your order: https://spendigo.ca/order/${orderId}
-
-Best regards,
-The Spendigo Team
-                `,
-                html: `
+            const htmlContent = `
 <!DOCTYPE html>
 <html>
 <head>
@@ -145,29 +90,37 @@ The Spendigo Team
         </div>
     </div>
 </body>
-</html>
-                `,
-            };
+</html>`;
 
-            await sgMail.send(msg);
-            console.log(`Order confirmation email sent to ${order.customerEmail} for order ${orderId}`);
-
-            // Update order with email sent status
-            await admin.firestore().collection('orders').doc(orderId).update({
-                emailSent: true,
-                emailSentAt: admin.firestore.FieldValue.serverTimestamp(),
+            // Write to 'mail' collection (Trigger Email Extension)
+            await admin.firestore().collection('mail').add({
+                to: [order.customerEmail],
+                message: {
+                    subject: `Order Confirmation - #${orderId}`,
+                    html: htmlContent,
+                },
+                orderId: orderId, // Metadata
+                createdAt: admin.firestore.FieldValue.serverTimestamp(),
             });
 
-            return { success: true, orderId };
+            console.log(`Queued order confirmation email for ${orderId}`);
+
+            // Update order status
+            await admin.firestore().collection('orders').doc(orderId).update({
+                emailQueued: true,
+                emailQueuedAt: admin.firestore.FieldValue.serverTimestamp(),
+            });
+
+            return { success: true };
         } catch (error) {
-            console.error('Error sending order confirmation email:', error);
+            console.error('Error queuing order confirmation email:', error);
             return { success: false, error: String(error) };
         }
     });
 
 /**
  * Send Order Status Update Email
- * Triggered when an order status changes
+ * Creates a document in the 'mail' collection which triggers the Firebase Extension
  */
 export const sendOrderStatusUpdate = functions.firestore
     .document('orders/{orderId}')
@@ -182,16 +135,6 @@ export const sendOrderStatusUpdate = functions.firestore
         }
 
         try {
-            const apiKey = functions.config().sendgrid?.api_key;
-
-            if (!apiKey) {
-                console.warn('SendGrid API key not configured. Skipping email.');
-                return null;
-            }
-
-            const sgMail = require('@sendgrid/mail');
-            sgMail.setApiKey(apiKey);
-
             // Determine email content based on status
             let subject = '';
             let emoji = '';
@@ -203,38 +146,31 @@ export const sendOrderStatusUpdate = functions.firestore
                     emoji = '👨‍🍳';
                     subject = `Your Order is Being Prepared`;
                     message = `${after.storeName} is now preparing your order. We'll notify you when it's ready for delivery.`;
-                    statusColor = '#eab308';
+                    statusColor = '#eab308'; // yellow
                     break;
                 case 'out_for_delivery':
                     emoji = '🚚';
                     subject = `Your Order is Out for Delivery`;
                     message = `Your order is on its way! Expected delivery within the next few hours.`;
-                    statusColor = '#3b82f6';
+                    statusColor = '#3b82f6'; // blue
                     break;
                 case 'delivered':
                     emoji = '✅';
                     subject = `Your Order Has Been Delivered`;
                     message = `Your order has been successfully delivered. Thank you for shopping with ${after.storeName}!`;
-                    statusColor = '#22c55e';
+                    statusColor = '#22c55e'; // green
                     break;
                 case 'cancelled':
                     emoji = '❌';
                     subject = `Your Order Has Been Cancelled`;
                     message = `Your order has been cancelled. If you didn't request this, please contact support.`;
-                    statusColor = '#ef4444';
+                    statusColor = '#ef4444'; // red
                     break;
                 default:
                     return null;
             }
 
-            const msg = {
-                to: after.customerEmail,
-                from: {
-                    email: 'orders@spendigo.ca',
-                    name: 'Spendigo Orders'
-                },
-                subject: `${subject} - Order #${orderId}`,
-                html: `
+            const htmlContent = `
 <!DOCTYPE html>
 <html>
 <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
@@ -262,16 +198,25 @@ export const sendOrderStatusUpdate = functions.firestore
         <p>Questions? Contact <a href="mailto:support@spendigo.ca" style="color: #6366f1;">support@spendigo.ca</a></p>
     </div>
 </body>
-</html>
-                `,
-            };
+</html>`;
 
-            await sgMail.send(msg);
-            console.log(`Order status update email sent to ${after.customerEmail} for order ${orderId}`);
+            // Write to 'mail' collection
+            await admin.firestore().collection('mail').add({
+                to: [after.customerEmail],
+                message: {
+                    subject: `${subject} - Order #${orderId}`,
+                    html: htmlContent,
+                },
+                orderId: orderId,
+                status: after.status,
+                createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            });
 
-            return { success: true, orderId, newStatus: after.status };
+            console.log(`Queued order status email for ${orderId} (${after.status})`);
+
+            return { success: true };
         } catch (error) {
-            console.error('Error sending order status update email:', error);
+            console.error('Error queuing order status email:', error);
             return { success: false, error: String(error) };
         }
     });
