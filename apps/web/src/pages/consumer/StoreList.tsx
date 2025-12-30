@@ -35,9 +35,20 @@ const StoreList: React.FC = () => {
         return R * c;
     };
 
-    // Auto-detect location from profile
+    // Auto-detect location from profile or use saved coordinates
     useEffect(() => {
         const detectProfileLocation = async () => {
+            // Priority 1: Use saved coordinates from User Profile (set during registration)
+            if (user?.coordinates) {
+                setUserCoords(user.coordinates);
+                // Also try to set a friendly address name if possible
+                if (user.address) {
+                    setAddress("Home");
+                }
+                return;
+            }
+
+            // Priority 2: Geocode address from Profile Addresses list
             if (user && profile.addresses.length > 0) {
                 const defaultAddr = profile.addresses.find(a => a.isDefault) || profile.addresses[0];
                 const addrStr = `${defaultAddr.street}, ${defaultAddr.city}, ${defaultAddr.province}, ${defaultAddr.postalCode}`;

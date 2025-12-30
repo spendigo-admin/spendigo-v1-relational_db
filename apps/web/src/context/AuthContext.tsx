@@ -26,6 +26,9 @@ export interface User {
     // Admin specific
     adminRole?: 'SUPER_ADMIN' | 'SUPPORT' | 'MODERATOR' | 'AUDITOR';
     emailVerified?: boolean;
+    // Consumer specific
+    address?: string;
+    coordinates?: { lat: number; lng: number };
 }
 
 export type Permission =
@@ -223,7 +226,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 id: uid,
                 email: userData.email!,
                 name: userData.name || 'New User',
-                role: userData.role || 'consumer',
+                role: (userData.role || 'consumer') as 'consumer' | 'merchant' | 'admin',
                 emailVerified: false,
             };
 
@@ -232,6 +235,37 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 newUser.merchantRole = 'OWNER';
                 newUser.subscriptionTier = 'free';
                 if (userData.storeName) newUser.storeName = userData.storeName;
+            } else {
+                // Consumer fields
+                if (userData.address) {
+                    newUser.address = userData.address;
+
+                    // Populate addresses array for compatibility with OrderContext/Profile
+                    // We assume the whole string is the street for now since we don't have parsed fields
+                    newUser.addresses = [{
+                        id: `addr-${Date.now()}`,
+                        label: 'Home',
+                        street: userData.address,
+                        city: '',
+                        province: '',
+                        postalCode: '',
+                        isDefault: true
+                    }];
+
+                    // Attempt Geocoding
+                    try {
+                        const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(userData.address)}`);
+                        const data = await response.json();
+                        if (data && data.length > 0) {
+                            newUser.coordinates = {
+                                lat: parseFloat(data[0].lat),
+                                lng: parseFloat(data[0].lon)
+                            };
+                        }
+                    } catch (e) {
+                        console.warn("Geocoding failed during registration:", e);
+                    }
+                }
             }
 
             await setDoc(doc(db, 'users', uid), newUser);
