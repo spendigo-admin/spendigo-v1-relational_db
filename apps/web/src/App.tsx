@@ -32,6 +32,7 @@ import OrderTracking from './pages/consumer/OrderTracking';
 import Notifications from './pages/consumer/Notifications';
 import SmartCartWishlist from './pages/consumer/SmartCartWishlist';
 import VerifyEmail from './pages/consumer/VerifyEmail';
+import RequireVerification from './components/RequireVerification';
 import HowItWorks from './pages/consumer/HowItWorks';
 
 // Merchant Pages
@@ -121,18 +122,21 @@ function App() {
                                                                 <Route path="/store/:id" element={<StoreDetail />} />
                                                                 <Route path="/product/:id" element={<ProductDetail />} />
                                                                 <Route path="/cart" element={<Cart />} />
-                                                                <Route path="/checkout" element={<Checkout />} />
-                                                                <Route path="/profile" element={<Profile />} />
+
+                                                                {/* Protected Consumer Routes - Require Email Verification */}
+                                                                <Route path="/checkout" element={<RequireVerification><Checkout /></RequireVerification>} />
+                                                                <Route path="/profile" element={<RequireVerification><Profile /></RequireVerification>} />
+                                                                <Route path="/order/:id" element={<RequireVerification><OrderTracking /></RequireVerification>} />
+                                                                <Route path="/notifications" element={<RequireVerification><Notifications /></RequireVerification>} />
+                                                                <Route path="/smartcart" element={<RequireVerification><SmartCartWishlist /></RequireVerification>} />
+
                                                                 <Route path="/search" element={<Search />} />
-                                                                <Route path="/order/:id" element={<OrderTracking />} />
-                                                                <Route path="/notifications" element={<Notifications />} />
-                                                                <Route path="/smartcart" element={<SmartCartWishlist />} />
                                                                 <Route path="/how-it-works" element={<HowItWorks />} />
                                                                 <Route path="/consumer" element={<Navigate to="/" replace />} />
                                                             </Route>
 
                                                             {/* MERCHANT ROUTES with Layout */}
-                                                            <Route element={<MerchantLayout />}>
+                                                            <Route element={<RequireVerification><MerchantLayout /></RequireVerification>}>
                                                                 <Route path="/merchant/dashboard" element={<MerchantDashboard />} />
                                                                 <Route path="/merchant/onboarding" element={<MerchantOnboarding />} />
                                                                 <Route path="/merchant/products" element={<MerchantProducts />} />
@@ -144,7 +148,7 @@ function App() {
                                                             </Route>
 
                                                             {/* ADMIN ROUTES with Layout */}
-                                                            <Route element={<AdminLayout />}>
+                                                            <Route element={<RequireVerification><AdminLayout /></RequireVerification>}>
                                                                 <Route path="/admin/dashboard" element={<AdminDashboard />} />
                                                                 <Route path="/admin/users" element={<AdminUserManagement />} />
                                                                 <Route path="/admin/stores" element={<AdminStoreManagement />} />

@@ -25,6 +25,7 @@ export interface User {
     subscriptionTier?: 'free' | 'core' | 'growth';
     // Admin specific
     adminRole?: 'SUPER_ADMIN' | 'SUPPORT' | 'MODERATOR' | 'AUDITOR';
+    emailVerified?: boolean;
 }
 
 export type Permission =
@@ -85,7 +86,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 const { onSnapshot, doc } = await import('firebase/firestore');
                 unsubscribeProfile = onSnapshot(doc(db, 'users', firebaseUser.uid), async (userDoc) => {
                     if (userDoc.exists()) {
-                        await processUserData(firebaseUser.uid, userDoc.data());
+                        await processUserData(firebaseUser.uid, userDoc.data(), firebaseUser.emailVerified);
                     } else {
                         console.error('User profile not found in Firestore');
                         setUser(null);
@@ -109,7 +110,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         };
     }, []);
 
-    const processUserData = async (uid: string, data: any) => {
+    const processUserData = async (uid: string, data: any, emailVerified: boolean) => {
         try {
             let finalRole = data.role || 'consumer';
             let finalAdminRole = data.adminRole;
@@ -164,7 +165,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 id: uid,
                 role: finalRole as 'consumer' | 'merchant' | 'admin',
                 merchantRole: merchantRole,
-                adminRole: finalAdminRole
+                adminRole: finalAdminRole,
+                emailVerified: emailVerified,
             } as User);
         } catch (error) {
             console.error('Error processing user data:', error);
@@ -173,12 +175,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
     };
 
-    const fetchUserProfile = async (uid: string) => {
+    const fetchUserProfile = async (uid: string, emailVerified: boolean) => {
         // fetchUserProfile is now primarily handled by onSnapshot, but we keep the logic 
         // for initial loads if needed, though processUserData handles it now.
         const userDoc = await getDoc(doc(db, 'users', uid));
         if (userDoc.exists()) {
-            await processUserData(uid, userDoc.data());
+            await processUserData(uid, userDoc.data(), emailVerified);
         }
     };
 
@@ -187,7 +189,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             setLoading(true);
             const userCredential = await signInWithEmailAndPassword(auth, email, password);
             // Explicitly fetch profile here to ensure 'user' state is populated before login returns true
-            await fetchUserProfile(userCredential.user.uid);
+            await fetchUserProfile(userCredential.user.uid, userCredential.user.emailVerified);
 
             // Re-check auth state (fetchUserProfile might have forced logout)
             if (!auth.currentUser) {
@@ -286,7 +288,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             }
 
             // Fetch profile (whether new or existing)
-            await fetchUserProfile(user.uid);
+            await fetchUserProfile(user.uid, user.emailVerified);
             return true;
         } catch (error: any) {
             console.error('Google Login failed:', error);
