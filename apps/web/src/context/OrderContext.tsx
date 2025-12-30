@@ -165,7 +165,7 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
                             id: user.id,
                             name: data.name || user.name,
                             email: data.email || user.email,
-                            phone: data.phone || '',
+                            phone: data.phoneNumber || data.phone || '',
                             addresses: data.addresses || []
                         });
                     }
@@ -345,7 +345,7 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
                 await updateDoc(userRef, {
                     ...(updates.name && { name: updates.name }),
                     ...(updates.email && { email: updates.email }),
-                    ...(updates.phone && { phone: updates.phone })
+                    ...(updates.phone && { phoneNumber: updates.phone })
                 });
             } catch (error) {
                 console.error('Error updating profile:', error);

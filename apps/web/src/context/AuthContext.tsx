@@ -222,13 +222,21 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 handleCodeInApp: false,
             });
 
+            // Format phone number (Default to +1 for 10 digits)
+            let formattedPhone = userData.phoneNumber || null;
+            if (formattedPhone) {
+                const digits = formattedPhone.replace(/\D/g, '');
+                if (digits.length === 10) formattedPhone = `+1${digits}`;
+                else if (digits.length === 11 && digits.startsWith('1')) formattedPhone = `+${digits}`;
+            }
+
             // Create User Profile in Firestore
             const newUser: any = {
                 id: uid,
                 email: userData.email!,
                 name: userData.name || 'New User',
                 role: (userData.role || 'consumer') as 'consumer' | 'merchant' | 'admin',
-                phoneNumber: userData.phoneNumber || null, // Add phoneNumber
+                phoneNumber: formattedPhone,
                 emailVerified: false,
             };
 
