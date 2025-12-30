@@ -11,9 +11,12 @@ const Register: React.FC = () => {
         name: '',
         email: '',
         password: '',
-        address: '',
         storeName: '',
-        businessType: 'Retail'
+        businessType: 'Retail',
+        street: '',
+        city: '',
+        province: 'ON',
+        postalCode: ''
     });
 
     const handleRegister = async (e: React.FormEvent) => {
@@ -181,15 +184,52 @@ const Register: React.FC = () => {
 
                     {/* Consumer Specific Fields */}
                     {role === 'consumer' && (
-                        <div className="animate-fade-in">
-                            <label className="block text-sm font-medium mb-1 text-[var(--text-main)]">Delivery Address</label>
+                        <div className="space-y-3 animate-fade-in">
+                            <label className="block text-sm font-medium text-[var(--text-main)]">Delivery Address</label>
+
                             <input
                                 type="text"
                                 required
-                                placeholder="e.g. 123 Queen St W"
+                                placeholder="Street Address"
                                 className="w-full p-3 rounded-[var(--radius-sm)] bg-[var(--surface-1)] border border-[var(--glass-border)] text-[var(--text-main)] focus:border-[var(--brand-primary)] outline-none transition-colors"
-                                value={formData.address}
-                                onChange={e => setFormData({ ...formData, address: e.target.value })}
+                                value={formData.street}
+                                onChange={e => setFormData({ ...formData, street: e.target.value })}
+                            />
+
+                            <div className="flex gap-2">
+                                <input
+                                    type="text"
+                                    required
+                                    placeholder="City"
+                                    className="flex-[2] p-3 rounded-[var(--radius-sm)] bg-[var(--surface-1)] border border-[var(--glass-border)] text-[var(--text-main)] focus:border-[var(--brand-primary)] outline-none transition-colors"
+                                    value={formData.city}
+                                    onChange={e => setFormData({ ...formData, city: e.target.value })}
+                                />
+                                <select
+                                    className="flex-1 p-3 rounded-[var(--radius-sm)] bg-[var(--surface-1)] border border-[var(--glass-border)] text-[var(--text-main)] focus:border-[var(--brand-primary)] outline-none transition-colors"
+                                    value={formData.province}
+                                    onChange={e => setFormData({ ...formData, province: e.target.value })}
+                                >
+                                    <option value="ON">ON</option>
+                                    <option value="BC">BC</option>
+                                    <option value="AB">AB</option>
+                                    <option value="QC">QC</option>
+                                    <option value="MB">MB</option>
+                                    <option value="NS">NS</option>
+                                    <option value="NB">NB</option>
+                                    <option value="SK">SK</option>
+                                    <option value="NL">NL</option>
+                                    <option value="PE">PE</option>
+                                </select>
+                            </div>
+
+                            <input
+                                type="text"
+                                required
+                                placeholder="Postal Code (e.g. K6V 5T3)"
+                                className="w-full p-3 rounded-[var(--radius-sm)] bg-[var(--surface-1)] border border-[var(--glass-border)] text-[var(--text-main)] focus:border-[var(--brand-primary)] outline-none transition-colors"
+                                value={formData.postalCode}
+                                onChange={e => setFormData({ ...formData, postalCode: e.target.value })}
                             />
                         </div>
                     )}

@@ -209,7 +209,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
     };
 
-    const register = async (userData: Partial<User> & { password: string }): Promise<boolean> => {
+    const register = async (userData: Partial<User> & { password: string; street?: string; city?: string; province?: string; postalCode?: string }): Promise<boolean> => {
         try {
             const userCredential = await createUserWithEmailAndPassword(auth, userData.email!, userData.password);
             const uid = userCredential.user.uid;
@@ -237,24 +237,24 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 if (userData.storeName) newUser.storeName = userData.storeName;
             } else {
                 // Consumer fields
-                if (userData.address) {
-                    newUser.address = userData.address;
+                if (userData.street) {
+                    const fullAddress = `${userData.street}, ${userData.city}, ${userData.province}, ${userData.postalCode}`;
+                    newUser.address = fullAddress;
 
-                    // Populate addresses array for compatibility with OrderContext/Profile
-                    // We assume the whole string is the street for now since we don't have parsed fields
+                    // Populate addresses array with structured data
                     newUser.addresses = [{
                         id: `addr-${Date.now()}`,
                         label: 'Home',
-                        street: userData.address,
-                        city: '',
-                        province: '',
-                        postalCode: '',
+                        street: userData.street,
+                        city: userData.city || '',
+                        province: userData.province || '',
+                        postalCode: userData.postalCode || '',
                         isDefault: true
                     }];
 
                     // Attempt Geocoding
                     try {
-                        const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(userData.address)}`);
+                        const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(fullAddress)}`);
                         const data = await response.json();
                         if (data && data.length > 0) {
                             newUser.coordinates = {
