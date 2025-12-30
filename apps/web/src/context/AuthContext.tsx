@@ -235,36 +235,36 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 newUser.merchantRole = 'OWNER';
                 newUser.subscriptionTier = 'free';
                 if (userData.storeName) newUser.storeName = userData.storeName;
-            } else {
-                // Consumer fields
-                if (userData.street) {
-                    const fullAddress = `${userData.street}, ${userData.city}, ${userData.province}, ${userData.postalCode}`;
-                    newUser.address = fullAddress;
+            }
 
-                    // Populate addresses array with structured data
-                    newUser.addresses = [{
-                        id: `addr-${Date.now()}`,
-                        label: 'Home',
-                        street: userData.street,
-                        city: userData.city || '',
-                        province: userData.province || '',
-                        postalCode: userData.postalCode || '',
-                        isDefault: true
-                    }];
+            // Common Address Processing (Consumer & Merchant)
+            if (userData.street) {
+                const fullAddress = `${userData.street}, ${userData.city}, ${userData.province}, ${userData.postalCode}`;
+                newUser.address = fullAddress; // Legacy/Simple access
 
-                    // Attempt Geocoding
-                    try {
-                        const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(fullAddress)}`);
-                        const data = await response.json();
-                        if (data && data.length > 0) {
-                            newUser.coordinates = {
-                                lat: parseFloat(data[0].lat),
-                                lng: parseFloat(data[0].lon)
-                            };
-                        }
-                    } catch (e) {
-                        console.warn("Geocoding failed during registration:", e);
+                // Populate addresses array with structured data
+                newUser.addresses = [{
+                    id: `addr-${Date.now()}`,
+                    label: userData.role === 'merchant' ? 'Store' : 'Home',
+                    street: userData.street,
+                    city: userData.city || '',
+                    province: userData.province || '',
+                    postalCode: userData.postalCode || '',
+                    isDefault: true
+                }];
+
+                // Attempt Geocoding
+                try {
+                    const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(fullAddress)}`);
+                    const data = await response.json();
+                    if (data && data.length > 0) {
+                        newUser.coordinates = {
+                            lat: parseFloat(data[0].lat),
+                            lng: parseFloat(data[0].lon)
+                        };
                     }
+                } catch (e) {
+                    console.warn("Geocoding failed during registration:", e);
                 }
             }
 

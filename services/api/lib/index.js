@@ -33,11 +33,13 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.sendOrderStatusUpdate = exports.sendOrderConfirmation = exports.getPaymentHistory = exports.stripeWebhook = exports.createCheckoutSession = exports.deleteUser = exports.inviteTeamMember = void 0;
+exports.sendOrderStatusUpdate = exports.sendOrderConfirmation = exports.getPaymentHistory = exports.stripeWebhook = exports.createCheckoutSession = exports.deleteUser = exports.inviteTeamMember = exports.cleanupOrphanedUsers = void 0;
 const admin = __importStar(require("firebase-admin"));
 // Initialize Firebase Admin
 admin.initializeApp();
 // Export all functions
+var cleanupOrphanedUsers_1 = require("./admin/cleanupOrphanedUsers");
+Object.defineProperty(exports, "cleanupOrphanedUsers", { enumerable: true, get: function () { return cleanupOrphanedUsers_1.cleanupOrphanedUsers; } });
 var inviteTeamMember_1 = require("./auth/inviteTeamMember");
 Object.defineProperty(exports, "inviteTeamMember", { enumerable: true, get: function () { return inviteTeamMember_1.inviteTeamMember; } });
 var deleteUser_1 = require("./auth/deleteUser");
