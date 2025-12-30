@@ -13,7 +13,7 @@ const Register: React.FC = () => {
         password: '',
         phoneNumber: '',
         storeName: '',
-        businessType: 'Retail',
+        businessType: 'Grocery Store',
         street: '',
         city: '',
         province: 'ON',
@@ -172,20 +172,34 @@ const Register: React.FC = () => {
                                     value={formData.businessType}
                                     onChange={e => setFormData({ ...formData, businessType: e.target.value })}
                                 >
-                                    <option>Grocery</option>
-                                    <option>Convenience</option>
-                                    <option>Farmers Market</option>
+                                    <option>Grocery Store</option>
+                                    <option>Convenience Store</option>
+                                    <option>Discount / Dollar Store</option>
+                                    <option>Ethnic / Specialty Grocery</option>
+                                    <option>Farmers Market Vendor</option>
+                                    <option>Organic / Health Food Store</option>
                                     <option>Artisan Bakery</option>
-                                    <option>Local Café</option>
                                     <option>Butcher Shop</option>
-                                    <option>Fishmonger</option>
-                                    <option>Craft Shop</option>
-                                    <option>Florist</option>
-                                    <option>Bookstore</option>
-                                    <option>Home & Garden</option>
+                                    <option>Fishmonger / Seafood Shop</option>
+                                    <option>Deli / Prepared Foods</option>
                                     <option>Restaurant</option>
-                                    <option>Retail</option>
-                                    <option>Other</option>
+                                    <option>Local Café / Coffee Shop</option>
+                                    <option>Dessert & Sweets Shop</option>
+                                    <option>Meal Prep / Tiffin Service</option>
+                                    <option>Liquor / Wine / Beer Store</option>
+                                    <option>Pharmacy / Health Store</option>
+                                    <option>Pet Store</option>
+                                    <option>Florist</option>
+                                    <option>Home & Garden Store</option>
+                                    <option>Hardware Store</option>
+                                    <option>Bookstore / Stationery</option>
+                                    <option>Craft / Handmade Goods Store</option>
+                                    <option>Clothing / Boutique</option>
+                                    <option>Toy & Gift Store</option>
+                                    <option>Electronics / Mobile Accessories</option>
+                                    <option>Thrift / Second-Hand Store</option>
+                                    <option>General Retail</option>
+                                    <option>Specialty Retail</option>
                                 </select>
                             </div>
                         </>
