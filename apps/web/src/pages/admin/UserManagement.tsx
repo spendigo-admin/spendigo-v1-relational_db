@@ -85,8 +85,8 @@ const UserManagement: React.FC = () => {
                         id: u.id,
                         email: u.email,
                         role: u.role,
-                        status: 'active' as 'active' | 'banned',
-                        joinedAt: '2025' // Placeholder
+                        status: u.status || 'active',
+                        joinedAt: u.joinedAt ? new Date(u.joinedAt).toLocaleDateString() : 'Unknown'
                     }));
 
                 setStaff(staffMembers.sort((a, b) => a.role === 'SUPER_ADMIN' ? -1 : 1));
