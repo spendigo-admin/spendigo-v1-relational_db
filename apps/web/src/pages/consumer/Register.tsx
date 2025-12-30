@@ -11,6 +11,7 @@ const Register: React.FC = () => {
         name: '',
         email: '',
         password: '',
+        phoneNumber: '',
         storeName: '',
         businessType: 'Retail',
         street: '',
@@ -137,8 +138,18 @@ const Register: React.FC = () => {
                             type="email"
                             required
                             className="w-full p-3 rounded-[var(--radius-sm)] bg-[var(--surface-1)] border border-[var(--glass-border)] text-[var(--text-main)] focus:border-[var(--brand-primary)] outline-none transition-colors"
-                            value={formData.email}
-                            onChange={e => setFormData({ ...formData, email: e.target.value })}
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium mb-1 text-[var(--text-main)]">Phone Number</label>
+                        <input
+                            type="tel"
+                            required
+                            placeholder="+1 (555) 000-0000"
+                            className="w-full p-3 rounded-[var(--radius-sm)] bg-[var(--surface-1)] border border-[var(--glass-border)] text-[var(--text-main)] focus:border-[var(--brand-primary)] outline-none transition-colors"
+                            value={formData.phoneNumber}
+                            onChange={e => setFormData({ ...formData, phoneNumber: e.target.value })}
                         />
                     </div>
 

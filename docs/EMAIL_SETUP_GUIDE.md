@@ -42,11 +42,16 @@ We are using the **Trigger Email** Firebase Extension (`firebase/firestore-send-
    - **Default FROM address**: `orders@spendigo.ca` (or your email)
    - **Default REPLY-TO address**: `support@spendigo.ca`
 
-   **NOTE about Gmail:**
-   - You **cannot** use your regular password.
-   - You must enable **2-Step Verification** on your Google Account.
-   - Then generate an **App Password**: [https://myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords)
-   - Use that 16-character code in the connection URI.
+   **NOTE about Gmail Credentials:**
+   - **Username**: Your full email (e.g. `user@gmail.com`). If it fails, try replacing `@` with `%40`.
+   - **Password**: You **CANNOT** use your regular Google password. You MUST generate an App Password:
+     1. Go to [Google Account Security](https://myaccount.google.com/security).
+     2. Ensure **2-Step Verification** is ON.
+     3. Search for "App Passwords" (or go to [https://myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords)).
+     4. Create a new one (App: "Mail", Device: "Mac" or "Other").
+     5. Copy the 16-character code (e.g. `abcd efgh ijkl mnop`).
+     6. **Remove the spaces** (result: `abcdefghijklmnop`).
+     7. Use that continuous string as the password in the SMTP string.
 
 ### Step 2: Deploy Updated Functions
 
@@ -118,9 +123,11 @@ Wait a few seconds, look at the **`mail`** collection in Firestore.
 2. **Check Extension Logs**:
    - Go to Extensions tab in Firebase Console -> Trigger Email -> Logs.
 
-### "Auth Error" with Gmail?
+### "Auth Error" or "Authentication Required" with Gmail?
 - Ensure you used an **App Password**, not your normal password.
-- Ensure the connection URI format is correct: `smtps://user:pass@host:465`
+- **Tip**: If your email has special characters, try URL-encoding it (e.g., replace `@` with `%40`).
+  - Example: `smtps://my.name%40gmail.com:app-password@smtp.gmail.com:465`
+- Ensure 2-Step Verification is enabled on your Google Account.
 
 ---
 

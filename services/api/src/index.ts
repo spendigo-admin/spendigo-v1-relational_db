@@ -4,6 +4,8 @@ import * as admin from 'firebase-admin';
 admin.initializeApp();
 
 // Export all functions
+export { checkEmailStatus } from './admin/checkEmailStatus';
+export { sendTestEmail } from './admin/testEmail';
 export { cleanupOrphanedUsers } from './admin/cleanupOrphanedUsers';
 export { inviteTeamMember } from './auth/inviteTeamMember';
 export { deleteUser } from './auth/deleteUser';

@@ -17,6 +17,7 @@ export interface User {
     email: string;
     name: string;
     role: 'consumer' | 'merchant' | 'admin';
+    phoneNumber?: string;
     avatar?: string;
     // Merchant specific
     storeId?: string;
@@ -227,6 +228,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 email: userData.email!,
                 name: userData.name || 'New User',
                 role: (userData.role || 'consumer') as 'consumer' | 'merchant' | 'admin',
+                phoneNumber: userData.phoneNumber || null, // Add phoneNumber
                 emailVerified: false,
             };
 
@@ -309,6 +311,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                     email: user.email!,
                     name: user.displayName || 'New User',
                     role: targetRole,
+                    phoneNumber: user.phoneNumber || null, // Add phoneNumber from Google profile if available
                     joinedAt: new Date().toISOString()
                 };
 
