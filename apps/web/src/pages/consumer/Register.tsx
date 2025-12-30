@@ -138,6 +138,8 @@ const Register: React.FC = () => {
                             type="email"
                             required
                             className="w-full p-3 rounded-[var(--radius-sm)] bg-[var(--surface-1)] border border-[var(--glass-border)] text-[var(--text-main)] focus:border-[var(--brand-primary)] outline-none transition-colors"
+                            value={formData.email}
+                            onChange={e => setFormData({ ...formData, email: e.target.value })}
                         />
                     </div>
 
