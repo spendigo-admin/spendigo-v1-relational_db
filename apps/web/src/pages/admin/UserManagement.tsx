@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { collection, query, getDocs, doc, setDoc, updateDoc, where, deleteDoc } from 'firebase/firestore';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 import { db } from '../../lib/firebase';
 import { useAuth } from '../../context/AuthContext';
 import '../../styles/design-system.css';
@@ -154,6 +155,27 @@ const UserManagement: React.FC = () => {
 
                 window.location.reload();
             } catch (e) { console.error(e); }
+        }
+    };
+
+    const handleDeleteUser = async (user: User) => {
+        if (!confirm(`Are you sure you want to PERMANENTLY DELETE user ${user.email}? This action cannot be undone.`)) return;
+
+        try {
+            setLoading(true);
+            const functions = getFunctions();
+            const deleteUserFunction = httpsCallable(functions, 'deleteUser');
+
+            await deleteUserFunction({ targetUid: user.id });
+
+            // Remove from local state
+            setUsers(prev => prev.filter(u => u.id !== user.id));
+            alert(`User ${user.email} deleted successfully.`);
+        } catch (error: any) {
+            console.error("Delete failed:", error);
+            alert(`Failed to delete user: ${error.message}`);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -337,11 +359,17 @@ const UserManagement: React.FC = () => {
                                         <button
                                             onClick={() => toggleUserBan(user.id, user.status)}
                                             className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-all ${user.status === 'banned'
-                                                    ? 'text-green-600 bg-green-50 hover:bg-green-100 hover:text-green-700'
-                                                    : 'text-red-500 hover:bg-red-50 hover:text-red-700'
+                                                ? 'text-green-600 bg-green-50 hover:bg-green-100 hover:text-green-700'
+                                                : 'text-red-500 hover:bg-red-50 hover:text-red-700'
                                                 }`}
                                         >
                                             {user.status === 'banned' ? 'Un-ban' : 'Suspend'}
+                                        </button>
+                                        <button
+                                            onClick={() => handleDeleteUser(user)}
+                                            className="text-xs font-bold text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-lg ml-2 transition-all"
+                                        >
+                                            Delete
                                         </button>
                                     </td>
                                 </tr>
