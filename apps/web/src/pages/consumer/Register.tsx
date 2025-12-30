@@ -115,10 +115,6 @@ const Register: React.FC = () => {
                     </div>
                 </div>
 
-                {role === 'consumer' && (
-                    <div className="space-y-3 mb-6 animate-fade-in">
-                    </div>
-                )}
 
                 <form onSubmit={handleRegister} className="space-y-4">
                     <div>
