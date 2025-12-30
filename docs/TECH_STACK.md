@@ -44,6 +44,7 @@
 - **Testing**: Vitest (configured, unit tests)
 - **Package Manager**: npm 11.7.0
 - **Monorepo**: Turbo 1.10.0 (build orchestration)
+- **CI/CD**: GitHub Actions (Auto-deploy to Firebase)
 - **TypeScript Compiler**: 5.0+
 
 ---
@@ -52,7 +53,7 @@
 
 | Platform | Status | Command |
 |----------|--------|---------|
-| **Web (Firebase Hosting)** | ✅ Ready | `firebase deploy` |
+| **Web (Firebase Hosting)** | ✅ Ready | `firebase deploy` OR `git push` (CI/CD) |
 | **iOS App Store** | ✅ Ready | `npx cap sync && npx cap open ios` |
 | **Android Play Store** | ✅ Ready | `npx cap sync && npx cap open android` |
 
