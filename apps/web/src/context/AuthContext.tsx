@@ -209,13 +209,20 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             const userCredential = await createUserWithEmailAndPassword(auth, userData.email!, userData.password);
             const uid = userCredential.user.uid;
 
+            // Send email verification
+            const { sendEmailVerification } = await import('firebase/auth');
+            await sendEmailVerification(userCredential.user, {
+                url: `${window.location.origin}/`,
+                handleCodeInApp: false,
+            });
+
             // Create User Profile in Firestore
-            // Firestore throws if any field is undefined. We must construct this carefully.
             const newUser: any = {
                 id: uid,
                 email: userData.email!,
                 name: userData.name || 'New User',
-                role: userData.role || 'consumer'
+                role: userData.role || 'consumer',
+                emailVerified: false,
             };
 
             // Only add merchant fields if the user is a merchant
@@ -227,10 +234,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
             await setDoc(doc(db, 'users', uid), newUser);
             setUser(newUser as User);
+
+            // Redirect to verification page
+            window.location.href = '/verify-email';
+
             return true;
         } catch (error: any) {
             console.error('Registration failed:', error);
-            // Show more detailed error
             alert(`Registration failed: ${error.message}`);
             return false;
         }

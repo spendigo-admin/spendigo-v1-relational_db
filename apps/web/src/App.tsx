@@ -31,6 +31,7 @@ import Search from './pages/consumer/Search';
 import OrderTracking from './pages/consumer/OrderTracking';
 import Notifications from './pages/consumer/Notifications';
 import SmartCartWishlist from './pages/consumer/SmartCartWishlist';
+import VerifyEmail from './pages/consumer/VerifyEmail';
 import HowItWorks from './pages/consumer/HowItWorks';
 
 // Merchant Pages
@@ -112,6 +113,7 @@ function App() {
                                                             {/* AUTH ROUTES (Fullscreen) */}
                                                             <Route path="/login" element={<Login />} />
                                                             <Route path="/register" element={<Register />} />
+                                                            <Route path="/verify-email" element={<VerifyEmail />} />
 
                                                             {/* CONSUMER ROUTES wrapped in Layout */}
                                                             <Route element={<ConsumerLayout />}>
