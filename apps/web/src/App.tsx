@@ -26,6 +26,7 @@ import Cart from './pages/consumer/Cart';
 import Checkout from './pages/consumer/Checkout';
 import Login from './pages/consumer/Login';
 import Register from './pages/consumer/Register';
+import ForgotPassword from './pages/consumer/ForgotPassword';
 import Profile from './pages/consumer/Profile';
 import Search from './pages/consumer/Search';
 import OrderTracking from './pages/consumer/OrderTracking';
@@ -113,6 +114,7 @@ function App() {
                                                         <Routes>
                                                             {/* AUTH ROUTES (Fullscreen) */}
                                                             <Route path="/login" element={<Login />} />
+                                                            <Route path="/forgot-password" element={<ForgotPassword />} />
                                                             <Route path="/register" element={<Register />} />
                                                             <Route path="/verify-email" element={<VerifyEmail />} />
 

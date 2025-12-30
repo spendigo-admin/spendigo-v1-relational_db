@@ -6,9 +6,10 @@ import {
     onAuthStateChanged,
     GoogleAuthProvider,
     signInWithPopup,
+    sendPasswordResetEmail, // Added sendPasswordResetEmail
     User as FirebaseUser
 } from 'firebase/auth';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore'; // Added updateDoc
 import { auth, db } from '../lib/firebase';
 
 // Define User Types
@@ -68,6 +69,7 @@ interface AuthContextType {
     loginWithGoogle: (targetRole?: 'consumer' | 'merchant') => Promise<boolean>;
     loginWithFacebook: () => Promise<boolean>;
     logout: () => void;
+    resetPassword: (email: string) => Promise<void>; // Added
     loading: boolean;
     can: (permission: Permission) => boolean;
     switchRole: (role: any) => void;
@@ -180,7 +182,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
 
     const fetchUserProfile = async (uid: string, emailVerified: boolean) => {
-        // fetchUserProfile is now primarily handled by onSnapshot, but we keep the logic 
+        // fetchUserProfile is now primarily handled by onSnapshot, but we keep the logic
         // for initial loads if needed, though processUserData handles it now.
         const userDoc = await getDoc(doc(db, 'users', uid));
         if (userDoc.exists()) {
@@ -295,9 +297,20 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const logout = async () => {
         try {
             await signOut(auth);
+            setUser(null); // Explicitly set user to null on logout
             window.location.href = '/login';
         } catch (error) {
             console.error('Logout failed:', error);
+        }
+    };
+
+    const resetPassword = async (email: string) => {
+        try {
+            await sendPasswordResetEmail(auth, email);
+            alert('Password reset email sent! Please check your inbox.');
+        } catch (error: any) {
+            console.error('Password reset failed:', error);
+            alert(`Password reset failed: ${error.message}`);
         }
     };
 
@@ -392,6 +405,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         loginWithGoogle,
         loginWithFacebook,
         logout,
+        resetPassword,
         loading,
         can,
         switchRole,
