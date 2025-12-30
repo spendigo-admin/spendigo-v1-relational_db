@@ -179,6 +179,25 @@ const UserManagement: React.FC = () => {
         }
     };
 
+    const handleCleanup = async () => {
+        if (!confirm("This will scan all users and permanently delete any Firestore profiles that do not have a matching Firebase Auth account. This could take a few moments. Continue?")) return;
+
+        try {
+            setLoading(true);
+            const functions = getFunctions();
+            const cleanupFunction = httpsCallable(functions, 'cleanupOrphanedUsers');
+            const result: any = await cleanupFunction();
+
+            alert(result.data.message);
+            window.location.reload();
+        } catch (e: any) {
+            console.error(e);
+            alert(`Cleanup failed: ${e.message}`);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const toggleUserBan = async (id: string, currentStatus: 'active' | 'banned') => {
         const newStatus = currentStatus === 'active' ? 'banned' : 'active';
         const action = newStatus === 'banned' ? 'SUSPEND' : 'ACTIVATE';
@@ -253,6 +272,13 @@ const UserManagement: React.FC = () => {
                             <option value="merchant">Merchants ({users.filter(u => u.role === 'merchant').length})</option>
                             <option value="consumer">Consumers ({users.filter(u => u.role === 'consumer').length})</option>
                         </select>
+                        <button
+                            onClick={handleCleanup}
+                            title="Remove users that don't exist in Auth"
+                            className="text-xs font-bold text-gray-500 hover:text-red-600 border border-gray-200 hover:border-red-200 hover:bg-red-50 px-3 py-1.5 rounded-lg transition-all flex items-center gap-2"
+                        >
+                            <span>🧹 Cleanup Ghosts</span>
+                        </button>
                     </div>
                 )}
             </div>
