@@ -186,7 +186,6 @@ const Register: React.FC = () => {
                                     <option>Local Café / Coffee Shop</option>
                                     <option>Dessert & Sweets Shop</option>
                                     <option>Meal Prep / Tiffin Service</option>
-                                    <option>Liquor / Wine / Beer Store</option>
                                     <option>Pharmacy / Health Store</option>
                                     <option>Pet Store</option>
                                     <option>Florist</option>
