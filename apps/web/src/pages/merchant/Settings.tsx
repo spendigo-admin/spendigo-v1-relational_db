@@ -109,7 +109,8 @@ const MerchantSettings: React.FC = () => {
         pickupEnabled: true,
         defaultPrepTime: 20,
         autoAcceptOrders: false,
-        taxRate: 13
+        taxRate: 13,
+        deliveryEnabled: true
     });
 
     // Hours State
@@ -189,7 +190,8 @@ const MerchantSettings: React.FC = () => {
                 pickupEnabled: store.pickupEnabled !== false, // Default true
                 defaultPrepTime: store.defaultPrepTime || 20,
                 autoAcceptOrders: store.autoAcceptOrders || false,
-                taxRate: store.taxRate || 13
+                taxRate: store.taxRate || 13,
+                deliveryEnabled: store.deliveryEnabled !== false // Default true
             });
         }
     }, [storeId, stores]);
@@ -248,6 +250,7 @@ const MerchantSettings: React.FC = () => {
             defaultPrepTime: operations.defaultPrepTime,
             autoAcceptOrders: operations.autoAcceptOrders,
             taxRate: operations.taxRate,
+            deliveryEnabled: operations.deliveryEnabled,
             // Legacy/Display Fields
             deliveryFee: displayFee
         };
@@ -746,7 +749,20 @@ const MerchantSettings: React.FC = () => {
                             className="w-full p-3 border border-[var(--glass-border)] rounded-lg"
                         />
                     </div>
-                    <div className="md:col-span-2 pt-2 border-t border-[var(--glass-border)] mt-2">
+                    <div className="md:col-span-2 pt-2 border-t border-[var(--glass-border)] mt-2 space-y-3">
+                        <label className="flex items-center gap-3 cursor-pointer p-2 hover:bg-gray-50 rounded-lg">
+                            <input
+                                type="checkbox"
+                                checked={operations.deliveryEnabled}
+                                onChange={e => setOperations({ ...operations, deliveryEnabled: e.target.checked })}
+                                className="w-5 h-5 accent-[var(--brand-primary)]"
+                                disabled={(!user?.subscriptionTier || user.subscriptionTier === 'free')}
+                            />
+                            <div>
+                                <div className="font-medium text-[var(--text-main)]">Enable Local Delivery</div>
+                                <div className="text-xs text-[var(--text-muted)]">Offer local delivery within your radius. (Core/Growth only)</div>
+                            </div>
+                        </label>
                         <label className="flex items-center gap-3 cursor-pointer p-2 hover:bg-gray-50 rounded-lg">
                             <input
                                 type="checkbox"
@@ -890,7 +906,7 @@ const MerchantSettings: React.FC = () => {
                 <div className="space-y-4">
                     {[
                         { key: 'emailOrderAlerts', title: 'Email Order Alerts', desc: 'Receive an email immediately when a new order is placed.' },
-                        { key: 'smsOrderAlerts', title: 'SMS Order Alerts', desc: 'Receive a text message when a new order is placed.' },
+
                         { key: 'dailyReports', title: 'Daily Business Reports', desc: 'Receive a daily summary of sales and orders each morning.' },
                         { key: 'marketingEmails', title: 'Marketing Communications', desc: 'Receive tips, trends, and promotional offers from Spendigo.' },
                     ].map((item) => (

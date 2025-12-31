@@ -19,6 +19,10 @@ interface MarketplaceContextType {
     subscribeToFlyers: (storeId: string | number, callback: (flyers: any[]) => void) => () => void;
     saveFlyer: (storeId: string | number, flyer: any) => Promise<void>;
     deleteFlyer: (storeId: string | number, flyerId: string) => Promise<void>;
+    // Deal Management
+    subscribeToDeals: (storeId: string | number, callback: (deals: any[]) => void) => () => void;
+    saveDeal: (storeId: string | number, deal: any) => Promise<void>;
+    deleteDeal: (storeId: string | number, dealId: string) => Promise<void>;
     getStore: (storeId: string | number) => any;
     loading: boolean;
 }
@@ -162,6 +166,26 @@ export const MarketplaceProvider: React.FC<{ children: ReactNode }> = ({ childre
         await deleteDoc(flyerRef);
     };
 
+    // --- Deal Management (Subcollection) ---
+    const subscribeToDeals = (storeId: string | number, callback: (deals: any[]) => void) => {
+        const dealsRef = collection(db, 'stores', String(storeId), 'deals');
+        return onSnapshot(dealsRef, (snapshot) => {
+            const deals = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            callback(deals);
+        });
+    };
+
+    const saveDeal = async (storeId: string | number, deal: any) => {
+        const dealId = deal.id || `d${Date.now()}`;
+        const dealRef = doc(db, 'stores', String(storeId), 'deals', dealId);
+        await setDoc(dealRef, { ...deal, id: dealId }, { merge: true });
+    };
+
+    const deleteDeal = async (storeId: string | number, dealId: string) => {
+        const dealRef = doc(db, 'stores', String(storeId), 'deals', dealId);
+        await deleteDoc(dealRef);
+    };
+
     const getStore = (storeId: string | number) => stores[storeId];
 
     return (
@@ -181,6 +205,11 @@ export const MarketplaceProvider: React.FC<{ children: ReactNode }> = ({ childre
             subscribeToFlyers,
             saveFlyer,
             deleteFlyer,
+
+            subscribeToDeals,
+            saveDeal,
+            deleteDeal,
+
             getStore,
             loading
         }}>

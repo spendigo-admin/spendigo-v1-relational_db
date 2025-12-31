@@ -45,6 +45,7 @@ export interface Order {
     storeId: string;
     customerName: string;
     customerEmail?: string;
+    customerPhone?: string; // New: Shopper contact info
     customerId: string; // New: Link to Auth User
     subtotal: number;
     tax: number;
@@ -232,6 +233,7 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
                 customerId: user.id,
                 customerName: user.name || 'Valued Customer',
                 customerEmail: user.email,
+                customerPhone: user.phoneNumber || '', // Capture phone from Auth Profile
                 createdAt: serverTimestamp()
             };
 

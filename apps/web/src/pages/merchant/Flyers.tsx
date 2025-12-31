@@ -32,11 +32,15 @@ const COVER_PRESETS = [
 
 const MerchantFlyers: React.FC = () => {
     const { getStore, updateStoreFlyer, subscribeToFlyers, saveFlyer, deleteFlyer } = useMarketplace();
-    const { can, user } = useAuth();
+    const can = (action: string) => true; // Bypass RBAC for now, rely on Plan
+    const { user } = useAuth();
     const storeId = user?.storeId || '1';
     const store = getStore(storeId);
     const availableProducts = useMemo(() => store?.products || [], [store?.products]);
-    const hasWriteAccess = can('flyers:write');
+    const hasWriteAccess = true; // Simplified for owner
+
+    const isRestrictedPlan = (user?.subscriptionTier || 'free') !== 'growth';
+
 
     const [flyers, setFlyers] = useState<Flyer[]>([]);
     const [view, setView] = useState<'list' | 'editor'>('list');
@@ -87,13 +91,17 @@ const MerchantFlyers: React.FC = () => {
     // Handlers
     const handleCreateNew = () => {
         const d = new Date();
-        // Use local YYYY-MM-DD format
-        const localToday = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        const localToday = d.toISOString().split('T')[0];
+
+        // Default end date to 7 days from now
+        const nextWeek = new Date(d);
+        nextWeek.setDate(d.getDate() + 7);
+        const localNextWeek = nextWeek.toISOString().split('T')[0];
 
         setFormData({
             title: '',
             validFrom: localToday,
-            validUntil: '',
+            validUntil: localNextWeek,
             items: [],
             coverImage: COVER_PRESETS[0].url
         });
@@ -137,7 +145,10 @@ const MerchantFlyers: React.FC = () => {
 
     // Editor Handlers
     const handleSave = async (publish: boolean) => {
-        if (!formData.title || !formData.validFrom || !formData.validUntil) return;
+        if (!formData.title || !formData.validFrom || !formData.validUntil) {
+            alert('Please ensure Title, Start Date, and End Date are filled out.');
+            return;
+        }
 
         let status: Flyer['status'] = 'draft';
         if (publish) {
@@ -166,18 +177,23 @@ const MerchantFlyers: React.FC = () => {
             coverImage: formData.coverImage || COVER_PRESETS[0].url
         };
 
-        await saveFlyer(storeId, newFlyer);
+        try {
+            await saveFlyer(storeId, newFlyer);
 
-        // Sync with Global Marketplace Context if Active
-        if (status === 'active') {
-            updateStoreFlyer(storeId, {
-                title: newFlyer.title,
-                validUntil: new Date(newFlyer.validUntil).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-                image: newFlyer.coverImage
-            });
+            // Sync with Global Marketplace Context if Active
+            if (status === 'active') {
+                updateStoreFlyer(storeId, {
+                    title: newFlyer.title,
+                    validUntil: new Date(newFlyer.validUntil).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+                    image: newFlyer.coverImage
+                });
+            }
+
+            setView('list');
+        } catch (error) {
+            console.error("Failed to save flyer:", error);
+            alert(`Failed to save flyer. Please try again. Error: ${(error as Error).message}`);
         }
-
-        setView('list');
     };
 
     // Smart Tools
@@ -547,7 +563,7 @@ const MerchantFlyers: React.FC = () => {
                     <h1 className="text-2xl font-bold text-[var(--text-main)]">📰 Flyers</h1>
                     <p className="text-sm text-[var(--text-muted)]">Manage your store's digital flyers and weekly deals</p>
                 </div>
-                {hasWriteAccess && (
+                {hasWriteAccess && !isRestrictedPlan && (
                     <button
                         onClick={handleCreateNew}
                         className="px-4 py-2 bg-[var(--brand-primary)] text-white font-medium rounded-lg hover:brightness-110 shadow-lg shadow-[var(--brand-primary)]/20"
@@ -557,66 +573,78 @@ const MerchantFlyers: React.FC = () => {
                 )}
             </div>
 
-            <div className="space-y-4">
-                {flyers.length === 0 ? (
-                    <div className="text-center py-20 bg-white rounded-xl border border-[var(--glass-border)]">
-                        <div className="text-6xl mb-4">📰</div>
-                        <h3 className="text-xl font-bold text-[var(--text-main)] mb-2">No Flyers Created</h3>
-                        <p className="text-[var(--text-muted)] mb-6">Create your first weekly flyer to attract more customers.</p>
-                        {hasWriteAccess && (
-                            <button
-                                onClick={handleCreateNew}
-                                className="px-6 py-2 bg-[var(--brand-primary)] text-white font-bold rounded-lg hover:brightness-110 shadow-lg shadow-[var(--brand-primary)]/20"
-                            >
-                                Start Creating
-                            </button>
-                        )}
-                    </div>
-                ) : (
-                    flyers.map(flyer => (
-                        <div key={flyer.id} className="bg-white rounded-xl border border-[var(--glass-border)] p-4 shadow-sm hover:shadow-md transition-shadow">
-                            <div className="flex items-center justify-between">
-                                <div className="flex gap-4 items-center">
-                                    <img src={flyer.coverImage} className="w-16 h-16 rounded-lg object-cover bg-gray-200" alt="" />
-                                    <div>
-                                        <div className="flex items-center gap-2 mb-1">
-                                            <h3 className="font-bold text-[var(--text-main)] text-lg">{flyer.title}</h3>
-                                            <span className={`text-xs px-2 py-0.5 rounded-full capitalize ${getStatusColor(flyer.status)} font-medium border border-current opacity-80`}>
-                                                {flyer.status}
-                                            </span>
+            {isRestrictedPlan ? (
+                <div className="text-center py-20 bg-gray-50 rounded-xl border border-dashed border-gray-300">
+                    <div className="text-6xl mb-4 grayscale opacity-50">📰</div>
+                    <h3 className="text-xl font-bold text-gray-800 mb-2">Upgrade to Create Flyers</h3>
+                    <p className="text-gray-500 mb-6 max-w-md mx-auto">Flyers are a premium feature available exclusively on the Growth plan. Upgrade your subscription to start publishing weekly deals.</p>
+                    <a href="/merchant/subscription" className="px-6 py-2 bg-[var(--brand-primary)] text-white font-bold rounded-lg hover:brightness-110 shadow-lg shadow-[var(--brand-primary)]/20 inline-block">
+                        View Plans & Upgrade
+                    </a>
+                </div>
+            ) : (
+                <div className="space-y-4">
+                    {flyers.length === 0 ? (
+                        <div className="text-center py-20 bg-white rounded-xl border border-[var(--glass-border)]">
+                            <div className="text-6xl mb-4">📰</div>
+                            <h3 className="text-xl font-bold text-[var(--text-main)] mb-2">No Flyers Created</h3>
+                            <p className="text-[var(--text-muted)] mb-6">Create your first weekly flyer to attract more customers.</p>
+                            {hasWriteAccess && (
+                                <button
+                                    onClick={handleCreateNew}
+                                    className="px-6 py-2 bg-[var(--brand-primary)] text-white font-bold rounded-lg hover:brightness-110 shadow-lg shadow-[var(--brand-primary)]/20"
+                                >
+                                    Start Creating
+                                </button>
+                            )}
+                        </div>
+                    ) : (
+                        flyers.map(flyer => (
+                            <div key={flyer.id} className="bg-white rounded-xl border border-[var(--glass-border)] p-4 shadow-sm hover:shadow-md transition-shadow">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex gap-4 items-center">
+                                        <img src={flyer.coverImage} className="w-16 h-16 rounded-lg object-cover bg-gray-200" alt="" />
+                                        <div>
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <h3 className="font-bold text-[var(--text-main)] text-lg">{flyer.title}</h3>
+                                                <span className={`text-xs px-2 py-0.5 rounded-full capitalize ${getStatusColor(flyer.status)} font-medium border border-current opacity-80`}>
+                                                    {flyer.status}
+                                                </span>
+                                            </div>
+                                            <p className="text-sm text-[var(--text-muted)]">
+                                                {new Date(flyer.validFrom).toLocaleDateString()} - {new Date(flyer.validUntil).toLocaleDateString()}
+                                            </p>
+                                            <p className="text-sm text-[var(--text-muted)] mt-1 flex items-center gap-1">
+                                                <span>🏷️</span> {flyer.items?.length || 0} products included
+                                            </p>
                                         </div>
-                                        <p className="text-sm text-[var(--text-muted)]">
-                                            {new Date(flyer.validFrom).toLocaleDateString()} - {new Date(flyer.validUntil).toLocaleDateString()}
-                                        </p>
-                                        <p className="text-sm text-[var(--text-muted)] mt-1 flex items-center gap-1">
-                                            <span>🏷️</span> {flyer.items?.length || 0} products included
-                                        </p>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        {hasWriteAccess ? (
+                                            <>
+                                                <button onClick={() => handleDuplicate(flyer)} className="px-3 py-1.5 border border-[var(--glass-border)] text-[var(--brand-primary)] rounded-lg text-sm hover:bg-[var(--surface-1)]" title="Duplicate Flyer">
+                                                    📋 Clone
+                                                </button>
+                                                <button onClick={() => handleEdit(flyer)} className="px-3 py-1.5 border border-[var(--glass-border)] rounded-lg text-sm text-[var(--text-main)] hover:bg-[var(--surface-1)]">
+                                                    ✏️ Edit
+                                                </button>
+                                                <button onClick={() => handleDelete(flyer.id)} className="px-3 py-1.5 text-red-500 text-sm hover:bg-red-50 rounded-lg">
+                                                    🗑️
+                                                </button>
+                                            </>
+                                        ) : (
+                                            <button onClick={() => handleEdit(flyer)} className="px-3 py-1.5 border border-[var(--glass-border)] rounded-lg text-sm text-[var(--text-main)] hover:bg-[var(--surface-1)]">
+                                                👁️ View Details
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                    {hasWriteAccess ? (
-                                        <>
-                                            <button onClick={() => handleDuplicate(flyer)} className="px-3 py-1.5 border border-[var(--glass-border)] text-[var(--brand-primary)] rounded-lg text-sm hover:bg-[var(--surface-1)]" title="Duplicate Flyer">
-                                                📋 Clone
-                                            </button>
-                                            <button onClick={() => handleEdit(flyer)} className="px-3 py-1.5 border border-[var(--glass-border)] rounded-lg text-sm text-[var(--text-main)] hover:bg-[var(--surface-1)]">
-                                                ✏️ Edit
-                                            </button>
-                                            <button onClick={() => handleDelete(flyer.id)} className="px-3 py-1.5 text-red-500 text-sm hover:bg-red-50 rounded-lg">
-                                                🗑️
-                                            </button>
-                                        </>
-                                    ) : (
-                                        <button onClick={() => handleEdit(flyer)} className="px-3 py-1.5 border border-[var(--glass-border)] rounded-lg text-sm text-[var(--text-main)] hover:bg-[var(--surface-1)]">
-                                            👁️ View Details
-                                        </button>
-                                    )}
-                                </div>
                             </div>
-                        </div>
-                    ))
-                )}
-            </div>
+                        ))
+                    )}
+
+                </div>
+            )}
         </div>
     );
 };

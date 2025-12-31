@@ -14,6 +14,7 @@ const Checkout: React.FC = () => {
     const { addOrder, createBatchOrders, profile } = useOrders();
     const { user } = useAuth();
     const { addNotification } = useNotifications();
+    const { getStore } = useMarketplace(); // Moved up
     const navigate = useNavigate();
 
     // Security Check: Redirect to login if not authenticated
@@ -25,22 +26,23 @@ const Checkout: React.FC = () => {
 
     // Group items by store
     const groupedItems = items.reduce((acc, item) => {
+        const store = getStore(item.storeId);
         if (!acc[item.storeId]) {
             acc[item.storeId] = {
                 storeName: item.storeName,
                 total: 0,
                 items: [],
-                tier: STORE_DATA[item.storeId]?.subscriptionTier || 'free' // Default to free if unknown
+                tier: store?.subscriptionTier || STORE_DATA[item.storeId]?.subscriptionTier || 'free',
+                deliveryEnabled: store?.deliveryEnabled !== false
             };
         }
         acc[item.storeId].total += item.price * item.quantity;
         acc[item.storeId].items.push(item);
         return acc;
-    }, {} as Record<string, { storeName: string; total: number; items: any[]; tier: string }>);
+    }, {} as Record<string, { storeName: string; total: number; items: any[]; tier: string; deliveryEnabled: boolean }>);
 
     // State for fulfillment method PER STORE
     const [fulfillmentMethods, setFulfillmentMethods] = useState<Record<string, 'delivery' | 'pickup'>>({});
-    const { getStore } = useMarketplace();
     const { logEvent } = useAudit();
     const [isProcessing, setIsProcessing] = useState(false);
     const [orderComplete, setOrderComplete] = useState(false);
@@ -49,20 +51,24 @@ const Checkout: React.FC = () => {
     useEffect(() => {
         const methods: Record<string, 'delivery' | 'pickup'> = {};
         Object.entries(groupedItems).forEach(([storeId, data]) => {
-            // Free tier = Pickup Only. Others = Default to Delivery.
-            if (data.tier === 'free') {
+            const store = getStore(storeId);
+            const tier = store?.subscriptionTier || data.tier || 'free';
+            const deliveryEnabled = store?.deliveryEnabled !== false; // Default true if not set
+
+            // Free tier OR explicit disable = Pickup Only. Others = Default to Delivery.
+            if (tier === 'free' || !deliveryEnabled) {
                 methods[storeId] = 'pickup';
             } else {
                 methods[storeId] = 'delivery';
             }
         });
         setFulfillmentMethods(methods);
-    }, [items.length]);
+    }, [items.length, getStore]);
 
     const toggleFulfillment = (storeId: string, method: 'delivery' | 'pickup') => {
-        // Prevent selecting delivery for free tier
-        const storeTier = groupedItems[storeId]?.tier;
-        if (storeTier === 'free' && method === 'delivery') return;
+        // Prevent selecting delivery for free tier or if disabled
+        const storeData = groupedItems[storeId];
+        if ((storeData.tier === 'free' || !storeData.deliveryEnabled) && method === 'delivery') return;
 
         setFulfillmentMethods(prev => ({
             ...prev,
@@ -275,7 +281,7 @@ const Checkout: React.FC = () => {
                                         <p className="text-xs text-[var(--text-muted)]">{items.length} items • ${total.toFixed(2)}</p>
                                     </div>
                                 </div>
-                                {tier === 'free' && (
+                                {(tier === 'free' || !groupedItems[storeId].deliveryEnabled) && (
                                     <span className="text-[10px] font-bold bg-gray-100 text-gray-500 px-2 py-1 rounded-full uppercase tracking-wider">
                                         Store Pickup Only
                                     </span>
@@ -295,7 +301,7 @@ const Checkout: React.FC = () => {
                                 </button>
                                 <button
                                     onClick={() => toggleFulfillment(storeId, 'delivery')}
-                                    disabled={tier === 'free'}
+                                    disabled={tier === 'free' || !groupedItems[storeId].deliveryEnabled}
                                     className={`flex-1 py-2 text-sm font-bold rounded-md transition-all flex items-center justify-center gap-2 ${fulfillmentMethods[storeId] === 'delivery'
                                         ? 'bg-white text-[var(--brand-primary)] shadow-sm'
                                         : 'text-[var(--text-muted)] hover:text-[var(--text-main)] disabled:opacity-50 disabled:cursor-not-allowed'

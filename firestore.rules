@@ -68,6 +68,18 @@ service cloud.firestore {
       allow update: if isAdmin() || (isMerchant() && getMerchantStoreId() == storeId);
       
       allow delete: if isAdmin();
+
+      // Subcollection: Flyers
+      match /flyers/{flyerId} {
+        allow read: if true;
+        allow write: if isAdmin() || (isMerchant() && getMerchantStoreId() == storeId);
+      }
+
+      // Subcollection: Deals
+      match /deals/{dealId} {
+        allow read: if true;
+        allow write: if isAdmin() || (isMerchant() && getMerchantStoreId() == storeId);
+      }
     }
 
     // 4. MASTER CATALOG (New)
@@ -77,22 +89,10 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
-    // 5. PRODUCTS & DEALS & FLYERS (Store-Specific Resources)
+    // 5. PRODUCTS (Store-Specific Resources)
     // - Public Read.
     // - Write restricted to Merchants (for their own store) or Admins.
     match /products/{productId} {
-      allow read: if true;
-      allow create: if isAdmin() || (isMerchant() && request.resource.data.storeId == getMerchantStoreId());
-      allow update, delete: if isAdmin() || (isMerchant() && resource.data.storeId == getMerchantStoreId());
-    }
-    
-    match /deals/{dealId} {
-      allow read: if true;
-      allow create: if isAdmin() || (isMerchant() && request.resource.data.storeId == getMerchantStoreId());
-      allow update, delete: if isAdmin() || (isMerchant() && resource.data.storeId == getMerchantStoreId());
-    }
-    
-    match /flyers/{flyerId} {
       allow read: if true;
       allow create: if isAdmin() || (isMerchant() && request.resource.data.storeId == getMerchantStoreId());
       allow update, delete: if isAdmin() || (isMerchant() && resource.data.storeId == getMerchantStoreId());

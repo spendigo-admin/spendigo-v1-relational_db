@@ -62,6 +62,8 @@ const UserManagement: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [showStaffModal, setShowStaffModal] = useState(false);
     const [userFilter, setUserFilter] = useState<'all' | 'merchant' | 'consumer'>('all');
+    const [searchTerm, setSearchTerm] = useState(''); // Search by Email/ID
+    const [statusFilter, setStatusFilter] = useState('all'); // Filter by Status
 
     // Form State
     const [newStaff, setNewStaff] = useState({ name: '', email: '', role: 'SUPPORT' as AdminRole });
@@ -284,8 +286,24 @@ const UserManagement: React.FC = () => {
     };
 
     const getFilteredUsers = () => {
-        if (userFilter === 'all') return users;
-        return users.filter(u => u.role === userFilter);
+        return users.filter(u => {
+            // 1. Role Filter
+            if (userFilter !== 'all' && u.role !== userFilter) return false;
+
+            // 2. Status Filter
+            if (statusFilter !== 'all' && u.status !== statusFilter) return false;
+
+            // 3. Search Filter
+            if (searchTerm) {
+                const searchLower = searchTerm.toLowerCase();
+                const matchesEmail = u.email.toLowerCase().includes(searchLower);
+                // Handle complex ID objects or simple strings just in case, though User interface says string
+                const matchesId = typeof u.id === 'string' && u.id.toLowerCase().includes(searchLower);
+                if (!matchesEmail && !matchesId) return false;
+            }
+
+            return true;
+        });
     };
 
     if (loading) return <div className="p-10 text-center">Loading Management Data...</div>;
@@ -324,28 +342,49 @@ const UserManagement: React.FC = () => {
                     </button>
                 </div>
 
-                {activeTab === 'users' && (
-                    <div className="flex items-center gap-3">
-                        <span className="text-xs font-bold text-[var(--text-muted)] uppercase">Filter:</span>
-                        <select
-                            value={userFilter}
-                            onChange={(e) => setUserFilter(e.target.value as any)}
-                            className="text-sm border rounded-lg px-3 py-1.5 focus:ring-2 ring-[var(--brand-primary)] outline-none bg-white font-medium"
-                        >
-                            <option value="all">All ({users.length})</option>
-                            <option value="merchant">Merchants ({users.filter(u => u.role === 'merchant').length})</option>
-                            <option value="consumer">Consumers ({users.filter(u => u.role === 'consumer').length})</option>
-                        </select>
-                        <button
-                            onClick={() => setShowCleanupModal(true)}
-                            title="Remove users that don't exist in Auth"
-                            className="text-xs font-bold text-gray-500 hover:text-red-600 border border-gray-200 hover:border-red-200 hover:bg-red-50 px-3 py-1.5 rounded-lg transition-all flex items-center gap-2"
-                        >
-                            <span>🧹 Cleanup Ghosts</span>
-                        </button>
-                    </div>
-                )}
+
             </div>
+
+            {/* Enhanced Filters for Platform Users */}
+            {activeTab === 'users' && (
+                <div className="flex flex-col sm:flex-row gap-4 bg-white p-4 rounded-xl border border-[var(--glass-border)] shadow-sm mb-6">
+                    <div className="flex-1 relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
+                        <input
+                            type="text"
+                            placeholder="Search by Email or User ID..."
+                            className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)]"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                    </div>
+                    <select
+                        className="px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)] bg-white"
+                        value={userFilter}
+                        onChange={(e) => setUserFilter(e.target.value as any)}
+                    >
+                        <option value="all">All Roles</option>
+                        <option value="merchant">Merchants</option>
+                        <option value="consumer">Consumers</option>
+                    </select>
+                    <select
+                        className="px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)] bg-white"
+                        value={statusFilter}
+                        onChange={(e) => setStatusFilter(e.target.value)}
+                    >
+                        <option value="all">All Statuses</option>
+                        <option value="active">Active</option>
+                        <option value="banned">Banned/Suspended</option>
+                    </select>
+                    <button
+                        onClick={() => setShowCleanupModal(true)}
+                        title="Remove users that don't exist in Auth"
+                        className="px-4 py-2 text-red-600 font-bold border border-red-200 rounded-lg hover:bg-red-50 transition-colors flex items-center gap-2 whitespace-nowrap"
+                    >
+                        <span>🧹 Cleanup Ghosts</span>
+                    </button>
+                </div>
+            )}
 
             {activeTab === 'staff' ? (
                 <div className="bg-white rounded-2xl border border-[var(--glass-border)] overflow-hidden shadow-sm">

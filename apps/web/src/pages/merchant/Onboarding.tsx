@@ -14,10 +14,13 @@ const MerchantOnboarding: React.FC = () => {
     const { addStore } = useMarketplace();
     const [step, setStep] = useState(1);
     const [loading, setLoading] = useState(false);
+    // Pre-fill form with data from User Profile (collected during registration)
     const [formData, setFormData] = useState({
-        legalName: '',
-        address: '',
-        postalCode: '',
+        legalName: user?.storeName || '',
+        address: (user as any)?.addresses?.[0]?.street || (user?.address?.split(',')[0] || ''),
+        city: (user as any)?.addresses?.[0]?.city || '',
+        province: (user as any)?.addresses?.[0]?.province || 'ON',
+        postalCode: (user as any)?.addresses?.[0]?.postalCode || '',
         agreedToTerms: false
     });
 
@@ -39,8 +42,9 @@ const MerchantOnboarding: React.FC = () => {
                 name: user.storeName || `${user.name}'s Store`,
                 merchantEmail: user.email,
                 ownerId: user.id,
-                legalName: formData.legalName,
-                address: formData.address, // Business address
+                address: formData.address,
+                city: formData.city,
+                province: formData.province,
                 postalCode: formData.postalCode,
                 status: 'pending', // Pending verification
                 subscriptionTier: user.subscriptionTier || 'free',
@@ -106,8 +110,8 @@ const MerchantOnboarding: React.FC = () => {
                         </div>
 
                         <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-sm font-medium mb-2 text-[var(--text-muted)]">Business Address</label>
+                            <div className="col-span-2">
+                                <label className="block text-sm font-medium mb-2 text-[var(--text-muted)]">Street Address</label>
                                 <input
                                     type="text"
                                     required
@@ -117,6 +121,29 @@ const MerchantOnboarding: React.FC = () => {
                                 />
                             </div>
                             <div>
+                                <label className="block text-sm font-medium mb-2 text-[var(--text-muted)]">City</label>
+                                <input
+                                    type="text"
+                                    required
+                                    className="w-full p-3 rounded-[var(--radius-sm)] bg-[var(--surface-0)] border border-[var(--glass-border)] text-[var(--text-main)]"
+                                    value={formData.city}
+                                    onChange={e => setFormData({ ...formData, city: e.target.value })}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium mb-2 text-[var(--text-muted)]">Province</label>
+                                <select
+                                    required
+                                    className="w-full p-3 rounded-[var(--radius-sm)] bg-[var(--surface-0)] border border-[var(--glass-border)] text-[var(--text-main)]"
+                                    value={formData.province}
+                                    onChange={e => setFormData({ ...formData, province: e.target.value })}
+                                >
+                                    {['ON', 'BC', 'AB', 'QC', 'MB', 'NS', 'NB', 'SK', 'NL', 'PE'].map(p => (
+                                        <option key={p} value={p}>{p}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="col-span-2">
                                 <label className="block text-sm font-medium mb-2 text-[var(--text-muted)]">Postal Code</label>
                                 <input
                                     type="text"

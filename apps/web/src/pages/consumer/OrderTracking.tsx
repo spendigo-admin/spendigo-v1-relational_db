@@ -45,7 +45,7 @@ const OrderTracking: React.FC = () => {
         switch (step) {
             case 'placed': return 'Order Placed';
             case 'preparing': return 'Preparing';
-            case 'out_for_delivery': return 'Out for Delivery';
+            case 'out_for_delivery': return order.deliveryAddress ? 'Out for Delivery' : 'Ready for Pickup';
             case 'delivered': return 'Delivered';
             default: return step;
         }
@@ -132,7 +132,9 @@ const OrderTracking: React.FC = () => {
                                                 {getStepLabel(step)}
                                             </p>
                                             {isCurrent && step === 'out_for_delivery' && (
-                                                <p className="text-sm text-[var(--brand-primary)] mt-1">Your order is on the way!</p>
+                                                <p className="text-sm text-[var(--brand-primary)] mt-1">
+                                                    {order.deliveryAddress ? 'Your order is on the way!' : 'Your order is ready for pickup!'}
+                                                </p>
                                             )}
                                         </div>
                                     </div>

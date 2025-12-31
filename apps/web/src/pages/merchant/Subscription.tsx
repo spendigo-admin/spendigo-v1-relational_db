@@ -87,8 +87,7 @@ const Subscription: React.FC = () => {
                 '✅ Unlimited Products',
                 '✅ Pickup + Delivery Toggle',
                 '✅ Order Management Dashboard',
-                '✅ Basic Analytics',
-                '✅ SMS Order Alerts'
+                '✅ Basic Analytics'
             ]
         },
         {

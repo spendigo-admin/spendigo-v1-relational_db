@@ -1,4 +1,4 @@
-# Spendigo Gap Analysis Report
+merchant/deals# Spendigo Gap Analysis Report
 **Date**: 2025-12-30  
 **Version**: 2.2 (Master Catalog & Seed Tool Update)
 
@@ -133,6 +133,7 @@ Following the recent implementation of **Stripe Payment Integration** and **Merc
 - [ ] **Advanced Search Filters**: Search exists, but no filters by category, price range, or dietary tags.
 - [ ] **Internationalization (i18n)**: Platform is English-only (acceptable for Canadian market).
 - [ ] **Dark Mode**: UI is light-themed only.
+- [ ] **Sponsored Listings**: Internal ad network for featured stores and products.
 
 ---
 
@@ -201,6 +202,7 @@ Following the recent implementation of **Stripe Payment Integration** and **Merc
 2. **Promo Code System**
 3. **Product Reviews UI**
 4. **Push Notifications** (FCM)
+5. **Sponsored Listings / Ad Network** (Internal)
 
 ---
 

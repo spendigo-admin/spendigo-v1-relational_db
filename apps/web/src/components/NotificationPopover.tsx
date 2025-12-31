@@ -77,27 +77,57 @@ const NotificationPopover: React.FC = () => {
 
                     <div className="max-h-80 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-200">
                         {notifications.length > 0 ? (
-                            notifications.map(notif => (
-                                <div
-                                    key={notif.id}
-                                    onClick={() => handleNotificationClick(notif)}
-                                    className={`p-3 border-b border-[var(--glass-border)] last:border-0 hover:bg-[var(--surface-1)] cursor-pointer transition-colors flex gap-3 ${!notif.read ? 'bg-blue-50/50' : ''}`}
-                                >
-                                    <div className="text-xl shrink-0 mt-1">{getIcon(notif.type)}</div>
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex justify-between items-start">
-                                            <p className={`text-sm ${!notif.read ? 'font-bold text-[var(--text-main)]' : 'font-medium text-[var(--text-main)]'}`}>
-                                                {notif.title}
-                                            </p>
-                                            {!notif.read && <div className="w-2 h-2 bg-blue-500 rounded-full mt-1.5 shrink-0"></div>}
+                            notifications.map(notif => {
+                                // Specialized "Tile" logic for New Orders
+                                const isNewOrder = notif.title.includes('New Order');
+                                const priceMatch = notif.message.match(/\$(\d+\.\d{2})/);
+                                const orderPrice = priceMatch ? priceMatch[0] : null;
+
+                                return (
+                                    <div
+                                        key={notif.id}
+                                        onClick={() => handleNotificationClick(notif)}
+                                        className={`p-3 border-b border-[var(--glass-border)] last:border-0 hover:bg-[var(--surface-1)] cursor-pointer transition-colors flex gap-3 
+                                            ${!notif.read ? 'bg-blue-50/50' : ''} 
+                                            ${isNewOrder ? 'items-start py-4' : ''}
+                                        `}
+                                    >
+                                        <div className={`shrink-0 flex items-center justify-center rounded-lg ${isNewOrder ? 'w-10 h-10 bg-blue-100 text-blue-600 border border-blue-200' : 'text-xl mt-1'}`}>
+                                            {getIcon(notif.type)}
                                         </div>
-                                        <p className="text-xs text-[var(--text-muted)] truncate mt-0.5">{notif.message}</p>
-                                        <p className="text-[10px] text-[var(--text-muted)] mt-1.5 opacity-70">
-                                            {new Date(notif.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                        </p>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex justify-between items-start">
+                                                <p className={`text-sm ${!notif.read || isNewOrder ? 'font-bold text-[var(--text-main)]' : 'font-medium text-[var(--text-main)]'}`}>
+                                                    {notif.title}
+                                                </p>
+                                                {!notif.read && <div className="w-2 h-2 bg-blue-500 rounded-full mt-1.5 shrink-0"></div>}
+                                            </div>
+
+                                            {isNewOrder ? (
+                                                <div className="mt-1">
+                                                    <p className="text-xs text-[var(--text-main)] font-medium mb-1 line-clamp-2">{notif.message.split(' for $')[0]}</p>
+                                                    <div className="flex items-center gap-2 mt-2">
+                                                        {orderPrice && (
+                                                            <span className="text-xs font-bold text-green-700 bg-green-50 border border-green-100 px-1.5 py-0.5 rounded">
+                                                                {orderPrice}
+                                                            </span>
+                                                        )}
+                                                        <span className="text-[10px] text-[var(--text-muted)] bg-gray-100 px-1.5 py-0.5 rounded">
+                                                            order #{notif.orderId?.slice(0, 5)}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <p className="text-xs text-[var(--text-muted)] truncate mt-0.5">{notif.message}</p>
+                                            )}
+
+                                            <p className="text-[10px] text-[var(--text-muted)] mt-1.5 opacity-70 flex justify-end">
+                                                {new Date(notif.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                            </p>
+                                        </div>
                                     </div>
-                                </div>
-                            ))
+                                );
+                            })
                         ) : (
                             <div className="py-10 text-center text-[var(--text-muted)] text-sm">
                                 <div className="text-2xl mb-2 opacity-30">🔕</div>

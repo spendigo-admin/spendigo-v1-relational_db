@@ -14,6 +14,7 @@ const Register: React.FC = () => {
         password: '',
         phoneNumber: '',
         storeName: '',
+        businessRegistrationNumber: '',
         businessType: 'Grocery Store',
         street: '',
         city: '',
@@ -175,6 +176,18 @@ const Register: React.FC = () => {
                                     value={formData.storeName}
                                     onChange={e => setFormData({ ...formData, storeName: e.target.value })}
                                 />
+                            </div>
+                            <div className="animate-fade-in">
+                                <label className="block text-sm font-medium mb-1 text-[var(--text-main)]">Business Registration Number (BN)</label>
+                                <input
+                                    type="text"
+                                    required
+                                    placeholder="e.g. 12345 6789 RT0001"
+                                    className="w-full p-3 rounded-[var(--radius-sm)] bg-[var(--surface-1)] border border-[var(--glass-border)] text-[var(--text-main)] focus:border-[var(--brand-primary)] outline-none transition-colors"
+                                    value={formData.businessRegistrationNumber}
+                                    onChange={e => setFormData({ ...formData, businessRegistrationNumber: e.target.value })}
+                                />
+                                <p className="text-xs text-[var(--text-muted)] mt-1">This helps us verify your business.</p>
                             </div>
                             <div className="animate-fade-in">
                                 <label className="block text-sm font-medium mb-1 text-[var(--text-main)]">Business Type</label>

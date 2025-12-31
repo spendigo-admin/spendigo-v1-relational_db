@@ -188,7 +188,8 @@ const StoreList: React.FC = () => {
 
     const allStores = useMemo(() => {
         if (!stores) return [];
-        return Object.values(stores).map((store: any) => {
+        const activeStores = Object.values(stores).filter((s: any) => s.status === 'active' || !s.status); // Default to active if status missing (Backwards compatibility)
+        return activeStores.map((store: any) => {
             let distanceVal = 'Distance unknown';
             let distanceNum = 9999;
 

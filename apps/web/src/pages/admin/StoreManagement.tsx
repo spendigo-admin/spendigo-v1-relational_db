@@ -12,11 +12,20 @@ const StoreManagement: React.FC = () => {
     const { confirm } = useConfirmation();
     const storeList = Object.values(stores);
 
+    const [searchTerm, setSearchTerm] = useState('');
+    const [statusFilter, setStatusFilter] = useState('all');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [newStore, setNewStore] = useState({
         name: '',
         merchantEmail: '',
         type: 'grocery'
+    });
+
+    const filteredStores = storeList.filter((store: any) => {
+        const matchesSearch = (store.name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+            (store.merchantEmail?.toLowerCase() || '').includes(searchTerm.toLowerCase());
+        const matchesStatus = statusFilter === 'all' || store.status === statusFilter;
+        return matchesSearch && matchesStatus;
     });
 
     const handleAddStore = (e: React.FormEvent) => {
@@ -71,6 +80,30 @@ const StoreManagement: React.FC = () => {
                     <p className="text-2xl font-bold text-red-500 mt-1">{storeList.filter((s: any) => s.status === 'pending_deletion').length}</p>
                 </div>
             </div>
+            {/* Filters */}
+            <div className="flex flex-col sm:flex-row gap-4 bg-white p-4 rounded-xl border border-[var(--glass-border)] shadow-sm">
+                <div className="flex-1 relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
+                    <input
+                        type="text"
+                        placeholder="Search by Store Name or Email..."
+                        className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)]"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                </div>
+                <select
+                    className="px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)] bg-white"
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                >
+                    <option value="all">All Statuses</option>
+                    <option value="active">Active</option>
+                    <option value="pending">Pending</option>
+                    <option value="suspended">Suspended</option>
+                    <option value="pending_deletion">Deletion Requests</option>
+                </select>
+            </div>
 
             {/* Main Table */}
             <div className="glass-panel overflow-hidden">
@@ -87,127 +120,135 @@ const StoreManagement: React.FC = () => {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-[var(--glass-border)]">
-                            {storeList.map((store: any) => (
-                                <tr key={store.id} className="hover:bg-[var(--surface-2)] transition-colors group">
-                                    <td className="p-4">
-                                        <div className="font-bold text-[var(--text-main)]">{store.name}</div>
-                                        <div className="text-xs text-[var(--text-muted)] md:hidden">ID: {store.id}</div>
-                                    </td>
-                                    <td className="p-4 text-sm text-[var(--text-main)]">{store.merchantEmail || 'N/A'}</td>
-                                    <td className="p-4 text-sm text-[var(--text-main)]">{store.products?.length || 0}</td>
-                                    <td className="p-4 text-sm text-[var(--text-muted)]">{store.joinedAt}</td>
-                                    <td className="p-4">
-                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                                            ${store.status === 'active' ? 'bg-green-100 text-green-800' :
-                                                store.status === 'pending' ? 'bg-orange-100 text-orange-800' :
-                                                    'bg-red-100 text-red-800'}`}>
-                                            {store.status === 'active' && <span className="mr-1">●</span>}
-                                            {store.status === 'pending' && <span className="mr-1">○</span>}
-                                            {store.status === 'suspended' && <span className="mr-1">✕</span>}
-                                            {store.status === 'pending_deletion' && <span className="mr-1">⚠️</span>}
-                                            {(store.status || 'active').replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}
-                                        </span>
-                                    </td>
-                                    <td className="p-4 text-right space-x-2">
-                                        {store.status === 'pending' && (
-                                            <>
-                                                <button
-                                                    onClick={() => updateStoreStatus(store.id, 'active')}
-                                                    className="text-xs bg-green-500 hover:bg-green-600 text-white px-3 py-1.5 rounded-lg transition-colors font-medium"
-                                                >
-                                                    Approve
-                                                </button>
-                                                <button
-                                                    onClick={() => updateStoreStatus(store.id, 'suspended')}
-                                                    className="text-xs bg-[var(--surface-2)] hover:bg-red-50 text-red-600 px-3 py-1.5 rounded-lg transition-colors border border-[var(--glass-border)]"
-                                                >
-                                                    Reject
-                                                </button>
-                                            </>
-                                        )}
-                                        {(store.status === 'active' || !store.status) && (
-                                            <button
-                                                onClick={() => updateStoreStatus(store.id, 'suspended')}
-                                                className="text-xs text-red-500 hover:text-red-700 font-medium px-2 py-1"
-                                            >
-                                                Suspend
-                                            </button>
-                                        )}
-                                        {store.status === 'suspended' && (
-                                            <button
-                                                onClick={() => updateStoreStatus(store.id, 'active')}
-                                                className="text-xs text-green-500 hover:text-green-700 font-medium px-2 py-1"
-                                            >
-                                                Reactivate
-                                            </button>
-                                        )}
-                                        {store.status === 'pending_deletion' && (
-                                            <>
-                                                {store.deletionRequest?.requestedBy !== user?.id ? (
-                                                    <button
-                                                        onClick={async () => {
-                                                            const confirmed = await confirm({
-                                                                title: 'Approve Deletion',
-                                                                message: `Approve deletion for ${store.name}? This is final.`,
-                                                                confirmText: 'Approve & Delete',
-                                                                type: 'danger'
-                                                            });
-                                                            if (confirmed) approveDeleteStore(store.id);
-                                                        }}
-                                                        className="text-xs bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg font-bold"
-                                                    >
-                                                        Approve Deletion
-                                                    </button>
-                                                ) : (
-                                                    <span className="text-xs text-orange-600 font-medium bg-orange-50 border border-orange-100 px-2 py-1 rounded inline-block">
-                                                        ⏳ Waiting for other admin
-                                                    </span>
-                                                )}
-                                                <button
-                                                    onClick={() => updateStoreStatus(store.id, 'active')}
-                                                    className="text-xs text-gray-500 hover:text-gray-700 border border-gray-300 px-2 py-1 rounded ml-1"
-                                                >
-                                                    Reject
-                                                </button>
-                                            </>
-                                        )}
-
-                                        {store.status !== 'pending_deletion' && (
-                                            <button
-                                                onClick={async () => {
-                                                    const confirmed = await confirm({
-                                                        title: 'Request Deletion',
-                                                        message: `Request deletion for ${store.name}? Another admin will need to approve this.`,
-                                                        confirmText: 'Submit Request',
-                                                        type: 'warning'
-                                                    });
-
-                                                    if (confirmed) {
-                                                        try {
-                                                            await requestDeleteStore(store.id, user?.id || 'admin', 'admin');
-                                                            addNotification({
-                                                                type: 'system',
-                                                                title: 'Request Submitted',
-                                                                message: `Deletion request for ${store.name} submitted.`
-                                                            });
-                                                        } catch (e) {
-                                                            addNotification({
-                                                                type: 'alert',
-                                                                title: 'Error',
-                                                                message: 'Failed to submit request.'
-                                                            });
-                                                        }
-                                                    }
-                                                }}
-                                                className="text-xs text-red-600 hover:text-red-800 font-medium px-3 py-1.5 ml-2 border border-red-200 rounded-lg hover:bg-red-50 transition-colors"
-                                                title="Initiate Maker-Checker Deletion Workflow"
-                                            >
-                                                Request Delete
-                                            </button>
-                                        )}
+                            {filteredStores.length === 0 ? (
+                                <tr>
+                                    <td colSpan={6} className="p-8 text-center text-[var(--text-muted)]">
+                                        No stores found matching your filters.
                                     </td>
                                 </tr>
-                            ))}
+                            ) : (
+                                filteredStores.map((store: any) => (
+                                    <tr key={store.id} className="hover:bg-[var(--surface-2)] transition-colors group">
+                                        <td className="p-4">
+                                            <div className="font-bold text-[var(--text-main)]">{store.name}</div>
+                                            <div className="text-xs text-[var(--text-muted)] md:hidden">ID: {store.id}</div>
+                                        </td>
+                                        <td className="p-4 text-sm text-[var(--text-main)]">{store.merchantEmail || 'N/A'}</td>
+                                        <td className="p-4 text-sm text-[var(--text-main)]">{store.products?.length || 0}</td>
+                                        <td className="p-4 text-sm text-[var(--text-muted)]">{store.joinedAt}</td>
+                                        <td className="p-4">
+                                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                            ${store.status === 'active' ? 'bg-green-100 text-green-800' :
+                                                    store.status === 'pending' ? 'bg-orange-100 text-orange-800' :
+                                                        'bg-red-100 text-red-800'}`}>
+                                                {store.status === 'active' && <span className="mr-1">●</span>}
+                                                {store.status === 'pending' && <span className="mr-1">○</span>}
+                                                {store.status === 'suspended' && <span className="mr-1">✕</span>}
+                                                {store.status === 'pending_deletion' && <span className="mr-1">⚠️</span>}
+                                                {(store.status || 'active').replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}
+                                            </span>
+                                        </td>
+                                        <td className="p-4 text-right space-x-2">
+                                            {store.status === 'pending' && (
+                                                <>
+                                                    <button
+                                                        onClick={() => updateStoreStatus(store.id, 'active')}
+                                                        className="text-xs bg-green-500 hover:bg-green-600 text-white px-3 py-1.5 rounded-lg transition-colors font-medium"
+                                                    >
+                                                        Approve
+                                                    </button>
+                                                    <button
+                                                        onClick={() => updateStoreStatus(store.id, 'suspended')}
+                                                        className="text-xs bg-[var(--surface-2)] hover:bg-red-50 text-red-600 px-3 py-1.5 rounded-lg transition-colors border border-[var(--glass-border)]"
+                                                    >
+                                                        Reject
+                                                    </button>
+                                                </>
+                                            )}
+                                            {(store.status === 'active' || !store.status) && (
+                                                <button
+                                                    onClick={() => updateStoreStatus(store.id, 'suspended')}
+                                                    className="text-xs text-red-500 hover:text-red-700 font-medium px-2 py-1"
+                                                >
+                                                    Suspend
+                                                </button>
+                                            )}
+                                            {store.status === 'suspended' && (
+                                                <button
+                                                    onClick={() => updateStoreStatus(store.id, 'active')}
+                                                    className="text-xs text-green-500 hover:text-green-700 font-medium px-2 py-1"
+                                                >
+                                                    Reactivate
+                                                </button>
+                                            )}
+                                            {store.status === 'pending_deletion' && (
+                                                <>
+                                                    {store.deletionRequest?.requestedBy !== user?.id ? (
+                                                        <button
+                                                            onClick={async () => {
+                                                                const confirmed = await confirm({
+                                                                    title: 'Approve Deletion',
+                                                                    message: `Approve deletion for ${store.name}? This is final.`,
+                                                                    confirmText: 'Approve & Delete',
+                                                                    type: 'danger'
+                                                                });
+                                                                if (confirmed) approveDeleteStore(store.id);
+                                                            }}
+                                                            className="text-xs bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg font-bold"
+                                                        >
+                                                            Approve Deletion
+                                                        </button>
+                                                    ) : (
+                                                        <span className="text-xs text-orange-600 font-medium bg-orange-50 border border-orange-100 px-2 py-1 rounded inline-block">
+                                                            ⏳ Waiting for other admin
+                                                        </span>
+                                                    )}
+                                                    <button
+                                                        onClick={() => updateStoreStatus(store.id, 'active')}
+                                                        className="text-xs text-gray-500 hover:text-gray-700 border border-gray-300 px-2 py-1 rounded ml-1"
+                                                    >
+                                                        Reject
+                                                    </button>
+                                                </>
+                                            )}
+
+                                            {store.status !== 'pending_deletion' && (
+                                                <button
+                                                    onClick={async () => {
+                                                        const confirmed = await confirm({
+                                                            title: 'Request Deletion',
+                                                            message: `Request deletion for ${store.name}? Another admin will need to approve this.`,
+                                                            confirmText: 'Submit Request',
+                                                            type: 'warning'
+                                                        });
+
+                                                        if (confirmed) {
+                                                            try {
+                                                                await requestDeleteStore(store.id, user?.id || 'admin', 'admin');
+                                                                addNotification({
+                                                                    type: 'system',
+                                                                    title: 'Request Submitted',
+                                                                    message: `Deletion request for ${store.name} submitted.`
+                                                                });
+                                                            } catch (e) {
+                                                                addNotification({
+                                                                    type: 'alert',
+                                                                    title: 'Error',
+                                                                    message: 'Failed to submit request.'
+                                                                });
+                                                            }
+                                                        }
+                                                    }}
+                                                    className="text-xs text-red-600 hover:text-red-800 font-medium px-3 py-1.5 ml-2 border border-red-200 rounded-lg hover:bg-red-50 transition-colors"
+                                                    title="Initiate Maker-Checker Deletion Workflow"
+                                                >
+                                                    Request Delete
+                                                </button>
+                                            )}
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
                         </tbody>
                     </table>
                 </div>

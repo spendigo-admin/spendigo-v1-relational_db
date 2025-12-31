@@ -23,6 +23,7 @@ export interface User {
     // Merchant specific
     storeId?: string;
     storeName?: string;
+    businessRegistrationNumber?: string;
     merchantRole?: 'OWNER' | 'MANAGER' | 'STAFF' | 'MARKETING';
     subscriptionTier?: 'free' | 'core' | 'growth';
     // Admin specific
@@ -218,7 +219,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
     };
 
-    const register = async (userData: Partial<User> & { password: string; street?: string; city?: string; province?: string; postalCode?: string }): Promise<boolean> => {
+    const register = async (userData: Partial<User> & { password: string; street?: string; city?: string; province?: string; postalCode?: string; businessRegistrationNumber?: string }): Promise<boolean> => {
         try {
             const userCredential = await createUserWithEmailAndPassword(auth, userData.email!, userData.password);
             const uid = userCredential.user.uid;
@@ -253,6 +254,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 newUser.merchantRole = 'OWNER';
                 newUser.subscriptionTier = 'free';
                 if (userData.storeName) newUser.storeName = userData.storeName;
+                if (userData.businessRegistrationNumber) newUser.businessRegistrationNumber = userData.businessRegistrationNumber;
             }
 
             // Common Address Processing (Consumer & Merchant)
@@ -397,11 +399,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setDoc(doc(db, 'users', user.id), updatedUser, { merge: true });
     };
 
-    const updateSubscription = (tier: 'free' | 'core' | 'growth') => {
+    const updateSubscription = async (tier: 'free' | 'core' | 'growth') => {
         if (!user || user.role !== 'merchant') return;
         const updatedUser: User = { ...user, subscriptionTier: tier };
         setUser(updatedUser);
-        setDoc(doc(db, 'users', user.id), updatedUser, { merge: true });
+        await setDoc(doc(db, 'users', user.id), updatedUser, { merge: true });
+
+        // Also update the STORE document so public consumers can see the tier
+        if (user.storeId) {
+            await setDoc(doc(db, 'stores', user.storeId), { subscriptionTier: tier }, { merge: true });
+        }
     };
 
     const value = {
