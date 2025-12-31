@@ -1,10 +1,14 @@
 import React from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useSearchParams } from 'react-router-dom';
+import { useNotifications } from '../../context/NotificationContext';
+import { useConfirmation } from '../../context/ConfirmationContext';
 import '../../styles/design-system.css';
 
 const Subscription: React.FC = () => {
     const { user, updateSubscription } = useAuth();
+    const { addNotification } = useNotifications();
+    const { confirm } = useConfirmation();
     const [searchParams, setSearchParams] = useSearchParams();
     const currentTier = user?.subscriptionTier || 'free';
 
@@ -110,17 +114,28 @@ const Subscription: React.FC = () => {
 
     const handleUpgrade = async (tierId: string, price: string) => {
         if (price === '$0') {
-            // Free tier - instant switch (handled by logic or separate mechanism if needed)
-            // For now, allow simple downgrade via AuthContext (but in prod, cancel stripe sub via portal)
-            if (confirm("Downgrade to Free tier? This will cancel your current subscription at the end of the billing period.")) {
+            const confirmed = await confirm({
+                title: 'Confirm Downgrade',
+                message: "Downgrade to Free tier? This will cancel your current subscription at the end of the billing period.",
+                confirmText: 'Downgrade',
+                type: 'warning'
+            });
+
+            if (confirmed) {
                 updateSubscription('free');
-                alert("Switched to Starter plan.");
+                addNotification({ type: 'system', title: 'Plan Updated', message: "Switched to Starter plan." });
             }
             return;
         }
 
-        // Paid tier - Real Stripe Checkout Flow
-        if (confirm(`Subscribe to ${price}${price === '$0' ? '' : '/month'}? This will redirect you to Stripe Checkout.`)) {
+        const confirmed = await confirm({
+            title: 'Confirm Upgrade',
+            message: `Subscribe to ${price}${price === '$0' ? '' : '/month'}? This will redirect you to Stripe Checkout.`,
+            confirmText: 'Proceed to Checkout',
+            type: 'info'
+        });
+
+        if (confirmed) {
             setProcessingId(tierId);
 
             try {
@@ -139,7 +154,7 @@ const Subscription: React.FC = () => {
                 }
             } catch (error: any) {
                 console.error("Payment Error:", error);
-                alert(`Failed to initialize payment: ${error.message}`);
+                addNotification({ type: 'alert', title: 'Payment Error', message: `Failed to initialize payment: ${error.message}` });
                 setProcessingId(null);
             }
         }

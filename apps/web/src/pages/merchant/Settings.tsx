@@ -3,6 +3,8 @@ import { useSearchParams } from 'react-router-dom';
 import '../../styles/design-system.css';
 import { useAuth } from '../../context/AuthContext';
 import { useMarketplace } from '../../context/MarketplaceContext';
+import { useNotifications } from '../../context/NotificationContext';
+import { useConfirmation } from '../../context/ConfirmationContext';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { db } from '../../lib/firebase';
 
@@ -53,7 +55,9 @@ const INITIAL_TEAM: TeamMember[] = [
 
 const MerchantSettings: React.FC = () => {
     const { can, user } = useAuth();
-    const { stores, updateStore, updateStoreTeam } = useMarketplace();
+    const { stores, updateStore, updateStoreTeam, requestDeleteStore } = useMarketplace();
+    const { addNotification } = useNotifications();
+    const { confirm } = useConfirmation();
     const hasTeamAccess = can('team:manage');
     const hasSettingsAccess = can('settings:write');
     const storeId = user?.storeId || '1'; // Fallback to 1 if missing
@@ -61,6 +65,8 @@ const MerchantSettings: React.FC = () => {
     const [searchParams] = useSearchParams();
     const [activeTab, setActiveTab] = useState<'profile' | 'operations' | 'team' | 'payments' | 'notifications'>((searchParams.get('tab') as any) || 'profile');
     const [isSaving, setIsSaving] = useState(false);
+    const [showCloseStoreModal, setShowCloseStoreModal] = useState(false);
+    const [closeStoreInput, setCloseStoreInput] = useState('');
 
     const TABS = [
         { id: 'profile', label: '🏪 Store Profile', visible: true },
@@ -248,7 +254,7 @@ const MerchantSettings: React.FC = () => {
 
         await updateStore(storeId, updates);
         setIsSaving(false);
-        alert('Settings saved successfully!');
+        addNotification({ type: 'system', title: 'Settings Saved', message: 'Store configuration updated successfully.' });
     };
 
     const handleInvite = async (e: React.FormEvent) => {
@@ -298,16 +304,24 @@ const MerchantSettings: React.FC = () => {
         } catch (error: any) {
             console.error('Error inviting team member:', error);
             const errorMessage = error.message || 'Failed to send invitation';
-            alert(`❌ Invitation Failed\n\n${errorMessage}\n\nPlease try again or contact support.`);
+            addNotification({ type: 'alert', title: 'Invitation Failed', message: errorMessage });
         } finally {
             setIsSaving(false);
         }
     };
 
-    const removeMember = (id: string) => {
-        if (confirm('Are you sure you want to remove this team member?')) {
+    const removeMember = async (id: string) => {
+        const confirmed = await confirm({
+            title: 'Remove Team Member',
+            message: 'Are you sure you want to remove this team member? Their access will be revoked immediately.',
+            confirmText: 'Remove',
+            type: 'danger'
+        });
+
+        if (confirmed) {
             const updatedTeam = team.filter((t: TeamMember) => t.id !== id);
             updateStoreTeam(storeId, updatedTeam); // Persist to context
+            addNotification({ type: 'system', title: 'Member Removed', message: 'Team access updated.' });
         }
     };
 
@@ -476,7 +490,7 @@ const MerchantSettings: React.FC = () => {
                                     <button
                                         onClick={() => {
                                             navigator.clipboard.writeText(inviteSuccess.password);
-                                            alert('Password copied to clipboard!');
+                                            addNotification({ type: 'system', title: 'Copied', message: 'Password copied to clipboard!' });
                                         }}
                                         className="text-sm bg-blue-100 text-blue-700 px-3 py-1.5 rounded-lg font-bold hover:bg-blue-200 transition-colors"
                                     >
@@ -901,10 +915,21 @@ const MerchantSettings: React.FC = () => {
                 <p className="text-sm text-red-600 mb-4">These actions can affect your store's visibility.</p>
                 <div className="flex gap-4">
                     <button
-                        onClick={() => {
-                            if (confirm('⚠️ This will pause your store operations.\n\nYour store will be hidden from customers and new orders will be disabled.\n\nYou can resume operations at any time.\n\nContinue?')) {
-                                updateStore(storeId, { status: 'suspended' });
-                                alert('🔴 Store operations paused.\n\nYour store is now hidden from the marketplace.\n\nContact support@spendigo.ca or update your store status to resume.');
+                        onClick={async () => {
+                            const confirmed = await confirm({
+                                title: 'Pause Store Operations?',
+                                message: 'This will pause your store operations.\n\nYour store will be hidden from customers and new orders will be disabled.\n\nYou can resume operations at any time.',
+                                confirmText: 'Pause Store',
+                                type: 'warning'
+                            });
+
+                            if (confirmed) {
+                                await updateStore(storeId, { status: 'suspended' });
+                                addNotification({
+                                    type: 'system',
+                                    title: 'Store Paused',
+                                    message: 'Your store is now hidden from the marketplace. Contact support to resume.'
+                                });
                             }
                         }}
                         className="px-4 py-2 border border-red-300 text-red-700 rounded-lg hover:bg-red-100 font-medium transition-colors"
@@ -912,22 +937,7 @@ const MerchantSettings: React.FC = () => {
                         Pause Store Operations
                     </button>
                     <button
-                        onClick={() => {
-                            const storeName = storeInfo.name;
-                            const confirmation = prompt(`⚠️ PERMANENT ACTION - This cannot be undone!\n\nType your store name "${storeName}" to confirm permanent closure:`);
-
-                            if (confirmation === storeName) {
-                                if (confirm('Are you absolutely sure?\n\nThis will:\n- Delete all your products\n- Cancel pending orders\n- Remove your store from the platform\n\nThis action CANNOT be reversed.')) {
-                                    alert('🚨 Store closure initiated.\n\nOur team will process this request within 24 hours.\n\nYou will receive a final email with details.');
-                                    updateStore(storeId, { status: 'suspended' });
-                                    setTimeout(() => {
-                                        window.location.href = '/';
-                                    }, 2000);
-                                }
-                            } else if (confirmation !== null) {
-                                alert('Store name did not match. Closure cancelled.');
-                            }
-                        }}
+                        onClick={() => setShowCloseStoreModal(true)}
                         className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium transition-colors shadow-sm"
                     >
                         Close Store Permanently
@@ -968,6 +978,71 @@ const MerchantSettings: React.FC = () => {
             {activeTab === 'team' && renderTeam()}
             {activeTab === 'payments' && renderPayments()}
             {activeTab === 'notifications' && renderNotifications()}
+
+            {/* Close Store Modal */}
+            {showCloseStoreModal && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-fade-in">
+                    <div className="bg-white p-8 rounded-3xl w-full max-w-md shadow-2xl relative border border-red-200">
+                        <div className="text-center mb-6">
+                            <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center text-3xl mx-auto mb-4">
+                                🚨
+                            </div>
+                            <h2 className="text-2xl font-bold text-red-900 mb-1">Delete {storeInfo.name}</h2>
+                            <p className="text-sm text-red-800">Permanent Action - Cannot be undone</p>
+                        </div>
+
+                        <div className="space-y-4 mb-6">
+                            <p className="text-sm text-[var(--text-muted)] leading-relaxed">
+                                You are about to permanently close this store. All products, deals, and current orders will be <strong>permanently deleted</strong>.
+                            </p>
+                            <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
+                                <label className="block text-xs font-bold text-[var(--text-muted)] uppercase tracking-wide mb-2">
+                                    Type <span className="text-black select-all">"{storeInfo.name}"</span> to confirm:
+                                </label>
+                                <input
+                                    type="text"
+                                    value={closeStoreInput}
+                                    onChange={(e) => setCloseStoreInput(e.target.value)}
+                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
+                                    placeholder={storeInfo.name}
+                                />
+                            </div>
+                        </div>
+
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => { setShowCloseStoreModal(false); setCloseStoreInput(''); }}
+                                className="flex-1 py-3 font-bold text-gray-600 hover:bg-gray-100 rounded-xl transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                disabled={closeStoreInput !== storeInfo.name}
+                                onClick={async () => {
+                                    try {
+                                        await requestDeleteStore(storeId, user?.id || 'unknown', 'merchant');
+                                        addNotification({
+                                            type: 'system',
+                                            title: 'Deletion Requested',
+                                            message: 'Your request to delete the store has been submitted for admin approval.'
+                                        });
+                                        setShowCloseStoreModal(false);
+                                    } catch (error) {
+                                        addNotification({
+                                            type: 'alert',
+                                            title: 'Error',
+                                            message: 'Failed to submit deletion request.'
+                                        });
+                                    }
+                                }}
+                                className="flex-1 py-3 bg-red-600 text-white font-bold rounded-xl shadow-lg hover:bg-red-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                Close Permanently
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

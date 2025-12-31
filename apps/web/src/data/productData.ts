@@ -1,10 +1,12 @@
+import { GROCERY_CATALOG } from './groceryCatalog';
+
 // Unified store data for the entire application
 // All components should import STORE_DATA from this file
 export const STORE_DATA: Record<string, any> = {
     '1': {
         id: '1',
         name: 'FreshMart',
-        tagline: 'Fresh groceries, delivered fast',
+        tagline: 'Fresh groceries, complete selection',
         image: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=1200&h=400&fit=crop',
         logo: '🥬',
         rating: 4.8,
@@ -14,38 +16,19 @@ export const STORE_DATA: Record<string, any> = {
         province: 'ON',
         subscriptionTier: 'growth',
         tags: ['Grocery', 'Organic'],
-        categories: ['All', 'Fresh Produce', 'Dairy', 'Bakery', 'Pantry'],
+        categories: ['All', 'Dairy & Refrigerated', 'Bakery & Grains', 'Pantry Staples', 'Breakfast & Beverages', 'Produce & Frozen', 'Snacks & Household'],
         flyer: {
             title: 'Weekly Savings Flyer',
             validUntil: 'Dec 22, 2024',
             image: 'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=600&h=400&fit=crop'
         },
         oneDayOffers: [
-            { id: 'od1', name: 'Fresh Strawberries', price: 2.99, originalPrice: 5.99, endsIn: '8 hours', image: 'https://images.unsplash.com/photo-1464965911861-746a04b4bca6?w=300&h=300&fit=crop' },
-            { id: 'od2', name: 'Orange Juice (2L)', price: 3.49, originalPrice: 6.99, endsIn: '8 hours', image: 'https://images.unsplash.com/photo-1621506289937-a8e4df240d0b?w=300&h=300&fit=crop' },
+            { id: 'GROC-PROD-001', name: 'Bananas (Bunch)', price: 1.99, originalPrice: 3.29, endsIn: '10 hours', image: 'https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e?w=300&h=300&fit=crop' }
         ],
         saleItems: [
-            { id: 's1', name: 'Organic Eggs (12pk)', price: 4.99, originalPrice: 7.99, discount: '38% OFF', image: 'https://images.unsplash.com/photo-1582722872445-44dc5f7e3c8f?w=300&h=300&fit=crop' },
-            { id: 's2', name: 'Whole Wheat Bread', price: 2.49, originalPrice: 3.99, discount: '38% OFF', image: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=300&h=300&fit=crop' },
+            { id: 'GROC-DAIRY-004', name: 'Eggs (6-pack)', price: 2.49, originalPrice: 3.49, discount: '20% OFF', image: 'https://images.unsplash.com/photo-1582722872445-44dc5f7e3c8f?w=300&h=300&fit=crop' }
         ],
-        products: [
-            { id: 'p1', name: 'Organic Avocados (5pk)', price: 6.99, originalPrice: 8.99, category: 'Fresh Produce', image: 'https://images.unsplash.com/photo-1523049673857-eb18f1d7b578?w=300&h=300&fit=crop' },
-            { id: 'p2', name: 'Almond Milk (1L)', price: 4.49, category: 'Dairy', image: 'https://images.unsplash.com/photo-1550583724-b2692b85b150?w=300&h=300&fit=crop' },
-            { id: 'p3', name: 'Sourdough Loaf', price: 5.99, category: 'Bakery', image: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=300&h=300&fit=crop' },
-            { id: 'p4', name: 'Organic Bananas (bunch)', price: 2.99, category: 'Fresh Produce', image: 'https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e?w=300&h=300&fit=crop' },
-            { id: 'p5', name: 'Greek Yogurt (500g)', price: 5.49, category: 'Dairy', image: 'https://images.unsplash.com/photo-1488477181946-6428a0291777?w=300&h=300&fit=crop' },
-            { id: 'p6', name: 'Olive Oil (750ml)', price: 12.99, category: 'Pantry', image: 'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=300&h=300&fit=crop' },
-            { id: 'p44', name: 'Gala Apples (3lb)', price: 4.99, category: 'Fresh Produce', image: 'https://images.unsplash.com/photo-1567306226416-28f0efdc88ce?w=300&h=300&fit=crop' },
-            { id: 'p45', name: 'Baby Spinach (5oz)', price: 3.49, category: 'Fresh Produce', image: 'https://images.unsplash.com/photo-1576045057995-568f588f82fb?w=300&h=300&fit=crop' },
-            { id: 'p46', name: 'Whole Milk (4L)', price: 5.89, category: 'Dairy', image: 'https://images.unsplash.com/photo-1711625826512-f0165fa3846d?w=300&h=300&fit=crop' },
-            { id: 'p47', name: 'Cheddar Cheese (400g)', price: 7.49, category: 'Dairy', image: 'https://images.unsplash.com/photo-1723473620176-8d26dc6314cf?w=300&h=300&fit=crop' },
-            { id: 'p48', name: 'Baguette', price: 3.29, category: 'Bakery', image: 'https://images.unsplash.com/photo-1554475659-9fd915c8f156?w=300&h=300&fit=crop' },
-            { id: 'p49', name: 'Chocolate Croissant', price: 2.99, category: 'Bakery', image: 'https://images.unsplash.com/photo-1530610476181-d83430b64dcd?w=300&h=300&fit=crop' },
-            { id: 'p50', name: 'Basmati Rice (2kg)', price: 8.99, category: 'Pantry', image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=300&h=300&fit=crop' },
-            { id: 'p51', name: 'Penne Rigate (900g)', price: 2.49, category: 'Pantry', image: 'https://images.unsplash.com/photo-1473093226795-af9932fe5856?w=300&h=300&fit=crop' },
-            { id: 'p52', name: 'Peanut Butter (1kg)', price: 6.99, category: 'Pantry', image: 'https://images.unsplash.com/photo-1590301157890-4810ed352733?w=300&h=300&fit=crop' },
-            { id: 'p53', name: 'Black Beans (540ml)', price: 1.79, category: 'Pantry', image: 'https://images.unsplash.com/photo-1627424497008-a529767e5de4?w=300&h=300&fit=crop' },
-        ]
+        products: GROCERY_CATALOG
     },
     '2': {
         id: '2',
@@ -116,10 +99,10 @@ export const STORE_DATA: Record<string, any> = {
             image: 'https://images.unsplash.com/photo-1607623814075-e51df1bdc82f?w=600&h=400&fit=crop'
         },
         oneDayOffers: [
-            { id: 'od4', name: 'Prime Ribeye Steak', price: 14.99, originalPrice: 24.99, endsIn: '10 hours', image: 'https://images.unsplash.com/photo-1600891964092-4316c288032e?w=300&h=300&fit=crop' },
+            { id: 'od4', name: 'Prime Ribeye Steak', price: 14.99, originalPrice: 24.99, endsIn: '10 hours', image: 'https://images.unsplash.com/photo-1600891964092-4316c288032e?w=300&h=300&fit=crop' }
         ],
         saleItems: [
-            { id: 's4', name: 'Frozen Shrimp (1lb)', price: 9.99, originalPrice: 15.99, discount: '37% OFF', image: 'https://images.unsplash.com/photo-1565680018434-b513d5e5fd47?w=300&h=300&fit=crop' },
+            { id: 's4', name: 'Frozen Shrimp (1lb)', price: 9.99, originalPrice: 15.99, discount: '37% OFF', image: 'https://images.unsplash.com/photo-1565680018434-b513d5e5fd47?w=300&h=300&fit=crop' }
         ],
         products: [
             { id: 'p10', name: 'Chicken Breast (1kg)', price: 14.99, category: 'Meat', image: 'https://images.unsplash.com/photo-1604503468506-a8da13d82791?w=300&h=300&fit=crop' },
@@ -433,5 +416,3 @@ export const STORE_DATA: Record<string, any> = {
         ]
     }
 };
-
-

@@ -6,6 +6,7 @@ import { useAuth } from '../../context/AuthContext';
 const Register: React.FC = () => {
     const navigate = useNavigate();
     const { register, loginWithGoogle, loginWithFacebook } = useAuth();
+    const [error, setError] = useState<string | null>(null);
     const [role, setRole] = useState<'consumer' | 'merchant'>('consumer');
     const [formData, setFormData] = useState({
         name: '',
@@ -22,21 +23,31 @@ const Register: React.FC = () => {
 
     const handleRegister = async (e: React.FormEvent) => {
         e.preventDefault();
+        setError(null);
 
         if (formData.password.length < 6) {
-            alert('Password must be at least 6 characters long.');
+            setError('Password must be at least 6 characters long.');
             return;
         }
 
-        await register({
-            ...formData,
-            role
-        });
+        try {
+            const success = await register({
+                ...formData,
+                role
+            });
 
-        if (role === 'merchant') {
-            navigate('/merchant/onboarding'); // Redirect to merchant setup
-        } else {
-            navigate('/'); // Redirect to home
+            if (success) {
+                if (role === 'merchant') {
+                    navigate('/merchant/onboarding'); // Redirect to merchant setup
+                } else {
+                    navigate('/'); // Redirect to home
+                }
+            } else {
+                setError('Registration failed. Please try again.');
+            }
+        } catch (err: any) {
+            console.error('Registration error:', err);
+            setError(err.message || 'Registration failed');
         }
     };
 

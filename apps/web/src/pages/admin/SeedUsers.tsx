@@ -3,7 +3,7 @@ import { createUserWithEmailAndPassword, signOut } from 'firebase/auth';
 import { doc, setDoc, collection } from 'firebase/firestore';
 import { auth, db } from '../../lib/firebase';
 import { User } from '../../context/AuthContext';
-
+import { GROCERY_CATALOG } from '../../data/groceryCatalog';
 import { STORE_DATA } from '../../data/productData';
 
 // --- DATA DEFINITIONS ---
@@ -17,34 +17,41 @@ const STORES = Object.values(STORE_DATA).map(store => ({
 }));
 
 // --- MASTER CATALOG EXTRACTION ---
-// Flatten all products from all stores to create a master list
-const CATALOG_ITEMS = STORES.flatMap(store => store.products.map((p: any) => ({
-    ...p,
-    storeId: store.id // Keep track of origin for initial seed
-})));
+// 1. Start with explicit Master Catalog items
+const MASTER_MAP = new Map<string, any>();
+GROCERY_CATALOG.forEach(item => {
+    MASTER_MAP.set(item.name.toLowerCase(), { ...item, storeId: 'master' });
+});
 
-// Deduplicate by Name (Case Insensitive)
-const UNIQUE_CATALOG_ITEMS = Array.from(new Map(
-    CATALOG_ITEMS.map((item: any) => {
-        const TAX_EXEMPT_CATEGORIES = ['Fresh Produce', 'Dairy & Eggs', 'Bakery', 'Meat & Seafood', 'Pantry', 'Frozen Foods'];
-        // Note: Simplification for demo. Real tax laws are complex (e.g. some frozen/pantry items are taxable).
-        // Assumes "Snacks", "Drinks", "Household", "Personal Care" are taxable.
+// 2. Supplement with items from other stores (merging duplicates by name)
+STORES.forEach(store => {
+    store.products.forEach((p: any) => {
+        const key = p.name.toLowerCase();
+        if (!MASTER_MAP.has(key)) {
+            MASTER_MAP.set(key, { ...p, storeId: store.id });
+        }
+    });
+});
 
-        const isTaxExempt = TAX_EXEMPT_CATEGORIES.some(c => item.category.includes(c) || c.includes(item.category));
+// 3. Apply Tax Logic and formatting
+const UNIQUE_CATALOG_ITEMS = Array.from(MASTER_MAP.values()).map((item, index) => {
+    const TAX_EXEMPT_CATEGORIES = ['Fresh Produce', 'Dairy & Eggs', 'Bakery', 'Meat & Seafood', 'Pantry', 'Frozen Foods', 'Dairy & Refrigerated', 'Bakery & Grains', 'Pantry Staples', 'Produce & Frozen'];
 
-        return [item.name.toLowerCase(), {
-            name: item.name,
-            category: item.category,
-            image: item.image,
-            description: item.description || `Fresh ${item.name} sourced for quality directly from local suppliers.`,
-            unit: item.unit || 'each',
-            taxable: !isTaxExempt
-        }];
-    })
-).values()).map((item, index) => ({
-    ...item,
-    id: `cat-${index + 1}` // Generate consistent Catalog IDs
-}));
+    // Check if category matches any exempt category (fuzzy match)
+    const isTaxExempt = TAX_EXEMPT_CATEGORIES.some(c =>
+        item.category.toLowerCase().includes(c.toLowerCase()) ||
+        c.toLowerCase().includes(item.category.toLowerCase())
+    );
+
+    return {
+        ...item,
+        // Preserve ID if it's a distinct SKU (like GROC-...), otherwise generate one if it looks generic
+        id: item.id.startsWith('GROC-') ? item.id : `cat-${index + 1000}`,
+        description: item.description || `Fresh ${item.name} sourced for quality directly from local suppliers.`,
+        unit: item.unit || 'each',
+        taxable: !isTaxExempt
+    };
+});
 
 const CONSUMERS = [
     { email: 'shopper@example.com', name: 'Alice Shopper', avatar: '🛒' },
@@ -256,18 +263,22 @@ export default function SeedUsers() {
             <p className="mb-4">
                 This utility will recreate the standard demo data including:
                 <ul className="list-disc ml-6 mt-2 mb-2">
-                    <li><strong>Master Product Catalog</strong> (~70 items)</li>
+                    <li><strong>Master Product Catalog</strong> (Integrated {UNIQUE_CATALOG_ITEMS.length} items)</li>
                     <li>30+ Users (Shoppers, Merchants, Admins)</li>
-                    <li>11 Mock Stores with full profiles</li>
-                    <li>~150 Mock Orders (90-Day History)</li>
-                    <li>~150 Audit Logs & Notifications</li>
-                    <li>~100 Products, Flyers, and Deals</li>
+                    <li>{STORES.length} Mock Stores with full profiles</li>
+                    <li>~50 Mock Orders (Analytics Data)</li>
                 </ul>
                 <br />
                 <strong>Default Password:</strong> <code>Spendigo123!</code>
             </p>
 
-
+            <button
+                onClick={seed}
+                disabled={loading}
+                className="px-6 py-3 bg-green-600 text-white font-bold rounded shadow hover:bg-green-700 disabled:opacity-50"
+            >
+                {loading ? 'Seeding...' : 'Seed Database'}
+            </button>
 
             <button
                 onClick={async () => {

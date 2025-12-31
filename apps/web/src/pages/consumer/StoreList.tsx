@@ -4,6 +4,7 @@ import '../../styles/design-system.css';
 import { useMarketplace } from '../../context/MarketplaceContext';
 import { useAuth } from '../../context/AuthContext';
 import { useOrders } from '../../context/OrderContext';
+import { useNotifications } from '../../context/NotificationContext';
 
 const CATEGORIES = ['All', 'Fastest', 'Offers', 'Low Prices', 'Grocery', 'Convenience', 'Wholesale'];
 
@@ -18,6 +19,7 @@ const StoreList: React.FC = () => {
     const { stores, loading } = useMarketplace();
     const { user } = useAuth();
     const { profile } = useOrders();
+    const { addNotification } = useNotifications();
     const [userCoords, setUserCoords] = useState<{ lat: number, lng: number } | null>(null);
     const [address, setAddress] = useState('');
     const [isLocating, setIsLocating] = useState(false);
@@ -79,7 +81,7 @@ const StoreList: React.FC = () => {
     const handleLocateMe = () => {
         setIsLocating(true);
         if (!navigator.geolocation) {
-            alert('Geolocation is not supported by your browser');
+            addNotification({ type: 'alert', title: 'Geolocation Not Supported', message: 'Your browser does not support Geolocation.' });
             setIsLocating(false);
             return;
         }
@@ -94,7 +96,7 @@ const StoreList: React.FC = () => {
                 setIsLocating(false);
             },
             () => {
-                alert('Unable to retrieve your location');
+                addNotification({ type: 'alert', title: 'Location Error', message: 'Unable to retrieve your location.' });
                 setIsLocating(false);
             }
         );
@@ -170,11 +172,15 @@ const StoreList: React.FC = () => {
                     }
                 }
 
-                alert(`Location not found for "${address}". \n\nTip: Try entering "City, Province" directly (e.g. "Brockville, ON").`);
+                addNotification({
+                    type: 'alert',
+                    title: 'Location Not Found',
+                    message: `We couldn't find "${address}". Try entering "City, Province" directly.`
+                });
             }
         } catch (error) {
             console.error('Search error:', error);
-            alert('Error finding location. Please try again.');
+            addNotification({ type: 'alert', title: 'Search Failed', message: 'Error finding location. Please try again.' });
         } finally {
             setIsLocating(false);
         }

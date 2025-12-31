@@ -19,19 +19,24 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.token.email.lower() == email.lower();
     }
 
+    // Fetch User Profile Data
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
     // Check if user has 'admin' role in their user profile
-    // Note: This requires getting the user document. 
-    // Optimization: In a real app, rely on Custom Claims (request.auth.token.admin == true).
-    // For this prototype, we will fetch the doc.
     function isAdmin() {
-      return isAuthenticated() && 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      return isAuthenticated() && getUserData().role == 'admin';
     }
 
     // Check if user is a merchant
     function isMerchant() {
-       return isAuthenticated() && 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'merchant';
+       return isAuthenticated() && getUserData().role == 'merchant';
+    }
+
+    // Get the storeId associated with the current merchant user
+    function getMerchantStoreId() {
+      return getUserData().storeId;
     }
 
     // --- COLLECTION RULES ---
@@ -39,115 +44,118 @@ service cloud.firestore {
     // 1. USERS COLLECTION
     // - Users can read and write their own profile.
     // - Admins can read all profiles and write (ban/promote) any profile.
-    // - Merchants/Public might need basic read access to names/avatars if we had a social feed, 
-    //   but for now strict privacy is better.
     match /users/{userId} {
       allow read: if isOwner(userId) || isAdmin();
       allow create: if isAuthenticated() && request.auth.uid == userId;
-      allow update: if isOwner(userId) || isAdmin(); // Owner updates profile, Admin updates status/roles
+      allow update: if isOwner(userId) || isAdmin(); 
       allow delete: if isAdmin();
     }
 
     // 2. STAFF COLLECTION (Isolated Admin List)
-    // - Super Admins (Admin role) can read/write everything.
-    // - A user can read their own entry to verify if they are staff (needed for AuthContext).
     match /staff/{email} {
       allow read: if isAdmin() || isEmailOwner(email);
       allow write: if isAdmin();
     }
 
     // 3. STORES COLLECTION
-    // - Public Read (Catalogue).
-    // - Write restricted to Admins or the Store Owner (StoreId checking required).
-    // - For prototype simplicity: Merchants can create, Owners can update their own.
+    // - Public Read.
+    // - Update restricted to Admins or the Store Owner.
     match /stores/{storeId} {
       allow read: if true;
-      allow create: if isMerchant() || isAdmin();
-      allow update: if isAdmin() || (isMerchant() && resource.data.ownerId == request.auth.uid);
+      allow create: if isAdmin() || (isMerchant() && request.resource.data.ownerId == request.auth.uid);
+      
+      // Update: Admin OR (Merchant who "owns" this store)
+      allow update: if isAdmin() || (isMerchant() && getMerchantStoreId() == storeId);
+      
       allow delete: if isAdmin();
     }
 
-    // 4. PRODUCTS & DEALS & FLYERS
+    // 4. MASTER CATALOG (New)
+    // - Public Read. Writes Admin Only.
+    match /catalog/{itemId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // 5. PRODUCTS & DEALS & FLYERS (Store-Specific Resources)
     // - Public Read.
-    // - Write restricted to Merchants (Owners) or Admins.
+    // - Write restricted to Merchants (for their own store) or Admins.
     match /products/{productId} {
       allow read: if true;
-      allow write: if isMerchant() || isAdmin(); 
-      // ideally check if product.storeId belongs to merchant
+      allow create: if isAdmin() || (isMerchant() && request.resource.data.storeId == getMerchantStoreId());
+      allow update, delete: if isAdmin() || (isMerchant() && resource.data.storeId == getMerchantStoreId());
     }
+    
     match /deals/{dealId} {
       allow read: if true;
-      allow write: if isMerchant() || isAdmin();
+      allow create: if isAdmin() || (isMerchant() && request.resource.data.storeId == getMerchantStoreId());
+      allow update, delete: if isAdmin() || (isMerchant() && resource.data.storeId == getMerchantStoreId());
     }
+    
     match /flyers/{flyerId} {
       allow read: if true;
-      allow write: if isMerchant() || isAdmin();
+      allow create: if isAdmin() || (isMerchant() && request.resource.data.storeId == getMerchantStoreId());
+      allow update, delete: if isAdmin() || (isMerchant() && resource.data.storeId == getMerchantStoreId());
     }
 
-    // 5. ORDERS
+    // 6. ORDERS
     // - Create: Any authenticated user.
-    // - Read: The Customer OR The Merchant (by storeId) OR Admin.
-    // - Update: Customer (cancel), Merchant (status), Admin.
+    // - Read/Update: Customer OR Merchant (of that store) OR Admin.
     match /orders/{orderId} {
       allow create: if isAuthenticated();
+      
       allow read: if isAuthenticated() && (
         resource.data.customerId == request.auth.uid || 
-        resource.data.storeId == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.storeId ||
+        (isMerchant() && resource.data.storeId == getMerchantStoreId()) ||
         isAdmin()
       );
+      
       allow update: if isAuthenticated() && (
         resource.data.customerId == request.auth.uid ||
-        // Check if user is the merchant owner of this order's store
-        // (Simplified check: User has storeId matching order's storeId)
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.storeId == resource.data.storeId ||
+        (isMerchant() && resource.data.storeId == getMerchantStoreId()) ||
         isAdmin()
       );
     }
 
-    // 6. NOTIFICATIONS
-    // - Read: Only the recipient (docId == userId).
-    // - Write: Any authenticated user (needed for client-side OrderContext logic).
+    // 7. NOTIFICATIONS
     match /notifications/{userId} {
       allow read: if isOwner(userId);
-      allow write: if isAuthenticated(); // Needed for peer-to-peer notification sending
+      allow create: if isAuthenticated(); // Allow sending notifications
+      allow update, delete: if isOwner(userId); // User can mark read or dismiss
     }
 
-    // 7. SETTINGS (Platform Config)
-    // - Read: Public (maintenance mode check).
-    // - Write: Admin only.
+    // 8. SETTINGS
     match /settings/{document=**} {
       allow read: if true;
       allow write: if isAdmin();
     }
     
-    // 8. REVIEWS
-    // - Read: Public.
-    // - Create: Authenticated users.
+    // 9. REVIEWS
     match /reviews/{reviewId} {
       allow read: if true;
       allow create: if isAuthenticated();
-      // Only author or admin can delete/edit (if we allowed editing)
       allow delete: if isAdmin() || (isAuthenticated() && resource.data.authorId == request.auth.uid);
     }
     
-    // 9. CARTS
-    // - Read/Write: Owner only.
+    // 10. CARTS & WISHLISTS (Private User Data)
     match /carts/{cartId} {
       allow read, write: if isOwner(cartId);
     }
-
-    // 10. WISHLISTS
-    // - Read/Write: Owner only.
     match /wishlists/{wishlistId} {
       allow read, write: if isOwner(wishlistId);
     }
 
-    // 10. LOGS (Audit)
-    // - Read: Admin only.
-    // - Write: Authenticated users (AuditContext).
+    // 11. AUDIT LOGS
     match /audit_logs/{logId} {
       allow read: if isAdmin();
-      allow create: if isAuthenticated();
+      allow create: if isAuthenticated(); // Users create logs for their actions
+      allow update, delete: if false; // Immutable
+    }
+    
+    // 12. MAIL (For Trigger Email Extension)
+    match /mail/{mailId} {
+      allow create: if isAuthenticated(); // Allow apps to queue emails
+      allow read, update, delete: if isAdmin(); // Only admins/system should see/manage email queue
     }
   }
 }

@@ -3,6 +3,8 @@ import { collection, query, getDocs, doc, setDoc, updateDoc, where, deleteDoc } 
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { db } from '../../lib/firebase';
 import { useAuth } from '../../context/AuthContext';
+import { useNotifications } from '../../context/NotificationContext';
+import { useConfirmation } from '../../context/ConfirmationContext';
 import '../../styles/design-system.css';
 
 // --- TYPES ---
@@ -52,6 +54,8 @@ const ROLE_DEFINITIONS: Record<AdminRole, { description: string; permissions: st
 
 const UserManagement: React.FC = () => {
     const { user: currentUser } = useAuth();
+    const { addNotification } = useNotifications();
+    const { confirm } = useConfirmation();
     const [activeTab, setActiveTab] = useState<'staff' | 'users'>('staff');
     const [staff, setStaff] = useState<AdminStaff[]>([]);
     const [users, setUsers] = useState<User[]>([]);
@@ -129,15 +133,31 @@ const UserManagement: React.FC = () => {
 
             setShowStaffModal(false);
             setNewStaff({ name: '', email: '', role: 'SUPPORT' });
-            window.location.reload();
+
+            addNotification({
+                type: 'system',
+                title: 'Staff Added',
+                message: `${newStaff.email} authorized as ${newStaff.role}`,
+            });
+
+            // Reload to refresh permissions/UI
+            setTimeout(() => window.location.reload(), 1500);
+
         } catch (e) {
             console.error(e);
-            alert('Failed to add staff member');
+            addNotification({ type: 'alert', title: 'Error', message: 'Failed to add staff member' });
         }
     };
 
     const removeStaff = async (email: string) => {
-        if (confirm(`Remove ${email} from Administrative Staff Pool?`)) {
+        const confirmed = await confirm({
+            title: 'Remove Staff',
+            message: `Remove ${email} from Administrative Staff Pool?`,
+            confirmText: 'Remove Access',
+            type: 'danger'
+        });
+
+        if (confirmed) {
             try {
                 await deleteDoc(doc(db, 'staff', email.toLowerCase()));
 
@@ -153,13 +173,24 @@ const UserManagement: React.FC = () => {
                     });
                 }
 
-                window.location.reload();
-            } catch (e) { console.error(e); }
+                addNotification({ type: 'system', title: 'Staff Removed', message: 'Staff rights revoked.' });
+                setTimeout(() => window.location.reload(), 1500);
+            } catch (e) {
+                console.error(e);
+                addNotification({ type: 'alert', title: 'Error', message: 'Failed to remove staff' });
+            }
         }
     };
 
     const handleDeleteUser = async (user: User) => {
-        if (!confirm(`Are you sure you want to PERMANENTLY DELETE user ${user.email}? This action cannot be undone.`)) return;
+        const confirmed = await confirm({
+            title: 'Delete User',
+            message: `Are you sure you want to PERMANENTLY DELETE user ${user.email}? This action cannot be undone.`,
+            confirmText: 'Delete Forever',
+            type: 'danger'
+        });
+
+        if (!confirmed) return;
 
         try {
             setLoading(true);
@@ -170,17 +201,28 @@ const UserManagement: React.FC = () => {
 
             // Remove from local state
             setUsers(prev => prev.filter(u => u.id !== user.id));
-            alert(`User ${user.email} deleted successfully.`);
+            addNotification({
+                type: 'system',
+                title: 'User Deleted',
+                message: `User ${user.email} deleted successfully.`
+            });
         } catch (error: any) {
             console.error("Delete failed:", error);
-            alert(`Failed to delete user: ${error.message}`);
+            addNotification({
+                type: 'alert',
+                title: 'Deletion Failed',
+                message: error.message || 'Operation failed.'
+            });
         } finally {
             setLoading(false);
         }
     };
 
+    const [showCleanupModal, setShowCleanupModal] = useState(false);
+
     const handleCleanup = async () => {
-        if (!confirm("This will scan all users and permanently delete any Firestore profiles that do not have a matching Firebase Auth account. This could take a few moments. Continue?")) return;
+        // Confirmation is now handled by the UI Modal
+        setShowCleanupModal(false);
 
         try {
             setLoading(true);
@@ -188,11 +230,20 @@ const UserManagement: React.FC = () => {
             const cleanupFunction = httpsCallable(functions, 'cleanupOrphanedUsers');
             const result: any = await cleanupFunction();
 
-            alert(result.data.message);
-            window.location.reload();
+            addNotification({
+                type: 'system',
+                title: 'Cleanup Complete',
+                message: result.data.message || 'Orphaned users removed.'
+            });
+
+            setTimeout(() => window.location.reload(), 2000);
         } catch (e: any) {
             console.error(e);
-            alert(`Cleanup failed: ${e.message}`);
+            addNotification({
+                type: 'alert',
+                title: 'Cleanup Failed',
+                message: e.message || 'An error occurred during cleanup.'
+            });
         } finally {
             setLoading(false);
         }
@@ -202,7 +253,14 @@ const UserManagement: React.FC = () => {
         const newStatus = currentStatus === 'active' ? 'banned' : 'active';
         const action = newStatus === 'banned' ? 'SUSPEND' : 'ACTIVATE';
 
-        if (confirm(`Are you sure you want to ${action} this user?`)) {
+        const confirmed = await confirm({
+            title: `${action} User`,
+            message: `Are you sure you want to ${action.toLowerCase()} this user?`,
+            confirmText: 'Yes, proceed',
+            type: 'warning'
+        });
+
+        if (confirmed) {
             try {
                 await updateDoc(doc(db, 'users', id), {
                     status: newStatus
@@ -212,9 +270,15 @@ const UserManagement: React.FC = () => {
                 setUsers(prev => prev.map(u =>
                     u.id === id ? { ...u, status: newStatus } : u
                 ));
+
+                addNotification({
+                    type: 'system',
+                    title: 'Status Updated',
+                    message: `User status set to ${newStatus}`
+                });
             } catch (e) {
                 console.error("Error updating user status:", e);
-                alert("Failed to update user status.");
+                addNotification({ type: 'alert', title: 'Error', message: "Failed to update user status." });
             }
         }
     };
@@ -273,7 +337,7 @@ const UserManagement: React.FC = () => {
                             <option value="consumer">Consumers ({users.filter(u => u.role === 'consumer').length})</option>
                         </select>
                         <button
-                            onClick={handleCleanup}
+                            onClick={() => setShowCleanupModal(true)}
                             title="Remove users that don't exist in Auth"
                             className="text-xs font-bold text-gray-500 hover:text-red-600 border border-gray-200 hover:border-red-200 hover:bg-red-50 px-3 py-1.5 rounded-lg transition-all flex items-center gap-2"
                         >
@@ -480,6 +544,37 @@ const UserManagement: React.FC = () => {
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Cleanup Confirmation Modal */}
+            {showCleanupModal && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-fade-in">
+                    <div className="bg-white p-6 rounded-3xl w-full max-w-sm shadow-2xl border border-[var(--glass-border)] text-center">
+                        <div className="w-16 h-16 bg-red-100 text-red-500 rounded-full flex items-center justify-center text-3xl mx-auto mb-4">
+                            🧹
+                        </div>
+                        <h2 className="text-xl font-bold text-[var(--text-main)] mb-2">Clean Up Orphaned Users?</h2>
+                        <p className="text-sm text-[var(--text-muted)] mb-6 leading-relaxed">
+                            This will scan all users and permanently delete any Firestore profiles that do not have a matching Firebase Auth account.
+                            <br /><br />
+                            <strong>This action cannot be undone.</strong>
+                        </p>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setShowCleanupModal(false)}
+                                className="flex-1 py-2.5 font-bold text-gray-600 hover:bg-gray-100 rounded-xl transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleCleanup}
+                                className="flex-1 py-2.5 bg-red-500 text-white font-bold rounded-xl shadow-lg shadow-red-500/30 hover:bg-red-600 transition-all"
+                            >
+                                Confirm Cleanup
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

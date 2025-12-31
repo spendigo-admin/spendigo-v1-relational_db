@@ -2,10 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { useAuth } from '../../context/AuthContext';
+import { useNotifications } from '../../context/NotificationContext';
 import '../../styles/design-system.css';
 
 const AdminSettings: React.FC = () => {
     const { user } = useAuth();
+    const { addNotification } = useNotifications();
     const [settings, setSettings] = useState<any>({
         maintenanceMode: false,
         maintenanceRequest: null, // { requesterId, requesterName, targetState, timestamp }
@@ -42,10 +44,10 @@ const AdminSettings: React.FC = () => {
                 ...settings,
                 maintenanceRequest: request
             });
-            alert('Maintenance verification requested. Another admin must approve this change.');
+            addNotification({ type: 'system', title: 'Request Submitted', message: 'Maintenance verification requested. Another admin must approve this change.' });
         } catch (err) {
             console.error(err);
-            alert('Failed to submit request.');
+            addNotification({ type: 'alert', title: 'Error', message: 'Failed to submit request.' });
         }
     };
 
@@ -59,10 +61,10 @@ const AdminSettings: React.FC = () => {
                 maintenanceMode: settings.maintenanceRequest.targetState,
                 maintenanceRequest: null // Clear request
             });
-            alert(`Maintenance Mode ${settings.maintenanceRequest.targetState ? 'ENABLED' : 'DISABLED'}.`);
+            addNotification({ type: 'system', title: 'Maintenance Updated', message: `Maintenance Mode ${settings.maintenanceRequest.targetState ? 'ENABLED' : 'DISABLED'}.` });
         } catch (err) {
             console.error(err);
-            alert('Failed to approve request.');
+            addNotification({ type: 'alert', title: 'Error', message: 'Failed to approve request.' });
         }
     };
 
@@ -72,10 +74,11 @@ const AdminSettings: React.FC = () => {
                 ...settings,
                 maintenanceRequest: null
             });
-            alert('Request cancelled.');
+
+            addNotification({ type: 'system', title: 'Cancelled', message: 'Request cancelled.' });
         } catch (err) {
             console.error(err);
-            alert('Failed to cancel request.');
+            addNotification({ type: 'alert', title: 'Error', message: 'Failed to cancel request.' });
         }
     };
 
@@ -93,10 +96,10 @@ const AdminSettings: React.FC = () => {
             // ensuring we don't overwrite maintenance things improperly if they changed in background, 
             // but onSnapshot handles the state sync, so 'settings' should be fresh.
             await setDoc(doc(db, 'settings', 'platform'), settings);
-            alert('Settings saved successfully!');
+            addNotification({ type: 'system', title: 'Saved', message: 'Settings saved successfully!' });
         } catch (err) {
             console.error(err);
-            alert('Failed to save settings.');
+            addNotification({ type: 'alert', title: 'Error', message: 'Failed to save settings.' });
         }
     };
 
@@ -139,8 +142,8 @@ const AdminSettings: React.FC = () => {
                                         <button
                                             onClick={() => handleMaintenanceRequest(!settings.maintenanceMode)}
                                             className={`px-4 py-2 text-sm font-bold rounded-lg transition-colors border ${settings.maintenanceMode
-                                                    ? 'bg-green-100 text-green-700 border-green-200 hover:bg-green-200' // Button to Disable
-                                                    : 'bg-red-100 text-red-700 border-red-200 hover:bg-red-200' // Button to Enable
+                                                ? 'bg-green-100 text-green-700 border-green-200 hover:bg-green-200' // Button to Disable
+                                                : 'bg-red-100 text-red-700 border-red-200 hover:bg-red-200' // Button to Enable
                                                 }`}
                                         >
                                             {settings.maintenanceMode ? 'Request to Go Online' : 'Request Maintenance'}

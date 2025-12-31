@@ -5,6 +5,7 @@ import { useOrders } from '../../context/OrderContext';
 import { useMarketplace } from '../../context/MarketplaceContext';
 import { useAudit } from '../../context/AuditContext';
 import { useAuth } from '../../context/AuthContext';
+import { useNotifications } from '../../context/NotificationContext';
 import { STORE_DATA } from '../../data/productData';
 import '../../styles/design-system.css';
 
@@ -12,6 +13,7 @@ const Checkout: React.FC = () => {
     const { items, subtotal, clearCart } = useCart();
     const { addOrder, createBatchOrders, profile } = useOrders();
     const { user } = useAuth();
+    const { addNotification } = useNotifications();
     const navigate = useNavigate();
 
     // Security Check: Redirect to login if not authenticated
@@ -142,7 +144,11 @@ const Checkout: React.FC = () => {
 
             if (method === 'delivery' && store && store.minDeliveryOrder) {
                 if (data.total < store.minDeliveryOrder) {
-                    alert(`${data.storeName} requires a minimum order of $${store.minDeliveryOrder.toFixed(2)} for delivery.`);
+                    addNotification({
+                        type: 'alert',
+                        title: 'Minimum Order Required',
+                        message: `${data.storeName} requires a minimum order of $${store.minDeliveryOrder.toFixed(2)} for delivery.`
+                    });
                     return;
                 }
             }
@@ -215,8 +221,13 @@ const Checkout: React.FC = () => {
 
         } catch (err: any) {
             console.error('Checkout failed:', err);
+            console.error('Checkout failed:', err);
             // Show detailed error
-            alert(`Failed to place order: ${err.message || 'Unknown error'}`);
+            addNotification({
+                type: 'alert',
+                title: 'Order Failed',
+                message: `Failed to place order: ${err.message || 'Unknown error'}`
+            });
         } finally {
             setIsProcessing(false);
         }

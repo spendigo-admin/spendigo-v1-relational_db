@@ -2,6 +2,8 @@ import React, { useMemo, useState, useEffect } from 'react';
 import '../../styles/design-system.css';
 import { useMarketplace } from '../../context/MarketplaceContext';
 import { useAudit } from '../../context/AuditContext';
+import { useNotifications } from '../../context/NotificationContext';
+import { useConfirmation } from '../../context/ConfirmationContext';
 
 import { useAuth } from '../../context/AuthContext';
 
@@ -51,6 +53,8 @@ const RecentActivityFeed: React.FC = () => {
 const AdminDashboard: React.FC = () => {
     const { user } = useAuth();
     const { stores, updateStore } = useMarketplace();
+    const { addNotification } = useNotifications();
+    const { confirm } = useConfirmation();
 
     // System Health State (Hybrid: Real Client Metrics + Simulation)
     const [systemHealth, setSystemHealth] = useState({
@@ -357,7 +361,14 @@ const AdminDashboard: React.FC = () => {
                     </div>
                     <button
                         onClick={async () => {
-                            if (confirm('Relocate all stores to Cornwall, Ontario? This will update store addresses and coordinates.')) {
+                            const confirmed = await confirm({
+                                title: 'Relocate Stores?',
+                                message: 'Relocate all stores to Cornwall, Ontario? This will update store addresses and coordinates for demo purposes.',
+                                confirmText: 'Relocate',
+                                type: 'info'
+                            });
+
+                            if (confirmed) {
                                 const cornwallAddresses = [
                                     { street: '301 Balmoral Ave', city: 'Cornwall', postalCode: 'K6H 3G6', lat: 45.034, lng: -74.717 },
                                     { street: '840 McConnell Ave', city: 'Cornwall', postalCode: 'K6H 4M3', lat: 45.031, lng: -74.722 },
@@ -394,7 +405,7 @@ const AdminDashboard: React.FC = () => {
                                         successCount++;
                                     } catch (e) { console.error(e); }
                                 }
-                                alert(`Successfully relocated ${successCount} stores to Cornwall!`);
+                                addNotification({ type: 'system', title: 'Relocation Complete', message: `Successfully relocated ${successCount} stores to Cornwall!` });
                             }
                         }}
                         className="w-full py-2.5 bg-gray-900 text-white font-bold rounded-lg hover:bg-black transition-colors text-sm"

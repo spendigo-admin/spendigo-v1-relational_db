@@ -1,9 +1,15 @@
 import React, { useState } from 'react';
 import '../../styles/design-system.css';
+import { useAuth } from '../../context/AuthContext';
 import { useMarketplace } from '../../context/MarketplaceContext';
+import { useNotifications } from '../../context/NotificationContext';
+import { useConfirmation } from '../../context/ConfirmationContext';
 
 const StoreManagement: React.FC = () => {
-    const { stores, updateStoreStatus, addStore } = useMarketplace();
+    const { user } = useAuth();
+    const { stores, updateStoreStatus, addStore, requestDeleteStore, approveDeleteStore } = useMarketplace();
+    const { addNotification } = useNotifications();
+    const { confirm } = useConfirmation();
     const storeList = Object.values(stores);
 
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -47,18 +53,22 @@ const StoreManagement: React.FC = () => {
             </div>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
                 <div className="bg-white p-4 rounded-xl border border-[var(--glass-border)] shadow-sm">
                     <p className="text-[var(--text-muted)] text-xs uppercase font-bold tracking-wider">Total Stores</p>
                     <p className="text-2xl font-bold text-[var(--text-main)] mt-1">{storeList.length}</p>
                 </div>
                 <div className="bg-white p-4 rounded-xl border border-[var(--glass-border)] shadow-sm">
-                    <p className="text-[var(--text-muted)] text-xs uppercase font-bold tracking-wider">Pending Review</p>
+                    <p className="text-[var(--text-muted)] text-xs uppercase font-bold tracking-wider">Pending</p>
                     <p className="text-2xl font-bold text-orange-500 mt-1">{storeList.filter((s: any) => s.status === 'pending').length}</p>
                 </div>
                 <div className="bg-white p-4 rounded-xl border border-[var(--glass-border)] shadow-sm">
                     <p className="text-[var(--text-muted)] text-xs uppercase font-bold tracking-wider">Suspended</p>
                     <p className="text-2xl font-bold text-red-500 mt-1">{storeList.filter((s: any) => s.status === 'suspended').length}</p>
+                </div>
+                <div className="bg-white p-4 rounded-xl border border-[var(--glass-border)] shadow-sm">
+                    <p className="text-[var(--text-muted)] text-xs uppercase font-bold tracking-wider">Deletion Req</p>
+                    <p className="text-2xl font-bold text-red-500 mt-1">{storeList.filter((s: any) => s.status === 'pending_deletion').length}</p>
                 </div>
             </div>
 
@@ -94,7 +104,8 @@ const StoreManagement: React.FC = () => {
                                             {store.status === 'active' && <span className="mr-1">●</span>}
                                             {store.status === 'pending' && <span className="mr-1">○</span>}
                                             {store.status === 'suspended' && <span className="mr-1">✕</span>}
-                                            {(store.status || 'active').charAt(0).toUpperCase() + (store.status || 'active').slice(1)}
+                                            {store.status === 'pending_deletion' && <span className="mr-1">⚠️</span>}
+                                            {(store.status || 'active').replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}
                                         </span>
                                     </td>
                                     <td className="p-4 text-right space-x-2">
@@ -130,6 +141,70 @@ const StoreManagement: React.FC = () => {
                                                 Reactivate
                                             </button>
                                         )}
+                                        {store.status === 'pending_deletion' && (
+                                            <>
+                                                {store.deletionRequest?.requestedBy !== user?.id ? (
+                                                    <button
+                                                        onClick={async () => {
+                                                            const confirmed = await confirm({
+                                                                title: 'Approve Deletion',
+                                                                message: `Approve deletion for ${store.name}? This is final.`,
+                                                                confirmText: 'Approve & Delete',
+                                                                type: 'danger'
+                                                            });
+                                                            if (confirmed) approveDeleteStore(store.id);
+                                                        }}
+                                                        className="text-xs bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg font-bold"
+                                                    >
+                                                        Approve Deletion
+                                                    </button>
+                                                ) : (
+                                                    <span className="text-xs text-orange-600 font-medium bg-orange-50 border border-orange-100 px-2 py-1 rounded inline-block">
+                                                        ⏳ Waiting for other admin
+                                                    </span>
+                                                )}
+                                                <button
+                                                    onClick={() => updateStoreStatus(store.id, 'active')}
+                                                    className="text-xs text-gray-500 hover:text-gray-700 border border-gray-300 px-2 py-1 rounded ml-1"
+                                                >
+                                                    Reject
+                                                </button>
+                                            </>
+                                        )}
+
+                                        {store.status !== 'pending_deletion' && (
+                                            <button
+                                                onClick={async () => {
+                                                    const confirmed = await confirm({
+                                                        title: 'Request Deletion',
+                                                        message: `Request deletion for ${store.name}? Another admin will need to approve this.`,
+                                                        confirmText: 'Submit Request',
+                                                        type: 'warning'
+                                                    });
+
+                                                    if (confirmed) {
+                                                        try {
+                                                            await requestDeleteStore(store.id, user?.id || 'admin', 'admin');
+                                                            addNotification({
+                                                                type: 'system',
+                                                                title: 'Request Submitted',
+                                                                message: `Deletion request for ${store.name} submitted.`
+                                                            });
+                                                        } catch (e) {
+                                                            addNotification({
+                                                                type: 'alert',
+                                                                title: 'Error',
+                                                                message: 'Failed to submit request.'
+                                                            });
+                                                        }
+                                                    }
+                                                }}
+                                                className="text-xs text-red-600 hover:text-red-800 font-medium px-3 py-1.5 ml-2 border border-red-200 rounded-lg hover:bg-red-50 transition-colors"
+                                                title="Initiate Maker-Checker Deletion Workflow"
+                                            >
+                                                Request Delete
+                                            </button>
+                                        )}
                                     </td>
                                 </tr>
                             ))}
@@ -139,69 +214,71 @@ const StoreManagement: React.FC = () => {
             </div>
 
             {/* Add Store Modal */}
-            {isModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
-                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
-                        <div className="p-6 border-b border-gray-100 flex justify-between items-center">
-                            <h2 className="text-xl font-bold">Add New Store</h2>
-                            <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-600">✕</button>
+            {
+                isModalOpen && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
+                        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+                            <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+                                <h2 className="text-xl font-bold">Add New Store</h2>
+                                <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-600">✕</button>
+                            </div>
+                            <form onSubmit={handleAddStore} className="p-6 space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Store Name</label>
+                                    <input
+                                        type="text"
+                                        required
+                                        className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--brand-primary)] focus:border-transparent outline-none"
+                                        value={newStore.name}
+                                        onChange={e => setNewStore({ ...newStore, name: e.target.value })}
+                                        placeholder="e.g. Green Valley Grocers"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Merchant Email</label>
+                                    <input
+                                        type="email"
+                                        required
+                                        className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--brand-primary)] focus:border-transparent outline-none"
+                                        value={newStore.merchantEmail}
+                                        onChange={e => setNewStore({ ...newStore, merchantEmail: e.target.value })}
+                                        placeholder="merchant@example.com"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Store Type</label>
+                                    <select
+                                        className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--brand-primary)] outline-none"
+                                        value={newStore.type}
+                                        onChange={e => setNewStore({ ...newStore, type: e.target.value })}
+                                    >
+                                        <option value="grocery">Grocery Store</option>
+                                        <option value="convenience">Convenience Store</option>
+                                        <option value="bakery">Bakery</option>
+                                        <option value="butcher">Butcher</option>
+                                    </select>
+                                </div>
+                                <div className="pt-4 flex gap-3">
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsModalOpen(false)}
+                                        className="flex-1 py-2.5 border border-gray-300 text-gray-700 rounded-lg font-bold hover:bg-gray-50"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        className="flex-1 py-2.5 bg-[var(--brand-primary)] text-white rounded-lg font-bold hover:brightness-110 shadow-lg shadow-[var(--brand-primary)]/20"
+                                    >
+                                        Create Store
+                                    </button>
+                                </div>
+                            </form>
                         </div>
-                        <form onSubmit={handleAddStore} className="p-6 space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Store Name</label>
-                                <input
-                                    type="text"
-                                    required
-                                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--brand-primary)] focus:border-transparent outline-none"
-                                    value={newStore.name}
-                                    onChange={e => setNewStore({ ...newStore, name: e.target.value })}
-                                    placeholder="e.g. Green Valley Grocers"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Merchant Email</label>
-                                <input
-                                    type="email"
-                                    required
-                                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--brand-primary)] focus:border-transparent outline-none"
-                                    value={newStore.merchantEmail}
-                                    onChange={e => setNewStore({ ...newStore, merchantEmail: e.target.value })}
-                                    placeholder="merchant@example.com"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Store Type</label>
-                                <select
-                                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--brand-primary)] outline-none"
-                                    value={newStore.type}
-                                    onChange={e => setNewStore({ ...newStore, type: e.target.value })}
-                                >
-                                    <option value="grocery">Grocery Store</option>
-                                    <option value="convenience">Convenience Store</option>
-                                    <option value="bakery">Bakery</option>
-                                    <option value="butcher">Butcher</option>
-                                </select>
-                            </div>
-                            <div className="pt-4 flex gap-3">
-                                <button
-                                    type="button"
-                                    onClick={() => setIsModalOpen(false)}
-                                    className="flex-1 py-2.5 border border-gray-300 text-gray-700 rounded-lg font-bold hover:bg-gray-50"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    type="submit"
-                                    className="flex-1 py-2.5 bg-[var(--brand-primary)] text-white rounded-lg font-bold hover:brightness-110 shadow-lg shadow-[var(--brand-primary)]/20"
-                                >
-                                    Create Store
-                                </button>
-                            </div>
-                        </form>
                     </div>
-                </div>
-            )}
-        </div>
+                )
+            }
+        </div >
     );
 };
 

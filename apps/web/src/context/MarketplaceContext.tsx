@@ -12,6 +12,9 @@ interface MarketplaceContextType {
     updateStoreTeam: (storeId: string | number, team: any[]) => Promise<void>;
     updateStoreStatus: (storeId: string | number, status: 'active' | 'pending' | 'suspended') => Promise<void>;
     addStore: (store: any) => Promise<void>;
+    deleteStore: (storeId: string) => Promise<void>;
+    requestDeleteStore: (storeId: string, requesterId: string, requesterRole: string) => Promise<void>;
+    approveDeleteStore: (storeId: string) => Promise<void>;
     // Flyer Management
     subscribeToFlyers: (storeId: string | number, callback: (flyers: any[]) => void) => () => void;
     saveFlyer: (storeId: string | number, flyer: any) => Promise<void>;
@@ -98,6 +101,38 @@ export const MarketplaceProvider: React.FC<{ children: ReactNode }> = ({ childre
         });
     };
 
+    const deleteStore = async (storeId: string) => {
+        const storeRef = doc(db, 'stores', storeId);
+        await deleteDoc(storeRef);
+    };
+
+    const requestDeleteStore = async (storeId: string, requesterId: string, requesterRole: string) => {
+        const storeRef = doc(db, 'stores', storeId);
+        await updateDoc(storeRef, {
+            status: 'pending_deletion',
+            deletionRequest: {
+                requestedBy: requesterId,
+                requesterRole: requesterRole,
+                requestedAt: new Date().toISOString()
+            }
+        });
+
+        logEvent('STORE_DELETION_REQUESTED', {
+            storeId,
+            requesterId,
+            requesterRole
+        }, `store/${storeId}`);
+    };
+
+    const approveDeleteStore = async (storeId: string) => {
+        const storeRef = doc(db, 'stores', storeId);
+        await deleteDoc(storeRef);
+
+        logEvent('STORE_DELETION_APPROVED', {
+            storeId
+        }, `store/${storeId}`);
+    };
+
     // --- Flyer Management (Subcollection) ---
     const subscribeToFlyers = (storeId: string | number, callback: (flyers: any[]) => void) => {
         const flyersRef = collection(db, 'stores', String(storeId), 'flyers');
@@ -124,7 +159,7 @@ export const MarketplaceProvider: React.FC<{ children: ReactNode }> = ({ childre
         // I will add it to imports in a separate call or same call if possible.
         // Since I can't effectively multi-replace safely without ensuring I have the import, 
         // I'll stick to defining the functions here and then fix the import.
-        await import('firebase/firestore').then(({ deleteDoc }) => deleteDoc(flyerRef));
+        await deleteDoc(flyerRef);
     };
 
     const getStore = (storeId: string | number) => stores[storeId];
@@ -138,6 +173,9 @@ export const MarketplaceProvider: React.FC<{ children: ReactNode }> = ({ childre
             updateStoreDeals,
             updateStoreTeam,
             updateStoreStatus,
+            deleteStore,
+            requestDeleteStore,
+            approveDeleteStore,
 
             addStore,
             subscribeToFlyers,

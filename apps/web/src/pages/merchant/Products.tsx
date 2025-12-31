@@ -2,6 +2,8 @@ import React, { useState, useMemo } from 'react';
 import '../../styles/design-system.css';
 import { useMarketplace } from '../../context/MarketplaceContext';
 import { useAuth } from '../../context/AuthContext';
+import { useNotifications } from '../../context/NotificationContext';
+import { useConfirmation } from '../../context/ConfirmationContext';
 import { CatalogItem, useCatalog } from '../../context/CatalogContext';
 
 import { useInventorySync } from '../../hooks/useInventorySync';
@@ -9,10 +11,12 @@ import { useInventorySync } from '../../hooks/useInventorySync';
 const MerchantProducts: React.FC = () => {
     const { getStore, updateStoreProducts } = useMarketplace();
     const { can, user } = useAuth();
+    const { addNotification } = useNotifications();
+    const { confirm } = useConfirmation();
     const { catalog, searchCatalog } = useCatalog(); // Use Catalog Context
 
-    const storeId = user?.storeId || '1';
-    const store = getStore(storeId);
+    const storeId = user?.storeId; // No fallback to '1'
+    const store = storeId ? getStore(storeId) : null;
     const hasWriteAccess = can('products:write');
 
     // Ensure products exist
@@ -48,14 +52,31 @@ const MerchantProducts: React.FC = () => {
         (p.sku?.toLowerCase() || '').includes(searchQuery.toLowerCase())
     );
 
-    const updateProducts = (newProducts: any[]) => {
-        updateStoreProducts(storeId, newProducts);
+    const updateProducts = async (newProducts: any[]) => {
+        if (!storeId) {
+            addNotification({ type: 'alert', title: 'Error', message: 'No Store ID associated with this account.' });
+            return;
+        }
+        try {
+            await updateStoreProducts(storeId, newProducts);
+        } catch (error) {
+            console.error("Failed to update products:", error);
+            addNotification({ type: 'alert', title: 'Error', message: 'Failed to save changes. You may not have permission.' });
+        }
     };
 
-    const handleSyncInventory = () => {
-        if (confirm(`Update ${stats.outOfSyncCount} items from Master Catalog? Prices and stock will remain unchanged.`)) {
+    const handleSyncInventory = async () => {
+        const confirmed = await confirm({
+            title: 'Sync Inventory',
+            message: `Update ${stats.outOfSyncCount} items from Master Catalog? Prices and stock will remain unchanged.`,
+            confirmText: 'Sync Now',
+            type: 'info'
+        });
+
+        if (confirmed) {
             const syncedList = getSyncedProducts();
             updateProducts(syncedList);
+            addNotification({ type: 'system', title: 'Sync Complete', message: 'Product details updated from Master Catalog.' });
         }
     };
 
@@ -128,10 +149,18 @@ const MerchantProducts: React.FC = () => {
         updateProducts(updatedList);
     };
 
-    const deleteProduct = (id: string) => {
-        if (confirm('Are you sure you want to delete this product?')) {
+    const deleteProduct = async (id: string) => {
+        const confirmed = await confirm({
+            title: 'Delete Product',
+            message: 'Are you sure you want to delete this product? This cannot be undone.',
+            confirmText: 'Delete',
+            type: 'danger'
+        });
+
+        if (confirmed) {
             const updatedList = products.filter((p: any) => p.id !== id);
             updateProducts(updatedList);
+            addNotification({ type: 'system', title: 'Product Deleted', message: 'Product removed from catalog.' });
         }
     };
 
@@ -340,12 +369,11 @@ const MerchantProducts: React.FC = () => {
                                 <div>
                                     <label className="block text-sm text-[var(--text-muted)] mb-1">Category</label>
                                     <select value={form.category} onChange={e => setForm({ ...form, category: e.target.value })} className="w-full px-4 py-3 border border-[var(--glass-border)] rounded-lg">
-                                        <option>Fresh Produce</option>
-                                        <option>Dairy</option>
-                                        <option>Bakery</option>
-                                        <option>Pantry</option>
-                                        <option>Snacks</option>
-                                        <option>Drinks</option>
+                                        <option value="">Select Category</option>
+                                        {/* Fallback defaults if catalog is empty, otherwise master list */}
+                                        {['Dairy & Refrigerated', 'Bakery & Grains', 'Pantry Staples', 'Breakfast & Beverages', 'Produce & Frozen', 'Snacks & Household'].map(c => (
+                                            <option key={c} value={c}>{c}</option>
+                                        ))}
                                     </select>
                                 </div>
                             </div>

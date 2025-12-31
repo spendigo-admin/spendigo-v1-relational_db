@@ -126,6 +126,7 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
                 q = query(collection(db, 'orders'), where('storeId', '==', user.storeId)); // , orderBy('date', 'desc') needs composite index
             } else {
                 setOrders([]); // No store assigned
+                setLoading(false);
                 return;
             }
         } else if (user.role === 'admin') {
@@ -349,7 +350,7 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
                 });
             } catch (error) {
                 console.error('Error updating profile:', error);
-                alert('Failed to save profile changes. Please try again.');
+                sendOrderNotification(user.id, 'Profile Update Failed', 'Failed to save profile changes. Please try again.', 'alert');
             }
         }
     };

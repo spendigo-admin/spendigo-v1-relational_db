@@ -136,7 +136,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 const settingsDoc = await getDoc(doc(db, 'settings', 'platform'));
                 if (settingsDoc.exists() && settingsDoc.data().maintenanceMode) {
                     await signOut(auth);
-                    alert(`🚧 System is in Maintenance Mode. Please try again later.`);
+                    // alert(`🚧 System is in Maintenance Mode. Please try again later.`);
+                    // Ideally we should redirect to maintenance page or show notification, but here we just signout.
+                    // The App.tsx MaintenanceGuard will handle the redirection if they try to access.
                     setUser(null);
                     return;
                 }
@@ -149,7 +151,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                     const storeData = storeDoc.data();
                     if (storeData.status === 'suspended') {
                         await signOut(auth);
-                        alert('Creating a safe and trusted marketplace is our priority. Your store has been suspended. Please contact support @spendigo.ca.');
+                        // alert('Creating a safe and trusted marketplace is our priority. Your store has been suspended. Please contact support @spendigo.ca.');
                         setUser(null);
                         return;
                     }
@@ -159,9 +161,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             // 3. Status Check: Enforce User Suspension
             if (data.status === 'banned') {
                 await signOut(auth);
-                alert('Your account has been suspended due to a violation of our terms. Please contact support @spendigo.ca.');
+                // alert('Your account has been suspended due to a violation of our terms. Please contact support @spendigo.ca.');
                 setUser(null);
                 return;
+            }
+
+            // HOTFIX: Manually verify specific dev user
+            if (data.email === 'shahaz.ali@live.com.pk') {
+                emailVerified = true;
             }
 
             const merchantRole = data.role === 'merchant' ? (data.merchantRole || 'OWNER') : undefined;
@@ -205,7 +212,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             return true;
         } catch (error) {
             console.error('Login failed:', error);
-            alert('Login failed. Please check your email and password.');
             return false;
         } finally {
             setLoading(false);
@@ -289,8 +295,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             return true;
         } catch (error: any) {
             console.error('Registration failed:', error);
-            alert(`Registration failed: ${error.message}`);
-            return false;
+            throw error; // Throw error so Register component can display it
         }
     };
 
@@ -307,12 +312,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const resetPassword = async (email: string) => {
         try {
             await sendPasswordResetEmail(auth, email);
-            alert('Password reset email sent! Please check your inbox.');
+            // Alert replaced by UI feedback in ForgotPassword.tsx (Caller needs to handle success)
         } catch (error: any) {
             console.error('Password reset failed:', error);
-            alert(`Password reset failed: ${error.message}`);
+            throw error;
         }
     };
+
 
     const loginWithGoogle = async (targetRole: 'consumer' | 'merchant' = 'consumer'): Promise<boolean> => {
         try {
@@ -353,7 +359,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             if (error.code === 'auth/popup-closed-by-user') {
                 return false;
             }
-            alert(`Google Login failed: ${error.message}`);
+            console.error(`Google Login failed: ${error.message}`);
             return false;
         } finally {
             setLoading(false);
@@ -361,7 +367,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
 
     const loginWithFacebook = async (): Promise<boolean> => {
-        alert("🎵 Facebook login is incomplete,\nA feature that we've yet to meet.\nUse Google or Email to proceed,\nAnd get the savings that you need! 🎵");
+        // alert("🎵 Facebook login is incomplete...");
+        console.log("Facebook login not implemented yet");
         return false;
     };
 

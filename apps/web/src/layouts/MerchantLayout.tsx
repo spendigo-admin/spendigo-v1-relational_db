@@ -1,12 +1,14 @@
 import React from 'react';
-import { NavLink, Outlet, useLocation, Link } from 'react-router-dom';
+import { NavLink, Outlet, useLocation, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useMarketplace } from '../context/MarketplaceContext';
 import NotificationPopover from '../components/NotificationPopover';
 import '../styles/design-system.css';
 
 const MerchantLayout: React.FC = () => {
     const { user, logout, can } = useAuth();
     const location = useLocation();
+    const navigate = useNavigate();
     const searchParams = new URL(window.location.href).searchParams;
     const currentTab = searchParams.get('tab');
     const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
@@ -15,6 +17,8 @@ const MerchantLayout: React.FC = () => {
     React.useEffect(() => {
         setIsSidebarOpen(false);
     }, [location]);
+
+    const { stores, loading: storesLoading } = useMarketplace();
 
     // STRICT SECURITY CHECK
     React.useEffect(() => {
@@ -26,14 +30,41 @@ const MerchantLayout: React.FC = () => {
 
         if (user.role !== 'merchant') {
             // Logged in but WRONG role -> Home
-            // using window.location to force full reload/redirect out of bad state
             window.location.href = '/';
+            return;
         }
-    }, [user, location.pathname]);
+
+        // ORPHANED MERCHANT CHECK (Store Deleted or Not Created)
+        // If merchant has no storeId OR storeId points to non-existent store
+        // Redirect to Onboarding (unless already there)
+        if (!storesLoading && location.pathname !== '/merchant/onboarding') {
+            const hasValidStore = user.storeId && stores[user.storeId];
+            if (!hasValidStore) {
+                // Allow "suspended" stores to view settings? No, let's stick to onboarding for now or simple "Store Deleted" handling.
+                // If store is suspended, the object exists, so this check passes.
+                // This check specifically catches "Deleted/Missing" stores.
+                navigate('/merchant/onboarding');
+            }
+        }
+
+    }, [user, location.pathname, stores, storesLoading]);
 
     // Don't render content if unauthorized (flicker protection)
     if (!user || user.role !== 'merchant') {
         return null;
+    }
+
+    // Hide Sidebar on Onboarding
+    if (location.pathname === '/merchant/onboarding') {
+        return (
+            <div className="min-h-screen bg-[var(--surface-0)]">
+                <header className="h-16 bg-white border-b border-[var(--glass-border)] flex items-center justify-between px-8">
+                    <span className="text-xl font-bold text-[var(--brand-primary)]">Spendigo Merchant</span>
+                    <button onClick={logout} className="text-sm font-medium text-[var(--text-muted)] hover:text-[var(--text-main)]">Sign Out</button>
+                </header>
+                <Outlet />
+            </div>
+        );
     }
 
     const isTeamActive = location.pathname === '/merchant/settings' && currentTab === 'team';

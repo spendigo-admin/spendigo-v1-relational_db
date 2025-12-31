@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import '../../styles/design-system.css';
 import { useAuth } from '../../context/AuthContext';
+import { useNotifications } from '../../context/NotificationContext';
 import { useOrders, Order } from '../../context/OrderContext';
 import { useMarketplace } from '../../context/MarketplaceContext';
 import { validateOrderIntegrity } from '../../utils/IntegrityUtils';
@@ -9,6 +10,7 @@ import ReviewForm from '../../components/ReviewForm';
 
 const MerchantOrders: React.FC = () => {
     const { can, user } = useAuth();
+    const { addNotification } = useNotifications();
     const {
         orders: contextOrders,
         updateOrderStatus,
@@ -18,7 +20,8 @@ const MerchantOrders: React.FC = () => {
         loading
     } = useOrders();
     const { getStore } = useMarketplace();
-    const store = getStore(user?.storeId || '1');
+    const storeId = user?.storeId;
+    const store = storeId ? getStore(storeId) : null;
     const storeProducts = store?.products || [];
 
     const hasReadAccess = can('orders:read');
@@ -95,30 +98,31 @@ const MerchantOrders: React.FC = () => {
             await updateOrderStatus(id, newStatus, reason);
         } catch (e) {
             console.error("Failed to update status", e);
-            alert("Failed to update order status");
+            addNotification({ type: 'alert', title: 'Error', message: "Failed to update order status" });
         }
     };
 
     const handleSaveET = async (id: string) => {
         try {
             await updateEstimatedTime(id, estTimeInput);
-            alert("Updated estimated time");
+            addNotification({ type: 'system', title: 'Updated', message: "Estimated time updated" });
         } catch (e) {
-            alert("Failed to update time");
+            addNotification({ type: 'alert', title: 'Error', message: "Failed to update time" });
         }
     };
 
     const handleCancelOrder = async (id: string) => {
         if (!rejectionReason.trim()) {
-            alert("Please provide a reason for cancellation");
+            addNotification({ type: 'alert', title: 'Required', message: "Please provide a reason for cancellation" });
             return;
         }
         try {
             await cancelOrder(id, rejectionReason);
             setSelectedOrder(null);
             setRejectionReason('');
+            addNotification({ type: 'system', title: 'Cancelled', message: "Order cancelled successfully" });
         } catch (e) {
-            alert("Failed to cancel order");
+            addNotification({ type: 'alert', title: 'Error', message: "Failed to cancel order" });
         }
     };
 
@@ -132,7 +136,7 @@ const MerchantOrders: React.FC = () => {
             await updatePaymentStatus(order.id, 'paid', auditEntry);
         } catch (e) {
             console.error("Failed to update payment", e);
-            alert("Failed to mark paid");
+            addNotification({ type: 'alert', title: 'Error', message: "Failed to mark paid" });
         }
     };
 
@@ -152,13 +156,13 @@ const MerchantOrders: React.FC = () => {
             }
         } catch (e) {
             console.error("Failed to complete order", e);
-            alert("Failed to complete order");
+            addNotification({ type: 'alert', title: 'Error', message: "Failed to complete order" });
         }
     };
 
 
     const addMockOrder = () => {
-        alert('Please use the Consumer App to place a real order.');
+        addNotification({ type: 'promo', title: 'Info', message: 'Please use the Consumer App to place a real order.' });
     };
 
     // Components
