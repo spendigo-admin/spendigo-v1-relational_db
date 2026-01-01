@@ -17,6 +17,38 @@ const Checkout: React.FC = () => {
     const { getStore } = useMarketplace(); // Moved up
     const navigate = useNavigate();
 
+    // Helper to check if store is open
+    const isStoreOpen = (store: any): boolean => {
+        if (!store || !store.hours) {
+            console.log('Checkout Debug: Store open (default) - no hours data');
+            return true;
+        }
+        const now = new Date();
+        const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        const currentDay = days[now.getDay()];
+
+        const todayHours = store.hours.find((h: any) => h.day === currentDay);
+
+        console.log(`Checkout Debug: Checking hours for ${currentDay}`, todayHours);
+
+        if (!todayHours || todayHours.closed) {
+            console.log('Checkout Debug: Store closed (explicitly closed or no schedule for today)');
+            return false;
+        }
+
+        const currentTime = now.getHours() * 60 + now.getMinutes();
+        const [openHour, openMin] = todayHours.open.split(':').map(Number);
+        const [closeHour, closeMin] = todayHours.close.split(':').map(Number);
+
+        const openTime = openHour * 60 + openMin;
+        const closeTime = closeHour * 60 + closeMin;
+
+        const isOpen = currentTime >= openTime && currentTime < closeTime;
+        console.log(`Checkout Debug: Time Check ${currentTime} vs [${openTime}, ${closeTime}] -> Open? ${isOpen}`);
+
+        return isOpen;
+    };
+
     // Security Check: Redirect to login if not authenticated
     useEffect(() => {
         if (!user && items.length > 0) {
@@ -33,13 +65,15 @@ const Checkout: React.FC = () => {
                 total: 0,
                 items: [],
                 tier: store?.subscriptionTier || STORE_DATA[item.storeId]?.subscriptionTier || 'free',
-                deliveryEnabled: store?.deliveryEnabled !== false
+                deliveryEnabled: store?.deliveryEnabled !== false,
+                pickupEnabled: store?.pickupEnabled !== false,
+                isOpen: isStoreOpen(store)
             };
         }
         acc[item.storeId].total += item.price * item.quantity;
         acc[item.storeId].items.push(item);
         return acc;
-    }, {} as Record<string, { storeName: string; total: number; items: any[]; tier: string; deliveryEnabled: boolean }>);
+    }, {} as Record<string, { storeName: string; total: number; items: any[]; tier: string; deliveryEnabled: boolean; pickupEnabled: boolean; isOpen: boolean }>);
 
     // State for fulfillment method PER STORE
     const [fulfillmentMethods, setFulfillmentMethods] = useState<Record<string, 'delivery' | 'pickup'>>({});
@@ -53,22 +87,28 @@ const Checkout: React.FC = () => {
         Object.entries(groupedItems).forEach(([storeId, data]) => {
             const store = getStore(storeId);
             const tier = store?.subscriptionTier || data.tier || 'free';
-            const deliveryEnabled = store?.deliveryEnabled !== false; // Default true if not set
+            const deliveryEnabled = store?.deliveryEnabled !== false;
+            const pickupEnabled = store?.pickupEnabled !== false;
 
-            // Free tier OR explicit disable = Pickup Only. Others = Default to Delivery.
-            if (tier === 'free' || !deliveryEnabled) {
+            // Determine default method
+            if (tier !== 'free' && deliveryEnabled) {
+                methods[storeId] = 'delivery';
+            } else if (pickupEnabled) {
                 methods[storeId] = 'pickup';
             } else {
-                methods[storeId] = 'delivery';
+                // Edge case: Both disabled (shouldn't happen in normal flow)
+                methods[storeId] = 'pickup';
             }
         });
         setFulfillmentMethods(methods);
     }, [items.length, getStore]);
 
     const toggleFulfillment = (storeId: string, method: 'delivery' | 'pickup') => {
-        // Prevent selecting delivery for free tier or if disabled
         const storeData = groupedItems[storeId];
-        if ((storeData.tier === 'free' || !storeData.deliveryEnabled) && method === 'delivery') return;
+
+        // Validation: Prevent selecting disabled methods
+        if (method === 'delivery' && (storeData.tier === 'free' || !storeData.deliveryEnabled)) return;
+        if (method === 'pickup' && !storeData.pickupEnabled) return;
 
         setFulfillmentMethods(prev => ({
             ...prev,
@@ -271,58 +311,77 @@ const Checkout: React.FC = () => {
 
                 <div className="space-y-6">
                     {/* Iterate over Stores */}
-                    {Object.entries(groupedItems).map(([storeId, { storeName, total, tier, items }]) => (
-                        <div key={storeId} className="glass-panel p-6">
-                            <div className="flex items-center justify-between mb-4">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-lg bg-[var(--surface-2)] flex items-center justify-center text-lg">🏪</div>
-                                    <div>
-                                        <h2 className="font-bold text-[var(--text-main)]">{storeName}</h2>
-                                        <p className="text-xs text-[var(--text-muted)]">{items.length} items • ${total.toFixed(2)}</p>
+                    {Object.entries(groupedItems).map(([storeId, { storeName, total, tier, items, isOpen, deliveryEnabled, pickupEnabled }]) => {
+                        const bothDisabled = !deliveryEnabled && !pickupEnabled;
+                        const isBlocked = !isOpen || bothDisabled;
+
+                        return (
+                            <div key={storeId} className={`glass-panel p-6 ${isBlocked ? 'opacity-70 grayscale-[0.5] border-2 border-red-100' : ''}`}>
+                                <div className="flex items-center justify-between mb-4">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-lg bg-[var(--surface-2)] flex items-center justify-center text-lg">🏪</div>
+                                        <div>
+                                            <h2 className="font-bold text-[var(--text-main)]">{storeName}</h2>
+                                            <p className="text-xs text-[var(--text-muted)]">{items.length} items • ${total.toFixed(2)}</p>
+                                        </div>
                                     </div>
+                                    {(tier === 'free' || !groupedItems[storeId].deliveryEnabled) && !bothDisabled && (
+                                        <span className="text-[10px] font-bold bg-gray-100 text-gray-500 px-2 py-1 rounded-full uppercase tracking-wider">
+                                            Store Pickup Only
+                                        </span>
+                                    )}
+                                    {bothDisabled && (
+                                        <span className="text-[10px] font-bold bg-red-100 text-red-600 px-2 py-1 rounded-full uppercase tracking-wider">
+                                            ⛔ Ordering Disabled
+                                        </span>
+                                    )}
+                                    {!isOpen && !bothDisabled && (
+                                        <span className="text-[10px] font-bold bg-orange-100 text-orange-700 px-2 py-1 rounded-full uppercase tracking-wider">
+                                            🕒 Closed Now
+                                        </span>
+                                    )}
                                 </div>
-                                {(tier === 'free' || !groupedItems[storeId].deliveryEnabled) && (
-                                    <span className="text-[10px] font-bold bg-gray-100 text-gray-500 px-2 py-1 rounded-full uppercase tracking-wider">
-                                        Store Pickup Only
-                                    </span>
-                                )}
-                            </div>
 
-                            {/* Fulfillment Toggle */}
-                            <div className="bg-[var(--surface-1)] p-1 rounded-lg flex mb-4">
-                                <button
-                                    onClick={() => toggleFulfillment(storeId, 'pickup')}
-                                    className={`flex-1 py-2 text-sm font-bold rounded-md transition-all ${fulfillmentMethods[storeId] === 'pickup'
-                                        ? 'bg-white text-[var(--brand-primary)] shadow-sm'
-                                        : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
-                                        }`}
-                                >
-                                    🛍️ Pickup
-                                </button>
-                                <button
-                                    onClick={() => toggleFulfillment(storeId, 'delivery')}
-                                    disabled={tier === 'free' || !groupedItems[storeId].deliveryEnabled}
-                                    className={`flex-1 py-2 text-sm font-bold rounded-md transition-all flex items-center justify-center gap-2 ${fulfillmentMethods[storeId] === 'delivery'
-                                        ? 'bg-white text-[var(--brand-primary)] shadow-sm'
-                                        : 'text-[var(--text-muted)] hover:text-[var(--text-main)] disabled:opacity-50 disabled:cursor-not-allowed'
-                                        }`}
-                                >
-                                    🚚 Delivery
-                                    {tier === 'free' && <span className="text-[8px] border border-gray-300 px-1 rounded">UNAVAILABLE</span>}
-                                </button>
-                            </div>
+                                {/* Fulfillment Toggle */}
+                                <div className="bg-[var(--surface-1)] p-1 rounded-lg flex mb-4">
+                                    <button
+                                        onClick={() => toggleFulfillment(storeId, 'pickup')}
+                                        disabled={!pickupEnabled || isBlocked}
+                                        className={`flex-1 py-2 text-sm font-bold rounded-md transition-all flex items-center justify-center gap-2 ${fulfillmentMethods[storeId] === 'pickup'
+                                            ? 'bg-white text-[var(--brand-primary)] shadow-sm'
+                                            : 'text-[var(--text-muted)] hover:text-[var(--text-main)] disabled:opacity-50 disabled:cursor-not-allowed'
+                                            }`}
+                                    >
+                                        🛍️ Pickup
+                                        {(!pickupEnabled) && <span className="text-[8px] border border-gray-300 px-1 rounded">UNAVAILABLE</span>}
+                                    </button>
+                                    <button
+                                        onClick={() => toggleFulfillment(storeId, 'delivery')}
+                                        disabled={tier === 'free' || !deliveryEnabled || isBlocked}
+                                        className={`flex-1 py-2 text-sm font-bold rounded-md transition-all flex items-center justify-center gap-2 ${fulfillmentMethods[storeId] === 'delivery'
+                                            ? 'bg-white text-[var(--brand-primary)] shadow-sm'
+                                            : 'text-[var(--text-muted)] hover:text-[var(--text-main)] disabled:opacity-50 disabled:cursor-not-allowed'
+                                            }`}
+                                    >
+                                        🚚 Delivery
+                                        {(tier === 'free' || !deliveryEnabled) && <span className="text-[8px] border border-gray-300 px-1 rounded">UNAVAILABLE</span>}
+                                    </button>
+                                </div>
 
-                            {/* Item List (Collapsed/Simple) */}
-                            <div className="space-y-2 pl-2 border-l-2 border-[var(--glass-border)]">
-                                {items.map((item: any, idx) => (
-                                    <div key={idx} className="flex justify-between text-sm">
-                                        <span className="text-[var(--text-muted)]">{item.quantity}x {item.productName}</span>
-                                        <span className="font-mono text-[var(--text-main)]">${(item.price * item.quantity).toFixed(2)}</span>
-                                    </div>
-                                ))}
+                                {/* Item List (Collapsed/Simple) */}
+                                < div className="space-y-2 pl-2 border-l-2 border-[var(--glass-border)]" >
+                                    {
+                                        items.map((item: any, idx) => (
+                                            <div key={idx} className="flex justify-between text-sm">
+                                                <span className="text-[var(--text-muted)]">{item.quantity}x {item.productName}</span>
+                                                <span className="font-mono text-[var(--text-main)]">${(item.price * item.quantity).toFixed(2)}</span>
+                                            </div>
+                                        ))
+                                    }
+                                </div>
                             </div>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
 
                 {/* Footer Summary */}
@@ -360,21 +419,33 @@ const Checkout: React.FC = () => {
                         Please complete payment at the store or with the delivery driver upon receipt.
                     </p>
                 </div>
-            </div>
+            </div >
 
             {/* FIXED ACTION BUTTON */}
-            <div className="fixed bottom-20 left-0 right-0 p-4 bg-[var(--surface-0)] border-t border-[var(--glass-border)]">
+            < div className="fixed bottom-20 left-0 right-0 p-4 bg-[var(--surface-0)] border-t border-[var(--glass-border)]" >
                 <div className="max-w-3xl mx-auto">
-                    <button
-                        onClick={handlePayment}
-                        disabled={isProcessing}
-                        className="w-full py-4 bg-[var(--brand-primary)] text-white font-bold text-lg rounded-2xl hover:brightness-110 transition-all active:scale-95 shadow-lg shadow-[var(--brand-primary)]/30 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
-                    >
-                        {isProcessing ? 'Confirming Orders...' : `Confirm Reservations • $${grandTotal.toFixed(2)}`}
-                    </button>
+                    {(() => {
+                        // Check if ANY store blocks the entire checkout
+                        const hasBlockers = Object.values(groupedItems).some(g => !g.isOpen || (!g.deliveryEnabled && !g.pickupEnabled));
+
+                        return (
+                            <button
+                                onClick={handlePayment}
+                                disabled={isProcessing || hasBlockers}
+                                className={`w-full py-4 text-white font-bold text-lg rounded-2xl transition-all flex items-center justify-center gap-2 shadow-lg ${isProcessing || hasBlockers
+                                    ? 'bg-gray-400 cursor-not-allowed opacity-80'
+                                    : 'bg-[var(--brand-primary)] hover:brightness-110 active:scale-95 shadow-[var(--brand-primary)]/30'
+                                    }`}
+                            >
+                                {isProcessing ? 'Confirming Orders...' :
+                                    hasBlockers ? '⚠️ Cannot Checkout (Store Closed or Disabled)' :
+                                        `Confirm Reservations • $${grandTotal.toFixed(2)}`}
+                            </button>
+                        );
+                    })()}
                 </div>
-            </div>
-        </div>
+            </div >
+        </div >
     );
 };
 

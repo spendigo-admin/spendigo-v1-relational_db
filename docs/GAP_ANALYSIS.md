@@ -144,6 +144,7 @@ Following the recent implementation of **Stripe Payment Integration** and **Merc
 - [ ] **Unit Tests**: Zero test coverage. Vitest is configured but no tests exist.
 - [ ] **E2E Tests**: Manual testing only. No Playwright or Cypress automation.
 - [ ] **Component Documentation**: No Storybook or component library.
+- [ ] **Data Consistency**: Relying on client-side syncing. Need Cloud Functions (Triggers) to ensure `users` and `stores` collections stay in sync.
 
 ### 3.2 Performance
 - [ ] **Image Optimization**: Product images are uploaded as-is. No WebP conversion or CDN.

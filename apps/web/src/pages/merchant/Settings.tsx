@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useMarketplace } from '../../context/MarketplaceContext';
 import { useNotifications } from '../../context/NotificationContext';
 import { useConfirmation } from '../../context/ConfirmationContext';
+import { useFileUpload } from '../../hooks/useFileUpload';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { db } from '../../lib/firebase';
 
@@ -47,20 +48,21 @@ const ROLE_INFO: Record<MerchantRole, { label: string; desc: string; permissions
     }
 };
 
-const INITIAL_TEAM: TeamMember[] = [
-    { id: 't1', name: 'John Doe', email: 'owner@freshmart.ca', role: 'OWNER', lastActive: 'Now' },
-    { id: 't2', name: 'Alice Staff', email: 'alice@freshmart.ca', role: 'STAFF', lastActive: '2 hours ago' },
-    { id: 't3', name: 'Bob Manager', email: 'bob@freshmart.ca', role: 'MANAGER', lastActive: '1 day ago' },
-];
+
 
 const MerchantSettings: React.FC = () => {
     const { can, user } = useAuth();
     const { stores, updateStore, updateStoreTeam, requestDeleteStore } = useMarketplace();
     const { addNotification } = useNotifications();
     const { confirm } = useConfirmation();
+    const { uploadFile, deleteFile, uploading } = useFileUpload(); // New Hook
     const hasTeamAccess = can('team:manage');
     const hasSettingsAccess = can('settings:write');
     const storeId = user?.storeId || '1'; // Fallback to 1 if missing
+
+    // Hidden File Input Ref
+    const fileInputRef = React.useRef<HTMLInputElement>(null);
+    const [uploadTarget, setUploadTarget] = useState<'logo' | 'cover' | null>(null);
 
     const [searchParams] = useSearchParams();
     const [activeTab, setActiveTab] = useState<'profile' | 'operations' | 'team' | 'payments' | 'notifications'>((searchParams.get('tab') as any) || 'profile');
@@ -151,16 +153,43 @@ const MerchantSettings: React.FC = () => {
     const [inviteSuccess, setInviteSuccess] = useState<{ name: string, email: string, password: string } | null>(null);
     const [inviteForm, setInviteForm] = useState({ name: '', email: '', role: 'STAFF' as MerchantRole });
 
-    // Initialize team if empty (Mock behavior)
+    // Initialize team if empty (Real behavior: Add current user as Owner)
     useEffect(() => {
         const store = stores[storeId];
-        if (store) {
-            // Restore team if missing OR empty (should always have at least Owner)
+        if (store && user) {
+            // 1. Cleanup Mock Data (Migration)
+            // If we find the specific mock IDs from previous versions, remove them.
+            if (store.team && store.team.some((m: TeamMember) => ['t1', 't2', 't3'].includes(m.id))) {
+                const cleanTeam = store.team.filter((m: TeamMember) => !['t1', 't2', 't3'].includes(m.id));
+                // Ensure we don't leave it completely empty (if only mocks existed)
+                if (cleanTeam.length === 0) {
+                    const initialOwner: TeamMember = {
+                        id: user.id,
+                        name: user.name || 'Store Owner',
+                        email: user.email,
+                        role: 'OWNER',
+                        lastActive: 'Now'
+                    };
+                    updateStoreTeam(storeId, [initialOwner]);
+                } else {
+                    updateStoreTeam(storeId, cleanTeam);
+                }
+                return; // Stop here, next render will handle init if needed
+            }
+
+            // 2. Init if empty
             if (!store.team || store.team.length === 0) {
-                updateStoreTeam(storeId, INITIAL_TEAM);
+                const initialOwner: TeamMember = {
+                    id: user.id,
+                    name: user.name || 'Store Owner',
+                    email: user.email,
+                    role: 'OWNER',
+                    lastActive: 'Now'
+                };
+                updateStoreTeam(storeId, [initialOwner]);
             }
         }
-    }, [storeId, stores]);
+    }, [storeId, stores, user]);
 
     // Initialize state from Context
     useEffect(() => {
@@ -193,6 +222,10 @@ const MerchantSettings: React.FC = () => {
                 taxRate: store.taxRate || 13,
                 deliveryEnabled: store.deliveryEnabled !== false // Default true
             });
+
+            if (store.hours) {
+                setHours(store.hours);
+            }
         }
     }, [storeId, stores]);
 
@@ -251,6 +284,10 @@ const MerchantSettings: React.FC = () => {
             autoAcceptOrders: operations.autoAcceptOrders,
             taxRate: operations.taxRate,
             deliveryEnabled: operations.deliveryEnabled,
+            hours: hours,
+            // Force sync subscription tier from user profile to store
+            // This fixes issues where the store doc might be out of sync with user doc
+            subscriptionTier: user?.subscriptionTier || 'free',
             // Legacy/Display Fields
             deliveryFee: displayFee
         };
@@ -326,6 +363,42 @@ const MerchantSettings: React.FC = () => {
             updateStoreTeam(storeId, updatedTeam); // Persist to context
             addNotification({ type: 'system', title: 'Member Removed', message: 'Team access updated.' });
         }
+    };
+
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (!e.target.files || !e.target.files[0] || !uploadTarget) return;
+
+        const file = e.target.files[0];
+        const path = `stores/${storeId}/${uploadTarget}_${Date.now()}_${file.name}`;
+
+        const url = await uploadFile(file, path, 5); // 5MB limit
+
+        if (url) {
+            // Delete old file if exists
+            try {
+                if (uploadTarget === 'logo' && storeInfo.logoUrl) {
+                    await deleteFile(storeInfo.logoUrl);
+                    setStoreInfo(prev => ({ ...prev, logoUrl: url }));
+                }
+                if (uploadTarget === 'cover' && storeInfo.coverUrl) {
+                    await deleteFile(storeInfo.coverUrl);
+                    setStoreInfo(prev => ({ ...prev, coverUrl: url }));
+                }
+            } catch (err) {
+                console.warn('Auto-delete failed, but upload succeeded.', err);
+            }
+
+            addNotification({ type: 'system', title: 'Upload Success', message: 'Image updated successfully. Don\'t forget to save changes.' });
+        }
+
+        // Reset
+        if (fileInputRef.current) fileInputRef.current.value = '';
+        setUploadTarget(null);
+    };
+
+    const triggerUpload = (target: 'logo' | 'cover') => {
+        setUploadTarget(target);
+        fileInputRef.current?.click();
     };
 
     const renderTabs = () => (
@@ -533,8 +606,12 @@ const MerchantSettings: React.FC = () => {
                         <div className="flex items-center gap-4">
                             <img src={storeInfo.logoUrl} className="w-20 h-20 rounded-full object-cover border-2 border-[var(--surface-2)]" alt="Logo" />
                             <div>
-                                <button className="px-4 py-2 border border-[var(--glass-border)] rounded-lg text-sm font-medium hover:bg-gray-50 mb-1">
-                                    Upload New Logo
+                                <button
+                                    onClick={() => triggerUpload('logo')}
+                                    disabled={uploading}
+                                    className="px-4 py-2 border border-[var(--glass-border)] rounded-lg text-sm font-medium hover:bg-gray-50 mb-1 disabled:opacity-50"
+                                >
+                                    {uploading && uploadTarget === 'logo' ? 'Uploading...' : 'Upload New Logo'}
                                 </button>
                                 <p className="text-xs text-[var(--text-muted)]">Recommended: 400x400px</p>
                             </div>
@@ -542,11 +619,25 @@ const MerchantSettings: React.FC = () => {
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-[var(--text-muted)] mb-2">Cover Image</label>
-                        <div className="h-20 w-full rounded-lg overflow-hidden relative group cursor-pointer border-2 border-[var(--surface-2)] transition-colors hover:border-[var(--brand-primary)]">
+                        <div
+                            onClick={() => !uploading && triggerUpload('cover')}
+                            className="h-20 w-full rounded-lg overflow-hidden relative group cursor-pointer border-2 border-[var(--surface-2)] transition-colors hover:border-[var(--brand-primary)]"
+                        >
                             <img src={storeInfo.coverUrl} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" alt="Cover" />
-                            <div className="absolute inset-0 flex items-center justify-center bg-black/10 group-hover:bg-black/20 text-white font-medium text-sm">Change Cover</div>
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/10 group-hover:bg-black/20 text-white font-medium text-sm">
+                                {uploading && uploadTarget === 'cover' ? 'Uploading...' : 'Change Cover'}
+                            </div>
                         </div>
                     </div>
+
+                    {/* Hidden File Input */}
+                    <input
+                        type="file"
+                        ref={fileInputRef}
+                        className="hidden"
+                        accept="image/png, image/jpeg, image/webp"
+                        onChange={handleImageUpload}
+                    />
                 </div>
             </section>
 
