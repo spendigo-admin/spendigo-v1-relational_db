@@ -63,8 +63,12 @@ const StoreDetail: React.FC = () => {
                 {/* Store Info Overlay */}
                 <div className="absolute bottom-0 left-0 right-0 p-4 md:p-6">
                     <div className="flex items-end gap-4">
-                        <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-white border-2 border-[var(--glass-border)] flex items-center justify-center text-3xl md:text-4xl shadow-lg">
-                            {store.logo}
+                        <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-white border-2 border-[var(--glass-border)] flex items-center justify-center text-3xl md:text-4xl shadow-lg overflow-hidden">
+                            {(store.logoUrl || store.logo || '').startsWith('http') ? (
+                                <img src={store.logoUrl || store.logo} alt="Logo" className="w-full h-full object-cover" />
+                            ) : (
+                                <span>{store.logo || store.logoUrl || '🏪'}</span>
+                            )}
                         </div>
                         <div className="flex-1">
                             <h1 className="text-2xl md:text-3xl font-bold text-[var(--text-main)]">{store.name}</h1>

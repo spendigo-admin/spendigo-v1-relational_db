@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { storage } from '../lib/firebase';
 import { useNotifications } from '../context/NotificationContext';
 
@@ -33,16 +33,43 @@ export const useFileUpload = () => {
 
         try {
             setUploading(true);
+
+            // Create a timeout promise
+            const timeout = new Promise((_, reject) => {
+                setTimeout(() => reject(new Error('Upload timed out. Please check your connection.')), 30000);
+            });
+
             const storageRef = ref(storage, path);
-            const snapshot = await uploadBytes(storageRef, file);
+
+            // Race between upload and timeout
+            const snapshot = await Promise.race([
+                uploadBytes(storageRef, file),
+                timeout
+            ]) as any;
+
             const downloadUrl = await getDownloadURL(snapshot.ref);
             return downloadUrl;
         } catch (error: any) {
-            console.error('Upload failed:', error);
+            console.error('Upload failed details:', {
+                code: error.code,
+                message: error.message,
+                serverResponse: error.serverResponse,
+                storageBucket: storage.app.options.storageBucket
+            });
+
+            let message = error.message || 'Could not upload image.';
+            if (error.code === 'storage/unauthorized') {
+                message = 'Permission denied. Please check your account access.';
+            } else if (error.code === 'storage/canceled') {
+                message = 'Upload cancelled.';
+            } else if (error.code === 'storage/retry-limit-exceeded') {
+                message = 'Network unstable. Please try again.';
+            }
+
             addNotification({
                 type: 'alert',
                 title: 'Upload Failed',
-                message: error.message || 'Could not upload image.'
+                message: message
             });
             return null;
         } finally {
@@ -51,17 +78,13 @@ export const useFileUpload = () => {
     };
 
     const deleteFile = async (url: string | null) => {
-        if (!url || !url.includes('firebase')) return; // Ignore external URLs or nulls
+        if (!url || !url.includes('firebase')) return;
         try {
-            // Extract path from URL roughly or use refFromURL if available in newer SDKs
-            // Simple approach: Create a ref from the full URL
             const fileRef = ref(storage, url);
-            const { deleteObject } = await import('firebase/storage');
             await deleteObject(fileRef);
             console.log('Deleted old file:', url);
         } catch (error) {
             console.warn('Failed to delete old file (might not exist):', error);
-            // Non-blocking error
         }
     };
 

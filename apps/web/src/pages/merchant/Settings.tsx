@@ -206,7 +206,7 @@ const MerchantSettings: React.FC = () => {
                 postalCode: store.postalCode || '',
                 description: store.description || '',
                 website: store.website || '',
-                logoUrl: store.logoUrl || store.logo || '', // Handle emoji vs url
+                logoUrl: store.logoUrl || store.logo || 'https://via.placeholder.com/150?text=Logo', // Handle emoji vs url vs empty
                 coverUrl: store.image || '',
                 coordinates: store.coordinates || { lat: 43.6510, lng: -79.3820 } // default Toronto
             });
@@ -274,6 +274,8 @@ const MerchantSettings: React.FC = () => {
             description: storeInfo.description,
             website: storeInfo.website,
             coordinates: storeInfo.coordinates, // Save real coordinates!
+            logoUrl: storeInfo.logoUrl,
+            image: storeInfo.coverUrl, // Map local coverUrl to DB 'image' field
             // Operations
             deliveryRadiusKm: operations.deliveryRadiusKm,
             minDeliveryOrder: operations.minOrder,

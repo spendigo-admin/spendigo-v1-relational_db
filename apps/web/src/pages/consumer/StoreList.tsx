@@ -209,7 +209,7 @@ const StoreList: React.FC = () => {
                 distance: distanceVal,
                 distanceNum: distanceNum,
                 image: store.image,
-                logo: store.logo,
+                logoUrl: store.logoUrl || store.logo, // Prioritize url
                 tags: store.tags || [],
                 deliveryTime: store.deliveryTime,
                 deliveryFee: store.deliveryFee || '$3.99',
@@ -418,8 +418,12 @@ const StoreList: React.FC = () => {
                                     {/* Store Info */}
                                     <div className="p-4 relative">
                                         {/* Logo Avatar */}
-                                        <div className="absolute -top-6 left-4 w-12 h-12 rounded-xl bg-[var(--surface-0)] border-2 border-[var(--glass-border)] flex items-center justify-center text-2xl shadow-lg">
-                                            {store.logo}
+                                        <div className="absolute -top-6 left-4 w-12 h-12 rounded-xl bg-[var(--surface-0)] border-2 border-[var(--glass-border)] flex items-center justify-center text-2xl shadow-lg overflow-hidden">
+                                            {store.logoUrl && store.logoUrl.startsWith('http') ? (
+                                                <img src={store.logoUrl} alt="Logo" className="w-full h-full object-cover" />
+                                            ) : (
+                                                <span>{store.logoUrl || '🏪'}</span>
+                                            )}
                                         </div>
 
                                         <div className="ml-14">
