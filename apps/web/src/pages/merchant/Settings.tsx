@@ -49,6 +49,70 @@ const ROLE_INFO: Record<MerchantRole, { label: string; desc: string; permissions
 };
 
 
+const BUSINESS_TYPES: Record<string, { logo: string; cover: string; tagline: string }> = {
+    'Grocery': {
+        logo: '/defaults/branding/grocery_logo.jpg',
+        cover: '/defaults/branding/grocery_cover.jpg',
+        tagline: 'Fresh groceries and daily essentials.'
+    },
+    'Desi Grocery': {
+        logo: '/defaults/branding/desi_logo.jpg',
+        cover: '/defaults/branding/desi_cover.jpg',
+        tagline: 'Authentic flavors, spices and traditional ingredients.'
+    },
+    'Asian Market': {
+        logo: '/defaults/branding/asian_logo.jpg',
+        cover: '/defaults/branding/asian_cover.jpg',
+        tagline: 'Your destination for premium Asian products.'
+    },
+    'Organic Market': {
+        // Fallback to grocery for now or download specific if needed, reusing grocery ensures reliability
+        logo: '/defaults/branding/grocery_logo.jpg',
+        cover: '/defaults/branding/grocery_cover.jpg',
+        tagline: 'Healthy, organic, and locally sourced goodness.'
+    },
+    'Convenience': {
+        // Reusing grocery/other assets to ensure local availability without bloating bundle too much yet
+        logo: '/defaults/branding/bg_other.jpg',
+        cover: '/defaults/branding/bg_other.jpg',
+        tagline: 'Quick stops for all your immediate needs.'
+    },
+    'Bakery': {
+        logo: '/defaults/branding/bakery_logo.jpg',
+        cover: '/defaults/branding/bakery_cover.jpg',
+        tagline: 'Freshly baked breads and sweet treats daily.'
+    },
+    'Cafe': {
+        logo: '/defaults/branding/cafe_logo.jpg',
+        cover: '/defaults/branding/cafe_cover.jpg',
+        tagline: 'Premium coffee and cozy vibes.'
+    },
+    'Butcher': {
+        logo: '/defaults/branding/butcher_logo.jpg',
+        cover: '/defaults/branding/butcher_cover.jpg',
+        tagline: 'Quality cuts and fresh meats.'
+    },
+    'Florist': {
+        logo: '/defaults/branding/other_logo.jpg', // Fallback
+        cover: '/defaults/branding/other_cover.jpg',
+        tagline: 'Beautiful blooms for every occasion.'
+    },
+    'Pet Store': {
+        logo: '/defaults/branding/other_logo.jpg', // Fallback
+        cover: '/defaults/branding/other_cover.jpg',
+        tagline: 'Everything your furry friends need.'
+    },
+    'Pharmacy': {
+        logo: '/defaults/branding/other_logo.jpg', // Fallback
+        cover: '/defaults/branding/other_cover.jpg',
+        tagline: 'Health, wellness, and prescriptions.'
+    },
+    'Other': {
+        logo: '/defaults/branding/other_logo.jpg',
+        cover: '/defaults/branding/other_cover.jpg',
+        tagline: 'Quality service for our community.'
+    }
+};
 
 const MerchantSettings: React.FC = () => {
     const { can, user } = useAuth();
@@ -69,6 +133,7 @@ const MerchantSettings: React.FC = () => {
     const [isSaving, setIsSaving] = useState(false);
     const [showCloseStoreModal, setShowCloseStoreModal] = useState(false);
     const [closeStoreInput, setCloseStoreInput] = useState('');
+    const [isApplyingPreset, setIsApplyingPreset] = useState(false);
 
     const TABS = [
         { id: 'profile', label: '🏪 Store Profile', visible: true },
@@ -97,6 +162,7 @@ const MerchantSettings: React.FC = () => {
         postalCode: 'M5V 2H1',
         description: 'Your local source for fresh produce and daily essentials. We partner with local farmers to bring you the best quality items.',
         website: 'www.freshmart.ca',
+        businessType: 'Grocery', // Default
         logoUrl: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=200',
         coverUrl: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=800&h=300&fit=crop',
         coordinates: { lat: 0, lng: 0 }
@@ -208,6 +274,7 @@ const MerchantSettings: React.FC = () => {
                 website: store.website || '',
                 logoUrl: store.logoUrl || store.logo || 'https://via.placeholder.com/150?text=Logo', // Handle emoji vs url vs empty
                 coverUrl: store.image || '',
+                businessType: store.businessType || 'Grocery',
                 coordinates: store.coordinates || { lat: 43.6510, lng: -79.3820 } // default Toronto
             });
 
@@ -274,6 +341,7 @@ const MerchantSettings: React.FC = () => {
             description: storeInfo.description,
             website: storeInfo.website,
             coordinates: storeInfo.coordinates, // Save real coordinates!
+            businessType: storeInfo.businessType,
             logoUrl: storeInfo.logoUrl,
             image: storeInfo.coverUrl, // Map local coverUrl to DB 'image' field
             // Operations
@@ -647,6 +715,83 @@ const MerchantSettings: React.FC = () => {
             <section className="bg-white p-6 rounded-xl border border-[var(--glass-border)] shadow-sm">
                 <h2 className="text-lg font-bold text-[var(--text-main)] mb-4">Store Details</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="md:col-span-2 bg-blue-50 p-4 rounded-lg border border-blue-100 mb-2">
+                        <label className="block text-sm font-bold text-blue-900 mb-2">Primary Business Type</label>
+                        <select
+                            value={storeInfo.businessType}
+                            disabled={isApplyingPreset || isSaving}
+                            onChange={async (e) => {
+                                const newType = e.target.value;
+                                const defaultAssets = BUSINESS_TYPES[newType];
+                                if (!defaultAssets) {
+                                    setStoreInfo(prev => ({ ...prev, businessType: newType }));
+                                    return;
+                                }
+
+                                setIsApplyingPreset(true);
+                                let newLogoUrl = defaultAssets.logo;
+                                let newCoverUrl = defaultAssets.cover;
+
+                                try {
+                                    // Helper to fetch and upload an asset
+                                    const mirrorAsset = async (url: string, type: 'logo' | 'cover'): Promise<string> => {
+                                        try {
+                                            /* 
+                                              Use 'cors' mode. If the image server (loremflickr) doesn't allow it,
+                                              fetch will throw. We catch it and fallback to the URL.
+                                            */
+                                            const response = await fetch(url, { method: 'GET', mode: 'cors', credentials: 'omit' });
+                                            if (!response.ok) throw new Error('Network response was not ok');
+
+                                            const blob = await response.blob();
+                                            const file = new File([blob], `${type}_preset_${newType.replace(/\s/g, '')}.jpg`, { type: 'image/jpeg' });
+                                            const path = `stores/${storeId}/${type}_preset_${Date.now()}.jpg`;
+                                            const uploadedUrl = await uploadFile(file, path);
+                                            return uploadedUrl || url;
+                                        } catch (err) {
+                                            console.warn(`Failed to mirror ${type} (CORS/Network), falling back to external link`, err);
+                                            addNotification({ type: 'alert', title: 'Upload Skipped', message: `Could not save ${type} to private storage. Using public link.` });
+                                            return url;
+                                        }
+                                    };
+
+                                    addNotification({ type: 'system', title: 'Updating Branding', message: `Applying ${newType} theme...` });
+
+                                    // 1. Mirror Logo
+                                    newLogoUrl = await mirrorAsset(defaultAssets.logo, 'logo');
+                                    // 2. Mirror Cover
+                                    newCoverUrl = await mirrorAsset(defaultAssets.cover, 'cover');
+
+                                    // 3. Clean up old assets to save space
+                                    // The deleteFile hook automatically checks if it's a firebase URL before deleting
+                                    if (storeInfo.logoUrl) await deleteFile(storeInfo.logoUrl);
+                                    if (storeInfo.coverUrl) await deleteFile(storeInfo.coverUrl);
+
+                                } catch (err) {
+                                    console.error('Preset application failed', err);
+                                    addNotification({ type: 'alert', title: 'Warning', message: 'Could not save images to storage. Using external links.' });
+                                } finally {
+                                    setStoreInfo(prev => ({
+                                        ...prev,
+                                        businessType: newType,
+                                        logoUrl: newLogoUrl,
+                                        coverUrl: newCoverUrl,
+                                        tagline: defaultAssets.tagline || prev.tagline
+                                    }));
+                                    setIsApplyingPreset(false);
+                                }
+                            }}
+                            className="w-full p-3 border border-blue-200 rounded-lg bg-white font-medium focus:ring-2 ring-blue-500 outline-none disabled:opacity-50"
+                        >
+                            {Object.keys(BUSINESS_TYPES).map(type => (
+                                <option key={type} value={type}>{type}</option>
+                            ))}
+                        </select>
+                        <p className="text-xs text-blue-700 mt-2">
+                            {isApplyingPreset ? '⏳ Uploading assets to your storage...' : '✨ Selecting a type will automatically suggest match.'}
+                        </p>
+                    </div>
+
                     <div className="md:col-span-2">
                         <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">Store Name</label>
                         <input
