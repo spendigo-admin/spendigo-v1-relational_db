@@ -51,64 +51,63 @@ const ROLE_INFO: Record<MerchantRole, { label: string; desc: string; permissions
 
 const BUSINESS_TYPES: Record<string, { logo: string; cover: string; tagline: string }> = {
     'Grocery': {
-        logo: '/defaults/branding/grocery_logo.jpg',
-        cover: '/defaults/branding/grocery_cover.jpg',
+        logo: '/defaults/branding/grocery_logo.jpg?v=3',
+        cover: '/defaults/branding/grocery_cover.jpg?v=3',
         tagline: 'Fresh groceries and daily essentials.'
     },
     'Desi Grocery': {
-        logo: '/defaults/branding/desi_logo.jpg',
-        cover: '/defaults/branding/desi_cover.jpg',
+        logo: '/defaults/branding/desi_logo.jpg?v=3',
+        cover: '/defaults/branding/desi_cover.jpg?v=3',
         tagline: 'Authentic flavors, spices and traditional ingredients.'
     },
     'Asian Market': {
-        logo: '/defaults/branding/asian_logo.jpg',
-        cover: '/defaults/branding/asian_cover.jpg',
+        logo: '/defaults/branding/asian_logo.jpg?v=3',
+        cover: '/defaults/branding/asian_cover.jpg?v=3',
         tagline: 'Your destination for premium Asian products.'
     },
     'Organic Market': {
-        // Fallback to grocery for now or download specific if needed, reusing grocery ensures reliability
-        logo: '/defaults/branding/grocery_logo.jpg',
-        cover: '/defaults/branding/grocery_cover.jpg',
+        logo: '/defaults/branding/grocery_logo.jpg?v=3', // Re-use grocery for reliability
+        cover: '/defaults/branding/grocery_cover.jpg?v=3',
         tagline: 'Healthy, organic, and locally sourced goodness.'
     },
     'Convenience': {
-        logo: '/defaults/branding/convenience_logo.jpg',
-        cover: '/defaults/branding/convenience_cover.jpg',
+        logo: '/defaults/branding/convenience_logo.jpg?v=3',
+        cover: '/defaults/branding/convenience_cover.jpg?v=3',
         tagline: 'Quick stops for all your immediate needs.'
     },
     'Bakery': {
-        logo: '/defaults/branding/bakery_logo.jpg',
-        cover: '/defaults/branding/bakery_cover.jpg',
+        logo: '/defaults/branding/bakery_logo.jpg?v=3',
+        cover: '/defaults/branding/bakery_cover.jpg?v=3',
         tagline: 'Freshly baked breads and sweet treats daily.'
     },
     'Cafe': {
-        logo: '/defaults/branding/cafe_logo.jpg',
-        cover: '/defaults/branding/cafe_cover.jpg',
+        logo: '/defaults/branding/cafe_logo.jpg?v=3',
+        cover: '/defaults/branding/cafe_cover.jpg?v=3',
         tagline: 'Premium coffee and cozy vibes.'
     },
     'Butcher': {
-        logo: '/defaults/branding/butcher_logo.jpg',
-        cover: '/defaults/branding/butcher_cover.jpg',
+        logo: '/defaults/branding/butcher_logo.jpg?v=3',
+        cover: '/defaults/branding/butcher_cover.jpg?v=3',
         tagline: 'Quality cuts and fresh meats.'
     },
     'Florist': {
-        logo: '/defaults/branding/florist_logo.jpg',
-        cover: '/defaults/branding/florist_cover.jpg',
+        logo: '/defaults/branding/florist_logo.jpg?v=3',
+        cover: '/defaults/branding/florist_cover.jpg?v=3',
         tagline: 'Beautiful blooms for every occasion.'
     },
     'Pet Store': {
-        logo: '/defaults/branding/pet_logo.jpg',
-        cover: '/defaults/branding/pet_cover.jpg',
+        logo: '/defaults/branding/pet_logo.jpg?v=3',
+        cover: '/defaults/branding/pet_cover.jpg?v=3',
         tagline: 'Everything your furry friends need.'
     },
     'Pharmacy': {
-        logo: '/defaults/branding/pharmacy_logo.jpg',
-        cover: '/defaults/branding/pharmacy_cover.jpg',
+        logo: '/defaults/branding/pharmacy_logo.jpg?v=3',
+        cover: '/defaults/branding/pharmacy_cover.jpg?v=3',
         tagline: 'Health, wellness, and prescriptions.'
     },
     'Other': {
-        logo: '/defaults/branding/other_logo.jpg',
-        cover: '/defaults/branding/other_cover.jpg',
+        logo: '/defaults/branding/other_logo.jpg?v=3',
+        cover: '/defaults/branding/other_cover.jpg?v=3',
         tagline: 'Quality service for our community.'
     }
 };
@@ -735,21 +734,23 @@ const MerchantSettings: React.FC = () => {
                                     // Helper to fetch and upload an asset
                                     const mirrorAsset = async (url: string, type: 'logo' | 'cover'): Promise<string> => {
                                         try {
-                                            /* 
-                                              Use 'cors' mode. If the image server (loremflickr) doesn't allow it,
-                                              fetch will throw. We catch it and fallback to the URL.
-                                            */
-                                            const response = await fetch(url, { method: 'GET', mode: 'cors', credentials: 'omit' });
-                                            if (!response.ok) throw new Error('Network response was not ok');
+                                            // Determine fetch options based on URL type
+                                            const isLocal = url.startsWith('/');
+                                            const options = isLocal ? {} : { method: 'GET', mode: 'cors' as RequestMode, credentials: 'omit' as RequestCredentials };
+
+                                            const response = await fetch(url, options);
+                                            if (!response.ok) throw new Error(`Network response was not ok: ${response.status}`);
 
                                             const blob = await response.blob();
-                                            const file = new File([blob], `${type}_preset_${newType.replace(/\s/g, '')}.jpg`, { type: 'image/jpeg' });
-                                            const path = `stores/${storeId}/${type}_preset_${Date.now()}.jpg`;
-                                            const uploadedUrl = await uploadFile(file, path);
+                                            // Generate a unique name for the new file
+                                            const fileName = `${type}_preset_${newType.replace(/\s+/g, '_').toLowerCase()}_${Date.now()}.jpg`;
+                                            const path = `stores/${storeId}/${fileName}`;
+
+                                            const uploadedUrl = await uploadFile(new File([blob], fileName, { type: 'image/jpeg' }), path);
                                             return uploadedUrl || url;
                                         } catch (err) {
-                                            console.warn(`Failed to mirror ${type} (CORS/Network), falling back to external link`, err);
-                                            addNotification({ type: 'alert', title: 'Upload Skipped', message: `Could not save ${type} to private storage. Using public link.` });
+                                            console.warn(`Failed to mirror ${type}, falling back to source link`, err);
+                                            // Don't show alert for local files, just fallback silently if it fails (it will still work as a path)
                                             return url;
                                         }
                                     };

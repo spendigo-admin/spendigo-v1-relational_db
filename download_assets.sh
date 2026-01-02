@@ -24,8 +24,8 @@ download_asset "Grocery" "grocery" "https://images.unsplash.com/photo-1542838132
 # 2. Desi Grocery (Spices)
 download_asset "Desi Grocery" "desi" "https://images.unsplash.com/photo-1596040033229-a9821ebd058d"
 
-# 3. Asian Market (Asian Grocery Aisle) - Verified
-download_asset "Asian Market" "asian" "https://images.unsplash.com/photo-1583258292688-d0213dc5a3a8"
+# 3. Asian Market (Asian Grocery Aisle) - Verified Replacement
+download_asset "Asian Market" "asian" "https://images.unsplash.com/photo-1577401239170-897942555fb3"
 
 # 4. Bakery (Bread)
 download_asset "Bakery" "bakery" "https://images.unsplash.com/photo-1555507036-ab1f4038808a"
@@ -39,8 +39,8 @@ download_asset "Butcher" "butcher" "https://images.unsplash.com/photo-1607623814
 # 7. Convenience (Snacks)
 download_asset "Convenience" "convenience" "https://images.unsplash.com/photo-1578916171728-46686eac8d58"
 
-# 8. Florist (Flowers)
-download_asset "Florist" "florist" "https://images.unsplash.com/photo-1563241527-28f0b7cc8636"
+# 8. Florist (Flowers) - Verified Replacement
+download_asset "Florist" "florist" "https://images.unsplash.com/photo-1507290439931-a861b5a38200"
 
 # 9. Pet Store (Dog)
 download_asset "Pet Store" "pet" "https://images.unsplash.com/photo-1516734212186-a967f81ad0d7"
