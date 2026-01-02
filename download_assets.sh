@@ -36,7 +36,19 @@ download_asset "Cafe" "cafe" "https://images.unsplash.com/photo-1495474472287-4d
 # 6. Butcher (Meat)
 download_asset "Butcher" "butcher" "https://images.unsplash.com/photo-1607623814075-e51df1bdc82f"
 
-# 7. Generic/Other (Storefront) - Fallback
+# 7. Convenience (Snacks)
+download_asset "Convenience" "convenience" "https://images.unsplash.com/photo-1578916171728-46686eac8d58"
+
+# 8. Florist (Flowers)
+download_asset "Florist" "florist" "https://images.unsplash.com/photo-1563241527-28f0b7cc8636"
+
+# 9. Pet Store (Dog)
+download_asset "Pet Store" "pet" "https://images.unsplash.com/photo-1516734212186-a967f81ad0d7"
+
+# 10. Pharmacy (Medicine)
+download_asset "Pharmacy" "pharmacy" "https://images.unsplash.com/photo-1585435557343-3b092031a831"
+
+# 11. Generic/Other (Storefront) - Fallback
 curl -L -s "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=400&h=400&fit=crop" -o "${OUT_DIR}/other_logo.jpg"
 curl -L -s "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=1200&h=400&fit=crop" -o "${OUT_DIR}/other_cover.jpg"
 

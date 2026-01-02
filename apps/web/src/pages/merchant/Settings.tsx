@@ -72,9 +72,8 @@ const BUSINESS_TYPES: Record<string, { logo: string; cover: string; tagline: str
         tagline: 'Healthy, organic, and locally sourced goodness.'
     },
     'Convenience': {
-        // Reusing grocery/other assets to ensure local availability without bloating bundle too much yet
-        logo: '/defaults/branding/bg_other.jpg',
-        cover: '/defaults/branding/bg_other.jpg',
+        logo: '/defaults/branding/convenience_logo.jpg',
+        cover: '/defaults/branding/convenience_cover.jpg',
         tagline: 'Quick stops for all your immediate needs.'
     },
     'Bakery': {
@@ -93,18 +92,18 @@ const BUSINESS_TYPES: Record<string, { logo: string; cover: string; tagline: str
         tagline: 'Quality cuts and fresh meats.'
     },
     'Florist': {
-        logo: '/defaults/branding/other_logo.jpg', // Fallback
-        cover: '/defaults/branding/other_cover.jpg',
+        logo: '/defaults/branding/florist_logo.jpg',
+        cover: '/defaults/branding/florist_cover.jpg',
         tagline: 'Beautiful blooms for every occasion.'
     },
     'Pet Store': {
-        logo: '/defaults/branding/other_logo.jpg', // Fallback
-        cover: '/defaults/branding/other_cover.jpg',
+        logo: '/defaults/branding/pet_logo.jpg',
+        cover: '/defaults/branding/pet_cover.jpg',
         tagline: 'Everything your furry friends need.'
     },
     'Pharmacy': {
-        logo: '/defaults/branding/other_logo.jpg', // Fallback
-        cover: '/defaults/branding/other_cover.jpg',
+        logo: '/defaults/branding/pharmacy_logo.jpg',
+        cover: '/defaults/branding/pharmacy_cover.jpg',
         tagline: 'Health, wellness, and prescriptions.'
     },
     'Other': {
