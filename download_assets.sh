@@ -24,8 +24,8 @@ download_asset "Grocery" "grocery" "https://images.unsplash.com/photo-1542838132
 # 2. Desi Grocery (Spices)
 download_asset "Desi Grocery" "desi" "https://images.unsplash.com/photo-1596040033229-a9821ebd058d"
 
-# 3. Asian Market (Street/Stall)
-download_asset "Asian Market" "asian" "https://images.unsplash.com/photo-1534483509916-2495b29a287f"
+# 3. Asian Market (Asian Grocery Aisle) - Verified
+download_asset "Asian Market" "asian" "https://images.unsplash.com/photo-1583258292688-d0213dc5a3a8"
 
 # 4. Bakery (Bread)
 download_asset "Bakery" "bakery" "https://images.unsplash.com/photo-1555507036-ab1f4038808a"
