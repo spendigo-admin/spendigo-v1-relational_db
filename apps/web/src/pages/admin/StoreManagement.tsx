@@ -9,7 +9,7 @@ import { useConfirmation } from '../../context/ConfirmationContext';
 
 const StoreManagement: React.FC = () => {
     const { user } = useAuth();
-    const { stores, updateStoreStatus, addStore, requestDeleteStore, approveDeleteStore } = useMarketplace();
+    const { stores, updateStore, updateStoreStatus, addStore, requestDeleteStore, approveDeleteStore } = useMarketplace();
     const { addNotification } = useNotifications();
     const { confirm } = useConfirmation();
     const storeList = Object.values(stores);
@@ -24,24 +24,39 @@ const StoreManagement: React.FC = () => {
     });
 
     // --- Subscription Data Logic ---
-    const [merchantDataMap, setMerchantDataMap] = useState<Record<string, any>>({});
+    const [merchantDataMap, setMerchantDataMap] = useState<{ byEmail: Record<string, any>, byStoreId: Record<string, any[]> }>({ byEmail: {}, byStoreId: {} });
 
     // Fetch merchant subscription data
     React.useEffect(() => {
         const q = query(collection(db, 'users'), where('role', '==', 'merchant'));
         const unsubscribe = onSnapshot(q, (snapshot) => {
-            const map: Record<string, any> = {};
+            const emailMap: Record<string, any> = {};
+            const storeIdMap: Record<string, any[]> = {};
+
             snapshot.forEach(doc => {
                 const data = doc.data();
+                const subInfo = {
+                    tier: data.subscriptionTier || 'free',
+                    status: data.subscriptionStatus || 'inactive',
+                    end: data.subscriptionEnd,
+                    ownerEmail: data.email,
+                    merchantRole: data.merchantRole
+                };
+
                 if (data.email) {
-                    map[data.email.toLowerCase()] = {
-                        tier: data.subscriptionTier || 'free',
-                        status: data.subscriptionStatus || 'inactive',
-                        end: data.subscriptionEnd
-                    };
+                    emailMap[data.email.toLowerCase()] = subInfo;
+                }
+
+                // Reliability Fix: Map by storeId to handle email mismatches
+                // Priority to OWNER logic: If multiple users track same store, prefer OWNER
+                if (data.storeId) {
+                    if (!storeIdMap[data.storeId]) {
+                        storeIdMap[data.storeId] = [];
+                    }
+                    storeIdMap[data.storeId].push(subInfo);
                 }
             });
-            setMerchantDataMap(map);
+            setMerchantDataMap({ byEmail: emailMap, byStoreId: storeIdMap });
         });
         return () => unsubscribe();
     }, []);
@@ -64,6 +79,15 @@ const StoreManagement: React.FC = () => {
         });
         setIsModalOpen(false);
         setNewStore({ name: '', merchantEmail: '', type: 'grocery' });
+    };
+    const handleSyncEmail = async (storeId: string, ownerEmail: string) => {
+        try {
+            await updateStore(storeId, { merchantEmail: ownerEmail });
+            addNotification({ type: 'system', title: 'Data Synced', message: 'Store email updated to match owner.' });
+        } catch (e) {
+            console.error(e);
+            addNotification({ type: 'alert', title: 'Sync Failed', message: 'Could not update store email.' });
+        }
     };
 
     return (
@@ -153,35 +177,79 @@ const StoreManagement: React.FC = () => {
                                 </tr>
                             ) : (
                                 filteredStores.map((store: any) => {
-                                    const subData = merchantDataMap[(store.merchantEmail || '').toLowerCase()];
+                                    // Subscription Data Lookup
+                                    const emailKey = (store.merchantEmail || '').toLowerCase();
+
+                                    // Handle array of owners
+                                    const storeOwners = merchantDataMap.byStoreId[store.id];
+                                    let subData: any = { tier: 'free', status: 'active' };
+
+                                    if (Array.isArray(storeOwners) && storeOwners.length > 0) {
+                                        // Find designated owner or fallback to first found user
+                                        subData = storeOwners.find(u => u.merchantRole === 'OWNER') || storeOwners[0];
+                                    } else if (merchantDataMap.byEmail[emailKey]) {
+                                        subData = merchantDataMap.byEmail[emailKey];
+                                    }
+
+                                    const displayEmail = subData.ownerEmail || store.merchantEmail || 'N/A';
+
                                     return (
                                         <tr key={store.id} className="hover:bg-[var(--surface-2)] transition-colors group">
                                             <td className="p-4">
                                                 <div className="font-bold text-[var(--text-main)]">{store.name}</div>
                                                 <div className="text-xs text-[var(--text-muted)] md:hidden">ID: {store.id}</div>
                                             </td>
-                                            <td className="p-4 text-sm text-[var(--text-main)]">{store.merchantEmail || 'N/A'}</td>
+                                            <td className="p-4 text-sm text-[var(--text-main)]">
+                                                <div className="flex flex-col gap-1 items-start">
+                                                    <span>{displayEmail}</span>
+                                                    {subData.ownerEmail && subData.ownerEmail !== store.merchantEmail && (
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-[10px] text-orange-600 bg-orange-50 px-1 rounded border border-orange-100">
+                                                                Mismatch: {store.merchantEmail}
+                                                            </span>
+                                                            <button
+                                                                onClick={() => handleSyncEmail(store.id, subData.ownerEmail)}
+                                                                className="text-[10px] font-bold text-blue-600 hover:underline cursor-pointer"
+                                                                title="Sync Store data to match Owner data"
+                                                            >
+                                                                ↻ Sync
+                                                            </button>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </td>
                                             <td className="p-4 text-sm text-[var(--text-main)]">{store.products?.length || 0}</td>
 
                                             {/* Subscription Column */}
                                             <td className="p-4">
-                                                {subData ? (
-                                                    <div className="flex flex-col gap-1">
-                                                        <span className={`text-xs font-bold px-2 py-0.5 rounded w-fit border capitalize
+                                                {(() => {
+                                                    const emailKey = (store.merchantEmail || '').toLowerCase();
+                                                    // Handle array of owners
+                                                    const storeOwners = merchantDataMap.byStoreId[store.id];
+                                                    let subData: any = { tier: 'free', status: 'active' };
+
+                                                    if (Array.isArray(storeOwners) && storeOwners.length > 0) {
+                                                        subData = storeOwners.find(u => u.merchantRole === 'OWNER') || storeOwners[0];
+                                                    } else if (merchantDataMap.byEmail[emailKey]) {
+                                                        subData = merchantDataMap.byEmail[emailKey];
+                                                    }
+
+                                                    return (
+                                                        <div className="flex flex-col gap-1">
+                                                            <span className={`text-xs font-bold px-2 py-0.5 rounded w-fit border capitalize
                                                             ${subData.tier === 'growth' ? 'bg-purple-50 text-purple-700 border-purple-100' :
-                                                                subData.tier === 'core' ? 'bg-blue-50 text-blue-700 border-blue-100' :
-                                                                    'bg-gray-50 text-gray-600 border-gray-200'}`}>
-                                                            {subData.tier}
-                                                        </span>
-                                                        {subData.end && (
-                                                            <span className="text-[10px] text-[var(--text-muted)]">
-                                                                Exp: {new Date(subData.end).toLocaleDateString()}
+                                                                    subData.tier === 'core' ? 'bg-blue-50 text-blue-700 border-blue-100' :
+                                                                        'bg-gray-50 text-gray-600 border-gray-200'}`}>
+                                                                {subData.tier}
                                                             </span>
-                                                        )}
-                                                    </div>
-                                                ) : (
-                                                    <span className="text-xs text-gray-400 italic">No Data</span>
-                                                )}
+                                                            {subData.end && (
+                                                                <span className="text-[10px] text-[var(--text-muted)]">
+                                                                    Exp: {new Date(subData.end).toLocaleDateString()}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                })()}
                                             </td>
 
                                             <td className="p-4">

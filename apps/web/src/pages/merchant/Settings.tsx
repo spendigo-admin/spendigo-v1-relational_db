@@ -8,6 +8,7 @@ import { useConfirmation } from '../../context/ConfirmationContext';
 import { useFileUpload } from '../../hooks/useFileUpload';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { db } from '../../lib/firebase';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
 
 // --- TYPES ---
 type MerchantRole = 'OWNER' | 'MANAGER' | 'STAFF' | 'MARKETING';
@@ -212,49 +213,48 @@ const MerchantSettings: React.FC = () => {
 
     const [isLocatingStatus, setIsLocatingStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
 
-    // Team State - derived from MarketplaceContext
-    const team = (stores[storeId]?.team as TeamMember[]) || [];
+    // Team State - derived from MarketplaceContext (Legacy) & Real-time Users
+    // const team = (stores[storeId]?.team as TeamMember[]) || []; // Deprecated
+    const [realTeam, setRealTeam] = useState<TeamMember[]>([]);
     const [showInviteModal, setShowInviteModal] = useState(false);
     const [inviteSuccess, setInviteSuccess] = useState<{ name: string, email: string, password: string } | null>(null);
     const [inviteForm, setInviteForm] = useState({ name: '', email: '', role: 'STAFF' as MerchantRole });
 
-    // Initialize team if empty (Real behavior: Add current user as Owner)
+    // Fetch Real-time Team Members
     useEffect(() => {
-        const store = stores[storeId];
-        if (store && user) {
-            // 1. Cleanup Mock Data (Migration)
-            // If we find the specific mock IDs from previous versions, remove them.
-            if (store.team && store.team.some((m: TeamMember) => ['t1', 't2', 't3'].includes(m.id))) {
-                const cleanTeam = store.team.filter((m: TeamMember) => !['t1', 't2', 't3'].includes(m.id));
-                // Ensure we don't leave it completely empty (if only mocks existed)
-                if (cleanTeam.length === 0) {
-                    const initialOwner: TeamMember = {
-                        id: user.id,
-                        name: user.name || 'Store Owner',
-                        email: user.email,
-                        role: 'OWNER',
-                        lastActive: 'Now'
-                    };
-                    updateStoreTeam(storeId, [initialOwner]);
-                } else {
-                    updateStoreTeam(storeId, cleanTeam);
-                }
-                return; // Stop here, next render will handle init if needed
-            }
+        if (!storeId) return;
 
-            // 2. Init if empty
-            if (!store.team || store.team.length === 0) {
-                const initialOwner: TeamMember = {
-                    id: user.id,
-                    name: user.name || 'Store Owner',
-                    email: user.email,
-                    role: 'OWNER',
-                    lastActive: 'Now'
-                };
-                updateStoreTeam(storeId, [initialOwner]);
-            }
-        }
-    }, [storeId, stores, user]);
+        // Fallback: Query constraint might be an issue. Let's try to debug with a console log.
+        console.log(`Fetching team for Store ID: ${storeId}`);
+
+        const q = query(collection(db, 'users'), where('storeId', '==', storeId));
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            console.log(`Found ${snapshot.size} team members.`);
+            const members: TeamMember[] = [];
+            snapshot.forEach(doc => {
+                const d = doc.data();
+                console.log(' - Member:', d.email, d.merchantRole);
+                if (d.role === 'merchant' || d.merchantRole) {
+                    members.push({
+                        id: doc.id,
+                        name: d.name || 'Unknown',
+                        email: d.email,
+                        role: d.merchantRole || 'STAFF',
+                        lastActive: d.status === 'active'
+                            ? (d.lastLogin ? new Date(d.lastLogin).toLocaleDateString() : 'Active')
+                            : '🟡 Pending Invite'
+                    });
+                }
+            });
+            members.sort((a, b) => {
+                if (a.role === 'OWNER') return -1;
+                if (b.role === 'OWNER') return 1;
+                return a.name.localeCompare(b.name);
+            });
+            setRealTeam(members);
+        });
+        return () => unsubscribe();
+    }, [storeId]);
 
     // Initialize state from Context
     useEffect(() => {
@@ -392,16 +392,8 @@ const MerchantSettings: React.FC = () => {
             }) as { data: { success: boolean; uid: string; message: string } };
 
             if (result.data.success) {
-                // Add to local team member list
-                const newMember: TeamMember = {
-                    id: result.data.uid,
-                    name: inviteForm.name,
-                    email: inviteForm.email,
-                    role: inviteForm.role,
-                    lastActive: '🟡 Pending Invite'
-                };
-                const updatedTeam = [...team, newMember];
-                await updateStoreTeam(storeId, updatedTeam);
+                // Success: Cloud function created user. 
+                // The onSnapshot listener will automatically pick up the new member in 'realTeam'.
 
                 // Show success modal instead of alert
                 setInviteSuccess({
@@ -433,9 +425,18 @@ const MerchantSettings: React.FC = () => {
         });
 
         if (confirmed) {
-            const updatedTeam = team.filter((t: TeamMember) => t.id !== id);
-            updateStoreTeam(storeId, updatedTeam); // Persist to context
-            addNotification({ type: 'system', title: 'Member Removed', message: 'Team access updated.' });
+            setIsSaving(true);
+            try {
+                const functions = getFunctions();
+                const removeFunc = httpsCallable(functions, 'removeTeamMember');
+                await removeFunc({ targetUserId: id, storeId });
+                addNotification({ type: 'system', title: 'Member Removed', message: 'User unlinked from store.' });
+            } catch (error: any) {
+                console.error('Error removing member:', error);
+                addNotification({ type: 'alert', title: 'Removal Failed', message: error.message || 'Could not remove member' });
+            } finally {
+                setIsSaving(false);
+            }
         }
     };
 
@@ -519,7 +520,7 @@ const MerchantSettings: React.FC = () => {
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-[var(--glass-border)]">
-                        {team.map(member => (
+                        {realTeam.map(member => (
                             <tr key={member.id} className="hover:bg-[var(--surface-1)] transition-colors">
                                 <td className="p-4">
                                     <div className="font-bold text-[var(--text-main)] text-sm">{member.name}</div>

@@ -46,6 +46,7 @@ service cloud.firestore {
     // - Admins can read all profiles and write (ban/promote) any profile.
     match /users/{userId} {
       allow read: if isOwner(userId) || isAdmin();
+      allow list: if isAdmin() || (isMerchant() && resource.data.storeId == getMerchantStoreId());
       allow create: if isAuthenticated() && request.auth.uid == userId;
       allow update: if isOwner(userId) || isAdmin(); 
       allow delete: if isAdmin();

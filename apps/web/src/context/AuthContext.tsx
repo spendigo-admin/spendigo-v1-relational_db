@@ -169,6 +169,19 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 return;
             }
 
+            // 4. Auto-Activate Invitees
+            if (data.status === 'pending_invite') {
+                try {
+                    await updateDoc(doc(db, 'users', uid), {
+                        status: 'active',
+                        lastLogin: new Date().toISOString()
+                    });
+                    data.status = 'active'; // Local update
+                } catch (e) {
+                    console.error("Failed to activate user:", e);
+                }
+            }
+
             // HOTFIX: Manually verify specific dev user
             if (data.email === 'shahaz.ali@live.com.pk') {
                 emailVerified = true;
