@@ -16,6 +16,7 @@ const Subscription: React.FC = () => {
     const [successMessage, setSuccessMessage] = React.useState<string | null>(null);
     const [payments, setPayments] = React.useState<any[]>([]);
     const [loadingPayments, setLoadingPayments] = React.useState(true);
+    const [promoCode, setPromoCode] = React.useState('');
 
     // 1. Check for success from Stripe
     React.useEffect(() => {
@@ -112,48 +113,73 @@ const Subscription: React.FC = () => {
 
 
     const handleUpgrade = async (tierId: string, price: string) => {
-        if (price === '$0') {
-            const confirmed = await confirm({
-                title: 'Confirm Downgrade',
-                message: "Downgrade to Free tier? This will cancel your current subscription at the end of the billing period.",
-                confirmText: 'Downgrade',
-                type: 'warning'
-            });
+        const isFree = tierId === 'free';
 
-            if (confirmed) {
-                updateSubscription('free');
-                addNotification({ type: 'system', title: 'Plan Updated', message: "Switched to Starter plan." });
-            }
-            return;
-        }
-
-        const confirmed = await confirm({
+        let confirmOptions: any = {
             title: 'Confirm Upgrade',
             message: `Subscribe to ${price}${price === '$0' ? '' : '/month'}? This will redirect you to Stripe Checkout.`,
             confirmText: 'Proceed to Checkout',
             type: 'info'
-        });
+        };
+
+        if (isFree) {
+            confirmOptions = {
+                title: 'Confirm Downgrade',
+                message: "Downgrade to Free tier? Your current plan will remain active until the end of the billing period.",
+                confirmText: 'Confirm Cancellation',
+                type: 'warning'
+            };
+        } else if (user?.subscriptionStatus === 'active') {
+            // Changing paid plans
+            const isUpgrade = tierId === 'growth' && user?.subscriptionTier === 'core'; // Simple check
+            confirmOptions = {
+                title: isUpgrade ? 'Confirm Upgrade' : 'Confirm Plan Change',
+                message: isUpgrade
+                    ? `Upgrade to ${tierId}? You will be charged the difference immediately.`
+                    : `Switch to ${tierId}? This change will take effect at the start of your next billing cycle. No refund will be issued for the current month.`,
+                confirmText: isUpgrade ? 'Upgrade Now' : 'Switch Plan',
+                type: 'info'
+            };
+        }
+
+        const confirmed = await confirm(confirmOptions);
 
         if (confirmed) {
             setProcessingId(tierId);
 
             try {
-                // Dynamically import firebase functions to keep bundle light
                 const { getFunctions, httpsCallable } = await import('firebase/functions');
                 const functions = getFunctions();
-                const createCheckoutSession = httpsCallable(functions, 'createCheckoutSession');
 
-                const { data }: any = await createCheckoutSession({ tier: tierId });
+                // If user is already active and just changing plans (or cancelling to free)
+                if (user?.subscriptionStatus === 'active' || isFree) {
+                    const updateSubscriptionPlan = httpsCallable(functions, 'updateSubscriptionPlan');
+                    const result: any = await updateSubscriptionPlan({ newTier: tierId });
+
+                    if (result.data.success) {
+                        addNotification({ type: 'system', title: 'Start Updated', message: result.data.message });
+                        // Optimistic update handled by backend or listener, but we can force refresh if needed
+                        // For now, listener handles it.
+                    }
+                    setProcessingId(null);
+                    return;
+                }
+
+                // Otherwise, New Subscription -> Checkout
+                const createCheckoutSession = httpsCallable(functions, 'createCheckoutSession');
+                const { data }: any = await createCheckoutSession({
+                    tier: tierId,
+                    promoCode: promoCode
+                });
 
                 if (data && data.url) {
-                    // Redirect to Stripe
                     window.location.href = data.url;
                 } else {
                     throw new Error("No checkout URL returned");
                 }
             } catch (error: any) {
                 console.error("Payment Error:", error);
-                addNotification({ type: 'alert', title: 'Payment Error', message: `Failed to initialize payment: ${error.message}` });
+                addNotification({ type: 'alert', title: 'Payment Error', message: `Failed to process: ${error.message}` });
                 setProcessingId(null);
             }
         }
@@ -214,18 +240,29 @@ const Subscription: React.FC = () => {
                             </div>
                             <p className="text-sm text-[var(--text-muted)] mb-6 h-10">{tier.description}</p>
 
-                            <button
-                                onClick={() => handleUpgrade(tier.id, tier.price)}
-                                disabled={currentTier === tier.id || isViewOnly || !!processingId}
-                                className={`w-full py-3 rounded-lg font-bold mb-6 transition-all ${currentTier === tier.id
-                                    ? 'bg-green-100 text-green-700 cursor-default'
-                                    : isViewOnly
-                                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                                        : 'bg-[var(--brand-primary)] text-white hover:brightness-110'
-                                    }`}
-                            >
-                                {currentTier === tier.id ? 'Current Plan' : isViewOnly ? 'Contact Owner' : `Subscribe (${tier.price})`}
-                            </button>
+                            <div className="mb-6">
+                                {currentTier === tier.id ? (
+                                    <div className="w-full py-3 rounded-lg bg-green-50 border border-green-200 text-green-700 font-bold text-center">
+                                        Current Plan
+                                        {user?.subscriptionEnd && (
+                                            <div className="text-xs font-normal mt-1 opacity-80">
+                                                Valid until {new Date(user.subscriptionEnd).toLocaleDateString()}
+                                            </div>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <button
+                                        onClick={() => handleUpgrade(tier.id, tier.price)}
+                                        disabled={isViewOnly || !!processingId}
+                                        className={`w-full py-3 rounded-lg font-bold transition-all ${isViewOnly
+                                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                            : 'bg-[var(--brand-primary)] text-white hover:brightness-110'
+                                            }`}
+                                    >
+                                        {isViewOnly ? 'Contact Owner' : `Subscribe (${tier.price})`}
+                                    </button>
+                                )}
+                            </div>
 
                             <div className="space-y-3">
                                 {tier.features.map((feature, i) => (
@@ -238,10 +275,22 @@ const Subscription: React.FC = () => {
                     ))}
                 </div>
 
-                <div className="mt-12 bg-gray-50 rounded-xl p-6 text-center border border-gray-100">
-                    <h3 className="font-bold text-[var(--text-main)] mb-2">Need a Custom Plan?</h3>
-                    <p className="text-[var(--text-muted)] mb-4">For multi-location franchises or enterprise needs, contact our sales team.</p>
-                    <button className="text-[var(--brand-primary)] font-bold hover:underline">Contact Sales</button>
+                <div className="mt-12 bg-gray-50 rounded-xl p-6 text-center border border-gray-100 relative overflow-hidden">
+                    <div className="absolute top-0 right-0 p-4 opacity-10 text-6xl rotate-12">🎟️</div>
+                    <h3 className="font-bold text-[var(--text-main)] mb-2">Have a Promo Code?</h3>
+                    <p className="text-[var(--text-muted)] mb-4 text-sm">Enter your code below to unlock special offers.</p>
+                    <div className="flex gap-2 max-w-xs mx-auto">
+                        <input
+                            type="text"
+                            placeholder="e.g. FIRST100"
+                            value={promoCode}
+                            onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-center font-bold tracking-widest uppercase"
+                        />
+                    </div>
+                    {promoCode === 'FIRST100' && (
+                        <p className="text-green-600 text-xs font-bold mt-2 animate-bounce">Verify: 'FIRST100' applies 3 Months FREE!</p>
+                    )}
                 </div>
 
                 {/* Payment History Section */}

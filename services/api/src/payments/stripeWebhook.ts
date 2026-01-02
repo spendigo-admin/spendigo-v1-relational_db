@@ -35,7 +35,8 @@ export const stripeWebhook = functions.https.onRequest(async (req, res) => {
                 break;
 
             case 'invoice.payment_succeeded':
-                // Could be used to extend subscription duration
+                const invoice = event.data.object as any;
+                await handleInvoicePaymentSucceeded(invoice);
                 break;
 
             // Handle cancellations, etc.
@@ -66,6 +67,27 @@ async function handleCheckoutCompleted(session: any) {
             subscriptionId: session.subscription,
             subscriptionUpdatedAt: new Date().toISOString()
         }, { merge: true });
+    }
+}
+
+async function handleInvoicePaymentSucceeded(invoice: any) {
+    const customerId = invoice.customer;
+    if (!customerId) return;
+
+    // Find user by stripeCustomerId
+    const snapshot = await db.collection('users').where('stripeCustomerId', '==', customerId).get();
+    if (!snapshot.empty) {
+        const userDoc = snapshot.docs[0];
+        const subscriptionEnd = invoice.lines?.data?.[0]?.period?.end; // Unix timestamp
+
+        if (subscriptionEnd) {
+            const endDate = new Date(subscriptionEnd * 1000).toISOString();
+            console.log(`Updating subscription end for ${userDoc.id} to ${endDate}`);
+            await userDoc.ref.set({
+                subscriptionStatus: 'active',
+                subscriptionEnd: endDate
+            }, { merge: true });
+        }
     }
 }
 

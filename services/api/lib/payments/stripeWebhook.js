@@ -66,7 +66,8 @@ exports.stripeWebhook = functions.https.onRequest(async (req, res) => {
                 await handleCheckoutCompleted(session);
                 break;
             case 'invoice.payment_succeeded':
-                // Could be used to extend subscription duration
+                const invoice = event.data.object;
+                await handleInvoicePaymentSucceeded(invoice);
                 break;
             // Handle cancellations, etc.
             case 'customer.subscription.deleted':
@@ -94,6 +95,26 @@ async function handleCheckoutCompleted(session) {
             subscriptionId: session.subscription,
             subscriptionUpdatedAt: new Date().toISOString()
         }, { merge: true });
+    }
+}
+async function handleInvoicePaymentSucceeded(invoice) {
+    var _a, _b, _c, _d;
+    const customerId = invoice.customer;
+    if (!customerId)
+        return;
+    // Find user by stripeCustomerId
+    const snapshot = await db.collection('users').where('stripeCustomerId', '==', customerId).get();
+    if (!snapshot.empty) {
+        const userDoc = snapshot.docs[0];
+        const subscriptionEnd = (_d = (_c = (_b = (_a = invoice.lines) === null || _a === void 0 ? void 0 : _a.data) === null || _b === void 0 ? void 0 : _b[0]) === null || _c === void 0 ? void 0 : _c.period) === null || _d === void 0 ? void 0 : _d.end; // Unix timestamp
+        if (subscriptionEnd) {
+            const endDate = new Date(subscriptionEnd * 1000).toISOString();
+            console.log(`Updating subscription end for ${userDoc.id} to ${endDate}`);
+            await userDoc.ref.set({
+                subscriptionStatus: 'active',
+                subscriptionEnd: endDate
+            }, { merge: true });
+        }
     }
 }
 async function handleSubscriptionDeleted(subscription) {

@@ -214,11 +214,25 @@ const StoreList: React.FC = () => {
                 deliveryTime: store.deliveryTime,
                 deliveryFee: store.deliveryFee || '$3.99',
                 rating: store.rating,
-                hasFlyer: store.flyer?.validUntil ? true : false,
-                activeDealsCount: (store.oneDayOffers?.length || 0) + (store.saleItems?.length || 0)
+                hasFlyer: store.flyer?.validUntil ? true : false, // Check flyer validity separately if needed
+                activeDealsCount: [...(store.oneDayOffers || []), ...(store.saleItems || [])].filter((d: any) => {
+                    // Only count if validUntil is in future (or missing, for legacy compat)
+                    if (!d.validUntil) return true;
+                    return new Date(d.validUntil) > new Date();
+                }).length,
+                productCount: store.products?.length || 0
             };
         });
     }, [stores, userCoords]);
+
+    const stats = useMemo(() => {
+        return {
+            totalStores: allStores.length,
+            totalFlyers: allStores.filter(s => s.hasFlyer).length,
+            totalDeals: allStores.reduce((acc, s) => acc + s.activeDealsCount, 0),
+            totalProducts: allStores.reduce((acc, s) => acc + s.productCount, 0)
+        };
+    }, [allStores]);
 
     const [activeCategory, setActiveCategory] = useState('All');
 
@@ -288,11 +302,12 @@ const StoreList: React.FC = () => {
                 </div>
 
                 <div className="relative z-10 max-w-4xl mx-auto text-center">
-                    <h1 className="text-4xl md:text-5xl font-bold text-white mb-4 leading-tight">
-                        Shop Local,<br />Save Smarter
+                    <h1 className="text-4xl md:text-6xl font-extrabold text-white mb-6 leading-tight tracking-tight drop-shadow-sm">
+                        When You Shop Local,<br />
+                        <span className="text-yellow-300">Everyone Wins.</span>
                     </h1>
-                    <p className="text-white/80 text-lg mb-6 max-w-2xl mx-auto">
-                        Browse digital flyers and automatically optimize your grocery list for the best prices across all your favorite neighborhood stores.
+                    <p className="text-white/90 text-lg md:text-xl mb-8 max-w-2xl mx-auto font-medium">
+                        Supporting local businesses while rewarding shoppers.
                     </p>
 
                     {/* Search Bar */}
@@ -327,20 +342,20 @@ const StoreList: React.FC = () => {
             <section className="py-8 px-4 bg-[var(--surface-1)] border-b border-[var(--glass-border)]">
                 <div className="max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
                     <div>
-                        <p className="text-3xl font-bold text-[var(--brand-primary)]">50+</p>
+                        <p className="text-3xl font-bold text-[var(--brand-primary)]">{stats.totalStores > 0 ? stats.totalStores : '50+'}</p>
                         <p className="text-sm text-[var(--text-muted)]">Local Grocers</p>
                     </div>
                     <div>
-                        <p className="text-3xl font-bold text-[var(--brand-primary)]">Real-time</p>
-                        <p className="text-sm text-[var(--text-muted)]">Digital Flyers</p>
+                        <p className="text-3xl font-bold text-[var(--brand-primary)]">{stats.totalFlyers > 0 ? stats.totalFlyers : '10+'}</p>
+                        <p className="text-sm text-[var(--text-muted)]">Active Flyers</p>
                     </div>
                     <div>
-                        <p className="text-3xl font-bold text-[var(--brand-primary)]">100%</p>
-                        <p className="text-sm text-[var(--text-muted)]">Price Comparison</p>
+                        <p className="text-3xl font-bold text-[var(--brand-primary)]">{stats.totalDeals > 0 ? stats.totalDeals : '100+'}</p>
+                        <p className="text-sm text-[var(--text-muted)]">Active Deals</p>
                     </div>
                     <div>
-                        <p className="text-3xl font-bold text-[var(--brand-primary)]">15%</p>
-                        <p className="text-sm text-[var(--text-muted)]">Estimated Savings</p>
+                        <p className="text-3xl font-bold text-[var(--brand-primary)]">{stats.totalProducts > 0 ? `${(stats.totalProducts / 1000).toFixed(1)}k+` : '15%'}</p>
+                        <p className="text-sm text-[var(--text-muted)]">{stats.totalProducts > 0 ? 'Products Available' : 'Estimated Savings'}</p>
                     </div>
                 </div>
             </section>
@@ -407,7 +422,9 @@ const StoreList: React.FC = () => {
                                         <img
                                             src={store.image}
                                             alt={store.name}
-                                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                            loading="lazy"
+                                            decoding="async"
+                                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 will-change-transform"
                                         />
                                         {/* Delivery Badge */}
                                         <div className="absolute top-3 left-3 bg-black/70 backdrop-blur-sm px-2 py-1 rounded-md text-xs text-white font-medium">
@@ -420,7 +437,13 @@ const StoreList: React.FC = () => {
                                         {/* Logo Avatar */}
                                         <div className="absolute -top-6 left-4 w-12 h-12 rounded-xl bg-[var(--surface-0)] border-2 border-[var(--glass-border)] flex items-center justify-center text-2xl shadow-lg overflow-hidden">
                                             {store.logoUrl && store.logoUrl.startsWith('http') ? (
-                                                <img src={store.logoUrl} alt="Logo" className="w-full h-full object-cover" />
+                                                <img
+                                                    src={store.logoUrl}
+                                                    alt="Logo"
+                                                    loading="lazy"
+                                                    decoding="async"
+                                                    className="w-full h-full object-cover"
+                                                />
                                             ) : (
                                                 <span>{store.logoUrl || '🏪'}</span>
                                             )}

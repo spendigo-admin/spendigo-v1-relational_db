@@ -51,63 +51,63 @@ const ROLE_INFO: Record<MerchantRole, { label: string; desc: string; permissions
 
 const BUSINESS_TYPES: Record<string, { logo: string; cover: string; tagline: string }> = {
     'Grocery': {
-        logo: '/defaults/branding/grocery_logo.jpg?v=3',
-        cover: '/defaults/branding/grocery_cover.jpg?v=3',
+        logo: '/defaults/branding/grocery_logo.jpg?v=4',
+        cover: '/defaults/branding/grocery_cover.jpg?v=4',
         tagline: 'Fresh groceries and daily essentials.'
     },
     'Desi Grocery': {
-        logo: '/defaults/branding/desi_logo.jpg?v=3',
-        cover: '/defaults/branding/desi_cover.jpg?v=3',
+        logo: '/defaults/branding/desi_logo.jpg?v=4',
+        cover: '/defaults/branding/desi_cover.jpg?v=4',
         tagline: 'Authentic flavors, spices and traditional ingredients.'
     },
     'Asian Market': {
-        logo: '/defaults/branding/asian_logo.jpg?v=3',
-        cover: '/defaults/branding/asian_cover.jpg?v=3',
+        logo: '/defaults/branding/asian_logo.jpg?v=4',
+        cover: '/defaults/branding/asian_cover.jpg?v=4',
         tagline: 'Your destination for premium Asian products.'
     },
     'Organic Market': {
-        logo: '/defaults/branding/grocery_logo.jpg?v=3', // Re-use grocery for reliability
-        cover: '/defaults/branding/grocery_cover.jpg?v=3',
+        logo: '/defaults/branding/grocery_logo.jpg?v=4', // Re-use grocery for reliability
+        cover: '/defaults/branding/grocery_cover.jpg?v=4',
         tagline: 'Healthy, organic, and locally sourced goodness.'
     },
     'Convenience': {
-        logo: '/defaults/branding/convenience_logo.jpg?v=3',
-        cover: '/defaults/branding/convenience_cover.jpg?v=3',
+        logo: '/defaults/branding/convenience_logo.jpg?v=4',
+        cover: '/defaults/branding/convenience_cover.jpg?v=4',
         tagline: 'Quick stops for all your immediate needs.'
     },
     'Bakery': {
-        logo: '/defaults/branding/bakery_logo.jpg?v=3',
-        cover: '/defaults/branding/bakery_cover.jpg?v=3',
+        logo: '/defaults/branding/bakery_logo.jpg?v=4',
+        cover: '/defaults/branding/bakery_cover.jpg?v=4',
         tagline: 'Freshly baked breads and sweet treats daily.'
     },
     'Cafe': {
-        logo: '/defaults/branding/cafe_logo.jpg?v=3',
-        cover: '/defaults/branding/cafe_cover.jpg?v=3',
+        logo: '/defaults/branding/cafe_logo.jpg?v=4',
+        cover: '/defaults/branding/cafe_cover.jpg?v=4',
         tagline: 'Premium coffee and cozy vibes.'
     },
     'Butcher': {
-        logo: '/defaults/branding/butcher_logo.jpg?v=3',
-        cover: '/defaults/branding/butcher_cover.jpg?v=3',
+        logo: '/defaults/branding/butcher_logo.jpg?v=4',
+        cover: '/defaults/branding/butcher_cover.jpg?v=4',
         tagline: 'Quality cuts and fresh meats.'
     },
     'Florist': {
-        logo: '/defaults/branding/florist_logo.jpg?v=3',
-        cover: '/defaults/branding/florist_cover.jpg?v=3',
+        logo: '/defaults/branding/florist_logo.jpg?v=4',
+        cover: '/defaults/branding/florist_cover.jpg?v=4',
         tagline: 'Beautiful blooms for every occasion.'
     },
     'Pet Store': {
-        logo: '/defaults/branding/pet_logo.jpg?v=3',
-        cover: '/defaults/branding/pet_cover.jpg?v=3',
+        logo: '/defaults/branding/pet_logo.jpg?v=4',
+        cover: '/defaults/branding/pet_cover.jpg?v=4',
         tagline: 'Everything your furry friends need.'
     },
     'Pharmacy': {
-        logo: '/defaults/branding/pharmacy_logo.jpg?v=3',
-        cover: '/defaults/branding/pharmacy_cover.jpg?v=3',
+        logo: '/defaults/branding/pharmacy_logo.jpg?v=4',
+        cover: '/defaults/branding/pharmacy_cover.jpg?v=4',
         tagline: 'Health, wellness, and prescriptions.'
     },
     'Other': {
-        logo: '/defaults/branding/other_logo.jpg?v=3',
-        cover: '/defaults/branding/other_cover.jpg?v=3',
+        logo: '/defaults/branding/other_logo.jpg?v=4',
+        cover: '/defaults/branding/other_cover.jpg?v=4',
         tagline: 'Quality service for our community.'
     }
 };
@@ -176,7 +176,8 @@ const MerchantSettings: React.FC = () => {
         defaultPrepTime: 20,
         autoAcceptOrders: false,
         taxRate: 13,
-        deliveryEnabled: true
+        deliveryEnabled: true,
+        deliveryTime: '45-60 min'
     });
 
     // Hours State
@@ -285,7 +286,8 @@ const MerchantSettings: React.FC = () => {
                 defaultPrepTime: store.defaultPrepTime || 20,
                 autoAcceptOrders: store.autoAcceptOrders || false,
                 taxRate: store.taxRate || 13,
-                deliveryEnabled: store.deliveryEnabled !== false // Default true
+                deliveryEnabled: store.deliveryEnabled !== false, // Default true
+                deliveryTime: store.deliveryTime || '45-60 min'
             });
 
             if (store.hours) {
@@ -352,6 +354,7 @@ const MerchantSettings: React.FC = () => {
             autoAcceptOrders: operations.autoAcceptOrders,
             taxRate: operations.taxRate,
             deliveryEnabled: operations.deliveryEnabled,
+            deliveryTime: operations.deliveryTime,
             hours: hours,
             // Force sync subscription tier from user profile to store
             // This fixes issues where the store doc might be out of sync with user doc
@@ -359,6 +362,9 @@ const MerchantSettings: React.FC = () => {
             // Legacy/Display Fields
             deliveryFee: displayFee
         };
+
+        // Simulate processing for UX
+        await new Promise(resolve => setTimeout(resolve, 1500));
 
         await updateStore(storeId, updates);
         setIsSaving(false);
@@ -986,6 +992,17 @@ const MerchantSettings: React.FC = () => {
                             onChange={e => setOperations({ ...operations, defaultPrepTime: Number(e.target.value) })}
                             className="w-full p-3 border border-[var(--glass-border)] rounded-lg"
                         />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">Displayed Delivery Time</label>
+                        <input
+                            type="text"
+                            value={operations.deliveryTime}
+                            onChange={e => setOperations({ ...operations, deliveryTime: e.target.value })}
+                            className="w-full p-3 border border-[var(--glass-border)] rounded-lg"
+                            placeholder="e.g. 45-60 min"
+                        />
+                        <p className="text-xs text-[var(--text-muted)] mt-1">This text is shown to customers on the store list.</p>
                     </div>
                     <div className="md:col-span-2 pt-2 border-t border-[var(--glass-border)] mt-2 space-y-3">
                         <label className="flex items-center gap-3 cursor-pointer p-2 hover:bg-gray-50 rounded-lg">

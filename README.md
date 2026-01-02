@@ -1,9 +1,9 @@
 # Spendigo SmartCart
 
-**Status**: Production-Ready  
-**Last Updated**: 2025-12-24
+**Status**: Beta (Feature Complete)  
+**Last Updated**: 2026-01-02
 
-Spendigo SmartCart is a Canada-first **Marketplace Facilitator** platform connecting independent convenience stores with local consumers. It features smart basket optimization, real-time order management, digital flyer integration, and production-grade security.
+Spendigo SmartCart is a Canada-first **Marketplace Facilitator** platform connecting independent convenience stores with local consumers. It features smart basket optimization, real-time order management, digital flyer integration, robust subscription management, and production-grade security.
 
 ---
 
@@ -179,17 +179,20 @@ npm run build
 - 📱 Real-time order tracking
 - ❤️ Wishlist with price alerts
 - 🧮 Provincial tax calculation
+- ⚡ **Optimized Performance:** Lazy loading & Async decoding for images
+- 📈 **Real-Time Stats:** Live counter for active stores & products
 
 ### Merchant Dashboard
 - 📊 Real-time order Kanban board
 - 📰 Digital flyer creation
 - 📦 Inventory management from master catalog
-- 💳 Payment status tracking
+- 💳 **Advanced Subscriptions:** Tiers (Free, Core, Growth) with Promo Codes
 - 📈 Analytics dashboard
 
 ### Admin Panel
 - 👥 User management (role promotion)
 - 🏪 Store approval/suspension
+- 📝 **Subscription Oversight:** Live view of merchant tiers & validity
 - 🔐 Security audit ledger
 - 🛠️ Platform maintenance mode
 - 📊 Real-time system events
@@ -272,15 +275,18 @@ Proprietary - All rights reserved.
 
 ## 🎯 Roadmap
 
-### ✅ Completed (Phase 1-8)
+### ✅ Completed (Phase 1-9)
 - Core shopping experience
 - Merchant order management (with Hold/Resume & Rejection Reasons)
 - Admin panel with audit logs
 - Real-time Firestore sync & In-App Notifications
 - Real-time store geocoding & proximity search
+- **Subscription System:** Tiers, Upgrades, Downgrades, Promo Codes
+- **Performance:** Image optimization (Lazy/Async/Will-Change)
+- **Admin Tools:** Subscription monitoring in Store Management
 - Production build verification
 
-### 🔜 Q1 2025
+### 🔜 Q1 2026
 - Real Stripe Connect integration
 - Firestore security rules hardening (RBAC enforcement)
 - CI/CD pipeline (GitHub Actions)

@@ -17,7 +17,7 @@ export const createCheckoutSession = functions.https.onCall(async (data, context
         throw new functions.https.HttpsError('unauthenticated', 'User must be logged in.');
     }
 
-    const { tier } = data; // 'core' or 'growth'
+    const { tier, promoCode } = data; // 'core' or 'growth'
     const userId = context.auth.uid;
     const userEmail = context.auth.token.email;
 
@@ -45,6 +45,21 @@ export const createCheckoutSession = functions.https.onCall(async (data, context
             await db.collection('users').doc(userId).set({ stripeCustomerId: customerId }, { merge: true });
         }
 
+        // --- PROMO CODE LOGIC ---
+        let subscriptionData: any = {};
+        if (promoCode === 'FIRST100') {
+            // Check if we are within the first 100 merchants
+            const storesSnapshot = await db.collection('stores').count().get();
+            const storeCount = storesSnapshot.data().count;
+
+            if (storeCount < 100) {
+                // Apply 3 Months Free Trial
+                subscriptionData = {
+                    trial_period_days: 90
+                };
+            }
+        }
+
         // 3. Create Checkout Session
         const session = await stripe.checkout.sessions.create({
             payment_method_types: ['card'],
@@ -56,12 +71,14 @@ export const createCheckoutSession = functions.https.onCall(async (data, context
                     quantity: 1,
                 },
             ],
+            subscription_data: subscriptionData, // <--- Apply Trial if eligible
             // Replace with your actual deployed URL
             success_url: `https://spendigo.ca/merchant/subscription?session_id={CHECKOUT_SESSION_ID}`,
             cancel_url: `https://spendigo.ca/merchant/subscription`,
             metadata: {
                 firebaseUID: userId,
-                targetTier: tier
+                targetTier: tier,
+                appliedPromo: promoCode || 'none'
             }
         });
 

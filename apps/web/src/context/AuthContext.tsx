@@ -26,6 +26,8 @@ export interface User {
     businessRegistrationNumber?: string;
     merchantRole?: 'OWNER' | 'MANAGER' | 'STAFF' | 'MARKETING';
     subscriptionTier?: 'free' | 'core' | 'growth';
+    subscriptionStatus?: 'active' | 'past_due' | 'canceled' | 'unpaid';
+    subscriptionEnd?: string; // ISO String
     // Admin specific
     adminRole?: 'SUPER_ADMIN' | 'SUPPORT' | 'MODERATOR' | 'AUDITOR';
     emailVerified?: boolean;

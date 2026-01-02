@@ -49,7 +49,7 @@ const StoreDetail: React.FC = () => {
         <div className="animate-fade-in pb-20">
             {/* STORE HEADER */}
             <div className="relative h-48 md:h-64 bg-[var(--surface-2)]">
-                <img src={store.image} alt={store.name} className="w-full h-full object-cover opacity-80" />
+                <img src={store.image} alt={store.name} className="w-full h-full object-cover opacity-80" decoding="async" />
                 <div className="absolute inset-0 bg-gradient-to-t from-[var(--surface-0)] via-transparent to-transparent"></div>
 
                 {/* Back Button */}
@@ -65,7 +65,7 @@ const StoreDetail: React.FC = () => {
                     <div className="flex items-end gap-4">
                         <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-white border-2 border-[var(--glass-border)] flex items-center justify-center text-3xl md:text-4xl shadow-lg overflow-hidden">
                             {(store.logoUrl || store.logo || '').startsWith('http') ? (
-                                <img src={store.logoUrl || store.logo} alt="Logo" className="w-full h-full object-cover" />
+                                <img src={store.logoUrl || store.logo} alt="Logo" className="w-full h-full object-cover" decoding="async" />
                             ) : (
                                 <span>{store.logo || store.logoUrl || '🏪'}</span>
                             )}
@@ -155,7 +155,13 @@ const StoreDetail: React.FC = () => {
                                 {filteredProducts.map((product: any) => (
                                     <div key={product.id} className="bg-white rounded-xl border border-[var(--glass-border)] overflow-hidden group shadow-sm hover:shadow-md transition-shadow">
                                         <div onClick={() => navigate(`/product/${product.id}`)} className="h-32 md:h-40 bg-[var(--surface-1)] relative cursor-pointer overflow-hidden">
-                                            <img src={product.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                                            <img
+                                                src={product.image}
+                                                alt={product.name}
+                                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                                loading="lazy"
+                                                decoding="async"
+                                            />
                                             {product.originalPrice && (
                                                 <div className="absolute top-2 left-2 bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded">SALE</div>
                                             )}
@@ -185,7 +191,13 @@ const StoreDetail: React.FC = () => {
                     {/* Flyer Card */}
                     {store.flyer?.validUntil ? (
                         <div className="bg-white rounded-xl border border-[var(--glass-border)] overflow-hidden shadow-sm">
-                            <img src={store.flyer.image} alt={store.flyer.title} className="w-full h-48 object-cover" />
+                            <img
+                                src={store.flyer.image}
+                                alt={store.flyer.title}
+                                className="w-full h-48 object-cover"
+                                loading="lazy"
+                                decoding="async"
+                            />
                             <div className="p-4">
                                 <h3 className="text-xl font-bold text-[var(--text-main)]">{store.flyer.title}</h3>
                                 <p className="text-sm text-[var(--text-muted)] mt-1">Valid until {store.flyer.validUntil}</p>

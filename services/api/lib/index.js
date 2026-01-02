@@ -33,7 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.sendOrderStatusUpdate = exports.sendOrderConfirmation = exports.getPaymentHistory = exports.stripeWebhook = exports.createCheckoutSession = exports.deleteUser = exports.inviteTeamMember = exports.cleanupOrphanedUsers = void 0;
+exports.updateSubscriptionPlan = exports.sendOrderStatusUpdate = exports.sendOrderConfirmation = exports.getPaymentHistory = exports.stripeWebhook = exports.createCheckoutSession = exports.deleteUser = exports.inviteTeamMember = exports.cleanupOrphanedUsers = void 0;
 const admin = __importStar(require("firebase-admin"));
 // Initialize Firebase Admin
 admin.initializeApp();
@@ -53,4 +53,6 @@ Object.defineProperty(exports, "getPaymentHistory", { enumerable: true, get: fun
 var sendOrderEmails_1 = require("./email/sendOrderEmails");
 Object.defineProperty(exports, "sendOrderConfirmation", { enumerable: true, get: function () { return sendOrderEmails_1.sendOrderConfirmation; } });
 Object.defineProperty(exports, "sendOrderStatusUpdate", { enumerable: true, get: function () { return sendOrderEmails_1.sendOrderStatusUpdate; } });
+var updateSubscriptionPlan_1 = require("./payments/updateSubscriptionPlan");
+Object.defineProperty(exports, "updateSubscriptionPlan", { enumerable: true, get: function () { return updateSubscriptionPlan_1.updateSubscriptionPlan; } });
 //# sourceMappingURL=index.js.map

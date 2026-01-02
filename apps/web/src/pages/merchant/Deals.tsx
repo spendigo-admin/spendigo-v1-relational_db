@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import '../../styles/design-system.css';
 import { useMarketplace } from '../../context/MarketplaceContext';
 import { useAuth } from '../../context/AuthContext';
+import { useNotifications } from '../../context/NotificationContext'; // Fixed plural
 
 // Types
 type DealType = 'percentage' | 'fixed' | 'bogo';
@@ -65,6 +66,8 @@ const MerchantDeals: React.FC = () => {
 
     const [deals, setDeals] = useState<Deal[]>([]); // Initial empty, populated by subscription
     const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'scheduled' | 'expired'>('all');
+    const [isSyncing, setIsSyncing] = useState(false);
+    const { addNotification } = useNotifications();
 
     // Subscribe to Deals
     React.useEffect(() => {
@@ -195,7 +198,8 @@ const MerchantDeals: React.FC = () => {
                         price: newDeal.salePrice,
                         originalPrice: newDeal.originalPrice,
                         endsIn: `${hours} hours`,
-                        image: newDeal.productImage
+                        image: newDeal.productImage,
+                        validUntil: newDeal.endDate
                     }];
                     updateStoreDeals(storeId, 'oneDayOffers', updatedOffers);
                 } else {
@@ -206,7 +210,8 @@ const MerchantDeals: React.FC = () => {
                         price: newDeal.salePrice,
                         originalPrice: newDeal.originalPrice,
                         discount: `${newDeal.value}% OFF`,
-                        image: newDeal.productImage
+                        image: newDeal.productImage,
+                        validUntil: newDeal.endDate
                     }];
                     updateStoreDeals(storeId, 'saleItems', updatedSales);
                 }
@@ -267,12 +272,67 @@ const MerchantDeals: React.FC = () => {
                     <p className="text-sm text-[var(--text-muted)]">Target customers with special limited-time offers</p>
                 </div>
                 {hasWriteAccess && !isRestrictedPlan && (
-                    <button
-                        onClick={() => setShowWizard(true)}
-                        className="px-4 py-2 bg-[var(--brand-primary)] text-white font-medium rounded-lg hover:brightness-110 shadow-lg shadow-[var(--brand-primary)]/20 transition-all"
-                    >
-                        + Create New Deal
-                    </button>
+                    <div className="flex gap-2">
+                        <button
+                            onClick={async () => {
+                                if (isSyncing) return;
+                                setIsSyncing(true);
+                                try {
+                                    // Add artificial delay for better UX
+                                    await new Promise(resolve => setTimeout(resolve, 1000));
+
+                                    const activeDeals = deals.filter(d => d.status === 'active');
+                                    const oneDayOffers = activeDeals.filter(d => d.isFlashSale).map(d => ({
+                                        id: d.id,
+                                        name: d.productName,
+                                        price: d.salePrice,
+                                        originalPrice: d.originalPrice,
+                                        endsIn: 'Ending soon',
+                                        image: d.productImage,
+                                        validUntil: d.endDate
+                                    }));
+                                    const saleItems = activeDeals.filter(d => !d.isFlashSale).map(d => ({
+                                        id: d.id,
+                                        name: d.productName,
+                                        price: d.salePrice,
+                                        originalPrice: d.originalPrice,
+                                        discount: `${d.value}% OFF`,
+                                        image: d.productImage,
+                                        validUntil: d.endDate
+                                    }));
+
+                                    await updateStoreDeals(storeId, 'oneDayOffers', oneDayOffers);
+                                    await updateStoreDeals(storeId, 'saleItems', saleItems);
+
+                                    addNotification({
+                                        type: 'system',
+                                        title: 'Listing Synced',
+                                        message: 'Your store listing has been updated with active deals.'
+                                    });
+                                } catch (e) {
+                                    console.error(e);
+                                    addNotification({
+                                        type: 'alert',
+                                        title: 'Sync Failed',
+                                        message: 'Could not sync deals. Please try again.'
+                                    });
+                                } finally {
+                                    setIsSyncing(false);
+                                }
+                            }}
+                            className="px-4 py-2 bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200 transition-all border border-gray-200 flex items-center gap-2"
+                            disabled={isSyncing}
+                        >
+                            <span className={isSyncing ? 'animate-spin' : ''}>🔄</span>
+                            {isSyncing ? 'Syncing...' : 'Sync Listing'}
+                        </button>
+                        <button
+                            onClick={() => setShowWizard(true)}
+                            className="px-4 py-2 bg-[var(--brand-primary)] text-white font-medium rounded-lg hover:brightness-110 shadow-lg shadow-[var(--brand-primary)]/20 transition-all"
+                        >
+                            + Create New Deal
+                        </button>
+                    </div>
                 )}
             </div>
             {isRestrictedPlan ? (
