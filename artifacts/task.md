@@ -66,3 +66,27 @@
     - [x] Update `MerchantDashboard` to display real Daily/Weekly/Monthly stats.
     - [x] Add time-period selector.
 
+
+## 9. Growth & Engagement Features
+- [x] **Carousel Ads System**
+    - [x] Create `ads` collection in Firestore
+    - [x] Admin UI: Campaign Manager (Upload Banners, Set Dates, Set Links)
+    - [x] Mobile/Web UI: Inject dynamic ad slides into Home Carousel
+    - [x] Tracking: Basic view/click tracking
+- [x] **Survey Board**
+    - [x] Admin UI: Create/Manage Polls & Surveys
+    - [x] Consumer UI: "Survey Board" page or modal popup
+    - [ ] Incentive: Award "Points" or "Badges" for completion
+- [x] **Digital Flyers Integration**
+    - [x] Merchant UI: PDF Upload / Flyer Builder (Exists)
+    - [x] Consumer UI: Interactive Flyer Viewer (Click product to add to cart)
+    - [x] Home Feed: "Nearby Flyers" horizontal scroll section
+- [x] **Platform Traffic Tracking**
+    - [x] Integrate Firebase Analytics / Google Analytics 4
+    - [x] Implement "Traffic" view in Admin Dashboard
+    - [x] Track Daily Active Users (DAU) & Monthly Active Users (MAU)
+
+## 10. Merchant Experience
+- [x] **Barcode Scanning**
+    - [x] Integrate `html5-qrcode` library for camera scanning
+    - [x] Add "Scan Barcode" button to Product Entry form

@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { Outlet, NavLink, Link, useNavigate } from 'react-router-dom';
+import { Outlet, NavLink, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationContext';
 import NotificationPopover from '../components/NotificationPopover';
 import '../styles/design-system.css';
+import { analytics } from '../lib/firebase';
+import { logEvent } from 'firebase/analytics';
 
 const ConsumerLayout: React.FC = () => {
     const { itemCount, notification, clearNotification } = useCart();
@@ -12,6 +14,23 @@ const ConsumerLayout: React.FC = () => {
     const { unreadCount } = useNotifications();
     const navigate = useNavigate();
     const [searchQuery, setSearchQuery] = useState('');
+    const location = useLocation();
+
+    // Track Page Views
+    React.useEffect(() => {
+        if (analytics) {
+            logEvent(analytics, 'page_view', {
+                page_path: location.pathname,
+                page_location: window.location.href,
+                page_title: document.title
+            });
+        }
+
+        // Custom Firestore Counter for Dashboard
+        import('../utils/traffic').then(({ incrementDailyVisitors }) => {
+            incrementDailyVisitors();
+        });
+    }, [location]);
 
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();

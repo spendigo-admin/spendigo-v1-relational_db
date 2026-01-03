@@ -1,20 +1,112 @@
 import React, { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
 import { useMarketplace } from '../../context/MarketplaceContext';
 import ReviewList from '../../components/ReviewList';
 import ReviewForm from '../../components/ReviewForm';
 import '../../styles/design-system.css';
 
+import { useEffect } from 'react';
+
+// New FlyerTab Component
+const FlyerTab: React.FC<{ storeId: string; storeName: string; summary: any }> = ({ storeId, storeName, summary }) => {
+    const { subscribeToFlyers } = useMarketplace();
+    const { addToCart } = useCart();
+    const [flyer, setFlyer] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const unsubscribe = subscribeToFlyers(storeId, (flyers) => {
+            // Find active flyer (status=active OR if summary exists match it)
+            // Simplified: Just take the first active one or the one matching summary
+            const active = flyers.find(f => f.status === 'active') || flyers.find(f => f.title === summary?.title);
+            setFlyer(active);
+            setLoading(false);
+        });
+        return () => unsubscribe();
+    }, [storeId, subscribeToFlyers, summary]);
+
+    const handleAdd = (item: any) => {
+        addToCart({
+            productId: item.productId,
+            productName: item.name,
+            price: item.salePrice,
+            quantity: 1,
+            storeId,
+            storeName,
+            image: item.image
+        });
+    };
+
+    if (loading) return <div className="p-10 text-center text-gray-400">Loading flyer...</div>;
+
+    if (!flyer) return (
+        <div className="text-center py-10">
+            <p className="text-4xl mb-4">📰</p>
+            <p className="text-[var(--text-muted)]">No active flyer details found.</p>
+        </div>
+    );
+
+    return (
+        <div className="p-4 space-y-6">
+            <div className="relative rounded-xl overflow-hidden shadow-sm h-48">
+                <img src={flyer.coverImage} className="w-full h-full object-cover" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex items-end p-6">
+                    <div>
+                        <h2 className="text-2xl font-bold text-white mb-1">{flyer.title}</h2>
+                        <p className="text-white/80 text-sm">Valid {new Date(flyer.validFrom).toLocaleDateString()} - {new Date(flyer.validUntil).toLocaleDateString()}</p>
+                    </div>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {flyer.items?.map((item: any, idx: number) => (
+                    <div key={idx} className="bg-white rounded-xl border border-[var(--glass-border)] shadow-sm overflow-hidden group">
+                        <div className="relative h-32 bg-gray-100">
+                            <img src={item.image} className="w-full h-full object-cover" />
+                            {item.salePrice < item.originalPrice && (
+                                <span className="absolute top-2 right-2 bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                                    SAVE {Math.round(((item.originalPrice - item.salePrice) / item.originalPrice) * 100)}%
+                                </span>
+                            )}
+                        </div>
+                        <div className="p-3">
+                            <p className="font-bold text-sm text-[var(--text-main)] truncate">{item.name}</p>
+                            <div className="flex items-baseline gap-2 mt-1 mb-3">
+                                <span className="text-lg font-bold text-[var(--brand-primary)]">${item.salePrice.toFixed(2)}</span>
+                                <span className="text-xs text-[var(--text-muted)] line-through">${item.originalPrice.toFixed(2)}</span>
+                            </div>
+                            <button
+                                onClick={() => handleAdd(item)}
+                                className="w-full py-2 bg-[var(--brand-primary)] text-white text-xs font-bold rounded-lg hover:brightness-110 active:scale-95 transition-all"
+                            >
+                                + Add to Cart
+                            </button>
+                        </div>
+                    </div>
+                ))}
+            </div>
+
+            {(!flyer.items || flyer.items.length === 0) && (
+                <div className="text-center py-8 text-gray-500 italic">
+                    This flyer has no items listed yet. Check the image above for details.
+                </div>
+            )}
+        </div>
+    );
+};
+
 const StoreDetail: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
+    const location = useLocation(); // Add useLocation import
     const { addToCart } = useCart();
     const { getStore } = useMarketplace();
 
     const store = getStore(id || '') || null;
 
-    const [activeTab, setActiveTab] = useState<'products' | 'flyer' | 'offers' | 'reviews'>('products');
+    // Check for initial tab in state
+    const [activeTab, setActiveTab] = useState<'products' | 'flyer' | 'offers' | 'reviews'>((location.state as any)?.initialTab || 'products');
     const [activeCategory, setActiveCategory] = useState('All');
 
     if (!store) {
@@ -187,32 +279,7 @@ const StoreDetail: React.FC = () => {
             )}
 
             {activeTab === 'flyer' && (
-                <div className="p-4">
-                    {/* Flyer Card */}
-                    {store.flyer?.validUntil ? (
-                        <div className="bg-white rounded-xl border border-[var(--glass-border)] overflow-hidden shadow-sm">
-                            <img
-                                src={store.flyer.image}
-                                alt={store.flyer.title}
-                                className="w-full h-48 object-cover"
-                                loading="lazy"
-                                decoding="async"
-                            />
-                            <div className="p-4">
-                                <h3 className="text-xl font-bold text-[var(--text-main)]">{store.flyer.title}</h3>
-                                <p className="text-sm text-[var(--text-muted)] mt-1">Valid until {store.flyer.validUntil}</p>
-                                <button className="mt-4 w-full py-3 bg-[var(--brand-primary)] text-white font-medium rounded-lg hover:brightness-110">
-                                    View Full Flyer
-                                </button>
-                            </div>
-                        </div>
-                    ) : (
-                        <div className="text-center py-10">
-                            <p className="text-4xl mb-4">📰</p>
-                            <p className="text-[var(--text-muted)]">No active flyer for this week.</p>
-                        </div>
-                    )}
-                </div>
+                <FlyerTab storeId={store.id} storeName={store.name} summary={store.flyer} />
             )}
 
             {activeTab === 'offers' && (

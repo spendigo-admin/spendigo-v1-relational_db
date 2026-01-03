@@ -6,6 +6,7 @@ import { useNotifications } from '../../context/NotificationContext';
 import { useConfirmation } from '../../context/ConfirmationContext';
 
 import { useAuth } from '../../context/AuthContext';
+import { useTrafficStats } from '../../hooks/useTrafficStats';
 
 const RecentActivityFeed: React.FC = () => {
     const { logs } = useAudit();
@@ -108,29 +109,38 @@ const AdminDashboard: React.FC = () => {
         return () => clearInterval(interval);
     }, [stores]); // Re-run if stores change to update DB load calc
 
+    const trafficStats = useTrafficStats(); // Real-time hook
+
+    const [trafficRange, setTrafficRange] = useState<'24h' | '7d' | '30d' | '365d'>('24h');
+
     // specific aggregation logic
     const stats = useMemo(() => {
+        // ... (pre-existing stats)
         const allStores = Object.values(stores || {});
         const totalStores = allStores.length;
-
-        // Calculate Pending Stores
         const pendingStores = allStores.filter((s: any) => s.status === 'pending').length;
-
-        // Calculate Real Product Counts
         const totalProducts = allStores.reduce((acc: number, store: any) => acc + (store.products?.length || 0), 0);
-
-        // Calculate Real Active Deals
         const totalDeals = allStores.reduce((acc: number, store: any) =>
             acc + (store.oneDayOffers?.length || 0) + (store.saleItems?.length || 0), 0);
-
-        // Calculate Monthly Recurring Revenue (MRR) based on Subscriptions
-        // Growth: $99/mo, Core: $49/mo, Free: $0
         const mrr = allStores.reduce((acc: number, store: any) => {
             const tier = store.subscriptionTier || 'free';
             if (tier === 'growth') return acc + 99;
             if (tier === 'core') return acc + 49;
             return acc;
         }, 0);
+
+        let trafficValue = trafficStats.today;
+        let trafficLabel = 'Traffic (Today)';
+        if (trafficRange === '7d') {
+            trafficValue = trafficStats.last7Days;
+            trafficLabel = 'Traffic (7 Days)';
+        } else if (trafficRange === '30d') {
+            trafficValue = trafficStats.last30Days;
+            trafficLabel = 'Traffic (30 Days)';
+        } else if (trafficRange === '365d') {
+            trafficValue = trafficStats.last365Days;
+            trafficLabel = 'Traffic (Year)';
+        }
 
         return [
             {
@@ -160,9 +170,17 @@ const AdminDashboard: React.FC = () => {
                 change: 'Monthly Recurring Revenue',
                 icon: '💰',
                 color: 'bg-green-100 text-green-700'
+            },
+            {
+                label: trafficLabel,
+                value: trafficStats.loading ? '...' : trafficValue.toLocaleString(),
+                change: trafficStats.loading ? '...' : `${trafficStats.percentChange >= 0 ? '↑' : '↓'} ${Math.abs(trafficStats.percentChange)}% vs yesterday`,
+                icon: '📈',
+                color: 'bg-indigo-100 text-indigo-700',
+                isTraffic: true // Flag to render dropdown
             }
         ];
-    }, [stores]);
+    }, [stores, trafficStats, trafficRange]);
 
     const getHealthColor = (val: number) => {
         if (val < 50) return 'bg-green-500 text-green-600';
@@ -192,7 +210,21 @@ const AdminDashboard: React.FC = () => {
             {/* Platform Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                 {stats.map((stat, idx) => (
-                    <div key={idx} className="bg-white p-5 rounded-xl border border-[var(--glass-border)] shadow-sm hover:shadow-md transition-shadow">
+                    <div key={idx} className="bg-white p-5 rounded-xl border border-[var(--glass-border)] shadow-sm hover:shadow-md transition-shadow relative">
+                        {stat.isTraffic && (
+                            <div className="absolute top-4 right-4">
+                                <select
+                                    className="text-xs border-none bg-[var(--surface-1)] rounded p-1 font-bold text-[var(--text-muted)] cursor-pointer outline-none hover:text-[var(--text-main)] transition-colors"
+                                    value={trafficRange}
+                                    onChange={(e) => setTrafficRange(e.target.value as any)}
+                                >
+                                    <option value="24h">24H</option>
+                                    <option value="7d">7D</option>
+                                    <option value="30d">30D</option>
+                                    <option value="365d">Year</option>
+                                </select>
+                            </div>
+                        )}
                         <div className="flex justify-between items-start mb-2">
                             <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl ${stat.color}`}>
                                 {stat.icon}
@@ -414,7 +446,7 @@ const AdminDashboard: React.FC = () => {
                     </button>
                 </div>
             </div>
-        </div>
+        </div >
     );
 };
 

@@ -36,6 +36,7 @@ import SmartCartWishlist from './pages/consumer/SmartCartWishlist';
 import VerifyEmail from './pages/consumer/VerifyEmail';
 import RequireVerification from './components/RequireVerification';
 import HowItWorks from './pages/consumer/HowItWorks';
+import ConsumerSurveys from './pages/consumer/Surveys';
 
 // Merchant Pages
 import MerchantDashboard from './pages/merchant/Dashboard';
@@ -56,7 +57,8 @@ import AdminFlyerModeration from './pages/admin/FlyerModeration';
 import AdminSettings from './pages/admin/Settings';
 import AdminMasterCatalog from './pages/admin/MasterCatalog';
 import AdminSeedUsers from './pages/admin/SeedUsers';
-
+import AdminAdManager from './pages/admin/AdManager';
+import AdminSurveyManager from './pages/admin/SurveyManager';
 
 import { useState, useEffect } from 'react';
 import { doc, onSnapshot } from 'firebase/firestore';
@@ -138,6 +140,7 @@ function App() {
 
                                                                     <Route path="/search" element={<Search />} />
                                                                     <Route path="/how-it-works" element={<HowItWorks />} />
+                                                                    <Route path="/surveys" element={<ConsumerSurveys />} />
                                                                     <Route path="/consumer" element={<Navigate to="/" replace />} />
                                                                 </Route>
 
@@ -162,9 +165,9 @@ function App() {
                                                                     <Route path="/admin/seed" element={<AdminSeedUsers />} />
                                                                     <Route path="/admin/settings" element={<AdminSettings />} />
                                                                     <Route path="/admin/audit-logs" element={<AdminAuditLogs />} />
+                                                                    <Route path="/admin/ads" element={<AdminAdManager />} />
+                                                                    <Route path="/admin/surveys" element={<AdminSurveyManager />} />
                                                                 </Route>
-
-
 
                                                                 {/* 404 Catch All */}
                                                                 <Route path="*" element={<NotFound />} />

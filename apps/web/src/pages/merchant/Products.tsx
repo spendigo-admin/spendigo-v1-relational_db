@@ -1,37 +1,87 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import '../../styles/design-system.css';
 import { useMarketplace } from '../../context/MarketplaceContext';
 import { useAuth } from '../../context/AuthContext';
 import { useNotifications } from '../../context/NotificationContext';
 import { useConfirmation } from '../../context/ConfirmationContext';
-import { CatalogItem, useCatalog } from '../../context/CatalogContext';
-
+import { useCatalog } from '../../context/CatalogContext';
 import { useInventorySync } from '../../hooks/useInventorySync';
+import { Html5QrcodeScanner } from 'html5-qrcode';
+
+// Scanner Component
+const ScannerModal: React.FC<{ onClose: () => void, onScan: (result: string) => void }> = ({ onClose, onScan }) => {
+    const [mountError, setMountError] = useState('');
+
+    useEffect(() => {
+        // Delay init slightly to ensure DOM is ready
+        const timeout = setTimeout(() => {
+            try {
+                const scanner = new Html5QrcodeScanner(
+                    "reader",
+                    { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 },
+                    false
+                );
+
+                scanner.render((decodedText) => {
+                    onScan(decodedText);
+                    scanner.clear().catch(console.error);
+                }, (error) => {
+                    // console.warn(error); 
+                });
+
+                // Cleanup
+                return () => {
+                    scanner.clear().catch(() => { });
+                };
+            } catch (err) {
+                console.error("Scanner init error", err);
+                setMountError('Camera permission denied or not available.');
+            }
+        }, 100);
+
+        return () => clearTimeout(timeout);
+    }, [onScan]);
+
+    return (
+        <div className="fixed inset-0 z-[60] bg-black/90 flex items-center justify-center p-4">
+            <div className="bg-white rounded-xl overflow-hidden w-full max-w-sm relative p-6">
+                <button onClick={onClose} className="absolute top-2 right-2 text-gray-500 hover:text-black z-10 w-8 h-8 flex items-center justify-center bg-gray-100 rounded-full">✕</button>
+                <h3 className="text-center font-bold mb-4">Scan Barcode</h3>
+                {mountError ? (
+                    <div className="text-red-500 text-center py-4">{mountError}</div>
+                ) : (
+                    <div id="reader" className="w-full bg-gray-50 rounded-lg overflow-hidden min-h-[300px]"></div>
+                )}
+                <p className="text-center mt-4 text-xs text-gray-400">Point camera at a barcode to scan</p>
+            </div>
+        </div>
+    );
+};
 
 const MerchantProducts: React.FC = () => {
     const { getStore, updateStoreProducts } = useMarketplace();
     const { can, user } = useAuth();
     const { addNotification } = useNotifications();
     const { confirm } = useConfirmation();
-    const { catalog, searchCatalog } = useCatalog(); // Use Catalog Context
+    const { catalog, searchCatalog } = useCatalog();
 
-    const storeId = user?.storeId; // No fallback to '1'
+    const storeId = user?.storeId;
     const store = storeId ? getStore(storeId) : null;
     const hasWriteAccess = can('products:write');
 
-    // Ensure products exist
     const products = useMemo(() => store?.products || [], [store?.products]);
-
-    // Inventory Sync Hook
     const { stats, getSyncedProducts } = useInventorySync(products, catalog);
 
     const [showAddModal, setShowAddModal] = useState(false);
     const [editingProduct, setEditingProduct] = useState<any | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
 
-    // Catalog Search State for "Add Product"
+    // Catalog Search State
     const [catalogSearch, setCatalogSearch] = useState('');
     const [showCatalogDropdown, setShowCatalogDropdown] = useState(false);
+
+    // Scanner State
+    const [showScanner, setShowScanner] = useState(false);
 
     // Form state
     const [form, setForm] = useState({
@@ -43,9 +93,15 @@ const MerchantProducts: React.FC = () => {
         lowStockThreshold: '10',
         category: 'Fresh Produce',
         image: '',
-        relatedCatalogItemId: '', // Link to master catalog
+        relatedCatalogItemId: '',
         taxable: true
     });
+
+    const handleScanSuccess = (decodedText: string) => {
+        setForm(prev => ({ ...prev, sku: decodedText }));
+        setShowScanner(false);
+        addNotification({ type: 'system', title: 'Scanned!', message: `SKU set to ${decodedText}` });
+    };
 
     const filteredProducts = products.filter((p: any) =>
         (p.name?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
@@ -90,13 +146,13 @@ const MerchantProducts: React.FC = () => {
             const updatedList = products.map((p: any) => p.id === editingProduct.id ? {
                 ...p,
                 name: form.name,
-                sku: form.sku, // Add SKU support if not in data
-                description: form.description, // Add description support
+                sku: form.sku,
+                description: form.description,
                 price,
                 stock,
                 lowStockThreshold: lowStock,
                 category: form.category,
-                image: form.image || p.image, // Keep existing or form
+                image: form.image || p.image,
                 taxable: form.taxable
             } : p);
             updateProducts(updatedList);
@@ -104,11 +160,11 @@ const MerchantProducts: React.FC = () => {
             const newProduct = {
                 id: `mp${Date.now()}`,
                 name: form.name,
-                catalogItemId: form.relatedCatalogItemId, // Link to catalog
+                catalogItemId: form.relatedCatalogItemId,
                 sku: form.sku,
                 description: form.description,
                 price,
-                stock, // Mock initial stock
+                stock,
                 lowStockThreshold: lowStock,
                 category: form.category,
                 image: form.image || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=100',
@@ -127,12 +183,12 @@ const MerchantProducts: React.FC = () => {
             sku: product.sku || '',
             description: product.description || '',
             price: String(product.price || 0),
-            stock: String(product.stock !== undefined ? product.stock : 50), // Default mock stock if missing
+            stock: String(product.stock !== undefined ? product.stock : 50),
             lowStockThreshold: String(product.lowStockThreshold || 10),
             category: product.category || 'Fresh Produce',
             image: product.image || '',
             relatedCatalogItemId: product.catalogItemId || '',
-            taxable: product.taxable !== false // Default to true if undefined
+            taxable: product.taxable !== false
         });
         setShowAddModal(true);
     };
@@ -270,6 +326,14 @@ const MerchantProducts: React.FC = () => {
                 </table>
             </div>
 
+            {/* Scanner Overlay */}
+            {showScanner && (
+                <ScannerModal
+                    onClose={() => setShowScanner(false)}
+                    onScan={handleScanSuccess}
+                />
+            )}
+
             {/* Add/Edit Modal */}
             {showAddModal && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 animate-fade-in">
@@ -289,7 +353,6 @@ const MerchantProducts: React.FC = () => {
                                         onChange={e => {
                                             setCatalogSearch(e.target.value);
                                             setShowCatalogDropdown(true);
-                                            // Also update name if user wants to type manually
                                             if (!form.relatedCatalogItemId) {
                                                 setForm(prev => ({ ...prev, name: e.target.value }));
                                             }
@@ -347,7 +410,7 @@ const MerchantProducts: React.FC = () => {
                                             value={form.name}
                                             onChange={e => setForm({ ...form, name: e.target.value })}
                                             className="w-full px-4 py-3 border border-[var(--glass-border)] rounded-lg bg-gray-50"
-                                            readOnly={!!form.relatedCatalogItemId && !editingProduct} // Lock name if catalog item selected (optional UX choice)
+                                            readOnly={!!form.relatedCatalogItemId && !editingProduct}
                                         />
                                         {form.relatedCatalogItemId && (
                                             <button
@@ -363,14 +426,29 @@ const MerchantProducts: React.FC = () => {
                                     </div>
                                 </div>
                                 <div>
-                                    <label className="block text-sm text-[var(--text-muted)] mb-1">SKU</label>
-                                    <input type="text" value={form.sku} onChange={e => setForm({ ...form, sku: e.target.value })} className="w-full px-4 py-3 border border-[var(--glass-border)] rounded-lg font-mono text-sm" placeholder="e.g. FR-001" />
+                                    <label className="block text-sm text-[var(--text-muted)] mb-1">SKU / Barcode</label>
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="text"
+                                            value={form.sku}
+                                            onChange={e => setForm({ ...form, sku: e.target.value })}
+                                            className="w-full px-4 py-3 border border-[var(--glass-border)] rounded-lg font-mono text-sm"
+                                            placeholder="e.g. 12345..."
+                                        />
+                                        <button
+                                            onClick={() => setShowScanner(true)}
+                                            className="px-3 bg-gray-100 hover:bg-gray-200 rounded-lg text-lg"
+                                            title="Scan Barcode"
+                                            type="button"
+                                        >
+                                            📷
+                                        </button>
+                                    </div>
                                 </div>
                                 <div>
                                     <label className="block text-sm text-[var(--text-muted)] mb-1">Category</label>
                                     <select value={form.category} onChange={e => setForm({ ...form, category: e.target.value })} className="w-full px-4 py-3 border border-[var(--glass-border)] rounded-lg">
                                         <option value="">Select Category</option>
-                                        {/* Fallback defaults if catalog is empty, otherwise master list */}
                                         {['Dairy & Refrigerated', 'Bakery & Grains', 'Pantry Staples', 'Breakfast & Beverages', 'Produce & Frozen', 'Snacks & Household'].map(c => (
                                             <option key={c} value={c}>{c}</option>
                                         ))}
@@ -424,5 +502,4 @@ const MerchantProducts: React.FC = () => {
         </div>
     );
 };
-
 export default MerchantProducts;

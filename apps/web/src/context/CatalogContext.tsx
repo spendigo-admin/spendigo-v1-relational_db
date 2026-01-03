@@ -10,6 +10,7 @@ export interface CatalogItem {
     description: string;
     unit: string;
     taxable: boolean;
+    barcode?: string; // Added barcode support
 }
 
 interface CatalogContextType {
@@ -50,7 +51,8 @@ export const CatalogProvider: React.FC<{ children: ReactNode }> = ({ children })
         const lowerQ = query.toLowerCase();
         return catalog.filter(item =>
             item.name.toLowerCase().includes(lowerQ) ||
-            item.category.toLowerCase().includes(lowerQ)
+            item.category.toLowerCase().includes(lowerQ) ||
+            (item.barcode && item.barcode.includes(lowerQ))
         );
     };
 
