@@ -1,92 +1,72 @@
-# Task: Mobile Expansion & System Cleanup
+# Task: Phase 3 - Security Hardening & Mobile Launch
 
-## 1. Cleanup & Linting
-- [x] Resolve "Unknown at rule @tailwind" lint warnings in `design-system.css`
-- [x] Verify no other build or lint errors exist
+## 1. Mobile Expansion (Capacitor) 📱
+- [ ] **Environment Configuration**
+    - [ ] Review `capacitor.config.ts` for correct production URL
+    - [ ] Ensure `google-services.json` (Android) and `GoogleService-Info.plist` (iOS) are present (or documented as manual steps)
+- [ ] **Native Build**
+    - [ ] Run `npx cap sync` to update native projects
+    - [ ] Verify assets (icons/splash screens) are generated
+- [ ] **Feature Verification on Native**
+    - [ ] Test **Camera** permission for Barcode Scanner
+    - [ ] Test **Geolocation** permission for Store Finder
 
-## 2. Mobile Expansion (Capacitor)
-- [ ] Check Firebase environment variables configuration for native platforms
-- [ ] Run `npx cap sync` and verify assets are correctly applied
-- [ ] Attempt CocoaPods installation and sync for iOS (if possible)
+## 2. Security Hardening (Critical) 🔒
+- [ ] **Firestore Rules Overhaul**
+    - [ ] Lock down `ads` collection (Admin write / Public read)
+    - [ ] Lock down `stats` collection (Admin write / Public read)
+    - [ ] Strict validation for `orders` (User can only read/write own)
+    - [ ] Strict validation for `users` (User can only edit own profile)
+- [ ] **Infrastructure Secrets**
+    - [ ] Audit `.env` usage
+    - [ ] Ensure API keys are restricted in Google Cloud Console
 
-## 3. Product & Cart Fixes
-- [x] Investigate and fix broken image icons in `SmartCartWishlist.tsx`
-- [x] Resolve broken image links in `SmartCartWishlist` component
-- [x] **SmartCart Layout & Savings Refactor**
-    - [x] Implement responsive side-by-side grid layout
-    - [x] Fix sticky summary card
-    - [x] Update savings calculation to use real price comparisons
-    - [x] Fix optimizer selection bug (cheapest store logic)
-- [x] **Product Search**
-    - [x] Enable Header Search Bar
-    - [x] Implement Search Page with dynamic data
-- [x] Audit `StoreDetail.tsx` and other data files for broken image URLs (Refactored `ProductDetail.tsx` to use real data)
+## 3. Financial Infrastructure (Stripe Connect) 💳
+*(Required for Marketplace Compliance)*
+- [ ] **Connect Onboarding**
+    - [ ] Create UI for Merchants to "Connect with Stripe"
+    - [ ] Implement OAuth flow for Express Accounts
+- [ ] **Payment Splitting**
+    - [ ] Update `create-checkout-session` to use `transfer_data` (Platform Fee vs Merchant Payout)
+- [ ] **Refund Portal**
+    - [ ] Add "Issue Refund" button to Admin Order View
 
-## 4. System Admin Dashboard
-- [x] Implement System Admin Dashboard (`/admin`)
-- [x] Extend System Admin Dashboard
-    - [x] Implement Audit Logs route
-    - [x] Implement Flyer Moderation routed (`/admin`)
-    - [x] Implement Store Management (`/admin/stores`)
-        - [x] **New:** Subscription Status Sync & Email One-Click Fix
-    - [x] Implement Admin Settings (`/admin/settings`)
-- [x] **Merchant Team Management**
-    - [x] Real-time Team List (Active/Pending)
-    - [x] Secure "Remove Member" Function
-    - [x] Auto-activation on Login
-- [x] Add basic stats, user management, and store management views
-- [x] Add navigation to Admin Dashboard in the footer or profile menu
+## 4. Stability & Quality 🧪
+- [ ] **Error Monitoring**
+    - [ ] Install Sentry for React
+    - [ ] Verify error reporting in production
+- [ ] **Type Safety**
+    - [ ] Enable `strict: true` in `tsconfig.json` locally and fix P0 errors
 
 ## 5. Verification
 - [ ] Run `npm run build` to ensure no regressions
-- [ ] Verify UI on mobile-simulated views (browser)
-- [ ] Verify Admin Dashboard functionality
+- [ ] Verify Admin Dashboard real-time stats
+- [ ] Verify Carousel Ads appearance on Home
 
-## 6. Architectural Review & Remediation
-- [x] **Data Isolation (RBAC & Multi-Tenancy)**
-    - [x] Isolate `CartContext` (User-specific storage)
-    - [x] Isolate `NotificationContext` (User-specific storage)
-    - [x] Isolate `WishlistContext` (User-specific storage)
-- [ ] **Mobile & Performance Polish**
-    - [x] Verify `capacitor.config.ts` settings applied correctly
-- [ ] Ensure all mock data is dynamic/reloadable
+---
 
-## 7. Order Routing Fix (Consumer -> Merchant)
-- [x] **Dual-Write Architecture (OrderContext)**
-    - [x] Update `addOrder` to write to `spendigo_store_orders_STOREID` in addition to user history.
-- [x] **Merchant Portal Integration**
-    - [x] Update `MerchantOrders` to read from `spendigo_store_orders_STOREID`.
-- [x] **Merchant Portal Integration**
-    - [x] Update `MerchantOrders` to read from `spendigo_store_orders_STOREID`.
-    - [x] Unify `Order` TypeScript interfaces between context and page.
+## 6. Completed Features (Log) ✅
+<details>
+<summary>View Recently Completed Items</summary>
 
-## 8. Merchant Analytics
-- [x] **Revenue & Order Tracking**
-    - [x] Implement `calculateRevenueStats` utility.
-    - [x] Update `MerchantDashboard` to display real Daily/Weekly/Monthly stats.
-    - [x] Add time-period selector.
+- **Growth & Engagement**
+    - [x] **Carousel Ads System**: Admin Manager, Consumer Component, Tracking
+    - [x] **Survey Board**: Admin Creator, Consumer View
+    - [x] **Digital Flyers**: PDF-like Viewer, "Nearby Flyers" feed
+    - [x] **Traffic Tracking**: Google Analytics + Custom Firestore Hooks
 
+- **Merchant Tools**
+    - [x] **Barcode Scanning**: HTML5-QRCode integration
+    - [x] **Revenue Analytics**: Daily/Weekly stats
+    - [x] **Team Management**: Staff invitations
 
-## 9. Growth & Engagement Features
-- [x] **Carousel Ads System**
-    - [x] Create `ads` collection in Firestore
-    - [x] Admin UI: Campaign Manager (Upload Banners, Set Dates, Set Links)
-    - [x] Mobile/Web UI: Inject dynamic ad slides into Home Carousel
-    - [x] Tracking: Basic view/click tracking
-- [x] **Survey Board**
-    - [x] Admin UI: Create/Manage Polls & Surveys
-    - [x] Consumer UI: "Survey Board" page or modal popup
-    - [ ] Incentive: Award "Points" or "Badges" for completion
-- [x] **Digital Flyers Integration**
-    - [x] Merchant UI: PDF Upload / Flyer Builder (Exists)
-    - [x] Consumer UI: Interactive Flyer Viewer (Click product to add to cart)
-    - [x] Home Feed: "Nearby Flyers" horizontal scroll section
-- [x] **Platform Traffic Tracking**
-    - [x] Integrate Firebase Analytics / Google Analytics 4
-    - [x] Implement "Traffic" view in Admin Dashboard
-    - [x] Track Daily Active Users (DAU) & Monthly Active Users (MAU)
+- **System Admin**
+    - [x] **Dashboard**: Real-time traffic, health metrics, activity logs
+    - [x] **Store Management**: Approval workflow, Demo Relocation Tool
+    - [x] **Ad Manager**: Campaign creation & metrics
 
-## 10. Merchant Experience
-- [x] **Barcode Scanning**
-    - [x] Integrate `html5-qrcode` library for camera scanning
-    - [x] Add "Scan Barcode" button to Product Entry form
+- **Core & Architecture**
+    - [x] **Data Isolation**: RBAC for Cart/Wishlist
+    - [x] **Order Routing**: Dual-write fix for Merchant Orders
+    - [x] **Search**: Global Product Search
+</details>
