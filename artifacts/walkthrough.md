@@ -1,6 +1,28 @@
-# Walkthrough: Fixing Broken Product Images and Admin Routing
+# Walkthrough: System Updates (Merchant Teams & Admin Tools)
 
-I have resolved the issue where multiple product images (Whole Milk, Cheddar Cheese, Baguette, Black Beans, etc.) were broken in the SmartCart and Store Detail pages. I also added new Admin routes as requested.
+This document tracks the latest system resolves, including Merchant Team Management, Admin Store Tools, and Product Image fixes.
+
+## Latest Update: Merchant & Admin Enhancements
+**Date:** Jan 2026
+**Focus:** Data Consistency, Team Management, and Subscription Sync.
+
+I have implemented a robust solution for managing Merchant Teams and syncing Store Subscription data.
+
+### 1. Merchant Team Management
+*   **Real-time Team Sync**: The "Team & Roles" tab now queries live user data.
+*   **Multi-Owner Support**: Stores can now have multiple "OWNER" accounts (e.g., Mac's Corner).
+*   **Invite & Remove**: Secure Cloud Functions (`inviteTeamMember`, `removeTeamMember`) handle team access.
+*   **Auto-Activation**: Invited users become 'Active' automatically upon login.
+*   **[Read the Full Walkthrough here](./walkthrough_admin_merchant_features.md)**
+
+### 2. Admin Store Management
+*   **Subscription Visibility**: Admin panel now shows live Tier, Status, and Expiry dates.
+*   **Email Sync**: Admins can fix mismatches between Store Email and Owner Email with one click.
+
+---
+
+## Previous Update: Fixing Broken Product Images
+I resolved the issue where multiple product images...
 
 ## Changes
 

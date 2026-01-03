@@ -28,7 +28,12 @@
     - [x] Implement Audit Logs route
     - [x] Implement Flyer Moderation routed (`/admin`)
     - [x] Implement Store Management (`/admin/stores`)
+        - [x] **New:** Subscription Status Sync & Email One-Click Fix
     - [x] Implement Admin Settings (`/admin/settings`)
+- [x] **Merchant Team Management**
+    - [x] Real-time Team List (Active/Pending)
+    - [x] Secure "Remove Member" Function
+    - [x] Auto-activation on Login
 - [x] Add basic stats, user management, and store management views
 - [x] Add navigation to Admin Dashboard in the footer or profile menu
 
