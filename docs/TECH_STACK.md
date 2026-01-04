@@ -84,12 +84,12 @@ The current implementation uses **Firebase** instead of the originally planned P
 
 | Category | Service | Status |
 |----------|---------|--------|
-| **Auth** | Firebase Auth | ✅ Implemented |
+| **Auth** | Firebase Auth (Email + Google SSO) | ✅ Implemented |
 | **Database** | Cloud Firestore | ✅ Implemented |
 | **Storage** | Firebase Storage | ✅ Implemented |
-| **Analytics** | Firebase Analytics | 🔜 Planned |
-| **Monitoring** | Sentry / LogRocket | 🔜 Planned |
-| **Payments** | Stripe Connect | ✅ Implemented (Test Mode) |
+| **Analytics** | Firebase + Custom Firestore Hooks | ✅ Implemented |
+| **Monitoring** | Sentry | 🔜 Planned |
+| **Payments** | Stripe Checkout (Subscriptions) | ✅ Implemented |
 | **Geocoding** | OpenStreetMap (Nominatim) | ✅ Implemented |
 | **Email** | Trigger Email Extension | ✅ Implemented |
 

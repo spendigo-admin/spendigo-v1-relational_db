@@ -275,28 +275,23 @@ Proprietary - All rights reserved.
 
 ## 🎯 Roadmap
 
-### ✅ Completed (Phase 1-9)
-- Core shopping experience
-- Merchant order management (with Hold/Resume & Rejection Reasons)
-- Admin panel with audit logs
-- Real-time Firestore sync & In-App Notifications
-- Real-time store geocoding & proximity search
-- **Subscription System:** Tiers, Upgrades, Downgrades, Promo Codes
-- **Performance:** Image optimization (Lazy/Async/Will-Change)
-- **Admin Tools:** Subscription monitoring in Store Management
-- Production build verification
+### ✅ Completed (Phase 1-10)
+- **Core Experience**: Shopping, Order Management, Real-time Sync
+- **Growth Tools**: Carousel Ads, Survey Board, Digital Flyers, Traffic Analytics
+- **Merchant Tools**: Barcode Scanning, Revenue Analytics, Subscriptions
+- **Security**: RBAC Enforcement, Audit Logs, Deployment Hardening
+- **Infrastructure**: Production Build, Image Optimization
 
-### 🔜 Q1 2026
-- Real Stripe Connect integration
-- Firestore security rules hardening (RBAC enforcement)
-- CI/CD pipeline (GitHub Actions)
-- Error monitoring (Sentry)
+### 🔜 Q1 2026 (Pre-Beta)
+- Native Mobile QA (iOS/Android)
+- Sentry Error Monitoring
+- Legal Compliance (Privacy/TOS)
 
-### 🔮 Q2-Q3 2025
+### 🔮 Future Enhancements
+- Stripe Connect (Marketplace Split)
 - Server-side rendering (Next.js migration)
-- Advanced analytics & Demand forecasting
-- Native mobile push notifications (FCM)
-- Multi-region deployment
+- Native Push Notifications (FCM)
+- Advanced Search (Algolia)
 
 ---
 

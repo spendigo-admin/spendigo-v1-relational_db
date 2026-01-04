@@ -140,7 +140,7 @@ sequenceDiagram
 | Feature | Implementation | Status |
 |---------|----------------|--------|
 | **Authentication** | Firebase Auth (Email/Password) | ✅ Complete |
-| **SSO** | Google/Facebook (mock ready) | 🔧 Planned |
+| **SSO** | Google (Firebase Auth) | ✅ Complete |
 | **Authorization** | RBAC (Consumer/Merchant/Admin) | ✅ Complete |
 | **Route Guards** | Layout-level checks | ✅ Complete |
 | **Audit Logging** | SHA-256 hash chain | ✅ Complete |
@@ -201,23 +201,20 @@ npx cap open android # Android Studio
 
 ## 9. Future Enhancements
 
-### Short-Term (Q1 2025)
-- [ ] Real Stripe Connect integration
-- [ ] Firebase Cloud Functions for order processing
-- [ ] Firestore security rules hardening
-- [ ] CI/CD pipeline (GitHub Actions)
+### Short-Term (Q1 2026)
+- [ ] Native Mobile QA (iOS/Android)
+- [ ] Sentry Error Monitoring
+- [ ] Privacy & TOS Compliance
 
-### Medium-Term (Q2-Q3 2025)
+### Medium-Term (Post-Beta)
+- [ ] Stripe Connect (Marketplace Split)
+- [ ] Native Push Notifications (FCM)
+- [ ] Advanced Search (Algolia)
+
+### Long-Term (Growth)
 - [ ] Server-side rendering (Next.js migration)
-- [ ] Advanced analytics (Firebase Analytics)
-- [ ] Error monitoring (Sentry)
-- [ ] Push notifications (Firebase Cloud Messaging)
-
-### Long-Term (Q4 2025+)
-- [ ] GraphQL API layer (for complex queries)
-- [ ] Multi-region deployment
 - [ ] ML-based product recommendations
-- [ ] Custom backend microservices (if needed)
+- [ ] Multi-region deployment
 
 ---
 

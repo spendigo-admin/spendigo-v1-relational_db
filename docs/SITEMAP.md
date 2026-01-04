@@ -11,6 +11,7 @@
 - [How It Works](http://192.168.2.54:5173/how-it-works) - Explainer page for the Optimizer.
 - [Shopping Cart](http://192.168.2.54:5173/cart) - Manage items and quantities.
 - [Checkout](http://192.168.2.54:5173/checkout) - Payment, delivery address, and order placement.
+- [Surveys](http://192.168.2.54:5173/surveys) - **New**: Participate in polls and provide feedback.
 
 ### Store & Product (Examples)
 - [Store Detail (FreshMart)](http://192.168.2.54:5173/store/1) - Products, flyers, deals, and ratings.
@@ -41,5 +42,7 @@
 - [System Dashboard](http://192.168.2.54:5173/admin/dashboard) - **Overview**: Platform health, revenue stats, system alerts.
 - [User Management](http://192.168.2.54:5173/admin/users) - **Users**: View/Ban consumers and merchants.
 - [Store Management](http://192.168.2.54:5173/admin/stores) - **Stores**: Approve new merchants, oversee compliance.
+- [Ad Campaigns](http://192.168.2.54:5173/admin/ads) - **Ads**: Manage carousel campaigns and sponsorships.
+- [Survey Manager](http://192.168.2.54:5173/admin/surveys) - **Surveys**: Create polls and view responses.
 - [Audit Logs](http://192.168.2.54:5173/admin/audit-logs) - **Security**: View system access logs and critical actions.
 - [Settings](http://192.168.2.54:5173/admin/settings) - **Config**: Global platform settings.

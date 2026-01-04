@@ -175,5 +175,13 @@ service cloud.firestore {
         allow write: if userId == request.auth.uid;
       }
     }
+
+    // 15. STATS (Traffic Analytics)
+    // - Public read for dashboard display
+    // - Authenticated write for incrementing counters
+    match /stats/{docId} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
   }
 }

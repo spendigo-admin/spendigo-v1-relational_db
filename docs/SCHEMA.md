@@ -1,8 +1,8 @@
 # Spendigo SmartCart — Database Schema
 
-**Last Updated**: 2025-12-24  
+**Last Updated**: 2026-01-03  
 **Database**: Cloud Firestore (NoSQL)  
-**Status**: Production Implementation
+**Status**: Features Complete & Rules Enforced
 
 ---
 
@@ -26,6 +26,9 @@ Spendigo uses **Cloud Firestore**, a NoSQL document database, instead of the ori
 /carts                  # Shopping carts
 /wishlists              # User wishlists
 /settings               # Platform-wide settings
+/ads                    # Carousel ad campaigns
+/surveys                # Consumer surveys & polls
+/stats                  # Traffic analytics & counters
 ```
 
 ### 2.2 Subcollections
@@ -315,54 +318,75 @@ interface PlatformSettings {
 }
 ```
 
+### 3.10 Ads Collection (`/ads/{adId}`)
+
+```typescript
+interface AdCampaign {
+  id: string;
+  title: string;
+  description: string;
+  imageUrl: string;
+  linkUrl: string;
+  startDate: string;  // ISO date
+  endDate: string;    // ISO date
+  status: 'active' | 'draft' | 'archived';
+  priority: number;
+  views: number;
+  clicks: number;
+}
+```
+
+### 3.11 Surveys Collection (`/surveys/{surveyId}`)
+
+```typescript
+interface Survey {
+  id: string;
+  requestId: string;
+  title: string;
+  description: string;
+  questions: SurveyQuestion[];
+  createdAt: string;
+  isActive: boolean;
+  
+  // Subcollection: /responses/{userId}
+}
+
+interface SurveyQuestion {
+  id: string;
+  type: 'text' | 'rating' | 'choice';
+  text: string;
+  options?: string[]; // For choice type
+}
+```
+
+### 3.12 Stats Collection (`/stats/{docId}`)
+
+```typescript
+interface TrafficStats {
+  id: string; // e.g., 'daily_2025-01-01' or 'global_counters'
+  date: string;
+  visitors: number;
+  pageViews: number;
+  uniqueUsers: number;
+}
+```
+
 ---
 
 ## 4. Security Rules (Firestore Rules)
 
-**Current Status**: Development mode (relaxed rules)
+**Current Status**: ✅ **RBAC Enforced** (Production Ready)
 
-**Production Rules** (to be implemented):
+The `firestore.rules` file enforces strict Role-Based Access Control (RBAC) across all 15 collections.
 
-```javascript
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    
-    // Users: Read own, write own
-    match /users/{userId} {
-      allow read: if request.auth.uid == userId;
-      allow write: if request.auth.uid == userId;
-    }
-    
-    // Stores: Public read, owner write
-    match /stores/{storeId} {
-      allow read: if true;
-      allow write: if request.auth.token.storeId == storeId;
-    }
-    
-    // Orders: Consumer read own, Merchant read own store
-    match /orders/{orderId} {
-      allow read: if request.auth.uid == resource.data.customerId
-                  || request.auth.token.storeId == resource.data.storeId;
-      allow create: if request.auth.uid != null;
-      allow update: if request.auth.token.storeId == resource.data.storeId;
-    }
-    
-    // Catalog: Public read, admin write
-    match /catalog/{productId} {
-      allow read: if true;
-      allow write: if request.auth.token.role == 'admin';
-    }
-    
-    // Audit Logs: Append-only
-    match /audit_logs/{logId} {
-      allow read: if request.auth.token.role == 'admin';
-      allow create: if request.auth.uid != null;
-      allow update, delete: if false;  // Immutable
-    }
-  }
-}
-```
+**Key Rule Highlights**:
+- **Users**: Read/Write own profile only.
+- **Stores**: Public read, Owner/Admin write.
+- **Orders**: Consumer (Own), Merchant (Assigned Store), or Admin.
+- **Audit Logs**: Append-only (immutable), Admin read.
+- **Stats**: Public read, Authenticated write (for counters).
+
+*See `firestore.rules` in the root directory for the complete definition.*
 
 ---
 
@@ -378,6 +402,8 @@ erDiagram
     orders ||--o{ order_items : contains
     users ||--o{ carts : has
     users ||--o{ notifications : receives
+    ads }|..|{ users : views
+    surveys ||--o{ survey_responses : contains
     
     users {
         string id PK

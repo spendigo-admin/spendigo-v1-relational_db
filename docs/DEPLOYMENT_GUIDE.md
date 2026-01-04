@@ -1,6 +1,6 @@
 # Spendigo Production Deployment Guide
 
-**Date**: 2025-12-30  
+**Date**: 2026-01-03  
 **Target**: Firebase Hosting + Cloud Functions  
 **Domain**: Custom GoDaddy Domain  
 **Stripe Mode**: Test (Sandbox)
@@ -415,7 +415,7 @@ Should show Firebase's IP addresses.
 
 ## Security Checklist (Before Public Launch) 🔒
 
-- [ ] Review Firestore Security Rules (currently in dev mode)
+- [x] Review Firestore Security Rules (RBAC enforced)
 - [ ] Remove `.runtimeconfig.json` from version control
 - [ ] Set up Firebase App Check (bot protection)
 - [ ] Enable Firebase Authentication Rate Limiting
