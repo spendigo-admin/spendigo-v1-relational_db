@@ -15,7 +15,7 @@ const MasterCatalog: React.FC = () => {
     if (loading) return <div className="p-8">Loading Catalog...</div>;
 
     return (
-        <div>
+        <div className="p-6 h-[calc(100vh-64px)] overflow-y-auto">
             {/* Header */}
             <div className="flex items-center justify-between mb-6">
                 <div>

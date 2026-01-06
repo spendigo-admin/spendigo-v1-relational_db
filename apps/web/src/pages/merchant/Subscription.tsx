@@ -16,19 +16,19 @@ const Subscription: React.FC = () => {
     const [successMessage, setSuccessMessage] = React.useState<string | null>(null);
     const [payments, setPayments] = React.useState<any[]>([]);
     const [loadingPayments, setLoadingPayments] = React.useState(true);
-    const [promoCode, setPromoCode] = React.useState('');
+
+    // Promo Code Logic
+    const [promoCode, setPromoCode] = React.useState('WELCOME2026');
+    const [activePromo, setActivePromo] = React.useState('WELCOME2026'); // Default applied
 
     // 1. Check for success from Stripe
     React.useEffect(() => {
         const sessionId = searchParams.get('session_id');
         if (sessionId) {
             setSuccessMessage("🎉 Payment Received! We are activating your new features...");
-            // Clean up URL
             const newParams = new URLSearchParams(searchParams);
             newParams.delete('session_id');
             setSearchParams(newParams);
-
-            // Auto-hide success message after 8 seconds
             setTimeout(() => setSuccessMessage(null), 8000);
         }
     }, [searchParams]);
@@ -50,9 +50,9 @@ const Subscription: React.FC = () => {
             }
         };
         fetchHistory();
-    }, [user?.id, currentTier]); // Refresh when tier changes
+    }, [user?.id, currentTier]);
 
-    // 3. Clear processing state if the tier changes (real-time via AuthContext)
+    // 3. Keep UI consistent
     React.useEffect(() => {
         if (processingId && currentTier === processingId) {
             setProcessingId(null);
@@ -60,11 +60,21 @@ const Subscription: React.FC = () => {
         }
     }, [currentTier, processingId]);
 
+    const handleApplyPromo = () => {
+        if (promoCode === 'WELCOME2026') {
+            setActivePromo('WELCOME2026');
+            addNotification({ type: 'system', title: 'Offer Applied', message: 'New Merchant prices loaded.' });
+        } else {
+            setActivePromo('');
+            addNotification({ type: 'alert', title: 'Invalid Code', message: 'Code not recognized.' });
+        }
+    };
+
     const tiers = [
         {
             id: 'free',
             name: 'Starter',
-            price: '$0',
+            basePrice: '$0',
             period: '/month',
             description: 'Essential tools to get visible.',
             color: 'bg-gray-100 border-gray-200',
@@ -79,7 +89,7 @@ const Subscription: React.FC = () => {
         {
             id: 'core',
             name: 'Core Store',
-            price: '$49',
+            basePrice: '$49',
             period: '/month',
             description: 'Recommended for active stores.',
             color: 'bg-blue-50 border-blue-200 ring-2 ring-blue-500',
@@ -94,7 +104,7 @@ const Subscription: React.FC = () => {
         {
             id: 'growth',
             name: 'Growth',
-            price: '$99',
+            basePrice: '$99',
             period: '/month',
             description: 'Maximize sales & visibility.',
             color: 'bg-purple-50 border-purple-200',
@@ -109,8 +119,6 @@ const Subscription: React.FC = () => {
     ];
 
     const isViewOnly = user?.merchantRole === 'STAFF';
-
-
 
     const handleUpgrade = async (tierId: string, price: string) => {
         const isFree = tierId === 'free';
@@ -130,13 +138,12 @@ const Subscription: React.FC = () => {
                 type: 'warning'
             };
         } else if (user?.subscriptionStatus === 'active') {
-            // Changing paid plans
-            const isUpgrade = tierId === 'growth' && user?.subscriptionTier === 'core'; // Simple check
+            const isUpgrade = tierId === 'growth' && user?.subscriptionTier === 'core';
             confirmOptions = {
                 title: isUpgrade ? 'Confirm Upgrade' : 'Confirm Plan Change',
                 message: isUpgrade
                     ? `Upgrade to ${tierId}? You will be charged the difference immediately.`
-                    : `Switch to ${tierId}? This change will take effect at the start of your next billing cycle. No refund will be issued for the current month.`,
+                    : `Switch to ${tierId}? This change will take effect at the start of your next billing cycle.`,
                 confirmText: isUpgrade ? 'Upgrade Now' : 'Switch Plan',
                 type: 'info'
             };
@@ -146,30 +153,24 @@ const Subscription: React.FC = () => {
 
         if (confirmed) {
             setProcessingId(tierId);
-
             try {
                 const { getFunctions, httpsCallable } = await import('firebase/functions');
                 const functions = getFunctions();
 
-                // If user is already active and just changing plans (or cancelling to free)
                 if (user?.subscriptionStatus === 'active' || isFree) {
                     const updateSubscriptionPlan = httpsCallable(functions, 'updateSubscriptionPlan');
                     const result: any = await updateSubscriptionPlan({ newTier: tierId });
-
                     if (result.data.success) {
                         addNotification({ type: 'system', title: 'Start Updated', message: result.data.message });
-                        // Optimistic update handled by backend or listener, but we can force refresh if needed
-                        // For now, listener handles it.
                     }
                     setProcessingId(null);
                     return;
                 }
 
-                // Otherwise, New Subscription -> Checkout
                 const createCheckoutSession = httpsCallable(functions, 'createCheckoutSession');
                 const { data }: any = await createCheckoutSession({
                     tier: tierId,
-                    promoCode: promoCode
+                    promoCode: activePromo // Send the validated code
                 });
 
                 if (data && data.url) {
@@ -216,80 +217,112 @@ const Subscription: React.FC = () => {
                 {isViewOnly && (
                     <div className="mb-8 p-4 bg-orange-50 border border-orange-200 rounded-lg flex items-center justify-center gap-2 text-orange-800">
                         <span className="text-xl">🔒</span>
-                        <span className="font-medium">Subscription management is restricted to Owners and Managers. Contact your administrator to change plans.</span>
+                        <span className="font-medium">Subscription management is restricted to Owners and Managers.</span>
                     </div>
                 )}
 
                 <div className="grid md:grid-cols-3 gap-6">
-                    {tiers.map((tier) => (
-                        <div
-                            key={tier.id}
-                            className={`relative rounded-2xl p-6 border-2 transition-all ${currentTier === tier.id ? 'border-[var(--brand-primary)] shadow-lg scale-[1.02] z-10' : 'border-transparent bg-white shadow-sm hover:shadow-md'
-                                }`}
-                        >
-                            {tier.recommended && (
-                                <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide">
-                                    Recommended
-                                </div>
-                            )}
+                    {tiers.map((tier) => {
+                        // Calculate Display Price
+                        let displayPrice = tier.basePrice;
+                        let originalPrice = null;
 
-                            <h3 className="text-xl font-bold text-[var(--text-main)] mb-2">{tier.name}</h3>
-                            <div className="flex items-baseline gap-1 mb-4">
-                                <span className="text-3xl font-bold text-[var(--text-main)]">{tier.price}</span>
-                                <span className="text-[var(--text-muted)]">{tier.period}</span>
-                            </div>
-                            <p className="text-sm text-[var(--text-muted)] mb-6 h-10">{tier.description}</p>
+                        if (activePromo === 'WELCOME2026') {
+                            if (tier.id === 'core') {
+                                originalPrice = tier.basePrice;
+                                displayPrice = '$0';
+                            } else if (tier.id === 'growth') {
+                                originalPrice = tier.basePrice;
+                                displayPrice = '$9.90';
+                            }
+                        }
 
-                            <div className="mb-6">
-                                {currentTier === tier.id ? (
-                                    <div className="w-full py-3 rounded-lg bg-green-50 border border-green-200 text-green-700 font-bold text-center">
-                                        Current Plan
-                                        {user?.subscriptionEnd && (
-                                            <div className="text-xs font-normal mt-1 opacity-80">
-                                                Valid until {new Date(user.subscriptionEnd).toLocaleDateString()}
-                                            </div>
-                                        )}
+                        return (
+                            <div
+                                key={tier.id}
+                                className={`relative rounded-2xl p-6 border-2 transition-all ${currentTier === tier.id ? 'border-[var(--brand-primary)] shadow-lg scale-[1.02] z-10' : 'border-transparent bg-white shadow-sm hover:shadow-md'
+                                    }`}
+                            >
+                                {tier.recommended && (
+                                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide">
+                                        Recommended
                                     </div>
-                                ) : (
-                                    <button
-                                        onClick={() => handleUpgrade(tier.id, tier.price)}
-                                        disabled={isViewOnly || !!processingId}
-                                        className={`w-full py-3 rounded-lg font-bold transition-all ${isViewOnly
-                                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                                            : 'bg-[var(--brand-primary)] text-white hover:brightness-110'
-                                            }`}
-                                    >
-                                        {isViewOnly ? 'Contact Owner' : `Subscribe (${tier.price})`}
-                                    </button>
                                 )}
-                            </div>
 
-                            <div className="space-y-3">
-                                {tier.features.map((feature, i) => (
-                                    <div key={i} className="text-sm text-[var(--text-secondary)] flex items-start gap-2">
-                                        <span className={feature.startsWith('❌') ? 'opacity-50' : ''}>{feature}</span>
-                                    </div>
-                                ))}
+                                <h3 className="text-xl font-bold text-[var(--text-main)] mb-2">{tier.name}</h3>
+                                <div className="flex items-baseline gap-2 mb-4">
+                                    {originalPrice && (
+                                        <span className="text-lg text-gray-400 line-through font-medium">{originalPrice}</span>
+                                    )}
+                                    <span className={`text-3xl font-bold ${originalPrice ? 'text-green-600' : 'text-[var(--text-main)]'}`}>
+                                        {displayPrice}
+                                    </span>
+                                    <span className="text-[var(--text-muted)]">{tier.period}</span>
+                                </div>
+                                <p className="text-sm text-[var(--text-muted)] mb-6 h-10">{tier.description}</p>
+
+                                <div className="mb-6">
+                                    {currentTier === tier.id ? (
+                                        <div className="w-full py-3 rounded-lg bg-green-50 border border-green-200 text-green-700 font-bold text-center">
+                                            Current Plan
+                                        </div>
+                                    ) : (
+                                        <button
+                                            onClick={() => handleUpgrade(tier.id, displayPrice)}
+                                            disabled={isViewOnly || !!processingId}
+                                            className={`w-full py-3 rounded-lg font-bold transition-all ${isViewOnly
+                                                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                                : 'bg-[var(--brand-primary)] text-white hover:brightness-110'
+                                                }`}
+                                        >
+                                            {isViewOnly
+                                                ? 'Contact Owner'
+                                                : tier.id === 'free' ? 'Downgrade' : `Subscribe (${displayPrice})`
+                                            }
+                                        </button>
+                                    )}
+                                </div>
+
+                                <div className="space-y-3">
+                                    {tier.features.map((feature, i) => (
+                                        <div key={i} className="text-sm text-[var(--text-secondary)] flex items-start gap-2">
+                                            <span className={feature.startsWith('❌') ? 'opacity-50' : ''}>{feature}</span>
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
 
                 <div className="mt-12 bg-gray-50 rounded-xl p-6 text-center border border-gray-100 relative overflow-hidden">
                     <div className="absolute top-0 right-0 p-4 opacity-10 text-6xl rotate-12">🎟️</div>
                     <h3 className="font-bold text-[var(--text-main)] mb-2">Have a Promo Code?</h3>
                     <p className="text-[var(--text-muted)] mb-4 text-sm">Enter your code below to unlock special offers.</p>
-                    <div className="flex gap-2 max-w-xs mx-auto">
+                    <div className="flex gap-2 max-w-sm mx-auto">
                         <input
                             type="text"
-                            placeholder="e.g. FIRST100"
+                            placeholder="e.g. WELCOME2026"
                             value={promoCode}
                             onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                            onKeyDown={(e) => e.key === 'Enter' && handleApplyPromo()}
                             className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-center font-bold tracking-widest uppercase"
                         />
+                        <button
+                            onClick={handleApplyPromo}
+                            className="px-6 py-2 bg-gray-800 text-white rounded-lg font-bold hover:bg-black transition-colors"
+                        >
+                            Apply
+                        </button>
                     </div>
-                    {promoCode === 'FIRST100' && (
-                        <p className="text-green-600 text-xs font-bold mt-2 animate-bounce">Verify: 'FIRST100' applies 3 Months FREE!</p>
+                    {activePromo === 'WELCOME2026' && (
+                        <div className="mt-4 bg-green-100 text-green-800 p-3 rounded-lg text-sm animate-pulse border border-green-200">
+                            <p className="font-bold">✅ 'WELCOME2026' Applied!</p>
+                            <ul className="text-left mt-1 list-disc list-inside space-y-1 inline-block">
+                                <li><strong>Core Plan:</strong> FREE for 1 Year ($0/mo)</li>
+                                <li><strong>Growth Plan:</strong> 90% OFF for 1 Year ($9.90/mo)</li>
+                            </ul>
+                        </div>
                     )}
                 </div>
 
@@ -297,67 +330,30 @@ const Subscription: React.FC = () => {
                 <div className="mt-12">
                     <h2 className="text-xl font-bold text-[var(--text-main)] mb-6 flex items-center gap-2">
                         💳 Payment History
-                        <span className="text-xs font-normal text-[var(--text-muted)] bg-white px-2 py-0.5 rounded-full border">Last 12 Successful</span>
                     </h2>
-
                     <div className="bg-white rounded-2xl border border-[var(--glass-border)] overflow-hidden shadow-sm">
                         {loadingPayments ? (
-                            <div className="p-12 text-center text-[var(--text-muted)]">
-                                <div className="w-8 h-8 border-2 border-[var(--brand-primary)] border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-                                Loading history...
-                            </div>
+                            <div className="p-12 text-center text-[var(--text-muted)]">Loading history...</div>
                         ) : payments.length === 0 ? (
-                            <div className="p-12 text-center text-[var(--text-muted)]">
-                                <div className="text-3xl mb-2">📄</div>
-                                No successful payments found yet.
-                            </div>
+                            <div className="p-12 text-center text-[var(--text-muted)]">No successful payments found yet.</div>
                         ) : (
                             <div className="overflow-x-auto">
                                 <table className="w-full text-left border-collapse">
                                     <thead className="bg-[var(--surface-1)] border-b border-[var(--glass-border)]">
                                         <tr>
                                             <th className="p-4 text-xs font-bold text-[var(--text-muted)] uppercase">Date</th>
-                                            <th className="p-4 text-xs font-bold text-[var(--text-muted)] uppercase">Plan / Description</th>
+                                            <th className="p-4 text-xs font-bold text-[var(--text-muted)] uppercase">Plan</th>
                                             <th className="p-4 text-xs font-bold text-[var(--text-muted)] uppercase">Amount</th>
                                             <th className="p-4 text-xs font-bold text-[var(--text-muted)] uppercase">Status</th>
-                                            <th className="p-4 text-xs font-bold text-[var(--text-muted)] uppercase">Invoice</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-[var(--glass-border)]">
                                         {payments.map((payment) => (
-                                            <tr key={payment.id} className="hover:bg-gray-50/50 transition-colors">
-                                                <td className="p-4 text-sm whitespace-nowrap">
-                                                    {new Date(payment.date).toLocaleDateString(undefined, {
-                                                        year: 'numeric',
-                                                        month: 'short',
-                                                        day: 'numeric'
-                                                    })}
-                                                </td>
-                                                <td className="p-4 text-sm font-medium">
-                                                    <span className="capitalize">{payment.tier}</span>
-                                                </td>
-                                                <td className="p-4 text-sm font-bold">
-                                                    ${payment.amount.toFixed(2)} {payment.currency}
-                                                </td>
-                                                <td className="p-4">
-                                                    <span className="px-2 py-1 bg-green-100 text-green-700 text-[10px] font-bold rounded-full uppercase">
-                                                        {payment.status}
-                                                    </span>
-                                                </td>
-                                                <td className="p-4">
-                                                    {payment.pdf ? (
-                                                        <a
-                                                            href={payment.pdf}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            className="text-[var(--brand-primary)] hover:underline text-sm font-medium flex items-center gap-1"
-                                                        >
-                                                            PDF <span>↗️</span>
-                                                        </a>
-                                                    ) : (
-                                                        <span className="text-gray-400 text-sm italic">Not available</span>
-                                                    )}
-                                                </td>
+                                            <tr key={payment.id} className="hover:bg-gray-50/50">
+                                                <td className="p-4 text-sm">{new Date(payment.date).toLocaleDateString()}</td>
+                                                <td className="p-4 text-sm capitalize">{payment.tier}</td>
+                                                <td className="p-4 text-sm font-bold">${payment.amount.toFixed(2)}</td>
+                                                <td className="p-4"><span className="px-2 py-1 bg-green-100 text-green-700 text-[10px] font-bold rounded-full">{payment.status}</span></td>
                                             </tr>
                                         ))}
                                     </tbody>
@@ -365,9 +361,6 @@ const Subscription: React.FC = () => {
                             </div>
                         )}
                     </div>
-                    <p className="mt-4 text-xs text-[var(--text-muted)] text-center">
-                        Secure payments handled by Stripe. Need a formal receipt for tax purposes? Click "PDF" to download the official invoice.
-                    </p>
                 </div>
             </div>
         </div>

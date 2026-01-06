@@ -29,6 +29,7 @@ import Login from './pages/consumer/Login';
 import Register from './pages/consumer/Register';
 import ForgotPassword from './pages/consumer/ForgotPassword';
 import Profile from './pages/consumer/Profile';
+import ResetPassword from './pages/consumer/ResetPassword';
 import Search from './pages/consumer/Search';
 import OrderTracking from './pages/consumer/OrderTracking';
 import Notifications from './pages/consumer/Notifications';
@@ -123,6 +124,7 @@ function App() {
                                                                 <Route path="/forgot-password" element={<ForgotPassword />} />
                                                                 <Route path="/register" element={<Register />} />
                                                                 <Route path="/verify-email" element={<VerifyEmail />} />
+                                                                <Route path="/reset-password" element={<ResetPassword />} />
 
                                                                 {/* CONSUMER ROUTES wrapped in Layout */}
                                                                 <Route element={<ConsumerLayout />}>

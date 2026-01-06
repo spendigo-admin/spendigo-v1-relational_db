@@ -7,6 +7,7 @@ import { useConfirmation } from '../../context/ConfirmationContext';
 import { useCatalog } from '../../context/CatalogContext';
 import { useInventorySync } from '../../hooks/useInventorySync';
 import { Html5QrcodeScanner } from 'html5-qrcode';
+import { searchOpenFoodFacts } from '../../lib/openFoodFacts';
 
 // Scanner Component
 const ScannerModal: React.FC<{ onClose: () => void, onScan: (result: string) => void }> = ({ onClose, onScan }) => {
@@ -97,10 +98,48 @@ const MerchantProducts: React.FC = () => {
         taxable: true
     });
 
-    const handleScanSuccess = (decodedText: string) => {
+    const handleScanSuccess = async (decodedText: string) => {
         setForm(prev => ({ ...prev, sku: decodedText }));
         setShowScanner(false);
-        addNotification({ type: 'system', title: 'Scanned!', message: `SKU set to ${decodedText}` });
+
+        // 1. Check Master Catalog first (Internal)
+        const catalogItem = catalog.find(i => i.barcode === decodedText);
+        if (catalogItem) {
+            addNotification({ type: 'system', title: 'Found in Catalog', message: 'Loaded details from Spendigo Catalog.' });
+            setForm(prev => ({
+                ...prev,
+                sku: decodedText,
+                name: catalogItem.name,
+                description: catalogItem.description,
+                category: catalogItem.category, // Exact match
+                image: catalogItem.image,
+                relatedCatalogItemId: catalogItem.id,
+                taxable: catalogItem.taxable !== false
+            }));
+            return;
+        }
+
+        // 2. Check External API (OpenFoodFacts)
+        addNotification({ type: 'system', title: 'Searching...', message: 'Looking up barcode online...' });
+
+        try {
+            const result = await searchOpenFoodFacts(decodedText);
+            if (result.found) {
+                addNotification({ type: 'system', title: 'Found Online', message: `Details loaded for ${result.name}` });
+                setForm(prev => ({
+                    ...prev,
+                    sku: decodedText,
+                    name: result.name || prev.name,
+                    image: result.image || prev.image,
+                    description: result.description || prev.description || result.brand || ''
+                }));
+            } else {
+                addNotification({ type: 'system', title: 'Not Found', message: 'Barcode not found online. Please enter details.' });
+            }
+        } catch (error) {
+            console.error(error);
+            addNotification({ type: 'alert', title: 'Lookup Failed', message: 'Could not reach product database.' });
+        }
     };
 
     const filteredProducts = products.filter((p: any) =>
@@ -459,6 +498,24 @@ const MerchantProducts: React.FC = () => {
                             <div>
                                 <label className="block text-sm text-[var(--text-muted)] mb-1">Description</label>
                                 <textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} className="w-full px-4 py-3 border border-[var(--glass-border)] rounded-lg h-24 resize-none" placeholder="Product details..." />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm text-[var(--text-muted)] mb-1">Product Image URL</label>
+                                <div className="flex gap-4 items-start">
+                                    <input
+                                        type="text"
+                                        value={form.image}
+                                        onChange={e => setForm({ ...form, image: e.target.value })}
+                                        placeholder="https://..."
+                                        className="flex-1 px-4 py-3 border border-[var(--glass-border)] rounded-lg"
+                                    />
+                                    {form.image && (
+                                        <div className="w-16 h-16 rounded-lg border border-[var(--glass-border)] overflow-hidden bg-gray-50 flex-shrink-0">
+                                            <img src={form.image} alt="Preview" className="w-full h-full object-cover" onError={(e) => (e.target as HTMLImageElement).src = 'https://placehold.co/100?text=No+Img'} />
+                                        </div>
+                                    )}
+                                </div>
                             </div>
 
                             <div className="grid grid-cols-3 gap-4">

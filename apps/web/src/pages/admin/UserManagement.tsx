@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { collection, query, getDocs, doc, setDoc, updateDoc, where, deleteDoc } from 'firebase/firestore';
+import { collection, query, getDocs, doc, setDoc, updateDoc, where, deleteDoc, addDoc } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { db } from '../../lib/firebase';
 import { useAuth } from '../../context/AuthContext';
@@ -120,6 +120,25 @@ const UserManagement: React.FC = () => {
             };
 
             await setDoc(staffRef, staffData);
+
+            // Trigger Welcome Email
+            await addDoc(collection(db, 'mail'), {
+                to: newStaff.email,
+                message: {
+                    subject: 'Welcome to Spendigo Admin Team',
+                    html: `
+                        <h2>Welcome Aboard!</h2>
+                        <p>Hi ${newStaff.name},</p>
+                        <p>You have been granted <strong>${newStaff.role}</strong> access to the Spendigo Admin Console.</p>
+                        <p>
+                            <strong>Step 1:</strong> If you don't have an account, <a href="${window.location.origin}/register">Register Here</a> using this email.<br/>
+                            <strong>Step 2:</strong> <a href="${window.location.origin}/login">Log In</a> to access the dashboard.
+                        </p>
+                        <hr />
+                        <p style="font-size:12px;color:gray">If you did not expect this, please contact support.</p>
+                    `
+                }
+            });
 
             const usersRef = collection(db, 'users');
             const userQuery = query(usersRef, where('email', '==', newStaff.email.toLowerCase()));

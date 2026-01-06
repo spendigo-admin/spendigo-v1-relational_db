@@ -72,7 +72,7 @@ interface AuthContextType {
     loginWithGoogle: (targetRole?: 'consumer' | 'merchant') => Promise<boolean>;
     loginWithFacebook: () => Promise<boolean>;
     logout: () => void;
-    resetPassword: (email: string) => Promise<void>; // Added
+    resetPassword: (email: string, settings?: any) => Promise<void>;
     loading: boolean;
     can: (permission: Permission) => boolean;
     switchRole: (role: any) => void;
@@ -326,9 +326,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
     };
 
-    const resetPassword = async (email: string) => {
+    const resetPassword = async (email: string, settings?: any) => {
         try {
-            await sendPasswordResetEmail(auth, email);
+            await sendPasswordResetEmail(auth, email, settings);
             // Alert replaced by UI feedback in ForgotPassword.tsx (Caller needs to handle success)
         } catch (error: any) {
             console.error('Password reset failed:', error);

@@ -384,6 +384,61 @@ const MerchantDashboard: React.FC = () => {
 
                 {/* Sidebar / Insights */}
                 <div className="space-y-6">
+                    {/* Share Store Visibility Widget */}
+                    <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-6 rounded-xl text-white shadow-lg relative overflow-hidden group">
+                        <div className="relative z-10">
+                            <h3 className="font-bold text-lg mb-2 flex items-center gap-2">
+                                <span>🚀</span> Boost Visibility
+                            </h3>
+                            <p className="text-indigo-100 text-sm mb-4">
+                                Share your store link to get more customers.
+                            </p>
+
+                            <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm p-1 rounded-lg border border-white/20 mb-3">
+                                <input
+                                    readOnly
+                                    value={`${window.location.origin}/store/${store?.id}`}
+                                    className="flex-1 bg-transparent border-none text-xs text-white placeholder-white/50 focus:ring-0 px-2 truncate"
+                                />
+                                <button
+                                    onClick={() => {
+                                        navigator.clipboard.writeText(`${window.location.origin}/store/${store?.id}`);
+                                        // Simple toast fallback
+                                        const btn = document.getElementById('copy-btn');
+                                        if (btn) btn.innerText = '✅';
+                                        setTimeout(() => { if (btn) btn.innerText = '📋'; }, 2000);
+                                    }}
+                                    id="copy-btn"
+                                    className="p-1.5 bg-white text-indigo-600 rounded-md text-xs font-bold hover:bg-indigo-50 transition-colors"
+                                    title="Copy Link"
+                                >
+                                    📋
+                                </button>
+                            </div>
+
+                            <div className="flex gap-2">
+                                <a
+                                    href={`https://twitter.com/intent/tweet?text=Check%20out%20${encodeURIComponent(store?.name || 'our store')}%20on%20Spendigo!&url=${encodeURIComponent(`${window.location.origin}/store/${store?.id}`)}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex-1 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-center text-xs font-bold border border-white/10 transition-colors flex items-center justify-center gap-1"
+                                >
+                                    𝕏 Post
+                                </a>
+                                <a
+                                    href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(`${window.location.origin}/store/${store?.id}`)}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex-1 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-center text-xs font-bold border border-white/10 transition-colors flex items-center justify-center gap-1"
+                                >
+                                    Facebook
+                                </a>
+                            </div>
+                        </div>
+
+                        {/* Decor */}
+                        <div className="absolute -bottom-4 -right-4 w-24 h-24 bg-white/10 rounded-full blur-xl group-hover:bg-white/20 transition-all"></div>
+                    </div>
                     {/* Flyer Status Card - Gated */}
                     {can('flyers:write') && (
                         <div className="bg-white p-6 rounded-xl border border-[var(--glass-border)] shadow-sm">

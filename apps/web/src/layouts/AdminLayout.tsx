@@ -32,6 +32,7 @@ const AdminLayout: React.FC = () => {
 
     const menuItems = [
         { icon: '📊', label: 'Dashboard', path: '/admin/dashboard' },
+        { icon: '📦', label: 'Master Catalog', path: '/admin/catalog' },
         { icon: '👥', label: 'Users', path: '/admin/users' },
 
         { icon: '🏪', label: 'Stores', path: '/admin/stores' },

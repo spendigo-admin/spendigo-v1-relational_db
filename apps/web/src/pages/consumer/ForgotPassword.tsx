@@ -24,7 +24,10 @@ const ForgotPassword = () => {
         }
 
         try {
-            await resetPassword(email);
+            await resetPassword(email, {
+                url: window.location.origin + '/reset-password',
+                handleCodeInApp: true
+            });
             setMessage('Verification code has been sent to your email. Please check your inbox (and spam folder).');
         } catch (err: any) {
             // Friendly error messages
@@ -90,8 +93,8 @@ const ForgotPassword = () => {
                             type="submit"
                             disabled={isSubmitting || !!message}
                             className={`w-full py-3.5 rounded-[var(--radius-sm)] font-semibold text-white shadow-lg shadow-[var(--brand-primary)]/20 transition-all ${isSubmitting || message
-                                    ? 'bg-[var(--text-muted)] cursor-not-allowed opacity-70'
-                                    : 'bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)] hover:brightness-110 hover:scale-[1.02] active:scale-[0.98]'
+                                ? 'bg-[var(--text-muted)] cursor-not-allowed opacity-70'
+                                : 'bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)] hover:brightness-110 hover:scale-[1.02] active:scale-[0.98]'
                                 }`}
                         >
                             {isSubmitting ? (
