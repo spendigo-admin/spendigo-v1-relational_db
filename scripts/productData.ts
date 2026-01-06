@@ -1,4 +1,4 @@
-import { GROCERY_CATALOG } from './groceryCatalog';
+import { GROCERY_CATALOG } from './groceryCatalog.ts';
 
 // Unified store data for the entire application
 // All components should import STORE_DATA from this file

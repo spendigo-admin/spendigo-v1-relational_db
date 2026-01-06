@@ -36,10 +36,18 @@ service cloud.firestore {
 
     // --- SPENDIGO MASTER CATALOG ---
 
-    // 1. MASTER PRODUCTS (Spendigo-Owned, Immutable by Merchants)
+    // 1. MASTER PRODUCTS (Spendigo-Owned, Shared Growth)
     match /master_products/{masterProductId} {
       allow read: if true;
-      allow write: if isAdmin(); // Only Spendigo Admins (or AI) can create/update master products
+      allow create: if isAdmin() || isMerchant(); // Allow merchants to contribute new IDs
+      allow update, delete: if isAdmin(); // Only Admins can modify or remove established identity
+    }
+
+    // 1B. PENDING MASTER PRODUCTS (Auto-discovered by merchants, awaiting admin approval)
+    match /pending_master_products/{pendingProductId} {
+      allow read: if isAdmin(); // Only admins can view pending products
+      allow create: if isMerchant(); // Merchants can create pending products via auto-discovery
+      allow update, delete: if isAdmin(); // Only admins can commit or reject
     }
 
     // 2. MERCHANT PRODUCTS (Merchant-Owned, Inventory & Pricing)
@@ -50,8 +58,9 @@ service cloud.firestore {
       // Merchant Write Rules
       allow create: if isMerchant() 
         && request.resource.data.merchant_id == getMerchantStoreId()
-        // CRITICAL: Master product MUST exist
-        && exists(/databases/$(database)/documents/master_products/$(request.resource.data.master_product_id));
+        // CRITICAL: Product must exist in master OR pending
+        && (exists(/databases/$(database)/documents/master_products/$(request.resource.data.master_product_id))
+           || exists(/databases/$(database)/documents/pending_master_products/$(request.resource.data.master_product_id)));
 
       allow update: if isMerchant() 
         // 1. Must own the existing doc

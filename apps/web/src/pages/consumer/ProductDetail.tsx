@@ -155,6 +155,44 @@ const ProductDetail: React.FC = () => {
                             <p className="text-[var(--text-muted)] leading-relaxed">{displayProduct.description}</p>
                         </div>
 
+                        {/* Specifications */}
+                        <div className="bg-gray-50 rounded-lg p-4 text-sm space-y-2">
+                            <div className="flex justify-between border-b pb-2 border-gray-200">
+                                <span className="text-gray-500">Brand</span>
+                                <span className="font-medium">{displayProduct.brand_name || 'Generic'}</span>
+                            </div>
+                            {(displayProduct.unit_size || displayProduct.net_quantity_value) && (
+                                <div className="flex justify-between border-b pb-2 border-gray-200">
+                                    <span className="text-gray-500">Format</span>
+                                    <span className="font-medium">{displayProduct.unit_size || `${displayProduct.net_quantity_value} ${displayProduct.net_quantity_unit}`}</span>
+                                </div>
+                            )}
+                            {displayProduct.storage_type && (
+                                <div className="flex justify-between border-b pb-2 border-gray-200">
+                                    <span className="text-gray-500">Storage</span>
+                                    <span className="font-medium capitalize">{displayProduct.storage_type}</span>
+                                </div>
+                            )}
+                            {displayProduct.dietary_tags?.length > 0 && (
+                                <div className="pt-2">
+                                    <span className="text-gray-500 block mb-1">Dietary</span>
+                                    <div className="flex flex-wrap gap-2">
+                                        {displayProduct.dietary_tags.map((tag: string) => (
+                                            <span key={tag} className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs font-bold">{tag}</span>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Ingredients */}
+                        {displayProduct.ingredients && (
+                            <div>
+                                <h3 className="font-bold text-[var(--text-main)] mb-1">Ingredients</h3>
+                                <p className="text-sm text-[var(--text-muted)] italic leading-relaxed">{displayProduct.ingredients}</p>
+                            </div>
+                        )}
+
                         {/* Nutrition (Optional) */}
                         <div className="grid grid-cols-4 gap-2 text-center">
                             {Object.entries(displayProduct.nutrition || {}).map(([key, val]) => (

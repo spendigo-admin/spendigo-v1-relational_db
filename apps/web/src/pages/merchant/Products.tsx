@@ -15,7 +15,7 @@ const ScannerModal: React.FC<{ onClose: () => void, onScan: (result: string) => 
             try {
                 const scanner = new Html5QrcodeScanner(
                     "reader",
-                    { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 },
+                    { fps: 10, qrbox: { width: 280, height: 150 }, aspectRatio: 1.0 },
                     false
                 );
                 scanner.render((decodedText) => {
@@ -55,7 +55,17 @@ const MerchantProducts: React.FC = () => {
     const { confirm } = useConfirmation();
 
     // New Hook Usage
-    const { useStoreProducts, searchMasterCatalog, addMerchantProduct, updateMerchantProduct, deleteMerchantProduct, requestMasterProduct } = useCatalog();
+    const {
+        useStoreProducts,
+        searchMasterCatalog,
+        addMerchantProduct,
+        updateMerchantProduct,
+        deleteMerchantProduct,
+        requestMasterProduct,
+        bulkAddMerchantProducts,
+        fetchExternalUPC,
+        addMasterProduct
+    } = useCatalog();
 
     const storeId = user?.storeId || '';
     const hasWriteAccess = can('products:write');
@@ -64,14 +74,18 @@ const MerchantProducts: React.FC = () => {
 
     // UI State
     const [showAddModal, setShowAddModal] = useState(false);
-    const [view, setView] = useState<'list' | 'search_master' | 'add_details' | 'request_new'>('list');
+    const [view, setView] = useState<'list' | 'search_master' | 'add_details' | 'request_new' | 'bulk_upload' | 'bulk_summary'>('list');
 
     const [searchQuery, setSearchQuery] = useState('');
     const [masterSearchQuery, setMasterSearchQuery] = useState('');
     const [masterSearchResults, setMasterSearchResults] = useState<any[]>([]);
     const [selectedMasterItem, setSelectedMasterItem] = useState<any | null>(null);
     const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-    const [deletingId, setDeletingId] = useState<string | null>(null); // State for delete loading
+    const [deletingId, setDeletingId] = useState<string | null>(null);
+    const [bulkText, setBulkText] = useState('');
+    const [bulkProcessing, setBulkProcessing] = useState(false);
+    const [bulkResults, setBulkResults] = useState<{ success: number, failed: number, errors: string[] } | null>(null);
+    const [searching, setSearching] = useState(false);
 
     const [showScanner, setShowScanner] = useState(false);
 
@@ -113,13 +127,61 @@ const MerchantProducts: React.FC = () => {
     };
 
     const handleMasterSearch = async (query: string) => {
+        const cleanQuery = query.trim().replace(/[^a-zA-Z0-9]/g, '');
+        const strippedQuery = cleanQuery.replace(/^0+/, ''); // Fuzzy match for UPC/EAN
         setMasterSearchQuery(query);
-        if (query.length > 2) {
-            const results = await searchMasterCatalog(query);
-            setMasterSearchResults(results);
+
+        if (cleanQuery.length > 2) {
+            setSearching(true);
+            try {
+                const results = await searchMasterCatalog(cleanQuery);
+
+                // Smart Discovery: Only auto-trigger if it looks like a barcode
+                const isBarcode = /^\d+$/.test(cleanQuery) && cleanQuery.length >= 8;
+
+                // Check if we have an EXACT match already (accounting for leading zero variance)
+                const exactLocalMatch = results.find(r =>
+                    r.barcode === cleanQuery ||
+                    (r.barcode && r.barcode.replace(/^0+/, '') === strippedQuery)
+                );
+
+                if (isBarcode && !exactLocalMatch) {
+                    const success = await handleGlobalDiscovery(cleanQuery);
+                    if (success) return;
+                }
+
+                setMasterSearchResults(results);
+            } finally {
+                setSearching(false);
+            }
         } else {
             setMasterSearchResults([]);
         }
+    };
+
+    const handleGlobalDiscovery = async (barcode: string) => {
+        setSearching(true);
+        addNotification({ type: 'system', title: 'Searching Global...', message: 'Checking external databases for barcode info...' });
+
+        try {
+            const externalProduct = await fetchExternalUPC(barcode);
+            if (externalProduct) {
+                const newMasterId = await addMasterProduct(externalProduct as any);
+                addNotification({
+                    type: 'system',
+                    title: '✨ Smart Match Found!',
+                    message: `Found "${externalProduct.product_name}". Added to global catalog.`
+                });
+                selectMasterItem({ ...externalProduct, id: newMasterId });
+                return true;
+            }
+        } catch (extErr: any) {
+            console.warn("External search failed", extErr);
+            addNotification({ type: 'alert', title: 'Not Found', message: 'This item is not in our global database yet.' });
+        } finally {
+            setSearching(false);
+        }
+        return false;
     };
 
     const selectMasterItem = (item: any) => {
@@ -160,6 +222,64 @@ const MerchantProducts: React.FC = () => {
         }
     };
 
+    const handleBulkUpload = async () => {
+        if (!bulkText.trim()) return;
+        const lines = bulkText.split('\n');
+        const items = [];
+
+        // Robust CSV/Tab parsing with header skipping
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i].trim();
+            if (!line) continue;
+
+            const parts = line.includes('\t') ? line.split('\t') : line.split(',');
+            const [barcode, price, qty] = parts.map(s => s.trim().replace(/"/g, ''));
+
+            // Skip header if it contains words
+            if (i === 0 && (barcode.toLowerCase().includes('upc') || barcode.toLowerCase().includes('barcode'))) continue;
+
+            if (barcode && price && qty) {
+                items.push({ barcode, price: parseFloat(price), quantity: parseInt(qty) });
+            }
+        }
+
+        if (items.length === 0) {
+            addNotification({ type: 'alert', title: 'Invalid Format', message: 'Please ensure CSV follows: barcode, price, qty' });
+            return;
+        }
+
+        setBulkProcessing(true);
+        try {
+            const results = await bulkAddMerchantProducts(storeId, items);
+            setBulkResults(results);
+            setView('bulk_summary');
+            addNotification({
+                type: results.success > 0 ? 'system' : 'alert',
+                title: 'Bulk Processing Complete',
+                message: `✨ Smart mapped ${results.success} items.`
+            });
+        } catch (err: any) {
+            console.error(err);
+            addNotification({ type: 'alert', title: 'Upload Failed', message: err.message });
+        } finally {
+            setBulkProcessing(false);
+        }
+    };
+
+    const downloadErrorReport = () => {
+        if (!bulkResults || bulkResults.errors.length === 0) return;
+        const content = bulkResults.errors.join('\n');
+        const blob = new Blob([content], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `bulk_upload_errors_${new Date().toISOString().split('T')[0]}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    };
+
     const handleUpdateProduct = async () => {
         if (!editingProduct) return;
         try {
@@ -192,6 +312,8 @@ const MerchantProducts: React.FC = () => {
         setMasterSearchResults([]);
         setSelectedMasterItem(null);
         setEditingProduct(null);
+        setBulkText('');
+        setBulkProcessing(false);
         setForm({ price: '', stock: '50', reqName: '', reqBrand: '', reqDescription: '', reqImage: '', reqCategory: 'General' });
     };
 
@@ -208,14 +330,24 @@ const MerchantProducts: React.FC = () => {
                     <h1 className="text-2xl font-bold text-[var(--text-main)]">Inventory</h1>
                     <p className="text-sm text-[var(--text-muted)]">{products.length} products sync with Master Catalog</p>
                 </div>
-                {hasWriteAccess && (
-                    <button
-                        onClick={() => { setView('search_master'); setShowAddModal(true); }}
-                        className="px-4 py-2 bg-[var(--brand-primary)] text-white font-medium rounded-lg hover:brightness-110 shadow-lg shadow-[var(--brand-primary)]/20"
-                    >
-                        + Add Product
-                    </button>
-                )}
+                <div className="flex gap-2">
+                    {hasWriteAccess && (
+                        <>
+                            <button
+                                onClick={() => { setView('bulk_upload'); setShowAddModal(true); }}
+                                className="px-4 py-2 border border-gray-200 text-gray-700 font-medium rounded-lg hover:bg-gray-50 flex items-center gap-2"
+                            >
+                                <span>📄</span> Bulk Upload
+                            </button>
+                            <button
+                                onClick={() => { setView('search_master'); setShowAddModal(true); }}
+                                className="px-4 py-2 bg-[var(--brand-primary)] text-white font-medium rounded-lg hover:brightness-110 shadow-lg shadow-[var(--brand-primary)]/20"
+                            >
+                                + Add Product
+                            </button>
+                        </>
+                    )}
+                </div>
             </div>
 
             {/* Search Local */}
@@ -311,22 +443,37 @@ const MerchantProducts: React.FC = () => {
                                 </div>
 
                                 <div className="space-y-2 max-h-60 overflow-y-auto mb-4">
+                                    {searching && <div className="text-center py-4 text-purple-600 font-bold animate-pulse">Checking catalogues...</div>}
                                     {masterSearchResults.map(item => (
                                         <div key={item.id} onClick={() => selectMasterItem(item)} className="flex items-center gap-3 p-3 hover:bg-blue-50 cursor-pointer border rounded-lg">
                                             <img src={item.primary_image_url} className="w-10 h-10 rounded object-cover" />
                                             <div>
                                                 <div className="font-bold">{item.product_name}</div>
-                                                <div className="text-xs text-gray-500">{item.brand_name} • {item.category_id}</div>
+                                                <div className="text-xs text-gray-500 flex gap-2 items-center">
+                                                    <span>{item.brand_name}</span>
+                                                    <span className="w-1 h-1 bg-gray-300 rounded-full"></span>
+                                                    <span>{item.net_quantity_value} {item.net_quantity_unit} {item.package_count > 1 ? `(${item.package_count} pk)` : ''}</span>
+                                                </div>
+                                                <div className="text-[10px] text-gray-400 font-mono mt-0.5">UPC: {item.barcode || 'N/A'}</div>
                                             </div>
                                         </div>
                                     ))}
-                                    {masterSearchQuery.length > 2 && masterSearchResults.length === 0 && (
-                                        <div className="text-center py-4 text-gray-500">
-                                            No products found.
-                                            <br />
-                                            <button onClick={() => setView('request_new')} className="mt-2 text-[var(--brand-primary)] underline font-bold">
-                                                Request New Product
-                                            </button>
+                                    {masterSearchQuery.length > 2 && masterSearchResults.length === 0 && !searching && (
+                                        <div className="text-center py-6 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+                                            <p className="text-gray-500 mb-4">No local products found.</p>
+
+                                            {/^\d+$/.test(masterSearchQuery.trim()) && (
+                                                <button
+                                                    onClick={() => handleGlobalDiscovery(masterSearchQuery.trim())}
+                                                    className="px-6 py-2 bg-purple-600 text-white font-bold rounded-lg hover:bg-purple-700 shadow-lg shadow-purple-500/20 mb-3"
+                                                >
+                                                    🔍 Search Global Catalog
+                                                </button>
+                                            )}
+
+                                            <div className="text-xs text-gray-400">
+                                                Or <button onClick={() => setView('request_new')} className="text-[var(--brand-primary)] underline font-bold">Request a New Product</button>
+                                            </div>
                                         </div>
                                     )}
                                 </div>
@@ -343,6 +490,60 @@ const MerchantProducts: React.FC = () => {
                                     <div>
                                         <div className="font-bold text-lg">{editingProduct?.name || selectedMasterItem?.product_name}</div>
                                         <div className="text-sm text-gray-500">Master Data (Read Only)</div>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-4 mb-6">
+                                    <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 border border-blue-100 rounded-lg">
+                                        <span className="text-blue-600 text-lg">✨</span>
+                                        <div className="text-xs">
+                                            <span className="font-bold text-blue-900 block uppercase tracking-tight">Smart Mapping Active</span>
+                                            <span className="text-blue-700">Configurations synced with Spendigo Master Catalog</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div className="bg-gray-50 p-3 rounded-xl border border-gray-100">
+                                            <span className="block text-[10px] text-gray-400 font-bold uppercase mb-1">Tax Configuration</span>
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-lg">🧾</span>
+                                                <div>
+                                                    <span className="text-sm font-medium block">{(editingProduct?.tax_category_id || selectedMasterItem?.tax_category_id)?.replace(/_/g, ' ') || 'Zero Rated'}</span>
+                                                    <span className="text-[10px] text-green-600 font-bold">Standard Grocery Rule</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="bg-gray-50 p-3 rounded-xl border border-gray-100">
+                                            <span className="block text-[10px] text-gray-400 font-bold uppercase mb-1">Pricing Model</span>
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-lg">⚖️</span>
+                                                <div>
+                                                    <span className="text-sm font-medium block">{(editingProduct?.is_sold_by_weight || selectedMasterItem?.is_sold_by_weight) ? 'By Weight (lb/kg)' : 'By Each (per unit)'}</span>
+                                                    <span className="text-[10px] text-gray-500">Auto-calculated at checkout</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="bg-gray-50 p-3 rounded-xl border border-gray-100 col-span-2">
+                                            <div className="flex justify-between items-center">
+                                                <div>
+                                                    <span className="block text-[10px] text-gray-400 font-bold uppercase mb-1">Price Signal</span>
+                                                    <div className="flex items-center gap-2 font-medium">
+                                                        <span className="text-sm">Market SRP:</span>
+                                                        <span className="text-sm text-green-700 font-bold">${(editingProduct?.suggested_retail_price || selectedMasterItem?.suggested_retail_price || 0).toFixed(2)}</span>
+                                                    </div>
+                                                </div>
+                                                {(parseFloat(form.price) > 0) && (
+                                                    <div className={`text-right px-2 py-1 rounded text-xs font-bold ${parseFloat(form.price) <= (editingProduct?.suggested_retail_price || selectedMasterItem?.suggested_retail_price || 0)
+                                                        ? 'bg-green-100 text-green-700'
+                                                        : 'bg-orange-100 text-orange-700'
+                                                        }`}>
+                                                        {parseFloat(form.price) <= (editingProduct?.suggested_retail_price || selectedMasterItem?.suggested_retail_price || 0)
+                                                            ? 'Competitive Price'
+                                                            : 'Above Market SRP'}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
 
@@ -388,6 +589,101 @@ const MerchantProducts: React.FC = () => {
                                     <button onClick={() => setView('search_master')} className="py-3 w-full text-gray-500">Back</button>
                                 </div>
                             </>
+                        )}
+                        {/* BULK UPLOAD VIEW */}
+                        {view === 'bulk_upload' && (
+                            <div className="space-y-6">
+                                <div className="flex justify-between items-center">
+                                    <h2 className="text-xl font-bold">Bulk Smart Upload</h2>
+                                    <button onClick={closeModal} className="text-gray-500 hover:text-black w-8 h-8 flex items-center justify-center bg-gray-100 rounded-full">✕</button>
+                                </div>
+
+                                <div className="flex items-center gap-3 p-4 bg-purple-50 rounded-xl border border-purple-100">
+                                    <span className="text-2xl">🤖</span>
+                                    <div>
+                                        <h3 className="font-bold text-purple-900">Smart Importer</h3>
+                                        <p className="text-xs text-purple-700">Paste your UPC list. We'll automatically fetch tax, branding, and images.</p>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-700 mb-2">CSV Data (UPC, Price, Qty)</label>
+                                    <textarea
+                                        value={bulkText}
+                                        onChange={e => setBulkText(e.target.value)}
+                                        placeholder="6000198046009, 3.99, 100&#10;6000191279309, 15.50, 50"
+                                        className="w-full h-48 px-4 py-3 border border-gray-200 rounded-xl font-mono text-sm outline-none focus:border-purple-400"
+                                    ></textarea>
+                                    <div className="mt-2 text-[11px] text-gray-400">
+                                        Tip: You can copy-paste directly from Excel columns: Barcode, Price, Quantity.
+                                    </div>
+                                </div>
+
+                                <div className="p-4 bg-gray-50 rounded-lg text-xs space-y-2">
+                                    <div className="font-bold text-gray-500 uppercase">How it works</div>
+                                    <ul className="list-disc list-inside text-gray-600 space-y-1">
+                                        <li>We match your UPCs against the Spendigo Master Catalog.</li>
+                                        <li>If not found, we automatically search Open Food Facts.</li>
+                                        <li>Tax categories & weights are auto-assigned.</li>
+                                    </ul>
+                                </div>
+
+                                <button
+                                    onClick={handleBulkUpload}
+                                    disabled={bulkProcessing || !bulkText.trim()}
+                                    className="w-full py-4 bg-purple-600 text-white font-bold rounded-xl hover:bg-purple-700 disabled:bg-gray-200 shadow-lg"
+                                >
+                                    {bulkProcessing ? '✨ Processing Smart Map...' : 'Map & Import Inventory'}
+                                </button>
+                            </div>
+                        )}
+
+                        {/* BULK SUMMARY VIEW */}
+                        {view === 'bulk_summary' && bulkResults && (
+                            <div className="space-y-6">
+                                <div className="text-center py-4">
+                                    <div className="text-5xl mb-4 text-green-500">✅</div>
+                                    <h2 className="text-2xl font-bold">Import Complete</h2>
+                                    <p className="text-gray-500">Your inventory has been updated with smart data.</p>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="bg-green-50 p-4 rounded-xl border border-green-100 text-center">
+                                        <div className="text-2xl font-bold text-green-700">{bulkResults.success}</div>
+                                        <div className="text-xs text-green-600 font-bold uppercase">Successfully Linked</div>
+                                    </div>
+                                    <div className="bg-orange-50 p-4 rounded-xl border border-orange-100 text-center">
+                                        <div className="text-2xl font-bold text-orange-700">{bulkResults.failed}</div>
+                                        <div className="text-xs text-orange-600 font-bold uppercase">Failed / Unresolved</div>
+                                    </div>
+                                </div>
+
+                                {bulkResults.failed > 0 && (
+                                    <div className="bg-red-50 p-4 rounded-xl border border-red-100">
+                                        <div className="flex justify-between items-center mb-2">
+                                            <span className="text-sm font-bold text-red-900">Issues Encountered</span>
+                                            <button
+                                                onClick={downloadErrorReport}
+                                                className="text-[10px] bg-white border border-red-200 px-2 py-1 rounded text-red-600 hover:bg-red-100 font-bold"
+                                            >
+                                                Download Error Log
+                                            </button>
+                                        </div>
+                                        <div className="max-h-32 overflow-y-auto space-y-1">
+                                            {bulkResults.errors.map((err, idx) => (
+                                                <div key={idx} className="text-[10px] text-red-700 font-mono">• {err}</div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                <button
+                                    onClick={() => { closeModal(); setBulkResults(null); }}
+                                    className="w-full py-4 bg-black text-white font-bold rounded-xl hover:bg-gray-800"
+                                >
+                                    Done
+                                </button>
+                            </div>
                         )}
                     </div>
                 </div>

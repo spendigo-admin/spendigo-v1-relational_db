@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { collection, query, where, onSnapshot, doc, getDoc, setDoc, updateDoc, deleteDoc, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, doc, getDoc, setDoc, updateDoc, deleteDoc, addDoc, serverTimestamp, orderBy } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 
 export interface Product {
@@ -19,8 +19,8 @@ export interface Product {
     images: string[];
     category: string;
     brand_name?: string;
-    barcode?: string;     // Added
-    unit_size?: string;   // Added
+    barcode?: string;
+    unit_size?: string;
     merchant_sku: string;
     price: number;
     currency: string;
@@ -29,13 +29,169 @@ export interface Product {
     // UI Helpers
     originalPrice?: number;
     discount?: string;
-    nutrition?: any;
+
+    // Enhanced Master Attributes
+    product_type?: string;
+    storage_type?: string;
+    package_count?: number;
+    unit_type?: string;
+    nutrition?: {
+        calories?: number;
+        protein?: number;
+        fat?: number;
+        carbs?: number;
+        [key: string]: any;
+    };
+    ingredients?: string;
+    allergens?: string[];
+    dietary_tags?: string[];
+
+    // Gap Fixes
+    is_sold_by_weight?: boolean;
+    tax_category_id?: string;
+    suggested_retail_price?: number;
+}
+
+// Admin View Model
+export interface MasterProduct {
+    master_product_id: string;
+    product_name: string;
+    product_name_fr?: string; // Quebec/Bilingual support
+    brand_name: string;
+    brand_family_id?: string; // For variant grouping
+    is_generic?: boolean;
+    barcode?: string;
+    upc_gtin?: string;
+    status: 'active' | 'deprecated' | 'blocked';
+    verification_status: 'unverified' | 'verified' | 'manufacturer_verified';
+
+    // Classification
+    category_id: string;
+    subcategory?: string;
+    product_type?: 'food' | 'non-food';
+    storage_type?: 'ambient' | 'refrigerated' | 'frozen';
+    age_restricted?: boolean;
+
+    // Tax & Commerce
+    tax_category_id: string; // e.g. 'zero_rated_grocery', 'taxable_grocery'
+    is_sold_by_weight: boolean;
+    suggested_retail_price?: number;
+
+    // Size & Packaging
+    net_quantity_value?: number;
+    net_quantity_unit?: string;
+    package_count?: number;
+    unit_type?: 'weight' | 'volume' | 'count';
+    substitution_group_id?: string;
+
+    // Logistics
+    dimensions?: {
+        length: number;
+        width: number;
+        height: number;
+        unit: 'cm' | 'in';
+    };
+    weight_gross?: number;
+
+    // Media
+    primary_image_url: string;
+    secondary_image_urls?: string[];
+    short_description?: string;
+    short_description_fr?: string;
+
+    // Nutrition & Ingredients
+    nutrition?: {
+        calories?: number;
+        protein?: number;
+        fat?: number;
+        carbs?: number;
+        [key: string]: any;
+    };
+    ingredients?: string;
+    ingredients_fr?: string;
+    allergens?: string[];
+    dietary_tags?: string[];
+
+    // Search & Metadata
+    search_keywords?: string[]; // Synonyms (e.g. Soda, Pop)
+
+    // Governance
+    data_source?: string;
+    confidence_score?: number;
+    created_by?: string;
+    created_at?: any;
+    updated_at?: any;
+
+    // Usage (Read Only)
+    number_of_merchants_listing?: number;
 }
 
 export const useCatalog = () => {
 
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    // --- ADMIN: MASTER CATALOG ---
+    const useMasterCatalog = () => {
+        const [masterProducts, setMasterProducts] = useState<MasterProduct[]>([]);
+        const [loadingMaster, setLoadingMaster] = useState(true);
+
+        useEffect(() => {
+            const q = query(collection(db, 'master_products'));
+            const unsubscribe = onSnapshot(q, (snapshot) => {
+                const fetched: MasterProduct[] = snapshot.docs.map(doc => {
+                    const data = doc.data();
+                    return {
+                        master_product_id: doc.id,
+                        product_name: data.product_name,
+                        product_name_fr: data.product_name_fr,
+                        brand_name: data.brand_name || '',
+                        brand_family_id: data.brand_family_id,
+                        barcode: data.barcode,
+                        upc_gtin: data.barcode, // mapping
+                        status: data.status || 'active',
+                        verification_status: data.verification_status || 'unverified',
+                        category_id: data.category_id,
+                        subcategory: data.subcategory,
+                        product_type: data.product_type,
+                        storage_type: data.storage_type || 'ambient',
+                        age_restricted: data.age_restricted || false,
+                        tax_category_id: data.tax_category_id || 'zero_rated_grocery',
+                        is_sold_by_weight: data.is_sold_by_weight || false,
+                        suggested_retail_price: data.suggested_retail_price,
+                        net_quantity_value: data.net_quantity_value,
+                        net_quantity_unit: data.net_quantity_unit,
+                        package_count: data.package_count || 1,
+                        unit_type: data.unit_type,
+                        substitution_group_id: data.substitution_group_id,
+                        dimensions: data.dimensions,
+                        weight_gross: data.weight_gross,
+                        primary_image_url: data.primary_image_url,
+                        short_description: data.short_description,
+                        short_description_fr: data.short_description_fr,
+                        nutrition: data.nutrition,
+                        ingredients: data.ingredients,
+                        ingredients_fr: data.ingredients_fr,
+                        allergens: data.allergens,
+                        dietary_tags: data.dietary_tags,
+                        search_keywords: data.search_keywords || [],
+                        data_source: data.data_source || 'admin',
+                        confidence_score: data.confidence_score,
+                        created_at: data.created_at,
+                        number_of_merchants_listing: data.number_of_merchants_listing || 0
+                    } as MasterProduct;
+                });
+                setMasterProducts(fetched);
+                setLoadingMaster(false);
+            }, (err) => {
+                console.error("Master catalog fetch error", err);
+                setLoadingMaster(false);
+            });
+            return () => unsubscribe();
+        }, []);
+
+        return { masterProducts, loading: loadingMaster };
+    };
 
     // Fetch all products for a specific store
     const useStoreProducts = (storeId: string) => {
@@ -87,6 +243,14 @@ export const useCatalog = () => {
                             barcode: master.barcode,
                             unit_size: master.unit_size || master.size,
                             nutrition: master.nutrition,
+                            ingredients: master.ingredients,
+                            dietary_tags: master.dietary_tags,
+                            storage_type: master.storage_type,
+                            package_count: master.package_count,
+                            unit_type: master.unit_type,
+                            is_sold_by_weight: master.is_sold_by_weight,
+                            tax_category_id: master.tax_category_id,
+                            suggested_retail_price: master.suggested_retail_price,
 
                             originalPrice: data.original_price,
                             discount: data.discount_label
@@ -158,6 +322,14 @@ export const useCatalog = () => {
                                 barcode: mData.barcode,
                                 unit_size: mData.unit_size || mData.size,
                                 nutrition: mData.nutrition,
+                                ingredients: mData.ingredients,
+                                dietary_tags: mData.dietary_tags,
+                                storage_type: mData.storage_type,
+                                package_count: mData.package_count,
+                                unit_type: mData.unit_type,
+                                is_sold_by_weight: mData.is_sold_by_weight,
+                                tax_category_id: mData.tax_category_id,
+                                suggested_retail_price: mData.suggested_retail_price,
 
                                 originalPrice: pData.original_price,
                                 discount: pData.discount_label
@@ -238,6 +410,14 @@ export const useCatalog = () => {
                             barcode: master.barcode,
                             unit_size: master.unit_size || master.size, // Fallback to 'size'
                             nutrition: master.nutrition,
+                            ingredients: master.ingredients,
+                            dietary_tags: master.dietary_tags,
+                            storage_type: master.storage_type,
+                            package_count: master.package_count,
+                            unit_type: master.unit_type,
+                            is_sold_by_weight: master.is_sold_by_weight,
+                            tax_category_id: master.tax_category_id,
+                            suggested_retail_price: master.suggested_retail_price,
 
                             originalPrice: data.original_price,
                             discount: data.discount_label
@@ -444,6 +624,311 @@ export const useCatalog = () => {
         await batch.commit();
     };
 
+    // Bulk Add Merchant Products
+    const bulkAddMerchantProducts = async (storeId: string, items: { barcode: string, price: number, quantity: number }[]) => {
+        const batch = (await import('firebase/firestore')).writeBatch(db);
+        const results = {
+            success: 0,
+            failed: 0,
+            errors: [] as string[]
+        };
+
+        // For demo, we do a simple sequential lookup or a pooled lookup.
+        // real production would use a more optimized matching engine.
+        for (const item of items) {
+            try {
+                // 1. Find master product by barcode locally
+                const q = query(collection(db, 'master_products'), where('barcode', '==', item.barcode));
+                const snap = await import('firebase/firestore').then(mod => mod.getDocs(q));
+
+                let masterId = null;
+
+                if (!snap.empty) {
+                    masterId = snap.docs[0].id;
+                } else {
+                    // 2. Auto-Discovery: Try external - Save to PENDING for admin review
+                    try {
+                        console.log(`[bulkAddMerchantProducts] Trying external lookup for ${item.barcode}`);
+                        const externalProduct = await fetchExternalUPC(item.barcode);
+                        if (externalProduct) {
+                            console.log(`[bulkAddMerchantProducts] External product fetched, saving to pending review...`);
+                            masterId = await addPendingMasterProduct(externalProduct as any, storeId, item.barcode);
+                            console.log(`[bulkAddMerchantProducts] ✅ Product saved to pending: ${masterId}`);
+                            results.success++;
+                        }
+                    } catch (extErr: any) {
+                        console.error(`[bulkAddMerchantProducts] ❌ External lookup failed for ${item.barcode}:`, extErr.message, extErr);
+                    }
+                }
+
+                if (masterId) {
+                    const merchantProductId = `${storeId}_${masterId}`;
+                    const ref = doc(db, 'merchant_products', merchantProductId);
+
+                    batch.set(ref, {
+                        merchant_product_id: merchantProductId,
+                        merchant_id: storeId,
+                        master_product_id: masterId,
+                        merchant_sku: item.barcode,
+                        price: Number(item.price),
+                        available_quantity: Number(item.quantity),
+                        currency: 'CAD',
+                        status: 'active',
+                        created_at: serverTimestamp(),
+                        updated_at: serverTimestamp()
+                    }, { merge: true });
+
+                    if (!snap.empty) results.success++; // Only count if not already counted by external discovery
+                } else {
+                    results.failed++;
+                    results.errors.push(`UPC ${item.barcode} not found locally or globally.`);
+                }
+            } catch (err: any) {
+                results.failed++;
+                results.errors.push(`Error processing UPC ${item.barcode}: ${err.message}`);
+            }
+        }
+
+        if (results.success > 0) {
+            await batch.commit();
+        }
+
+        return results;
+    };
+
+    // Fetch from External Source (Open Food Facts - FREE)
+    const fetchExternalUPC = async (barcode: string) => {
+        setLoading(true);
+        const userAgent = "SpendigoApp - WebScanner - Version 1.0";
+
+        const categoryMap: Record<string, string> = {
+            'lait': 'cat-dairy', 'milk': 'cat-dairy', 'cream': 'cat-dairy', 'yogourt': 'cat-dairy', 'cheese': 'cat-dairy',
+            'pain': 'cat-bakery', 'bread': 'cat-bakery', 'bun': 'cat-bakery', 'cookie': 'cat-bakery',
+            'poulet': 'cat-meat', 'chicken': 'cat-meat', 'beef': 'cat-meat', 'pork': 'cat-meat', 'steak': 'cat-meat',
+            'fruit': 'cat-produce', 'legume': 'cat-produce', 'apple': 'cat-produce', 'banana': 'cat-produce', 'tomato': 'cat-produce',
+            'soda': 'cat-beverages', 'pop': 'cat-beverages', 'water': 'cat-beverages', 'juice': 'cat-beverages', 'drink': 'cat-beverages',
+            'egg': 'cat-dairy', 'oeuf': 'cat-dairy'
+        };
+
+        try {
+            // Try different variants of the barcode (Original, 12-digit, Stripped)
+            const variants = [barcode];
+            if (barcode.length === 13 && barcode.startsWith('0')) variants.push(barcode.slice(1));
+            if (barcode.startsWith('0')) variants.push(barcode.replace(/^0+/, ''));
+
+            console.log(`[fetchExternalUPC] Trying barcode variants for "${barcode}":`, Array.from(new Set(variants)));
+
+            let pData = null;
+            for (const v of Array.from(new Set(variants))) {
+                // Try multiple endpoints - different CORS policies
+                const endpoints = [
+                    `https://world.openfoodfacts.org/api/v2/product/${v}.json`,
+                    `https://world.openfoodfacts.org/api/v0/product/${v}.json`,
+                    `https://openfoodfacts.org/api/v0/product/${v}.json` // Different domain, often better CORS
+                ];
+
+                for (const url of endpoints) {
+                    try {
+                        console.log(`[fetchExternalUPC] Attempting: ${url}`);
+                        const res = await fetch(url);
+                        console.log(`[fetchExternalUPC] Response status: ${res.status}, ok: ${res.ok}`);
+
+                        if (res.ok) {
+                            const json = await res.json();
+                            console.log(`[fetchExternalUPC] JSON status: ${json.status}`);
+
+                            if (json.status === 1) {
+                                console.log(`[fetchExternalUPC] ✅ Product found:`, json.product.product_name);
+                                pData = json.product;
+                                break;
+                            }
+                        }
+                    } catch (e: any) {
+                        console.error(`[fetchExternalUPC] ❌ Error fetching ${url}:`, e.message, e.name);
+                    }
+                }
+
+                if (pData) break;
+            }
+
+            if (!pData) {
+                console.error(`[fetchExternalUPC] ⚠️ All attempts failed for barcode: ${barcode}`);
+                throw new Error(`Barcode ${barcode} not found in global database after trying ${Array.from(new Set(variants)).length} variants across multiple endpoints.`);
+            }
+
+            const p = pData;
+            const name = p.product_name || p.generic_name || "Unknown Product";
+
+            // Auto-Discovery: Category Mapping
+            let categoryId = 'cat-general';
+            const searchableText = `${name} ${p.categories || ''} ${p.generic_name || ''}`.toLowerCase();
+            for (const [key, val] of Object.entries(categoryMap)) {
+                if (searchableText.includes(key)) {
+                    categoryId = val;
+                    break;
+                }
+            }
+
+            // Map OFF fields to Spendigo MasterProduct schema
+            const mapped: Partial<MasterProduct> = {
+                product_name: name,
+                brand_name: p.brands?.split(',')[0] || "Generic",
+                barcode: barcode,
+                upc_gtin: barcode,
+                primary_image_url: p.image_url || p.image_front_url || "",
+                short_description: p.generic_name || p.product_name,
+                ingredients: p.ingredients_text,
+                allergens: p.allergens_tags?.map((t: string) => t.replace('en:', '')),
+                dietary_tags: [
+                    ...(p.labels_tags || []),
+                    ...(p.states_tags?.includes('en:checked') ? ['verified'] : [])
+                ].map(t => t.replace('en:', '')),
+                nutrition: {
+                    calories: p.nutriments?.['energy-kcal_100g'],
+                    protein: p.nutriments?.proteins_100g,
+                    fat: p.nutriments?.fat_100g,
+                    carbs: p.nutriments?.carbohydrates_100g
+                },
+                net_quantity_value: parseFloat(p.quantity?.match(/[\d.]+/)?.[0] || '0'),
+                net_quantity_unit: p.quantity?.match(/[a-zA-Z]+/)?.[0] || '',
+                data_source: 'open_food_facts',
+                status: 'active',
+                verification_status: 'unverified',
+                is_sold_by_weight: categoryId === 'cat-meat' || categoryId === 'cat-produce',
+                tax_category_id: 'zero_rated_grocery',
+                category_id: categoryId
+            };
+
+            return mapped as MasterProduct;
+        } catch (err: any) {
+            console.error("OFF Fetch Error:", err);
+            throw err;
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const addMasterProduct = async (data: MasterProduct) => {
+        try {
+            const masterId = data.master_product_id || `mp-${data.product_name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${Date.now().toString().slice(-4)}`;
+            const ref = doc(db, 'master_products', masterId);
+
+            console.log(`[addMasterProduct] Creating master product with ID: ${masterId}`);
+
+            // Remove undefined values (Firestore doesn't support them)
+            const cleanPayload = (obj: any): any => {
+                if (obj === null || obj === undefined) return null;
+                if (Array.isArray(obj)) return obj.filter(v => v !== undefined).map(cleanPayload);
+                if (typeof obj === 'object') {
+                    const cleaned: any = {};
+                    for (const [key, value] of Object.entries(obj)) {
+                        if (value !== undefined) {
+                            cleaned[key] = cleanPayload(value);
+                        }
+                    }
+                    return cleaned;
+                }
+                return obj;
+            };
+
+            const payload = cleanPayload({
+                ...data,
+                master_product_id: masterId,
+                updated_at: serverTimestamp(),
+                created_at: data.created_at || serverTimestamp()
+            });
+
+            await setDoc(ref, payload, { merge: true });
+            console.log(`[addMasterProduct] ✅ Successfully created/updated master product: ${masterId}`);
+            return masterId;
+        } catch (err: any) {
+            console.error(`[addMasterProduct] ❌ Failed to add master product:`, err.message, err);
+            throw err;
+        }
+    };
+
+    // ============= PENDING MASTER PRODUCTS =============
+    const usePendingMasterProducts = () => {
+        const [pendingProducts, setPendingProducts] = useState<any[]>([]);
+        const [loading, setLoading] = useState(true);
+
+        useEffect(() => {
+            const q = query(collection(db, 'pending_master_products'), orderBy('created_at', 'desc'));
+            const unsubscribe = onSnapshot(q, snapshot => {
+                const pending: any[] = [];
+                snapshot.forEach(doc => {
+                    pending.push({ id: doc.id, ...doc.data() });
+                });
+                setPendingProducts(pending);
+                setLoading(false);
+            });
+            return () => unsubscribe();
+        }, []);
+
+        return { pendingProducts, loading };
+    };
+
+    const addPendingMasterProduct = async (data: MasterProduct, merchantId: string, barcode: string) => {
+        try {
+            const pendingId = `pending-${barcode}-${Date.now()}`;
+            const ref = doc(db, 'pending_master_products', pendingId);
+
+            console.log(`[addPendingMasterProduct] Creating pending product: ${pendingId}`);
+
+            // Remove undefined values
+            const cleanPayload = (obj: any): any => {
+                if (obj === null || obj === undefined) return null;
+                if (Array.isArray(obj)) return obj.filter(v => v !== undefined).map(cleanPayload);
+                if (typeof obj === 'object') {
+                    const cleaned: any = {};
+                    for (const [key, value] of Object.entries(obj)) {
+                        if (value !== undefined) {
+                            cleaned[key] = cleanPayload(value);
+                        }
+                    }
+                    return cleaned;
+                }
+                return obj;
+            };
+
+            const payload = cleanPayload({
+                ...data,
+                pending_id: pendingId,
+                discovered_by_merchant: merchantId,
+                original_barcode: barcode,
+                status: 'pending_review',
+                created_at: serverTimestamp(),
+                updated_at: serverTimestamp()
+            });
+
+            await setDoc(ref, payload, { merge: true });
+            console.log(`[addPendingMasterProduct] ✅ Saved to pending: ${pendingId}`);
+            return pendingId;
+        } catch (err: any) {
+            console.error(`[addPendingMasterProduct] ❌ Failed:`, err.message, err);
+            throw err;
+        }
+    };
+
+    const commitPendingProduct = async (pendingId: string, pendingData: any) => {
+        try {
+            // 1. Add to master_products
+            const masterId = await addMasterProduct(pendingData as MasterProduct);
+
+            // 2. Delete from pending
+            await deleteDoc(doc(db, 'pending_master_products', pendingId));
+
+            return masterId;
+        } catch (err: any) {
+            console.error('Failed to commit pending product:', err);
+            throw err;
+        }
+    };
+
+    const rejectPendingProduct = async (pendingId: string) => {
+        await deleteDoc(doc(db, 'pending_master_products', pendingId));
+    };
+
     return {
         useStoreProducts,
         useProductDetail,
@@ -452,10 +937,18 @@ export const useCatalog = () => {
         addMerchantProduct,
         updateMerchantProduct,
         deleteMerchantProduct,
+        bulkAddMerchantProducts,
+        fetchExternalUPC,
+        addMasterProduct,
+        addPendingMasterProduct,
         requestMasterProduct,
+        useMasterCatalog,
         useProductRequests,
+        usePendingMasterProducts,
         approveProductRequest,
         rejectProductRequest,
+        commitPendingProduct,
+        rejectPendingProduct,
         loading,
         error
     };

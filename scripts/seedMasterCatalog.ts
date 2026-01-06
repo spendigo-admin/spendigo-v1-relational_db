@@ -1,7 +1,7 @@
-
-import * as admin from 'firebase-admin';
-import { STORE_DATA } from './productData';
-import { GROCERY_CATALOG } from './groceryCatalog';
+import { initializeApp } from 'firebase-admin/app';
+import { getFirestore, FieldValue } from 'firebase-admin/firestore';
+import { STORE_DATA } from './productData.ts';
+import { GROCERY_CATALOG } from './groceryCatalog.ts';
 
 // Determine project ID
 const projectId = process.env.GCLOUD_PROJECT || 'demo-project';
@@ -9,18 +9,18 @@ const projectId = process.env.GCLOUD_PROJECT || 'demo-project';
 // Initialize Firebase Admin
 // If running in local emulator, no credentials needed usually, or use default
 if (process.env.FIRESTORE_EMULATOR_HOST) {
-    admin.initializeApp({ projectId });
+    initializeApp({ projectId });
 } else {
     // If you were running against real prod, you'd need creds. 
     // For this context, we assume local or properly env-var configured.
     try {
-        admin.initializeApp();
+        initializeApp();
     } catch (e) {
         console.log('App already initialized or failed init', e);
     }
 }
 
-const db = admin.firestore();
+const db = getFirestore();
 
 // Helper to sanitize IDs
 const sanitizeId = (id: string) => id.replace(/[^a-zA-Z0-9-_]/g, '_');
@@ -29,6 +29,101 @@ const sanitizeId = (id: string) => id.replace(/[^a-zA-Z0-9-_]/g, '_');
 // Key: normalized product name (lowercase)
 // Value: masterProductId
 const masterProductMap = new Map<string, string>();
+
+const WALMART_SEEDS = [
+    {
+        name: "Your Fresh Market Ciabatta Buns",
+        product_name_fr: "Petits pains ciabatta Marché Frais",
+        brand: "Your Fresh Market",
+        upc: "6000198046009",
+        category: "Bakery",
+        subcategory: "Bread Rolls & Buns",
+        image: "https://i5.walmartimages.ca/images/Enlarge/261/278/6000200261278.jpg",
+        description: "Your Fresh Market Ciabatta Buns. Crusty on the outside and soft on the inside. 6 pk, 500g.",
+        short_description_fr: "Petits pains ciabatta Marché Frais. Croûtés à l'extérieur et moelleux à l'intérieur. 6 pqt, 500g.",
+        net_quantity_value: 500,
+        net_quantity_unit: "g",
+        package_count: 6,
+        unit_type: "weight",
+        storage_type: "ambient",
+        product_type: "food",
+        tax_category_id: "zero_rated_grocery",
+        is_sold_by_weight: false,
+        suggested_retail_price: 3.97,
+        search_keywords: ["bread", "rolls", "buns", "ciabatta", "pain"],
+        verification_status: "verified",
+        dimensions: { length: 25, width: 15, height: 8, unit: "cm" }
+    },
+    {
+        name: "Maple Leaf Boneless Skinless Chicken Breasts",
+        product_name_fr: "Poitrines de poulet désossées sans peau Maple Leaf",
+        brand: "Maple Leaf",
+        upc: "6000191279309",
+        category: "Meat & Seafood",
+        subcategory: "Chicken",
+        image: "https://i5.walmartimages.ca/images/Enlarge/127/930/6000191279309.jpg",
+        description: "Fresh boneless skinless chicken breasts. No added hormones. 4 Breasts.",
+        short_description_fr: "Poitrines de poulet fraîches désossées et sans peau. Sans hormones ajoutées. 4 poitrines.",
+        net_quantity_value: 4,
+        net_quantity_unit: "count",
+        package_count: 4,
+        unit_type: "count",
+        storage_type: "refrigerated",
+        product_type: "food",
+        tax_category_id: "zero_rated_grocery",
+        is_sold_by_weight: true,
+        suggested_retail_price: 15.50,
+        search_keywords: ["chicken", "poulet", "breast", "meat", "poultry"],
+        verification_status: "verified",
+        dimensions: { length: 20, width: 15, height: 5, unit: "cm" }
+    },
+    {
+        name: "Gray Ridge Premium Large White Eggs",
+        product_name_fr: "Gros œufs blancs de qualité supérieure Gray Ridge",
+        brand: "Gray Ridge",
+        upc: "6000191268613",
+        category: "Dairy & Eggs",
+        subcategory: "Eggs",
+        image: "https://i5.walmartimages.ca/images/Enlarge/686/13_/6000191268613.jpg",
+        description: "Gray Ridge Premium Large White Eggs. 18 Count.",
+        short_description_fr: "Gros œufs blancs de qualité supérieure Gray Ridge. 18 unités.",
+        net_quantity_value: 18,
+        net_quantity_unit: "count",
+        package_count: 18,
+        unit_type: "count",
+        storage_type: "refrigerated",
+        product_type: "food",
+        tax_category_id: "zero_rated_grocery",
+        is_sold_by_weight: false,
+        suggested_retail_price: 6.48,
+        search_keywords: ["eggs", "oeufs", "large eggs", "white eggs", "dairy"],
+        verification_status: "verified",
+        dimensions: { length: 30, width: 10, height: 7, unit: "cm" }
+    },
+    {
+        name: "Sealtest Partly Skimmed 1% Milk",
+        product_name_fr: "Lait 1 % partiellement écrémé Sealtest",
+        brand: "Sealtest",
+        upc: "6000199044320",
+        category: "Dairy & Eggs",
+        subcategory: "Milk",
+        image: "https://i5.walmartimages.ca/images/Enlarge/904/432/6000199044320.jpg",
+        description: "Sealtest Partly Skimmed 1% Milk. 4 L bag.",
+        short_description_fr: "Lait 1 % partiellement écrémé Sealtest. Sac de 4 L.",
+        net_quantity_value: 4,
+        net_quantity_unit: "L",
+        package_count: 1,
+        unit_type: "volume",
+        storage_type: "refrigerated",
+        product_type: "food",
+        tax_category_id: "zero_rated_grocery",
+        is_sold_by_weight: false,
+        suggested_retail_price: 5.89,
+        search_keywords: ["milk", "lait", "1%", "dairy", "beverage"],
+        verification_status: "verified",
+        dimensions: { length: 20, width: 20, height: 30, unit: "cm" }
+    }
+];
 
 async function seedCategories() {
     console.log('--- Seeding Categories ---');
@@ -67,6 +162,48 @@ async function seedMasterProducts() {
     const batch = db.batch();
     let count = 0;
 
+    // 0. Process WALMART_SEEDS (Specific overrides/new items)
+    for (const item of WALMART_SEEDS) {
+        const masterId = `mp-${item.upc}`;
+        const normalizedName = item.name.trim().toLowerCase();
+        masterProductMap.set(normalizedName, masterId);
+
+        const ref = db.collection('master_products').doc(masterId);
+        const data = {
+            master_product_id: masterId,
+            product_name: item.name,
+            product_name_fr: (item as any).product_name_fr || '',
+            brand_name: item.brand,
+            barcode: item.upc,
+            upc_gtin: item.upc,
+            category_id: `cat-${sanitizeId(item.category).toLowerCase()}`,
+            primary_image_url: item.image,
+            short_description: item.description,
+            short_description_fr: (item as any).short_description_fr || '',
+
+            // Gap Attributes
+            product_type: item.product_type,
+            storage_type: item.storage_type,
+            net_quantity_value: item.net_quantity_value,
+            net_quantity_unit: item.net_quantity_unit,
+            package_count: item.package_count,
+            unit_type: item.unit_type,
+            tax_category_id: (item as any).tax_category_id || 'zero_rated_grocery',
+            is_sold_by_weight: (item as any).is_sold_by_weight || false,
+            suggested_retail_price: (item as any).suggested_retail_price || 0,
+            search_keywords: (item as any).search_keywords || [],
+            verification_status: (item as any).verification_status || 'verified',
+            dimensions: (item as any).dimensions || null,
+
+            data_source: 'admin_seed',
+            created_at: FieldValue.serverTimestamp(),
+            updated_at: FieldValue.serverTimestamp(),
+            status: 'active'
+        };
+        batch.set(ref, data, { merge: true });
+        count++;
+    }
+
     // 1. Process GROCERY_CATALOG (The source of truth for many items)
     for (const item of GROCERY_CATALOG) {
         const normalizedName = item.name.trim().toLowerCase();
@@ -82,13 +219,17 @@ async function seedMasterProducts() {
             const data = {
                 master_product_id: masterId,
                 product_name: item.name,
-                // In a real app we'd parse brand, size, etc.
-                // For now we map available fields
-                product_type: 'grocery',
+
+                // Defaults for generic
+                product_type: 'food',
                 category_id: `cat-${sanitizeId(item.category).toLowerCase()}`,
                 primary_image_url: item.image,
-                created_at: admin.firestore.FieldValue.serverTimestamp(),
-                updated_at: admin.firestore.FieldValue.serverTimestamp(),
+                tax_category_id: 'zero_rated_grocery',
+                is_sold_by_weight: false,
+                verification_status: 'unverified',
+
+                created_at: FieldValue.serverTimestamp(),
+                updated_at: FieldValue.serverTimestamp(),
                 status: 'active'
             };
             batch.set(ref, data, { merge: true });
@@ -113,8 +254,8 @@ async function seedMasterProducts() {
                     product_name: p.name,
                     category_id: p.category ? `cat-${sanitizeId(p.category).toLowerCase()}` : 'cat-general',
                     primary_image_url: p.image,
-                    created_at: admin.firestore.FieldValue.serverTimestamp(),
-                    updated_at: admin.firestore.FieldValue.serverTimestamp(),
+                    created_at: FieldValue.serverTimestamp(),
+                    updated_at: FieldValue.serverTimestamp(),
                     status: 'active'
                 };
                 batch.set(ref, data, { merge: true });
@@ -162,8 +303,8 @@ async function seedMerchantProducts() {
                 currency: 'CAD',
                 available_quantity: 100, // Default mock stock
                 visibility: true,
-                created_at: admin.firestore.FieldValue.serverTimestamp(),
-                updated_at: admin.firestore.FieldValue.serverTimestamp()
+                created_at: FieldValue.serverTimestamp(),
+                updated_at: FieldValue.serverTimestamp()
             };
 
             if (p.originalPrice) {
