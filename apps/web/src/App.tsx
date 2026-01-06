@@ -75,6 +75,10 @@ function MaintenanceGuard({ children }: { children: React.ReactNode }) {
         const unsubscribe = onSnapshot(doc(db, 'settings', 'platform'), (doc) => {
             setMaintenanceMode(doc.data()?.maintenanceMode || false);
             setLoading(false);
+        }, (error) => {
+            console.error("Maintenance check failed:", error);
+            // Fallback: Assume not in maintenance mode if check fails (e.g. offline/rules)
+            setLoading(false);
         });
         return () => unsubscribe();
     }, []);

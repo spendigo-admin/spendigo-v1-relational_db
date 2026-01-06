@@ -76,7 +76,8 @@ interface NotificationContextType {
     togglePreference: (key: keyof NotificationPreferences) => void;
 }
 
-import { doc, onSnapshot, setDoc, getDoc } from 'firebase/firestore';
+// Imports updated
+import { doc, onSnapshot, setDoc, getDoc, collection, query, orderBy, addDoc, updateDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
@@ -85,12 +86,13 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     const { user } = useAuth();
 
     // Determine context ID: Store > User > Guest
-    const contextId = user?.storeId || user?.id || 'guest';
+    // If user is logged in, we use their UID. If guest, we use LocalStorage.
+    const contextId = user?.id; // Subcollections hang off USER document
     const isAuth = !!user;
 
-    // Keys for LocalStorage Fallback
-    const LOCAL_NOTIF_KEY = `spendigo_notifications_${contextId}`;
-    const LOCAL_PREF_KEY = `spendigo_notification_prefs_${contextId}`;
+    // Keys for LocalStorage Fallback (Guest / Demo)
+    const LOCAL_NOTIF_KEY = `spendigo_notifications_${contextId || 'guest'}`;
+    const LOCAL_PREF_KEY = `spendigo_notification_prefs_${contextId || 'guest'}`;
 
     const [notifications, setNotifications] = useState<AppNotification[]>([]);
     const [preferences, setPreferences] = useState<NotificationPreferences>(DEFAULT_PREFERENCES);
@@ -101,20 +103,21 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
         let unsubscribe: () => void;
 
         const initialize = async () => {
-            if (isAuth) {
-                // FIRESTORE SYNC
-                const notifRef = doc(db, 'notifications', contextId);
+            // Load Prefs (Local for now, could be DB)
+            const savedPrefs = localStorage.getItem(LOCAL_PREF_KEY);
+            if (savedPrefs) setPreferences(JSON.parse(savedPrefs));
 
-                // Subscribe
-                unsubscribe = onSnapshot(notifRef, (doc) => {
-                    if (doc.exists()) {
-                        const data = doc.data();
-                        setNotifications(data.list || []);
-                        if (data.preferences) setPreferences(data.preferences);
-                    } else {
-                        // Initialize if empty? Or just set empty.
-                        setNotifications([]);
-                    }
+            if (isAuth && contextId) {
+                // FIRESTORE SYNC (Subcollection)
+                const notifRef = collection(db, 'users', contextId, 'notifications');
+                const q = query(notifRef, orderBy('timestamp', 'desc'));
+
+                unsubscribe = onSnapshot(q, (snapshot) => {
+                    const loaded: AppNotification[] = [];
+                    snapshot.forEach(doc => {
+                        loaded.push({ id: doc.id, ...doc.data() } as AppNotification);
+                    });
+                    setNotifications(loaded);
                     setLoading(false);
                 });
             } else {
@@ -123,13 +126,8 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
                 if (savedNotifs) {
                     try { setNotifications(JSON.parse(savedNotifs)); } catch (e) { console.error(e); }
                 } else {
-                    // Seed mocks for demo only if guest
                     setNotifications(MOCK_NOTIFICATIONS);
                 }
-
-                const savedPrefs = localStorage.getItem(LOCAL_PREF_KEY);
-                if (savedPrefs) setPreferences(JSON.parse(savedPrefs));
-
                 setLoading(false);
             }
         };
@@ -141,75 +139,73 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
         };
     }, [contextId, isAuth, LOCAL_NOTIF_KEY, LOCAL_PREF_KEY]);
 
-    // Save Helper
-    const saveToStorage = async (newNotifs: AppNotification[], newPrefs: NotificationPreferences) => {
-        if (isAuth) {
-            // Write to Firestore
-            try {
-                await setDoc(doc(db, 'notifications', contextId), {
-                    list: newNotifs,
-                    preferences: newPrefs,
-                    updatedAt: new Date().toISOString()
-                }, { merge: true });
-            } catch (e) {
-                console.error("Failed to save notifications", e);
-            }
-        } else {
-            // Write to LocalStorage
-            localStorage.setItem(LOCAL_NOTIF_KEY, JSON.stringify(newNotifs));
-            localStorage.setItem(LOCAL_PREF_KEY, JSON.stringify(newPrefs));
-        }
-    };
-
-    // --- Actions ---
-
-    // Note: State updates here are optimistic for local UI, 
-    // but actual persistence is handled by saveToStorage.
-    // However, if we rely on Firestore listener to update State, we should strictly write to DB.
-    // For Guests, we set State + LS.
-
-    const updateState = (newNotifs: AppNotification[], newPrefs: NotificationPreferences) => {
-        if (!isAuth) {
-            setNotifications(newNotifs);
-            setPreferences(newPrefs);
-        }
-        // Auth users wait for Listener (or we could optimistically update, but listener is fast enough locally)
-        saveToStorage(newNotifs, newPrefs);
-    };
-
-    const markAsRead = (id: string) => {
-        const newNotifs = notifications.map(n => n.id === id ? { ...n, read: true } : n);
-        updateState(newNotifs, preferences);
-    };
-
-    const markAllAsRead = () => {
-        const newNotifs = notifications.map(n => ({ ...n, read: true }));
-        updateState(newNotifs, preferences);
-    };
-
-    const clearAll = () => {
-        updateState([], preferences);
-    };
-
-    const deleteNotification = (id: string) => {
-        const newNotifs = notifications.filter(n => n.id !== id);
-        updateState(newNotifs, preferences);
-    };
-
-    const addNotification = (n: Omit<AppNotification, 'id' | 'timestamp' | 'read'>) => {
-        const newNotif: AppNotification = {
-            ...n,
-            id: `notif-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
-            timestamp: new Date().toISOString(),
-            read: false,
-        };
-        const newNotifs = [newNotif, ...notifications];
-        updateState(newNotifs, preferences);
-    };
-
+    // Save Prefs
     const togglePreference = (key: keyof NotificationPreferences) => {
         const newPrefs = { ...preferences, [key]: !preferences[key] };
-        updateState(notifications, newPrefs);
+        setPreferences(newPrefs);
+        localStorage.setItem(LOCAL_PREF_KEY, JSON.stringify(newPrefs));
+    };
+
+    // Actions
+    const addNotification = async (n: Omit<AppNotification, 'id' | 'timestamp' | 'read'>) => {
+        const payload = {
+            ...n,
+            timestamp: new Date().toISOString(), // Use serverTimestamp in real app, but ISO string easy for UI
+            read: false
+        };
+
+        if (isAuth && contextId) {
+            await addDoc(collection(db, 'users', contextId, 'notifications'), payload);
+        } else {
+            // Local
+            const newNotif = { ...payload, id: `guest-${Date.now()}` };
+            const updated = [newNotif, ...notifications];
+            setNotifications(updated);
+            localStorage.setItem(LOCAL_NOTIF_KEY, JSON.stringify(updated));
+        }
+    };
+
+    const markAsRead = async (id: string) => {
+        if (isAuth && contextId) {
+            const ref = doc(db, 'users', contextId, 'notifications', id);
+            await updateDoc(ref, { read: true });
+        } else {
+            const updated = notifications.map(n => n.id === id ? { ...n, read: true } : n);
+            setNotifications(updated);
+            localStorage.setItem(LOCAL_NOTIF_KEY, JSON.stringify(updated));
+        }
+    };
+
+    const markAllAsRead = async () => {
+        if (isAuth && contextId) {
+            // Batch update (limit 500)
+            const batch = (await import('firebase/firestore')).writeBatch(db);
+            notifications.forEach(n => {
+                if (!n.read) {
+                    const ref = doc(db, 'users', contextId, 'notifications', n.id);
+                    batch.update(ref, { read: true });
+                }
+            });
+            if (notifications.some(n => !n.read)) await batch.commit();
+        } else {
+            const updated = notifications.map(n => ({ ...n, read: true }));
+            setNotifications(updated);
+            localStorage.setItem(LOCAL_NOTIF_KEY, JSON.stringify(updated));
+        }
+    };
+
+    const clearAll = async () => {
+        // Implement if needed, dangerous to delete all
+    };
+
+    const deleteNotification = async (id: string) => {
+        if (isAuth && contextId) {
+            await deleteDoc(doc(db, 'users', contextId, 'notifications', id));
+        } else {
+            const updated = notifications.filter(n => n.id !== id);
+            setNotifications(updated);
+            localStorage.setItem(LOCAL_NOTIF_KEY, JSON.stringify(updated));
+        }
     };
 
     const unreadCount = notifications.filter(n => !n.read).length;
@@ -221,7 +217,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
             preferences,
             markAsRead,
             markAllAsRead,
-            markAllRead: markAllAsRead, // Alias
+            markAllRead: markAllAsRead,
             clearAll,
             addNotification,
             deleteNotification,

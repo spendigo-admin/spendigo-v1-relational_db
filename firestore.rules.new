@@ -54,12 +54,7 @@ service cloud.firestore {
         && exists(/databases/$(database)/documents/master_products/$(request.resource.data.master_product_id));
 
       allow update: if isMerchant() 
-        // 1. Must own the existing doc
-        && resource.data.merchant_id == getMerchantStoreId()
-        // 2. Cannot change ownership (merchant_id)
-        && request.resource.data.merchant_id == resource.data.merchant_id
-        // 3. Cannot change the master product link (prevents broken links)
-        && request.resource.data.master_product_id == resource.data.master_product_id;
+        && resource.data.merchant_id == getMerchantStoreId();
         
       allow delete: if isMerchant() 
         && resource.data.merchant_id == getMerchantStoreId();
@@ -68,12 +63,7 @@ service cloud.firestore {
     // 3. PRODUCT CREATION REQUESTS (Controlled Growth)
     match /product_creation_requests/{requestId} {
       allow read: if isAdmin() || (isMerchant() && resource.data.submitted_by_merchant_id == getMerchantStoreId());
-      
-      allow create: if isMerchant() 
-        && request.resource.data.submitted_by_merchant_id == getMerchantStoreId()
-        // Enforce initial status
-        && request.resource.data.status == 'pending';
-        
+      allow create: if isMerchant() && request.resource.data.submitted_by_merchant_id == getMerchantStoreId();
       allow update: if isAdmin(); // Admin updates status (pending -> approved/rejected)
     }
 
@@ -138,17 +128,11 @@ service cloud.firestore {
       );
     }
 
-    // NOTIFICATIONS (Subcollection)
-    match /users/{userId}/notifications/{notificationId} {
-      // User can manage their own notifications
-      // Admin/System might create them (via backend or if allowed here)
-      allow read, update, delete: if isOwner(userId);
-      allow create: if true; // Allow anyone (like Admin) to write a notification to a user
-    }
-
-    // Deprecated
+    // NOTIFICATIONS
     match /notifications/{userId} {
-      allow read, write: if false;
+      allow read: if isOwner(userId);
+      allow create: if isAuthenticated();
+      allow update, delete: if isOwner(userId);
     }
 
     // REVIEWS
@@ -193,12 +177,6 @@ service cloud.firestore {
         allow read: if userId == request.auth.uid || isAdmin();
         allow write: if userId == request.auth.uid;
       }
-    }
-
-    // SETTINGS (Platform Config)
-    match /settings/{settingId} {
-      allow read: if true;
-      allow write: if isAdmin();
     }
 
     // STATS

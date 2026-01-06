@@ -83,3 +83,6 @@ users-export.json
 firestore.rules.backup
 firestore.rules.bak
 firestore.seed.rules
+
+# Service Account Credentials
+scripts/service-account.json

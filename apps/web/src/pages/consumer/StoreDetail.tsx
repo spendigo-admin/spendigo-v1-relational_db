@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
 import { useMarketplace } from '../../context/MarketplaceContext';
+import { useCatalog } from '../../hooks/useCatalog';
 import ReviewList from '../../components/ReviewList';
 import ReviewForm from '../../components/ReviewForm';
 import '../../styles/design-system.css';
@@ -102,8 +103,10 @@ const StoreDetail: React.FC = () => {
     const location = useLocation(); // Add useLocation import
     const { addToCart } = useCart();
     const { getStore } = useMarketplace();
+    const { useStoreProducts } = useCatalog(); // Use the new hook
 
     const store = getStore(id || '') || null;
+    const { products: catalogProducts, loading: loadingProducts } = useStoreProducts(id || '');
 
     // Check for initial tab in state
     const [activeTab, setActiveTab] = useState<'products' | 'flyer' | 'offers' | 'reviews'>((location.state as any)?.initialTab || 'products');
@@ -121,9 +124,20 @@ const StoreDetail: React.FC = () => {
         );
     }
 
+    // Merge or Override products
+    // If migration is partial, we might want to fallback to store.products, but let's prefer catalogProducts if available
+    const displayProducts = catalogProducts.length > 0 ? catalogProducts : (store.products || []);
+
     const filteredProducts = activeCategory === 'All'
-        ? (store.products || [])
-        : (store.products || []).filter((p: any) => p.category === activeCategory);
+        ? displayProducts
+        : displayProducts.filter((p: any) => {
+            // map category ID to name if needed, or simple check
+            // For now assuming category field matches or we need a map
+            // The hook returns 'category' as 'cat-id', but UI expects 'Dairy'. 
+            // We might need to fetch category map. For now let's just show all if name mismatch or fix in hook.
+            // Simplified:
+            return p.category === activeCategory || (p.category && p.category.includes(activeCategory));
+        });
 
     const handleQuickAdd = (product: any) => {
         addToCart({

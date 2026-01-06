@@ -1,20 +1,16 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import '../../styles/design-system.css';
-import { useMarketplace } from '../../context/MarketplaceContext';
 import { useAuth } from '../../context/AuthContext';
 import { useNotifications } from '../../context/NotificationContext';
 import { useConfirmation } from '../../context/ConfirmationContext';
-import { useCatalog } from '../../context/CatalogContext';
-import { useInventorySync } from '../../hooks/useInventorySync';
+import { useCatalog, Product } from '../../hooks/useCatalog';
 import { Html5QrcodeScanner } from 'html5-qrcode';
-import { searchOpenFoodFacts } from '../../lib/openFoodFacts';
 
 // Scanner Component
 const ScannerModal: React.FC<{ onClose: () => void, onScan: (result: string) => void }> = ({ onClose, onScan }) => {
     const [mountError, setMountError] = useState('');
 
     useEffect(() => {
-        // Delay init slightly to ensure DOM is ready
         const timeout = setTimeout(() => {
             try {
                 const scanner = new Html5QrcodeScanner(
@@ -22,24 +18,18 @@ const ScannerModal: React.FC<{ onClose: () => void, onScan: (result: string) => 
                     { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 },
                     false
                 );
-
                 scanner.render((decodedText) => {
                     onScan(decodedText);
                     scanner.clear().catch(console.error);
                 }, (error) => {
                     // console.warn(error); 
                 });
-
-                // Cleanup
-                return () => {
-                    scanner.clear().catch(() => { });
-                };
+                return () => { scanner.clear().catch(() => { }); };
             } catch (err) {
                 console.error("Scanner init error", err);
                 setMountError('Camera permission denied or not available.');
             }
         }, 100);
-
         return () => clearTimeout(timeout);
     }, [onScan]);
 
@@ -60,246 +50,186 @@ const ScannerModal: React.FC<{ onClose: () => void, onScan: (result: string) => 
 };
 
 const MerchantProducts: React.FC = () => {
-    const { getStore, updateStoreProducts } = useMarketplace();
-    const { can, user } = useAuth();
+    const { user, can } = useAuth();
     const { addNotification } = useNotifications();
     const { confirm } = useConfirmation();
-    const { catalog, searchCatalog } = useCatalog();
 
-    const storeId = user?.storeId;
-    const store = storeId ? getStore(storeId) : null;
+    // New Hook Usage
+    const { useStoreProducts, searchMasterCatalog, addMerchantProduct, updateMerchantProduct, deleteMerchantProduct, requestMasterProduct } = useCatalog();
+
+    const storeId = user?.storeId || '';
     const hasWriteAccess = can('products:write');
 
-    const products = useMemo(() => store?.products || [], [store?.products]);
-    const { stats, getSyncedProducts } = useInventorySync(products, catalog);
+    const { products, loading } = useStoreProducts(storeId);
 
+    // UI State
     const [showAddModal, setShowAddModal] = useState(false);
-    const [editingProduct, setEditingProduct] = useState<any | null>(null);
+    const [view, setView] = useState<'list' | 'search_master' | 'add_details' | 'request_new'>('list');
+
     const [searchQuery, setSearchQuery] = useState('');
+    const [masterSearchQuery, setMasterSearchQuery] = useState('');
+    const [masterSearchResults, setMasterSearchResults] = useState<any[]>([]);
+    const [selectedMasterItem, setSelectedMasterItem] = useState<any | null>(null);
+    const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+    const [deletingId, setDeletingId] = useState<string | null>(null); // State for delete loading
 
-    // Catalog Search State
-    const [catalogSearch, setCatalogSearch] = useState('');
-    const [showCatalogDropdown, setShowCatalogDropdown] = useState(false);
-
-    // Scanner State
     const [showScanner, setShowScanner] = useState(false);
 
-    // Form state
+    // Form State
     const [form, setForm] = useState({
-        name: '',
-        sku: '',
-        description: '',
         price: '',
-        stock: '',
-        lowStockThreshold: '10',
-        category: 'Fresh Produce',
-        image: '',
-        relatedCatalogItemId: '',
-        taxable: true
+        stock: '50',
+
+        // Request Form Fields
+        reqName: '',
+        reqBrand: '',
+        reqDescription: '',
+        reqImage: '',
+        reqCategory: 'General'
     });
 
-    const handleScanSuccess = async (decodedText: string) => {
-        setForm(prev => ({ ...prev, sku: decodedText }));
-        setShowScanner(false);
+    // Handlers
 
-        // 1. Check Master Catalog first (Internal)
-        const catalogItem = catalog.find(i => i.barcode === decodedText);
-        if (catalogItem) {
-            addNotification({ type: 'system', title: 'Found in Catalog', message: 'Loaded details from Spendigo Catalog.' });
-            setForm(prev => ({
-                ...prev,
-                sku: decodedText,
-                name: catalogItem.name,
-                description: catalogItem.description,
-                category: catalogItem.category, // Exact match
-                image: catalogItem.image,
-                relatedCatalogItemId: catalogItem.id,
-                taxable: catalogItem.taxable !== false
-            }));
-            return;
-        }
-
-        // 2. Check External API (OpenFoodFacts)
-        addNotification({ type: 'system', title: 'Searching...', message: 'Looking up barcode online...' });
-
-        try {
-            const result = await searchOpenFoodFacts(decodedText);
-            if (result.found) {
-                addNotification({ type: 'system', title: 'Found Online', message: `Details loaded for ${result.name}` });
-                setForm(prev => ({
-                    ...prev,
-                    sku: decodedText,
-                    name: result.name || prev.name,
-                    image: result.image || prev.image,
-                    description: result.description || prev.description || result.brand || ''
-                }));
-            } else {
-                addNotification({ type: 'system', title: 'Not Found', message: 'Barcode not found online. Please enter details.' });
-            }
-        } catch (error) {
-            console.error(error);
-            addNotification({ type: 'alert', title: 'Lookup Failed', message: 'Could not reach product database.' });
-        }
-    };
-
-    const filteredProducts = products.filter((p: any) =>
-        (p.name?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
-        (p.sku?.toLowerCase() || '').includes(searchQuery.toLowerCase())
-    );
-
-    const updateProducts = async (newProducts: any[]) => {
-        if (!storeId) {
-            addNotification({ type: 'alert', title: 'Error', message: 'No Store ID associated with this account.' });
-            return;
-        }
-        try {
-            await updateStoreProducts(storeId, newProducts);
-        } catch (error) {
-            console.error("Failed to update products:", error);
-            addNotification({ type: 'alert', title: 'Error', message: 'Failed to save changes. You may not have permission.' });
-        }
-    };
-
-    const handleSyncInventory = async () => {
+    const handleDeleteProduct = async (product: Product) => {
         const confirmed = await confirm({
-            title: 'Sync Inventory',
-            message: `Update ${stats.outOfSyncCount} items from Master Catalog? Prices and stock will remain unchanged.`,
-            confirmText: 'Sync Now',
-            type: 'info'
+            title: 'Remove Product?',
+            message: `Are you sure you want to remove "${product.name}" from your store? This cannot be undone.`,
+            confirmText: 'Remove',
+            type: 'danger'
         });
 
         if (confirmed) {
-            const syncedList = getSyncedProducts();
-            updateProducts(syncedList);
-            addNotification({ type: 'system', title: 'Sync Complete', message: 'Product details updated from Master Catalog.' });
+            setDeletingId(product.id);
+            try {
+                await deleteMerchantProduct(product.id);
+                addNotification({ type: 'system', title: 'Removed', message: 'Product removed from available inventory.' });
+            } catch (err) {
+                console.error(err);
+                addNotification({ type: 'alert', title: 'Error', message: 'Could not remove product.' });
+            } finally {
+                setDeletingId(null);
+            }
         }
     };
 
-
-    const handleSaveProduct = () => {
-        const price = parseFloat(form.price) || 0;
-        const stock = parseInt(form.stock) || 0;
-        const lowStock = parseInt(form.lowStockThreshold) || 10;
-
-        if (editingProduct) {
-            const updatedList = products.map((p: any) => p.id === editingProduct.id ? {
-                ...p,
-                name: form.name,
-                sku: form.sku,
-                description: form.description,
-                price,
-                stock,
-                lowStockThreshold: lowStock,
-                category: form.category,
-                image: form.image || p.image,
-                taxable: form.taxable
-            } : p);
-            updateProducts(updatedList);
+    const handleMasterSearch = async (query: string) => {
+        setMasterSearchQuery(query);
+        if (query.length > 2) {
+            const results = await searchMasterCatalog(query);
+            setMasterSearchResults(results);
         } else {
-            const newProduct = {
-                id: `mp${Date.now()}`,
-                name: form.name,
-                catalogItemId: form.relatedCatalogItemId,
-                sku: form.sku,
-                description: form.description,
-                price,
-                stock,
-                lowStockThreshold: lowStock,
-                category: form.category,
-                image: form.image || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=100',
-                active: true,
-                taxable: form.taxable
-            };
-            updateProducts([...products, newProduct]);
+            setMasterSearchResults([]);
         }
-        closeModal();
     };
 
-    const openEditModal = (product: any) => {
+    const selectMasterItem = (item: any) => {
+        setSelectedMasterItem(item);
+        setView('add_details');
+        setForm(f => ({ ...f, price: '', stock: '50' }));
+    };
+
+    const handleAddProduct = async () => {
+        if (!storeId || !selectedMasterItem) return;
+
+        try {
+            await addMerchantProduct(storeId, selectedMasterItem.id, parseFloat(form.price) || 0, parseInt(form.stock) || 0);
+            addNotification({ type: 'system', title: 'Product Added', message: `${selectedMasterItem.product_name} added to your store.` });
+            closeModal();
+        } catch (err: any) {
+            console.error(err);
+            addNotification({ type: 'alert', title: 'Error', message: 'Could not add product.' });
+        }
+    };
+
+    const handleRequestProduct = async () => {
+        if (!storeId) return;
+        try {
+            await requestMasterProduct(storeId, {
+                name: form.reqName,
+                brand: form.reqBrand,
+                category: form.reqCategory,
+                description: form.reqDescription,
+                image: form.reqImage,
+                barcode: masterSearchQuery // Assume search query was barcode if applicable
+            });
+            addNotification({ type: 'system', title: 'Request Sent', message: 'Spendigo team will review your product request.' });
+            closeModal();
+        } catch (err: any) {
+            console.error(err);
+            addNotification({ type: 'alert', title: 'Error', message: 'Could not submit request.' });
+        }
+    };
+
+    const handleUpdateProduct = async () => {
+        if (!editingProduct) return;
+        try {
+            await updateMerchantProduct(editingProduct.id, {
+                price: parseFloat(form.price),
+                available_quantity: parseInt(form.stock)
+            });
+            addNotification({ type: 'system', title: 'Updated', message: 'Product updated successfully.' });
+            closeModal();
+        } catch (err) {
+            addNotification({ type: 'alert', title: 'Error', message: 'Update failed.' });
+        }
+    };
+
+    const openEdit = (product: Product) => {
         setEditingProduct(product);
-        setForm({
-            name: product.name || '',
-            sku: product.sku || '',
-            description: product.description || '',
-            price: String(product.price || 0),
-            stock: String(product.stock !== undefined ? product.stock : 50),
-            lowStockThreshold: String(product.lowStockThreshold || 10),
-            category: product.category || 'Fresh Produce',
-            image: product.image || '',
-            relatedCatalogItemId: product.catalogItemId || '',
-            taxable: product.taxable !== false
-        });
+        setForm(f => ({
+            ...f,
+            price: product.price.toString(),
+            stock: product.available_quantity.toString()
+        }));
+        setView('add_details'); // Re-use view
         setShowAddModal(true);
     };
 
     const closeModal = () => {
         setShowAddModal(false);
+        setView('list');
+        setMasterSearchQuery('');
+        setMasterSearchResults([]);
+        setSelectedMasterItem(null);
         setEditingProduct(null);
-        setCatalogSearch('');
-        setForm({ name: '', sku: '', description: '', price: '', stock: '', lowStockThreshold: '10', category: 'Fresh Produce', image: '', relatedCatalogItemId: '', taxable: true });
+        setForm({ price: '', stock: '50', reqName: '', reqBrand: '', reqDescription: '', reqImage: '', reqCategory: 'General' });
     };
 
-    const toggleProductActive = (id: string) => {
-        const updatedList = products.map((p: any) => p.id === id ? { ...p, active: !p.active } : p);
-        updateProducts(updatedList);
-    };
-
-    const deleteProduct = async (id: string) => {
-        const confirmed = await confirm({
-            title: 'Delete Product',
-            message: 'Are you sure you want to delete this product? This cannot be undone.',
-            confirmText: 'Delete',
-            type: 'danger'
-        });
-
-        if (confirmed) {
-            const updatedList = products.filter((p: any) => p.id !== id);
-            updateProducts(updatedList);
-            addNotification({ type: 'system', title: 'Product Deleted', message: 'Product removed from catalog.' });
-        }
-    };
+    // Filter local list
+    const filteredProducts = products.filter(p =>
+        p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        p.merchant_sku?.toLowerCase().includes(searchQuery.toLowerCase())
+    );
 
     return (
         <div className="p-6">
-            {/* Header */}
             <div className="flex items-center justify-between mb-6">
                 <div>
-                    <h1 className="text-2xl font-bold text-[var(--text-main)]">Products</h1>
-                    <p className="text-sm text-[var(--text-muted)]">{products.length} total products</p>
+                    <h1 className="text-2xl font-bold text-[var(--text-main)]">Inventory</h1>
+                    <p className="text-sm text-[var(--text-muted)]">{products.length} products sync with Master Catalog</p>
                 </div>
-                <div className="flex gap-3">
-                    {hasWriteAccess && stats.outOfSyncCount > 0 && (
-                        <button
-                            onClick={handleSyncInventory}
-                            className="px-4 py-2 bg-orange-100 text-orange-700 font-bold rounded-lg hover:bg-orange-200 border border-orange-200 flex items-center gap-2 animate-pulse"
-                        >
-                            <span>↻</span>
-                            <span>Sync Catalog ({stats.outOfSyncCount})</span>
-                        </button>
-                    )}
-                    {hasWriteAccess && (
-                        <button
-                            onClick={() => setShowAddModal(true)}
-                            className="px-4 py-2 bg-[var(--brand-primary)] text-white font-medium rounded-lg hover:brightness-110 shadow-lg shadow-[var(--brand-primary)]/20"
-                        >
-                            + Add Product
-                        </button>
-                    )}
-                </div>
+                {hasWriteAccess && (
+                    <button
+                        onClick={() => { setView('search_master'); setShowAddModal(true); }}
+                        className="px-4 py-2 bg-[var(--brand-primary)] text-white font-medium rounded-lg hover:brightness-110 shadow-lg shadow-[var(--brand-primary)]/20"
+                    >
+                        + Add Product
+                    </button>
+                )}
             </div>
 
-            {/* Search */}
+            {/* Search Local */}
             <div className="mb-4">
                 <input
                     type="text"
-                    placeholder="Search by name or SKU..."
+                    placeholder="Search existing inventory..."
                     value={searchQuery}
                     onChange={e => setSearchQuery(e.target.value)}
                     className="w-full px-4 py-3 border border-[var(--glass-border)] rounded-lg focus:border-[var(--brand-primary)] outline-none"
                 />
             </div>
 
-            {/* Products Table */}
+            {/* Table */}
             <div className="bg-white rounded-xl border border-[var(--glass-border)] overflow-hidden shadow-sm">
                 <table className="w-full">
                     <thead className="bg-[var(--surface-1)]">
@@ -307,256 +237,165 @@ const MerchantProducts: React.FC = () => {
                             <th className="text-left p-4 text-sm font-medium text-[var(--text-muted)]">Product</th>
                             <th className="text-left p-4 text-sm font-medium text-[var(--text-muted)]">Category</th>
                             <th className="text-left p-4 text-sm font-medium text-[var(--text-muted)]">Price</th>
-                            <th className="text-left p-4 text-sm font-medium text-[var(--text-muted)]">Stock</th>
-                            <th className="text-left p-4 text-sm font-medium text-[var(--text-muted)]">Status</th>
+                            <th className="text-left p-4 text-sm font-medium text-[var(--text-muted)]">Qty</th>
                             <th className="text-left p-4 text-sm font-medium text-[var(--text-muted)]">Actions</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-[var(--glass-border)]">
-                        {filteredProducts.map((product: any) => {
-                            const stock = product.stock !== undefined ? product.stock : 50;
-                            const lowThreshold = product.lowStockThreshold || 10;
-                            const isActive = product.active !== false;
-
-                            return (
-                                <tr key={product.id} className="hover:bg-[var(--surface-1)] transition-colors">
-                                    <td className="p-4">
+                        {loading && <tr><td colSpan={5} className="p-8 text-center text-gray-400">Loading catalog...</td></tr>}
+                        {!loading && filteredProducts.map(product => (
+                            <tr key={product.id} className="hover:bg-[var(--surface-1)] transition-colors">
+                                <td className="p-4">
+                                    <div className="flex items-center gap-3">
+                                        <img src={product.image} alt="" className="w-10 h-10 rounded-lg object-cover bg-gray-100" />
+                                        <div>
+                                            <span className="font-medium text-[var(--text-main)] block">{product.name}</span>
+                                            <span className="text-xs text-gray-400">{product.brand_name}</span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td className="p-4 text-[var(--text-muted)] capitalize">{product.category}</td>
+                                <td className="p-4 font-medium text-[var(--text-main)]">${product.price.toFixed(2)}</td>
+                                <td className="p-4">
+                                    <span className={`${product.available_quantity < 10 ? 'text-orange-600 font-bold' : 'text-green-600'}`}>
+                                        {product.available_quantity}
+                                    </span>
+                                </td>
+                                <td className="p-4">
+                                    {hasWriteAccess && (
                                         <div className="flex items-center gap-3">
-                                            <img src={product.image} alt="" className="w-10 h-10 rounded-lg object-cover" />
-                                            <div>
-                                                <span className="font-medium text-[var(--text-main)] block">{product.name}</span>
-                                                {stock <= lowThreshold && stock > 0 && (
-                                                    <span className="text-[10px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded font-bold">Low Stock</span>
-                                                )}
-                                            </div>
+                                            <button onClick={() => openEdit(product)} className="text-[var(--brand-primary)] hover:underline font-bold text-sm">Edit</button>
+                                            <button
+                                                onClick={() => handleDeleteProduct(product)}
+                                                disabled={deletingId === product.id}
+                                                className="text-red-500 hover:text-red-700 hover:underline text-sm"
+                                            >
+                                                {deletingId === product.id ? 'Removing...' : 'Remove'}
+                                            </button>
                                         </div>
-                                    </td>
-                                    <td className="p-4 text-[var(--text-muted)]">{product.category}</td>
-                                    <td className="p-4 font-medium text-[var(--text-main)]">${product.price.toFixed(2)}</td>
-                                    <td className="p-4">
-                                        <span className={`${stock === 0 ? 'text-red-500 font-bold' : stock <= lowThreshold ? 'text-orange-600 font-medium' : 'text-green-600'}`}>
-                                            {stock}
-                                        </span>
-                                    </td>
-                                    <td className="p-4">
-                                        <span className={`text-xs px-2 py-1 rounded-full ${isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
-                                            {isActive ? 'Active' : 'Inactive'}
-                                        </span>
-                                    </td>
-                                    <td className="p-4">
-                                        <div className="flex items-center gap-2">
-                                            {hasWriteAccess ? (
-                                                <>
-                                                    <button onClick={() => openEditModal(product)} className="text-[var(--brand-primary)] text-sm hover:underline">Edit</button>
-                                                    <button onClick={() => toggleProductActive(product.id)} className="text-yellow-600 text-sm hover:underline">
-                                                        {isActive ? 'Disable' : 'Enable'}
-                                                    </button>
-                                                    <button onClick={() => deleteProduct(product.id)} className="text-red-500 text-sm hover:underline">Delete</button>
-                                                </>
-                                            ) : (
-                                                <span className="text-xs text-[var(--text-muted)] italic">View Only</span>
-                                            )}
-                                        </div>
-                                    </td>
-                                </tr>
-                            );
-                        })}
+                                    )}
+                                </td>
+                            </tr>
+                        ))}
                     </tbody>
                 </table>
             </div>
 
-            {/* Scanner Overlay */}
-            {showScanner && (
-                <ScannerModal
-                    onClose={() => setShowScanner(false)}
-                    onScan={handleScanSuccess}
-                />
-            )}
-
-            {/* Add/Edit Modal */}
+            {/* MODAL */}
             {showAddModal && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 animate-fade-in">
                     <div className="bg-white rounded-2xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
-                        <h2 className="text-xl font-bold text-[var(--text-main)] mb-4">
-                            {editingProduct ? 'Edit Product' : 'Add New Product'}
-                        </h2>
 
-                        {!editingProduct && (
-                            <div className="mb-6 bg-blue-50 p-4 rounded-xl border border-blue-100">
-                                <label className="block text-sm font-bold text-blue-900 mb-2">🛍️ Select from Master Catalog</label>
-                                <div className="relative">
+                        {/* PHASE 1: SEARCH MASTER */}
+                        {view === 'search_master' && (
+                            <>
+                                <div className="flex justify-between items-center mb-4">
+                                    <h2 className="text-xl font-bold">Add from Master Catalog</h2>
+                                    <div className="flex items-center gap-4">
+                                        <button onClick={() => setView('request_new')} className="text-sm font-bold text-[var(--brand-primary)] hover:underline">
+                                            Request Missing?
+                                        </button>
+                                        <button onClick={closeModal} className="text-gray-500 hover:text-black w-8 h-8 flex items-center justify-center bg-gray-100 rounded-full">✕</button>
+                                    </div>
+                                </div>
+                                <div className="mb-4 relative">
                                     <input
                                         type="text"
-                                        placeholder="Search catalog (e.g. 'Apple', 'Milk')..."
-                                        value={catalogSearch}
-                                        onChange={e => {
-                                            setCatalogSearch(e.target.value);
-                                            setShowCatalogDropdown(true);
-                                            if (!form.relatedCatalogItemId) {
-                                                setForm(prev => ({ ...prev, name: e.target.value }));
-                                            }
-                                        }}
-                                        onFocus={() => setShowCatalogDropdown(true)}
-                                        className="w-full px-4 py-3 border border-blue-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                        className="w-full px-4 py-3 border rounded-lg"
+                                        placeholder="Search by name, brand, barcode..."
+                                        value={masterSearchQuery}
+                                        onChange={e => handleMasterSearch(e.target.value)}
+                                        autoFocus
                                     />
-                                    {showCatalogDropdown && catalogSearch && (
-                                        <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl z-20 max-h-60 overflow-y-auto">
-                                            {searchCatalog(catalogSearch).length > 0 ? (
-                                                searchCatalog(catalogSearch).map(item => (
-                                                    <div
-                                                        key={item.id}
-                                                        onClick={() => {
-                                                            setForm(prev => ({
-                                                                ...prev,
-                                                                name: item.name,
-                                                                description: item.description,
-                                                                category: item.category,
-                                                                image: item.image,
-                                                                relatedCatalogItemId: item.id,
-                                                                taxable: item.taxable !== false
-                                                            }));
-                                                            setCatalogSearch(item.name);
-                                                            setShowCatalogDropdown(false);
-                                                        }}
-                                                        className="p-3 hover:bg-blue-50 cursor-pointer border-b border-gray-50 last:border-0 flex items-center gap-3"
-                                                    >
-                                                        <img src={item.image} className="w-8 h-8 rounded object-cover" alt="" />
-                                                        <div>
-                                                            <div className="font-bold text-sm">{item.name}</div>
-                                                            <div className="text-xs text-gray-500">{item.category}</div>
-                                                        </div>
-                                                    </div>
-                                                ))
-                                            ) : (
-                                                <div className="p-3 text-sm text-gray-500 italic">No matching items found in catalog.</div>
-                                            )}
+                                    <button onClick={() => setShowScanner(true)} className="absolute right-3 top-3 text-xl">📷</button>
+                                </div>
+
+                                <div className="space-y-2 max-h-60 overflow-y-auto mb-4">
+                                    {masterSearchResults.map(item => (
+                                        <div key={item.id} onClick={() => selectMasterItem(item)} className="flex items-center gap-3 p-3 hover:bg-blue-50 cursor-pointer border rounded-lg">
+                                            <img src={item.primary_image_url} className="w-10 h-10 rounded object-cover" />
+                                            <div>
+                                                <div className="font-bold">{item.product_name}</div>
+                                                <div className="text-xs text-gray-500">{item.brand_name} • {item.category_id}</div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                    {masterSearchQuery.length > 2 && masterSearchResults.length === 0 && (
+                                        <div className="text-center py-4 text-gray-500">
+                                            No products found.
+                                            <br />
+                                            <button onClick={() => setView('request_new')} className="mt-2 text-[var(--brand-primary)] underline font-bold">
+                                                Request New Product
+                                            </button>
                                         </div>
                                     )}
                                 </div>
-                                <p className="text-xs text-blue-600 mt-2">
-                                    Selecting from catalog ensures better visibility in search results.
-                                </p>
-                            </div>
+                            </>
                         )}
 
-                        <div className="space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="col-span-2">
-                                    <label className="block text-sm text-[var(--text-muted)] mb-1">Product Name</label>
-                                    <div className="relative">
-                                        <input
-                                            type="text"
-                                            value={form.name}
-                                            onChange={e => setForm({ ...form, name: e.target.value })}
-                                            className="w-full px-4 py-3 border border-[var(--glass-border)] rounded-lg bg-gray-50"
-                                            readOnly={!!form.relatedCatalogItemId && !editingProduct}
-                                        />
-                                        {form.relatedCatalogItemId && (
-                                            <button
-                                                onClick={() => {
-                                                    setForm(prev => ({ ...prev, relatedCatalogItemId: '' }));
-                                                    setCatalogSearch('');
-                                                }}
-                                                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-red-500 hover:underline"
-                                            >
-                                                Clear Selection
-                                            </button>
-                                        )}
+                        {/* PHASE 2: EDIT/ADD DETAILS */}
+                        {view === 'add_details' && (selectedMasterItem || editingProduct) && (
+                            <>
+                                <h2 className="text-xl font-bold mb-4">{editingProduct ? 'Edit Inventory' : 'Add to Inventory'}</h2>
+
+                                <div className="flex gap-4 mb-6 bg-gray-50 p-4 rounded-lg">
+                                    <img src={editingProduct?.image || selectedMasterItem?.primary_image_url} className="w-16 h-16 rounded object-cover" />
+                                    <div>
+                                        <div className="font-bold text-lg">{editingProduct?.name || selectedMasterItem?.product_name}</div>
+                                        <div className="text-sm text-gray-500">Master Data (Read Only)</div>
                                     </div>
                                 </div>
-                                <div>
-                                    <label className="block text-sm text-[var(--text-muted)] mb-1">SKU / Barcode</label>
-                                    <div className="flex gap-2">
-                                        <input
-                                            type="text"
-                                            value={form.sku}
-                                            onChange={e => setForm({ ...form, sku: e.target.value })}
-                                            className="w-full px-4 py-3 border border-[var(--glass-border)] rounded-lg font-mono text-sm"
-                                            placeholder="e.g. 12345..."
-                                        />
-                                        <button
-                                            onClick={() => setShowScanner(true)}
-                                            className="px-3 bg-gray-100 hover:bg-gray-200 rounded-lg text-lg"
-                                            title="Scan Barcode"
-                                            type="button"
-                                        >
-                                            📷
+
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block text-sm font-bold mb-1">Price ($)</label>
+                                        <input type="number" step="0.01" className="w-full p-3 border rounded-lg" value={form.price} onChange={e => setForm({ ...form, price: e.target.value })} />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-bold mb-1">Qty</label>
+                                        <input type="number" className="w-full p-3 border rounded-lg" value={form.stock} onChange={e => setForm({ ...form, stock: e.target.value })} />
+                                    </div>
+
+                                    <div className="flex gap-3 pt-4">
+                                        <button onClick={editingProduct ? handleUpdateProduct : handleAddProduct} className="flex-1 py-3 bg-[var(--brand-primary)] text-white w-full rounded-lg font-bold">
+                                            {editingProduct ? 'Save Changes' : 'Add Product'}
                                         </button>
+                                        <button onClick={closeModal} className="flex-1 py-3 border rounded-lg">Cancel</button>
                                     </div>
                                 </div>
-                                <div>
-                                    <label className="block text-sm text-[var(--text-muted)] mb-1">Category</label>
-                                    <select value={form.category} onChange={e => setForm({ ...form, category: e.target.value })} className="w-full px-4 py-3 border border-[var(--glass-border)] rounded-lg">
-                                        <option value="">Select Category</option>
-                                        {['Dairy & Refrigerated', 'Bakery & Grains', 'Pantry Staples', 'Breakfast & Beverages', 'Produce & Frozen', 'Snacks & Household'].map(c => (
-                                            <option key={c} value={c}>{c}</option>
-                                        ))}
+                            </>
+                        )}
+
+                        {/* PHASE 3: REQUEST NEW */}
+                        {view === 'request_new' && (
+                            <>
+                                <h2 className="text-xl font-bold mb-4">Request New Product</h2>
+                                <p className="text-sm text-gray-500 mb-4">This product will be added to the Master Catalog after approval.</p>
+
+                                <div className="space-y-3">
+                                    <input type="text" placeholder="Product Name" className="w-full p-3 border rounded-lg" value={form.reqName} onChange={e => setForm({ ...form, reqName: e.target.value })} />
+                                    <input type="text" placeholder="Brand" className="w-full p-3 border rounded-lg" value={form.reqBrand} onChange={e => setForm({ ...form, reqBrand: e.target.value })} />
+                                    <select className="w-full p-3 border rounded-lg" value={form.reqCategory} onChange={e => setForm({ ...form, reqCategory: e.target.value })}>
+                                        <option>General</option>
+                                        <option>Fresh Produce</option>
+                                        <option>Dairy</option>
+                                        <option>Bakery</option>
                                     </select>
-                                </div>
-                            </div>
+                                    <textarea placeholder="Description" className="w-full p-3 border rounded-lg h-24" value={form.reqDescription} onChange={e => setForm({ ...form, reqDescription: e.target.value })}></textarea>
+                                    <input type="text" placeholder="Image URL (Optional)" className="w-full p-3 border rounded-lg" value={form.reqImage} onChange={e => setForm({ ...form, reqImage: e.target.value })} />
 
-                            <div>
-                                <label className="block text-sm text-[var(--text-muted)] mb-1">Description</label>
-                                <textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} className="w-full px-4 py-3 border border-[var(--glass-border)] rounded-lg h-24 resize-none" placeholder="Product details..." />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm text-[var(--text-muted)] mb-1">Product Image URL</label>
-                                <div className="flex gap-4 items-start">
-                                    <input
-                                        type="text"
-                                        value={form.image}
-                                        onChange={e => setForm({ ...form, image: e.target.value })}
-                                        placeholder="https://..."
-                                        className="flex-1 px-4 py-3 border border-[var(--glass-border)] rounded-lg"
-                                    />
-                                    {form.image && (
-                                        <div className="w-16 h-16 rounded-lg border border-[var(--glass-border)] overflow-hidden bg-gray-50 flex-shrink-0">
-                                            <img src={form.image} alt="Preview" className="w-full h-full object-cover" onError={(e) => (e.target as HTMLImageElement).src = 'https://placehold.co/100?text=No+Img'} />
-                                        </div>
-                                    )}
+                                    <button onClick={handleRequestProduct} className="py-3 bg-black text-white w-full rounded-lg font-bold mt-2">Submit Request</button>
+                                    <button onClick={() => setView('search_master')} className="py-3 w-full text-gray-500">Back</button>
                                 </div>
-                            </div>
-
-                            <div className="grid grid-cols-3 gap-4">
-                                <div>
-                                    <label className="block text-sm text-[var(--text-muted)] mb-1">Price ($)</label>
-                                    <input type="number" step="0.01" value={form.price} onChange={e => setForm({ ...form, price: e.target.value })} className="w-full px-4 py-3 border border-[var(--glass-border)] rounded-lg" />
-                                </div>
-                                <div>
-                                    <label className="block text-sm text-[var(--text-muted)] mb-1">Stock</label>
-                                    <input type="number" value={form.stock} onChange={e => setForm({ ...form, stock: e.target.value })} className="w-full px-4 py-3 border border-[var(--glass-border)] rounded-lg" />
-                                </div>
-                                <div>
-                                    <label className="block text-sm text-[var(--text-muted)] mb-1">Low Alert At</label>
-                                    <input type="number" value={form.lowStockThreshold} onChange={e => setForm({ ...form, lowStockThreshold: e.target.value })} className="w-full px-4 py-3 border border-[var(--glass-border)] rounded-lg bg-yellow-50" />
-                                </div>
-                                <div className="flex items-center pt-6">
-                                    <label className="flex items-center gap-3 cursor-pointer">
-                                        <input
-                                            type="checkbox"
-                                            checked={form.taxable}
-                                            onChange={e => setForm({ ...form, taxable: e.target.checked })}
-                                            className="w-5 h-5 accent-[var(--brand-primary)]"
-                                        />
-                                        <div>
-                                            <div className="font-bold text-[var(--text-main)]">Taxable Item</div>
-                                            <div className="text-xs text-[var(--text-muted)]">Apply HST/GST (13%)</div>
-                                        </div>
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="flex gap-3 mt-6">
-                            <button onClick={handleSaveProduct} className="flex-1 py-3 bg-[var(--brand-primary)] text-white font-medium rounded-lg hover:brightness-110 shadow-lg shadow-[var(--brand-primary)]/20 transition-all">
-                                {editingProduct ? 'Save Changes' : 'Add Product'}
-                            </button>
-                            <button onClick={closeModal} className="flex-1 py-3 border border-[var(--glass-border)] rounded-lg hover:bg-[var(--surface-1)]">Cancel</button>
-                        </div>
+                            </>
+                        )}
                     </div>
                 </div>
             )}
+
+            {showScanner && <ScannerModal onClose={() => setShowScanner(false)} onScan={(code) => { setShowScanner(false); handleMasterSearch(code); }} />}
         </div>
     );
 };
+
 export default MerchantProducts;

@@ -2,50 +2,20 @@ import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
 import { useMarketplace } from '../../context/MarketplaceContext';
+import { useCatalog } from '../../hooks/useCatalog';
 
 const Search: React.FC = () => {
     const navigate = useNavigate();
     const { addToCart } = useCart();
-    const { stores, loading } = useMarketplace();
 
-    // Dynamic Product List derived from Marketplace Context
-    const { allProducts, categories } = useMemo(() => {
-        const products: Array<{
-            id: string;
-            name: string;
-            price: number;
-            originalPrice?: number;
-            storeId: string;
-            storeName: string;
-            category: string;
-            image: string;
-        }> = [];
+    // Use new global catalog search
+    const { useGlobalCatalog } = useCatalog();
+    const { products: allProducts, loading } = useGlobalCatalog();
 
-        Object.values(stores).forEach((store: any) => {
-            // Only include active stores
-            if (store.status === 'suspended') return;
-
-            store.products?.forEach((product: any) => {
-                // Only include active products
-                if (product.active === false) return;
-
-                products.push({
-                    id: product.id,
-                    name: product.name,
-                    price: product.price,
-                    originalPrice: product.originalPrice,
-                    storeId: store.id,
-                    storeName: store.name || 'Unknown Store', // Fallback
-                    category: product.category || 'Uncategorized',
-                    image: product.image
-                });
-            });
-        });
-
-        const uniqueCategories = ['All', ...Array.from(new Set(products.map(p => p.category))).sort()];
-
-        return { allProducts: products, categories: uniqueCategories };
-    }, [stores]);
+    // Derived categories
+    const categories = useMemo(() => {
+        return ['All', ...Array.from(new Set(allProducts.map(p => p.category))).sort()];
+    }, [allProducts]);
 
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('All');
@@ -69,7 +39,7 @@ const Search: React.FC = () => {
             results = results.filter(p =>
                 p.name.toLowerCase().includes(query) ||
                 p.category.toLowerCase().includes(query) ||
-                p.storeName.toLowerCase().includes(query)
+                (p.storeName && p.storeName.toLowerCase().includes(query))
             );
         }
 
@@ -92,10 +62,11 @@ const Search: React.FC = () => {
     const groupedByStore = useMemo(() => {
         const groups: Record<string, typeof allProducts> = {};
         filteredProducts.forEach(product => {
-            if (!groups[product.storeName]) {
-                groups[product.storeName] = [];
+            const sName = product.storeName || 'Unknown Store';
+            if (!groups[sName]) {
+                groups[sName] = [];
             }
-            groups[product.storeName].push(product);
+            groups[sName].push(product);
         });
         return groups;
     }, [filteredProducts]);

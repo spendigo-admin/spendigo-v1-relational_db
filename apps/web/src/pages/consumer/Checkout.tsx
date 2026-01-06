@@ -67,13 +67,14 @@ const Checkout: React.FC = () => {
                 tier: store?.subscriptionTier || STORE_DATA[item.storeId]?.subscriptionTier || 'free',
                 deliveryEnabled: store?.deliveryEnabled !== false,
                 pickupEnabled: store?.pickupEnabled !== false,
-                isOpen: isStoreOpen(store)
+                isOpen: isStoreOpen(store),
+                acceptsOnlinePayment: !!store?.stripeAccountId && store?.stripeOnboardingStatus === 'complete'
             };
         }
         acc[item.storeId].total += item.price * item.quantity;
         acc[item.storeId].items.push(item);
         return acc;
-    }, {} as Record<string, { storeName: string; total: number; items: any[]; tier: string; deliveryEnabled: boolean; pickupEnabled: boolean; isOpen: boolean }>);
+    }, {} as Record<string, { storeName: string; total: number; items: any[]; tier: string; deliveryEnabled: boolean; pickupEnabled: boolean; isOpen: boolean; acceptsOnlinePayment: boolean }>);
 
     // State for fulfillment method PER STORE
     const [fulfillmentMethods, setFulfillmentMethods] = useState<Record<string, 'delivery' | 'pickup'>>({});
@@ -321,7 +322,14 @@ const Checkout: React.FC = () => {
                                     <div className="flex items-center gap-3">
                                         <div className="w-10 h-10 rounded-lg bg-[var(--surface-2)] flex items-center justify-center text-lg">🏪</div>
                                         <div>
-                                            <h2 className="font-bold text-[var(--text-main)]">{storeName}</h2>
+                                            <div className="flex items-center gap-2">
+                                                <h2 className="font-bold text-[var(--text-main)]">{storeName}</h2>
+                                                {groupedItems[storeId].acceptsOnlinePayment && (
+                                                    <span className="text-[10px] font-bold bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full border border-purple-200">
+                                                        💳 Online Pay
+                                                    </span>
+                                                )}
+                                            </div>
                                             <p className="text-xs text-[var(--text-muted)]">{items.length} items • ${total.toFixed(2)}</p>
                                         </div>
                                     </div>

@@ -1090,70 +1090,147 @@ const MerchantSettings: React.FC = () => {
         </div>
     );
 
-    const renderPayments = () => (
-        <div className="space-y-6 animate-fade-in">
-            {/* Context / Information */}
-            <section className="bg-blue-50 border border-blue-200 rounded-xl p-6">
-                <div className="flex gap-4">
-                    <div className="text-3xl">🏦</div>
-                    <div>
-                        <h3 className="font-bold text-blue-900 text-lg">Direct Payouts</h3>
-                        <p className="text-blue-800 mt-1">
-                            Spendigo does not hold your funds. All payments from customers are routed directly to your connected bank account via our payment partner, Stripe.
-                        </p>
-                    </div>
-                </div>
-            </section>
+    const renderPayments = () => {
+        const store = stores[storeId];
+        const isConnected = !!store?.stripeAccountId;
 
-            {/* Payout Configuration */}
-            <section className="bg-white p-6 rounded-xl border border-[var(--glass-border)] shadow-sm">
-                <h2 className="text-lg font-bold text-[var(--text-main)] mb-4">Payout Configuration</h2>
+        const handleConnectStripe = async () => {
+            setIsSaving(true);
+            try {
+                // Simulate OAuth Redirect & Webhook delay
+                await new Promise(resolve => setTimeout(resolve, 2000));
 
-                {/* Mock Connected State */}
-                <div className="flex items-center gap-4 p-5 bg-green-50 border border-green-200 rounded-lg mb-6">
-                    <div className="w-12 h-12 rounded-full bg-green-200 flex items-center justify-center text-green-700 font-bold text-xl">✓</div>
-                    <div className="flex-1">
-                        <div className="font-bold text-green-900 text-lg">Stripe Connect Active</div>
-                        <div className="text-green-800">Your account is ready to receive payouts.</div>
-                        <div className="text-sm text-green-700 mt-1">Connected: TD Canada Trust •••• {payments.bankLast4}</div>
-                    </div>
-                    <button className="px-4 py-2 bg-white border border-green-200 text-green-800 font-bold rounded-lg hover:bg-green-100 transition-colors shadow-sm">
-                        Manage in Stripe
-                    </button>
-                </div>
+                await updateStore(storeId, {
+                    stripeAccountId: `acct_test_${Math.random().toString(36).substr(2, 9)}`,
+                    stripeOnboardingStatus: 'complete',
+                    stripeConnectedAt: new Date().toISOString()
+                });
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                        <label className="block text-sm font-medium text-[var(--text-muted)] mb-2">Payout Schedule</label>
-                        <select
-                            value={payments.payoutSchedule}
-                            onChange={e => setPayments({ ...payments, payoutSchedule: e.target.value })}
-                            className="w-full p-3 border border-[var(--glass-border)] rounded-lg bg-[var(--surface-1)]"
-                        >
-                            <option value="daily">Daily (Rolling 2 Day Window)</option>
-                            <option value="weekly">Weekly (Every Monday)</option>
-                            <option value="manual">Manual Payouts</option>
-                        </select>
-                        <p className="text-xs text-[var(--text-muted)] mt-2">
-                            Funds are typically available 2 business days after transaction.
-                        </p>
+                addNotification({ type: 'system', title: 'Stripe Connected', message: 'Your account is now ready to receive payouts.' });
+            } catch (err) {
+                console.error(err);
+                addNotification({ type: 'alert', title: 'Connection Failed', message: 'Could not connect to Stripe. Try again.' });
+            } finally {
+                setIsSaving(false);
+            }
+        };
+
+        const handleDisconnectStripe = async () => {
+            if (await confirm({ title: 'Disconnect Stripe?', message: 'You will stop receiving payouts until you reconnect.', confirmText: 'Disconnect', type: 'danger' })) {
+                setIsSaving(true);
+                try {
+                    await updateStore(storeId, {
+                        stripeAccountId: null,
+                        stripeOnboardingStatus: null,
+                        stripeConnectedAt: null
+                    });
+                    addNotification({ type: 'system', title: 'Disconnected', message: 'Stripe account unlinked.' });
+                } catch (err) {
+                    addNotification({ type: 'alert', title: 'Error', message: 'Failed to disconnect.' });
+                } finally {
+                    setIsSaving(false);
+                }
+            }
+        };
+
+        return (
+            <div className="space-y-6 animate-fade-in">
+                {/* Context / Information */}
+                <section className="bg-blue-50 border border-blue-200 rounded-xl p-6">
+                    <div className="flex gap-4">
+                        <div className="text-3xl">🏦</div>
+                        <div>
+                            <h3 className="font-bold text-blue-900 text-lg">Direct Payouts</h3>
+                            <p className="text-blue-800 mt-1">
+                                Spendigo does not hold your funds. All payments from customers are routed directly to your connected bank account via our payment partner, Stripe.
+                            </p>
+                        </div>
                     </div>
-                    <div>
-                        <label className="block text-sm font-medium text-[var(--text-muted)] mb-2">Statement Descriptor</label>
-                        <input
-                            type="text"
-                            value={storeInfo.name.substring(0, 20)}
-                            readOnly
-                            className="w-full p-3 border border-[var(--glass-border)] rounded-lg bg-gray-50 text-gray-500 cursor-not-allowed"
-                        />
-                        <p className="text-xs text-[var(--text-muted)] mt-2">
-                            This is what customers will see on their bank statements.
-                        </p>
+                </section>
+
+                {/* Payout Configuration */}
+                <section className="bg-white p-6 rounded-xl border border-[var(--glass-border)] shadow-sm">
+                    <h2 className="text-lg font-bold text-[var(--text-main)] mb-4">Payout Configuration</h2>
+
+                    {isConnected ? (
+                        /* Connected State */
+                        <div className="flex items-center gap-4 p-5 bg-green-50 border border-green-200 rounded-lg mb-6">
+                            <div className="w-12 h-12 rounded-full bg-green-200 flex items-center justify-center text-green-700 font-bold text-xl">✓</div>
+                            <div className="flex-1">
+                                <div className="font-bold text-green-900 text-lg">Stripe Connect Active</div>
+                                <div className="text-green-800">Your account is ready to receive payouts.</div>
+                                <div className="text-sm text-green-700 mt-1">Account ID: <span className="font-mono bg-green-100 px-1 rounded">{store.stripeAccountId}</span></div>
+                            </div>
+                            <div className="flex flex-col gap-2">
+                                <button className="px-4 py-2 bg-white border border-green-200 text-green-800 font-bold rounded-lg hover:bg-green-100 transition-colors shadow-sm">
+                                    Manage in Stripe
+                                </button>
+                                <button onClick={handleDisconnectStripe} className="text-xs text-red-500 hover:underline text-right">
+                                    Disconnect
+                                </button>
+                            </div>
+                        </div>
+                    ) : (
+                        /* Not Connected State */
+                        <div className="flex flex-col md:flex-row items-center gap-6 p-6 bg-gray-50 border border-gray-200 rounded-xl mb-6">
+                            <div className="w-16 h-16 bg-[#635BFF] rounded-xl flex items-center justify-center text-white text-3xl shadow-lg shrink-0">
+                                S
+                            </div>
+                            <div className="flex-1 text-center md:text-left">
+                                <h3 className="text-xl font-bold text-gray-900 mb-2">Connect with Stripe</h3>
+                                <p className="text-gray-600 mb-4">
+                                    To start selling on Spendigo, you must connect a Stripe account. This allows us to securely transfer earnings to your bank account automatically.
+                                </p>
+                                <div className="flex flex-wrap gap-2 justify-center md:justify-start">
+                                    <span className="text-xs bg-white border px-2 py-1 rounded text-gray-500">🔒 Secure processing</span>
+                                    <span className="text-xs bg-white border px-2 py-1 rounded text-gray-500">⚡️ Daily payouts</span>
+                                    <span className="text-xs bg-white border px-2 py-1 rounded text-gray-500">🌍 Major cards accepted</span>
+                                </div>
+                            </div>
+                            <button
+                                onClick={handleConnectStripe}
+                                disabled={isSaving}
+                                className="px-6 py-3 bg-[#635BFF] text-white font-bold rounded-lg hover:brightness-110 shadow-lg shadow-[#635BFF]/30 transition-all whitespace-nowrap"
+                            >
+                                {isSaving ? 'Connecting...' : 'Connect Stripe Account'}
+                            </button>
+                        </div>
+                    )}
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 opacity-75">
+                        <div>
+                            <label className="block text-sm font-medium text-[var(--text-muted)] mb-2">Payout Schedule</label>
+                            <select
+                                value={payments.payoutSchedule}
+                                onChange={e => setPayments({ ...payments, payoutSchedule: e.target.value })}
+                                className="w-full p-3 border border-[var(--glass-border)] rounded-lg bg-[var(--surface-1)]"
+                                disabled={!isConnected}
+                            >
+                                <option value="daily">Daily (Rolling 2 Day Window)</option>
+                                <option value="weekly">Weekly (Every Monday)</option>
+                                <option value="manual">Manual Payouts</option>
+                            </select>
+                            <p className="text-xs text-[var(--text-muted)] mt-2">
+                                Funds are typically available 2 business days after transaction.
+                            </p>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-[var(--text-muted)] mb-2">Statement Descriptor</label>
+                            <input
+                                type="text"
+                                value={storeInfo.name.substring(0, 20)}
+                                readOnly
+                                className="w-full p-3 border border-[var(--glass-border)] rounded-lg bg-gray-50 text-gray-500 cursor-not-allowed"
+                            />
+                            <p className="text-xs text-[var(--text-muted)] mt-2">
+                                This is what customers will see on their bank statements.
+                            </p>
+                        </div>
                     </div>
-                </div>
-            </section>
-        </div>
-    );
+                </section>
+            </div>
+        );
+    };
 
     const renderNotifications = () => (
         <div className="space-y-6 animate-fade-in">
