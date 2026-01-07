@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { collection, query, where, onSnapshot, doc, getDoc, setDoc, updateDoc, deleteDoc, addDoc, serverTimestamp, orderBy } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, addDoc, serverTimestamp, orderBy } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 
 export interface Product {
@@ -211,8 +211,26 @@ export const useCatalog = () => {
 
                 const masterMap = new Map();
                 await Promise.all(Array.from(masterIds).map(async (mid) => {
-                    const mDoc = await getDoc(doc(db, 'master_products', mid));
-                    if (mDoc.exists()) masterMap.set(mid, mDoc.data());
+                    // 1. Try Master Catalog
+                    let mDoc = await getDoc(doc(db, 'master_products', mid));
+                    let isPending = false;
+
+                    // 2. If not found, try Pending Catalog
+                    if (!mDoc.exists()) {
+                        mDoc = await getDoc(doc(db, 'pending_master_products', mid));
+                        isPending = true;
+                    }
+
+                    if (mDoc.exists()) {
+                        const data = mDoc.data()!;
+                        // Map pending fields if necessary
+                        if (isPending) {
+                            if (!data.barcode && data.original_barcode) data.barcode = data.original_barcode;
+                            // Pending might use 'status'='pending_review'
+                        }
+
+                        masterMap.set(mid, { ...data, is_pending: isPending });
+                    }
                 }));
 
                 snapshot.forEach(doc => {
@@ -440,27 +458,69 @@ export const useCatalog = () => {
     // Search Master Catalog (for Merchant adding products)
     const searchMasterCatalog = async (searchQuery: string) => {
         // NOTE: Firestore doesn't support full-text search natively. 
-        // For a hackathon/demo, we'll fetch all master products (or a reasonable limit) and filter strictly in memory.
-        // In production, use Algolia/Typesense.
+        // For production, use Algolia/Typesense.
+        // Optimized to check barcodes directly first.
+
+        const results: any[] = [];
+        const seenIds = new Set<string>();
+        const lowerQuery = searchQuery.toLowerCase().trim();
 
         try {
-            // Limited fetch for demo performance
-            const q = query(collection(db, 'master_products'));
-            const snapshot = await import('firebase/firestore').then(mod => mod.getDocs(q));
+            // 1. Barcode Search (Direct Index Lookup)
+            // Checks both exact match and potentially stripped zeros if needed, 
+            // but strict barcode match is safest.
+            if (/^\d+$/.test(lowerQuery)) {
+                // Check Master
+                const masterQ = query(collection(db, 'master_products'), where('barcode', '==', lowerQuery));
+                const masterSnap = await getDocs(masterQ);
+                masterSnap.forEach(doc => {
+                    const data = doc.data();
+                    if (!seenIds.has(doc.id)) {
+                        results.push({ ...data, id: doc.id });
+                        seenIds.add(doc.id);
+                    }
+                });
 
-            const results: any[] = [];
-            const lowerQuery = searchQuery.toLowerCase();
+                // Check Pending
+                const pendingQ = query(collection(db, 'pending_master_products'), where('original_barcode', '==', lowerQuery));
+                const pendingSnap = await getDocs(pendingQ);
+                pendingSnap.forEach(doc => {
+                    if (!seenIds.has(doc.id)) {
+                        const data = doc.data();
+                        results.push({
+                            ...data,
+                            id: doc.id,
+                            barcode: data.original_barcode,
+                            product_name: data.product_name, // Ensure compatible field names
+                            brand_name: data.brand,
+                            is_pending: true
+                        });
+                        seenIds.add(doc.id);
+                    }
+                });
+            }
+
+            // If we found barcode matches, return them immediately
+            if (results.length > 0) return results;
+
+            // 2. Name/Brand Search (Memory Filter fallback)
+            // Fetching all (demo only)
+            const q = query(collection(db, 'master_products'));
+            const snapshot = await getDocs(q);
 
             snapshot.forEach(doc => {
                 const data = doc.data();
+                if (seenIds.has(doc.id)) return;
+
                 const text = `${data.product_name} ${data.brand_name || ''} ${data.barcode || ''}`.toLowerCase();
                 if (text.includes(lowerQuery)) {
                     results.push({ ...data, id: doc.id });
                 }
             });
+
             return results;
         } catch (err) {
-            console.error(err);
+            console.error('Search error:', err);
             return [];
         }
     };
@@ -810,10 +870,26 @@ export const useCatalog = () => {
 
     const addMasterProduct = async (data: MasterProduct) => {
         try {
-            const masterId = data.master_product_id || `mp-${data.product_name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${Date.now().toString().slice(-4)}`;
-            const ref = doc(db, 'master_products', masterId);
+            console.log(`[addMasterProduct] Checking for existing product with barcode: ${data.barcode}`);
 
-            console.log(`[addMasterProduct] Creating master product with ID: ${masterId}`);
+            // Check if product with this barcode already exists
+            let masterId = data.master_product_id;
+
+            if (data.barcode) {
+                const q = query(collection(db, 'master_products'), where('barcode', '==', data.barcode));
+                const existingSnap = await getDocs(q);
+
+                if (!existingSnap.empty) {
+                    masterId = existingSnap.docs[0].id;
+                    console.log(`[addMasterProduct] ⚠️ Barcode ${data.barcode} exists as: ${masterId}. Updating.`);
+                }
+            }
+
+            // If no existing product found, generate new ID
+            if (!masterId) {
+                masterId = `mp-${data.product_name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${Date.now().toString().slice(-4)}`;
+                console.log(`[addMasterProduct] Creating NEW product: ${masterId}`);
+            }
 
             // Remove undefined values (Firestore doesn't support them)
             const cleanPayload = (obj: any): any => {
@@ -837,6 +913,8 @@ export const useCatalog = () => {
                 updated_at: serverTimestamp(),
                 created_at: data.created_at || serverTimestamp()
             });
+
+            const ref = doc(db, 'master_products', masterId);
 
             await setDoc(ref, payload, { merge: true });
             console.log(`[addMasterProduct] ✅ Successfully created/updated master product: ${masterId}`);
@@ -870,10 +948,33 @@ export const useCatalog = () => {
 
     const addPendingMasterProduct = async (data: MasterProduct, merchantId: string, barcode: string) => {
         try {
+            console.log(`[addPendingMasterProduct] Checking duplicates for: ${barcode}`);
+
+            // 1. Check if already in MASTER catalog
+            const masterQ = query(collection(db, 'master_products'), where('barcode', '==', barcode));
+            const masterSnap = await getDocs(masterQ);
+
+            if (!masterSnap.empty) {
+                const existingId = masterSnap.docs[0].id;
+                console.log(`[addPendingMasterProduct] ⚠️ Already in MASTER: ${existingId}`);
+                return existingId;
+            }
+
+            // 2. Check if already PENDING
+            const pendingQ = query(collection(db, 'pending_master_products'), where('original_barcode', '==', barcode));
+            const pendingSnap = await getDocs(pendingQ);
+
+            if (!pendingSnap.empty) {
+                const existingId = pendingSnap.docs[0].id;
+                console.log(`[addPendingMasterProduct] ⚠️ Already PENDING: ${existingId}`);
+                return existingId;
+            }
+
+            // 3. Create new pending product
             const pendingId = `pending-${barcode}-${Date.now()}`;
             const ref = doc(db, 'pending_master_products', pendingId);
 
-            console.log(`[addPendingMasterProduct] Creating pending product: ${pendingId}`);
+            console.log(`[addPendingMasterProduct] Creating NEW: ${pendingId}`);
 
             // Remove undefined values
             const cleanPayload = (obj: any): any => {
@@ -912,15 +1013,37 @@ export const useCatalog = () => {
 
     const commitPendingProduct = async (pendingId: string, pendingData: any) => {
         try {
+            console.log(`[commitPendingProduct] Committing: ${pendingId}`);
+
             // 1. Add to master_products
             const masterId = await addMasterProduct(pendingData as MasterProduct);
+            console.log(`[commitPendingProduct] Created master: ${masterId}`);
 
-            // 2. Delete from pending
+            // 2. Update all merchant_products that reference pending ID
+            const merchantQuery = query(
+                collection(db, 'merchant_products'),
+                where('master_product_id', '==', pendingId)
+            );
+            const merchantSnap = await getDocs(merchantQuery);
+
+            console.log(`[commitPendingProduct] Updating ${merchantSnap.size} merchant products`);
+
+            const updates = merchantSnap.docs.map(docSnap =>
+                updateDoc(doc(db, 'merchant_products', docSnap.id), {
+                    master_product_id: masterId,
+                    updated_at: serverTimestamp()
+                })
+            );
+            await Promise.all(updates);
+            console.log(`[commitPendingProduct] ✅ Merchant products updated`);
+
+            // 3. Delete from pending
             await deleteDoc(doc(db, 'pending_master_products', pendingId));
+            console.log(`[commitPendingProduct] ✅ Pending deleted`);
 
             return masterId;
         } catch (err: any) {
-            console.error('Failed to commit pending product:', err);
+            console.error('[commitPendingProduct] ❌ Failed:', err);
             throw err;
         }
     };

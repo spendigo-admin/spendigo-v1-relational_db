@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import '../../styles/design-system.css';
 import { useMarketplace } from '../../context/MarketplaceContext';
 import { useAuth } from '../../context/AuthContext';
+import { useStoreProducts } from '../../hooks/useStoreProducts';
 
 // Types
 interface FlyerItem {
@@ -36,7 +37,8 @@ const MerchantFlyers: React.FC = () => {
     const { user } = useAuth();
     const storeId = user?.storeId || '1';
     const store = getStore(storeId);
-    const availableProducts = useMemo(() => store?.products || [], [store?.products]);
+    // const availableProducts = useMemo(() => store?.products || [], [store?.products]);
+    const { products: availableProducts } = useStoreProducts(storeId);
     const hasWriteAccess = true; // Simplified for owner
 
     const isRestrictedPlan = (user?.subscriptionTier || 'free') !== 'growth';

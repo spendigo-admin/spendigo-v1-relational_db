@@ -249,67 +249,7 @@ const AdminSettings: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* System Tools */}
-                    <div>
-                        <h2 className="text-lg font-bold text-red-700 mb-4 border-b border-red-200 pb-2 pt-4">System Tools</h2>
-                        <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center justify-between">
-                            <div>
-                                <p className="font-bold text-red-900">Database Restoration</p>
-                                <p className="text-xs text-red-700">Seed the Master Catalog, initial users, and demo stores.</p>
-                            </div>
-                            <div className="flex gap-2">
-                                <button
-                                    onClick={async () => {
-                                        if (!user?.email) return;
-                                        try {
-                                            addNotification({ type: 'system', title: 'Test Queued', message: 'Waiting for email extension...' });
 
-                                            const mailRef = await addDoc(collection(db, 'mail'), {
-                                                to: user.email,
-                                                message: {
-                                                    subject: 'Test Email from Spendigo Admin',
-                                                    html: '<h1>System Check</h1><p>This is a test email to verify the notification system is working.</p>'
-                                                }
-                                            });
-
-                                            // Listen for delivery status
-                                            const unsubscribe = onSnapshot(mailRef, (docSnap) => {
-                                                const data = docSnap.data();
-                                                if (data?.delivery?.state === 'SUCCESS') {
-                                                    addNotification({ type: 'system', title: '✅ Email Sent', message: 'SMTP handshake successful.' });
-                                                    unsubscribe();
-                                                } else if (data?.delivery?.state === 'ERROR') {
-                                                    console.error('Email Error:', data.delivery.error);
-                                                    addNotification({ type: 'alert', title: '❌ Delivery Failed', message: String(data.delivery.error).substring(0, 100) });
-                                                    unsubscribe();
-                                                }
-                                            });
-
-                                            // Timeout warning
-                                            setTimeout(() => {
-                                                unsubscribe();
-                                                // We can't check if it succeeded here easily without more state, 
-                                                // but we can rely on the user seeing no success message.
-                                            }, 20000);
-
-                                        } catch (e: any) {
-                                            console.error(e);
-                                            addNotification({ type: 'alert', title: 'Test Failed', message: e.message });
-                                        }
-                                    }}
-                                    className="px-4 py-2 bg-white text-gray-700 border border-gray-300 rounded font-bold text-sm hover:bg-gray-50"
-                                >
-                                    📨 Send Test
-                                </button>
-                                <a
-                                    href="/admin/seed"
-                                    className="px-4 py-2 bg-white text-red-700 border border-red-300 rounded font-bold text-sm hover:bg-red-50"
-                                >
-                                    Open Restore Tool
-                                </a>
-                            </div>
-                        </div>
-                    </div>
 
                     <div className="pt-4 flex justify-end">
                         <button

@@ -1,7 +1,39 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useCatalog, MasterProduct } from '../../hooks/useCatalog';
 import { useNotifications } from '../../context/NotificationContext';
 import { useConfirmation } from '../../context/ConfirmationContext';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { db } from '../../lib/firebase';
+
+// Component to show real-time merchant count for each product
+const MerchantCountCell: React.FC<{ masterProductId: string }> = ({ masterProductId }) => {
+    const [count, setCount] = useState(0);
+
+    useEffect(() => {
+        if (!masterProductId) {
+            setCount(0);
+            return;
+        }
+
+        const q = query(
+            collection(db, 'merchant_products'),
+            where('master_product_id', '==', masterProductId)
+        );
+
+        const unsubscribe = onSnapshot(q, snapshot => {
+            setCount(snapshot.size);
+        });
+
+        return () => unsubscribe();
+    }, [masterProductId]);
+
+    return (
+        <>
+            <div className="text-sm font-mono">{count}</div>
+            <div className="text-[10px] text-[var(--text-muted)]">stores</div>
+        </>
+    );
+};
 
 const MasterCatalog: React.FC = () => {
     const {
@@ -25,6 +57,26 @@ const MasterCatalog: React.FC = () => {
     const [selectedProduct, setSelectedProduct] = useState<MasterProduct | null>(null);
     const [importUpc, setImportUpc] = useState('');
     const [importing, setImporting] = useState(false);
+    const [merchantCount, setMerchantCount] = useState(0);
+
+    // Count active merchant listings for selected product
+    useEffect(() => {
+        if (!selectedProduct?.master_product_id) {
+            setMerchantCount(0);
+            return;
+        }
+
+        const q = query(
+            collection(db, 'merchant_products'),
+            where('master_product_id', '==', selectedProduct.master_product_id)
+        );
+
+        const unsubscribe = onSnapshot(q, (snapshot: any) => {
+            setMerchantCount(snapshot.size);
+        });
+
+        return () => unsubscribe();
+    }, [selectedProduct]);
 
     // --- CATALOG TAB LOGIC ---
     const categories = Array.from(new Set(masterProducts.map(item => item.category_id).filter(Boolean))).sort();
@@ -53,16 +105,20 @@ const MasterCatalog: React.FC = () => {
 
     const handleCommit = async () => {
         if (!selectedProduct) return;
+        console.log('[Admin handleCommit] Starting commit for:', selectedProduct.product_name);
         setImporting(true);
         try {
+            console.log('[Admin handleCommit] Calling addMasterProduct with:', selectedProduct);
             await addMasterProduct({
                 ...selectedProduct,
-                verification_status: 'verified', // Promote to verified on commit
+                verification_status: 'verified',
                 status: 'active'
             });
+            console.log('[Admin handleCommit] ✅ Successfully committed');
             addNotification({ type: 'system', title: 'Committed', message: `${selectedProduct.product_name} added to Master Catalog.` });
             setSelectedProduct(null);
         } catch (err: any) {
+            console.error('[Admin handleCommit] ❌ Failed:', err.message, err);
             addNotification({ type: 'alert', title: 'Commit Failed', message: err.message });
         } finally {
             setImporting(false);
@@ -142,6 +198,8 @@ const MasterCatalog: React.FC = () => {
             }
         }
     };
+
+
 
     return (
         <div className="p-6 h-[calc(100vh-64px)] overflow-y-auto">
@@ -279,8 +337,7 @@ const MasterCatalog: React.FC = () => {
                                             </span>
                                         </td>
                                         <td className="p-4 text-right">
-                                            <div className="text-sm font-mono">{item.number_of_merchants_listing || 0}</div>
-                                            <div className="text-[10px] text-[var(--text-muted)]">stores</div>
+                                            <MerchantCountCell masterProductId={item.master_product_id} />
                                         </td>
                                         <td className="p-4 text-right">
                                             <button
@@ -539,7 +596,7 @@ const MasterCatalog: React.FC = () => {
                                 <h3 className="text-sm font-bold uppercase text-gray-400 mb-4 border-b pb-2">E. Usage Signals</h3>
                                 <div className="bg-blue-50 p-4 rounded-xl flex justify-between items-center">
                                     <div>
-                                        <span className="text-2xl font-bold text-blue-700">{selectedProduct.number_of_merchants_listing || 0}</span>
+                                        <span className="text-2xl font-bold text-blue-700">{merchantCount}</span>
                                         <span className="block text-sm text-blue-600">Active Merchant Listings</span>
                                     </div>
                                     <div className="text-right">
@@ -551,7 +608,7 @@ const MasterCatalog: React.FC = () => {
                                 </p>
                             </section>
 
-                            {selectedProduct.data_source === 'open_food_facts' && (
+                            {selectedProduct.data_source === 'open_food_facts' && selectedProduct.status !== 'active' && (
                                 <div className="p-6 bg-purple-50 border-t border-purple-100 flex items-center justify-between sticky bottom-0">
                                     <div className="text-sm font-medium text-purple-900">
                                         Found in External DB. Save to Master?

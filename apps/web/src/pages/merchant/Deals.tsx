@@ -2,7 +2,8 @@ import React, { useState, useMemo } from 'react';
 import '../../styles/design-system.css';
 import { useMarketplace } from '../../context/MarketplaceContext';
 import { useAuth } from '../../context/AuthContext';
-import { useNotifications } from '../../context/NotificationContext'; // Fixed plural
+import { useNotifications } from '../../context/NotificationContext';
+import { useStoreProducts } from '../../hooks/useStoreProducts';
 
 // Types
 type DealType = 'percentage' | 'fixed' | 'bogo';
@@ -58,7 +59,8 @@ const MerchantDeals: React.FC = () => {
     const { user } = useAuth();
     const storeId = user?.storeId || '1';
     const store = getStore(storeId);
-    const availableProducts = useMemo(() => store?.products || [], [store?.products]);
+    // const availableProducts = useMemo(() => store?.products || [], [store?.products]);
+    const { products: availableProducts } = useStoreProducts(storeId);
     const hasWriteAccess = true;
 
 

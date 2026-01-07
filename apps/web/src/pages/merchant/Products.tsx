@@ -64,7 +64,8 @@ const MerchantProducts: React.FC = () => {
         requestMasterProduct,
         bulkAddMerchantProducts,
         fetchExternalUPC,
-        addMasterProduct
+        addMasterProduct,
+        addPendingMasterProduct
     } = useCatalog();
 
     const storeId = user?.storeId || '';
@@ -166,11 +167,11 @@ const MerchantProducts: React.FC = () => {
         try {
             const externalProduct = await fetchExternalUPC(barcode);
             if (externalProduct) {
-                const newMasterId = await addMasterProduct(externalProduct as any);
+                const newMasterId = await addPendingMasterProduct(externalProduct as any, storeId, barcode);
                 addNotification({
                     type: 'system',
                     title: '✨ Smart Match Found!',
-                    message: `Found "${externalProduct.product_name}". Added to global catalog.`
+                    message: `Found "${externalProduct.product_name}". Saved for admin review.`
                 });
                 selectMasterItem({ ...externalProduct, id: newMasterId });
                 return true;

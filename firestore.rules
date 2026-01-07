@@ -45,7 +45,7 @@ service cloud.firestore {
 
     // 1B. PENDING MASTER PRODUCTS (Auto-discovered by merchants, awaiting admin approval)
     match /pending_master_products/{pendingProductId} {
-      allow read: if isAdmin(); // Only admins can view pending products
+      allow read: if isAdmin() || isMerchant(); // Admins review, Merchants check for duplicates
       allow create: if isMerchant(); // Merchants can create pending products via auto-discovery
       allow update, delete: if isAdmin(); // Only admins can commit or reject
     }
@@ -62,16 +62,17 @@ service cloud.firestore {
         && (exists(/databases/$(database)/documents/master_products/$(request.resource.data.master_product_id))
            || exists(/databases/$(database)/documents/pending_master_products/$(request.resource.data.master_product_id)));
 
-      allow update: if isMerchant() 
+      allow update: if isAdmin() || (isMerchant() 
         // 1. Must own the existing doc
         && resource.data.merchant_id == getMerchantStoreId()
         // 2. Cannot change ownership (merchant_id)
         && request.resource.data.merchant_id == resource.data.merchant_id
         // 3. Cannot change the master product link (prevents broken links)
-        && request.resource.data.master_product_id == resource.data.master_product_id;
+        // EXCEPTION: Admins can change master_product_id during commit workflow
+        && (isAdmin() || request.resource.data.master_product_id == resource.data.master_product_id));
         
-      allow delete: if isMerchant() 
-        && resource.data.merchant_id == getMerchantStoreId();
+      allow delete: if isAdmin() || (isMerchant() 
+        && resource.data.merchant_id == getMerchantStoreId());
     }
 
     // 3. PRODUCT CREATION REQUESTS (Controlled Growth)

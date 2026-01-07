@@ -1,4 +1,25 @@
 {
     "indexes": [],
-    "fieldOverrides": []
+    "fieldOverrides": [
+        {
+            "collectionGroup": "master_products",
+            "fieldPath": "barcode",
+            "indexes": [
+                {
+                    "order": "ASCENDING",
+                    "queryScope": "COLLECTION"
+                }
+            ]
+        },
+        {
+            "collectionGroup": "pending_master_products",
+            "fieldPath": "original_barcode",
+            "indexes": [
+                {
+                    "order": "ASCENDING",
+                    "queryScope": "COLLECTION"
+                }
+            ]
+        }
+    ]
 }
