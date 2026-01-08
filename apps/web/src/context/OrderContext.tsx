@@ -12,7 +12,9 @@ import {
     serverTimestamp,
     orderBy,
     writeBatch,
-    arrayUnion
+    arrayUnion,
+    increment,
+    runTransaction
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useAuth } from './AuthContext';
@@ -214,49 +216,76 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     const createBatchOrders = async (ordersData: Omit<Order, 'id' | 'date' | 'customerName' | 'customerId'>[]): Promise<string[]> => {
         if (!user) throw new Error("Must be logged in");
 
-        const batch = writeBatch(db);
         const orderIds: string[] = [];
-
-        ordersData.forEach(orderData => {
-            const newOrderRef = doc(collection(db, 'orders'));
-            orderIds.push(newOrderRef.id);
-
-            // Sanitize
-            const rawOrder = {
-                ...orderData,
-                deliveryAddress: orderData.deliveryAddress || null,
-                items: orderData.items.map(i => ({
-                    ...i,
-                    image: i.image || null
-                })),
-                date: new Date().toISOString(),
-                customerId: user.id,
-                customerName: user.name || 'Valued Customer',
-                customerEmail: user.email,
-                customerPhone: user.phoneNumber || '', // Capture phone from Auth Profile
-                createdAt: serverTimestamp()
-            };
-
-            const { createdAt, ...rest } = rawOrder;
-            const sanitizedRest = JSON.parse(JSON.stringify(rest));
-            const finalOrder = { ...sanitizedRest, createdAt };
-
-            batch.set(newOrderRef, finalOrder);
-
-            // Notify Shopper
-            sendOrderNotification(user.id, 'Order Placed! 📋', `Your order from ${orderData.storeName} has been received.`, 'order', newOrderRef.id);
-
-            // Notify Merchant
-            sendOrderNotification(orderData.storeId, 'New Order! 🔔', `New order from ${user.name} for $${orderData.total.toFixed(2)}`, 'order', newOrderRef.id);
-        });
+        const notificationQueue: Array<() => Promise<void>> = [];
 
         try {
-            await batch.commit();
-            console.log(`OrderContext: Batch committed. Orders: ${orderIds.join(', ')}`);
+            await runTransaction(db, async (transaction) => {
+                // 1. Verify Stock Levels First
+                for (const order of ordersData) {
+                    for (const item of order.items) {
+                        const productRef = doc(db, 'merchant_products', item.productId);
+                        const productSnap = await transaction.get(productRef);
+
+                        if (!productSnap.exists()) {
+                            throw new Error(`Product "${item.productName}" is no longer available.`);
+                        }
+
+                        const currentStock = productSnap.data().available_quantity || 0;
+                        if (currentStock < item.quantity) {
+                            throw new Error(`Insufficient stock for "${item.productName}". Only ${currentStock} left.`);
+                        }
+
+                        // Decrement Stock
+                        transaction.update(productRef, {
+                            available_quantity: increment(-item.quantity)
+                        });
+                    }
+                }
+
+                // 2. Create Orders
+                ordersData.forEach(orderData => {
+                    const newOrderRef = doc(collection(db, 'orders'));
+                    orderIds.push(newOrderRef.id);
+
+                    // Sanitize
+                    const rawOrder = {
+                        ...orderData,
+                        deliveryAddress: orderData.deliveryAddress || null,
+                        items: orderData.items.map(i => ({
+                            ...i,
+                            image: i.image || null
+                        })),
+                        date: new Date().toISOString(),
+                        customerId: user.id,
+                        customerName: user.name || 'Valued Customer',
+                        customerEmail: user.email,
+                        customerPhone: user.phoneNumber || '',
+                        createdAt: serverTimestamp()
+                    };
+
+                    const { createdAt, ...rest } = rawOrder;
+                    const sanitizedRest = JSON.parse(JSON.stringify(rest));
+                    const finalOrder = { ...sanitizedRest, createdAt };
+
+                    transaction.set(newOrderRef, finalOrder);
+
+                    // Queue Notifications (Execute after commit)
+                    notificationQueue.push(async () => {
+                        await sendOrderNotification(user.id, 'Order Placed! 📋', `Your order from ${orderData.storeName} has been received.`, 'order', newOrderRef.id);
+                        await sendOrderNotification(orderData.storeId, 'New Order! 🔔', `New order from ${user.name} for $${orderData.total.toFixed(2)}`, 'order', newOrderRef.id);
+                    });
+                });
+            });
+
+            // 3. Send Notifications & Return
+            console.log(`OrderContext: Transaction committed. Orders: ${orderIds.join(', ')}`);
+            notificationQueue.forEach(fn => fn());
             return orderIds;
-        } catch (e) {
-            console.error('OrderContext: Batch commit failed', e);
-            throw e;
+
+        } catch (e: any) {
+            console.error('OrderContext: Transaction failed', e);
+            throw e; // Propagate error to UI
         }
     };
 
@@ -324,15 +353,37 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
     const cancelOrder = async (orderId: string, reason?: string) => {
         const order = orders.find(o => o.id === orderId);
-        const orderRef = doc(db, 'orders', orderId);
-        await updateDoc(orderRef, {
-            status: 'cancelled',
-            ...(reason && { rejectionReason: reason })
-        });
+        if (!order) return;
 
-        if (order) {
+        try {
+            await runTransaction(db, async (transaction) => {
+                const orderRef = doc(db, 'orders', orderId);
+
+                // 1. Update Order Status
+                transaction.update(orderRef, {
+                    status: 'cancelled',
+                    ...(reason && { rejectionReason: reason })
+                });
+
+                // 2. Restore Stock
+                for (const item of order.items) {
+                    const productRef = doc(db, 'merchant_products', item.productId);
+                    const productSnap = await transaction.get(productRef);
+
+                    if (productSnap.exists()) {
+                        transaction.update(productRef, {
+                            available_quantity: increment(item.quantity)
+                        });
+                    }
+                }
+            });
+
             const message = reason ? `Cancelled: ${reason}` : `Your order from ${order.storeName} was cancelled.`;
             sendOrderNotification(order.customerId, 'Order Cancelled 🚫', message, 'alert', order.id);
+
+        } catch (e) {
+            console.error("Failed to cancel order and restore stock", e);
+            throw e;
         }
     };
 

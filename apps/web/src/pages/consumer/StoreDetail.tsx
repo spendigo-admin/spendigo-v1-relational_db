@@ -3,6 +3,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
 import { useMarketplace } from '../../context/MarketplaceContext';
 import { useCatalog } from '../../hooks/useCatalog';
+import { useStoreProducts } from '../../hooks/useStoreProducts'; // Standalone hook
 import ReviewList from '../../components/ReviewList';
 import ReviewForm from '../../components/ReviewForm';
 import '../../styles/design-system.css';
@@ -97,13 +98,122 @@ const FlyerTab: React.FC<{ storeId: string; storeName: string; summary: any }> =
     );
 };
 
+
+
+// New OffersTab Component
+const OffersTab: React.FC<{ storeId: string, storeName: string }> = ({ storeId, storeName }) => {
+    const { subscribeToDeals } = useMarketplace();
+    const { addToCart } = useCart();
+    const [deals, setDeals] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const unsubscribe = subscribeToDeals(storeId, (data) => {
+            setDeals(data);
+            setLoading(false);
+        });
+        return () => unsubscribe();
+    }, [storeId, subscribeToDeals]);
+
+    const handleQuickAdd = (item: any) => {
+        addToCart({
+            productId: item.productId,
+            productName: item.productName || item.name,
+            price: item.salePrice,
+            quantity: 1,
+            storeId,
+            storeName,
+            image: item.productImage || item.image
+        });
+    };
+
+    if (loading) return <div className="p-10 text-center text-[var(--text-muted)]">Loading deals...</div>;
+
+    const oneDayOffers = deals.filter(d => d.status === 'active' && d.isFlashSale);
+    const saleItems = deals.filter(d => d.status === 'active' && !d.isFlashSale);
+
+    if (oneDayOffers.length === 0 && saleItems.length === 0) {
+        return (
+            <div className="text-center py-10">
+                <p className="text-4xl mb-4">🍂</p>
+                <p className="text-[var(--text-muted)]">No special deals available right now.</p>
+            </div>
+        );
+    }
+
+    return (
+        <div className="p-4 space-y-6">
+            {/* One Day Offers */}
+            {oneDayOffers.length > 0 && (
+                <div>
+                    <div className="flex items-center gap-2 mb-3">
+                        <span className="text-xl">⏰</span>
+                        <h3 className="text-lg font-bold text-[var(--text-main)]">Flash Sales</h3>
+                        <span className="ml-auto text-xs bg-red-100 text-red-600 px-2 py-1 rounded-full font-medium">Limited Time</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                        {oneDayOffers.map((offer: any) => (
+                            <div key={offer.id} className="bg-gradient-to-br from-red-50 to-orange-50 rounded-xl border border-red-100 p-3">
+                                <img src={offer.productImage} alt={offer.productName} className="w-full h-24 object-cover rounded-lg mb-2 bg-white" />
+                                <p className="font-medium text-sm text-[var(--text-main)] truncate">{offer.productName}</p>
+                                <div className="flex items-baseline gap-2 mt-1">
+                                    <span className="font-bold text-red-600">${offer.salePrice.toFixed(2)}</span>
+                                    {offer.originalPrice && (
+                                        <span className="text-xs text-[var(--text-muted)] line-through">${offer.originalPrice.toFixed(2)}</span>
+                                    )}
+                                </div>
+                                <p className="text-xs text-red-500 mt-1">Ends {new Date(offer.endDate).toLocaleDateString()}</p>
+                                <button onClick={() => handleQuickAdd(offer)} className="w-full mt-2 py-2 bg-red-500 text-white text-xs font-medium rounded-lg hover:brightness-110">
+                                    + Add
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* Sale Items */}
+            {saleItems.length > 0 && (
+                <div>
+                    <div className="flex items-center gap-2 mb-3">
+                        <span className="text-xl">🏷️</span>
+                        <h3 className="text-lg font-bold text-[var(--text-main)]">Items on Sale</h3>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                        {saleItems.map((item: any) => (
+                            <div key={item.id} className="bg-white rounded-xl border border-[var(--glass-border)] p-3 shadow-sm">
+                                <div className="relative">
+                                    <img src={item.productImage} alt={item.productName} className="w-full h-24 object-cover rounded-lg mb-2" />
+                                    {item.value && (
+                                        <span className="absolute top-1 left-1 bg-green-500 text-white text-[10px] font-bold px-2 py-0.5 rounded">
+                                            {item.type === 'percentage' ? `${item.value}% OFF` : 'SALE'}
+                                        </span>
+                                    )}
+                                </div>
+                                <p className="font-medium text-sm text-[var(--text-main)] truncate">{item.productName}</p>
+                                <div className="flex items-baseline gap-2 mt-1">
+                                    <span className="font-bold text-green-600">${item.salePrice.toFixed(2)}</span>
+                                    <span className="text-xs text-[var(--text-muted)] line-through">${item.originalPrice.toFixed(2)}</span>
+                                </div>
+                                <button onClick={() => handleQuickAdd(item)} className="w-full mt-2 py-2 bg-[var(--brand-primary)] text-white text-xs font-medium rounded-lg hover:brightness-110">
+                                    + Add
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
 const StoreDetail: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const location = useLocation(); // Add useLocation import
     const { addToCart } = useCart();
     const { getStore } = useMarketplace();
-    const { useStoreProducts } = useCatalog(); // Use the new hook
+    // const { useStoreProducts } = useCatalog(); // Removed
 
     const store = getStore(id || '') || null;
     const { products: catalogProducts, loading: loadingProducts } = useStoreProducts(id || '');
@@ -125,8 +235,10 @@ const StoreDetail: React.FC = () => {
     }
 
     // Merge or Override products
-    // If migration is partial, we might want to fallback to store.products, but let's prefer catalogProducts if available
-    const displayProducts = catalogProducts.length > 0 ? catalogProducts : (store.products || []);
+    // Only fallback to legacy if the store hasn't been migrated (indicated by missing productCount)
+    // If productCount is 0, it means it's a migrated store with empty inventory, so show empty.
+    const isMigrated = store.productCount !== undefined;
+    const displayProducts = isMigrated ? catalogProducts : (catalogProducts.length > 0 ? catalogProducts : (store.products || []));
 
     const filteredProducts = activeCategory === 'All'
         ? displayProducts
@@ -297,73 +409,7 @@ const StoreDetail: React.FC = () => {
             )}
 
             {activeTab === 'offers' && (
-                <div className="p-4 space-y-6">
-                    {/* One Day Offers */}
-                    {store.oneDayOffers && store.oneDayOffers.length > 0 && (
-                        <div>
-                            <div className="flex items-center gap-2 mb-3">
-                                <span className="text-xl">⏰</span>
-                                <h3 className="text-lg font-bold text-[var(--text-main)]">One-Day Offers</h3>
-                                <span className="ml-auto text-xs bg-red-100 text-red-600 px-2 py-1 rounded-full font-medium">Limited Time</span>
-                            </div>
-                            <div className="grid grid-cols-2 gap-3">
-                                {store.oneDayOffers.map((offer: any) => (
-                                    <div key={offer.id} className="bg-gradient-to-br from-red-50 to-orange-50 rounded-xl border border-red-100 p-3">
-                                        <img src={offer.image} alt={offer.name} className="w-full h-24 object-cover rounded-lg mb-2" />
-                                        <p className="font-medium text-sm text-[var(--text-main)] truncate">{offer.name}</p>
-                                        <div className="flex items-baseline gap-2 mt-1">
-                                            <span className="font-bold text-red-600">${offer.price.toFixed(2)}</span>
-                                            {offer.originalPrice && (
-                                                <span className="text-xs text-[var(--text-muted)] line-through">${offer.originalPrice.toFixed(2)}</span>
-                                            )}
-                                        </div>
-                                        <p className="text-xs text-red-500 mt-1">⏱ Ends in {offer.endsIn}</p>
-                                        <button onClick={() => handleQuickAdd(offer)} className="w-full mt-2 py-2 bg-red-500 text-white text-xs font-medium rounded-lg">
-                                            + Add
-                                        </button>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Sale Items */}
-                    {store.saleItems && store.saleItems.length > 0 && (
-                        <div>
-                            <div className="flex items-center gap-2 mb-3">
-                                <span className="text-xl">🏷️</span>
-                                <h3 className="text-lg font-bold text-[var(--text-main)]">Items on Sale</h3>
-                            </div>
-                            <div className="grid grid-cols-2 gap-3">
-                                {store.saleItems.map((item: any) => (
-                                    <div key={item.id} className="bg-white rounded-xl border border-[var(--glass-border)] p-3 shadow-sm">
-                                        <div className="relative">
-                                            <img src={item.image} alt={item.name} className="w-full h-24 object-cover rounded-lg mb-2" />
-                                            {item.discount && (
-                                                <span className="absolute top-1 left-1 bg-green-500 text-white text-[10px] font-bold px-2 py-0.5 rounded">{item.discount}</span>
-                                            )}
-                                        </div>
-                                        <p className="font-medium text-sm text-[var(--text-main)] truncate">{item.name}</p>
-                                        <div className="flex items-baseline gap-2 mt-1">
-                                            <span className="font-bold text-green-600">${item.price.toFixed(2)}</span>
-                                            <span className="text-xs text-[var(--text-muted)] line-through">${item.originalPrice.toFixed(2)}</span>
-                                        </div>
-                                        <button onClick={() => handleQuickAdd(item)} className="w-full mt-2 py-2 bg-[var(--brand-primary)] text-white text-xs font-medium rounded-lg">
-                                            + Add
-                                        </button>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    {(!store.oneDayOffers?.length && !store.saleItems?.length) && (
-                        <div className="text-center py-10">
-                            <p className="text-4xl mb-4">🍂</p>
-                            <p className="text-[var(--text-muted)]">No special deals available right now.</p>
-                        </div>
-                    )}
-                </div>
+                <OffersTab storeId={store.id} storeName={store.name} />
             )}
 
             {activeTab === 'reviews' && (

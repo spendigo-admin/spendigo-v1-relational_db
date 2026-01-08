@@ -191,7 +191,7 @@ const StoreList: React.FC = () => {
                     if (!d.validUntil) return true;
                     return new Date(d.validUntil) > new Date();
                 }).length,
-                productCount: store.products?.length || 0
+                productCount: store.productCount || store.products?.length || 0
             };
         });
     }, [stores, userCoords]);

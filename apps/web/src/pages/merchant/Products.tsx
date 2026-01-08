@@ -3,7 +3,8 @@ import '../../styles/design-system.css';
 import { useAuth } from '../../context/AuthContext';
 import { useNotifications } from '../../context/NotificationContext';
 import { useConfirmation } from '../../context/ConfirmationContext';
-import { useCatalog, Product } from '../../hooks/useCatalog';
+import { useCatalog, Product, generateBarcodeVariants } from '../../hooks/useCatalog';
+import { useStoreProducts } from '../../hooks/useStoreProducts';
 import { Html5QrcodeScanner } from 'html5-qrcode';
 
 // Scanner Component
@@ -56,7 +57,7 @@ const MerchantProducts: React.FC = () => {
 
     // New Hook Usage
     const {
-        useStoreProducts,
+        // useStoreProducts, // Switched to standalone
         searchMasterCatalog,
         addMerchantProduct,
         updateMerchantProduct,
@@ -82,6 +83,8 @@ const MerchantProducts: React.FC = () => {
     const [masterSearchResults, setMasterSearchResults] = useState<any[]>([]);
     const [selectedMasterItem, setSelectedMasterItem] = useState<any | null>(null);
     const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+    const [restockProduct, setRestockProduct] = useState<Product | null>(null);
+    const [restockQty, setRestockQty] = useState(1);
     const [deletingId, setDeletingId] = useState<string | null>(null);
     const [bulkText, setBulkText] = useState('');
     const [bulkProcessing, setBulkProcessing] = useState(false);
@@ -116,7 +119,7 @@ const MerchantProducts: React.FC = () => {
         if (confirmed) {
             setDeletingId(product.id);
             try {
-                await deleteMerchantProduct(product.id);
+                await deleteMerchantProduct(storeId, product.id);
                 addNotification({ type: 'system', title: 'Removed', message: 'Product removed from available inventory.' });
             } catch (err) {
                 console.error(err);
@@ -139,6 +142,25 @@ const MerchantProducts: React.FC = () => {
 
                 // Smart Discovery: Only auto-trigger if it looks like a barcode
                 const isBarcode = /^\d+$/.test(cleanQuery) && cleanQuery.length >= 8;
+
+                // CHECK INVENTORY FIRST
+                if (isBarcode) {
+                    const variants = generateBarcodeVariants(cleanQuery);
+                    console.log(`[MerchantProducts] Checking inventory for barcode variants:`, variants);
+
+                    const existing = products.find(p => {
+                        const match = (p.barcode && variants.includes(p.barcode)) ||
+                            (p.merchant_sku && variants.includes(p.merchant_sku));
+                        if (match) console.log(`[MerchantProducts] Found match: ${p.name} (${p.barcode})`);
+                        return match;
+                    });
+
+                    if (existing) {
+                        setRestockProduct(existing);
+                        setRestockQty(1);
+                        return; // Stop search, show restock UI
+                    }
+                }
 
                 // Check if we have an EXACT match already (accounting for leading zero variance)
                 const exactLocalMatch = results.find(r =>
@@ -295,6 +317,21 @@ const MerchantProducts: React.FC = () => {
         }
     };
 
+    const handleRestockConfirm = async () => {
+        if (!restockProduct) return;
+        try {
+            const newQty = restockProduct.available_quantity + restockQty;
+            await updateMerchantProduct(restockProduct.id, {
+                available_quantity: newQty
+            });
+            addNotification({ type: 'system', title: 'Stock Updated', message: `Added ${restockQty} to inventory. Total: ${newQty}` });
+            setRestockProduct(null);
+            closeModal();
+        } catch (err) {
+            addNotification({ type: 'alert', title: 'Error', message: 'Restock failed.' });
+        }
+    };
+
     const openEdit = (product: Product) => {
         setEditingProduct(product);
         setForm(f => ({
@@ -313,6 +350,7 @@ const MerchantProducts: React.FC = () => {
         setMasterSearchResults([]);
         setSelectedMasterItem(null);
         setEditingProduct(null);
+        setRestockProduct(null);
         setBulkText('');
         setBulkProcessing(false);
         setForm({ price: '', stock: '50', reqName: '', reqBrand: '', reqDescription: '', reqImage: '', reqCategory: 'General' });
@@ -481,8 +519,58 @@ const MerchantProducts: React.FC = () => {
                             </>
                         )}
 
+
+
+                        {/* RESTOCK INTERCEPT MODAL */}
+                        {(restockProduct) && (
+                            <div className="text-center p-4">
+                                <div className="bg-green-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">📦</div>
+                                <h2 className="text-2xl font-bold mb-2">Item Already in Stock!</h2>
+                                <p className="text-gray-500 mb-6">
+                                    You already have <strong className="text-black">{restockProduct.name}</strong> listed.
+                                    <br />Current Quantity: <strong className="text-[var(--brand-primary)] text-lg">{restockProduct.available_quantity}</strong>
+                                </p>
+
+                                <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 mb-6 max-w-xs mx-auto">
+                                    <label className="block text-xs font-bold text-gray-400 uppercase mb-2">Add to Stock</label>
+                                    <div className="flex items-center justify-center gap-4">
+                                        <button
+                                            onClick={() => setRestockQty(q => Math.max(1, q - 1))}
+                                            className="w-10 h-10 rounded-lg bg-white border border-gray-300 font-bold hover:bg-gray-100"
+                                        >-</button>
+                                        <div className="text-3xl font-bold w-16">{restockQty}</div>
+                                        <button
+                                            onClick={() => setRestockQty(q => q + 1)}
+                                            className="w-10 h-10 rounded-lg bg-white border border-gray-300 font-bold hover:bg-gray-100"
+                                        >+</button>
+                                    </div>
+                                </div>
+
+                                <div className="flex flex-col gap-3">
+                                    <button
+                                        onClick={handleRestockConfirm}
+                                        className="w-full py-4 bg-[var(--brand-primary)] text-white font-bold rounded-xl hover:brightness-110 shadow-lg text-lg"
+                                    >
+                                        Update Stock (+{restockQty})
+                                    </button>
+                                    <button
+                                        onClick={() => { setRestockProduct(null); openEdit(restockProduct); }}
+                                        className="w-full py-3 bg-white border border-gray-200 text-gray-700 font-bold rounded-xl hover:bg-gray-50"
+                                    >
+                                        Edit Details Instead
+                                    </button>
+                                    <button
+                                        onClick={() => setRestockProduct(null)}
+                                        className="w-full py-3 text-gray-400 font-medium hover:text-black"
+                                    >
+                                        Cancel
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
                         {/* PHASE 2: EDIT/ADD DETAILS */}
-                        {view === 'add_details' && (selectedMasterItem || editingProduct) && (
+                        {view === 'add_details' && !restockProduct && (selectedMasterItem || editingProduct) && (
                             <>
                                 <h2 className="text-xl font-bold mb-4">{editingProduct ? 'Edit Inventory' : 'Add to Inventory'}</h2>
 
@@ -688,10 +776,11 @@ const MerchantProducts: React.FC = () => {
                         )}
                     </div>
                 </div>
-            )}
+            )
+            }
 
             {showScanner && <ScannerModal onClose={() => setShowScanner(false)} onScan={(code) => { setShowScanner(false); handleMasterSearch(code); }} />}
-        </div>
+        </div >
     );
 };
 

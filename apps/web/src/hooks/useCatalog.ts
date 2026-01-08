@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { collection, query, where, onSnapshot, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, addDoc, serverTimestamp, orderBy } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, addDoc, serverTimestamp, orderBy, getCountFromServer } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 
 export interface Product {
@@ -51,6 +51,22 @@ export interface Product {
     tax_category_id?: string;
     suggested_retail_price?: number;
 }
+
+// Helper to generate barcode variants for robust deduplication
+export const generateBarcodeVariants = (raw: string) => {
+    if (!raw) return [];
+    const clean = raw.replace(/^0+/, ''); // Strip leading zeros
+    if (!clean) return [raw]; // Edge case for "000"
+
+    const variants = new Set([raw, clean]);
+    // Standard Global Trade Item Number (GTIN) formats
+    variants.add(clean.padStart(8, '0'));  // GTIN-8
+    variants.add(clean.padStart(12, '0')); // GTIN-12 (UPC-A)
+    variants.add(clean.padStart(13, '0')); // GTIN-13 (EAN)
+    variants.add(clean.padStart(14, '0')); // GTIN-14 (ITF-14)
+
+    return Array.from(variants);
+};
 
 // Admin View Model
 export interface MasterProduct {
@@ -541,6 +557,7 @@ export const useCatalog = () => {
             created_at: serverTimestamp(),
             updated_at: serverTimestamp()
         });
+        await syncStoreProductCount(storeId);
     };
 
     // Update Merchant Product (Price, Quantity)
@@ -558,9 +575,10 @@ export const useCatalog = () => {
     };
 
     // Delete Merchant Product
-    const deleteMerchantProduct = async (productId: string) => {
+    const deleteMerchantProduct = async (storeId: string, productId: string) => {
         const ref = doc(db, 'merchant_products', productId);
         await deleteDoc(ref);
+        await syncStoreProductCount(storeId);
     };
 
     // Request New Product
@@ -697,8 +715,9 @@ export const useCatalog = () => {
         // real production would use a more optimized matching engine.
         for (const item of items) {
             try {
-                // 1. Find master product by barcode locally
-                const q = query(collection(db, 'master_products'), where('barcode', '==', item.barcode));
+                // 1. Find master product by barcode locally (Robust Check)
+                const variants = generateBarcodeVariants(item.barcode);
+                const q = query(collection(db, 'master_products'), where('barcode', 'in', variants));
                 const snap = await import('firebase/firestore').then(mod => mod.getDocs(q));
 
                 let masterId = null;
@@ -751,9 +770,26 @@ export const useCatalog = () => {
 
         if (results.success > 0) {
             await batch.commit();
+            await syncStoreProductCount(storeId);
         }
 
         return results;
+    };
+
+    // Helper to sync count
+    const syncStoreProductCount = async (storeId: string) => {
+        try {
+            const result = await getCountFromServer(query(collection(db, 'merchant_products'), where('merchant_id', '==', storeId)));
+            const count = result.data().count;
+            // Update count AND clear legacy 'products' array to prevent fallback zombies
+            await updateDoc(doc(db, 'stores', storeId), {
+                productCount: count,
+                products: []
+            });
+            console.log(`Synced product count for ${storeId}: ${count}`);
+        } catch (e) {
+            console.error("Failed to sync product count", e);
+        }
     };
 
     // Fetch from External Source (Open Food Facts - FREE)
@@ -876,7 +912,8 @@ export const useCatalog = () => {
             let masterId = data.master_product_id;
 
             if (data.barcode) {
-                const q = query(collection(db, 'master_products'), where('barcode', '==', data.barcode));
+                const variants = generateBarcodeVariants(data.barcode);
+                const q = query(collection(db, 'master_products'), where('barcode', 'in', variants));
                 const existingSnap = await getDocs(q);
 
                 if (!existingSnap.empty) {
@@ -951,7 +988,8 @@ export const useCatalog = () => {
             console.log(`[addPendingMasterProduct] Checking duplicates for: ${barcode}`);
 
             // 1. Check if already in MASTER catalog
-            const masterQ = query(collection(db, 'master_products'), where('barcode', '==', barcode));
+            const variants = generateBarcodeVariants(barcode);
+            const masterQ = query(collection(db, 'master_products'), where('barcode', 'in', variants));
             const masterSnap = await getDocs(masterQ);
 
             if (!masterSnap.empty) {
@@ -961,7 +999,8 @@ export const useCatalog = () => {
             }
 
             // 2. Check if already PENDING
-            const pendingQ = query(collection(db, 'pending_master_products'), where('original_barcode', '==', barcode));
+            // Note: generateBarcodeVariants(barcode) reused from above 'variants'
+            const pendingQ = query(collection(db, 'pending_master_products'), where('original_barcode', 'in', variants));
             const pendingSnap = await getDocs(pendingQ);
 
             if (!pendingSnap.empty) {

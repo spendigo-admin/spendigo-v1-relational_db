@@ -45,7 +45,7 @@ service cloud.firestore {
 
     // 1B. PENDING MASTER PRODUCTS (Auto-discovered by merchants, awaiting admin approval)
     match /pending_master_products/{pendingProductId} {
-      allow read: if isAdmin() || isMerchant(); // Admins review, Merchants check for duplicates
+      allow read: if true; // Shoppers need to see pending products if they are sold by a merchant
       allow create: if isMerchant(); // Merchants can create pending products via auto-discovery
       allow update, delete: if isAdmin(); // Only admins can commit or reject
     }

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { doc, getDoc, setDoc, onSnapshot, collection, addDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, onSnapshot, collection, addDoc, getDocs, updateDoc, query, where, getCountFromServer } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { useAuth } from '../../context/AuthContext';
 import { useNotifications } from '../../context/NotificationContext';
@@ -115,6 +115,47 @@ const AdminSettings: React.FC = () => {
         } catch (err) {
             console.error(err);
             addNotification({ type: 'alert', title: 'Error', message: 'Failed to save settings.' });
+        }
+    };
+
+    const handleRepairCounts = async () => {
+        if (!window.confirm('This will recalculate product counts for ALL stores and clear legacy data for claimed stores. Continue?')) return;
+
+        try {
+            addNotification({ type: 'system', title: 'Starting', message: 'Analyzing stores...' });
+
+            const storesSnap = await getDocs(collection(db, 'stores'));
+            let updated = 0;
+            let skipped = 0;
+
+            for (const storeDoc of storesSnap.docs) {
+                const store = storeDoc.data();
+                const storeId = storeDoc.id;
+
+                // 1. Get Real Count
+                const q = query(collection(db, 'merchant_products'), where('merchant_id', '==', storeId));
+                const countSnap = await getCountFromServer(q);
+                const count = countSnap.data().count;
+
+                // 2. Decide to Update
+                // If count > 0 -> Definitely Migrated.
+                // If ownerId OR merchantEmail exists -> Claimed/Seeded store, should not show legacy data if empty.
+                if (count > 0 || store.ownerId || store.merchantEmail) {
+                    await updateDoc(doc(db, 'stores', storeId), {
+                        productCount: count,
+                        products: [] // Clear legacy
+                    });
+                    updated++;
+                } else {
+                    skipped++;
+                }
+            }
+
+            addNotification({ type: 'system', title: 'Complete', message: `Repaired ${updated} stores. Skipped ${skipped} legacy demos.` });
+
+        } catch (err: any) {
+            console.error(err);
+            addNotification({ type: 'alert', title: 'Error', message: 'Repair failed: ' + err.message });
         }
     };
 
@@ -246,6 +287,24 @@ const AdminSettings: React.FC = () => {
                                     className="w-full p-2 bg-[var(--surface-1)] border border-[var(--glass-border)] rounded-lg focus:border-[var(--brand-primary)] outline-none"
                                 />
                             </div>
+                        </div>
+                    </div>
+
+                    {/* Inventory Tools */}
+                    <div>
+                        <h2 className="text-lg font-bold text-[var(--text-main)] mb-4 border-b border-[var(--glass-border)] pb-2 pt-4">Inventory Tools</h2>
+                        <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                            <p className="font-medium text-yellow-800 mb-2">Repair Product Counts</p>
+                            <p className="text-xs text-yellow-700 mb-4">
+                                Recalculate 'Active Products' count for all stores.
+                                This also wipes legacy product lists for claimed stores to ensure accurate display.
+                            </p>
+                            <button
+                                onClick={handleRepairCounts}
+                                className="px-4 py-2 bg-yellow-600 text-white text-xs font-bold rounded-lg hover:bg-yellow-700 shadow-sm"
+                            >
+                                Run Repair Script
+                            </button>
                         </div>
                     </div>
 
