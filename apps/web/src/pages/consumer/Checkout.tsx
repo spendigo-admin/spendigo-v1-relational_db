@@ -189,13 +189,24 @@ const Checkout: React.FC = () => {
             const method = fulfillmentMethods[storeId] || 'pickup';
             const store = getStore(storeId);
 
-            if (method === 'delivery' && store && store.minDeliveryOrder) {
-                if (data.total < store.minDeliveryOrder) {
+            if (method === 'delivery') {
+                if (store && store.minDeliveryOrder && data.total < store.minDeliveryOrder) {
                     addNotification({
                         type: 'alert',
                         title: 'Minimum Order Required',
                         message: `${data.storeName} requires a minimum order of $${store.minDeliveryOrder.toFixed(2)} for delivery.`
                     });
+                    return;
+                }
+
+                if (!profile.addresses || profile.addresses.length === 0) {
+                    addNotification({
+                        type: 'alert',
+                        title: 'Missing Address',
+                        message: `Please add a delivery address to your profile before placing a delivery order.`
+                    });
+                    // Ideally redirect to profile/address page or show modal
+                    navigate('/profile/addresses');
                     return;
                 }
             }
@@ -253,7 +264,19 @@ const Checkout: React.FC = () => {
                     paymentMethod: 'in_store' as const,
                     paymentStatus: 'pending' as const,
                     deliveryAddress: method === 'delivery'
-                        ? (profile.addresses.find(a => a.isDefault) || profile.addresses[0])
+                        ? (() => {
+                            const addr = (profile.addresses.find(a => a.isDefault) || profile.addresses[0]);
+                            if (!addr) return undefined;
+                            return {
+                                id: String(addr.id || ''),
+                                street: String(addr.street || ''),
+                                city: String(addr.city || ''),
+                                province: String(addr.province || ''),
+                                postalCode: String(addr.postalCode || ''),
+                                label: String(addr.label || 'Home'),
+                                isDefault: !!addr.isDefault
+                            };
+                        })()
                         : undefined
                 };
             });
@@ -268,12 +291,11 @@ const Checkout: React.FC = () => {
 
         } catch (err: any) {
             console.error('Checkout failed:', err);
-            console.error('Checkout failed:', err);
             // Show detailed error
             addNotification({
                 type: 'alert',
                 title: 'Order Failed',
-                message: `Failed to place order: ${err.message || 'Unknown error'}`
+                message: `Failed to place order: ${err.message || JSON.stringify(err)}`
             });
         } finally {
             setIsProcessing(false);

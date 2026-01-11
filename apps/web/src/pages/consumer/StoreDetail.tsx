@@ -355,9 +355,9 @@ const StoreDetail: React.FC = () => {
                                     <button
                                         key={cat}
                                         onClick={() => setActiveCategory(cat)}
-                                        className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${activeCategory === cat ? 'bg-[var(--text-main)] text-white' : 'bg-white text-[var(--text-muted)] border border-[var(--glass-border)]'}`}
+                                        className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all capitalize ${activeCategory === cat ? 'bg-[var(--text-main)] text-white' : 'bg-white text-[var(--text-muted)] border border-[var(--glass-border)]'}`}
                                     >
-                                        {cat}
+                                        {cat.replace(/^cat-/, '').replace(/-/g, ' ')}
                                     </button>
                                 ))}
                             </div>
@@ -392,9 +392,21 @@ const StoreDetail: React.FC = () => {
                                                     <span className="text-xs text-[var(--text-muted)] line-through">${product.originalPrice.toFixed(2)}</span>
                                                 )}
                                             </div>
-                                            <button onClick={() => handleQuickAdd(product)} className="w-full mt-3 py-2 bg-[var(--brand-primary)] text-white text-sm font-medium rounded-lg hover:brightness-110 transition-all">
-                                                + Add to Cart
-                                            </button>
+                                            {(() => {
+                                                const isOutOfStock = product.available_quantity !== undefined && product.available_quantity <= 0;
+                                                return (
+                                                    <button
+                                                        onClick={() => !isOutOfStock && handleQuickAdd(product)}
+                                                        disabled={isOutOfStock}
+                                                        className={`w-full mt-3 py-2 text-white text-sm font-medium rounded-lg transition-all ${isOutOfStock
+                                                            ? 'bg-gray-400 cursor-not-allowed'
+                                                            : 'bg-[var(--brand-primary)] hover:brightness-110'
+                                                            }`}
+                                                    >
+                                                        {isOutOfStock ? 'Out of Stock' : '+ Add to Cart'}
+                                                    </button>
+                                                );
+                                            })()}
                                         </div>
                                     </div>
                                 ))}

@@ -1,8 +1,8 @@
 openapi: 3.0.0
 info:
   title: Spendigo SmartCart API
-  version: 1.0.0
-  description: API for Spendigo Marketplace Facilitator (Canada)
+  version: 1.1.0 (Beta)
+  description: API for Spendigo Marketplace (Hybrid Catalog Architecture)
 servers:
   - url: https://api.spendigo.ca/v1
     description: Production Server
@@ -24,12 +24,28 @@ paths:
                 password:
                   type: string
       responses:
-        '200':
+        "200":
           description: JWT Token returned
+
+  /catalog/master:
+    get:
+      summary: Search Master Catalog
+      parameters:
+        - name: query
+          in: query
+          schema:
+            type: string
+        - name: barcode
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of master products
 
   /stores:
     get:
-      summary: List near stores
+      summary: List near stores (with Sponsored priority)
       parameters:
         - name: lat
           in: query
@@ -40,8 +56,15 @@ paths:
           schema:
             type: number
       responses:
-        '200':
+        "200":
           description: List of stores
+
+  /ads/active:
+    get:
+      summary: Get active Carousel Ads
+      responses:
+        "200":
+          description: List of ad banners
 
   /cart/checkout:
     post:
@@ -66,7 +89,7 @@ paths:
                       quantity:
                         type: integer
       responses:
-        '200':
+        "200":
           description: Client Secret for Stripe Elements
           content:
             application/json:
@@ -83,7 +106,7 @@ paths:
   /webhooks/stripe:
     post:
       summary: Stripe Webhook Endpoint
-      description: Handles `payment_intent.succeeded` etc.
+      description: Handles `payment_intent.succeeded`, `checkout.session.completed`, etc.
       responses:
-        '200':
+        "200":
           description: Received

@@ -4,6 +4,7 @@ import { useNotifications } from '../../context/NotificationContext';
 import { useConfirmation } from '../../context/ConfirmationContext';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
+import { PRODUCT_CATEGORIES } from '../../data/categories';
 
 // Component to show real-time merchant count for each product
 const MerchantCountCell: React.FC<{ masterProductId: string }> = ({ masterProductId }) => {
@@ -39,7 +40,7 @@ const MasterCatalog: React.FC = () => {
     const {
         useMasterCatalog, searchMasterCatalog,
         useProductRequests, approveProductRequest, rejectProductRequest,
-        fetchExternalUPC, addMasterProduct,
+        fetchExternalUPC, addMasterProduct, updateMasterProduct, deleteMasterProduct,
         usePendingMasterProducts, commitPendingProduct, rejectPendingProduct
     } = useCatalog();
 
@@ -58,6 +59,60 @@ const MasterCatalog: React.FC = () => {
     const [importUpc, setImportUpc] = useState('');
     const [importing, setImporting] = useState(false);
     const [merchantCount, setMerchantCount] = useState(0);
+    const [isEditing, setIsEditing] = useState(false);
+    const [editForm, setEditForm] = useState<Partial<MasterProduct>>({});
+
+    useEffect(() => {
+        if (selectedProduct) {
+            setEditForm({ ...selectedProduct });
+            setIsEditing(false);
+        }
+    }, [selectedProduct]);
+
+    const handleUpdate = async () => {
+        if (!selectedProduct || !editForm) return;
+
+        // Remove ID itself from payload (don't write ID into doc field if not needed)
+        // casting to any to allow destructuring dynamic properties if needed, though interface keys are known.
+        const { master_product_id, ...data } = editForm as any;
+
+        // Sanitize: remove undefined values
+        const cleanData: any = {};
+        Object.keys(data).forEach(key => {
+            const val = (data as any)[key];
+            if (val !== undefined) cleanData[key] = val;
+        });
+
+        console.log('[MasterCatalog] Updating:', selectedProduct.master_product_id, cleanData);
+
+        try {
+            await updateMasterProduct(selectedProduct.master_product_id, cleanData);
+            addNotification({ type: 'system', title: 'Updated', message: 'Product updated successfully.' });
+            setIsEditing(false);
+            // Merge changes back into selectedProduct to update the view immediately
+            setSelectedProduct({ ...selectedProduct, ...cleanData } as MasterProduct);
+        } catch (e: any) {
+            console.error('[MasterCatalog] Update Error:', e);
+            addNotification({ type: 'alert', title: 'Error', message: e.message || 'Update failed' });
+        }
+    };
+
+    const handleDelete = async () => {
+        if (!selectedProduct) return;
+        if (merchantCount > 0) {
+            if (!await confirm({ title: 'Warning: Active Usage', message: `This product is listed by ${merchantCount} merchants. Deleting it will break their listings. Are you SURE?`, type: 'danger', confirmText: 'Yes, Delete Anyway' })) return;
+        } else {
+            if (!await confirm({ title: 'Delete Product?', message: 'This action cannot be undone.', type: 'danger', confirmText: 'Delete' })) return;
+        }
+
+        try {
+            await deleteMasterProduct(selectedProduct.master_product_id);
+            addNotification({ type: 'system', title: 'Deleted', message: 'Product removed from Master Catalog.' });
+            setSelectedProduct(null);
+        } catch (e: any) {
+            addNotification({ type: 'alert', title: 'Error', message: e.message });
+        }
+    };
 
     // Count active merchant listings for selected product
     useEffect(() => {
@@ -79,7 +134,8 @@ const MasterCatalog: React.FC = () => {
     }, [selectedProduct]);
 
     // --- CATALOG TAB LOGIC ---
-    const categories = Array.from(new Set(masterProducts.map(item => item.category_id).filter(Boolean))).sort();
+    // const categories = Array.from(new Set(masterProducts.map(item => item.category_id).filter(Boolean))).sort();
+    const categories = PRODUCT_CATEGORIES;
 
     const filteredItems = masterProducts.filter(item => {
         const matchesSearch =
@@ -137,11 +193,12 @@ const MasterCatalog: React.FC = () => {
             try {
                 // Map request data to master data structure
                 const masterData = {
-                    name: request.requested_product_name,
-                    brand: request.requested_brand,
-                    category: request.requested_category,
+                    name: request.requested_product_name || 'Unknown Product',
+                    brand: request.requested_brand || '',
+                    category: request.requested_category || 'general',
                     image: request.requested_image_url || 'https://placehold.co/100',
-                    description: request.requested_description
+                    description: request.requested_description || '',
+                    barcode: request.requested_barcode || null
                 };
 
                 await approveProductRequest(request.id, request, masterData);
@@ -323,7 +380,7 @@ const MasterCatalog: React.FC = () => {
                                             </div>
                                         </td>
                                         <td className="p-4">
-                                            <div className="text-sm">{item.category_id}</div>
+                                            <div className="text-sm capitalize">{item.category_id.replace(/^cat-/, '').replace(/-/g, ' ')}</div>
                                             <div className="text-xs text-[var(--text-muted)]">{item.product_type}</div>
                                         </td>
                                         <td className="p-4 text-sm">
@@ -367,15 +424,23 @@ const MasterCatalog: React.FC = () => {
                     {requests.map(req => (
                         <div key={req.id} className="bg-white p-6 rounded-xl border border-[var(--glass-border)] shadow-sm flex flex-col md:flex-row gap-6">
                             {/* Image Preview */}
-                            <div className="w-full md:w-48 h-48 bg-gray-100 rounded-lg flex-shrink-0 overflow-hidden relative">
-                                {req.requested_image_url ? (
-                                    <img src={req.requested_image_url} className="w-full h-full object-cover" />
-                                ) : (
-                                    <div className="w-full h-full flex items-center justify-center text-gray-400">No Image</div>
-                                )}
-                                <div className="absolute top-2 right-2 bg-blue-600 text-white text-[10px] uppercase font-bold px-2 py-1 rounded">
-                                    New Request
+                            <div className="w-full md:w-48 flex flex-col gap-2">
+                                <div className="w-full h-48 bg-gray-100 rounded-lg flex-shrink-0 overflow-hidden relative">
+                                    {req.requested_image_url ? (
+                                        <img src={req.requested_image_url} className="w-full h-full object-cover" />
+                                    ) : (
+                                        <div className="w-full h-full flex items-center justify-center text-gray-400">No Image</div>
+                                    )}
+                                    <div className="absolute top-2 right-2 bg-blue-600 text-white text-[10px] uppercase font-bold px-2 py-1 rounded">
+                                        Product
+                                    </div>
                                 </div>
+                                {req.requested_barcode_image_url && (
+                                    <div className="w-full h-24 bg-gray-100 rounded-lg overflow-hidden relative border cursor-pointer hover:opacity-90" onClick={() => window.open(req.requested_barcode_image_url, '_blank')}>
+                                        <img src={req.requested_barcode_image_url} className="w-full h-full object-cover" />
+                                        <div className="absolute bottom-1 right-1 bg-black/50 text-white text-[8px] uppercase font-bold px-1 rounded">Barcode Proof</div>
+                                    </div>
+                                )}
                             </div>
 
                             {/* Details */}
@@ -418,10 +483,29 @@ const MasterCatalog: React.FC = () => {
                                     {req.requested_description || "No description provided."}
                                 </div>
 
-                                {/* AI Suggestions Placeholder */}
-                                <div className="border text-xs rounded p-2 bg-yellow-50 border-yellow-100 text-yellow-800">
-                                    <strong>⚠️ Possible Duplicate Detected:</strong> We found "Coca-Cola 500ml" (MP-123) with similar attributes.
-                                </div>
+                                {(() => {
+                                    const duplicate = req.requested_barcode && masterProducts.find(p =>
+                                        p.barcode === req.requested_barcode ||
+                                        (p.upc_gtin && p.upc_gtin.includes(req.requested_barcode))
+                                    );
+
+                                    if (duplicate) {
+                                        return (
+                                            <div className="border text-xs rounded p-2 bg-red-50 border-red-100 text-red-800 mt-2 flex justify-between items-center">
+                                                <span>
+                                                    <strong>⚠️ Duplicate Barcode Detected:</strong> Exists as "<span className="font-bold">{duplicate.product_name}</span>" (Category: {duplicate.category_id}).
+                                                </span>
+                                                <button
+                                                    onClick={() => { setSelectedProduct(duplicate); setActiveTab('catalog'); }}
+                                                    className="underline text-red-900 font-bold hover:no-underline"
+                                                >
+                                                    View Existing
+                                                </button>
+                                            </div>
+                                        );
+                                    }
+                                    return null;
+                                })()}
                             </div>
 
                             {/* Actions */}
@@ -449,11 +533,37 @@ const MasterCatalog: React.FC = () => {
                 <div className="fixed inset-0 bg-black/50 z-50 flex justify-end">
                     <div className="w-full max-w-2xl bg-white h-full shadow-2xl overflow-y-auto animate-slide-in-right">
                         <div className="sticky top-0 bg-white border-b p-6 flex justify-between items-center z-10">
-                            <div>
-                                <h2 className="text-xl font-bold">{selectedProduct.product_name}</h2>
-                                <p className="text-sm text-gray-500">{selectedProduct.master_product_id} • {selectedProduct.status}</p>
+                            <div className="flex-1 mr-4">
+                                {isEditing ? (
+                                    <input
+                                        className="text-xl font-bold border-b border-gray-300 focus:border-blue-500 outline-none w-full"
+                                        value={editForm.product_name || ''}
+                                        onChange={e => setEditForm({ ...editForm, product_name: e.target.value })}
+                                        placeholder="Product Name"
+                                    />
+                                ) : (
+                                    <h2 className="text-xl font-bold">{selectedProduct.product_name}</h2>
+                                )}
+                                <p className="text-sm text-gray-500">{selectedProduct.master_product_id}</p>
                             </div>
-                            <button onClick={() => setSelectedProduct(null)} className="p-2 hover:bg-gray-100 rounded-full">✕</button>
+                            <div className="flex items-center gap-2">
+                                {isEditing ? (
+                                    <>
+                                        <button onClick={() => setIsEditing(false)} className="px-3 py-1 text-gray-600 hover:bg-gray-100 rounded text-sm font-medium">Cancel</button>
+                                        <button onClick={handleUpdate} className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 font-bold text-sm">Save</button>
+                                    </>
+                                ) : (
+                                    <>
+                                        <button onClick={handleDelete} className="p-2 text-red-500 hover:bg-red-50 rounded" title="Delete Product">
+                                            <span className="text-lg">🗑️</span>
+                                        </button>
+                                        <button onClick={() => setIsEditing(true)} className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium text-sm flex items-center gap-2">
+                                            <span>✏️</span> Edit
+                                        </button>
+                                        <button onClick={() => setSelectedProduct(null)} className="p-2 hover:bg-gray-100 rounded-full text-gray-400 hover:text-gray-600">✕</button>
+                                    </>
+                                )}
+                            </div>
                         </div>
 
                         <div className="p-6 space-y-8">
@@ -462,20 +572,34 @@ const MasterCatalog: React.FC = () => {
                                 <h3 className="text-sm font-bold uppercase text-gray-400 mb-4 border-b pb-2">A. Identity & Classification</h3>
                                 <div className="grid grid-cols-2 gap-6">
                                     <div>
-                                        <span className="block text-sm text-gray-500">Brand Name</span>
-                                        <span className="font-medium">{selectedProduct.brand_name}</span>
+                                        <label className="block text-sm text-gray-500 mb-1">Brand Name</label>
+                                        {isEditing ? (
+                                            <input className="w-full p-2 border rounded-lg outline-none focus:border-blue-500" value={editForm.brand_name || ''} onChange={e => setEditForm({ ...editForm, brand_name: e.target.value })} />
+                                        ) : <span className="font-medium">{selectedProduct.brand_name}</span>}
                                     </div>
                                     <div>
-                                        <span className="block text-sm text-gray-500">UPC / GTIN</span>
-                                        <span className="font-mono bg-gray-100 px-2 py-1 rounded text-sm">{selectedProduct.upc_gtin || 'N/A'}</span>
+                                        <label className="block text-sm text-gray-500 mb-1">UPC / GTIN</label>
+                                        {isEditing ? (
+                                            <input className="w-full p-2 border rounded-lg font-mono outline-none focus:border-blue-500" value={editForm.upc_gtin || ''} onChange={e => setEditForm({ ...editForm, upc_gtin: e.target.value, barcode: e.target.value })} />
+                                        ) : <span className="font-mono bg-gray-100 px-2 py-1 rounded text-sm">{selectedProduct.upc_gtin || 'N/A'}</span>}
                                     </div>
                                     <div>
-                                        <span className="block text-sm text-gray-500">Category</span>
-                                        <span className="font-medium">{selectedProduct.category_id}</span>
+                                        <label className="block text-sm text-gray-500 mb-1">Category</label>
+                                        {isEditing ? (
+                                            <select className="w-full p-2 border rounded-lg outline-none focus:border-blue-500" value={editForm.category_id} onChange={e => setEditForm({ ...editForm, category_id: e.target.value })}>
+                                                {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                                            </select>
+                                        ) : <span className="font-medium capitalize">{selectedProduct.category_id.replace(/^cat-/, '').replace(/-/g, ' ')}</span>}
                                     </div>
                                     <div>
-                                        <span className="block text-sm text-gray-500">Is Generic?</span>
-                                        <span className="font-medium">{selectedProduct.is_generic ? 'Yes' : 'No'}</span>
+                                        <label className="block text-sm text-gray-500 mb-1">Status</label>
+                                        {isEditing ? (
+                                            <select className="w-full p-2 border rounded-lg outline-none focus:border-blue-500" value={editForm.status} onChange={e => setEditForm({ ...editForm, status: e.target.value as any })}>
+                                                <option value="active">Active</option>
+                                                <option value="deprecated">Deprecated</option>
+                                                <option value="blocked">Blocked</option>
+                                            </select>
+                                        ) : <span className={`px-2 py-1 rounded-full text-xs font-bold w-fit ${selectedProduct.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{selectedProduct.status}</span>}
                                     </div>
                                 </div>
                             </section>
@@ -485,138 +609,68 @@ const MasterCatalog: React.FC = () => {
                                 <h3 className="text-sm font-bold uppercase text-gray-400 mb-4 border-b pb-2">B. Size & Packaging</h3>
                                 <div className="grid grid-cols-2 gap-6">
                                     <div>
-                                        <span className="block text-sm text-gray-500">Net Quantity</span>
-                                        <span className="font-medium">{selectedProduct.net_quantity_value} {selectedProduct.net_quantity_unit}</span>
-                                    </div>
-                                    <div>
-                                        <span className="block text-sm text-gray-500">Package Count</span>
-                                        <span className="font-medium">{selectedProduct.package_count} pk</span>
-                                    </div>
-                                    <div>
-                                        <span className="block text-sm text-gray-500">Storage Type</span>
-                                        <span className="font-medium capitalize">{selectedProduct.storage_type}</span>
-                                    </div>
-                                    <div>
-                                        <span className="block text-sm text-gray-500">Unit of Sale</span>
-                                        <span className="font-medium">{selectedProduct.is_sold_by_weight ? 'Sold by Weight' : 'Sold by Each'}</span>
-                                    </div>
-                                </div>
-                            </section>
-
-                            {/* C. Commerce & Tax */}
-                            <section>
-                                <h3 className="text-sm font-bold uppercase text-gray-400 mb-4 border-b pb-2">C. Commerce & Tax</h3>
-                                <div className="grid grid-cols-2 gap-6">
-                                    <div>
-                                        <span className="block text-sm text-gray-500">Tax Category</span>
-                                        <span className="font-medium select-all bg-yellow-50 px-2 rounded">{selectedProduct.tax_category_id || 'zero_rated_grocery'}</span>
-                                    </div>
-                                    <div>
-                                        <span className="block text-sm text-gray-500">Suggested Retail (SRP)</span>
-                                        <span className="font-bold text-green-700">${selectedProduct.suggested_retail_price?.toFixed(2) || '0.00'}</span>
-                                    </div>
-                                </div>
-                            </section>
-
-                            {/* D. Media & Regional */}
-                            <section>
-                                <h3 className="text-sm font-bold uppercase text-gray-400 mb-4 border-b pb-2">D. Media & Regional Support</h3>
-                                <div className="space-y-4">
-                                    <div className="flex gap-4">
-                                        <div className="w-32 h-32 bg-gray-100 rounded-lg flex items-center justify-center border flex-shrink-0">
-                                            <img src={selectedProduct.primary_image_url} className="max-w-full max-h-full object-contain" />
-                                        </div>
-                                        <div className="flex-1 space-y-3">
-                                            <div>
-                                                <span className="block text-xs font-bold text-gray-400 uppercase">EN Description</span>
-                                                <p className="text-sm text-gray-700">{selectedProduct.short_description || "No description."}</p>
+                                        <label className="block text-sm text-gray-500 mb-1">Net Quantity</label>
+                                        {isEditing ? (
+                                            <div className="flex gap-2">
+                                                <input type="number" className="w-24 p-2 border rounded-lg outline-none focus:border-blue-500" value={editForm.net_quantity_value || ''} onChange={e => setEditForm({ ...editForm, net_quantity_value: Number(e.target.value) })} placeholder="Value" />
+                                                <input className="w-20 p-2 border rounded-lg outline-none focus:border-blue-500" value={editForm.net_quantity_unit || ''} onChange={e => setEditForm({ ...editForm, net_quantity_unit: e.target.value })} placeholder="Unit" />
                                             </div>
-                                            {selectedProduct.short_description_fr && (
-                                                <div>
-                                                    <span className="block text-xs font-bold text-gray-400 uppercase">FR Description (Bilingual)</span>
-                                                    <p className="text-sm text-gray-700 italic border-l-2 pl-2 border-blue-200">{selectedProduct.short_description_fr}</p>
-                                                </div>
-                                            )}
-                                        </div>
+                                        ) : <span className="font-medium">{selectedProduct.net_quantity_value} {selectedProduct.net_quantity_unit}</span>}
                                     </div>
-                                    {selectedProduct.product_name_fr && (
-                                        <div className="bg-blue-50/50 p-2 rounded text-sm italic">
-                                            <span className="font-bold mr-2 text-blue-900">FR Name:</span> {selectedProduct.product_name_fr}
+                                    <div>
+                                        <label className="block text-sm text-gray-500 mb-1">Package Count</label>
+                                        {isEditing ? (
+                                            <input type="number" className="w-24 p-2 border rounded-lg outline-none focus:border-blue-500" value={editForm.package_count || 1} onChange={e => setEditForm({ ...editForm, package_count: Number(e.target.value) })} />
+                                        ) : <span className="font-medium">{selectedProduct.package_count} pk</span>}
+                                    </div>
+                                </div>
+                            </section>
+
+                            {/* IMAGES */}
+                            <section>
+                                <h3 className="text-sm font-bold uppercase text-gray-400 mb-4 border-b pb-2">Media</h3>
+                                <div className="flex gap-4 items-start">
+                                    <div className="w-32 h-32 bg-gray-50 border rounded-lg flex items-center justify-center p-2">
+                                        <img src={editForm.primary_image_url || '/placeholder.png'} className="max-w-full max-h-full object-contain" />
+                                    </div>
+                                    <div className="flex-1">
+                                        <label className="block text-sm text-gray-500 mb-1">Primary Image URL</label>
+                                        {isEditing ? (
+                                            <div className="space-y-2">
+                                                <input className="w-full p-2 border rounded-lg text-sm font-mono outline-none focus:border-blue-500" value={editForm.primary_image_url || ''} onChange={e => setEditForm({ ...editForm, primary_image_url: e.target.value })} placeholder="https://..." />
+                                                <p className="text-[10px] text-gray-400">Paste a direct image link.</p>
+                                            </div>
+                                        ) : <a href={selectedProduct.primary_image_url} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:underline break-all block">{selectedProduct.primary_image_url}</a>}
+                                    </div>
+                                </div>
+                            </section>
+
+                            {/* Usage Section (Read Only) */}
+                            <section>
+                                <h3 className="text-sm font-bold uppercase text-gray-400 mb-4 border-b pb-2">Usage</h3>
+                                <div className="bg-blue-50 p-4 rounded-xl flex justify-between items-center border border-blue-100">
+                                    <div>
+                                        <span className="text-2xl font-bold text-blue-700">{merchantCount}</span>
+                                        <span className="block text-sm text-blue-800 font-medium">Active Merchant Listings</span>
+                                    </div>
+
+                                    {isEditing && (
+                                        <div className="text-sm text-blue-700 bg-blue-100 px-3 py-1 rounded">
+                                            Edits will propagate to all stores.
                                         </div>
                                     )}
                                 </div>
                             </section>
 
-                            {/* E. Logistics */}
-                            <section>
-                                <h3 className="text-sm font-bold uppercase text-gray-400 mb-4 border-b pb-2">E. Logistics</h3>
-                                <div className="grid grid-cols-2 gap-6">
-                                    <div>
-                                        <span className="block text-sm text-gray-500">Dimensions (LxWxH)</span>
-                                        <span className="font-medium">
-                                            {selectedProduct.dimensions ? `${selectedProduct.dimensions.length}x${selectedProduct.dimensions.width}x${selectedProduct.dimensions.height} ${selectedProduct.dimensions.unit}` : 'N/A'}
-                                        </span>
-                                    </div>
-                                    <div>
-                                        <span className="block text-sm text-gray-500">Gross Weight</span>
-                                        <span className="font-medium">{selectedProduct.weight_gross ? `${selectedProduct.weight_gross}g` : 'N/A'}</span>
-                                    </div>
-                                </div>
-                            </section>
-
-                            {/* F. Governance */}
-                            <section>
-                                <h3 className="text-sm font-bold uppercase text-gray-400 mb-4 border-b pb-2">F. Governance & Quality</h3>
-                                <div className="grid grid-cols-2 gap-6">
-                                    <div>
-                                        <span className="block text-sm text-gray-500">Verification</span>
-                                        <span className={`px-2 py-0.5 rounded text-xs font-bold uppercase ${selectedProduct.verification_status === 'verified' ? 'bg-green-100 text-green-700' :
-                                            selectedProduct.verification_status === 'manufacturer_verified' ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-700'
-                                            }`}>
-                                            {selectedProduct.verification_status || 'Unverified'}
-                                        </span>
-                                    </div>
-                                    <div>
-                                        <span className="block text-sm text-gray-500">Data Source</span>
-                                        <span className="font-medium capitalize">{selectedProduct.data_source || 'Admin'}</span>
-                                    </div>
-                                    <div className="col-span-2">
-                                        <span className="block text-sm text-gray-500 mb-1">Search Keywords (Synonyms)</span>
-                                        <div className="flex flex-wrap gap-2">
-                                            {selectedProduct.search_keywords?.map(kw => (
-                                                <span key={kw} className="bg-gray-100 px-2 py-1 rounded text-xs text-gray-600">#{kw}</span>
-                                            )) || <span className="text-xs text-gray-400">No keywords defined.</span>}
-                                        </div>
-                                    </div>
-                                </div>
-                            </section>
-
-                            {/* E. Usage (Read Only) */}
-                            <section>
-                                <h3 className="text-sm font-bold uppercase text-gray-400 mb-4 border-b pb-2">E. Usage Signals</h3>
-                                <div className="bg-blue-50 p-4 rounded-xl flex justify-between items-center">
-                                    <div>
-                                        <span className="text-2xl font-bold text-blue-700">{merchantCount}</span>
-                                        <span className="block text-sm text-blue-600">Active Merchant Listings</span>
-                                    </div>
-                                    <div className="text-right">
-                                        <button className="text-sm text-blue-700 font-bold hover:underline">View All Merchants →</button>
-                                    </div>
-                                </div>
-                                <p className="text-xs text-gray-500 mt-2">
-                                    Note: You cannot edit prices or inventory. Contact merchants directly for commerce issues.
-                                </p>
-                            </section>
-
-                            {selectedProduct.data_source === 'open_food_facts' && selectedProduct.status !== 'active' && (
-                                <div className="p-6 bg-purple-50 border-t border-purple-100 flex items-center justify-between sticky bottom-0">
+                            {selectedProduct.data_source === 'open_food_facts' && selectedProduct.status !== 'active' && !isEditing && (
+                                <div className="p-6 bg-purple-50 border-t border-purple-100 flex items-center justify-between sticky bottom-0 -mx-6 -mb-6">
                                     <div className="text-sm font-medium text-purple-900">
-                                        Found in External DB. Save to Master?
+                                        External Data Source
                                     </div>
                                     <button
                                         onClick={handleCommit}
                                         disabled={importing}
-                                        className="px-6 py-2 bg-purple-600 text-white font-bold rounded-lg hover:bg-purple-700 shadow-lg shadow-purple-500/20"
+                                        className="px-6 py-2 bg-purple-600 text-white font-bold rounded-lg hover:bg-purple-700 shadow-lg"
                                     >
                                         {importing ? 'Saving...' : 'Commit to Master Catalog'}
                                     </button>

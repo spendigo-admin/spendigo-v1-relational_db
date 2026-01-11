@@ -9,6 +9,16 @@ const Profile: React.FC = () => {
     const [activeTab, setActiveTab] = useState<'account' | 'addresses' | 'orders'>(
         (location.state as any)?.activeTab || 'account'
     );
+
+    // Update active tab when location state changes
+    useEffect(() => {
+        const state = location.state as any;
+        if (state?.activeTab) {
+            setActiveTab(state.activeTab);
+        } else {
+            setActiveTab('account');
+        }
+    }, [location.state]);
     const [editingProfile, setEditingProfile] = useState(false);
     const [showAddAddress, setShowAddAddress] = useState(false);
 

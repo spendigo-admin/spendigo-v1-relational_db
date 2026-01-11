@@ -218,7 +218,7 @@ const StoreManagement: React.FC = () => {
                                                     )}
                                                 </div>
                                             </td>
-                                            <td className="p-4 text-sm text-[var(--text-main)]">{store.products?.length || 0}</td>
+                                            <td className="p-4 text-sm text-[var(--text-main)]">{store.productCount || store.products?.length || 0}</td>
 
                                             {/* Subscription Column */}
                                             <td className="p-4">

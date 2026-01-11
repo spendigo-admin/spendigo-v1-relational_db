@@ -21,8 +21,9 @@ Our visual design system uses a high-contrast theme:
 - Headings (`h1` through `h6`) strictly follow hierarchy.
 
 ### Keyboard Navigation
-- Focus indicators are explicitly defined in `reset.css` (`outline: 2px solid var(--brand-primary)`).
+- Focus indicators are explicitly defined in `index.css` (`outline: 2px solid var(--brand-primary)`).
 - Skip-to-content links are implemented in the main layout.
+- **SmartCart Controls**: The substitution preference toggles are fully keyboard accessible (Tab + Space).
 
 ## 3. Known Limitations
 - The **Flyer OCR Canvas** tool is inherently visual and provides a text-table alternative for screen readers, but the bounding box interaction requires mouse input. We are working on a keyboard-based coordinate entry system for Phase 3.

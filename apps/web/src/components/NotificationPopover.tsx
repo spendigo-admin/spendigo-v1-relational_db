@@ -105,7 +105,7 @@ const NotificationPopover: React.FC = () => {
 
                                             {isNewOrder ? (
                                                 <div className="mt-1">
-                                                    <p className="text-xs text-[var(--text-main)] font-medium mb-1 line-clamp-2">{notif.message.split(' for $')[0]}</p>
+                                                    <p className="text-xs text-[var(--text-main)] font-medium mb-1 break-words">{notif.message.split(' for $')[0]}</p>
                                                     <div className="flex items-center gap-2 mt-2">
                                                         {orderPrice && (
                                                             <span className="text-xs font-bold text-green-700 bg-green-50 border border-green-100 px-1.5 py-0.5 rounded">
@@ -118,7 +118,7 @@ const NotificationPopover: React.FC = () => {
                                                     </div>
                                                 </div>
                                             ) : (
-                                                <p className="text-xs text-[var(--text-muted)] truncate mt-0.5">{notif.message}</p>
+                                                <p className="text-xs text-[var(--text-muted)] mt-0.5 break-words whitespace-pre-wrap">{notif.message}</p>
                                             )}
 
                                             <p className="text-[10px] text-[var(--text-muted)] mt-1.5 opacity-70 flex justify-end">

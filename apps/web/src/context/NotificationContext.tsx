@@ -195,7 +195,20 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     };
 
     const clearAll = async () => {
-        // Implement if needed, dangerous to delete all
+        if (isAuth && contextId) {
+            const batch = (await import('firebase/firestore')).writeBatch(db);
+            // Limit to first 500 to stay within batch limits
+            const toDelete = notifications.slice(0, 500);
+
+            toDelete.forEach(n => {
+                const ref = doc(db, 'users', contextId, 'notifications', n.id);
+                batch.delete(ref);
+            });
+            if (toDelete.length > 0) await batch.commit();
+        } else {
+            setNotifications([]);
+            localStorage.setItem(LOCAL_NOTIF_KEY, JSON.stringify([]));
+        }
     };
 
     const deleteNotification = async (id: string) => {

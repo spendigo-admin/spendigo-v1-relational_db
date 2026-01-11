@@ -1,73 +1,82 @@
 # Spendigo SmartCart — UI Wireframes
 
-## 1. Core User Flows
+**Status**: Implemented (Beta)
+**Design System**: Tailwind CSS (Custom Theme: Emerald/Dark)
 
-### 1.1 Guest Checkout Flow
-*Optimized for speed and conversion.*
-```mermaid
-graph LR
-    A[Cart/View] -->|Proceed to Checkout| B(Email Entry / Lookup)
-    B -->|New User| C{Phone Verified?}
-    B -->|Returning| D[Auth Challenge (MFA)]
-    C -->|No| E[SMS OTP Entry]
-    C -->|Yes| F[Delivery Address & Instructions]
-    E --> F
-    F --> G[Split Payment Review]
-    G -->|Pay Now| H[Stripe Payment Sheet]
-    H --> I[Order Confirmation]
-```
+## 1. Core User Flows (Mermaid)
 
-### 1.2 Merchant Onboarding
-*Stripe Connect Express Integration.*
+### 1.1 SmartCart Optimization Flow
+*How the user finds the best price.*
 ```mermaid
 graph TD
-    Start[Landing Page] -->|Start Selling| SignUp[Create Account]
-    SignUp --> Verify[Email Verification]
-    Verify --> Profile[Store Profile Setup]
-    Profile --> Connect[Link Bank Account (Stripe)]
-    Connect -->|Redirect| Stripe[Stripe Hosted Onboarding]
-    Stripe -->|Success| Dashboard[Merchant Dashboard]
-    Stripe -->|Fail/Restricted| Support[Contact Support]
+    A[User Search: "Milk"] --> B[Result List]
+    B -->|Click Item| C[Product Detail]
+    C -->|Add to Wishlist| D[Wishlist State]
+    D -->|Click 'Optimize'| E[Smart Engine]
+    E --> F{Cheaper Replacement?}
+    F -->|Yes| G[Show "Swap & Save" Modal]
+    F -->|No| H[Direct Add to Cart]
+    G -->|Accept| I[Replace Item in Cart]
+    G -->|Decline| H
 ```
 
-## 2. Key Screen Mockups (Descriptions)
+### 1.2 Merchant Product Management (Hybrid Catalog)
+*How a merchant adds inventory.*
+```mermaid
+graph TD
+    A[Merchant Dashboard] --> B[My Products]
+    B -->|Click Add| C[Global Search Modal]
+    C -->|Type Barcode/Name| D{Found in Master?}
+    D -->|Yes| E[Select & Set Price]
+    D -->|No| F[Click 'Request New']
+    F --> G[Fill Request Form]
+    G --> H[Pending Admin Approval]
+    E --> I[Live in Store]
+```
 
-### 2.1 Home / Store List
-- **Header**: Glassmorphic sticky nav. Logo (Left), "Your Location" (Center), Cart icon with badge (Right).
-- **Hero**: "Shop Local, Optimize Savings". Dynamic wavy gradient background.
-- **Store Cards**:
-  - Horizontal scroll container.
-  - Card: Store Image (Top), Store Logo (Avatar overlap), Name (Bold), "0.5km away" (Subtext).
-  - Badge: "Open" (Green dot).
+## 2. Key Screen Mockups
 
-### 2.2 Product Detail Page
-- **Breadcrumbs**: Home > Store Name > Category > Item.
-- **Image**: Large, square, swipeable gallery.
-- **Info**:
-  - Price (Huge font).
-  - "**Sold by: [Store Legal Name]**" (Mandatory Disclosure - Regulatory).
-  - Address: Clickable map link.
-- **Actions**:
-  - "Add to Cart" (Floating sticky button on mobile).
-  - Quantity stepper.
+### 2.1 Consumer: SmartCart Wishlist (`/smartcart`)
+*   **Header**: "Your Smart List" (Sticky)
+*   **Toggle Switch**: "Strict Mode" (Same Brand) vs "Eco Mode" (Any Brand, lower price).
+*   **Main List**: 
+    *   Left side: Required Items.
+    *   Right side: "Best Deal" found.
+    *   Green Arrow pointing to savings amount ("Save $3.50").
+*   **CTA**: floating "Add All to Cart" button.
 
-### 2.3 Cart (SmartCart View)
-- **Top Summary**: "Total: $45.50 (2 Stores)".
-- **Grouped List**:
-  - **Store A** (Header with Logo)
-    - Item 1
-    - Item 2
-  - **Store B** (Header with Logo)
-    - Item 3
-- **Smart Optimizer Banner**: "You saved $4.20 by splitting this order!" (Green gradient background).
-- **Checkout Button**: Fixed at bottom.
+### 2.2 Merchant: Product Editor (`/merchant/products`)
+*   **Layout**: Split view.
+*   **Left (Locked)**: Master Data (Image, Name, Description, Nutrition).
+    *   *Note*: "This data is managed by Spendigo".
+*   **Right (Editable)**: Store Data.
+    *   Price Input (Large).
+    *   Inventory Spinner.
+    *   Status Toggle (Active/Hidden).
+*   **Footer**: "Save Changes" button.
 
-### 2.4 Checkout (Split Payment)
-- **Order Summary Breakdown**:
-  - Store A Subtotal: $20.00
-  - Store B Subtotal: $25.50
-  - Service Fee: $2.00
-  - GST/HST: $5.91
-- **Payment**:
-  - Single "Pay $53.41" button.
-  - Disclaimer: "Your statement will show separate charges for Store A and Store B." (Transparency).
+### 2.3 Admin: Master Catalog Grid (`/admin/catalog`)
+*   **Tool**: Data Grid (React Table).
+*   **Columns**: Image (Thumbnail), Name, Brand, Barcode, # Stores, Status.
+*   **Actions (Row)**: Edit, Merge, Block.
+*   **Filter Bar**: "Pending Verification", "Missing Image", "Flagged".
+*   **Bulk Actions**: "Export CSV", "Update Tax Category".
+
+### 2.4 Consumer: Store Profile (`/store/:id`)
+*   **Hero**: Store Banner Image + Avatar.
+*   **Stats**: "0.5km away" • "Delivery: $3.99" • "Rating: 4.8★".
+*   **Tabs**: "Flyers" (PDF Viewer), "Deals" (Red Grid), "Aisles" (Categories).
+*   **Search**: In-store search bar ("Search FreshMart...").
+
+### 2.5 Checkout: Split Payment (`/checkout`)
+*   **Header**: "Secure Checkout".
+*   **Order Breakdown**:
+    *   **Store A (FreshMart)**: 3 items - $12.50.
+    *   **Store B (Bakery)**: 1 item - $5.00.
+*   **Payment Method**: Stripe Elements (Card / Google Pay).
+*   **Disclaimer**: "You will see two separate charges on your statement."
+*   **Submit**: "Pay $17.50".
+
+## 3. Responsive Behavior
+*   **Mobile**: Bottom Navigation Bar (Home, Search, Cart, Profile).
+*   **Desktop**: Top Navigation Bar with Mega-Menu for Categories. Sidebar for Filters.

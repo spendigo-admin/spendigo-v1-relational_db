@@ -1,5 +1,8 @@
 # Cost Optimization Strategy (Pre-Revenue)
 
+**Status**: Active / Enforced
+**Last Updated**: 2026-01-11
+
 ## 1. Hard Constraint
 **Total Budget: $0 - $25 CAD / month**
 
@@ -7,43 +10,45 @@
 
 ### 2.1 Compute (Serverless)
 - **Strategy**: Scale-to-zero. No running containers or instances when idle.
-- **Service**: Google Cloud Functions / AWS Lambda.
-- **Free Tier**: 2M invocations/month (AWS/GCP combined typically covers this).
+- **Service**: Google Cloud Functions.
+- **Free Tier**: 2M invocations/month (GCP Free Tier).
 - **Risk**: Infinite loops or DDOS.
 - **Mitigation**:
-  - Set `max_instances` to 5-10 for non-critical functions.
+  - Set `max_instances` to 10 for non-critical functions.
   - Set execution timeouts (e.g., 5s).
 
 ### 2.2 Database
-- **Strategy**: Serverless Postgres.
-- **Service**: Neon (Free: 0.5 vCPU, 512MB RAM, 3GB Storage).
-- **Risk**: Storage growth.
-- **Mitigation**: Regular pruning of logs. Store heavy headers (images, PDFs) in Object Storage, not DB.
+- **Strategy**: Firestore (NoSQL).
+- **Service**: Firebase Firestore.
+- **Free Tier**: 50k reads, 20k writes per day.
+- **Risk**: High read volume from inefficient queries.
+- **Mitigation**:
+  - Aggressive client-side caching (React Query / Context).
+  - Denormalization of "Store Name" and "Product Price" to avoid joins.
 
 ### 2.3 Storage (Assets & Logs)
 - **Strategy**: Hot/Cold lifecycle.
-- **Service**: Cloudflare R2 (10GB Free, no egress fees) or AWS S3.
+- **Service**: Firebase Storage (Google Cloud Storage).
 - **Risk**: Bandwidth/Egress costs.
 - **Mitigation**:
-  - Aggressive CDN caching (Cache-Control: public, max-age=31536000).
-  - WebP conversion for all user uploads.
+  - Cache-Control headers (`public, max-age=31536000`) for immutable assets.
+  - Resize user uploads (avatars/products) on the client before upload.
 
 ### 2.4 Monitoring & Logging
 - **Strategy**: Sampling and Retention reduction.
-- **Service**: Cloud Native (CloudWatch/Stackdriver).
+- **Service**: Google Cloud Logging.
 - **Risk**: High ingestion costs.
 - **Mitigation**:
-  - Structured logging (JSON).
   - Log level: `INFO` default, `ERROR` only for high volume.
-  - Retention: 3-7 days max for Dev/Staging.
+  - Retention: Default 30 days is free for reasonable volume.
 
 ### 2.5 Maps & Geolocation
-- **Strategy**: Cache-first, Lazy-load.
-- **Risk**: API call volume ($5+ per 1000 loads).
+- **Strategy**: Cache-first, Open Source.
+- **Service**: OpenStreetMap / Nominatim (Free) + Leaflet.
+- **Risk**: API Rate Limits.
 - **Mitigation**:
-  - Do NOT auto-load map on homepage.
-  - Use static maps where interactive is not needed.
-  - Cache geocoded results for stores.
+  - Do NOT auto-load map on homepage (List view default).
+  - Cache geocoded results for stores in Firestore.
 
 ## 3. Kill-Switches
 If projected cost > $20 CAD:
@@ -56,7 +61,8 @@ If projected cost > $20 CAD:
 | Component | Usage | Est. Cost |
 | :--- | :--- | :--- |
 | Compute | < 1M reqs | $0.00 |
-| DB | < 3GB | $0.00 |
+| DB | < 50k reads/day | $0.00 |
+| Storage | < 5GB | $0.00 |
 | Stripe | Transaction Based | Net Positive |
 | Domain/DNS | 1 Domain | $15.00/yr |
 | **Total** | | **~$1.25/mo** |

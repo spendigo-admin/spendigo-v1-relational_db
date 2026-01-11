@@ -11,6 +11,7 @@ export interface CatalogItem {
     unit: string;
     taxable: boolean;
     barcode?: string; // Added barcode support
+    brand?: string;
 }
 
 interface CatalogContextType {
@@ -28,13 +29,24 @@ export const CatalogProvider: React.FC<{ children: ReactNode }> = ({ children })
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // Subscribe to catalog updates
-        const q = query(collection(db, 'catalog'), orderBy('name', 'asc'));
+        // Subscribe to master_products (Real Global Catalog)
+        const q = query(collection(db, 'master_products'), orderBy('product_name', 'asc'));
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const items: CatalogItem[] = [];
             snapshot.forEach(doc => {
-                items.push({ id: doc.id, ...doc.data() } as CatalogItem);
+                const data = doc.data();
+                items.push({
+                    id: doc.id,
+                    name: data.product_name || 'Unnamed Product',
+                    category: data.category_id || 'General',
+                    image: data.primary_image_url || '',
+                    description: data.short_description || '',
+                    unit: data.unit_size || data.net_quantity_unit || '',
+                    taxable: data.tax_category_id !== 'zero_rated_grocery',
+                    barcode: data.upc_gtin || data.barcode,
+                    brand: data.brand || ''
+                });
             });
             setCatalog(items);
             setLoading(false);

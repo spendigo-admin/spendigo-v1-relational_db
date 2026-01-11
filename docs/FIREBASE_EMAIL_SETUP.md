@@ -1,5 +1,8 @@
 # Firebase Email Trigger Extension Setup
 
+**Status**: Verified
+**Last Updated**: 2026-01-11
+
 This guide walks you through setting up the infrastructure required to send emails from Spendigo.
 
 ## 1. Install the Extension

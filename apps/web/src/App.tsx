@@ -60,6 +60,7 @@ import AdminMasterCatalog from './pages/admin/MasterCatalog';
 import AdminSeedUsers from './pages/admin/SeedUsers';
 import AdminAdManager from './pages/admin/AdManager';
 import AdminSurveyManager from './pages/admin/SurveyManager';
+import AdminSystemTools from './pages/admin/SystemTools';
 
 import { useState, useEffect } from 'react';
 import { doc, onSnapshot } from 'firebase/firestore';
@@ -173,6 +174,7 @@ function App() {
                                                                     <Route path="/admin/audit-logs" element={<AdminAuditLogs />} />
                                                                     <Route path="/admin/ads" element={<AdminAdManager />} />
                                                                     <Route path="/admin/surveys" element={<AdminSurveyManager />} />
+                                                                    <Route path="/admin/tools" element={<AdminSystemTools />} />
                                                                 </Route>
 
                                                                 {/* 404 Catch All */}

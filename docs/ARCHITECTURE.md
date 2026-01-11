@@ -1,7 +1,7 @@
 # Spendigo SmartCart — System Architecture
 
-**Last Updated**: 2025-12-30  
-**Status**: Production (Firebase-Based Implementation)
+**Last Updated**: 2026-01-11  
+**Status**: Beta (Feature Complete)
 
 ---
 
@@ -52,10 +52,10 @@ graph TB
 
 | Application | Technology | Status |
 |------------|------------|--------|
-| **Consumer Web** | React 18 + Vite 7 | ✅ Complete |
-| **Merchant Dashboard** | React 18 + Vite 7 | ✅ Complete |
-| **Admin Panel** | React 18 + Vite 7 | ✅ Complete |
-| **Mobile Apps** | Capacitor 6 (iOS/Android) | ✅ Ready for build |
+| **Consumer Web** | React 18 + Vite 7.3 | ✅ Complete |
+| **Merchant Dashboard** | React 18 + Vite 7.3 | ✅ Complete |
+| **Admin Panel** | React 18 + Vite 7.3 | ✅ Complete |
+| **Mobile Apps** | Capacitor 6 (iOS/Android) | ✅ Build Verified |
 
 **Shared Codebase**: Single React app with role-based routing (`ConsumerLayout`, `MerchantLayout`, `AdminLayout`)
 
@@ -158,7 +158,7 @@ sequenceDiagram
 | **Hosting** | Local dev server | Vite dev server on port 443 |
 | **Database** | Cloud Firestore | Auto-scaling, real-time |
 | **Storage** | Firebase Storage | 1GB free tier |
-| **CI/CD** | Manual | 🔜 GitHub Actions planned |
+| **CI/CD** | GitHub Actions | ✅ Auto-deploy configured |
 | **Monitoring** | Console logs | 🔜 Sentry planned |
 | **Domain** | spendigo.ca | Local DNS mapping |
 
@@ -169,7 +169,7 @@ sequenceDiagram
 ### Development
 ```bash
 npm run dev
-# Runs on https://spendigo.ca:446/
+# Runs on https://spendigo.ca:443/
 ```
 
 ### Production

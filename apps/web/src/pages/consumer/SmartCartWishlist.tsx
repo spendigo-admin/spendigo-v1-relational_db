@@ -2,90 +2,115 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useWishlist } from '../../context/WishlistContext';
 import { useCart } from '../../context/CartContext';
 import { useMarketplace } from '../../context/MarketplaceContext';
+import { useCatalog } from '../../context/CatalogContext';
+import { collection, onSnapshot, query } from 'firebase/firestore';
+import { db } from '../../lib/firebase';
 import '../../styles/design-system.css';
 
 const SmartCartWishlist: React.FC = () => {
     const { items: wishlistItems, addItem, removeItem, isInWishlist, clearWishlist } = useWishlist();
     const { addItemsToCart } = useCart();
     const { stores } = useMarketplace();
+    const { catalog } = useCatalog();
     const [showAddItems, setShowAddItems] = useState(false);
 
     // State to track user's selected store for each unique product name
     const [selections, setSelections] = useState<Record<string, string>>({});
 
     // 1. Build Global Product Database dynamically from Context
-    const GLOBAL_PRODUCTS = useMemo(() => {
+    // 1. Build Global Product Database dynamically from Merchant Inventory
+    const [merchantInventory, setMerchantInventory] = useState<any[]>([]);
+
+    useEffect(() => {
+        // Fetch all merchant products to build the real-time availability map
+        // In a real app with thousands of stores, this would be a backend function or filtered query
+        const q = query(collection(db, 'merchant_products'));
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const products = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            setMerchantInventory(products);
+        });
+        return () => unsubscribe();
+    }, []);
+
+    const availabilityMap = useMemo(() => {
         const productMap: Record<string, {
-            name: string;
-            category: string;
-            image: string;
-            stores: { storeId: string; storeName: string; price: number; inStock: boolean; productId: string }[]
+            stores: {
+                storeId: string;
+                storeName: string;
+                price: number;
+                inStock: boolean;
+                productId: string;
+                brand?: string;
+                name?: string;
+                unit?: string;
+            }[]
         }> = {};
 
-        Object.values(stores).forEach((store: any) => {
-            store.products?.forEach((product: any) => {
-                // Normalize name for matching same products across stores
-                // In a real app we would use UPC or exact value matching
-                const normalizedName = product.name;
+        merchantInventory.forEach((product: any) => {
+            const masterId = product.master_product_id;
+            const store = stores[product.merchant_id];
 
-                if (!productMap[normalizedName]) {
-                    productMap[normalizedName] = {
-                        name: product.name,
-                        category: product.category,
-                        image: product.image,
-                        stores: []
-                    };
-                }
+            if (!masterId || !store) return;
 
-                // Check if this product is on sale (One Day Offer or Sale Item)
-                let finalPrice = product.price;
+            if (!productMap[masterId]) {
+                productMap[masterId] = { stores: [] };
+            }
 
-                // Simple check if product ID matches any active deal
-                const deal = store.saleItems?.find((s: any) => s.name === product.name) ||
-                    store.oneDayOffers?.find((o: any) => o.name === product.name);
+            const masterProduct = catalog.find(c => c.id === masterId);
 
-                if (deal) {
-                    finalPrice = deal.price;
-                }
-
-                productMap[normalizedName].stores.push({
-                    storeId: store.id,
-                    storeName: store.name,
-                    price: finalPrice,
-                    inStock: true, // Assuming stock for now
-                    productId: product.id
-                });
+            productMap[masterId].stores.push({
+                storeId: product.merchant_id,
+                storeName: store.name,
+                price: product.price,
+                inStock: product.available_quantity > 0,
+                productId: product.id, // Merchant Product ID
+                brand: product.brand || masterProduct?.brand,
+                name: product.product_name || masterProduct?.name,
+                unit: product.unit_size || product.net_quantity_unit || masterProduct?.unit
             });
         });
 
         return productMap;
-    }, [stores]);
+    }, [merchantInventory, stores, catalog]);
 
-    // 2. Derive Available Items for limits/suggestions
+    // 2. Derive Available Items from Global Catalog (Filtered by Availability)
     const AVAILABLE_ITEMS = useMemo(() => {
-        return Object.values(GLOBAL_PRODUCTS).map(data => {
-            // Find the cheapest option and use its product ID
-            const cheapestStore = [...data.stores].sort((a, b) => a.price - b.price)[0];
-            return {
-                id: cheapestStore.productId,
-                name: data.name,
-                category: data.category,
-                image: data.image,
-            };
+        // Only show items that are actually present in the connected stores
+        return catalog.filter(item => {
+            const availability = availabilityMap[item.id];
+            return availability && availability.stores.length > 0;
         });
-    }, [GLOBAL_PRODUCTS]);
+    }, [catalog, availabilityMap]);
 
     // 3. Group Wishlist Items and Find Matches using dynamic DB
+    // 3. Group Wishlist Items and Find Matches using ID
     const optimizerItems = useMemo(() => {
         return wishlistItems.map(item => {
-            const globalData = GLOBAL_PRODUCTS[item.name];
-            if (!globalData) return null;
+            // Match by Master ID (Strong Link)
+            let globalData = availabilityMap[item.id];
 
-            const allOptions = globalData.stores.sort((a, b) => a.price - b.price);
-            const cheapestOption = allOptions[0];
-            const maxPrice = Math.max(...allOptions.map(o => o.price));
+            // Fallback: Match by Name (Weak Link for legacy)
+            if (!globalData) {
+                // Try to find a master ID that maps to this name?
+                // Or scan all inventories for name match (slow)
+                // For now, assume ID match is primary.
+            }
+
+            // If valid data found in stores
+            let allOptions: any[] = [];
+            let cheapestOption = null;
+            let maxPrice = 0;
+
+            if (globalData) {
+                allOptions = globalData.stores.sort((a, b) => a.price - b.price);
+                if (allOptions.length > 0) {
+                    cheapestOption = allOptions[0];
+                    maxPrice = Math.max(...allOptions.map(o => o.price));
+                }
+            }
 
             return {
+                id: item.id,
                 name: item.name,
                 image: item.image,
                 category: item.category,
@@ -93,8 +118,8 @@ const SmartCartWishlist: React.FC = () => {
                 cheapest: cheapestOption,
                 maxPrice
             };
-        }).filter(Boolean);
-    }, [wishlistItems, GLOBAL_PRODUCTS]);
+        });
+    }, [wishlistItems, availabilityMap]);
 
     // 4. Initialize Selections with Cheapest Option
     useEffect(() => {
@@ -102,15 +127,16 @@ const SmartCartWishlist: React.FC = () => {
         let hasChanges = false;
 
         optimizerItems.forEach(item => {
-            if (!item) return;
+            if (!item || !item.cheapest) return;
+
             const cheapestStoreId = item.cheapest.storeId;
-            const currentSelection = selections[item.name];
+            const currentSelection = selections[item.id] || selections[item.name]; // Fallback to name if id key missing
 
             // Force update to cheapest if no selection or current is more expensive
             if (!currentSelection || (currentSelection !== cheapestStoreId)) {
                 const currentOption = item.options.find(o => o.storeId === currentSelection);
                 if (!currentOption || currentOption.price > item.cheapest.price) {
-                    newSelections[item.name] = cheapestStoreId;
+                    newSelections[item.id] = cheapestStoreId;
                     hasChanges = true;
                 }
             }
@@ -121,10 +147,11 @@ const SmartCartWishlist: React.FC = () => {
         }
     }, [optimizerItems]);
 
-    const handleSelectionChange = (productName: string, storeId: string) => {
-        setSelections(prev => ({ ...prev, [productName]: storeId }));
+    const handleSelectionChange = (id: string, storeId: string) => {
+        setSelections(prev => ({ ...prev, [id]: storeId }));
     };
 
+    // 5. Calculate Totals
     // 5. Calculate Totals
     const { totalCost, potentialSavings, validCartItems } = useMemo(() => {
         let total = 0;
@@ -133,16 +160,24 @@ const SmartCartWishlist: React.FC = () => {
 
         optimizerItems.forEach(item => {
             if (!item) return;
-            const selectedStoreId = selections[item.name] || item.cheapest.storeId;
+            const selectedStoreId = selections[item.id] || (item.cheapest ? item.cheapest.storeId : null);
             const selectedOption = item.options.find(o => o.storeId === selectedStoreId);
 
             if (selectedOption) {
                 total += selectedOption.price;
                 savings += (item.maxPrice - selectedOption.price);
 
+                // Smart Name formatting to avoid "Kraft Kraft Dinner"
+                const brand = selectedOption.brand || '';
+                const name = selectedOption.name;
+                const unit = selectedOption.unit ? ` (${selectedOption.unit})` : '';
+
+                const showBrand = brand && !name.toLowerCase().startsWith(brand.toLowerCase());
+                const finalName = `${showBrand ? brand + ' ' : ''}${name}${unit}`;
+
                 cartItems.push({
                     productId: selectedOption.productId,
-                    productName: item.name,
+                    productName: finalName,
                     price: selectedOption.price,
                     quantity: 1,
                     storeId: selectedOption.storeId,
@@ -238,7 +273,7 @@ const SmartCartWishlist: React.FC = () => {
                             <div className="space-y-4">
                                 {optimizerItems.map((item) => {
                                     if (!item) return null;
-                                    const currentSelection = selections[item.name];
+                                    const currentSelection = selections[item.id];
 
                                     return (
                                         <div key={item.name} className="bg-white rounded-xl border border-[var(--glass-border)] overflow-hidden shadow-sm transition-shadow hover:shadow-md">
@@ -260,51 +295,75 @@ const SmartCartWishlist: React.FC = () => {
                                                 </button>
                                             </div>
 
+
+
                                             {/* Store Options */}
-                                            <div className="divide-y divide-[var(--glass-border)]">
-                                                {item.options.map(option => {
-                                                    const isSelected = currentSelection === option.storeId;
-                                                    const isCheapest = option.storeId === item.cheapest.storeId;
-                                                    const savingsVsMax = item.maxPrice - option.price;
+                                            {
+                                                item.options.length > 0 ? (
+                                                    <div className="divide-y divide-[var(--glass-border)]">
+                                                        {item.options.map(option => {
+                                                            const isSelected = currentSelection === option.storeId;
+                                                            const isCheapest = item.cheapest && option.storeId === item.cheapest.storeId;
+                                                            const savingsVsMax = item.maxPrice - option.price;
 
-                                                    return (
-                                                        <div
-                                                            key={option.storeId}
-                                                            onClick={() => handleSelectionChange(item.name, option.storeId)}
-                                                            className={`p-3 flex items-center justify-between cursor-pointer transition-colors ${isSelected ? 'bg-[var(--brand-primary)]/5' : 'hover:bg-gray-50'
-                                                                }`}
-                                                        >
-                                                            <div className="flex items-center gap-3">
-                                                                <div className={`w-5 h-5 rounded-full border flex items-center justify-center transition-colors ${isSelected ? 'border-[var(--brand-primary)] bg-[var(--brand-primary)]' : 'border-gray-300'
-                                                                    }`}>
-                                                                    {isSelected && <div className="w-2 h-2 bg-white rounded-full" />}
-                                                                </div>
-                                                                <div>
-                                                                    <p className={`font-medium text-sm ${isSelected ? 'text-[var(--brand-primary)]' : 'text-gray-700'}`}>
-                                                                        {option.storeName}
-                                                                    </p>
-                                                                    {isCheapest && (
-                                                                        <span className="inline-block px-1.5 py-0.5 bg-green-100 text-green-700 text-[10px] uppercase font-bold tracking-wider rounded">
-                                                                            Best Price
-                                                                        </span>
-                                                                    )}
-                                                                </div>
-                                                            </div>
+                                                            return (
+                                                                <div
+                                                                    key={option.storeId}
+                                                                    onClick={() => handleSelectionChange(item.id, option.storeId)}
+                                                                    className={`p-3 flex items-center justify-between cursor-pointer transition-colors ${isSelected ? 'bg-[var(--brand-primary)]/5' : 'hover:bg-gray-50'
+                                                                        }`}
+                                                                >
+                                                                    <div className="flex items-center gap-3">
+                                                                        <div className={`w-5 h-5 rounded-full border flex items-center justify-center transition-colors ${isSelected ? 'border-[var(--brand-primary)] bg-[var(--brand-primary)]' : 'border-gray-300'
+                                                                            }`}>
+                                                                            {isSelected && <div className="w-2 h-2 bg-white rounded-full" />}
+                                                                        </div>
+                                                                        <div>
+                                                                            <p className={`font-medium text-sm ${isSelected ? 'text-[var(--brand-primary)]' : 'text-gray-700'}`}>
+                                                                                {/* Enhanced Product Name: Brand + Name + Unit */}
+                                                                                {(() => {
+                                                                                    const showBrand = option.brand && !option.name.toLowerCase().startsWith(option.brand.toLowerCase());
+                                                                                    return (
+                                                                                        <>
+                                                                                            {showBrand && <span className="font-bold text-gray-900">{option.brand} </span>}
+                                                                                            <span>{option.name}</span>
+                                                                                            {option.unit && <span className="text-gray-500 text-xs"> ({option.unit})</span>}
+                                                                                        </>
+                                                                                    );
+                                                                                })()}
 
-                                                            <div className="text-right">
-                                                                <p className={`font-bold ${isSelected ? 'text-[var(--brand-primary)]' : 'text-gray-900'}`}>
-                                                                    ${option.price.toFixed(2)}
-                                                                </p>
-                                                                {savingsVsMax > 0 && (
-                                                                    <p className="text-[10px] text-green-600 font-medium">
-                                                                        Save ${(savingsVsMax).toFixed(2)}
-                                                                    </p>
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                    );
-                                                })}
-                                            </div>
+                                                                                <span className="block text-[10px] text-gray-400 mt-0.5">{option.storeName}</span>
+                                                                            </p>
+                                                                            {isCheapest && (
+                                                                                <span className="inline-block px-1.5 py-0.5 bg-green-100 text-green-700 text-[10px] uppercase font-bold tracking-wider rounded mt-1">
+                                                                                    Best Price
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
+
+                                                                    <div className="text-right">
+                                                                        <p className={`font-bold ${isSelected ? 'text-[var(--brand-primary)]' : 'text-gray-900'}`}>
+                                                                            ${option.price.toFixed(2)}
+                                                                        </p>
+                                                                        {savingsVsMax > 0 && (
+                                                                            <p className="text-[10px] text-green-600 font-medium">
+                                                                                Save ${(savingsVsMax).toFixed(2)}
+                                                                            </p>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                ) : (
+                                                    <div className="p-8 text-center bg-gray-50">
+                                                        <p className="text-2xl mb-2">🤷</p>
+                                                        <p className="text-sm font-medium text-[var(--text-main)]">Not found nearby</p>
+                                                        <p className="text-xs text-[var(--text-muted)]">We couldn't find this item in any connected stores.</p>
+                                                    </div>
+                                                )
+                                            }
                                         </div>
                                     );
                                 })}
@@ -314,7 +373,18 @@ const SmartCartWishlist: React.FC = () => {
                         {/* RIGHT COLUMN: Sticky Summary */}
                         <div className="lg:col-span-4 mt-8 lg:mt-0">
                             <div className="glass-panel p-6 sticky top-8 border-[var(--glass-border)] shadow-xl bg-white/50 backdrop-blur-xl">
-                                <h2 className="text-xl font-bold text-[var(--text-main)] mb-4">Order Summary</h2>
+
+                                {/* AI Header */}
+                                <div className="flex items-center justify-between mb-4">
+                                    <h2 className="text-xl font-bold text-[var(--text-main)]">Order Summary</h2>
+                                    <div className="flex items-center gap-1.5 px-2 py-1 bg-purple-50 rounded-full border border-purple-100">
+                                        <span className="text-xs font-bold text-purple-600">AI Powered</span>
+                                        <span className="relative flex h-2 w-2">
+                                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span>
+                                            <span className="relative inline-flex rounded-full h-2 w-2 bg-purple-500"></span>
+                                        </span>
+                                    </div>
+                                </div>
 
                                 <div className="flex items-center justify-between mb-2">
                                     <span className="text-[var(--text-muted)]">Estimated Total</span>
@@ -324,6 +394,80 @@ const SmartCartWishlist: React.FC = () => {
                                 <div className="flex items-center justify-between mb-6 text-green-600 text-sm">
                                     <span>Estimated Savings</span>
                                     <span className="font-bold">-${potentialSavings.toFixed(2)}</span>
+                                </div>
+
+                                {/* AI Insights Panel */}
+                                <div className="mb-6 bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl p-4 border border-purple-100 relative overflow-hidden">
+                                    <div className="absolute top-0 right-0 w-16 h-16 bg-purple-200/20 rounded-bl-full -mr-4 -mt-4"></div>
+
+                                    <h3 className="font-bold text-sm text-purple-900 mb-3 flex items-center gap-2">
+                                        <span>✨</span> Smart Insights
+                                    </h3>
+
+                                    {/* Insight 1: Missing Items */}
+                                    {(() => {
+                                        const categories = wishlistItems.map(i => i.category.toLowerCase());
+                                        const hasCoffee = categories.some(c => c.includes('coffee') || c.includes('beverage'));
+                                        const hasMilk = categories.some(c => c.includes('dairy') || c.includes('milk'));
+                                        const hasPasta = categories.some(c => c.includes('pasta') || c.includes('grain'));
+                                        const hasSauce = categories.some(c => c.includes('sauce') || c.includes('canned'));
+
+                                        const suggestions = [];
+                                        if (hasCoffee && !hasMilk) suggestions.push("Milk/Creamer");
+                                        if (hasPasta && !hasSauce) suggestions.push("Pasta Sauce");
+
+                                        if (suggestions.length > 0) {
+                                            return (
+                                                <div className="mb-3">
+                                                    <p className="text-xs text-purple-800 mb-1">You might be missing:</p>
+                                                    <div className="flex flex-wrap gap-2">
+                                                        {suggestions.map(s => (
+                                                            <span key={s} className="px-2 py-1 bg-white rounded-md text-[10px] font-bold text-purple-600 shadow-sm border border-purple-100">
+                                                                + {s}
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            );
+                                        }
+                                        return <div className="mb-3 text-xs text-purple-800">Basket looks well balanced! 🥗</div>;
+                                    })()}
+
+                                    {/* Insight 2: Trip Consolidation */}
+                                    {(() => {
+                                        const storesVisited = new Set(validCartItems.map(i => i.storeId)).size;
+                                        if (storesVisited > 1) {
+                                            return (
+                                                <div className="pt-3 border-t border-purple-100">
+                                                    <div className="flex items-start gap-2">
+                                                        <span className="text-lg">🚗</span>
+                                                        <div>
+                                                            <p className="text-xs font-bold text-purple-900">Trip Efficiency: Medium</p>
+                                                            <p className="text-[10px] text-purple-700 leading-tight">
+                                                                You're visiting {storesVisited} stores to save ${potentialSavings.toFixed(2)}.
+                                                                Consider consolidating if time is tight.
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        } else if (storesVisited === 1) {
+                                            return (
+                                                <div className="pt-3 border-t border-purple-100">
+                                                    <div className="flex items-start gap-2">
+                                                        <span className="text-lg">⚡</span>
+                                                        <div>
+                                                            <p className="text-xs font-bold text-green-700">Maximum Efficiency</p>
+                                                            <p className="text-[10px] text-green-600 leading-tight">
+                                                                One-stop shop! You're saving time and money.
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        }
+                                        return null;
+                                    })()}
                                 </div>
 
                                 <div className="border-t border-[var(--glass-border)] my-4"></div>
@@ -344,7 +488,7 @@ const SmartCartWishlist: React.FC = () => {
                     </div>
                 )}
             </div>
-        </div>
+        </div >
     );
 };
 

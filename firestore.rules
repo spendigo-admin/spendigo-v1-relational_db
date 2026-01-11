@@ -56,11 +56,11 @@ service cloud.firestore {
       allow read: if true;
 
       // Merchant Write Rules
-      allow create: if isMerchant() 
+      allow create: if isAdmin() || (isMerchant() 
         && request.resource.data.merchant_id == getMerchantStoreId()
         // CRITICAL: Product must exist in master OR pending
         && (exists(/databases/$(database)/documents/master_products/$(request.resource.data.master_product_id))
-           || exists(/databases/$(database)/documents/pending_master_products/$(request.resource.data.master_product_id)));
+           || exists(/databases/$(database)/documents/pending_master_products/$(request.resource.data.master_product_id))));
 
       allow update: if isAdmin() || (isMerchant() 
         // 1. Must own the existing doc

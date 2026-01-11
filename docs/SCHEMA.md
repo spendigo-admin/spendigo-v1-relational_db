@@ -1,47 +1,189 @@
 # Spendigo SmartCart — Database Schema
 
-**Last Updated**: 2026-01-03  
+**Last Updated**: 2026-01-11  
 **Database**: Cloud Firestore (NoSQL)  
-**Status**: Features Complete & Rules Enforced
+**Status**: Beta (SmartCart Optimizer Implemented)
 
 ---
 
 ## 1. Overview
 
-Spendigo uses **Cloud Firestore**, a NoSQL document database, instead of the originally planned PostgreSQL. This document describes the actual collection structure and data models as implemented.
+Spendigo uses **Cloud Firestore** with a **Hybrid Catalog Architecture** to balance global product standardization with merchant-specific inventory control. The schema is designed for the **SmartCart Optimizer**, ensuring robust product matching, tax calculations, and substitution logic.
 
 ---
 
 ## 2. Collection Structure
 
-### 2.1 Top-Level Collections
+### 2.1 Core Catalog (SmartCart System)
 
 ```
-/users                  # User profiles and authentication
-/stores                 # Merchant store data
-/orders                 # Order documents
-/catalog                # Master product catalog
-/audit_logs             # Security audit ledger
-/notifications          # User notifications
-/carts                  # Shopping carts
-/wishlists              # User wishlists
-/settings               # Platform-wide settings
-/ads                    # Carousel ad campaigns
-/surveys                # Consumer surveys & polls
-/stats                  # Traffic analytics & counters
+/master_products            # Global Spendigo-managed product catalog
+/pending_master_products    # Auto-discovered products awaiting admin review
+/merchant_products          # Merchant-specific price & stock (Links to Master)
+/product_creation_requests  # Merchant requests for new master products
+/categories                 # Centralized category taxonomy
+/substitution_groups        # Groups of interchangeable products (e.g. Milk 2L)
 ```
 
-### 2.2 Subcollections
+### 2.2 User & Commerce
 
 ```
-/stores/{storeId}/flyers/{flyerId}   # Digital flyers for each store
+/users                      # User profiles and authentication
+/stores                     # Merchant store data
+/orders                     # Order documents
+/audit_logs                 # Security audit ledger
+/carts                      # Shopping carts
+/wishlists                  # User wishlists
+```
+
+### 2.3 Subcollections
+
+```
+/users/{userId}/notifications/{notifId} # In-app notifications
+/stores/{storeId}/flyers/{flyerId}      # Digital flyers
+```
+
+### 2.4 Platform Support
+
+```
+/settings                   # Platform-wide settings
+/ads                        # Carousel ad campaigns
+/surveys                    # Consumer surveys & polls
+/stats                      # Traffic analytics & counters
+/mail                       # Outbound emails (Trigger Email Extension)
 ```
 
 ---
 
 ## 3. Document Schemas (TypeScript Interfaces)
 
-### 3.1 Users Collection (`/users/{userId}`)
+### 3.1 Master Catalog (`/master_products/{masterId}`)
+
+**Purpose**: The "Source of Truth" for all products. Shared across all merchants.
+
+```typescript
+interface MasterProduct {
+  master_product_id: string;     // e.g. "mp-coca-cola-355ml-1234"
+  
+  // Identification
+  product_name: string;
+  product_name_fr?: string;      // Bilingual support
+  brand_name: string;
+  brand_family_id?: string;
+  barcode: string;               // GTIN-12/13
+  upc_gtin: string;              // Normalized GTIN-14
+  
+  // Classification
+  category_id: string;           // e.g. "Dairy", "Snacks"
+  subcategory?: string;
+  product_type: 'food' | 'non-food';
+  storage_type: 'ambient' | 'refrigerated' | 'frozen';
+  is_sold_by_weight: boolean;
+  
+  // Tax & Economy
+  tax_category_id: string;       // e.g. "taxable_grocery", "zero_rated_grocery"
+  suggested_retail_price?: number;
+  
+  // Measurements
+  net_quantity_value?: number;
+  net_quantity_unit?: string;    // 'ml', 'g', 'kg', 'l'
+  package_count?: number;        // Multipack quantity (e.g. 12 cans)
+  unit_type?: 'weight' | 'volume' | 'count';
+  
+  // Media
+  primary_image_url: string;
+  secondary_image_urls?: string[];
+  short_description?: string;
+  
+  // SmartCart Logic
+  substitution_group_id?: string; // Links to /substitution_groups
+  nutrition?: Record<string, number>;
+  ingredients?: string;
+  allergens?: string[];
+  dietary_tags?: string[];        // 'gluten-free', 'vegan', etc.
+  
+  // Governance
+  status: 'active' | 'deprecated' | 'blocked';
+  verification_status: 'unverified' | 'verified' | 'manufacturer_verified';
+  created_at: FirebaseTimestamp;
+  updated_at: FirebaseTimestamp;
+}
+```
+
+### 3.2 Merchant Inventory (`/merchant_products/{merchantProductId}`)
+
+**Purpose**: Connects a store to a Master Product with local price/stock.
+
+```typescript
+interface MerchantProduct {
+  merchant_product_id: string;   // Format: "{storeId}_{masterId}"
+  merchant_id: string;           // Reference to /stores
+  master_product_id: string;     // Reference to /master_products
+  
+  // Local Overrides
+  price: number;
+  currency: 'CAD';
+  available_quantity: number;
+  merchant_sku?: string;         // Internal store code
+  
+  // Discounting
+  original_price?: number;
+  discount_label?: string;
+  
+  // Metadata
+  is_active: boolean;
+  created_at: FirebaseTimestamp;
+  updated_at: FirebaseTimestamp;
+}
+```
+
+### 3.3 Pending Catalog (`/pending_master_products/{pendingId}`)
+
+**Purpose**: Holding area for products auto-discovered by barcode scanners (e.g. OpenFoodFacts) before Admin approval.
+
+```typescript
+interface PendingMasterProduct extends MasterProduct {
+  pending_id: string;
+  discovered_by_merchant: string; // Store ID
+  original_barcode: string;
+  status: 'pending_review';
+  data_source: 'open_food_facts' | 'manual_scan';
+}
+```
+
+### 3.4 Product Creation Requests (`/product_creation_requests/{requestId}`)
+
+**Purpose**: Manual requests from merchants when a barcode isn't found.
+
+```typescript
+interface ProductRequest {
+  id: string;
+  submitted_by_merchant_id: string;
+  status: 'pending' | 'approved' | 'rejected';
+  
+  // Requested Data
+  requested_product_name: string;
+  requested_brand: string;
+  requested_category: string;
+  requested_description?: string;
+  requested_barcode?: string;
+  requested_image_url?: string;
+  requested_barcode_image_url?: string;
+  
+  // Admin Resolution
+  resolution_note?: string;
+  approved_master_product_id?: string;
+  
+  created_at: FirebaseTimestamp;
+  updated_at: FirebaseTimestamp;
+}
+```
+
+---
+
+## 4. User & Order Schema
+
+### 4.1 Users (`/users/{userId}`)
 
 ```typescript
 interface User {
@@ -49,447 +191,77 @@ interface User {
   email: string;
   name: string;
   role: 'consumer' | 'merchant' | 'admin';
-  avatar?: string;
   
-  // Merchant-specific fields
-  storeId?: string;              // Reference to stores collection
-  storeName?: string;
-  merchantRole?: 'OWNER' | 'MANAGER' | 'STAFF' | 'MARKETING';
-  subscriptionTier?: 'free' | 'core' | 'growth';
+  // Merchant Fields
+  storeId?: string;              // Primary store ID
   
-  // Admin-specific fields
-  adminRole?: 'SUPER_ADMIN' | 'SUPPORT' | 'MODERATOR' | 'AUDITOR';
+  // Preferences
+  fcmToken?: string;             // For Push Notifications
 }
 ```
 
-**Indexes**: None required (Firebase Auth UID is primary key)
-
----
-
-### 3.2 Stores Collection (`/stores/{storeId}`)
-
-```typescript
-interface Store {
-  id: string;
-  name: string;
-  merchantEmail: string;
-  location: string;
-  province: 'ON' | 'QC' | 'BC' | 'AB' | 'MB' | 'SK' | 'NB' | 'NS' | 'PE' | 'NL' | 'NT' | 'YT' | 'NU';
-  status: 'active' | 'pending' | 'suspended';
-  
-  // Products
-  products: Product[];           // Denormalized for fast reads
-  
-  // Active flyer metadata
-  flyer?: {
-    title: string;
-    image: string;
-    validUntil: string;          // ISO date
-  };
-  
-  // Settings
-  subscriptionTier: 'free' | 'core' | 'growth';
-  deliveryEnabled: boolean;
-  pickupEnabled: boolean;
-  operatingHours?: string;
-  
-  // Metadata
-  joinedAt: string;              // ISO date
-}
-
-interface Product {
-  id: string;
-  name: string;
-  price: number;
-  category: string;
-  image?: string;
-  stock?: number;
-  isTaxable?: boolean;           // For HST calculation
-}
-```
-
-**Indexes**: 
-- `status` (for admin queries)
-- `province` (for tax calculation)
-
----
-
-### 3.3 Orders Collection (`/orders/{orderId}`)
+### 4.2 Orders (`/orders/{orderId}`)
 
 ```typescript
 interface Order {
-  id: string;                    // Auto-generated doc ID
+  id: string;
   date: string;                  // ISO timestamp
   status: 'placed' | 'preparing' | 'out_for_delivery' | 'delivered' | 'cancelled';
   
   // Parties
-  customerId: string;            // User ID
-  customerName: string;
-  storeId: string;               // Store ID
-  storeName: string;
+  customerId: string;
+  storeId: string;
   
-  // Items
-  items: OrderItem[];
-  
-  // Financials
+  // Money
   subtotal: number;
   tax: number;
   deliveryFee: number;
+  serviceFee: number;
   total: number;
-  
-  // Payment
-  paymentMethod: 'card' | 'in_store';
   paymentStatus: 'paid' | 'pending';
-  paymentCollectedBy?: {         // Audit trail for in-store payments
-    id: string;
+  
+  // Items (Snapshot of MerchantProduct + MasterProduct at time of purchase)
+  items: Array<{
+    productId: string;           // merchant_product_id
+    masterId: string;
     name: string;
-    timestamp: string;
-  };
-  
-  // Delivery
-  deliveryAddress?: Address;
-  estimatedDelivery?: string;
-  
-  // Metadata
-  createdAt: FirebaseTimestamp;
-}
-
-interface OrderItem {
-  productId: string;
-  productName: string;
-  price: number;
-  quantity: number;
-  image?: string;
-}
-
-interface Address {
-  id: string;
-  label: string;
-  street: string;
-  city: string;
-  province: string;
-  postalCode: string;
-  isDefault: boolean;
-}
-```
-
-**Indexes**:
-- `customerId` (for consumer order history)
-- `storeId` (for merchant order inbox)
-- `status` (for Kanban board filtering)
-- Composite: `storeId + status` (for merchant dashboard)
-
----
-
-### 3.4 Catalog Collection (`/catalog/{productId}`)
-
-```typescript
-interface CatalogProduct {
-  id: string;
-  name: string;
-  description: string;
-  category: string;
-  image: string;
-  basePrice: number;             // Suggested retail price
-  isTaxable: boolean;
-  tags?: string[];
-}
-```
-
-**Purpose**: Master product database. Merchants add products from here with custom pricing.
-
----
-
-### 3.5 Audit Logs Collection (`/audit_logs/{logId}`)
-
-```typescript
-interface AuditLog {
-  id: string;                    // Custom ID: txn_{timestamp}_{random}
-  timestamp: string;             // ISO timestamp
-  
-  actor: {
-    id: string;                  // User ID
-    email: string;
-    ip: string;                  // Simulated in dev
-  };
-  
-  action: string;                // e.g., 'AUTH_LOGIN', 'STORE_STATUS_UPDATE', 'ORDER_CREATE'
-  resource?: string;             // e.g., 'store/1', 'order/abc123'
-  metadata?: Record<string, any>;
-  
-  // Blockchain-lite hash chain
-  prevHash: string;              // SHA-256 hash of previous log
-  hash: string;                  // SHA-256 hash of this log
-}
-```
-
-**Security**: Append-only. Hash chain ensures tamper-evidence.
-
----
-
-### 3.6 Flyers Subcollection (`/stores/{storeId}/flyers/{flyerId}`)
-
-```typescript
-interface Flyer {
-  id: string;
-  title: string;
-  image: string;                 // Cover image URL
-  validFrom: string;             // ISO date
-  validUntil: string;            // ISO date
-  status: 'draft' | 'scheduled' | 'active' | 'expired';
-  
-  products: FlyerProduct[];
-}
-
-interface FlyerProduct {
-  productId: string;
-  productName: string;
-  originalPrice: number;
-  salePrice: number;
-  discountPercent: number;
-}
-```
-
-**Lifecycle**: Draft → Scheduled → Active → Expired
-
----
-
-### 3.7 Notifications Collection (`/notifications/{userId}`)
-
-```typescript
-interface NotificationDocument {
-  userId: string;                // User or Store ID
-  notifications: AppNotification[];
-}
-
-interface AppNotification {
-  id: string;
-  type: 'order' | 'system' | 'promotion';
-  title: string;
-  message: string;
-  timestamp: string;
-  isRead: boolean;
-  link?: string;                 // Navigation target
+    price: number;
+    quantity: number;
+    image: string;
+    taxable: boolean;
+  }>;
 }
 ```
 
 ---
 
-### 3.8 Carts Collection (`/carts/{userId}`)
+## 5. Security Rules (RBAC)
 
-```typescript
-interface Cart {
-  userId: string;
-  items: CartItem[];
-  lastUpdated: FirebaseTimestamp;
-}
+**File**: `firestore.rules`
 
-interface CartItem {
-  productId: string;
-  productName: string;
-  storeId: string;
-  storeName: string;
-  price: number;
-  quantity: number;
-  image?: string;
-}
-```
-
-**Hybrid Persistence**: 
-- Guest users → LocalStorage
-- Authenticated users → Firestore (synced on login)
+| Collection | Read Access | Write Access |
+|------------|-------------|--------------|
+| `master_products` | Public (All) | Admin Only (Merchants can create via Requests) |
+| `merchant_products` | Public (All) | Merchant (Own Scope) |
+| `pending_master_products` | Public (All) | Merchant (Create), Admin (Commit/Delete) |
+| `users` | Own Profile | Own Profile |
+| `stores` | Public | Admin (Create), Owner (Update) |
+| `orders` | Involved Parties | Involved Parties |
+| `audit_logs` | Admin | System (Append Only) |
 
 ---
 
-### 3.9 Settings Collection (`/settings/platform`)
+## 6. Migration Notes
 
-```typescript
-interface PlatformSettings {
-  maintenanceMode: boolean;
-  maintenanceMessage?: string;
-  
-  // Dual-approval system for maintenance mode
-  maintenancePending?: {
-    requestedBy: string;
-    requestedAt: string;
-    approvedBy?: string;
-    approvedAt?: string;
-  };
-}
-```
+**Legacy Schema**: The original `catalog` collection is deprecated and replaced by the `master_products` + `merchant_products` split.
 
-### 3.10 Ads Collection (`/ads/{adId}`)
-
-```typescript
-interface AdCampaign {
-  id: string;
-  title: string;
-  description: string;
-  imageUrl: string;
-  linkUrl: string;
-  startDate: string;  // ISO date
-  endDate: string;    // ISO date
-  status: 'active' | 'draft' | 'archived';
-  priority: number;
-  views: number;
-  clicks: number;
-}
-```
-
-### 3.11 Surveys Collection (`/surveys/{surveyId}`)
-
-```typescript
-interface Survey {
-  id: string;
-  requestId: string;
-  title: string;
-  description: string;
-  questions: SurveyQuestion[];
-  createdAt: string;
-  isActive: boolean;
-  
-  // Subcollection: /responses/{userId}
-}
-
-interface SurveyQuestion {
-  id: string;
-  type: 'text' | 'rating' | 'choice';
-  text: string;
-  options?: string[]; // For choice type
-}
-```
-
-### 3.12 Stats Collection (`/stats/{docId}`)
-
-```typescript
-interface TrafficStats {
-  id: string; // e.g., 'daily_2025-01-01' or 'global_counters'
-  date: string;
-  visitors: number;
-  pageViews: number;
-  uniqueUsers: number;
-}
-```
-
----
-
-## 4. Security Rules (Firestore Rules)
-
-**Current Status**: ✅ **RBAC Enforced** (Production Ready)
-
-The `firestore.rules` file enforces strict Role-Based Access Control (RBAC) across all 15 collections.
-
-**Key Rule Highlights**:
-- **Users**: Read/Write own profile only.
-- **Stores**: Public read, Owner/Admin write.
-- **Orders**: Consumer (Own), Merchant (Assigned Store), or Admin.
-- **Audit Logs**: Append-only (immutable), Admin read.
-- **Stats**: Public read, Authenticated write (for counters).
-
-*See `firestore.rules` in the root directory for the complete definition.*
-
----
-
-## 5. Data Relationships (Visual)
-
-```mermaid
-erDiagram
-    users ||--o{ stores : owns
-    stores ||--o{ flyers : publishes
-    stores ||--o{ products : sells
-    users ||--o{ orders : places
-    stores ||--o{ orders : fulfills
-    orders ||--o{ order_items : contains
-    users ||--o{ carts : has
-    users ||--o{ notifications : receives
-    ads }|..|{ users : views
-    surveys ||--o{ survey_responses : contains
-    
-    users {
-        string id PK
-        string email
-        string role
-        string storeId FK
-    }
-    
-    stores {
-        string id PK
-        string name
-        string status
-        array products
-    }
-    
-    orders {
-        string id PK
-        string customerId FK
-        string storeId FK
-        string status
-        decimal total
-    }
-```
-
----
-
-## 6. Migration from Original Schema
-
-The original plan used **PostgreSQL** with relational tables. The current implementation uses **Firestore** for:
-- **Real-time sync**: Orders update instantly without polling
-- **Easier scaling**: Auto-scales without server management
-- **Faster development**: No ORM setup, migrations, or server config
-
-**Trade-offs**:
-- ❌ No JOIN operations (denormalization required)
-- ❌ No ACID transactions across collections (use batch writes)
-- ✅ Real-time listeners
-- ✅ Offline persistence
-- ✅ Auto-scaling
-
----
-
-## 7. Query Patterns
-
-### Common Queries
-
-```typescript
-// Get consumer's orders
-const ordersQuery = query(
-  collection(db, 'orders'),
-  where('customerId', '==', userId),
-  orderBy('date', 'desc')
-);
-
-// Get merchant's orders by status
-const merchantOrdersQuery = query(
-  collection(db, 'orders'),
-  where('storeId', '==', storeId),
-  where('status', '==', 'placed')
-);
-
-// Get active flyers for a store
-const flyersQuery = query(
-  collection(db, `stores/${storeId}/flyers`),
-  where('status', '==', 'active')
-);
-```
-
-**Composite Indexes Required**:
-- `storeId + status`
-- `customerId + date`
-
----
-
-## 8. Backup & Recovery
-
-**Firebase Built-in**:
-- Automatic daily backups (14-day retention)
-- Point-in-time recovery available
-
-**Manual Export**:
-```bash
-gcloud firestore export gs://[BUCKET_NAME]
-```
+**Key Changes**:
+- **Normalized Data**: Product details (name, image, nutrition) live in `master_products`.
+- **Lightweight Inventory**: `merchant_products` only contains price, stock, and ID links.
+- **Tax Accuracy**: Tax calculation now relies on `master_products.tax_category_id` (e.g. 'zero_rated_grocery') rather than a simple boolean.
+- **Substitution**: Supported via `substitution_group_id`.
 
 ---
 
 **For architecture overview, see**: [ARCHITECTURE.md](./ARCHITECTURE.md)  
-**For complete tech stack, see**: [TECH_STACK.md](./TECH_STACK.md)
+**For tech stack details, see**: [TECH_STACK.md](./TECH_STACK.md)

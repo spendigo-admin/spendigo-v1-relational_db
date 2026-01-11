@@ -1,7 +1,7 @@
 # Spendigo SmartCart — Tech Stack
 
-**Last Updated**: 2025-12-30  
-**Status**: Production-Ready
+**Last Updated**: 2026-01-11  
+**Status**: Beta (Feature Complete)
 
 ---
 
@@ -113,7 +113,10 @@ React:         18.2.0
   "react-router-dom": "6.20.0",
   "firebase": "10.14.1",
   "@capacitor/core": "6.0.0",
-  "react-error-boundary": "6.0.0"
+  "react-error-boundary": "6.0.0",
+  "html5-qrcode": "2.3.8",
+  "date-fns": "4.1.0",
+  "@stripe/stripe-js": "8.6.0"
 }
 ```
 

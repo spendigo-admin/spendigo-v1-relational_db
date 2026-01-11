@@ -6,6 +6,10 @@ import { useConfirmation } from '../../context/ConfirmationContext';
 import { useCatalog, Product, generateBarcodeVariants } from '../../hooks/useCatalog';
 import { useStoreProducts } from '../../hooks/useStoreProducts';
 import { Html5QrcodeScanner } from 'html5-qrcode';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { storage } from '../../lib/firebase';
+import { compressImage } from '../../utils/imageOptimizer';
+import { PRODUCT_CATEGORIES } from '../../data/categories';
 
 // Scanner Component
 const ScannerModal: React.FC<{ onClose: () => void, onScan: (result: string) => void }> = ({ onClose, onScan }) => {
@@ -92,19 +96,24 @@ const MerchantProducts: React.FC = () => {
     const [searching, setSearching] = useState(false);
 
     const [showScanner, setShowScanner] = useState(false);
+    const [scannerContext, setScannerContext] = useState<'search' | 'request_form'>('search');
 
     // Form State
     const [form, setForm] = useState({
         price: '',
-        stock: '50',
-
-        // Request Form Fields
+        stock: '100',
+        reqBarcode: '',
         reqName: '',
         reqBrand: '',
+        reqCategory: 'General',
         reqDescription: '',
         reqImage: '',
-        reqCategory: 'General'
+        reqBarcodeImage: ''
     });
+    const [imageFile, setImageFile] = useState<File | null>(null);
+    const [barcodeFile, setBarcodeFile] = useState<File | null>(null);
+    const [uploading, setUploading] = useState(false);
+    const [barcodeLocked, setBarcodeLocked] = useState(false);
 
     // Handlers
 
@@ -210,7 +219,7 @@ const MerchantProducts: React.FC = () => {
     const selectMasterItem = (item: any) => {
         setSelectedMasterItem(item);
         setView('add_details');
-        setForm(f => ({ ...f, price: '', stock: '50' }));
+        setForm(f => ({ ...f, price: '', stock: '100' }));
     };
 
     const handleAddProduct = async () => {
@@ -227,21 +236,53 @@ const MerchantProducts: React.FC = () => {
     };
 
     const handleRequestProduct = async () => {
-        if (!storeId) return;
+        if (!form.reqName || !form.reqBrand) {
+            addNotification({ type: 'alert', title: 'Missing Info', message: 'Name and Brand are required.' });
+            return;
+        }
+
+        setUploading(true);
         try {
-            await requestMasterProduct(storeId, {
+            let finalImageUrl = form.reqImage;
+            let finalBarcodeUrl = form.reqBarcodeImage;
+
+            // Upload Product Image
+            if (imageFile && user?.storeId) {
+                const compressed = await compressImage(imageFile);
+                const path = `product-requests/${user.storeId}/${Date.now()}_product_${compressed.name}`;
+                const storageRef = ref(storage, path);
+                await uploadBytes(storageRef, compressed);
+                finalImageUrl = await getDownloadURL(storageRef);
+            }
+
+            // Upload Barcode Image
+            if (barcodeFile && user?.storeId) {
+                const compressed = await compressImage(barcodeFile);
+                const path = `product-requests/${user.storeId}/${Date.now()}_barcode_${compressed.name}`;
+                const storageRef = ref(storage, path);
+                await uploadBytes(storageRef, compressed);
+                finalBarcodeUrl = await getDownloadURL(storageRef);
+            }
+
+            await requestMasterProduct(user?.storeId || 'unknown', {
                 name: form.reqName,
                 brand: form.reqBrand,
                 category: form.reqCategory,
                 description: form.reqDescription,
-                image: form.reqImage,
-                barcode: masterSearchQuery // Assume search query was barcode if applicable
+                image: finalImageUrl,
+                barcode: form.reqBarcode,
+                barcodeImage: finalBarcodeUrl
             });
-            addNotification({ type: 'system', title: 'Request Sent', message: 'Spendigo team will review your product request.' });
-            closeModal();
+            addNotification({ type: 'system', title: 'Request Sent', message: 'Admin will review shortly.' });
+            setView('search_master');
+            setForm({ ...form, reqBarcode: '', reqName: '', reqBrand: '', reqDescription: '', reqImage: '', reqBarcodeImage: '' });
+            setImageFile(null);
+            setBarcodeFile(null);
         } catch (err: any) {
             console.error(err);
-            addNotification({ type: 'alert', title: 'Error', message: 'Could not submit request.' });
+            addNotification({ type: 'alert', title: 'Error', message: err.message });
+        } finally {
+            setUploading(false);
         }
     };
 
@@ -353,7 +394,7 @@ const MerchantProducts: React.FC = () => {
         setRestockProduct(null);
         setBulkText('');
         setBulkProcessing(false);
-        setForm({ price: '', stock: '50', reqName: '', reqBrand: '', reqDescription: '', reqImage: '', reqCategory: 'General' });
+        setForm({ price: '', stock: '50', reqName: '', reqBrand: '', reqDescription: '', reqImage: '', reqCategory: 'General', reqBarcode: '', reqBarcodeImage: '' });
     };
 
     // Filter local list
@@ -425,7 +466,7 @@ const MerchantProducts: React.FC = () => {
                                         </div>
                                     </div>
                                 </td>
-                                <td className="p-4 text-[var(--text-muted)] capitalize">{product.category}</td>
+                                <td className="p-4 text-[var(--text-muted)] capitalize">{product.category.replace(/^cat-/, '').replace(/-/g, ' ')}</td>
                                 <td className="p-4 font-medium text-[var(--text-main)]">${product.price.toFixed(2)}</td>
                                 <td className="p-4">
                                     <span className={`${product.available_quantity < 10 ? 'text-orange-600 font-bold' : 'text-green-600'}`}>
@@ -463,7 +504,12 @@ const MerchantProducts: React.FC = () => {
                                 <div className="flex justify-between items-center mb-4">
                                     <h2 className="text-xl font-bold">Add from Master Catalog</h2>
                                     <div className="flex items-center gap-4">
-                                        <button onClick={() => setView('request_new')} className="text-sm font-bold text-[var(--brand-primary)] hover:underline">
+                                        <button onClick={() => {
+                                            const isBarcode = /^\d+$/.test(masterSearchQuery);
+                                            setForm(f => ({ ...f, reqBarcode: isBarcode ? masterSearchQuery : '' }));
+                                            setBarcodeLocked(isBarcode);
+                                            setView('request_new');
+                                        }} className="text-sm font-bold text-[var(--brand-primary)] hover:underline">
                                             Request Missing?
                                         </button>
                                         <button onClick={closeModal} className="text-gray-500 hover:text-black w-8 h-8 flex items-center justify-center bg-gray-100 rounded-full">✕</button>
@@ -478,7 +524,7 @@ const MerchantProducts: React.FC = () => {
                                         onChange={e => handleMasterSearch(e.target.value)}
                                         autoFocus
                                     />
-                                    <button onClick={() => setShowScanner(true)} className="absolute right-3 top-3 text-xl">📷</button>
+                                    <button onClick={() => { setScannerContext('search'); setShowScanner(true); }} className="absolute right-3 top-3 text-xl">📷</button>
                                 </div>
 
                                 <div className="space-y-2 max-h-60 overflow-y-auto mb-4">
@@ -660,22 +706,88 @@ const MerchantProducts: React.FC = () => {
                         {view === 'request_new' && (
                             <>
                                 <h2 className="text-xl font-bold mb-4">Request New Product</h2>
-                                <p className="text-sm text-gray-500 mb-4">This product will be added to the Master Catalog after approval.</p>
+                                <p className="text-sm text-gray-500 mb-4">Help the community by adding new products to the Master Catalog.</p>
 
-                                <div className="space-y-3">
-                                    <input type="text" placeholder="Product Name" className="w-full p-3 border rounded-lg" value={form.reqName} onChange={e => setForm({ ...form, reqName: e.target.value })} />
-                                    <input type="text" placeholder="Brand" className="w-full p-3 border rounded-lg" value={form.reqBrand} onChange={e => setForm({ ...form, reqBrand: e.target.value })} />
+                                <div className="space-y-4">
+                                    {/* Barcode Section */}
+                                    <div className="bg-gray-50 p-3 rounded-lg border border-gray-100">
+                                        <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Product Barcode</label>
+                                        <div className="flex gap-2">
+                                            <div className="relative flex-1">
+                                                <input
+                                                    type="text"
+                                                    placeholder="Scanned Barcode"
+                                                    className={`w-full p-2 border rounded font-mono ${barcodeLocked ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : ''}`}
+                                                    value={form.reqBarcode}
+                                                    onChange={e => setForm({ ...form, reqBarcode: e.target.value })}
+                                                    readOnly={barcodeLocked}
+                                                />
+                                                {barcodeLocked && (
+                                                    <button onClick={() => { setBarcodeLocked(false); setForm(f => ({ ...f, reqBarcode: '' })); }} className="absolute right-2 top-2 text-gray-400 hover:text-red-500 text-xs font-bold px-2 py-1">
+                                                        🔒 Clear
+                                                    </button>
+                                                )}
+                                            </div>
+                                            <button
+                                                onClick={() => { setScannerContext('request_form'); setShowScanner(true); }}
+                                                className="px-3 bg-white border border-gray-300 rounded hover:bg-gray-50"
+                                            >
+                                                📷 Scan
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <input type="text" placeholder="Product Name" className="w-full p-3 border rounded-lg" value={form.reqName} onChange={e => setForm({ ...form, reqName: e.target.value })} />
+                                        <input type="text" placeholder="Brand" className="w-full p-3 border rounded-lg" value={form.reqBrand} onChange={e => setForm({ ...form, reqBrand: e.target.value })} />
+                                    </div>
+
                                     <select className="w-full p-3 border rounded-lg" value={form.reqCategory} onChange={e => setForm({ ...form, reqCategory: e.target.value })}>
-                                        <option>General</option>
-                                        <option>Fresh Produce</option>
-                                        <option>Dairy</option>
-                                        <option>Bakery</option>
-                                    </select>
-                                    <textarea placeholder="Description" className="w-full p-3 border rounded-lg h-24" value={form.reqDescription} onChange={e => setForm({ ...form, reqDescription: e.target.value })}></textarea>
-                                    <input type="text" placeholder="Image URL (Optional)" className="w-full p-3 border rounded-lg" value={form.reqImage} onChange={e => setForm({ ...form, reqImage: e.target.value })} />
 
-                                    <button onClick={handleRequestProduct} className="py-3 bg-black text-white w-full rounded-lg font-bold mt-2">Submit Request</button>
-                                    <button onClick={() => setView('search_master')} className="py-3 w-full text-gray-500">Back</button>
+                                        <option value="General">General</option>
+                                        {PRODUCT_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                                    </select>
+
+                                    <textarea placeholder="Description (Optional)" className="w-full p-3 border rounded-lg h-20" value={form.reqDescription} onChange={e => setForm({ ...form, reqDescription: e.target.value })}></textarea>
+
+                                    {/* Images Section */}
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Product Photo</label>
+                                            <div onClick={() => document.getElementById('file-product')?.click()} className="cursor-pointer border-2 border-dashed border-gray-300 rounded-lg p-4 hover:bg-gray-50 text-center transition-colors relative overflow-hidden h-32 flex items-center justify-center">
+                                                {imageFile ? (
+                                                    <img src={URL.createObjectURL(imageFile)} className="absolute inset-0 w-full h-full object-cover" />
+                                                ) : (
+                                                    <div className="text-gray-400 text-xs text-center">Tap to Capture<br />or Upload Photo</div>
+                                                )}
+                                                <input id="file-product" type="file" accept="image/*" className="hidden" onChange={e => {
+                                                    if (e.target.files?.[0]) setImageFile(e.target.files[0]);
+                                                }} />
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Barcode Photo (Usage Proof)</label>
+                                            <div onClick={() => document.getElementById('file-barcode')?.click()} className="cursor-pointer border-2 border-dashed border-gray-300 rounded-lg p-4 hover:bg-gray-50 text-center transition-colors relative overflow-hidden h-32 flex items-center justify-center">
+                                                {barcodeFile ? (
+                                                    <img src={URL.createObjectURL(barcodeFile)} className="absolute inset-0 w-full h-full object-cover" />
+                                                ) : (
+                                                    <div className="text-gray-400 text-xs text-center">Tap to Capture<br />or Upload Proof</div>
+                                                )}
+                                                <input id="file-barcode" type="file" accept="image/*" className="hidden" onChange={e => {
+                                                    if (e.target.files?.[0]) setBarcodeFile(e.target.files[0]);
+                                                }} />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="pt-2">
+                                        <button onClick={handleRequestProduct} disabled={uploading} className="py-3 bg-black text-white w-full rounded-lg font-bold shadow-lg hover:bg-gray-800 transition-transform hover:scale-[1.01] disabled:bg-gray-400">
+                                            {uploading ? 'Uploading Images...' : 'Submit Request'}
+                                        </button>
+                                        <button onClick={() => setView('search_master')} className="py-3 w-full text-gray-500 mt-2 hover:text-black">
+                                            Cancel
+                                        </button>
+                                    </div>
                                 </div>
                             </>
                         )}
@@ -779,7 +891,16 @@ const MerchantProducts: React.FC = () => {
             )
             }
 
-            {showScanner && <ScannerModal onClose={() => setShowScanner(false)} onScan={(code) => { setShowScanner(false); handleMasterSearch(code); }} />}
+            {showScanner && <ScannerModal onClose={() => setShowScanner(false)} onScan={(code) => {
+                setShowScanner(false);
+                if (scannerContext === 'search') {
+                    handleMasterSearch(code);
+                } else {
+                    setForm(f => ({ ...f, reqBarcode: code }));
+                    setBarcodeLocked(true);
+                    addNotification({ type: 'system', title: 'Scanned', message: 'Barcode captured.' });
+                }
+            }} />}
         </div >
     );
 };

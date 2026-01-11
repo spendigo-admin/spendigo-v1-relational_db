@@ -1,12 +1,13 @@
 # Email Notifications & Verification System
 
-**Last Updated**: 2025-12-30
+**Last Updated**: 2026-01-11
+**Status**: Active (Firebase Extension)
 
 ---
 
 ## Architecture Override: Trigger Email Extension
 
-We have switched from SendGrid SDK to the **Firebase Trigger Email Extension**.
+We use the **Firebase Trigger Email Extension** for all transactional emails.
 
 ### Architecture
 1. **Cloud Functions** (`sendOrderEmails.ts`) detect order events.

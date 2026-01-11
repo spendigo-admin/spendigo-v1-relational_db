@@ -1,6 +1,7 @@
 # GitHub Actions CI/CD Setup Guide
 
-**Last Updated**: 2025-12-29
+**Last Updated**: 2026-01-11
+**Status**: Active & Configured
 
 This guide explains how to set up automatic deployment to Firebase whenever you push code to GitHub.
 
@@ -71,7 +72,7 @@ This gives GitHub permission to deploy to your Firebase project.
    - Click "**New repository secret**"
 
 3. **Add the Firebase key**:
-   - **Name**: `FIREBASE_SERVICE_ACCOUNT`
+   - **Name**: `FIREBASE_SERVICE_ACCOUNT_SPENDIGO_8540C`
    - **Value**: Paste the entire JSON contents from Step 2
    - Click "**Add secret**"
 
@@ -96,7 +97,7 @@ git push
 2. GitHub Actions starts the workflow
 3. It builds your app (`npm run build`)
 4. It deploys to Firebase Hosting
-5. Your site updates at `https://spendigo-8540c.web.app`
+5. Your site updates at `https://spendigo.ca` (or the firebaseapp.com alias)
 
 ---
 
@@ -119,7 +120,7 @@ git push
 
 To also auto-deploy Cloud Functions, update the workflow:
 
-**Edit**: `.github/workflows/firebase-deploy.yml`
+**Edit**: `.github/workflows/main.yml`
 
 Change the last step to:
 
@@ -128,7 +129,7 @@ Change the last step to:
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: '${{ secrets.GITHUB_TOKEN }}'
-          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}'
+          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_SPENDIGO_8540C }}'
           channelId: live
           projectId: spendigo-8540c
           # Add this line to deploy functions too:
@@ -137,31 +138,12 @@ Change the last step to:
 
 ---
 
-## Branch Protection (Optional but Recommended)
-
-To prevent accidental deployments:
-
-1. **Go to GitHub Settings** → **Branches**
-2. Click "**Add rule**"
-3. **Branch name pattern**: `main`
-4. **Enable**:
-   - ✅ Require pull request reviews before merging
-   - ✅ Require status checks to pass (select "build-and-deploy")
-5. **Save**
-
-Now you can only deploy after:
-- Creating a pull request
-- Getting it approved
-- Passing the build
-
----
-
 ## Workflow File Explained
 
-**Location**: `.github/workflows/firebase-deploy.yml`
+**Location**: `.github/workflows/main.yml`
 
 ```yaml
-name: Deploy to Firebase Hosting
+name: Deploy to Firebase Hosting on merge to main
 
 on:
   push:
@@ -170,15 +152,22 @@ on:
   workflow_dispatch:  # Allow manual trigger
 
 jobs:
-  build-and-deploy:
+  build_and_deploy:
     runs-on: ubuntu-latest  # Use Ubuntu server
     
     steps:
       - uses: actions/checkout@v4         # Get code
-      - uses: actions/setup-node@v4       # Install Node.js
-      - run: npm ci                       # Install dependencies
-      - run: npm run build                # Build production
-      - uses: FirebaseExtended/action-hosting-deploy@v0  # Deploy
+      - name: Install Dependencies
+        run: npm ci                       # Install dependencies
+      - name: Build
+        run: npm run build                # Build production
+      - name: Deploy to Firebase Hosting
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: '${{ secrets.GITHUB_TOKEN }}'
+          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_SPENDIGO_8540C }}'
+          channelId: live
+          projectId: spendigo-8540c
 ```
 
 ---
@@ -187,7 +176,7 @@ jobs:
 
 ### Error: "Permission denied"
 
-**Solution**: Make sure you added the `FIREBASE_SERVICE_ACCOUNT` secret correctly.
+**Solution**: Make sure you added the `FIREBASE_SERVICE_ACCOUNT_SPENDIGO_8540C` secret correctly.
 
 ### Error: "Build failed"
 
@@ -207,38 +196,6 @@ jobs:
 - ✅ Plenty for your use case
 
 Each deployment takes ~2-3 minutes, so you can do **~600 deployments/month** for free.
-
----
-
-## Next Steps
-
-1. **Set up staging environment**:
-   - Create a `staging` branch
-   - Deploy to a Firebase preview channel
-
-2. **Add automated tests**:
-   - Run `npm test` before deployment
-   - Prevent broken code from going live
-
-3. **Add deployment notifications**:
-   - Get Slack/Discord alerts when deployments complete
-
----
-
-## Quick Reference
-
-```bash
-# Push to trigger deployment
-git add .
-git commit -m "Your changes"
-git push
-
-# View deployment status
-# Go to: https://github.com/YOUR_USERNAME/spendigo/actions
-
-# Manual trigger (from GitHub Actions tab)
-# Click "Run workflow" → Select branch → Run
-```
 
 ---
 

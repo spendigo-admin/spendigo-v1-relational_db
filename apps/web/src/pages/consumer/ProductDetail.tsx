@@ -83,7 +83,7 @@ const ProductDetail: React.FC = () => {
                 <span className="mx-2">›</span>
                 <Link to={`/store/${displayProduct.storeId}`} className="hover:text-[var(--brand-primary)]">{displayProduct.storeName}</Link>
                 <span className="mx-2">›</span>
-                <span className="text-[var(--text-muted)]">{displayProduct.category}</span>
+                <span className="text-[var(--text-muted)] capitalize">{displayProduct.category.replace(/^cat-/, '').replace(/-/g, ' ')}</span>
                 <span className="mx-2">›</span>
                 <span className="text-[var(--text-main)]">{displayProduct.name}</span>
             </nav>
