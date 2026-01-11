@@ -1,7 +1,7 @@
 # Spendigo Demo Credentials
 
 **CONFIDENTIAL - Internal Use Only**  
-**Last Updated**: 2025-12-29
+**Last Updated**: 2026-01-11
 
 ---
 
@@ -9,9 +9,7 @@
 
 All demo accounts use the same password:
 
-```
-Spendigo123!
-```
+> **Spendigo123!**
 
 ---
 
@@ -26,7 +24,9 @@ Spendigo123!
 
 ---
 
-## 🏪 Merchant Owners
+## 🏪 Merchant Accounts
+
+### Owners
 
 | Email | Role | Store |
 |-------|------|-------|
@@ -53,9 +53,7 @@ Spendigo123!
 
 **Permissions**: Full store management, team invitations, subscription management, order fulfillment, analytics
 
----
-
-## 💼 Store Managers
+### Managers
 
 | Email | Role | Store |
 |-------|------|-------|
@@ -82,9 +80,7 @@ Spendigo123!
 
 **Permissions**: Order fulfillment, inventory management, flyer creation (view-only for subscription settings)
 
----
-
-## 👥 Store Staff
+### Staff
 
 | Email | Role | Store |
 |-------|------|-------|
@@ -126,7 +122,7 @@ Spendigo123!
 | verif_shopper@test.com | USER | Test account |
 | verif_user@test.com | USER | Test account |
 
-**Merchant Test Accounts**:
+### Merchant Test Accounts (Consumer Side)
 | Email | Role | Notes |
 |-------|------|-------|
 | al_shahb@outlook.com | MERCHANT | Merchant test account |
