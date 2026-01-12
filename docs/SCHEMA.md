@@ -1,7 +1,7 @@
 # Spendigo SmartCart — Database Schema
 
-**Last Updated**: 2026-01-11  
-**Database**: Cloud Firestore (NoSQL)  
+**Last Updated**: 2026-01-12
+**Database**: Cloud Firestore (NoSQL)
 **Status**: Beta (SmartCart Optimizer Implemented)
 
 ---
@@ -36,18 +36,23 @@ Spendigo uses **Cloud Firestore** with a **Hybrid Catalog Architecture** to bala
 /wishlists                  # User wishlists
 ```
 
-### 2.3 Subcollections
+### 2.3 Marketing (New)
+
+```
+/sponsored_listings         # Paid ad slots for top-of-list placement
+```
+
+### 2.4 Subcollections
 
 ```
 /users/{userId}/notifications/{notifId} # In-app notifications
 /stores/{storeId}/flyers/{flyerId}      # Digital flyers
 ```
 
-### 2.4 Platform Support
+### 2.5 Platform Support
 
 ```
 /settings                   # Platform-wide settings
-/ads                        # Carousel ad campaigns
 /surveys                    # Consumer surveys & polls
 /stats                      # Traffic analytics & counters
 /mail                       # Outbound emails (Trigger Email Extension)
@@ -71,7 +76,7 @@ interface MasterProduct {
   brand_name: string;
   brand_family_id?: string;
   barcode: string;               // GTIN-12/13
-  upc_gtin: string;              // Normalized GTIN-14
+  upc_gtin: string;              // Normalized GTIN-14 (Indexed in Algolia)
   
   // Classification
   category_id: string;           // e.g. "Dairy", "Snacks"
@@ -137,45 +142,29 @@ interface MerchantProduct {
 }
 ```
 
-### 3.3 Pending Catalog (`/pending_master_products/{pendingId}`)
+### 3.3 Sponsored Listings (`/sponsored_listings/{adId}`)
 
-**Purpose**: Holding area for products auto-discovered by barcode scanners (e.g. OpenFoodFacts) before Admin approval.
-
-```typescript
-interface PendingMasterProduct extends MasterProduct {
-  pending_id: string;
-  discovered_by_merchant: string; // Store ID
-  original_barcode: string;
-  status: 'pending_review';
-  data_source: 'open_food_facts' | 'manual_scan';
-}
-```
-
-### 3.4 Product Creation Requests (`/product_creation_requests/{requestId}`)
-
-**Purpose**: Manual requests from merchants when a barcode isn't found.
+**Purpose**: Paid placement for products within specific categories.
 
 ```typescript
-interface ProductRequest {
+interface SponsoredListing {
   id: string;
-  submitted_by_merchant_id: string;
-  status: 'pending' | 'approved' | 'rejected';
+  merchantId: string;
+  productId: string;        // merchant_product_id
+  categoryIds: string[];    // Where this ad appears
   
-  // Requested Data
-  requested_product_name: string;
-  requested_brand: string;
-  requested_category: string;
-  requested_description?: string;
-  requested_barcode?: string;
-  requested_image_url?: string;
-  requested_barcode_image_url?: string;
+  // Timing
+  startDate: string;        // ISO Date
+  endDate: string;          // ISO Date
+  status: 'active' | 'scheduled' | 'expired';
   
-  // Admin Resolution
-  resolution_note?: string;
-  approved_master_product_id?: string;
+  // Metrics
+  impressions: number;
+  clicks: number;
   
-  created_at: FirebaseTimestamp;
-  updated_at: FirebaseTimestamp;
+  // Billing
+  cost: number;
+  stripePaymentId?: string;
 }
 ```
 
@@ -247,7 +236,25 @@ interface Order {
 | `users` | Own Profile | Own Profile |
 | `stores` | Public | Admin (Create), Owner (Update) |
 | `orders` | Involved Parties | Involved Parties |
+| `sponsored_listings` | Public (Active) | System / Admin |
 | `audit_logs` | Admin | System (Append Only) |
+
+---
+
+## 6. Migration Notes
+
+**Legacy Schema**: The original `catalog` collection is deprecated and replaced by the `master_products` + `merchant_products` split.
+
+**Key Changes**:
+- **Normalized Data**: Product details (name, image, nutrition) live in `master_products`.
+- **Lightweight Inventory**: `merchant_products` only contains price, stock, and ID links.
+- **Tax Accuracy**: Tax calculation now relies on `master_products.tax_category_id` (e.g. 'zero_rated_grocery') rather than a simple boolean.
+- **Substitution**: Supported via `substitution_group_id`.
+
+---
+
+**For architecture overview, see**: [ARCHITECTURE.md](./ARCHITECTURE.md)  
+**For tech stack details, see**: [TECH_STACK.md](./TECH_STACK.md)
 
 ---
 

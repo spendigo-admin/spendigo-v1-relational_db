@@ -1,6 +1,6 @@
 # GitHub Actions CI/CD Setup Guide
 
-**Last Updated**: 2026-01-11
+**Last Updated**: 2026-01-12
 **Status**: Active & Configured
 
 This guide explains how to set up automatic deployment to Firebase whenever you push code to GitHub.
@@ -10,9 +10,8 @@ This guide explains how to set up automatic deployment to Firebase whenever you 
 ## Overview
 
 We've configured **GitHub Actions** to automatically:
-1. ✅ Build your app when you push to `main` branch
-2. ✅ Deploy to Firebase Hosting
-3. ✅ (Optional) Deploy Cloud Functions
+1.  ✅ **Build** your app when you push to the `main` branch.
+2.  ✅ **Deploy** the build artifacts to Firebase Hosting.
 
 ---
 
@@ -20,127 +19,42 @@ We've configured **GitHub Actions** to automatically:
 
 ### Step 1: Push Your Code to GitHub
 
-If you haven't already, create a GitHub repository:
+If you haven't already, ensure your code is pushed to the `main` branch of your repository.
 
 ```bash
-cd /Users/shahbaz/Documents/Spendigo
-
-# Initialize git (if not already done)
-git init
-
-# Add all files
-git add .
-
-# Commit
-git commit -m "Initial production deployment"
-
-# Add remote (replace with your actual repo URL)
-git remote add origin https://github.com/YOUR_USERNAME/spendigo.git
-
-# Push to GitHub
-git push -u origin main
+git push origin main
 ```
-
----
 
 ### Step 2: Create Firebase Service Account
 
 This gives GitHub permission to deploy to your Firebase project.
 
-1. **Go to Firebase Console**:
-   - https://console.firebase.google.com/project/spendigo-8540c/settings/serviceaccounts/adminsdk
+1.  **Go to Firebase Console**:
+    - [Project Settings > Service Accounts](https://console.firebase.google.com/project/spendigo-8540c/settings/serviceaccounts/adminsdk)
 
-2. **Generate New Private Key**:
-   - Click "**Service accounts**" tab
-   - Click "**Generate new private key**"
-   - Click "**Generate key**"
-   - A JSON file will download (keep it safe!)
+2.  **Generate New Private Key**:
+    - Click "**Generate new private key**".
+    - A JSON file will download.
 
-3. **Open the JSON file**:
-   - Copy the ENTIRE contents of the file
-
----
+3.  **Open the JSON file**:
+    - Copy the **ENTIRE** contents of the file.
 
 ### Step 3: Add Secret to GitHub
 
-1. **Go to your GitHub repository**:
-   - `https://github.com/YOUR_USERNAME/spendigo`
+1.  **Go to your GitHub repository Settings**:
+    - `Settings` -> `Secrets and variables` -> `Actions`.
+    - Click "**New repository secret**".
 
-2. **Open Settings**:
-   - Click "**Settings**" (in the top menu)
-   - Click "**Secrets and variables**" → "**Actions**" (in the left sidebar)
-   - Click "**New repository secret**"
-
-3. **Add the Firebase key**:
-   - **Name**: `FIREBASE_SERVICE_ACCOUNT_SPENDIGO_8540C`
-   - **Value**: Paste the entire JSON contents from Step 2
-   - Click "**Add secret**"
+2.  **Add the Firebase key**:
+    - **Name**: `FIREBASE_SERVICE_ACCOUNT_SPENDIGO_8540C`
+    - **Value**: Paste the entire JSON contents from Step 2.
+    - Click "**Add secret**".
 
 ---
 
-### Step 4: Test the Workflow
+## Workflow Configuration
 
-Now whenever you push code:
-
-```bash
-# Make a change (e.g., update README.md)
-echo "# Spendigo - Live!" > README.md
-
-# Commit and push
-git add .
-git commit -m "Test auto-deploy"
-git push
-```
-
-**What Happens**:
-1. GitHub receives your push
-2. GitHub Actions starts the workflow
-3. It builds your app (`npm run build`)
-4. It deploys to Firebase Hosting
-5. Your site updates at `https://spendigo.ca` (or the firebaseapp.com alias)
-
----
-
-## Monitoring Deployments
-
-### View Action Status
-
-1. Go to your GitHub repo
-2. Click "**Actions**" tab
-3. You'll see all deployment runs
-
-**Status Indicators**:
-- 🟡 **Yellow (In Progress)**: Currently deploying
-- ✅ **Green**: Deployment succeeded
-- ❌ **Red**: Deployment failed (click to see logs)
-
----
-
-## Advanced: Deploy Functions Too
-
-To also auto-deploy Cloud Functions, update the workflow:
-
-**Edit**: `.github/workflows/main.yml`
-
-Change the last step to:
-
-```yaml
-      - name: Deploy to Firebase
-        uses: FirebaseExtended/action-hosting-deploy@v0
-        with:
-          repoToken: '${{ secrets.GITHUB_TOKEN }}'
-          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_SPENDIGO_8540C }}'
-          channelId: live
-          projectId: spendigo-8540c
-          # Add this line to deploy functions too:
-          target: hosting,functions
-```
-
----
-
-## Workflow File Explained
-
-**Location**: `.github/workflows/main.yml`
+The workflow is defined in `.github/workflows/main.yml`.
 
 ```yaml
 name: Deploy to Firebase Hosting on merge to main
@@ -148,19 +62,21 @@ name: Deploy to Firebase Hosting on merge to main
 on:
   push:
     branches:
-      - main          # Trigger on push to main branch
-  workflow_dispatch:  # Allow manual trigger
+      - main
+  workflow_dispatch:
 
 jobs:
   build_and_deploy:
-    runs-on: ubuntu-latest  # Use Ubuntu server
-    
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4         # Get code
+      - uses: actions/checkout@v4
+      
       - name: Install Dependencies
-        run: npm ci                       # Install dependencies
+        run: npm ci
+        
       - name: Build
-        run: npm run build                # Build production
+        run: npm run build
+        
       - name: Deploy to Firebase Hosting
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
@@ -170,34 +86,40 @@ jobs:
           projectId: spendigo-8540c
 ```
 
+### Key Components:
+-   **`npm ci`**: Uses `package-lock.json` for a clean, deterministic install.
+-   **`FirebaseExtended/action-hosting-deploy`**: The official action for deploying to Firebase Hosting.
+-   **`channelId: live`**: Deploys directly to the production site.
+
+---
+
+## Advanced: Deploying Cloud Functions
+
+To auto-deploy Cloud Functions as well, you would update the `with` block in your workflow file:
+
+```yaml
+        with:
+          # ... existing config ...
+          target: hosting,functions
+```
+
+*Note: Deploying functions typically takes longer and may require additional permissions or configuration.*
+
 ---
 
 ## Troubleshooting
 
-### Error: "Permission denied"
+### Build Errors
+If the build fails, check the "Actions" tab in GitHub. Common issues include:
+-   **TypeScript Errors**: Ensure `npm run build` runs locally without errors before pushing.
+-   **Missing Secrets**: Verify `FIREBASE_SERVICE_ACCOUNT_SPENDIGO_8540C` is set correctly.
 
-**Solution**: Make sure you added the `FIREBASE_SERVICE_ACCOUNT_SPENDIGO_8540C` secret correctly.
-
-### Error: "Build failed"
-
-**Solution**: Your code has errors. Check the "Actions" tab logs to see the TypeScript/build error.
-
-### Error: "Firebase project not found"
-
-**Solution**: Check that `projectId: spendigo-8540c` matches your actual Firebase project ID.
+### Permission Denied
+Ensure the Service Account Key used in the secret has the "Firebase Admin" or "Firebase Hosting Admin" role in the Google Cloud Console.
 
 ---
 
-## Cost Considerations
+## Monitoring and Cost
 
-**GitHub Actions Free Tier**:
-- ✅ 2,000 minutes/month (for public repos)
-- ✅ 500 MB storage
-- ✅ Plenty for your use case
-
-Each deployment takes ~2-3 minutes, so you can do **~600 deployments/month** for free.
-
----
-
-**Prepared By**: Shahbaz + AI Development Team  
-**Status**: Production-Ready CI/CD Pipeline
+-   **Monitoring**: View deployment logs in the "Actions" tab of your GitHub repository.
+-   **Cost**: GitHub Actions offers 2,000 free automation minutes per month for public repositories (and generous limits for private ones), which is sufficient for frequent deployments.

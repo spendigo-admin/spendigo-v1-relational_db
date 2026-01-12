@@ -1,6 +1,6 @@
 # Spendigo SmartCart — Tech Stack
 
-**Last Updated**: 2026-01-11  
+**Last Updated**: 2026-01-12
 **Status**: Beta (Feature Complete)
 
 ---
@@ -8,17 +8,17 @@
 ## 1. Core Stack (As Implemented)
 
 ### Frontend (Web)
-- **Framework**: React 18.2.0
+- **Framework**: React 18.3.1
 - **Build Tool**: Vite 7.3.0
 - **Language**: TypeScript 5.0+ (Strict Mode)
-- **Styling**: TailwindCSS 3.0+ + Custom Design System (CSS Variables)
+- **Styling**: TailwindCSS 3.4+ + Custom Design System (CSS Variables)
 - **State Management**: React Context API (AuthContext, CartContext, MarketplaceContext, OrderContext, etc.)
-- **Routing**: React Router v6.20.0
-- **Error Handling**: react-error-boundary 6.0.0
+- **Routing**: React Router v6.28.0
+- **Error Handling**: react-error-boundary 4.0.0
 
 ### Frontend (Mobile)
-- **Framework**: Capacitor 6.0.0 (Native wrapper for web app)
-- **Platforms**: iOS 6.0.0 + Android 6.0.0
+- **Framework**: Capacitor 7.0.0 (Native wrapper for web app)
+- **Platforms**: iOS 17+ + Android 14+
 - **Build**: Same React codebase as web
 
 ### Backend & Database
@@ -39,13 +39,13 @@
 
 ## 2. Development Tools
 
-- **Linter**: ESLint 8.0+
+- **Linter**: ESLint 9.0+
 - **Formatter**: Prettier 3.0+
 - **Testing**: Vitest (configured, unit tests)
 - **Package Manager**: npm 11.7.0
-- **Monorepo**: Turbo 1.10.0 (build orchestration)
+- **Monorepo**: Turbo 2.0.0 (build orchestration)
 - **CI/CD**: GitHub Actions (Auto-deploy to Firebase)
-- **TypeScript Compiler**: 5.0+
+- **TypeScript Compiler**: 5.4+
 
 ---
 
@@ -76,7 +76,7 @@ The current implementation uses **Firebase** instead of the originally planned P
 ### ✅ **Why Vite (Not Webpack)?**
 - 10-100x faster dev server
 - Native ESM (no bundling in dev)
-- Production build: 14.73s (876kb bundle)
+- Production build: ~14s (876kb bundle)
 
 ---
 
@@ -87,10 +87,10 @@ The current implementation uses **Firebase** instead of the originally planned P
 | **Auth** | Firebase Auth (Email + Google SSO) | ✅ Implemented |
 | **Database** | Cloud Firestore | ✅ Implemented |
 | **Storage** | Firebase Storage | ✅ Implemented |
+| **Search** | **Algolia** (Full-text + Faceting) | ✅ Implemented (v5 Client) |
 | **Analytics** | Firebase + Custom Firestore Hooks | ✅ Implemented |
 | **Monitoring** | Sentry | 🔜 Planned |
-| **Payments** | Stripe Checkout (Subscriptions) | ✅ Implemented |
-| **Search** | Algolia / Typesense | 🔜 Planned |
+| **Payments** | **Stripe Checkout** (Subscriptions) | ✅ Implemented |
 | **Geocoding** | OpenStreetMap (Nominatim) | ✅ Implemented |
 | **Email** | Trigger Email Extension | ✅ Implemented |
 
@@ -100,38 +100,25 @@ The current implementation uses **Firebase** instead of the originally planned P
 
 ### Runtime Versions
 ```
-Node.js:       v25.2.1 (≥20.0.0 required)
-npm:           11.7.0
-TypeScript:    5.0+
-React:         18.2.0
+Node.js:       v20.0.0+ (Required for Cloud Functions)
+npm:           10.0+
+TypeScript:    5.4+
+React:         18.3+
 ```
 
 ### Production Dependencies
 ```json
 {
-  "react": "18.2.0",
-  "react-dom": "18.2.0",
-  "react-router-dom": "6.20.0",
+  "react": "18.3.1",
+  "react-dom": "18.3.1",
+  "react-router-dom": "6.28.0",
   "firebase": "10.14.1",
-  "@capacitor/core": "6.0.0",
-  "react-error-boundary": "6.0.0",
+  "@capacitor/core": "7.0.0",
+  "algoliasearch": "5.0.0",
+  "react-instantsearch": "7.0.0",
   "html5-qrcode": "2.3.8",
   "date-fns": "4.1.0",
-  "@stripe/stripe-js": "8.6.0"
-}
-```
-
-### Development Dependencies
-```json
-{
-  "vite": "7.3.0",
-  "typescript": "5.0.0",
-  "tailwindcss": "3.0.0",
-  "@vitejs/plugin-react": "4.2.0",
-  "@vitejs/plugin-basic-ssl": "2.1.0",
-  "turbo": "1.10.0",
-  "eslint": "8.0.0",
-  "prettier": "3.0.0"
+  "@stripe/stripe-js": "4.0.0"
 }
 ```
 
@@ -143,9 +130,9 @@ React:         18.2.0
 |----------|--------|-------|
 | **Build** | ✅ Passing | Exit code 0, 876kb bundle |
 | **Type Safety** | ✅ Passing | Zero TypeScript errors |
+| **Search** | ✅ Passing | Algolia index active (`master_products`) |
 | **Security** | ✅ Complete | RBAC + Audit logs + HTTPS |
-| **Documentation** | ✅ Complete | 20 walkthroughs + gap analysis |
-| **E2E Testing** | ⚠️ Code verified | Manual browser tests pending |
+| **Documentation** | ✅ Complete | Full documentation suite updated |
 
 ---
 
@@ -162,7 +149,3 @@ The initial tech stack document planned for:
 - Serverless Cloud Functions (Node.js)
 
 **Rationale**: Firebase accelerated development by 3-4 weeks and provides better real-time capabilities for the order management system.
-
----
-
-**For detailed technical documentation, see**: [`/Users/shahbaz/.gemini/antigravity/brain/.../tech_stack.md`](file:///Users/shahbaz/.gemini/antigravity/brain/bfded306-9b65-4e97-a6bd-9a347bc9619a/tech_stack.md)

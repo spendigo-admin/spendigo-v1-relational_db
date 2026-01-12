@@ -12,6 +12,7 @@ The "Facilitator-Safe Master Catalog" model effectively solves the core business
 | **Phase 3** | **Frontend Integration (Read)** | ✅ **COMPLETED** | Store Detail, Product Detail, and Search updated to use `useCatalog` hook. |
 | **Phase 4** | **Merchant UI (Write)** | ✅ **COMPLETED** | Merchants can link logic, request products, and bulk scan barcodes. |
 | **Phase 5** | **Admin UI (Approval)** | ✅ **COMPLETED** | Admin dashboard (`AdminMasterCatalog`) processes pending requests. |
+| **Phase 6** | **Search & Optimization** | ✅ **COMPLETED** | **Algolia** integration for high-performance search; **SmartCart Optimizer** logic. |
 
 ## 3. Completed Features
 
@@ -24,11 +25,16 @@ The "Facilitator-Safe Master Catalog" model effectively solves the core business
 *   **Master Catalog Grid**: Admins can edit, delete, and merge master products.
 *   **Request Inbox**: A dedicated queue for `product_creation_requests` where Admins can Approve (promote to Master) or Reject (with reason).
 
-### 3.3 SmartCart Integration
-*   **Substitution Groups**: Master products are now grouped (e.g., "Milk 2L") to allow logic-based substitutions in the SmartCart Optimizer.
+### 3.3 SmartCart Integration & Client Intelligence
+*   **Optimization Logic**: Complex store-splitting and trip-optimization algorithms run entirely on the client, minimizing server costs.
+*   **Fuzzy Matching**: The client attempts to match generic wishlist items (e.g., "Milk") to specific merchant products (e.g., "Dairyland 2%") using name analysis and `master_product_id` references.
+*   **Substitution Groups**: Master products are now grouped (e.g., "Milk 2L") to allow logic-based substitutions.
 *   **Tax Standardization**: `tax_category_id` is enforced at the Master level.
 
+### 3.4 Search Infrastructure
+*   **Algolia Integration**: The "Search with Algolia" extension syncs `master_products` to an external index.
+*   **Frontend**: `useCatalog.ts` seamlessly switches between Firestore (Barcode/ID lookup) and Algolia (Fuzzy Text Search).
+
 ## 4. Next Steps (Enhancements)
-*   **Algolia Search**: Replace the current basic name-check search with Algolia for typo tolerance.
 *   **Bulk CSV Import**: Allow merchants to upload a CSV of UPCs for faster onboarding.
 *   **Price Intelligence**: Show merchants the "Average Market Price" for a master product when they are setting their price.

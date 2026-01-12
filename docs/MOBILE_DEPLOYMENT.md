@@ -1,8 +1,9 @@
 # Spendigo Mobile App Build Guide
 
 **Location**: `apps/web`
+**Last Updated**: 2026-01-12
 **Status**: Beta Verified
-**Framework**: Ionic Capacitor (v6.0)
+**Framework**: Ionic Capacitor (v7.0)
 
 This guide details how to build and deploy the Spendigo application for Android and iOS.
 
@@ -88,12 +89,13 @@ For faster iteration without rebuilding:
     npx cap open android
     ```
 
-**Important**: Remove the `server` block before building for Production!
+**🚨 CRITICAL**: Remove the `server` block from `capacitor.config.ts` before building for Production!
 
 ---
 
 ## 7. Troubleshooting
 
-- **Android Keystore**: If signing fails, verify your `key.jks` location.
-- **Gradle Errors**: Ensure JDK 17+ is selected in Android Studio Settings.
-- **SSL Errors on Localhost**: Since we use `https://spendigo.ca` locally, you must install the self-signed cert on the Android Emulator or use the IP address method above.
+-   **Android Keystore**: If signing fails, verify your `key.jks` location.
+-   **Gradle Errors**: Ensure **JDK 17** (or 21) is selected in Android Studio Settings > Build, Execution, Deployment > Build Tools > Gradle.
+-   **CocoaPods (M1/M2/M3 Macs)**: If `pod install` fails, try running `arch -x86_64 sudo gem install ffi`.
+-   **SSL Errors on Localhost**: Since we use `https://spendigo.ca` locally, you must install the self-signed cert on the Android Emulator or disable SSL verification (Dev Only).

@@ -1,6 +1,6 @@
 # Spendigo Production Deployment Guide
 
-**Date**: 2026-01-11
+**Date**: 2026-01-12
 **Target**: Firebase Hosting + Cloud Functions
 **Domain**: Custom GoDaddy Domain (spendigo.ca)
 **Stripe Mode**: Test (Sandbox)
@@ -75,7 +75,12 @@ Visit `https://spendigo.ca`.
 - ✅ SSL Lock icon is present.
 - ✅ Site loads without console errors.
 
-### 2. Verify Stripe Webhooks
+### 2. Verify Search (Algolia)
+- Go to the **Merchant Dashboard** > **Inventory**.
+- Type "Milk" in the global product search.
+- ✅ Results appear quickly (approx 30ms), confirming the Algolia index is connected.
+
+### 3. Verify Stripe Webhooks
 If you re-deployed functions, ensure the Webhook Secret matches:
 - **Stripe Dashboard**: Developers > Webhooks > `https://.../stripeWebhook` > Signing Secret (`whsec_...`)
 - **Firebase Config**:
@@ -84,7 +89,7 @@ If you re-deployed functions, ensure the Webhook Secret matches:
   firebase functions:config:get
   ```
 
-### 3. Verify Mobile Assets
+### 4. Verify Mobile Assets
 If updating the mobile app wrapper:
 - Follow `docs/MOBILE_DEPLOYMENT.md` to sync changes to Android/iOS projects.
 
@@ -107,4 +112,4 @@ If updating the mobile app wrapper:
 ---
 
 **Prepared By**: Shahbaz + AI Development Team
-**Last Updated**: 2026-01-11
+**Last Updated**: 2026-01-12

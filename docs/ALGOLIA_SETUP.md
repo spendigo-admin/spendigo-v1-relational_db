@@ -1,4 +1,5 @@
 # Algolia Extension Configuration
+**Last Updated:** January 2026
 
 To enable full-text search, you must install the **"Search with Algolia"** Firebase Extension.
 
@@ -16,7 +17,7 @@ To enable full-text search, you must install the **"Search with Algolia"** Fireb
 3. Select **"Search with Algolia"** (by Algolia).
 4. Click **Install**.
 
-## 2. Configuration Parameters
+## 3. Configuration Parameters
 During installation, use the following settings:
 
 | Parameter | Value | Notes |
@@ -25,15 +26,15 @@ During installation, use the following settings:
 | **Algolia App ID** | `[Your Algolia App ID]` | From Algolia Dashboard. |
 | **Algolia API Key** | `[Your Algolia Admin API Key]` | **Important**: Use the "Write" or "Admin" key here, NOT the search key. |
 | **Algolia Index Name** | `master_products` | Matches your .env config. |
-| **Fields to Index** | `product_name,brand_name,short_description,upc_gtin,barcode,category_id,dietary_tags` | Comma-separated list of fields to sync. |
+| **Fields to Index** | `product_name,brand_name,short_description,upc_gtin,category_id,dietary_tags,primary_image_url` | Comma-separated list of fields to sync. |
 | **Transform Function** | *Leave Empty* | Unless we need specific data transformation. |
 
-## 3. Post-Install
+## 4. Post-Install
 After installation:
 1.  **Re-save** a document in `master_products` to verify it syncs to Algolia.
 2.  If you have existing data, you may need to run a "Backfill" script (Algolia provides a script for this).
 
-## 4. Frontend Keys
+## 5. Frontend Keys
 Ensure your `.env.local` has the **Search-Only** key, not the Admin key.
 
 ```bash

@@ -1,23 +1,26 @@
 # Spendigo SmartCart — UI Wireframes
 
+**Last Updated**: 2026-01-12
 **Status**: Implemented (Beta)
-**Design System**: Tailwind CSS (Custom Theme: Emerald/Dark)
+**Design System**: Tailwind CSS (Custom Theme: Bright White & Blue)
 
 ## 1. Core User Flows (Mermaid)
 
 ### 1.1 SmartCart Optimization Flow
-*How the user finds the best price.*
+*How the user optimizes their generic recurring grocery list.*
 ```mermaid
 graph TD
-    A[User Search: "Milk"] --> B[Result List]
-    B -->|Click Item| C[Product Detail]
-    C -->|Add to Wishlist| D[Wishlist State]
-    D -->|Click 'Optimize'| E[Smart Engine]
-    E --> F{Cheaper Replacement?}
-    F -->|Yes| G[Show "Swap & Save" Modal]
-    F -->|No| H[Direct Add to Cart]
-    G -->|Accept| I[Replace Item in Cart]
-    G -->|Decline| H
+    A[User Inputs: "Milk", "Eggs"] --> B[Wishlist State]
+    B -->|Frontend Auto-Match| C{Fuzzy Matcher}
+    C -->|Found| D[Display Specific Products]
+    C -->|Not Found| B
+    D -->|Click 'Optimize Trip'| E[Trip Optimizer Engine]
+    E --> F{Compare Scenarios}
+    F --> G[Scenario A: Best Split (Lowest Price)]
+    F --> H[Scenario B: Best Single Store (Convenience)]
+    G --> I[User Selects Preference]
+    H --> I
+    I --> J[Bulk Add to Cart]
 ```
 
 ### 1.2 Merchant Product Management (Hybrid Catalog)
@@ -25,8 +28,8 @@ graph TD
 ```mermaid
 graph TD
     A[Merchant Dashboard] --> B[My Products]
-    B -->|Click Add| C[Global Search Modal]
-    C -->|Type Barcode/Name| D{Found in Master?}
+    B -->|Click Add| C[Global Search Modal (Algolia)]
+    C -->|Type Name/Barcode| D{Found in Master?}
     D -->|Yes| E[Select & Set Price]
     D -->|No| F[Click 'Request New']
     F --> G[Fill Request Form]
@@ -37,13 +40,16 @@ graph TD
 ## 2. Key Screen Mockups
 
 ### 2.1 Consumer: SmartCart Wishlist (`/smartcart`)
-*   **Header**: "Your Smart List" (Sticky)
-*   **Toggle Switch**: "Strict Mode" (Same Brand) vs "Eco Mode" (Any Brand, lower price).
+*   **Header**: "Smart List Optimizer"
+*   **Input Area**: "Add a generic item..." (e.g. "Bread") - *Auto-matches to available inventory*.
 *   **Main List**: 
-    *   Left side: Required Items.
-    *   Right side: "Best Deal" found.
-    *   Green Arrow pointing to savings amount ("Save $3.50").
-*   **CTA**: floating "Add All to Cart" button.
+    *   Displays generic terms ("Milk") with resolved specific products underneath ("Dairyland 2% - $4.99").
+    *   **Edit Control**: Click to swap the specific product match.
+*   **Smart Insights Panel (Right/Bottom)**: 
+    *   **"Trip Optimizer"**: Toggle between:
+        *   **Best Split**: "Save $5.20 by visiting 2 stores."
+        *   **Best Single Store**: "Pay $2.00 more to buy everything at FreshMart."
+*   **CTA**: "Add All to Cart".
 
 ### 2.2 Merchant: Product Editor (`/merchant/products`)
 *   **Layout**: Split view.
@@ -76,6 +82,13 @@ graph TD
 *   **Payment Method**: Stripe Elements (Card / Google Pay).
 *   **Disclaimer**: "You will see two separate charges on your statement."
 *   **Submit**: "Pay $17.50".
+
+### 2.6 Global Search (Header)
+*   **Input**: "Algolia Autocomplete"
+*   **Results Dropdown**:
+    *   **Instant Result**: Shows thumbnail, Name, Brand.
+    *   **Highlights**: Matching text is bolded (e.g. "**Coca**-Cola").
+    *   **Speed**: < 50ms response.
 
 ## 3. Responsive Behavior
 *   **Mobile**: Bottom Navigation Bar (Home, Search, Cart, Profile).

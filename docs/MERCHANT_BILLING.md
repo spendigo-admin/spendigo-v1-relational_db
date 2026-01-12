@@ -1,6 +1,6 @@
 # Merchant Billing & Subscription Operations
 
-**Last Updated**: 2026-01-11  
+**Last Updated**: 2026-01-12
 **Status**: Beta (Stripe Test Mode Active)
 
 This document outlines the billing procedures, subscription tiers, and development protocols for the Spendigo Merchant platform.
@@ -20,8 +20,8 @@ Spendigo utilizes **Stripe** as its payment processor for Merchant Subscriptions
 | Tier | Price (CAD) | Features | Stripe Product ID (Test) |
 | :--- | :--- | :--- | :--- |
 | **Free / Starter** | $0/mo | • Up to 50 Products<br>• Basic Analytics<br>• No Flyers | `prod_Ran...` (Auto-assigned) |
-| **Core Store** | $29/mo | • Up to 500 Products<br>• Weekly Flyers<br>• Priority Support | `prod_Q...` |
-| **Growth** | $79/mo | • Unlimited Products<br>• Daily Deals<br>• Advanced Analytics | `prod_R...` |
+| **Core Store** | $29/mo | • Up to 500 Products<br>• Weekly Flyers<br>• Priority Support | `prod_Qt...` |
+| **Growth** | $79/mo | • Unlimited Products<br>• Daily Deals<br>• Advanced Analytics | `prod_Rt...` |
 
 ---
 
@@ -57,15 +57,25 @@ Real-time updates are handled via the `stripeWebhook` Cloud Function:
 
 ---
 
-## 5. Developer Guide (Local Testing)
+## 5. Sponsored Listings (Ad-Hoc Billing)
+
+*For detailed flow, see [SPONSORED_LISTINGS.md](./SPONSORED_LISTINGS.md)*
+
+In addition to recurring subscriptions, Merchants can purchase one-time "Sponsored Listing" slots.
+- **Billing Model**: Pay-per-performance or Fixed Duration (e.g., $5 to Boost for 7 Days).
+- **Payment Method**: Uses the saved Stripe Customer ID from the main subscription if available, or prompts for one-time payment.
+
+---
+
+## 6. Developer Guide (Local Testing)
 
 To test the billing lifecycle in the development environment:
 
-### 5.1 Prerequisites
+### 6.1 Prerequisites
 - Stripe CLI installed (`brew install stripe/stripe-cli/stripe`)
 - Local Firebase Emulators running (`npm run dev`)
 
-### 5.2 Invoking the Listener
+### 6.2 Invoking the Listener
 Forward webhooks to your local function:
 
 ```bash
@@ -75,7 +85,7 @@ npm run stripe:listen
 
 **Important**: You must update the `stripe.webhook_secret` config variable in your local `.runtimeconfig.json` or `.env` file if the secret changes.
 
-### 5.3 Triggering Events
+### 6.3 Triggering Events
 You can trigger mock events via CLI to test UI responses:
 
 ```bash

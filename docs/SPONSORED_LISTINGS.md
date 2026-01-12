@@ -1,6 +1,6 @@
 # Spendigo SmartCart — Sponsored Listings Design
 
-**Last Updated**: 2026-01-11
+**Last Updated**: 2026-01-12
 **Status**: Plan Active (Phase 1 Implemented)
 
 ## 1. Overview
@@ -27,7 +27,14 @@ Instead of relying on external ad networks (e.g. AdSense) which leak user data a
     *   Track Views/Clicks (Basic analytics in Firestore).
 *   **Revenue**: Sold manually to large brands or used for internal promos (Reference: `$500-$2000/mo`).
 
-### C. Search Priority (SmartCart) 🚧
+### C. Sponsored Product Listings (New) 🚧
+*   **Status**: In Development (Schema Defined).
+*   **Placement**: Top of Search Results or Category Pages.
+*   **Logic**: Merchants bid to have their specific product (e.g. "MyBrand Coffee") appear at the top when a user browses the "Coffee" category.
+*   **Billing**: Pay-per-click or Fixed Duration.
+*   **Schema**: managed in `/sponsored_listings` collection.
+
+### D. Search Priority (SmartCart) 🚧
 *   **Status**: Planned for Q2.
 *   **Logic**: When a user searches "Milk", products from Growth Tier stores will appear first if the price variance is < 10%.
 *   **Fairness Check**: The **SmartCart Optimizer** will NEVER substitute a cheaper product for a sponsored, more expensive one. Sponsored listings only affect *visual sorting* in the browse/search UI, not the optimization engine logic.
@@ -40,32 +47,40 @@ Instead of relying on external ad networks (e.g. AdSense) which leak user data a
 | :--- | :--- | :--- | :--- |
 | **Growth Plan** (Bundled Boost) | $79/merchant | 50 merchants | $3,950 |
 | **Carousel Slots** (National) | $1,000/slot | 3 slots | $3,000 |
+| **Product Listings** (CPC) | ~$0.50/click | 2000 clicks | $1,000 |
 | **Carousel Slots** (Local) | $250/slot | 10 slots | $2,500 |
-| **Total Ad Revenue** | | | **~$9,450 / mo** |
+| **Total Ad Revenue** | | | **~$10,450 / mo** |
 
 ---
 
-## 4. Technical Schema (`/ads/{adId}`)
+## 4. Technical Schemas
+
+### Ad Campaigns (`/ads/{adId}`)
+Used for Homepage Banners.
 
 ```typescript
 interface AdCampaign {
   id: string;
   type: 'carousel' | 'featured_store';
-  
-  // Content
   title: string;
   imageUrl: string;
   linkUrl: string; // e.g., "/store/123"
-  
-  // Scheduling
-  startDate: string; // ISO
-  endDate: string;
-  isActive: boolean;
-  priority: number; // 1-10 (Higher shows first)
-  
-  // Analytics
-  views: number;
-  clicks: number;
+  active: boolean;
+  priority: number;
+}
+```
+
+### Sponsored Listings (`/sponsored_listings/{id}`)
+Used for Product sorting boosts.
+
+```typescript
+interface SponsoredListing {
+  id: string;
+  merchantId: string;
+  productId: string;
+  categoryIds: string[];
+  cost: number;
+  status: 'active' | 'scheduled';
 }
 ```
 

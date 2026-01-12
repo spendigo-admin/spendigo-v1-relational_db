@@ -1,13 +1,16 @@
 # Spendigo SmartCart — System Architecture
 
-**Last Updated**: 2026-01-11  
-**Status**: Beta (Feature Complete)
+**Last Updated**: 2026-01-12
+**Status**: Beta (Feature Complete & Optimization Phase)
 
 ---
 
 ## 1. Executive Summary
 
-Spendigo SmartCart is a Canada-first marketplace facilitator connecting independent convenience stores with consumers. The **current implementation** uses **Firebase** as a managed backend, enabling rapid development and automatic scalability while maintaining production-grade security.
+Spendigo SmartCart is a Canada-first marketplace facilitator connecting independent convenience stores with consumers. The **current implementation** uses a **Hybrid Architecture**:
+-   **Backend**: Firebase (Firestore, Auth, Functions) for core data and logic.
+-   **Search**: **Algolia** for high-performance Master Catalog search.
+-   **Optimization**: Client-side SmartCart Optimizer with local heuristic algorithms (Store Splitting & Trip Optimization).
 
 ---
 
@@ -23,24 +26,29 @@ graph TB
         Auth[Firebase Auth<br/>User Authentication]
         Firestore[(Cloud Firestore<br/>Real-time Database)]
         Storage[(Firebase Storage<br/>Images/Files)]
-        Functions[Cloud Functions<br/>Optional serverless logic]
+        Functions[Cloud Functions<br/>Serverless Logic]
     end
 
     subgraph External Services
         Stripe[Stripe Payments<br/>Subscription & Checkout]
+        Algolia[Algolia Search<br/>Master Catalog Index]
         OSM[OpenStreetMap / Nominatim<br/> Geocoding]
         Email[Firebase Extensions<br/>Trigger Email / SMTP]
     end
 
-    Consumer -->|Browse, Order| Auth
-    StoreMgr -->|Manage Inventory| Auth
-    Admin -->|Moderate, Audit| Auth
+    Consumer -->|Login| Auth
+    Consumer -->|Real-time Orders| Firestore
+    Consumer -->|Global Product Search| Algolia
     
-    Auth --> Firestore
-    Auth --> Storage
-    Firestore -.->|Triggers| Functions
-    Firestore -.->|Write to 'mail'| Email
+    StoreMgr -->|Manage Inventory| Firestore
+    StoreMgr -->|Sync Catalog| Firestore
+    Firestore -.->|Index Sync| Algolia
+
+    Admin -->|Moderate Catalog| Firestore
+    Admin -->|User Mgmt| Auth
+    
     Functions --> Stripe
+    Functions --> Email
     Consumer --> OSM
 ```
 
@@ -57,19 +65,19 @@ graph TB
 | **Admin Panel** | React 18 + Vite 7.3 | ✅ Complete |
 | **Mobile Apps** | Capacitor 6 (iOS/Android) | ✅ Build Verified |
 
-**Shared Codebase**: Single React app with role-based routing (`ConsumerLayout`, `MerchantLayout`, `AdminLayout`)
+**Shared Codebase**: Single React app with role-based routing (`ConsumerLayout`, `MerchantLayout`, `AdminLayout`) and shared Design System (`hsl` tokens).
 
 ### 3.2 Backend Services (Hybrid)
 
 The architecture uses a **Hybrid approach**:
-1.  **Client-Side**: Firebase SDKs for real-time data sync and simple CRUD (handled via React Contexts).
-2.  **Server-Side**: Cloud Functions (Node.js) for privileged operations, extensive logic, and third-party integrations.
+1.  **Client-Side**: Firebase SDKs for real-time data sync (Orders, Inventory) and simple CRUD.
+2.  **Server-Side**: Cloud Functions (Node.js) for privileged operations (Order Emails, Stripe Webhooks, Admin Tasks).
 
 | Component | Technology | Responsibilities |
 |-----------|------------|------------------|
-| **React Contexts** | Client SDK | Auth state, realtime order listeners, cart management |
-| **Cloud Functions** | Node.js 20 | Order emails, complex admin actions (user deletion), Stripe webhooks, maintenance tasks |
-| **Firebase Extensions** | Trigger Email | Outbound transactional emails via Firestore `mail` collection |
+| **React Contexts** | Client SDK | Auth state, realtime order listeners, cart management, *SmartCart Optimizer Logic* |
+| **Cloud Functions** | Node.js 20 | Order emails, complex admin actions, Stripe webhooks, maintenance tasks |
+| **Algolia Extension** | Firebase Extension | Syncs `master_products` to Algolia index for fuzzy search |
 
 ### 3.3 Data Store (Firebase Firestore)
 
@@ -77,60 +85,63 @@ The architecture uses a **Hybrid approach**:
 ```
 /users/{userId}              # User profiles + roles
 /stores/{storeId}            # Merchant stores
-  /flyers/{flyerId}          # Digital flyers (subcollection)
 /orders/{orderId}            # Order documents
-/catalog/{productId}         # Master product catalog
-/audit_logs/{logId}          # Tamper-evident security logs
-/notifications/{userId}      # In-app notifications
-/mail/{mailId}               # Outbound emails (Trigger Email Extension)
+/master_products/{mpId}      # Global verified catalog (Synced to Algolia)
+/merchant_products/{pId}     # Store-specific inventory & pricing
+/product_creation_requests/  # Merchant requests for new products
 /carts/{userId}              # Shopping carts
 /wishlists/{userId}          # User wishlists
-/settings/platform           # Global settings (maintenance mode, etc.)
 ```
 
-**Key Features**:
-- Real-time listeners (`onSnapshot`) for instant UI updates
-- Atomic batch writes for multi-store checkout
-- Security rules enforce RBAC at database level
-- Offline persistence enabled
+**Key Architectural Decisions**:
+- **Hybrid Catalog**: Separation of `master_products` (Global Data) and `merchant_products` (Store Data). Merchants link to a Master ID, ensuring consistent data quality while allowing flexible pricing.
+- **SmartCart Optimizer**: Runs entirely on the client-side (`useMemo` in `SmartCartWishlist.tsx`). It downloads relevant availability data and performs:
+    1.  **Fuzzy Matching**: Matches generic terms ("Milk") to specific inventory ("Dairyland Milk").
+    2.  **Store Splitting**: Finds the cheapest combination of stores.
+    3.  **Trip Optimization**: Suggests a "Best Single Store" alternative.
 
 ---
 
 ## 4. Key Data Flows
 
-### 4.1 Consumer Checkout (Multi-Store)
+### 4.1 SmartCart Optimization Flow
 
 ```mermaid
 sequenceDiagram
-    participant Consumer
-    participant CartContext
-    participant OrderContext
+    participant User
+    participant Optimizer(Client)
     participant Firestore
-    participant Merchant
+    participant Algolia
 
-    Consumer->>CartContext: Add items from Store A + Store B
-    Consumer->>CartContext: Proceed to Checkout
-    CartContext->>OrderContext: createBatchOrders([...])
-    OrderContext->>Firestore: writeBatch (atomic)
-    Firestore-->>Merchant: Real-time update (onSnapshot)
-    Merchant->>Firestore: Update order status
-    Firestore-->>Consumer: Real-time status update
+    User->>Optimizer: Adds "Milk" (Generic Item)
+    
+    par Parallel Fetch
+        Optimizer->>Firestore: Fetch Merchant Inventory (local cache)
+        Optimizer->>Algolia: (Optional) Search Master Catalog
+    end
+    
+    Optimizer->>Optimizer: Fuzzy Match "Milk" -> "Dairyland 2%"
+    Optimizer->>Optimizer: Algorithm: Cheapest Split vs. Single Store
+    
+    Optimizer-->>User: Display "Best Prices" & "Trip Saver"
+    User->>Firestore: Add to Cart (Batched Write)
 ```
 
-### 4.2 Merchant Order Management
+### 4.2 Admin Catalog Verification
 
 ```mermaid
 sequenceDiagram
-    participant Consumer
+    participant Merchant
     participant Firestore
-    participant MerchantDashboard
-    participant NotificationContext
+    participant Admin
+    participant Algolia
 
-    Consumer->>Firestore: Place order
-    Firestore->>NotificationContext: Trigger notification
-    NotificationContext->>MerchantDashboard: Real-time bell icon update
-    MerchantDashboard->>Firestore: updateOrderStatus('preparing')
-    Firestore-->>Consumer: Order status updated
+    Merchant->>Firestore: Request New Product
+    Admin->>Firestore: Review & Approve Request
+    Firestore->>Firestore: Create Master Product
+    Firestore->>Algolia: Extension Syncs New Item
+    Firestore-->>Merchant: Notification (Approved)
+    Merchant->>Firestore: Set Price & Quantity
 ```
 
 ---
@@ -139,15 +150,12 @@ sequenceDiagram
 
 | Feature | Implementation | Status |
 |---------|----------------|--------|
-| **Authentication** | Firebase Auth (Email/Password) | ✅ Complete |
-| **SSO** | Google (Firebase Auth) | ✅ Complete |
+| **Authentication** | Firebase Auth (Email/Password + Google) | ✅ Complete |
 | **Authorization** | RBAC (Consumer/Merchant/Admin) | ✅ Complete |
 | **Route Guards** | Layout-level checks | ✅ Complete |
 | **Audit Logging** | SHA-256 hash chain | ✅ Complete |
 | **Data Isolation** | Per-user Firestore docs | ✅ Complete |
-| **HTTPS/SSL** | Local dev certificate | ✅ Complete |
 | **Maintenance Mode** | Global platform lockdown | ✅ Complete |
-| **Suspended Stores** | Auto-logout enforcement | ✅ Complete |
 
 ---
 
@@ -155,12 +163,12 @@ sequenceDiagram
 
 | Component | Technology | Configuration |
 |-----------|------------|---------------|
-| **Hosting** | Local dev server | Vite dev server on port 443 |
+| **Hosting** | Firebase Hosting | Production CDN |
 | **Database** | Cloud Firestore | Auto-scaling, real-time |
-| **Storage** | Firebase Storage | 1GB free tier |
+| **Search Engine** | Algolia | `master_products` index |
+| **Storage** | Firebase Storage | Images/Files |
 | **CI/CD** | GitHub Actions | ✅ Auto-deploy configured |
-| **Monitoring** | Console logs | 🔜 Sentry planned |
-| **Domain** | spendigo.ca | Local DNS mapping |
+| **Domain** | spendigo.ca | Connected |
 
 ---
 
@@ -169,21 +177,15 @@ sequenceDiagram
 ### Development
 ```bash
 npm run dev
-# Runs on https://spendigo.ca:443/
+# Runs on https://spendigo.ca:443/ (Local proxy)
 ```
 
 ### Production
 ```bash
 npm run build
-# Output: apps/web/dist/ (876kb bundle)
-# Deploy to Firebase Hosting, Vercel, or Netlify
-```
-
-### Mobile
-```bash
-npx cap sync
-npx cap open ios     # Xcode
-npx cap open android # Android Studio
+# Output: apps/web/dist/ (Typescript -> JS)
+firebase deploy
+# Deploys Hosting + Functions + Firestore Rules
 ```
 
 ---
@@ -192,29 +194,22 @@ npx cap open android # Android Studio
 
 | Original Plan | Current Implementation | Rationale |
 |---------------|------------------------|-----------|
-| PostgreSQL + Drizzle | Cloud Firestore | Faster development, real-time sync |
-| Custom backend functions | Firebase client SDKs | Eliminates server management |
-| Stripe backend integration | Client-side simulation | MVP focus, backend ready for production |
-| Serverless deployment | Static site + Firebase | Simpler hosting, lower cost |
+| PostgreSQL + Drizzle | Cloud Firestore | Faster development, real-time sync for orders |
+| Custom backend search | Algolia | Better typos tolerance & performance (30ms vs 500ms) |
+| Server-side Optimization | Client-side Logic | Reduced server costs, instant feedback for user |
 
 ---
 
 ## 9. Future Enhancements
 
 ### Short-Term (Q1 2026)
-- [ ] Native Mobile QA (iOS/Android)
+- [ ] Native Mobile QA (iOS/Android) - *In Progress*
 - [ ] Sentry Error Monitoring
-- [ ] Privacy & TOS Compliance
 
-### Medium-Term (Post-Beta)
-- [ ] Stripe Connect (Marketplace Split)
+### Medium-Term (2026+)
+- [ ] Stripe Connect (Marketplace Split Funds)
 - [ ] Native Push Notifications (FCM)
-- [ ] Advanced Search (Algolia)
-
-### Long-Term (Growth)
-- [ ] Server-side rendering (Next.js migration)
-- [ ] ML-based product recommendations
-- [ ] Multi-region deployment
+- [ ] Server-side rendering (Next.js migration) for improved SEO
 
 ---
 

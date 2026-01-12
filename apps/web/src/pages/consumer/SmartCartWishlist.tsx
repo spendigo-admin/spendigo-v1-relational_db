@@ -13,6 +13,7 @@ const SmartCartWishlist: React.FC = () => {
     const { stores } = useMarketplace();
     const { catalog } = useCatalog();
     const [showAddItems, setShowAddItems] = useState(false);
+    const [customItemName, setCustomItemName] = useState('');
 
     // State to track user's selected store for each unique product name
     const [selections, setSelections] = useState<Record<string, string>>({});
@@ -82,18 +83,98 @@ const SmartCartWishlist: React.FC = () => {
         });
     }, [catalog, availabilityMap]);
 
+    const GENERIC_STAPLES = [
+        { name: 'Milk', emoji: '🥛', category: 'Dairy' },
+        { name: 'Eggs', emoji: '🥚', category: 'Dairy' },
+        { name: 'Cheese', emoji: '🧀', category: 'Dairy' },
+        { name: 'Bread', emoji: '🍞', category: 'Bakery' },
+        { name: 'Butter', emoji: '🧈', category: 'Dairy' },
+        { name: 'Chicken', emoji: '🍗', category: 'Meat' },
+        { name: 'Beef', emoji: '🥩', category: 'Meat' },
+        { name: 'Rice', emoji: '🍚', category: 'Pantry' },
+        { name: 'Pasta', emoji: '🍝', category: 'Pantry' },
+        { name: 'Apples', emoji: '🍎', category: 'Produce' },
+        { name: 'Bananas', emoji: '🍌', category: 'Produce' },
+        { name: 'Ice Cream', emoji: '🍨', category: 'Frozen' },
+        { name: 'Free-Run Eggs', emoji: '🍳', category: 'Dairy' },
+    ];
+
     // 3. Group Wishlist Items and Find Matches using dynamic DB
     // 3. Group Wishlist Items and Find Matches using ID
     const optimizerItems = useMemo(() => {
+        // DEBUG LOGS
+        console.log("Optimizer Run", { items: wishlistItems.length, inv: merchantInventory.length, catalog: catalog.length });
+
         return wishlistItems.map(item => {
             // Match by Master ID (Strong Link)
             let globalData = availabilityMap[item.id];
 
-            // Fallback: Match by Name (Weak Link for legacy)
+            // Fallback: Match by Name (Weak Link for legacy or generic items)
             if (!globalData) {
-                // Try to find a master ID that maps to this name?
-                // Or scan all inventories for name match (slow)
-                // For now, assume ID match is primary.
+                const searchName = item.name.toLowerCase();
+                console.log("Searching generic:", searchName);
+
+                // Find all merchant products that match the generic name
+                const matches = merchantInventory.filter((p: any) => {
+                    let pName = (p.product_name || '').toLowerCase();
+
+                    // If local name is missing, try resolving from Master Catalog
+                    if (!pName && p.master_product_id) {
+                        const master = catalog.find(c => c.id === p.master_product_id);
+                        if (master) {
+                            pName = master.name.toLowerCase();
+                        }
+                    }
+
+                    const isMatch = pName.includes(searchName) && p.available_quantity > 0;
+                    if (isMatch) console.log("Match:", pName);
+                    return isMatch;
+                });
+
+                if (matches.length > 0) {
+                    const storesMap = new Map();
+
+                    matches.forEach((m: any) => {
+                        const store = stores[m.merchant_id];
+                        if (!store) return;
+
+                        let finalName = m.product_name;
+                        let finalBrand = m.brand;
+                        let finalUnit = m.unit_size || m.net_quantity_unit;
+
+                        if (m.master_product_id) {
+                            const master = catalog.find(c => c.id === m.master_product_id);
+                            if (master) {
+                                // Smart Resolution: If merchant name is generic/missing, use Master Name
+                                const isGeneric = !finalName || (finalName.toLowerCase().trim() === searchName.trim());
+                                if (isGeneric) {
+                                    finalName = master.name;
+                                }
+                                finalBrand = finalBrand || master.brand;
+                                finalUnit = finalUnit || master.unit;
+                            }
+                        }
+
+                        const option = {
+                            storeId: m.merchant_id,
+                            storeName: store.name,
+                            price: m.price,
+                            inStock: true,
+                            productId: m.id,
+                            brand: finalBrand || '',
+                            name: finalName || 'Unknown Item',
+                            unit: finalUnit || ''
+                        };
+
+                        if (!storesMap.has(m.merchant_id) || storesMap.get(m.merchant_id).price > m.price) {
+                            storesMap.set(m.merchant_id, option);
+                        }
+                    });
+
+                    if (storesMap.size > 0) {
+                        globalData = { stores: Array.from(storesMap.values()) };
+                    }
+                }
             }
 
             // If valid data found in stores
@@ -119,7 +200,7 @@ const SmartCartWishlist: React.FC = () => {
                 maxPrice
             };
         });
-    }, [wishlistItems, availabilityMap]);
+    }, [wishlistItems, availabilityMap, merchantInventory, stores, catalog]);
 
     // 4. Initialize Selections with Cheapest Option
     useEffect(() => {
@@ -220,7 +301,82 @@ const SmartCartWishlist: React.FC = () => {
 
                     {showAddItems && (
                         <div className="bg-white rounded-xl border border-[var(--glass-border)] p-4 shadow-sm animate-slide-up mt-4">
-                            <h3 className="font-bold text-[var(--text-main)] mb-3 text-sm">Tap to add/remove:</h3>
+
+                            {/* Generic Staples Section */}
+                            <div className="mb-6">
+                                <h3 className="font-bold text-[var(--text-main)] mb-3 text-sm">Quick Add Essentials:</h3>
+
+                                <div className="flex gap-2 mb-4">
+                                    <input
+                                        type="text"
+                                        placeholder="Add any item (e.g. 'Kale')"
+                                        className="flex-1 border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[var(--brand-primary)] outline-none"
+                                        value={customItemName}
+                                        onChange={(e) => setCustomItemName(e.target.value)}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter' && customItemName.trim()) {
+                                                addItem({
+                                                    id: `generic-${customItemName.trim()}`,
+                                                    name: customItemName.trim(),
+                                                    image: `https://ui-avatars.com/api/?name=${customItemName.trim().charAt(0)}&background=random&length=1&size=128`,
+                                                    category: 'General'
+                                                });
+                                                setCustomItemName('');
+                                            }
+                                        }}
+                                    />
+                                    <button
+                                        onClick={() => {
+                                            if (customItemName.trim()) {
+                                                addItem({
+                                                    id: `generic-${customItemName.trim()}`,
+                                                    name: customItemName.trim(),
+                                                    image: `https://ui-avatars.com/api/?name=${customItemName.trim().charAt(0)}&background=random&length=1&size=128`,
+                                                    category: 'General'
+                                                });
+                                                setCustomItemName('');
+                                            }
+                                        }}
+                                        className="bg-[var(--brand-primary)] text-white px-4 py-2 rounded-lg text-sm font-bold"
+                                    >
+                                        Add
+                                    </button>
+                                </div>
+
+                                <div className="flex flex-wrap gap-2">
+                                    {GENERIC_STAPLES.map(staple => {
+                                        const isAdded = wishlistItems.some(w => w.name === staple.name);
+                                        return (
+                                            <button
+                                                key={staple.name}
+                                                onClick={() => {
+                                                    if (isAdded) {
+                                                        const toRemove = wishlistItems.find(w => w.name === staple.name);
+                                                        if (toRemove) removeItem(toRemove.id);
+                                                    } else {
+                                                        addItem({
+                                                            id: `generic-${staple.name}`,
+                                                            name: staple.name,
+                                                            image: `https://ui-avatars.com/api/?name=${staple.emoji}&background=random&length=1&size=128`,
+                                                            category: staple.category
+                                                        });
+                                                    }
+                                                }}
+                                                className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all flex items-center gap-1.5 ${isAdded
+                                                    ? 'bg-[var(--brand-primary)] text-white border-[var(--brand-primary)] shadow-md'
+                                                    : 'bg-white text-gray-600 border-gray-200 hover:border-[var(--brand-primary)] hover:text-[var(--brand-primary)]'
+                                                    }`}
+                                            >
+                                                <span className="text-sm">{staple.emoji}</span>
+                                                {staple.name}
+                                                {isAdded && <span className="ml-1 text-[10px] opacity-80">✓</span>}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+                            <h3 className="font-bold text-[var(--text-main)] mb-3 text-sm">Browse Catalog:</h3>
                             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-60 overflow-y-auto">
                                 {AVAILABLE_ITEMS.map(item => {
                                     const isAdded = wishlistItems.some(w => w.name === item.name);
@@ -274,6 +430,7 @@ const SmartCartWishlist: React.FC = () => {
                                 {optimizerItems.map((item) => {
                                     if (!item) return null;
                                     const currentSelection = selections[item.id];
+                                    const selectedOption = item.options.find(o => o.storeId === currentSelection);
 
                                     return (
                                         <div key={item.name} className="bg-white rounded-xl border border-[var(--glass-border)] overflow-hidden shadow-sm transition-shadow hover:shadow-md">
@@ -281,8 +438,18 @@ const SmartCartWishlist: React.FC = () => {
                                             <div className="p-4 bg-[var(--surface-1)] border-b border-[var(--glass-border)] flex items-center gap-3">
                                                 <img src={item.image} alt="" className="w-12 h-12 rounded-lg object-cover shadow-sm" />
                                                 <div className="flex-1">
-                                                    <h3 className="font-bold text-[var(--text-main)]">{item.name}</h3>
-                                                    <p className="text-xs text-[var(--text-muted)]">{item.category} • {item.options.length} options found</p>
+                                                    {/* Display the SELECTED item name if available, otherwise generic */}
+                                                    <h3 className="font-bold text-[var(--text-main)]">
+                                                        {selectedOption ? selectedOption.name : item.name}
+                                                    </h3>
+                                                    {selectedOption && selectedOption.brand && (
+                                                        <span className="text-[10px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded mr-2">
+                                                            {selectedOption.brand}
+                                                        </span>
+                                                    )}
+                                                    <p className="text-xs text-[var(--text-muted)] inline-block">
+                                                        {item.options.length} options found
+                                                    </p>
                                                 </div>
                                                 <button
                                                     onClick={() => {
@@ -404,7 +571,72 @@ const SmartCartWishlist: React.FC = () => {
                                         <span>✨</span> Smart Insights
                                     </h3>
 
-                                    {/* Insight 1: Missing Items */}
+                                    {/* Insight 1: Trip Optimizer / Best Single Store */}
+                                    {(() => {
+                                        // 1. Calculate totals per store
+                                        const storeTotals: Record<string, { id: string, name: string, total: number, missing: number }> = {};
+
+                                        optimizerItems.forEach(item => {
+                                            if (!item) return;
+                                            // Check availability at all stores
+                                            const allStoreIds = new Set(Object.keys(stores));
+
+                                            // For each store, check if they have this item
+                                            allStoreIds.forEach(storeId => {
+                                                if (!storeTotals[storeId]) {
+                                                    storeTotals[storeId] = {
+                                                        id: storeId,
+                                                        name: stores[storeId]?.name || 'Unknown',
+                                                        total: 0,
+                                                        missing: 0
+                                                    };
+                                                }
+
+                                                const option = item.options.find(o => o.storeId === storeId);
+                                                if (option) {
+                                                    storeTotals[storeId].total += option.price;
+                                                } else {
+                                                    storeTotals[storeId].missing += 1;
+                                                }
+                                            });
+                                        });
+
+                                        // 2. Find Best Single Store (Most items, then cheapest)
+                                        const sortedStores = Object.values(storeTotals).sort((a, b) => {
+                                            if (a.missing !== b.missing) return a.missing - b.missing; // Prioritize availability
+                                            return a.total - b.total; // Then price
+                                        });
+
+                                        const bestSingleStore = sortedStores[0];
+                                        const uniqueStoresInSplit = new Set(optimizerItems.map(i => selections[i.id]).filter(Boolean)).size;
+
+                                        // Only show recommendation if valid and actually different from current split
+                                        if (bestSingleStore && bestSingleStore.missing === 0 && uniqueStoresInSplit > 1) {
+                                            const diff = bestSingleStore.total - totalCost;
+
+                                            return (
+                                                <div className="mb-4 bg-white/60 rounded-lg p-3 border border-purple-100 shadow-sm">
+                                                    <div className="flex items-start gap-2">
+                                                        <div className="bg-purple-100 p-1.5 rounded-md text-purple-600 mt-0.5">
+                                                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                                                        </div>
+                                                        <div>
+                                                            <h4 className="font-bold text-xs text-purple-900 uppercase tracking-wide">Trip Saver</h4>
+                                                            <p className="text-xs text-[var(--text-main)] mt-1">
+                                                                Get everything at <span className="font-bold">{bestSingleStore.name}</span> for <span className="font-bold">${bestSingleStore.total.toFixed(2)}</span>.
+                                                            </p>
+                                                            <p className="text-[10px] text-[var(--text-muted)] mt-1">
+                                                                Pay ${diff.toFixed(2)} more but save {uniqueStoresInSplit - 1} trip{uniqueStoresInSplit - 1 > 1 ? 's' : ''}.
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        }
+                                        return null;
+                                    })()}
+
+                                    {/* Insight 2: Missing Items */}
                                     {(() => {
                                         const categories = wishlistItems.map(i => i.category.toLowerCase());
                                         const hasCoffee = categories.some(c => c.includes('coffee') || c.includes('beverage'));
