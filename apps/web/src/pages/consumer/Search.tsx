@@ -4,22 +4,29 @@ import { useCart } from '../../context/CartContext';
 import { useMarketplace } from '../../context/MarketplaceContext';
 import { useCatalog } from '../../hooks/useCatalog';
 
+import { useDebounce } from '../../hooks/useDebounce';
+
 const Search: React.FC = () => {
     const navigate = useNavigate();
     const { addToCart } = useCart();
 
+    const [searchQuery, setSearchQuery] = useState('');
+    const [selectedCategory, setSelectedCategory] = useState('All');
+    const [sortBy, setSortBy] = useState<'relevance' | 'price_low' | 'price_high'>('relevance');
+
+    // Debounce search input (wait 800ms after typing stops)
+    const debouncedSearchQuery = useDebounce(searchQuery, 800);
+
     // Use new global catalog search
     const { useGlobalCatalog } = useCatalog();
-    const { products: allProducts, loading } = useGlobalCatalog();
+    const { products: allProducts, loading } = useGlobalCatalog(debouncedSearchQuery);
 
     // Derived categories
     const categories = useMemo(() => {
         return ['All', ...Array.from(new Set(allProducts.map(p => p.category))).sort()];
     }, [allProducts]);
 
-    const [searchQuery, setSearchQuery] = useState('');
-    const [selectedCategory, setSelectedCategory] = useState('All');
-    const [sortBy, setSortBy] = useState<'relevance' | 'price_low' | 'price_high'>('relevance');
+
 
     // Read query parameter from URL on mount
     React.useEffect(() => {
@@ -33,15 +40,9 @@ const Search: React.FC = () => {
     const filteredProducts = useMemo(() => {
         let results = allProducts;
 
-        // Filter by search query
-        if (searchQuery.trim()) {
-            const query = searchQuery.toLowerCase();
-            results = results.filter(p =>
-                p.name.toLowerCase().includes(query) ||
-                p.category.toLowerCase().includes(query) ||
-                (p.storeName && p.storeName.toLowerCase().includes(query))
-            );
-        }
+        // Note: We do NOT filter by text here because useGlobalCatalog already returned
+        // the relevant results from Algolia (which handles fuzzy/brand matching).
+        // If we filter again here using .includes(), we break the fuzzy/brand logic.
 
         // Filter by category
         if (selectedCategory !== 'All') {

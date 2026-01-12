@@ -172,7 +172,7 @@ const MerchantProducts: React.FC = () => {
                 }
 
                 // Check if we have an EXACT match already (accounting for leading zero variance)
-                const exactLocalMatch = results.find(r =>
+                const exactLocalMatch = results.find((r: any) =>
                     r.barcode === cleanQuery ||
                     (r.barcode && r.barcode.replace(/^0+/, '') === strippedQuery)
                 );

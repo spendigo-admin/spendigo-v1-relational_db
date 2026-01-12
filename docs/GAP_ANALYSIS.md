@@ -45,7 +45,7 @@ Spendigo has achieved a critical milestone with the completion of the **Hybrid C
 - **Missing Images**: Implemented OpenFoodFacts fallbacks for product imagery.
 
 ### 2.2 Remaining Debt
-- **Search Performance**: Firestore does not support full-text fuzzy search natively. Current "name contains" implementation is limited. **Gap**: Need Algolia or Typesense for production.
+- **Search Performance**: **SOLVED**. Implemented Algolia (v5) for fuzzy search with 800ms debounce on mobile.
 - **E2E Testing**: While unit tests exist, automated end-to-end browser testing (e.g., Cypress/Playwright) is missing.
 - **Stripe Connect**: Currently using Stripe Checkout in Test Mode. Need to implement full Stripe Connect Onboarding for split payments.
 - **Image Hosting**: Currently relying on external URLs (OpenFoodFacts). Need a pipeline to cache these to Firebase Storage to prevent hotlinking issues.
@@ -96,7 +96,7 @@ Spendigo has achieved a critical milestone with the completion of the **Hybrid C
 - [x] Role-Based Access Control (RBAC) Hardened
 - [x] Mobile Builds Verified
 - [ ] Stripe Connect Integration *(Pending)*
-- [ ] Algolia Search Integration *(Pending)*
+- [x] Algolia Search Integration *(Verified - Works on Web & Mobile)*
 
 ---
 

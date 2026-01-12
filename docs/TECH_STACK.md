@@ -90,6 +90,7 @@ The current implementation uses **Firebase** instead of the originally planned P
 | **Analytics** | Firebase + Custom Firestore Hooks | ✅ Implemented |
 | **Monitoring** | Sentry | 🔜 Planned |
 | **Payments** | Stripe Checkout (Subscriptions) | ✅ Implemented |
+| **Search** | Algolia / Typesense | 🔜 Planned |
 | **Geocoding** | OpenStreetMap (Nominatim) | ✅ Implemented |
 | **Email** | Trigger Email Extension | ✅ Implemented |
 

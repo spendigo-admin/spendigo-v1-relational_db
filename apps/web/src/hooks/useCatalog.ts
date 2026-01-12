@@ -1,8 +1,9 @@
 
 import { useState, useEffect } from 'react';
-import { collection, query, where, onSnapshot, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, addDoc, serverTimestamp, orderBy, getCountFromServer } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, addDoc, serverTimestamp, orderBy, getCountFromServer, limit } from 'firebase/firestore';
 import { db, storage } from '../lib/firebase';
 import { ref, deleteObject } from 'firebase/storage';
+import { searchClient, ALGOLIA_INDEX_NAME } from '../lib/algolia';
 
 export interface Product {
     id: string; // Merchant Product ID
@@ -385,87 +386,130 @@ export const useCatalog = () => {
     };
 
     // Fetch all products (Global Search)
-    const useGlobalCatalog = () => {
+    const useGlobalCatalog = (searchQuery?: string) => {
         const [products, setProducts] = useState<Product[]>([]);
         const [loadingProducts, setLoading] = useState(true);
 
         useEffect(() => {
-            // Limit to 50 for demo performance
-            const q = query(collection(db, 'merchant_products') /*, limit(50) */);
+            const fetchProducts = async () => {
+                setLoading(true);
+                try {
+                    // STRATEGY A: ALGOLIA SEARCH (If query exists)
+                    if (searchQuery && searchQuery.trim().length > 2 && searchClient) {
+                        // 1. Search Algolia for Master Products
+                        const { results } = await searchClient.search({
+                            requests: [{
+                                indexName: ALGOLIA_INDEX_NAME,
+                                query: searchQuery,
+                                hitsPerPage: 20,
+                            }]
+                        });
+                        const hits = (results[0] as any).hits;
+                        const masterIds = hits.map((h: any) => h.objectID);
 
-            const unsubscribe = onSnapshot(q, async (snapshot) => {
-                const fetchedProducts: Product[] = [];
-                const masterIds = new Set<string>();
-                const merchantIds = new Set<string>();
+                        if (masterIds.length === 0) {
+                            setProducts([]);
+                            setLoading(false);
+                            return;
+                        }
 
-                snapshot.forEach(doc => {
-                    const d = doc.data();
-                    masterIds.add(d.master_product_id);
-                    merchantIds.add(d.merchant_id);
-                });
+                        // 2. Find Stores Selling These Products
+                        // Firestore "IN" query is limited to 10-30 items. We batch if needed.
+                        const q = query(
+                            collection(db, 'merchant_products'),
+                            where('master_product_id', 'in', masterIds.slice(0, 30)) // Limit to top 30 matches
+                        );
 
-                const masterMap = new Map();
-                await Promise.all(Array.from(masterIds).map(async (mid) => {
-                    const mDoc = await getDoc(doc(db, 'master_products', mid));
-                    if (mDoc.exists()) masterMap.set(mid, mDoc.data());
-                }));
-
-                const storeMap = new Map();
-                await Promise.all(Array.from(merchantIds).map(async (sid) => {
-                    const sDoc = await getDoc(doc(db, 'stores', sid));
-                    if (sDoc.exists()) storeMap.set(sid, sDoc.data());
-                }));
-
-                snapshot.forEach(doc => {
-                    const data = doc.data();
-                    const master = masterMap.get(data.master_product_id);
-                    const store = storeMap.get(data.merchant_id);
-
-                    if (master) {
-                        fetchedProducts.push({
-                            id: doc.id,
-                            merchant_id: data.merchant_id,
-                            master_product_id: data.master_product_id,
-
-                            storeId: data.merchant_id,
-                            storeName: store?.name || 'Unknown Store',
-                            storeAddress: store?.address,
-
-                            merchant_sku: data.merchant_sku,
-                            price: data.price,
-                            currency: data.currency || 'CAD',
-                            available_quantity: data.available_quantity,
-
-                            name: master.product_name,
-                            description: master.short_description,
-                            image: master.primary_image_url,
-                            images: [master.primary_image_url],
-                            category: master.category_id,
-                            brand_name: master.brand_name,
-                            barcode: master.barcode,
-                            unit_size: master.unit_size || master.size, // Fallback to 'size'
-                            nutrition: master.nutrition,
-                            ingredients: master.ingredients,
-                            dietary_tags: master.dietary_tags,
-                            storage_type: master.storage_type,
-                            package_count: master.package_count,
-                            unit_type: master.unit_type,
-                            is_sold_by_weight: master.is_sold_by_weight,
-                            tax_category_id: master.tax_category_id,
-                            suggested_retail_price: master.suggested_retail_price,
-
-                            originalPrice: data.original_price,
-                            discount: data.discount_label
-                        } as Product);
+                        const snapshot = await getDocs(q);
+                        const fetchedProducts = await mapSnapshotToProducts(snapshot);
+                        setProducts(fetchedProducts);
                     }
-                });
+                    // STRATEGY B: DEFAULT LISTING (No query)
+                    else {
+                        const q = query(collection(db, 'merchant_products'), limit(50));
+                        const snapshot = await getDocs(q);
+                        const fetchedProducts = await mapSnapshotToProducts(snapshot);
+                        setProducts(fetchedProducts);
+                    }
+                } catch (err) {
+                    console.error("Global search error:", err);
+                } finally {
+                    setLoading(false);
+                }
+            };
 
-                setProducts(fetchedProducts);
-                setLoading(false);
+            fetchProducts();
+        }, [searchQuery]);
+
+        // Helper: Convert MerchantProduct + MasterProduct + Store => UI Product
+        const mapSnapshotToProducts = async (snapshot: any) => {
+            const fetchedProducts: Product[] = [];
+            const masterIds = new Set<string>();
+            const merchantIds = new Set<string>();
+
+            snapshot.forEach((doc: any) => {
+                const d = doc.data();
+                masterIds.add(d.master_product_id);
+                merchantIds.add(d.merchant_id);
             });
 
-            return () => unsubscribe();
-        }, []);
+            const masterMap = new Map();
+            await Promise.all(Array.from(masterIds).map(async (mid) => {
+                const mDoc = await getDoc(doc(db, 'master_products', mid));
+                if (mDoc.exists()) masterMap.set(mid, mDoc.data());
+            }));
+
+            const storeMap = new Map();
+            await Promise.all(Array.from(merchantIds).map(async (sid) => {
+                const sDoc = await getDoc(doc(db, 'stores', sid));
+                if (sDoc.exists()) storeMap.set(sid, sDoc.data());
+            }));
+
+            snapshot.forEach((doc: any) => {
+                const data = doc.data();
+                const master = masterMap.get(data.master_product_id);
+                const store = storeMap.get(data.merchant_id);
+
+                if (master) {
+                    fetchedProducts.push({
+                        id: doc.id,
+                        merchant_id: data.merchant_id,
+                        master_product_id: data.master_product_id,
+
+                        storeId: data.merchant_id,
+                        storeName: store?.name || 'Unknown Store',
+                        storeAddress: store?.address,
+
+                        merchant_sku: data.merchant_sku,
+                        price: data.price,
+                        currency: data.currency || 'CAD',
+                        available_quantity: data.available_quantity,
+
+                        name: master.product_name,
+                        description: master.short_description,
+                        image: master.primary_image_url,
+                        images: [master.primary_image_url],
+                        category: master.category_id,
+                        brand_name: master.brand_name,
+                        barcode: master.barcode,
+                        unit_size: master.unit_size || master.size,
+                        nutrition: master.nutrition,
+                        ingredients: master.ingredients,
+                        dietary_tags: master.dietary_tags,
+                        storage_type: master.storage_type,
+                        package_count: master.package_count,
+                        unit_type: master.unit_type,
+                        is_sold_by_weight: master.is_sold_by_weight,
+                        tax_category_id: master.tax_category_id,
+                        suggested_retail_price: master.suggested_retail_price,
+
+                        originalPrice: data.original_price,
+                        discount: data.discount_label
+                    } as Product);
+                }
+            });
+            return fetchedProducts;
+        };
 
         return { products, loading: loadingProducts };
     };
@@ -474,18 +518,14 @@ export const useCatalog = () => {
 
     // Search Master Catalog (for Merchant adding products)
     const searchMasterCatalog = async (searchQuery: string) => {
-        // NOTE: Firestore doesn't support full-text search natively. 
-        // For production, use Algolia/Typesense.
-        // Optimized to check barcodes directly first.
-
         const results: any[] = [];
         const seenIds = new Set<string>();
         const lowerQuery = searchQuery.toLowerCase().trim();
 
         try {
             // 1. Barcode Search (Direct Index Lookup)
-            // Checks both exact match and potentially stripped zeros if needed, 
-            // but strict barcode match is safest.
+            // Checks both exact match and potentially stripped zeros if needed.
+            // Barcodes are best served by exact lookup in DB for strict accuracy.
             if (/^\d+$/.test(lowerQuery)) {
                 // Check Master
                 const masterQ = query(collection(db, 'master_products'), where('upc_gtin', '==', lowerQuery));
@@ -508,20 +548,53 @@ export const useCatalog = () => {
                             ...data,
                             id: doc.id,
                             barcode: data.original_barcode,
-                            product_name: data.product_name, // Ensure compatible field names
+                            product_name: data.product_name,
                             brand_name: data.brand,
                             is_pending: true
                         });
                         seenIds.add(doc.id);
                     }
                 });
+
+                // If found via barcode, return immediately
+                if (results.length > 0) return results;
             }
 
-            // If we found barcode matches, return them immediately
-            if (results.length > 0) return results;
+            // 2. Algolia Search (Fuzzy Text Search)
+            // If configured, this is much better than Firestore "contains"
+            if (searchClient) {
+                try {
+                    const { results } = await searchClient.search({
+                        requests: [{
+                            indexName: ALGOLIA_INDEX_NAME,
+                            query: lowerQuery,
+                            hitsPerPage: 20,
+                        }]
+                    });
 
-            // 2. Name/Brand Search (Memory Filter fallback)
-            // Fetching all (demo only)
+                    // Algolia v5 structure: results[0].hits
+                    const hits = (results[0] as any).hits;
+
+                    const algoliaResults = hits.map((hit: any) => {
+                        // Map Algolia objectID to id
+                        return {
+                            ...hit,
+                            id: hit.objectID,
+                        };
+                    });
+
+                    if (algoliaResults.length > 0) {
+                        return algoliaResults;
+                    }
+                } catch (algErr) {
+                    console.warn("Algolia search error (falling back to Firestore):", algErr);
+                }
+            }
+
+            // 3. Name/Brand Search (Memory Filter fallback)
+            // Warning: This is slow and reads all docs (or limited set). 
+            // Only runs if Algolia is off or fails or returns nothing.
+
             const q = query(collection(db, 'master_products'));
             const snapshot = await getDocs(q);
 
