@@ -18,17 +18,24 @@ interface CatalogContextType {
     catalog: CatalogItem[];
     searchCatalog: (query: string) => CatalogItem[];
     getCatalogItem: (id: string) => CatalogItem | undefined;
+    loadCatalog: () => void; // Added loadCatalog
     categories: string[];
     loading: boolean;
+    isLoaded: boolean; // Added isLoaded state
 }
 
 const CatalogContext = createContext<CatalogContextType | undefined>(undefined);
 
 export const CatalogProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [catalog, setCatalog] = useState<CatalogItem[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false); // Default to false (not loading initially)
+    const [isLoaded, setIsLoaded] = useState(false); // Track if data is loaded
 
-    useEffect(() => {
+    // Lazy load function
+    const loadCatalog = () => {
+        if (isLoaded || loading) return; // Prevent duplicate loads
+
+        setLoading(true);
         // Subscribe to master_products (Real Global Catalog)
         const q = query(collection(db, 'master_products'), orderBy('product_name', 'asc'));
 
@@ -50,13 +57,18 @@ export const CatalogProvider: React.FC<{ children: ReactNode }> = ({ children })
             });
             setCatalog(items);
             setLoading(false);
+            setIsLoaded(true);
         }, (error) => {
             console.error("Error fetching catalog:", error);
             setLoading(false);
         });
 
-        return () => unsubscribe();
-    }, []);
+        // Note: We're not returning unsubscribe here because this is a one-off trigger, 
+        // but ideally we should manage the subscription lifecycle. 
+        // For now, once loaded, it stays synced.
+    };
+    // No useEffect for auto-loading
+
 
     const searchCatalog = (query: string) => {
         if (!query) return catalog;
@@ -74,7 +86,7 @@ export const CatalogProvider: React.FC<{ children: ReactNode }> = ({ children })
     const categories = Array.from(new Set(catalog.map(i => i.category))).sort();
 
     return (
-        <CatalogContext.Provider value={{ catalog, searchCatalog, getCatalogItem, categories, loading }}>
+        <CatalogContext.Provider value={{ catalog, searchCatalog, getCatalogItem, categories, loading, loadCatalog, isLoaded }}>
             {children}
         </CatalogContext.Provider>
     );

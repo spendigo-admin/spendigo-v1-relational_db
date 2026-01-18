@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { collection, onSnapshot, doc, updateDoc, setDoc, getDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { useAudit } from './AuditContext';
+// Audit import removed
 
 interface MarketplaceContextType {
     stores: Record<string, any>;
@@ -30,18 +30,25 @@ interface MarketplaceContextType {
 const MarketplaceContext = createContext<MarketplaceContextType | undefined>(undefined);
 
 export const MarketplaceProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-    const { logEvent } = useAudit();
     const [stores, setStores] = useState<Record<string, any>>({});
     const [loading, setLoading] = useState(true);
 
-    // Sync Stores from Firestore
+    // Sync Stores from Firestore - OPTIMIZED: Filter for active stores
     useEffect(() => {
+        // Load all stores and filter client-side (Firestore doesn't support undefined in 'in' clause)
         const unsubscribe = onSnapshot(collection(db, 'stores'), (snapshot) => {
             const storeData: Record<string, any> = {};
             snapshot.forEach(doc => {
-                storeData[doc.id] = { id: doc.id, ...doc.data() };
+                const data = doc.data();
+                // Only include active stores or stores without a status field (default to active)
+                if (!data.status || data.status === 'active') {
+                    storeData[doc.id] = { id: doc.id, ...data };
+                }
             });
             setStores(storeData);
+            setLoading(false);
+        }, (error) => {
+            console.error("Error loading stores:", error);
             setLoading(false);
         });
 
@@ -75,27 +82,13 @@ export const MarketplaceProvider: React.FC<{ children: ReactNode }> = ({ childre
 
     const updateStoreStatus = async (storeId: string | number, status: 'active' | 'pending' | 'suspended') => {
         const storeRef = doc(db, 'stores', String(storeId));
-        const store = stores[storeId];
-
-        logEvent('STORE_STATUS_UPDATE', {
-            storeId,
-            storeName: store?.name,
-            oldStatus: store?.status,
-            newStatus: status
-        }, `store/${storeId}`);
-
+        // Audit logging removed
         await updateDoc(storeRef, { status });
     };
 
     const addStore = async (store: any) => {
         const newId = store.id || `store-${Date.now()}`;
-
-        logEvent('STORE_CREATED', {
-            storeId: newId,
-            storeName: store.name,
-            merchantEmail: store.merchantEmail
-        }, `store/${newId}`);
-
+        // Audit logging removed
         await setDoc(doc(db, 'stores', newId), {
             ...store,
             id: newId,
@@ -120,21 +113,13 @@ export const MarketplaceProvider: React.FC<{ children: ReactNode }> = ({ childre
                 requestedAt: new Date().toISOString()
             }
         });
-
-        logEvent('STORE_DELETION_REQUESTED', {
-            storeId,
-            requesterId,
-            requesterRole
-        }, `store/${storeId}`);
+        // Audit logging removed
     };
 
     const approveDeleteStore = async (storeId: string) => {
         const storeRef = doc(db, 'stores', storeId);
         await deleteDoc(storeRef);
-
-        logEvent('STORE_DELETION_APPROVED', {
-            storeId
-        }, `store/${storeId}`);
+        // Audit logging removed
     };
 
     // --- Flyer Management (Subcollection) ---

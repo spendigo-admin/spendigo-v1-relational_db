@@ -78,6 +78,80 @@ const SystemTools = () => {
                     addNotification({ type: 'system', title: 'Repair Complete', message: `Updated ${updates.length} stores.` });
                 }
             }
+        },
+        {
+            id: 'cleanup-catalog',
+            title: 'Cleanup Master Catalog',
+            description: 'Deletes master products that are NOT currently listed in any merchant store ("orphaned products").',
+            icon: '🧹',
+            action: async () => {
+                if (await confirm({
+                    title: 'Cleanup Orphans?',
+                    message: 'This will DELETE all master products that are not currently sold by any store. This action is irreversible.',
+                    confirmText: 'Start Cleanup',
+                    type: 'danger'
+                })) {
+                    console.log('Starting Catalog Cleanup...');
+                    addNotification({ type: 'system', title: 'Analysis Started', message: 'Identifying orphaned products...' });
+
+                    // 1. Identify all USED Master IDs
+                    const merchantProductsSnap = await getDocs(collection(db, 'merchant_products'));
+                    const usedMasterIds = new Set<string>();
+
+                    merchantProductsSnap.forEach(doc => {
+                        const data = doc.data();
+                        if (data.master_product_id) {
+                            usedMasterIds.add(data.master_product_id);
+                        }
+                    });
+
+                    console.log(`Found ${usedMasterIds.size} used master products across ${merchantProductsSnap.size} inventory items.`);
+
+                    // 2. Identify ALL Master IDs
+                    const masterProductsSnap = await getDocs(collection(db, 'master_products'));
+                    console.log(`Found ${masterProductsSnap.size} total master products.`);
+
+                    // 3. Find Orphans
+                    const orphans: any[] = [];
+                    masterProductsSnap.forEach(doc => {
+                        if (!usedMasterIds.has(doc.id)) {
+                            orphans.push(doc.ref);
+                        }
+                    });
+
+                    if (orphans.length === 0) {
+                        addNotification({ type: 'system', title: 'Clean', message: 'No orphaned products found.' });
+                        return;
+                    }
+
+                    if (await confirm({
+                        title: `Delete ${orphans.length} Orphans?`,
+                        message: `Found ${orphans.length} orphaned products (out of ${masterProductsSnap.size}). Proceed with deletion?`,
+                        confirmText: 'Delete Orphans',
+                        type: 'danger'
+                    })) {
+                        // 4. Batch Delete
+                        let batch = writeBatch(db);
+                        let opCount = 0;
+                        let deletedCount = 0;
+
+                        for (const ref of orphans) {
+                            batch.delete(ref);
+                            opCount++;
+                            deletedCount++;
+
+                            if (opCount >= 400) {
+                                await batch.commit();
+                                batch = writeBatch(db);
+                                opCount = 0;
+                            }
+                        }
+                        if (opCount > 0) await batch.commit();
+
+                        addNotification({ type: 'system', title: 'Cleanup Complete', message: `Deleted ${deletedCount} orphaned products.` });
+                    }
+                }
+            }
         }
     ];
 

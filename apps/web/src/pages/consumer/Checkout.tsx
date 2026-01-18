@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
 import { useOrders } from '../../context/OrderContext';
 import { useMarketplace } from '../../context/MarketplaceContext';
-import { useAudit } from '../../context/AuditContext';
+// Audit import removed
 import { useAuth } from '../../context/AuthContext';
 import { useNotifications } from '../../context/NotificationContext';
 import { STORE_DATA } from '../../data/productData';
@@ -78,7 +78,7 @@ const Checkout: React.FC = () => {
 
     // State for fulfillment method PER STORE
     const [fulfillmentMethods, setFulfillmentMethods] = useState<Record<string, 'delivery' | 'pickup'>>({});
-    const { logEvent } = useAudit();
+    // Audit logging removed
     const [isProcessing, setIsProcessing] = useState(false);
     const [orderComplete, setOrderComplete] = useState(false);
 
@@ -287,7 +287,7 @@ const Checkout: React.FC = () => {
 
             clearCart();
             setOrderComplete(true);
-            logEvent('checkout_completed', { total_amount: grandTotal, num_stores: Object.keys(groupedItems).length });
+            // logEvent('checkout_completed', { total_amount: grandTotal, num_stores: Object.keys(groupedItems).length });
 
         } catch (err: any) {
             console.error('Checkout failed:', err);

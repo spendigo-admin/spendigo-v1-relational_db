@@ -75,7 +75,8 @@ const StoreList: React.FC = () => {
         };
 
         if (!userCoords && address === '') {
-            detectProfileLocation();
+            const t = setTimeout(detectProfileLocation, 0); // Defer to next tick to unblock render
+            return () => clearTimeout(t);
         }
     }, [user, profile.addresses, userCoords, address]);
 
@@ -328,7 +329,19 @@ const StoreList: React.FC = () => {
                         <span className="text-sm text-[var(--text-muted)]">{filteredStores.length} stores</span>
                     </div>
 
-                    {filteredStores.length === 0 ? (
+                    {loading ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {[1, 2, 3, 4, 5, 6].map((n) => (
+                                <div key={n} className="h-80 bg-gray-100 rounded-xl animate-pulse border border-gray-200">
+                                    <div className="h-40 bg-gray-200 w-full mb-4"></div>
+                                    <div className="px-4">
+                                        <div className="h-6 bg-gray-200 rounded w-3/4 mb-2"></div>
+                                        <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    ) : filteredStores.length === 0 ? (
                         <div className="text-center py-12">
                             <p className="text-5xl mb-4">🔍</p>
                             <p className="text-[var(--text-muted)]">No stores match this filter</p>

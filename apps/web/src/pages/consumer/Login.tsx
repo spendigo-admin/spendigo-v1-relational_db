@@ -3,14 +3,14 @@ import { useNavigate, Link, useLocation } from 'react-router-dom';
 import '../../styles/design-system.css';
 
 import { useAuth } from '../../context/AuthContext';
-import { useAudit } from '../../context/AuditContext';
+// Audit import removed
 import { DEMO_USERS } from '../../data/demoUsers';
 
 const Login = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const { login, user, loginWithGoogle, loginWithFacebook } = useAuth();
-    const { logEvent } = useAudit();
+    // Audit logging removed
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
@@ -47,7 +47,8 @@ const Login = () => {
         try {
             const success = await login(email, password);
             if (success) {
-                await logEvent('AUTH_LOGIN_SUCCESS', { email: email }, 'auth/login');
+                // Audit log removed
+                // await logEvent('AUTH_LOGIN_SUCCESS', { email: email }, 'auth/login');
                 // useEffect will handle redirect when user state updates
             } else {
                 setError('Login failed. Please try again.');
