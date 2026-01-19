@@ -95,8 +95,8 @@ const VerifyEmail: React.FC = () => {
                 {/* Message Display */}
                 {message && (
                     <div className={`mb-4 p-3 rounded-lg text-sm ${message.startsWith('✅')
-                            ? 'bg-green-50 text-green-800 border border-green-200'
-                            : 'bg-red-50 text-red-800 border border-red-200'
+                        ? 'bg-green-50 text-green-800 border border-green-200'
+                        : 'bg-red-50 text-red-800 border border-red-200'
                         }`}>
                         {message}
                     </div>

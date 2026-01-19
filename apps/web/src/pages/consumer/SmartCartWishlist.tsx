@@ -11,8 +11,13 @@ const SmartCartWishlist: React.FC = () => {
     const { items: wishlistItems, addItem, removeItem, isInWishlist, clearWishlist } = useWishlist();
     const { addItemsToCart } = useCart();
     const { stores } = useMarketplace();
-    const { catalog } = useCatalog();
+    const { catalog, loadCatalog } = useCatalog();
     const [showAddItems, setShowAddItems] = useState(false);
+
+    // Ensure Global Catalog is loaded
+    useEffect(() => {
+        loadCatalog();
+    }, [loadCatalog]);
     const [customItemName, setCustomItemName] = useState('');
 
     // State to track user's selected store for each unique product name
@@ -21,6 +26,7 @@ const SmartCartWishlist: React.FC = () => {
     // 1. Build Global Product Database dynamically from Context
     // 1. Build Global Product Database dynamically from Merchant Inventory
     const [merchantInventory, setMerchantInventory] = useState<any[]>([]);
+    const [pendingInventory, setPendingInventory] = useState<any[]>([]);
 
     useEffect(() => {
         // Fetch all merchant products to build the real-time availability map
@@ -29,6 +35,16 @@ const SmartCartWishlist: React.FC = () => {
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const products = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             setMerchantInventory(products);
+        });
+        return () => unsubscribe();
+    }, []);
+
+    useEffect(() => {
+        // Fetch pending products to resolve names for items not yet in Master Catalog
+        const q = query(collection(db, 'pending_master_products'));
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const pending = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            setPendingInventory(pending);
         });
         return () => unsubscribe();
     }, []);
@@ -49,9 +65,10 @@ const SmartCartWishlist: React.FC = () => {
 
         merchantInventory.forEach((product: any) => {
             const masterId = product.master_product_id;
-            const store = stores[product.merchant_id];
+            // Relaxed check: If store missing, use fallback
+            const store = stores[product.merchant_id] || { name: 'Unknown Store', id: product.merchant_id };
 
-            if (!masterId || !store) return;
+            if (!masterId) return;
 
             if (!productMap[masterId]) {
                 productMap[masterId] = { stores: [] };
@@ -76,12 +93,56 @@ const SmartCartWishlist: React.FC = () => {
 
     // 2. Derive Available Items from Global Catalog (Filtered by Availability)
     const AVAILABLE_ITEMS = useMemo(() => {
-        // Only show items that are actually present in the connected stores
-        return catalog.filter(item => {
+        // A. Start with Master Catalog Items (Existing Logic)
+        const masterItems = catalog.filter(item => {
             const availability = availabilityMap[item.id];
             return availability && availability.stores.length > 0;
         });
-    }, [catalog, availabilityMap]);
+
+        // B. Find "Local Only" items from Merchant Inventory
+        const localItemsMap = new Map();
+
+        merchantInventory.forEach((p: any) => {
+            if (p.available_quantity <= 0) return;
+
+            // Check if this product is already covered by a Master Product
+            const hasValidMaster = p.master_product_id && availabilityMap[p.master_product_id];
+
+            if (!hasValidMaster) {
+                let name = p.product_name;
+
+                // Try to resolve from Pending if name missing
+                if (!name && p.master_product_id) {
+                    const pending = pendingInventory.find((pm: any) => pm.id === p.master_product_id);
+                    if (pending) name = pending.product_name;
+                }
+
+                name = name || 'Unknown Item';
+                // Normalize name check to avoid duplicates against Master Items
+                const isAlreadyListed = masterItems.some(m => m.name.toLowerCase() === name.toLowerCase());
+
+                if (!isAlreadyListed) {
+                    // Group by name to avoid showing duplicate entries (e.g. "Local Bread" from 3 stores -> 1 entry)
+                    if (!localItemsMap.has(name)) {
+                        localItemsMap.set(name, {
+                            id: p.id, // Use merchant product ID as the item ID
+                            name: name,
+                            image: p.image || p.primary_image_url || `https://ui-avatars.com/api/?name=${name}&background=random&length=1&size=128`,
+                            category: p.category || 'Store Item',
+                            description: p.description || 'Instore item',
+                            unit: p.unit_size || '',
+                            taxable: false,
+                            brand: p.brand || ''
+                        });
+                    }
+                }
+            }
+        });
+
+        const localItems = Array.from(localItemsMap.values());
+
+        return [...masterItems, ...localItems].sort((a, b) => a.name.localeCompare(b.name));
+    }, [catalog, availabilityMap, merchantInventory, pendingInventory]);
 
     const GENERIC_STAPLES = [
         { name: 'Milk', emoji: '🥛', category: 'Dairy' },
@@ -135,8 +196,8 @@ const SmartCartWishlist: React.FC = () => {
                     const storesMap = new Map();
 
                     matches.forEach((m: any) => {
-                        const store = stores[m.merchant_id];
-                        if (!store) return;
+                        // Relaxed check: Use fallback if store missing
+                        const store = stores[m.merchant_id] || { name: 'Unknown Store', id: m.merchant_id };
 
                         let finalName = m.product_name;
                         let finalBrand = m.brand;
@@ -378,7 +439,12 @@ const SmartCartWishlist: React.FC = () => {
 
                             <h3 className="font-bold text-[var(--text-main)] mb-3 text-sm">Browse Catalog:</h3>
                             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-60 overflow-y-auto">
-                                {AVAILABLE_ITEMS.map(item => {
+                                {AVAILABLE_ITEMS.filter(item =>
+                                    GENERIC_STAPLES.some(staple =>
+                                        item.name.toLowerCase().includes(staple.name.toLowerCase()) ||
+                                        (item.category && item.category.toLowerCase().includes(staple.category.toLowerCase()))
+                                    )
+                                ).map(item => {
                                     const isAdded = wishlistItems.some(w => w.name === item.name);
                                     return (
                                         <button

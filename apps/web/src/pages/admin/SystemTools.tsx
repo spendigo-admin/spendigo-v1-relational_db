@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useCatalog } from '../../hooks/useCatalog';
 import { useNotifications } from '../../context/NotificationContext';
 import { useConfirmation } from '../../context/ConfirmationContext';
-import { collection, getDocs, query, where, writeBatch, doc } from 'firebase/firestore';
+import { collection, getDocs, query, where, writeBatch, doc, getCountFromServer, getDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 
 const SystemTools = () => {
@@ -48,14 +48,18 @@ const SystemTools = () => {
 
                     // 2. For each store, count products and prepare update
                     for (const storeDoc of storesSnap.docs) {
-                        const q = query(collection(db, 'merchant_products'), where('merchant_id', '==', storeDoc.id), where('status', '==', 'active')); // Only count ACTIVE status if applicable, or remove status check if field missing
-                        // Actually, let's just count all for now, or check schema. Step 2153 showed 'status: active' in addMerchantProduct.
-                        // But let's stick to simply counting documents with the merchant_id to be safe.
-                        const qAll = query(collection(db, 'merchant_products'), where('merchant_id', '==', storeDoc.id));
-                        const prodSnap = await getDocs(qAll);
-                        const count = prodSnap.size;
+                        try {
+                            // Count ALL products regardless of status to give total inventory size
+                            const q = query(collection(db, 'merchant_products'), where('merchant_id', '==', storeDoc.id));
+                            const snapshot = await getCountFromServer(q);
+                            const count = snapshot.data().count;
 
-                        updates.push({ ref: storeDoc.ref, data: { productCount: count, products: [] } });
+                            console.log(`Store: ${storeDoc.data().name} (${storeDoc.id}) - Count: ${count}`);
+
+                            updates.push({ ref: storeDoc.ref, data: { productCount: count, products: [] } });
+                        } catch (e) {
+                            console.warn(`Failed to count for store ${storeDoc.id}`, e);
+                        }
                     }
 
                     // 3. Commit in batches of 400 (safe limit)
@@ -149,6 +153,101 @@ const SystemTools = () => {
                         if (opCount > 0) await batch.commit();
 
                         addNotification({ type: 'system', title: 'Cleanup Complete', message: `Deleted ${deletedCount} orphaned products.` });
+                    }
+                }
+            }
+        },
+        {
+            id: 'cleanup-inventory-orphans',
+            title: 'Cleanup Inventory Orphans',
+            description: 'Scans all merchant inventories for products linked to deleted/missing Master Products and removes them.',
+            icon: '🗑️',
+            action: async () => {
+                if (await confirm({
+                    title: 'Cleanup Inventory Orphans?',
+                    message: 'This will DELETE merchant products that link to non-existent master products. This action is irreversible.',
+                    confirmText: 'Start Cleanup',
+                    type: 'danger'
+                })) {
+                    console.log('Starting Inventory Cleanup...');
+                    addNotification({ type: 'system', title: 'Analysis Started', message: 'Scanning for broken inventory links...' });
+
+                    let totalOrphans = 0;
+                    let processedCount = 0;
+                    const merchantProductsSnap = await getDocs(collection(db, 'merchant_products'));
+                    const totalDocs = merchantProductsSnap.size;
+
+                    console.log(`Scanning ${totalDocs} inventory items...`);
+
+                    const orphans: any[] = [];
+                    // Cache master existence to speed up
+                    const validityCache: Record<string, boolean> = {};
+
+                    for (const docSnap of merchantProductsSnap.docs) {
+                        const data = docSnap.data();
+                        const mid = data.master_product_id;
+
+                        if (!mid) continue; // Skip local-only items (no master ID)
+
+                        if (validityCache[mid] !== undefined) {
+                            if (!validityCache[mid]) orphans.push(docSnap.ref);
+                            continue;
+                        }
+
+                        // Check existence
+                        // 1. Check Master
+                        const masterRef = doc(db, 'master_products', mid);
+                        const masterSnap = await getDoc(masterRef);
+
+                        let isValid = masterSnap.exists();
+
+                        if (!isValid) {
+                            // 2. Check Pending
+                            const pendingRef = doc(db, 'pending_master_products', mid);
+                            const pendingSnap = await getDoc(pendingRef);
+                            isValid = pendingSnap.exists();
+                        }
+
+                        validityCache[mid] = isValid;
+
+                        if (!isValid) {
+                            orphans.push(docSnap.ref);
+                            totalOrphans++;
+                        }
+
+                        processedCount++;
+                        if (processedCount % 100 === 0) console.log(`Processed ${processedCount}/${totalDocs}...`);
+                    }
+
+                    if (orphans.length === 0) {
+                        addNotification({ type: 'system', title: 'Clean', message: 'No inventory orphans found.' });
+                        return;
+                    }
+
+                    if (await confirm({
+                        title: `Delete ${orphans.length} Ghost Items?`,
+                        message: `Found ${orphans.length} inventory items pointing to missing master products. Delete them?`,
+                        confirmText: 'Delete Ghost Items',
+                        type: 'danger'
+                    })) {
+                        let batch = writeBatch(db);
+                        let opCount = 0;
+                        let deletedCount = 0;
+
+                        for (const ref of orphans) {
+                            batch.delete(ref);
+                            opCount++;
+                            deletedCount++;
+
+                            if (opCount >= 400) {
+                                await batch.commit();
+                                batch = writeBatch(db);
+                                opCount = 0;
+                            }
+                        }
+                        if (opCount > 0) await batch.commit();
+
+                        addNotification({ type: 'system', title: 'Cleanup Complete', message: `Deleted ${deletedCount} ghost inventory items.` });
                     }
                 }
             }
