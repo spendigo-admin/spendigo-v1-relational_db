@@ -182,101 +182,103 @@ const SmartCartWishlist: React.FC = () => {
         // DEBUG LOGS
         console.log("Optimizer Run", { items: wishlistItems.length, inv: merchantInventory.length, catalog: catalog.length });
 
-        return wishlistItems.map(item => {
-            // Match by Master ID (Strong Link)
-            let globalData = availabilityMap[item.id];
+        return wishlistItems
+            .filter(item => !item.id.startsWith('generic-')) // Don't process quick-add tags as actual cart items
+            .map(item => {
+                // Match by Master ID (Strong Link)
+                let globalData = availabilityMap[item.id];
 
-            // Fallback: Match by Name (Weak Link for legacy or generic items)
-            if (!globalData) {
-                const searchName = item.name.toLowerCase();
-                console.log("Searching generic:", searchName);
+                // Fallback: Match by Name (Weak Link for legacy or generic items)
+                if (!globalData) {
+                    const searchName = item.name.toLowerCase();
+                    console.log("Searching generic:", searchName);
 
-                // Find all merchant products that match the generic name
-                const matches = merchantInventory.filter((p: any) => {
-                    let pName = (p.product_name || '').toLowerCase();
+                    // Find all merchant products that match the generic name
+                    const matches = merchantInventory.filter((p: any) => {
+                        let pName = (p.product_name || '').toLowerCase();
 
-                    // If local name is missing, try resolving from Master Catalog
-                    if (!pName && p.master_product_id) {
-                        const master = catalog.find(c => c.id === p.master_product_id);
-                        if (master) {
-                            pName = master.name.toLowerCase();
-                        }
-                    }
-
-                    const isMatch = pName.includes(searchName) && p.available_quantity > 0;
-                    if (isMatch) console.log("Match:", pName);
-                    return isMatch;
-                });
-
-                if (matches.length > 0) {
-                    const storesMap = new Map();
-
-                    matches.forEach((m: any) => {
-                        // Relaxed check: Use fallback if store missing
-                        const store = stores[m.merchant_id] || { name: 'Unknown Store', id: m.merchant_id };
-
-                        let finalName = m.product_name;
-                        let finalBrand = m.brand;
-                        let finalUnit = m.unit_size || m.net_quantity_unit;
-
-                        if (m.master_product_id) {
-                            const master = catalog.find(c => c.id === m.master_product_id);
+                        // If local name is missing, try resolving from Master Catalog
+                        if (!pName && p.master_product_id) {
+                            const master = catalog.find(c => c.id === p.master_product_id);
                             if (master) {
-                                // Smart Resolution: If merchant name is generic/missing, use Master Name
-                                const isGeneric = !finalName || (finalName.toLowerCase().trim() === searchName.trim());
-                                if (isGeneric) {
-                                    finalName = master.name;
-                                }
-                                finalBrand = finalBrand || master.brand;
-                                finalUnit = finalUnit || master.unit;
+                                pName = master.name.toLowerCase();
                             }
                         }
 
-                        const option = {
-                            storeId: m.merchant_id,
-                            storeName: store.name,
-                            price: m.price,
-                            inStock: true,
-                            productId: m.id,
-                            brand: finalBrand || '',
-                            name: finalName || 'Unknown Item',
-                            unit: finalUnit || ''
-                        };
-
-                        if (!storesMap.has(m.merchant_id) || storesMap.get(m.merchant_id).price > m.price) {
-                            storesMap.set(m.merchant_id, option);
-                        }
+                        const isMatch = pName.includes(searchName) && p.available_quantity > 0;
+                        if (isMatch) console.log("Match:", pName);
+                        return isMatch;
                     });
 
-                    if (storesMap.size > 0) {
-                        globalData = { stores: Array.from(storesMap.values()) };
+                    if (matches.length > 0) {
+                        const storesMap = new Map();
+
+                        matches.forEach((m: any) => {
+                            // Relaxed check: Use fallback if store missing
+                            const store = stores[m.merchant_id] || { name: 'Unknown Store', id: m.merchant_id };
+
+                            let finalName = m.product_name;
+                            let finalBrand = m.brand;
+                            let finalUnit = m.unit_size || m.net_quantity_unit;
+
+                            if (m.master_product_id) {
+                                const master = catalog.find(c => c.id === m.master_product_id);
+                                if (master) {
+                                    // Smart Resolution: If merchant name is generic/missing, use Master Name
+                                    const isGeneric = !finalName || (finalName.toLowerCase().trim() === searchName.trim());
+                                    if (isGeneric) {
+                                        finalName = master.name;
+                                    }
+                                    finalBrand = finalBrand || master.brand;
+                                    finalUnit = finalUnit || master.unit;
+                                }
+                            }
+
+                            const option = {
+                                storeId: m.merchant_id,
+                                storeName: store.name,
+                                price: m.price,
+                                inStock: true,
+                                productId: m.id,
+                                brand: finalBrand || '',
+                                name: finalName || 'Unknown Item',
+                                unit: finalUnit || ''
+                            };
+
+                            if (!storesMap.has(m.merchant_id) || storesMap.get(m.merchant_id).price > m.price) {
+                                storesMap.set(m.merchant_id, option);
+                            }
+                        });
+
+                        if (storesMap.size > 0) {
+                            globalData = { stores: Array.from(storesMap.values()) };
+                        }
                     }
                 }
-            }
 
-            // If valid data found in stores
-            let allOptions: any[] = [];
-            let cheapestOption = null;
-            let maxPrice = 0;
+                // If valid data found in stores
+                let allOptions: any[] = [];
+                let cheapestOption = null;
+                let maxPrice = 0;
 
-            if (globalData) {
-                allOptions = globalData.stores.sort((a, b) => a.price - b.price);
-                if (allOptions.length > 0) {
-                    cheapestOption = allOptions[0];
-                    maxPrice = Math.max(...allOptions.map(o => o.price));
+                if (globalData) {
+                    allOptions = globalData.stores.sort((a, b) => a.price - b.price);
+                    if (allOptions.length > 0) {
+                        cheapestOption = allOptions[0];
+                        maxPrice = Math.max(...allOptions.map(o => o.price));
+                    }
                 }
-            }
 
-            return {
-                id: item.id,
-                name: item.name,
-                image: item.image,
-                category: item.category,
-                options: allOptions,
-                cheapest: cheapestOption,
-                maxPrice
-            };
-        });
+                return {
+                    id: item.id,
+                    name: item.name,
+                    image: item.image,
+                    category: item.category,
+                    options: allOptions,
+                    cheapest: cheapestOption,
+                    maxPrice
+                };
+            });
     }, [wishlistItems, availabilityMap, merchantInventory, stores, catalog]);
 
     // 4. Initialize Selections with Cheapest Option
