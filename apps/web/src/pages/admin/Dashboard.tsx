@@ -70,17 +70,13 @@ const AdminDashboard: React.FC = () => {
     useEffect(() => {
         const updateRealStats = () => {
             // 1. Get Real Network Latency (RTT)
-            // @ts-expect-error - Navigator connection API is widely supported but experimental in TS
-            const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+            const connection = (navigator as any).connection || (navigator as any).mozConnection || (navigator as any).webkitConnection;
             const realLatency = connection ? connection.rtt : 50; // Fallback to 50ms if API unavailable
 
             // 2. Get Real Memory Usage (Chrome/Edge only)
-            // @ts-expect-error - Standard window.performance is globally available in modern browsers but may need validation in all configs
-            const perf = window.performance;
+            const perf = window.performance as any;
             let memoryUsage = 45; // Default fallback
-            // @ts-expect-error - Memory profiling API is Chrome-specific and may not be present on performance object
             if (perf && perf.memory) {
-                // @ts-expect-error - Used to calculate heap size from chrome-extension or performance.memory API if it exists
                 memoryUsage = Math.round((perf.memory.usedJSHeapSize / perf.memory.jsHeapSizeLimit) * 100);
             }
 
