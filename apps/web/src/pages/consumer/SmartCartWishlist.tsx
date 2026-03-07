@@ -453,43 +453,41 @@ const SmartCartWishlist: React.FC = () => {
                                 </div>
                             </div>
 
-                            <h3 className="font-bold text-[var(--text-main)] mb-3 text-sm">Browse Catalog:</h3>
-                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-60 overflow-y-auto">
-                                {AVAILABLE_ITEMS.filter(item => {
-                                    if (wishlistItems.length > 0) {
-                                        return wishlistItems.some(w =>
-                                            item.name.toLowerCase().includes(w.name.toLowerCase())
-                                        );
-                                    }
-                                    return availableStaples.some(staple =>
-                                        item.name.toLowerCase().includes(staple.name.toLowerCase()) ||
-                                        (item.category && item.category.toLowerCase().includes(staple.category.toLowerCase()))
-                                    );
-                                }).map(item => {
-                                    const isAdded = wishlistItems.some(w => w.name === item.name);
-                                    return (
-                                        <button
-                                            key={item.name}
-                                            onClick={() => {
-                                                if (isAdded) {
-                                                    const toRemove = wishlistItems.find(w => w.name === item.name);
-                                                    if (toRemove) removeItem(toRemove.id);
-                                                } else {
-                                                    addItem(item);
-                                                }
-                                            }}
-                                            className={`flex items-center gap-2 p-2 rounded-lg text-left transition-all text-xs ${isAdded
-                                                ? 'bg-[var(--brand-primary)] text-white shadow-md transform scale-[1.02]'
-                                                : 'bg-[var(--surface-1)] hover:bg-[var(--surface-2)] border border-transparent'
-                                                }`}
-                                        >
-                                            <img src={item.image} alt="" className="w-8 h-8 rounded-md object-cover bg-white" />
-                                            <span className="font-medium truncate flex-1">{item.name}</span>
-                                            {isAdded && <span>✓</span>}
-                                        </button>
-                                    );
-                                })}
-                            </div>
+                            {wishlistItems.length > 0 && (
+                                <>
+                                    <h3 className="font-bold text-[var(--text-main)] mb-3 text-sm">Browse Catalog:</h3>
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-60 overflow-y-auto">
+                                        {AVAILABLE_ITEMS.filter(item =>
+                                            wishlistItems.some(w =>
+                                                item.name.toLowerCase().includes(w.name.toLowerCase())
+                                            )
+                                        ).map(item => {
+                                            const isAdded = wishlistItems.some(w => w.name === item.name);
+                                            return (
+                                                <button
+                                                    key={item.name}
+                                                    onClick={() => {
+                                                        if (isAdded) {
+                                                            const toRemove = wishlistItems.find(w => w.name === item.name);
+                                                            if (toRemove) removeItem(toRemove.id);
+                                                        } else {
+                                                            addItem(item);
+                                                        }
+                                                    }}
+                                                    className={`flex items-center gap-2 p-2 rounded-lg text-left transition-all text-xs ${isAdded
+                                                        ? 'bg-[var(--brand-primary)] text-white shadow-md transform scale-[1.02]'
+                                                        : 'bg-[var(--surface-1)] hover:bg-[var(--surface-2)] border border-transparent'
+                                                        }`}
+                                                >
+                                                    <img src={item.image} alt="" className="w-8 h-8 rounded-md object-cover bg-white" />
+                                                    <span className="font-medium truncate flex-1">{item.name}</span>
+                                                    {isAdded && <span>✓</span>}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </>
+                            )}
                         </div>
                     )}
                 </div>
