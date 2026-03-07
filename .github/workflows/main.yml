@@ -43,9 +43,9 @@ jobs:
           projectId: spendigo-8540c
 
       - name: Deploy to Firebase (Functions, Firestore, Storage)
-        uses: w9jds/firebase-action@v2.2.1
-        with:
-          args: deploy --only functions,firestore,storage
+        run: |
+          echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT_SPENDIGO_8540C }}" > service-account.json
+          export GOOGLE_APPLICATION_CREDENTIALS=$(pwd)/service-account.json
+          npx firebase-tools deploy --only functions,firestore,storage --project spendigo-8540c --non-interactive
         env:
-          GCP_SA_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_SPENDIGO_8540C }}
-          PROJECT_ID: spendigo-8540c
+          NODE_OPTIONS: "--max-old-space-size=4096"
