@@ -122,7 +122,7 @@ const Checkout: React.FC = () => {
     // Calculate totals including Delivery Fees
     const { orderSubtotal, deliveryFees, calculatedTax, grandTotal } = React.useMemo(() => {
         let sub = 0;
-        let taxableSub = 0;
+        const taxableSub = 0;
         let fees = 0;
         let totalCalculatedTax = 0;
 

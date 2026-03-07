@@ -204,7 +204,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     const addItemsToCart = (newItems: Omit<CartItem, 'id'>[]) => {
-        let updatedItems = [...items];
+        const updatedItems = [...items];
         newItems.forEach(newItem => {
             const existingIndex = updatedItems.findIndex(i => i.productId === newItem.productId);
             if (existingIndex > -1) {

@@ -1,8 +1,0 @@
-{
-  "stripe": {
-    "secret_key": "sk_test_51SjU0QRFXZKzUZbZjxCTWBW9HdmB5jf8G6XMUokndVnXGhXzdNjFU5oLcercAweVTMakTSKAS1SZ13tYkj0E3KRG001TkiisRq",
-    "price_growth": "price_1SjiGuRFXZKzUZbZNVNhWn2W",
-    "webhook_secret": "whsec_4332986834e9f8d0aa00234cbc44a8c4167ea1ed9b12c23d7735407e2536d4d2",
-    "price_core": "price_1SjiGLRFXZKzUZbZoh9O8wp6"
-  }
-}
