@@ -160,6 +160,22 @@ const SmartCartWishlist: React.FC = () => {
         { name: 'Free-Run Eggs', emoji: '🍳', category: 'Dairy' },
     ];
 
+    const availableStaples = useMemo(() => {
+        return GENERIC_STAPLES.filter(staple => {
+            const searchName = staple.name.toLowerCase();
+            return merchantInventory.some((p: any) => {
+                let pName = (p.product_name || '').toLowerCase();
+                if (!pName && p.master_product_id) {
+                    const master = catalog.find(c => c.id === p.master_product_id);
+                    if (master) {
+                        pName = master.name.toLowerCase();
+                    }
+                }
+                return pName.includes(searchName) && p.available_quantity > 0;
+            });
+        });
+    }, [merchantInventory, catalog]);
+
     // 3. Group Wishlist Items and Find Matches using dynamic DB
     // 3. Group Wishlist Items and Find Matches using ID
     const optimizerItems = useMemo(() => {
@@ -405,7 +421,7 @@ const SmartCartWishlist: React.FC = () => {
                                 </div>
 
                                 <div className="flex flex-wrap gap-2">
-                                    {GENERIC_STAPLES.map(staple => {
+                                    {availableStaples.map(staple => {
                                         const isAdded = wishlistItems.some(w => w.name === staple.name);
                                         return (
                                             <button
@@ -439,12 +455,17 @@ const SmartCartWishlist: React.FC = () => {
 
                             <h3 className="font-bold text-[var(--text-main)] mb-3 text-sm">Browse Catalog:</h3>
                             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-60 overflow-y-auto">
-                                {AVAILABLE_ITEMS.filter(item =>
-                                    GENERIC_STAPLES.some(staple =>
+                                {AVAILABLE_ITEMS.filter(item => {
+                                    if (wishlistItems.length > 0) {
+                                        return wishlistItems.some(w =>
+                                            item.name.toLowerCase().includes(w.name.toLowerCase())
+                                        );
+                                    }
+                                    return availableStaples.some(staple =>
                                         item.name.toLowerCase().includes(staple.name.toLowerCase()) ||
                                         (item.category && item.category.toLowerCase().includes(staple.category.toLowerCase()))
-                                    )
-                                ).map(item => {
+                                    );
+                                }).map(item => {
                                     const isAdded = wishlistItems.some(w => w.name === item.name);
                                     return (
                                         <button
