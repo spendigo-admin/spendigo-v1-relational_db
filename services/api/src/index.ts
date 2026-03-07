@@ -15,3 +15,4 @@ export { sendOrderConfirmation, sendOrderStatusUpdate } from './email/sendOrderE
 export { updateSubscriptionPlan } from './payments/updateSubscriptionPlan';
 export { placeOrder } from './orders/placeOrder';
 export { cancelOrder } from './orders/cancelOrder';
+export { onUserUpdate } from './triggers/userTriggers';

@@ -3,14 +3,15 @@ import react from '@vitejs/plugin-react'
 import basicSsl from '@vitejs/plugin-basic-ssl'
 
 // https://vitejs.dev/config/
-export default defineConfig({
+export default defineConfig(({ command }) => ({
     plugins: [
         react(),
-        basicSsl({
+        command === 'serve' ? basicSsl({
             name: 'spendigo',
             domains: ['spendigo.ca', 'www.spendigo.ca', 'localhost'],
-            certDir: '/Users/shahbaz/.gemini/antigravity/certs'
-        })
+            // Use relative path or omit certDir to avoid hardcoded absolute paths that break CI
+            certDir: './.certs'
+        }) : []
     ],
     server: {
         host: 'spendigo.ca',
@@ -19,4 +20,5 @@ export default defineConfig({
             host: 'spendigo.ca'
         }
     }
-})
+}))
+
