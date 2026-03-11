@@ -20,7 +20,6 @@ const Checkout: React.FC = () => {
     // Helper to check if store is open
     const isStoreOpen = (store: any): boolean => {
         if (!store || !store.hours) {
-            console.log('Checkout Debug: Store open (default) - no hours data');
             return true;
         }
         const now = new Date();
@@ -29,10 +28,7 @@ const Checkout: React.FC = () => {
 
         const todayHours = store.hours.find((h: any) => h.day === currentDay);
 
-        console.log(`Checkout Debug: Checking hours for ${currentDay}`, todayHours);
-
         if (!todayHours || todayHours.closed) {
-            console.log('Checkout Debug: Store closed (explicitly closed or no schedule for today)');
             return false;
         }
 
@@ -43,10 +39,7 @@ const Checkout: React.FC = () => {
         const openTime = openHour * 60 + openMin;
         const closeTime = closeHour * 60 + closeMin;
 
-        const isOpen = currentTime >= openTime && currentTime < closeTime;
-        console.log(`Checkout Debug: Time Check ${currentTime} vs [${openTime}, ${closeTime}] -> Open? ${isOpen}`);
-
-        return isOpen;
+        return currentTime >= openTime && currentTime < closeTime;
     };
 
     // Security Check: Redirect to login if not authenticated

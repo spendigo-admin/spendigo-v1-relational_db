@@ -3,16 +3,21 @@ import { useWishlist } from '../../context/WishlistContext';
 import { useCart } from '../../context/CartContext';
 import { useMarketplace } from '../../context/MarketplaceContext';
 import { useCatalog } from '../../context/CatalogContext';
-import { collection, onSnapshot, query } from 'firebase/firestore';
+import { collection, onSnapshot, query, where } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import '../../styles/design-system.css';
 
 const SmartCartWishlist: React.FC = () => {
-    const { items: wishlistItems, addItem, removeItem, isInWishlist, clearWishlist } = useWishlist();
+    const { items: wishlistItems, addItem, removeItem } = useWishlist();
     const { addItemsToCart } = useCart();
     const { stores } = useMarketplace();
     const { catalog, loadCatalog } = useCatalog();
     const [showAddItems, setShowAddItems] = useState(false);
+
+    // Auto-open add panel when wishlist is empty
+    useEffect(() => {
+        if (wishlistItems.length === 0) setShowAddItems(true);
+    }, [wishlistItems.length]);
 
     // Ensure Global Catalog is loaded
     useEffect(() => {
@@ -22,19 +27,25 @@ const SmartCartWishlist: React.FC = () => {
 
     // State to track user's selected store for each unique product name
     const [selections, setSelections] = useState<Record<string, string>>({});
+    const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
+    const toggleExpand = (id: string) => setExpandedItems(prev => {
+        const next = new Set(prev);
+        next.has(id) ? next.delete(id) : next.add(id);
+        return next;
+    });
 
-    // 1. Build Global Product Database dynamically from Context
     // 1. Build Global Product Database dynamically from Merchant Inventory
     const [merchantInventory, setMerchantInventory] = useState<any[]>([]);
     const [pendingInventory, setPendingInventory] = useState<any[]>([]);
+    const [inventoryLoading, setInventoryLoading] = useState(true);
 
     useEffect(() => {
-        // Fetch all merchant products to build the real-time availability map
-        // In a real app with thousands of stores, this would be a backend function or filtered query
-        const q = query(collection(db, 'merchant_products'));
+        // Fetch all in-stock merchant products to build the real-time availability map
+        const q = query(collection(db, 'merchant_products'), where('available_quantity', '>', 0));
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const products = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             setMerchantInventory(products);
+            setInventoryLoading(false);
         });
         return () => unsubscribe();
     }, []);
@@ -48,6 +59,9 @@ const SmartCartWishlist: React.FC = () => {
         });
         return () => unsubscribe();
     }, []);
+
+    // Index catalog by ID for O(1) lookups instead of O(N) catalog.find() in nested loops
+    const catalogMap = useMemo(() => new Map(catalog.map(c => [c.id, c])), [catalog]);
 
     const availabilityMap = useMemo(() => {
         const productMap: Record<string, {
@@ -74,7 +88,7 @@ const SmartCartWishlist: React.FC = () => {
                 productMap[masterId] = { stores: [] };
             }
 
-            const masterProduct = catalog.find(c => c.id === masterId);
+            const masterProduct = catalogMap.get(masterId);
 
             productMap[masterId].stores.push({
                 storeId: product.merchant_id,
@@ -89,7 +103,7 @@ const SmartCartWishlist: React.FC = () => {
         });
 
         return productMap;
-    }, [merchantInventory, stores, catalog]);
+    }, [merchantInventory, stores, catalogMap]);
 
     // 2. Derive Available Items from Global Catalog (Filtered by Availability)
     const AVAILABLE_ITEMS = useMemo(() => {
@@ -179,11 +193,7 @@ const SmartCartWishlist: React.FC = () => {
     // 3. Group Wishlist Items and Find Matches using dynamic DB
     // 3. Group Wishlist Items and Find Matches using ID
     const optimizerItems = useMemo(() => {
-        // DEBUG LOGS
-        console.log("Optimizer Run", { items: wishlistItems.length, inv: merchantInventory.length, catalog: catalog.length });
-
-        return wishlistItems
-            .filter(item => !item.id.startsWith('generic-')) // Don't process quick-add tags as actual cart items
+        const mapped = wishlistItems
             .map(item => {
                 // Match by Master ID (Strong Link)
                 let globalData = availabilityMap[item.id];
@@ -191,7 +201,6 @@ const SmartCartWishlist: React.FC = () => {
                 // Fallback: Match by Name (Weak Link for legacy or generic items)
                 if (!globalData) {
                     const searchName = item.name.toLowerCase();
-                    console.log("Searching generic:", searchName);
 
                     // Find all merchant products that match the generic name
                     const matches = merchantInventory.filter((p: any) => {
@@ -199,14 +208,13 @@ const SmartCartWishlist: React.FC = () => {
 
                         // If local name is missing, try resolving from Master Catalog
                         if (!pName && p.master_product_id) {
-                            const master = catalog.find(c => c.id === p.master_product_id);
+                            const master = catalogMap.get(p.master_product_id);
                             if (master) {
                                 pName = master.name.toLowerCase();
                             }
                         }
 
                         const isMatch = pName.includes(searchName) && p.available_quantity > 0;
-                        if (isMatch) console.log("Match:", pName);
                         return isMatch;
                     });
 
@@ -222,7 +230,7 @@ const SmartCartWishlist: React.FC = () => {
                             let finalUnit = m.unit_size || m.net_quantity_unit;
 
                             if (m.master_product_id) {
-                                const master = catalog.find(c => c.id === m.master_product_id);
+                                const master = catalogMap.get(m.master_product_id);
                                 if (master) {
                                     // Smart Resolution: If merchant name is generic/missing, use Master Name
                                     const isGeneric = !finalName || (finalName.toLowerCase().trim() === searchName.trim());
@@ -279,7 +287,29 @@ const SmartCartWishlist: React.FC = () => {
                     maxPrice
                 };
             });
-    }, [wishlistItems, availabilityMap, merchantInventory, stores, catalog]);
+
+        // Deduplicate: two wishlist entries can resolve to the same merchant products
+        // (e.g. generic "Rice" chip + specific "Steamed Lime & Cilantro Basmati Rice" catalog item)
+        // Fingerprint each item by its sorted set of resolved merchant product IDs.
+        // When a collision occurs, prefer the non-generic (master catalog) entry.
+        const seen = new Map<string, typeof mapped[0]>();
+        for (const item of mapped) {
+            const fingerprint = item.options.map((o: any) => o.productId).sort().join('|');
+            if (!fingerprint) {
+                // No options → keep as-is (will show in "not found" section)
+                seen.set(item.id, item);
+                continue;
+            }
+            const existing = seen.get(fingerprint);
+            if (!existing) {
+                seen.set(fingerprint, item);
+            } else if (existing.id.startsWith('generic-') && !item.id.startsWith('generic-')) {
+                // Replace generic entry with the more specific catalog match
+                seen.set(fingerprint, item);
+            }
+        }
+        return Array.from(seen.values());
+    }, [wishlistItems, availabilityMap, merchantInventory, stores, catalogMap]);
 
     // 4. Initialize Selections with Cheapest Option
     useEffect(() => {
@@ -325,7 +355,11 @@ const SmartCartWishlist: React.FC = () => {
 
             if (selectedOption) {
                 total += selectedOption.price;
-                savings += (item.maxPrice - selectedOption.price);
+                // Savings vs. average market price across all stores (honest metric)
+                if (item.options.length > 1) {
+                    const avgPrice = item.options.reduce((sum: number, o: any) => sum + o.price, 0) / item.options.length;
+                    savings += Math.max(0, avgPrice - selectedOption.price);
+                }
 
                 // Smart Name formatting to avoid "Kraft Kraft Dinner"
                 const brand = selectedOption.brand || '';
@@ -352,12 +386,28 @@ const SmartCartWishlist: React.FC = () => {
 
     const handleAddAllToCart = () => {
         if (validCartItems.length > 0) {
-            addItemsToCart(validCartItems);
+            addItemsToCart(validCartItems, potentialSavings > 0 ? parseFloat(potentialSavings.toFixed(2)) : undefined);
         }
     };
 
     return (
-        <div className="animate-fade-in pb-12">
+        <div className="animate-fade-in pb-12 lg:pb-12">
+            {/* Mobile Sticky Bottom Bar */}
+            {!inventoryLoading && wishlistItems.length > 0 && (
+                <div className="fixed bottom-0 left-0 right-0 lg:hidden bg-white border-t border-gray-200 px-4 py-3 pb-safe z-50 flex items-center gap-3 shadow-2xl">
+                    <div className="flex-1 min-w-0">
+                        <p className="text-xs text-gray-500">Estimated total</p>
+                        <p className="text-lg font-bold text-[var(--text-main)]">${totalCost.toFixed(2)}</p>
+                    </div>
+                    <button
+                        onClick={handleAddAllToCart}
+                        disabled={validCartItems.length === 0}
+                        className={`px-6 py-3 rounded-xl font-bold text-white text-sm transition-all flex items-center gap-2 ${validCartItems.length === 0 ? 'bg-gray-300 cursor-not-allowed' : 'bg-[var(--brand-primary)] active:scale-95'}`}
+                    >
+                        Add {validCartItems.length} to Cart
+                    </button>
+                </div>
+            )}
             {/* Header */}
             <div className="bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)] text-white p-6 shadow-md mb-6">
                 <div className="max-w-6xl mx-auto px-4">
@@ -365,17 +415,32 @@ const SmartCartWishlist: React.FC = () => {
                         <span>🛒</span> SmartCart Optimizer
                     </h1>
                     <p className="text-white/80 text-sm">Compare prices and choose the best store for each item.</p>
+                    {!inventoryLoading && wishlistItems.length > 0 && (
+                        <div className="flex items-center gap-3 mt-3 text-sm text-white/90 flex-wrap">
+                            <span className="font-semibold">{validCartItems.length} matched</span>
+                            <span className="text-white/40">·</span>
+                            <span>{new Set(validCartItems.map(i => i.storeId)).size} store{new Set(validCartItems.map(i => i.storeId)).size !== 1 ? 's' : ''}</span>
+                            <span className="text-white/40">·</span>
+                            <span className="font-bold text-white">Est. ${totalCost.toFixed(2)}</span>
+                            {potentialSavings > 0 && (
+                                <>
+                                    <span className="text-white/40">·</span>
+                                    <span className="text-green-300 font-semibold">Save ~${potentialSavings.toFixed(2)}</span>
+                                </>
+                            )}
+                        </div>
+                    )}
                 </div>
             </div>
 
-            <div className="max-w-6xl mx-auto px-4 pb-8">
+            <div className="max-w-6xl mx-auto px-4 pb-8 pb-28 lg:pb-8">
                 {/* Add Items Panel */}
                 <div className="mb-8">
                     <button
                         onClick={() => setShowAddItems(!showAddItems)}
                         className="w-full py-3 border border-dashed border-[var(--brand-primary)] rounded-xl text-[var(--brand-primary)] font-medium hover:bg-[var(--brand-primary)]/5 transition-colors text-sm"
                     >
-                        {showAddItems ? 'Hide Item Selector' : '+ Add More Items to Wishlist'}
+                        {showAddItems ? '▲ Hide Item Selector' : `+ Add Items${wishlistItems.length > 0 ? ` (${wishlistItems.length} in list)` : ''}`}
                     </button>
 
                     {showAddItems && (
@@ -455,15 +520,11 @@ const SmartCartWishlist: React.FC = () => {
                                 </div>
                             </div>
 
-                            {wishlistItems.length > 0 && (
+                            {AVAILABLE_ITEMS.length > 0 && (
                                 <>
-                                    <h3 className="font-bold text-[var(--text-main)] mb-3 text-sm">Browse Catalog:</h3>
+                                    <h3 className="font-bold text-[var(--text-main)] mb-3 text-sm">All Available Items:</h3>
                                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-60 overflow-y-auto">
-                                        {AVAILABLE_ITEMS.filter(item =>
-                                            wishlistItems.some(w =>
-                                                item.name.toLowerCase().includes(w.name.toLowerCase())
-                                            )
-                                        ).map(item => {
+                                        {AVAILABLE_ITEMS.map(item => {
                                             const isAdded = wishlistItems.some(w => w.name === item.name);
                                             return (
                                                 <button
@@ -495,7 +556,25 @@ const SmartCartWishlist: React.FC = () => {
                 </div>
 
                 {/* Main Content */}
-                {wishlistItems.length === 0 ? (
+                {inventoryLoading ? (
+                    <div className="space-y-4">
+                        {[1, 2, 3].map(i => (
+                            <div key={i} className="bg-white rounded-xl border border-[var(--glass-border)] p-4 animate-pulse">
+                                <div className="flex items-center gap-3 mb-4">
+                                    <div className="w-12 h-12 bg-gray-200 rounded-lg" />
+                                    <div className="flex-1 space-y-2">
+                                        <div className="h-4 bg-gray-200 rounded w-1/3" />
+                                        <div className="h-3 bg-gray-100 rounded w-1/4" />
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <div className="h-10 bg-gray-100 rounded" />
+                                    <div className="h-10 bg-gray-100 rounded" />
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                ) : wishlistItems.length === 0 ? (
                     <div className="text-center py-24 bg-white rounded-[2.5rem] border-2 border-dashed border-gray-100 shadow-inner max-w-2xl mx-auto animate-fade-in">
                         <div className="w-24 h-24 bg-gray-50 rounded-3xl flex items-center justify-center text-5xl mx-auto mb-6 shadow-sm grayscale opacity-60">
                             📋
@@ -513,142 +592,220 @@ const SmartCartWishlist: React.FC = () => {
                     <div className="lg:grid lg:grid-cols-12 lg:gap-8 relative">
                         {/* LEFT COLUMN: Main List */}
                         <div className="lg:col-span-8">
-                            <div className="space-y-4">
-                                {optimizerItems.map((item) => {
+                            <div className="space-y-3">
+                                {optimizerItems.filter(item => item && item.options.length > 0).map((item) => {
                                     if (!item) return null;
                                     const currentSelection = selections[item.id];
                                     const selectedOption = item.options.find(o => o.storeId === currentSelection);
+                                    const isExpanded = expandedItems.has(item.id);
 
                                     return (
                                         <div key={item.name} className="bg-white rounded-xl border border-[var(--glass-border)] overflow-hidden shadow-sm transition-shadow hover:shadow-md">
-                                            {/* Item Header */}
-                                            <div className="p-4 bg-[var(--surface-1)] border-b border-[var(--glass-border)] flex items-center gap-3">
-                                                <img src={item.image} alt="" className="w-12 h-12 rounded-lg object-cover shadow-sm" />
-                                                <div className="flex-1">
-                                                    {/* Display the SELECTED item name if available, otherwise generic */}
-                                                    <h3 className="font-bold text-[var(--text-main)]">
+                                            {/* Item Header — always visible, tap to expand */}
+                                            <div
+                                                className="p-4 flex items-center gap-3 cursor-pointer select-none"
+                                                onClick={() => toggleExpand(item.id)}
+                                            >
+                                                <img src={item.image} alt="" className="w-11 h-11 rounded-lg object-cover shadow-sm flex-shrink-0" />
+                                                <div className="flex-1 min-w-0">
+                                                    <h3 className="font-bold text-[var(--text-main)] text-sm truncate">
                                                         {selectedOption ? selectedOption.name : item.name}
                                                     </h3>
-                                                    {selectedOption && selectedOption.brand && (
-                                                        <span className="text-[10px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded mr-2">
+                                                    {/* Collapsed summary: store name + price */}
+                                                    {!isExpanded && selectedOption && (
+                                                        <p className="text-xs text-[var(--text-muted)] mt-0.5 truncate">
+                                                            {selectedOption.storeName}
+                                                            {item.options.length > 1 && (
+                                                                <span className="ml-1.5 text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-full">
+                                                                    +{item.options.length - 1} more
+                                                                </span>
+                                                            )}
+                                                        </p>
+                                                    )}
+                                                    {isExpanded && selectedOption?.brand && (
+                                                        <span className="text-[10px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">
                                                             {selectedOption.brand}
                                                         </span>
                                                     )}
-                                                    <p className="text-xs text-[var(--text-muted)] inline-block">
-                                                        {item.options.length} options found
-                                                    </p>
                                                 </div>
-                                                <button
-                                                    onClick={() => {
-                                                        const wItem = wishlistItems.find(w => w.name === item.name);
-                                                        if (wItem) removeItem(wItem.id);
-                                                    }}
-                                                    className="text-red-500 p-2 hover:bg-red-50 rounded-full transition-colors"
-                                                >
-                                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                                                </button>
+
+                                                {/* Right side: price + chevron + delete */}
+                                                <div className="flex items-center gap-2 flex-shrink-0">
+                                                    {selectedOption && (
+                                                        <span className="font-bold text-[var(--brand-primary)] text-sm">
+                                                            ${selectedOption.price.toFixed(2)}
+                                                        </span>
+                                                    )}
+                                                    <svg
+                                                        className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
+                                                        fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                                    >
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                                    </svg>
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            const wItem = wishlistItems.find(w => w.name === item.name);
+                                                            if (wItem) removeItem(wItem.id);
+                                                        }}
+                                                        className="text-gray-300 hover:text-red-400 p-1 rounded-full transition-colors"
+                                                    >
+                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                                                    </button>
+                                                </div>
                                             </div>
 
+                                            {/* Store Options — only visible when expanded */}
+                                            {isExpanded && (
+                                                <div className="border-t border-[var(--glass-border)] divide-y divide-[var(--glass-border)]">
+                                                    {item.options.map(option => {
+                                                        const isSelected = currentSelection === option.storeId;
+                                                        const isCheapest = item.cheapest && option.storeId === item.cheapest.storeId;
+                                                        const priceDelta = item.cheapest ? option.price - item.cheapest.price : 0;
 
-
-                                            {/* Store Options */}
-                                            {
-                                                item.options.length > 0 ? (
-                                                    <div className="divide-y divide-[var(--glass-border)]">
-                                                        {item.options.map(option => {
-                                                            const isSelected = currentSelection === option.storeId;
-                                                            const isCheapest = item.cheapest && option.storeId === item.cheapest.storeId;
-                                                            const savingsVsMax = item.maxPrice - option.price;
-
-                                                            return (
-                                                                <div
-                                                                    key={option.storeId}
-                                                                    onClick={() => handleSelectionChange(item.id, option.storeId)}
-                                                                    className={`p-3 flex items-center justify-between cursor-pointer transition-colors ${isSelected ? 'bg-[var(--brand-primary)]/5' : 'hover:bg-gray-50'
-                                                                        }`}
-                                                                >
-                                                                    <div className="flex items-center gap-3">
-                                                                        <div className={`w-5 h-5 rounded-full border flex items-center justify-center transition-colors ${isSelected ? 'border-[var(--brand-primary)] bg-[var(--brand-primary)]' : 'border-gray-300'
-                                                                            }`}>
-                                                                            {isSelected && <div className="w-2 h-2 bg-white rounded-full" />}
-                                                                        </div>
-                                                                        <div>
-                                                                            <p className={`font-medium text-sm ${isSelected ? 'text-[var(--brand-primary)]' : 'text-gray-700'}`}>
-                                                                                {/* Enhanced Product Name: Brand + Name + Unit */}
-                                                                                {(() => {
-                                                                                    const showBrand = option.brand && !option.name.toLowerCase().startsWith(option.brand.toLowerCase());
-                                                                                    return (
-                                                                                        <>
-                                                                                            {showBrand && <span className="font-bold text-gray-900">{option.brand} </span>}
-                                                                                            <span>{option.name}</span>
-                                                                                            {option.unit && <span className="text-gray-500 text-xs"> ({option.unit})</span>}
-                                                                                        </>
-                                                                                    );
-                                                                                })()}
-
-                                                                                <span className="block text-[10px] text-gray-400 mt-0.5">{option.storeName}</span>
-                                                                            </p>
-                                                                            {isCheapest && (
-                                                                                <span className="inline-block px-1.5 py-0.5 bg-green-100 text-green-700 text-[10px] uppercase font-bold tracking-wider rounded mt-1">
-                                                                                    Best Price
-                                                                                </span>
-                                                                            )}
-                                                                        </div>
+                                                        return (
+                                                            <div
+                                                                key={option.storeId}
+                                                                onClick={() => handleSelectionChange(item.id, option.storeId)}
+                                                                className={`p-3 flex items-center justify-between cursor-pointer transition-colors border-l-4 ${
+                                                                    isSelected
+                                                                        ? 'bg-[var(--brand-primary)]/5 border-[var(--brand-primary)]'
+                                                                        : 'border-transparent hover:bg-gray-50'
+                                                                }`}
+                                                            >
+                                                                <div className="flex items-center gap-3">
+                                                                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors flex-shrink-0 ${isSelected ? 'border-[var(--brand-primary)] bg-[var(--brand-primary)]' : 'border-gray-300'}`}>
+                                                                        {isSelected && <div className="w-2 h-2 bg-white rounded-full" />}
                                                                     </div>
-
-                                                                    <div className="text-right">
-                                                                        <p className={`font-bold ${isSelected ? 'text-[var(--brand-primary)]' : 'text-gray-900'}`}>
-                                                                            ${option.price.toFixed(2)}
+                                                                    <div>
+                                                                        <p className={`font-medium text-sm leading-tight ${isSelected ? 'text-[var(--brand-primary)]' : 'text-gray-700'}`}>
+                                                                            {(() => {
+                                                                                const showBrand = option.brand && !option.name.toLowerCase().startsWith(option.brand.toLowerCase());
+                                                                                return (
+                                                                                    <>
+                                                                                        {showBrand && <span className="font-bold text-gray-900">{option.brand} </span>}
+                                                                                        <span>{option.name}</span>
+                                                                                        {option.unit && <span className="text-gray-400 text-xs"> ({option.unit})</span>}
+                                                                                    </>
+                                                                                );
+                                                                            })()}
                                                                         </p>
-                                                                        {savingsVsMax > 0 && (
-                                                                            <p className="text-[10px] text-green-600 font-medium">
-                                                                                Save ${(savingsVsMax).toFixed(2)}
-                                                                            </p>
+                                                                        <p className="text-[11px] text-gray-400 mt-0.5">{option.storeName}</p>
+                                                                        {isCheapest && (
+                                                                            <span className="inline-block px-1.5 py-0.5 bg-green-100 text-green-700 text-[10px] uppercase font-bold tracking-wider rounded mt-1">
+                                                                                Best Price
+                                                                            </span>
                                                                         )}
                                                                     </div>
                                                                 </div>
-                                                            );
-                                                        })}
-                                                    </div>
-                                                ) : (
-                                                    <div className="p-8 text-center bg-gray-50">
-                                                        <p className="text-2xl mb-2">🤷</p>
-                                                        <p className="text-sm font-medium text-[var(--text-main)]">Not found nearby</p>
-                                                        <p className="text-xs text-[var(--text-muted)]">We couldn't find this item in any connected stores.</p>
-                                                    </div>
-                                                )
-                                            }
+
+                                                                <div className="text-right flex-shrink-0 ml-2">
+                                                                    <p className={`font-bold text-sm ${isSelected ? 'text-[var(--brand-primary)]' : 'text-gray-900'}`}>
+                                                                        ${option.price.toFixed(2)}
+                                                                    </p>
+                                                                    {priceDelta > 0 && (
+                                                                        <p className="text-[10px] text-amber-600 font-medium">
+                                                                            +${priceDelta.toFixed(2)} more
+                                                                        </p>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            )}
                                         </div>
                                     );
                                 })}
                             </div>
+
+                            {/* Unavailable Items */}
+                            {optimizerItems.filter(item => item && item.options.length === 0).length > 0 && (
+                                <div className="mt-6">
+                                    <div className="flex items-center justify-between mb-3">
+                                        <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wide">
+                                            Not found nearby ({optimizerItems.filter(i => i && i.options.length === 0).length})
+                                        </h3>
+                                        <button
+                                            onClick={() => {
+                                                optimizerItems
+                                                    .filter(item => item && item.options.length === 0)
+                                                    .forEach(item => {
+                                                        const wItem = wishlistItems.find(w => w.name === item!.name);
+                                                        if (wItem) removeItem(wItem.id);
+                                                    });
+                                            }}
+                                            className="text-xs text-red-400 hover:text-red-600 font-medium transition-colors"
+                                        >
+                                            Clear All
+                                        </button>
+                                    </div>
+                                    <div className="space-y-2">
+                                        {optimizerItems.filter(item => item && item.options.length === 0).map(item => (
+                                            <div key={item!.name} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-dashed border-gray-200">
+                                                <div className="flex items-center gap-3">
+                                                    <img src={item!.image} alt="" className="w-8 h-8 rounded-md object-cover opacity-40 grayscale" />
+                                                    <span className="text-sm text-gray-400 font-medium">{item!.name}</span>
+                                                </div>
+                                                <button
+                                                    onClick={() => {
+                                                        const wItem = wishlistItems.find(w => w.name === item!.name);
+                                                        if (wItem) removeItem(wItem.id);
+                                                    }}
+                                                    className="text-gray-300 hover:text-red-400 transition-colors p-1"
+                                                >
+                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         {/* RIGHT COLUMN: Sticky Summary */}
                         <div className="lg:col-span-4 mt-8 lg:mt-0">
                             <div className="glass-panel p-6 sticky top-8 border-[var(--glass-border)] shadow-xl bg-white/50 backdrop-blur-xl">
 
-                                {/* AI Header */}
+                                {/* Panel Header */}
                                 <div className="flex items-center justify-between mb-4">
                                     <h2 className="text-xl font-bold text-[var(--text-main)]">Order Summary</h2>
-                                    <div className="flex items-center gap-1.5 px-2 py-1 bg-purple-50 rounded-full border border-purple-100">
-                                        <span className="text-xs font-bold text-purple-600">AI Powered</span>
-                                        <span className="relative flex h-2 w-2">
-                                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span>
-                                            <span className="relative inline-flex rounded-full h-2 w-2 bg-purple-500"></span>
-                                        </span>
+                                    <span className="text-xs font-semibold text-purple-600 bg-purple-50 px-2 py-1 rounded-full border border-purple-100">Smart Insights</span>
+                                </div>
+
+                                {/* Store sub-totals breakdown */}
+                                {validCartItems.length > 0 && (
+                                    <div className="mb-4 space-y-2">
+                                        {Object.values(
+                                            validCartItems.reduce<Record<string, { name: string; total: number; count: number }>>((acc, item) => {
+                                                if (!acc[item.storeId]) acc[item.storeId] = { name: item.storeName, total: 0, count: 0 };
+                                                acc[item.storeId].total += item.price;
+                                                acc[item.storeId].count += item.quantity;
+                                                return acc;
+                                            }, {})
+                                        ).map((store) => (
+                                            <div key={store.name} className="flex items-center justify-between text-sm">
+                                                <div className="flex items-center gap-2 min-w-0">
+                                                    <span className="text-base flex-shrink-0">🏪</span>
+                                                    <span className="text-[var(--text-main)] font-medium truncate">{store.name}</span>
+                                                    <span className="text-[11px] text-gray-400 flex-shrink-0">({store.count})</span>
+                                                </div>
+                                                <span className="font-semibold text-[var(--text-main)] flex-shrink-0 ml-2">${store.total.toFixed(2)}</span>
+                                            </div>
+                                        ))}
+                                        <div className="border-t border-[var(--glass-border)] pt-2 mt-2 flex items-center justify-between">
+                                            <span className="text-[var(--text-muted)] text-sm">Total</span>
+                                            <span className="text-2xl font-bold text-[var(--text-main)]">${totalCost.toFixed(2)}</span>
+                                        </div>
                                     </div>
-                                </div>
+                                )}
 
-                                <div className="flex items-center justify-between mb-2">
-                                    <span className="text-[var(--text-muted)]">Estimated Total</span>
-                                    <span className="text-2xl font-bold text-[var(--text-main)]">${totalCost.toFixed(2)}</span>
-                                </div>
-
-                                <div className="flex items-center justify-between mb-6 text-green-600 text-sm">
-                                    <span>Estimated Savings</span>
-                                    <span className="font-bold">-${potentialSavings.toFixed(2)}</span>
-                                </div>
+                                {potentialSavings > 0 && (
+                                    <div className="flex items-center justify-between mb-4 text-green-600 text-sm bg-green-50 rounded-lg px-3 py-2">
+                                        <span className="font-medium">Avg. Market Savings</span>
+                                        <span className="font-bold">-${potentialSavings.toFixed(2)}</span>
+                                    </div>
+                                )}
 
                                 {/* AI Insights Panel */}
                                 <div className="mb-6 bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl p-4 border border-purple-100 relative overflow-hidden">
@@ -793,7 +950,8 @@ const SmartCartWishlist: React.FC = () => {
 
                                 <button
                                     onClick={handleAddAllToCart}
-                                    className="w-full bg-[var(--brand-primary)] text-white px-6 py-4 rounded-2xl font-bold shadow-lg shadow-[var(--brand-primary)]/20 active:scale-95 hover:brightness-110 transition-all flex items-center justify-center gap-2"
+                                    disabled={validCartItems.length === 0}
+                                    className={`w-full text-white px-6 py-4 rounded-2xl font-bold shadow-lg transition-all flex items-center justify-center gap-2 ${validCartItems.length === 0 ? 'bg-gray-300 cursor-not-allowed shadow-none' : 'bg-[var(--brand-primary)] shadow-[var(--brand-primary)]/20 active:scale-95 hover:brightness-110'}`}
                                 >
                                     <span>Add Selected to Cart</span>
                                     <span className="bg-white/20 px-2 py-0.5 rounded text-sm">{validCartItems.length}</span>

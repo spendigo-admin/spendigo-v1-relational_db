@@ -94,7 +94,10 @@ export const placeOrder = functions.https.onCall(async (data, context) => {
 
     } catch (error: any) {
         console.error('Place Order Transaction Failed:', error);
-        // Throw a structured error that the client can parse
+        // Re-throw HttpsErrors as-is to preserve the error code for the client
+        if (error instanceof functions.https.HttpsError) {
+            throw error;
+        }
         throw new functions.https.HttpsError('aborted', error.message || 'Transaction failed');
     }
 });

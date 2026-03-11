@@ -91,9 +91,9 @@ const OrderContext = createContext<OrderContextType | undefined>(undefined);
 
 // Mock Profile Data (Keep implemented as local storage/memory for now as "User Profile" wasn't explicitly migrated yet)
 const INITIAL_PROFILE: UserProfile = {
-    id: 'user1',
-    name: 'Guest User',
-    email: 'guest@example.com',
+    id: '',
+    name: '',
+    email: '',
     phone: '',
     addresses: []
 };
@@ -108,6 +108,7 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     useEffect(() => {
         if (!user) {
             setOrders([]);
+            setProfile(INITIAL_PROFILE);
             setLoading(false);
             return;
         }
@@ -125,8 +126,7 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             // BUT: Access rules usually prevent querying ALL orders.
             // Let's rely on the fact we haven't implemented strict Firestore Rules yet so we can query.
             if (user.storeId) {
-                console.log(`OrderContext: Querying orders for Store ID: ${user.storeId}`);
-                q = query(collection(db, 'orders'), where('storeId', '==', user.storeId)); // , orderBy('date', 'desc') needs composite index
+                q = query(collection(db, 'orders'), where('storeId', '==', user.storeId));
             } else {
                 setOrders([]); // No store assigned
                 setLoading(false);
@@ -141,7 +141,6 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         }
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
-            console.log(`OrderContext: Snapshot update. Docs found: ${snapshot.size}`); // Debug
             const fetchedOrders: Order[] = [];
             snapshot.forEach((doc) => {
                 const data = doc.data();
@@ -217,12 +216,9 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         if (!user) throw new Error("Must be logged in");
 
         try {
-            console.log('OrderContext: Calling placeOrder Cloud Function...');
             const placeOrderFn = httpsCallable(functions, 'placeOrder');
             const result = await placeOrderFn({ orders: ordersData });
             const { orderIds } = result.data as { orderIds: string[] };
-
-            console.log(`OrderContext: Orders created: ${orderIds.join(', ')}`);
 
             // Send Notifications (Client-side for immediate feedback, though ideally server-side)
             ordersData.forEach(async (orderData, index) => {
@@ -306,7 +302,6 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         if (!order) return;
 
         try {
-            console.log('OrderContext: Calling cancelOrder Cloud Function...');
             const cancelOrderFn = httpsCallable(functions, 'cancelOrder');
             await cancelOrderFn({ orderId, reason });
 

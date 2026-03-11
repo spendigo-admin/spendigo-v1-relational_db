@@ -135,9 +135,10 @@ service cloud.firestore {
 
     // ORDERS
     match /orders/{orderId} {
-      allow create: if isAuthenticated();
+      // Orders are created server-side only (via placeOrder Cloud Function using Admin SDK)
+      allow create: if false;
       allow read: if isAuthenticated() && (
-        resource.data.customerId == request.auth.uid || 
+        resource.data.customerId == request.auth.uid ||
         (isMerchant() && resource.data.storeId == getMerchantStoreId()) ||
         isAdmin()
       );
@@ -212,9 +213,12 @@ service cloud.firestore {
     }
 
     // STATS
+    // Clients may only update the traffic doc (used by traffic.ts for visitor counting).
+    // Full writes (create, delete) are admin-only to prevent manipulation.
     match /stats/{docId} {
       allow read: if true;
-      allow write: if isAuthenticated();
+      allow create, delete: if isAdmin();
+      allow update: if isAuthenticated() && docId == 'traffic';
     }
   }
 }

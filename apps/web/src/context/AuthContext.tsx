@@ -125,6 +125,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             let finalAdminRole = data.adminRole;
 
             // --- ISOLATED STAFF CHECK ---
+            // Must run first because it can promote role to 'admin', which gates subsequent checks
             const staffDoc = await getDoc(doc(db, 'staff', data.email.toLowerCase()));
             if (staffDoc.exists()) {
                 const staffData = staffDoc.data();
@@ -134,37 +135,31 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 }
             }
 
+            // Fetch settings and store doc in parallel (both may be needed based on role)
+            const [settingsDoc, storeDoc] = await Promise.all([
+                finalRole !== 'admin' ? getDoc(doc(db, 'settings', 'platform')) : Promise.resolve(null),
+                finalRole === 'merchant' && data.storeId ? getDoc(doc(db, 'stores', data.storeId)) : Promise.resolve(null)
+            ]);
+
             // 1. Maintenance Mode Check
-            if (finalRole !== 'admin') {
-                const settingsDoc = await getDoc(doc(db, 'settings', 'platform'));
-                if (settingsDoc.exists() && settingsDoc.data().maintenanceMode) {
-                    await signOut(auth);
-                    // alert(`🚧 System is in Maintenance Mode. Please try again later.`);
-                    // Ideally we should redirect to maintenance page or show notification, but here we just signout.
-                    // The App.tsx MaintenanceGuard will handle the redirection if they try to access.
-                    setUser(null);
-                    return;
-                }
+            if (settingsDoc && settingsDoc.exists() && settingsDoc.data()?.maintenanceMode) {
+                await signOut(auth);
+                setUser(null);
+                return;
             }
 
             // 2. Security Check: If Merchant, verify Store Status
-            if (finalRole === 'merchant' && data.storeId) {
-                const storeDoc = await getDoc(doc(db, 'stores', data.storeId));
-                if (storeDoc.exists()) {
-                    const storeData = storeDoc.data();
-                    if (storeData.status === 'suspended') {
-                        await signOut(auth);
-                        // alert('Creating a safe and trusted marketplace is our priority. Your store has been suspended. Please contact support @spendigo.ca.');
-                        setUser(null);
-                        return;
-                    }
+            if (storeDoc && storeDoc.exists()) {
+                if (storeDoc.data()?.status === 'suspended') {
+                    await signOut(auth);
+                    setUser(null);
+                    return;
                 }
             }
 
             // 3. Status Check: Enforce User Suspension
             if (data.status === 'banned') {
                 await signOut(auth);
-                // alert('Your account has been suspended due to a violation of our terms. Please contact support @spendigo.ca.');
                 setUser(null);
                 return;
             }
@@ -180,11 +175,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 } catch (e) {
                     console.error("Failed to activate user:", e);
                 }
-            }
-
-            // HOTFIX: Manually verify specific dev user
-            if (data.email === 'shahaz.ali@live.com.pk') {
-                emailVerified = true;
             }
 
             const merchantRole = data.role === 'merchant' ? (data.merchantRole || 'OWNER') : undefined;
@@ -204,23 +194,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
     };
 
-    const fetchUserProfile = async (uid: string, emailVerified: boolean) => {
-        // fetchUserProfile is now primarily handled by onSnapshot, but we keep the logic
-        // for initial loads if needed, though processUserData handles it now.
-        const userDoc = await getDoc(doc(db, 'users', uid));
-        if (userDoc.exists()) {
-            await processUserData(uid, userDoc.data(), emailVerified);
-        }
-    };
-
     const login = async (email: string, password: string): Promise<boolean> => {
         try {
             setLoading(true);
             const userCredential = await signInWithEmailAndPassword(auth, email, password);
-            // Explicitly fetch profile here to ensure 'user' state is populated before login returns true
-            await fetchUserProfile(userCredential.user.uid, userCredential.user.emailVerified);
+            // Explicitly process profile here to ensure 'user' state is populated before login returns true
+            const userDoc = await getDoc(doc(db, 'users', userCredential.user.uid));
+            if (userDoc.exists()) {
+                await processUserData(userCredential.user.uid, userDoc.data(), userCredential.user.emailVerified);
+            }
 
-            // Re-check auth state (fetchUserProfile might have forced logout)
+            // Re-check auth state (processUserData might have forced logout for banned/suspended users)
             if (!auth.currentUser) {
                 return false; // Login blocked
             }
@@ -369,7 +353,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             }
 
             // Fetch profile (whether new or existing)
-            await fetchUserProfile(user.uid, user.emailVerified);
+            const finalUserDoc = userDoc.exists() ? userDoc : await getDoc(userDocRef);
+            if (finalUserDoc.exists()) {
+                await processUserData(user.uid, finalUserDoc.data(), user.emailVerified);
+            }
             return true;
         } catch (error: any) {
             console.error('Google Login failed:', error);

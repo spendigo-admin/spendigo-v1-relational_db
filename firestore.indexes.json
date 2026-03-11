@@ -1,5 +1,22 @@
 {
-    "indexes": [],
+    "indexes": [
+        {
+            "collectionGroup": "orders",
+            "queryScope": "COLLECTION",
+            "fields": [
+                { "fieldPath": "storeId", "order": "ASCENDING" },
+                { "fieldPath": "date", "order": "DESCENDING" }
+            ]
+        },
+        {
+            "collectionGroup": "orders",
+            "queryScope": "COLLECTION",
+            "fields": [
+                { "fieldPath": "customerId", "order": "ASCENDING" },
+                { "fieldPath": "date", "order": "DESCENDING" }
+            ]
+        }
+    ],
     "fieldOverrides": [
         {
             "collectionGroup": "master_products",

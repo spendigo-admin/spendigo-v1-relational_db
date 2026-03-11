@@ -41,11 +41,17 @@ const stripe_1 = require("../config/stripe");
 const db = admin.firestore();
 // MAP YOUR STRIPE PRICE IDs HERE (From your Stripe Dashboard)
 // Run `firebase functions:config:set stripe.price_core="price_..." stripe.price_growth="price_..."`
+const corePrice = (_a = functions.config().stripe) === null || _a === void 0 ? void 0 : _a.price_core;
+const growthPrice = (_b = functions.config().stripe) === null || _b === void 0 ? void 0 : _b.price_growth;
+if (!corePrice || !growthPrice) {
+    throw new Error('Missing Stripe price IDs in Firebase config. Run: firebase functions:config:set stripe.price_core="price_..." stripe.price_growth="price_..."');
+}
 const PRICE_IDS = {
-    core: ((_a = functions.config().stripe) === null || _a === void 0 ? void 0 : _a.price_core) || 'price_123_test_core',
-    growth: ((_b = functions.config().stripe) === null || _b === void 0 ? void 0 : _b.price_growth) || 'price_456_test_growth',
+    core: corePrice,
+    growth: growthPrice,
 };
 exports.createCheckoutSession = functions.https.onCall(async (data, context) => {
+    var _a;
     // 1. Security Check
     if (!context.auth) {
         throw new functions.https.HttpsError('unauthenticated', 'User must be logged in.');
@@ -88,6 +94,7 @@ exports.createCheckoutSession = functions.https.onCall(async (data, context) => 
             }
         }
         // 3. Create Checkout Session
+        const appUrl = ((_a = functions.config().app) === null || _a === void 0 ? void 0 : _a.url) || 'https://spendigo.ca';
         const session = await stripe_1.stripe.checkout.sessions.create({
             payment_method_types: ['card'],
             mode: 'subscription',
@@ -98,10 +105,9 @@ exports.createCheckoutSession = functions.https.onCall(async (data, context) => 
                     quantity: 1,
                 },
             ],
-            subscription_data: subscriptionData, // <--- Apply Trial if eligible
-            // Replace with your actual deployed URL
-            success_url: `https://spendigo.ca/merchant/subscription?session_id={CHECKOUT_SESSION_ID}`,
-            cancel_url: `https://spendigo.ca/merchant/subscription`,
+            subscription_data: subscriptionData,
+            success_url: `${appUrl}/merchant/subscription?session_id={CHECKOUT_SESSION_ID}`,
+            cancel_url: `${appUrl}/merchant/subscription`,
             metadata: {
                 firebaseUID: userId,
                 targetTier: tier,

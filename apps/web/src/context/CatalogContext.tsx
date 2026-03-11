@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 
@@ -28,15 +28,22 @@ const CatalogContext = createContext<CatalogContextType | undefined>(undefined);
 
 export const CatalogProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [catalog, setCatalog] = useState<CatalogItem[]>([]);
-    const [loading, setLoading] = useState(false); // Default to false (not loading initially)
-    const [isLoaded, setIsLoaded] = useState(false); // Track if data is loaded
+    const [loading, setLoading] = useState(false);
+    const [isLoaded, setIsLoaded] = useState(false);
+    const unsubscribeRef = useRef<(() => void) | null>(null);
+
+    // Cleanup subscription on unmount
+    useEffect(() => {
+        return () => {
+            if (unsubscribeRef.current) unsubscribeRef.current();
+        };
+    }, []);
 
     // Lazy load function
     const loadCatalog = () => {
         if (isLoaded || loading) return; // Prevent duplicate loads
 
         setLoading(true);
-        // Subscribe to master_products (Real Global Catalog)
         const q = query(collection(db, 'master_products'), orderBy('product_name', 'asc'));
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -63,11 +70,8 @@ export const CatalogProvider: React.FC<{ children: ReactNode }> = ({ children })
             setLoading(false);
         });
 
-        // Note: We're not returning unsubscribe here because this is a one-off trigger, 
-        // but ideally we should manage the subscription lifecycle. 
-        // For now, once loaded, it stays synced.
+        unsubscribeRef.current = unsubscribe;
     };
-    // No useEffect for auto-loading
 
 
     const searchCatalog = (query: string) => {

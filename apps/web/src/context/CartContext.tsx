@@ -18,7 +18,7 @@ export interface CartItem {
 interface CartContextType {
     items: CartItem[];
     addToCart: (item: Omit<CartItem, 'id'>) => void;
-    addItemsToCart: (items: Omit<CartItem, 'id'>[]) => void;
+    addItemsToCart: (items: Omit<CartItem, 'id'>[], savedAmount?: number) => void;
     removeFromCart: (itemId: string) => void;
     updateQuantity: (itemId: string, delta: number) => void;
     clearCart: () => void;
@@ -203,7 +203,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setTimeout(() => setNotification(null), 4000);
     };
 
-    const addItemsToCart = (newItems: Omit<CartItem, 'id'>[]) => {
+    const addItemsToCart = (newItems: Omit<CartItem, 'id'>[], savedAmount?: number) => {
         const updatedItems = [...items];
         newItems.forEach(newItem => {
             const existingIndex = updatedItems.findIndex(i => i.productId === newItem.productId);
@@ -226,7 +226,11 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
             ? `${newItems.length} items added: ${newItems.slice(0, 2).map(i => i.productName).join(', ')} and ${newItems.length - 2} more`
             : `${newItems.length} items added: ${names}`;
 
-        setNotification({ message, type: 'success' });
+        setNotification({
+            message,
+            type: 'success',
+            savings: savedAmount && savedAmount > 0 ? savedAmount : undefined
+        });
         setTimeout(() => setNotification(null), 3000);
     };
 

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { createUserWithEmailAndPassword, signOut } from 'firebase/auth';
 import { doc, setDoc, collection } from 'firebase/firestore';
 import { auth, db } from '../../lib/firebase';
-import { User } from '../../context/AuthContext';
+import { User, useAuth } from '../../context/AuthContext';
 import { GROCERY_CATALOG } from '../../data/groceryCatalog';
 import { STORE_DATA } from '../../data/productData';
 
@@ -66,8 +66,18 @@ const ADMINS = [
 ];
 
 export default function SeedUsers() {
+    const { user } = useAuth();
     const [status, setStatus] = useState<string[]>([]);
     const [loading, setLoading] = useState(false);
+
+    // Only SUPER_ADMIN can access this page
+    if (user?.adminRole !== 'SUPER_ADMIN') {
+        return (
+            <div className="p-8 text-center">
+                <p className="text-red-600 font-semibold">Access Denied: This page requires SUPER_ADMIN privileges.</p>
+            </div>
+        );
+    }
 
     const log = (msg: string) => setStatus(prev => [...prev, msg]);
 
