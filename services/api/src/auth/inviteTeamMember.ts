@@ -65,6 +65,16 @@ export const inviteTeamMember = functions.https.onCall(
             );
         }
 
+        // 5b. Role-rank guard: caller may only assign roles strictly below their own.
+        // Prevents a MANAGER from inviting a new OWNER (store takeover vector).
+        const ROLE_RANK: Record<string, number> = { OWNER: 3, MANAGER: 2, STAFF: 1, MARKETING: 1 };
+        if ((ROLE_RANK[merchantRole] ?? 0) >= (ROLE_RANK[callerRole] ?? 0)) {
+            throw new functions.https.HttpsError(
+                'permission-denied',
+                'Cannot assign a role equal to or higher than your own'
+            );
+        }
+
         try {
             // 6. Create Firebase Auth user with temporary password
             const authUser = await admin.auth().createUser({

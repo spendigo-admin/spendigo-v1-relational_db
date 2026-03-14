@@ -41,6 +41,7 @@ const admin = __importStar(require("firebase-admin"));
  * Creates both Firebase Auth account and Firestore user record
  */
 exports.inviteTeamMember = functions.https.onCall(async (data, context) => {
+    var _a, _b;
     // 1. Verify caller is authenticated
     if (!context.auth) {
         throw new functions.https.HttpsError('unauthenticated', 'Must be authenticated to invite team members');
@@ -67,6 +68,12 @@ exports.inviteTeamMember = functions.https.onCall(async (data, context) => {
     const callerRole = callerData.merchantRole || 'STAFF';
     if (callerRole !== 'OWNER' && callerRole !== 'MANAGER') {
         throw new functions.https.HttpsError('permission-denied', 'Only store owners and managers can invite team members');
+    }
+    // 5b. Role-rank guard: caller may only assign roles strictly below their own.
+    // Prevents a MANAGER from inviting a new OWNER (store takeover vector).
+    const ROLE_RANK = { OWNER: 3, MANAGER: 2, STAFF: 1, MARKETING: 1 };
+    if (((_a = ROLE_RANK[merchantRole]) !== null && _a !== void 0 ? _a : 0) >= ((_b = ROLE_RANK[callerRole]) !== null && _b !== void 0 ? _b : 0)) {
+        throw new functions.https.HttpsError('permission-denied', 'Cannot assign a role equal to or higher than your own');
     }
     try {
         // 6. Create Firebase Auth user with temporary password

@@ -53,7 +53,7 @@ exports.stripeWebhook = functions.https.onRequest(async (req, res) => {
         event = stripe_1.stripe.webhooks.constructEvent(req.rawBody, signature, endpointSecret);
     }
     catch (err) {
-        console.error(`Webhook Error: ${err.message}`);
+        functions.logger.error(`Webhook Error: ${err.message}`);
         res.status(400).send(`Webhook Error: ${err.message}`);
         return;
     }
@@ -74,12 +74,12 @@ exports.stripeWebhook = functions.https.onRequest(async (req, res) => {
                 await handleSubscriptionDeleted(event.data.object);
                 break;
             default:
-                console.log(`Unhandled event type ${event.type}`);
+                functions.logger.log(`Unhandled event type ${event.type}`);
         }
         res.json({ received: true });
     }
     catch (e) {
-        console.error(e);
+        functions.logger.error(e);
         res.status(500).send("Internal Server Error processing webhook");
     }
 });
@@ -88,7 +88,7 @@ async function handleCheckoutCompleted(session) {
     const userId = (_a = session.metadata) === null || _a === void 0 ? void 0 : _a.firebaseUID;
     const tier = (_b = session.metadata) === null || _b === void 0 ? void 0 : _b.targetTier;
     if (userId && tier) {
-        console.log(`Upgrading user ${userId} to ${tier}`);
+        functions.logger.log(`Upgrading user ${userId} to ${tier}`);
         await db.collection('users').doc(userId).set({
             subscriptionTier: tier,
             subscriptionStatus: 'active',
@@ -109,7 +109,7 @@ async function handleInvoicePaymentSucceeded(invoice) {
         const subscriptionEnd = (_d = (_c = (_b = (_a = invoice.lines) === null || _a === void 0 ? void 0 : _a.data) === null || _b === void 0 ? void 0 : _b[0]) === null || _c === void 0 ? void 0 : _c.period) === null || _d === void 0 ? void 0 : _d.end; // Unix timestamp
         if (subscriptionEnd) {
             const endDate = new Date(subscriptionEnd * 1000).toISOString();
-            console.log(`Updating subscription end for ${userDoc.id} to ${endDate}`);
+            functions.logger.log(`Updating subscription end for ${userDoc.id} to ${endDate}`);
             await userDoc.ref.set({
                 subscriptionStatus: 'active',
                 subscriptionEnd: endDate
@@ -122,7 +122,7 @@ async function handleSubscriptionDeleted(subscription) {
     const snapshot = await db.collection('users').where('subscriptionId', '==', subscription.id).get();
     if (!snapshot.empty) {
         const userDoc = snapshot.docs[0];
-        console.log(`Downgrading user ${userDoc.id} due to subscription cancellation`);
+        functions.logger.log(`Downgrading user ${userDoc.id} due to subscription cancellation`);
         await userDoc.ref.update({
             subscriptionTier: 'free',
             subscriptionStatus: 'canceled',

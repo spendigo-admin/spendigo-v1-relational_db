@@ -1,0 +1,10 @@
+{
+  "name": "Spendigo — Shop Smarter, Save More",
+  "short_name": "Spendigo",
+  "description": "Compare prices across local grocery stores and build your SmartCart.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#1a6b3c",
+  "orientation": "portrait"
+}

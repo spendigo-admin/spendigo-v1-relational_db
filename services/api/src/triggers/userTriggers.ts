@@ -24,7 +24,7 @@ export const onUserUpdate = functions.firestore
             return null;
         }
 
-        console.log(`Syncing user data to store ${newData.storeId}...`);
+        functions.logger.log(`Syncing user data to store ${newData.storeId}...`);
 
         try {
             await db.collection('stores').doc(newData.storeId).set({
@@ -35,9 +35,9 @@ export const onUserUpdate = functions.firestore
                 updatedAt: admin.firestore.FieldValue.serverTimestamp()
             }, { merge: true });
 
-            console.log(`Successfully synced subscriptionTier='${newData.subscriptionTier}' to store/${newData.storeId}`);
+            functions.logger.log(`Successfully synced subscriptionTier='${newData.subscriptionTier}' to store/${newData.storeId}`);
         } catch (error) {
-            console.error('Error syncing user data to store:', error);
+            functions.logger.error('Error syncing user data to store:', error);
         }
         return null;
     });

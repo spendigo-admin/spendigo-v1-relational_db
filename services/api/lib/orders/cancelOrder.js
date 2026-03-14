@@ -91,7 +91,7 @@ exports.cancelOrder = functions.https.onCall(async (data, context) => {
         return { success: true };
     }
     catch (error) {
-        console.error('Cancel Order Error:', error);
+        functions.logger.error('Cancel Order Error:', error);
         throw new functions.https.HttpsError('internal', error.message);
     }
 });

@@ -28,7 +28,15 @@ interface AuditContextType {
 
 const AuditContext = createContext<AuditContextType | undefined>(undefined);
 
-// Simple SHA-256 Helper with Fallback
+// Canonicalize an object to a deterministic JSON string (sorted keys, recursive)
+const canonicalize = (value: unknown): string => {
+    if (value === null || typeof value !== 'object') return JSON.stringify(value);
+    if (Array.isArray(value)) return '[' + value.map(canonicalize).join(',') + ']';
+    const sorted = Object.keys(value as Record<string, unknown>).sort();
+    return '{' + sorted.map(k => JSON.stringify(k) + ':' + canonicalize((value as Record<string, unknown>)[k])).join(',') + '}';
+};
+
+
 const sha256 = async (message: string): Promise<string> => {
     try {
         if (window.crypto && window.crypto.subtle) {
@@ -107,37 +115,16 @@ export const AuditProvider: React.FC<{ children: ReactNode }> = ({ children }) =
                 break;
             }
 
-            // 2. Check Data Integrity (Re-hash content)
-            const calculatedHash = await sha256(JSON.stringify({ ...log, hash: undefined, id: undefined })); // ID is firestore ID, not in content hash usually? 
-            // WAIT: The previous implementation included ID in the object before saving.
-            // Firestore IDs are generated on addDoc usually, OR we can setDoc with custom ID.
-            // In the previous code: id was generated mostly random.
-            // Let's stick to the previous hashing logic: hash everything EXCEPT 'hash'.
-            // But we need to be careful about what 'id' is used. 
-            // Strategy: We will generate ID client side, allow addDoc to use it or set it.
-
-            // Re-hash check:
-            // We need to match EXACTLY what was stringified.
-            // Firestore data usually comes out with keys in specific order or we need strict ordering.
-            // For now, let's assume 'log' object from Firestore matches the shape.
-            // We'll trust the stored hash for now or do a best-effort verification.
-
+            // 2. Check Data Integrity (Re-hash content using canonical key order)
             const contentToHash = { ...log, hash: undefined };
-            // Ensure ID is part of it if it was before.
-            // Firestore 'doc.id' is separate from 'doc.data()'. 
-            // We merged them in the Snapshot.
-            // So 'contentToHash' has 'id'.
 
-            const calculated = await sha256(JSON.stringify(contentToHash));
+            const calculated = await sha256(canonicalize(contentToHash));
 
             if (calculated !== log.hash) {
-                // console.error(`Tampered Data at ${log.id}: hash mismatch`);
-                // isValid = false;
-                // break;
+                console.error(`Tampered Data at ${log.id}: hash mismatch`);
+                isValid = false;
+                break;
             }
-            // FIXME: Hashing JSON is flaky across clients/dbs due to key ordering.
-            // For this verification step, we might relax it or strictly enforce order.
-            // Given the task is Migration, let's just Chain Check for now.
 
             previousHash = log.hash;
         }
@@ -149,8 +136,7 @@ export const AuditProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     // Auto-verify on load if logs exist
     useEffect(() => {
         if (logs.length > 0) {
-            // verifyIntegrity(); // Disable strict verify during migration to avoid false negatives on bad JSON order
-            setIsVerified(true); // Assume valid for now until we fix canonical JSON hashing
+            verifyIntegrity();
         }
     }, [logs.length]);
 
@@ -176,13 +162,10 @@ export const AuditProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             hash: ''
         };
 
-        // Calculate Hash
-        // We include a temporary ID? Or just hash the content without ID?
-        // Previous impl included ID. Let's generate one.
         const id = `txn_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
 
         const logEntry = { id, ...newLogData };
-        const hash = await sha256(JSON.stringify({ ...logEntry, hash: undefined }));
+        const hash = await sha256(canonicalize({ ...logEntry, hash: undefined }));
         logEntry.hash = hash;
 
         // Write to Firestore

@@ -42,6 +42,18 @@ export const removeTeamMember = functions.https.onCall(async (data, context) => 
         throw new functions.https.HttpsError('invalid-argument', 'Cannot remove yourself');
     }
 
+    // Role-rank guard: caller may only remove members strictly below their own rank.
+    // Prevents a MANAGER from removing an OWNER (store takeover vector).
+    const ROLE_RANK: Record<string, number> = { OWNER: 3, MANAGER: 2, STAFF: 1, MARKETING: 1 };
+    const callerRank = ROLE_RANK[callerData.merchantRole] ?? 0;
+    const targetRank = ROLE_RANK[targetDoc.data()?.merchantRole] ?? 0;
+    if (targetRank >= callerRank) {
+        throw new functions.https.HttpsError(
+            'permission-denied',
+            'Cannot remove a member with equal or higher role'
+        );
+    }
+
     // 4. Update Target User (Unlink from store)
     await targetRef.update({
         storeId: admin.firestore.FieldValue.delete(),

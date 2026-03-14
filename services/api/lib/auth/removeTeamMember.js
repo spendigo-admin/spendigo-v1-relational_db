@@ -41,7 +41,7 @@ const admin = __importStar(require("firebase-admin"));
  * Removes the storeId and merchantRole from the target user
  */
 exports.removeTeamMember = functions.https.onCall(async (data, context) => {
-    var _a;
+    var _a, _b, _c, _d;
     // 1. Verify Authentication
     if (!context.auth) {
         throw new functions.https.HttpsError('unauthenticated', 'Must be authenticated');
@@ -68,6 +68,14 @@ exports.removeTeamMember = functions.https.onCall(async (data, context) => {
     // Prevent removing yourself (optional, but good practice)
     if (context.auth.uid === targetUserId) {
         throw new functions.https.HttpsError('invalid-argument', 'Cannot remove yourself');
+    }
+    // Role-rank guard: caller may only remove members strictly below their own rank.
+    // Prevents a MANAGER from removing an OWNER (store takeover vector).
+    const ROLE_RANK = { OWNER: 3, MANAGER: 2, STAFF: 1, MARKETING: 1 };
+    const callerRank = (_b = ROLE_RANK[callerData.merchantRole]) !== null && _b !== void 0 ? _b : 0;
+    const targetRank = (_d = ROLE_RANK[(_c = targetDoc.data()) === null || _c === void 0 ? void 0 : _c.merchantRole]) !== null && _d !== void 0 ? _d : 0;
+    if (targetRank >= callerRank) {
+        throw new functions.https.HttpsError('permission-denied', 'Cannot remove a member with equal or higher role');
     }
     // 4. Update Target User (Unlink from store)
     await targetRef.update({

@@ -31,22 +31,21 @@ export const deleteUser = functions.https.onCall(async (data, context) => {
     }
 
     try {
-        console.log(`Admin ${callerUid} deleting user ${targetUid}`);
+        functions.logger.log(`Admin ${callerUid} deleting user ${targetUid}`);
 
-        // 2. Delete from Firebase Authentication
+        // 2. Fetch user data BEFORE deleting — needed for merchant store suspension below.
+        const userDoc = await admin.firestore().collection('users').doc(targetUid).get();
+        const userData = userDoc.data();
+
+        // 3. Delete from Firebase Authentication
         await admin.auth().deleteUser(targetUid);
 
-        // 3. Delete User Profile from Firestore
+        // 4. Delete User Profile from Firestore
         await admin.firestore().collection('users').doc(targetUid).delete();
 
-        // 4. (Optional) Cleanup other data:
-        // - Orders: Keep for records? Or anonymize? usually keep for records.
-        // - Stores: If merchant, suspend store?
-
-        // Check if user was a merchant
-        const userDoc = await admin.firestore().collection('users').doc(targetUid).get();
-        if (userDoc.exists && userDoc.data()?.role === 'merchant') {
-            const storeId = userDoc.data()?.storeId;
+        // 5. If merchant, suspend their store to preserve order history but hide it publicly.
+        if (userData?.role === 'merchant') {
+            const storeId = userData?.storeId;
             if (storeId) {
                 // Suspend the store instead of deleting it to preserve order history
                 await admin.firestore().collection('stores').doc(storeId).update({
@@ -59,7 +58,7 @@ export const deleteUser = functions.https.onCall(async (data, context) => {
 
         return { success: true, message: `User ${targetUid} deleted successfully.` };
     } catch (error: any) {
-        console.error('Error deleting user:', error);
+        functions.logger.error('Error deleting user:', error);
         throw new functions.https.HttpsError('internal', `Failed to delete user: ${error.message}`);
     }
 });

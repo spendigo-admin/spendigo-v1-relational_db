@@ -44,12 +44,12 @@ export const cleanupOrphanedUsers = functions.https.onCall(async (data, context)
             } catch (error: any) {
                 if (error.code === 'auth/user-not-found') {
                     // User does not exist in Auth, delete from Firestore
-                    console.log(`Deleting orphan user: ${uid} (${doc.data().email})`);
+                    functions.logger.log(`Deleting orphan user: ${uid} (${doc.data().email})`);
                     batch.delete(doc.ref);
                     deletedCount++;
                     operationCounter++;
                 } else {
-                    console.error(`Error checking user ${uid}:`, error);
+                    functions.logger.error(`Error checking user ${uid}:`, error);
                 }
             }
 
@@ -74,7 +74,7 @@ export const cleanupOrphanedUsers = functions.https.onCall(async (data, context)
         };
 
     } catch (error: any) {
-        console.error("Cleanup failed:", error);
+        functions.logger.error("Cleanup failed:", error);
         throw new functions.https.HttpsError('internal', `Cleanup failed: ${error.message}`);
     }
 });

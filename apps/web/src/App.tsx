@@ -59,7 +59,6 @@ const AdminAuditLogs = lazy(() => import('./pages/admin/AuditLogs'));
 const AdminFlyerModeration = lazy(() => import('./pages/admin/FlyerModeration'));
 const AdminSettings = lazy(() => import('./pages/admin/Settings'));
 const AdminMasterCatalog = lazy(() => import('./pages/admin/MasterCatalog'));
-const AdminSeedUsers = lazy(() => import('./pages/admin/SeedUsers'));
 const AdminAdManager = lazy(() => import('./pages/admin/AdManager'));
 const AdminSurveyManager = lazy(() => import('./pages/admin/SurveyManager'));
 const AdminSystemTools = lazy(() => import('./pages/admin/SystemTools'));
@@ -176,7 +175,6 @@ function App() {
                                                                     <Route path="/admin/users" element={<AdminUserManagement />} />
                                                                     <Route path="/admin/stores" element={<AdminStoreManagement />} />
                                                                     <Route path="/admin/catalog" element={<AdminMasterCatalog />} />
-                                                                    <Route path="/admin/seed" element={<AdminSeedUsers />} />
                                                                     <Route path="/admin/settings" element={<AdminSettings />} />
                                                                     <Route path="/admin/audit-logs" element={<AdminAuditLogs />} />
                                                                     <Route path="/admin/ads" element={<AdminAdManager />} />

@@ -824,15 +824,12 @@ export const useCatalog = () => {
 
     // Bulk Add Merchant Products
     const bulkAddMerchantProducts = async (storeId: string, items: { barcode: string, price: number, quantity: number }[]) => {
-        const batch = (await import('firebase/firestore')).writeBatch(db);
         const results = {
             success: 0,
             failed: 0,
             errors: [] as string[]
         };
 
-        // For demo, we do a simple sequential lookup or a pooled lookup.
-        // real production would use a more optimized matching engine.
         for (const item of items) {
             try {
                 // 1. Find master product by barcode locally (Robust Check)
@@ -840,7 +837,7 @@ export const useCatalog = () => {
                 const q = query(collection(db, 'master_products'), where('barcode', 'in', variants));
                 const snap = await import('firebase/firestore').then(mod => mod.getDocs(q));
 
-                let masterId = null;
+                let masterId: string | null = null;
 
                 if (!snap.empty) {
                     masterId = snap.docs[0].id;
@@ -853,7 +850,6 @@ export const useCatalog = () => {
                             console.log(`[bulkAddMerchantProducts] External product fetched, saving to pending review...`);
                             masterId = await addPendingMasterProduct(externalProduct as any, storeId, item.barcode);
                             console.log(`[bulkAddMerchantProducts] ✅ Product saved to pending: ${masterId}`);
-                            results.success++;
                         }
                     } catch (extErr: any) {
                         console.error(`[bulkAddMerchantProducts] ❌ External lookup failed for ${item.barcode}:`, extErr.message, extErr);
@@ -864,7 +860,10 @@ export const useCatalog = () => {
                     const merchantProductId = `${storeId}_${masterId}`;
                     const ref = doc(db, 'merchant_products', merchantProductId);
 
-                    batch.set(ref, {
+                    // Use individual setDoc instead of batch to avoid:
+                    // 1. 500-operation limit silently dropping items
+                    // 2. Atomic batch failure rejecting ALL items if one fails
+                    await setDoc(ref, {
                         merchant_product_id: merchantProductId,
                         merchant_id: storeId,
                         master_product_id: masterId,
@@ -877,7 +876,8 @@ export const useCatalog = () => {
                         updated_at: serverTimestamp()
                     }, { merge: true });
 
-                    if (!snap.empty) results.success++; // Only count if not already counted by external discovery
+                    results.success++;
+                    console.log(`[bulkAddMerchantProducts] ✅ Merchant product created: ${merchantProductId}`);
                 } else {
                     results.failed++;
                     results.errors.push(`UPC ${item.barcode} not found locally or globally.`);
@@ -885,11 +885,11 @@ export const useCatalog = () => {
             } catch (err: any) {
                 results.failed++;
                 results.errors.push(`Error processing UPC ${item.barcode}: ${err.message}`);
+                console.error(`[bulkAddMerchantProducts] ❌ Failed to create merchant product for ${item.barcode}:`, err.message);
             }
         }
 
         if (results.success > 0) {
-            await batch.commit();
             await syncStoreProductCount(storeId);
         }
 
@@ -926,13 +926,19 @@ export const useCatalog = () => {
             'egg': 'Dairy', 'oeuf': 'Dairy'
         };
 
+        const cleanBarcode = barcode.trim().replace(/[^0-9]/g, '');
+        if (!cleanBarcode) {
+            setLoading(false);
+            throw new Error("Invalid barcode provided.");
+        }
+
         try {
             // Try different variants of the barcode (Original, 12-digit, Stripped)
-            const variants = [barcode];
-            if (barcode.length === 13 && barcode.startsWith('0')) variants.push(barcode.slice(1));
-            if (barcode.startsWith('0')) variants.push(barcode.replace(/^0+/, ''));
+            const variants = [cleanBarcode];
+            if (cleanBarcode.length === 13 && cleanBarcode.startsWith('0')) variants.push(cleanBarcode.slice(1));
+            if (cleanBarcode.startsWith('0')) variants.push(cleanBarcode.replace(/^0+/, ''));
 
-            console.log(`[fetchExternalUPC] Trying barcode variants for "${barcode}":`, Array.from(new Set(variants)));
+            console.log(`[fetchExternalUPC] Trying barcode variants for "${cleanBarcode}":`, Array.from(new Set(variants)));
 
             let pData = null;
             for (const v of Array.from(new Set(variants))) {
@@ -989,24 +995,24 @@ export const useCatalog = () => {
             const mapped: Partial<MasterProduct> = {
                 product_name: name,
                 brand_name: p.brands?.split(',')[0] || "Generic",
-                barcode: barcode,
-                upc_gtin: barcode,
+                barcode: cleanBarcode,
+                upc_gtin: cleanBarcode,
                 primary_image_url: p.image_url || p.image_front_url || "",
                 short_description: p.generic_name || p.product_name,
                 ingredients: p.ingredients_text,
-                allergens: p.allergens_tags?.map((t: string) => t.replace('en:', '')),
+                allergens: Array.isArray(p.allergens_tags) ? p.allergens_tags.map((t: any) => typeof t === 'string' ? t.replace('en:', '') : String(t)) : [],
                 dietary_tags: [
-                    ...(p.labels_tags || []),
-                    ...(p.states_tags?.includes('en:checked') ? ['verified'] : [])
-                ].map(t => t.replace('en:', '')),
+                    ...(Array.isArray(p.labels_tags) ? p.labels_tags : []),
+                    ...(Array.isArray(p.states_tags) && p.states_tags.includes('en:checked') ? ['verified'] : [])
+                ].map((t: any) => typeof t === 'string' ? t.replace('en:', '') : String(t)),
                 nutrition: {
                     calories: p.nutriments?.['energy-kcal_100g'],
                     protein: p.nutriments?.proteins_100g,
                     fat: p.nutriments?.fat_100g,
                     carbs: p.nutriments?.carbohydrates_100g
                 },
-                net_quantity_value: parseFloat(p.quantity?.match(/[\d.]+/)?.[0] || '0'),
-                net_quantity_unit: p.quantity?.match(/[a-zA-Z]+/)?.[0] || '',
+                net_quantity_value: parseFloat(String(p.quantity || '').match(/[\d.]+/)?.[0] || '0'),
+                net_quantity_unit: String(p.quantity || '').match(/[a-zA-Z]+/)?.[0] || '',
                 data_source: 'open_food_facts',
                 status: 'active',
                 verification_status: 'unverified',
@@ -1053,6 +1059,7 @@ export const useCatalog = () => {
                 if (obj === null || obj === undefined) return null;
                 if (Array.isArray(obj)) return obj.filter(v => v !== undefined).map(cleanPayload);
                 if (typeof obj === 'object') {
+                    if (typeof obj.isEqual === 'function' || obj instanceof Date) return obj;
                     const cleaned: any = {};
                     for (const [key, value] of Object.entries(obj)) {
                         if (value !== undefined) {
@@ -1140,6 +1147,7 @@ export const useCatalog = () => {
                 if (obj === null || obj === undefined) return null;
                 if (Array.isArray(obj)) return obj.filter(v => v !== undefined).map(cleanPayload);
                 if (typeof obj === 'object') {
+                    if (typeof obj.isEqual === 'function' || obj instanceof Date) return obj;
                     const cleaned: any = {};
                     for (const [key, value] of Object.entries(obj)) {
                         if (value !== undefined) {

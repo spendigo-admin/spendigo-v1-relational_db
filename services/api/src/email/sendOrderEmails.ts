@@ -103,7 +103,7 @@ export const sendOrderConfirmation = functions.firestore
                 createdAt: admin.firestore.FieldValue.serverTimestamp(),
             });
 
-            console.log(`Queued order confirmation email for ${orderId}`);
+            functions.logger.log(`Queued order confirmation email for ${orderId}`);
 
             // Update order status
             await admin.firestore().collection('orders').doc(orderId).update({
@@ -113,7 +113,7 @@ export const sendOrderConfirmation = functions.firestore
 
             return { success: true };
         } catch (error) {
-            console.error('Error queuing order confirmation email:', error);
+            functions.logger.error('Error queuing order confirmation email:', error);
             return { success: false, error: String(error) };
         }
     });
@@ -212,11 +212,11 @@ export const sendOrderStatusUpdate = functions.firestore
                 createdAt: admin.firestore.FieldValue.serverTimestamp(),
             });
 
-            console.log(`Queued order status email for ${orderId} (${after.status})`);
+            functions.logger.log(`Queued order status email for ${orderId} (${after.status})`);
 
             return { success: true };
         } catch (error) {
-            console.error('Error queuing order status email:', error);
+            functions.logger.error('Error queuing order status email:', error);
             return { success: false, error: String(error) };
         }
     });

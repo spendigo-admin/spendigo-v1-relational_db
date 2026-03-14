@@ -77,11 +77,25 @@ export const placeOrder = functions.https.onCall(async (data, context) => {
                 const newOrderRef = db.collection('orders').doc();
                 orderIds.push(newOrderRef.id);
 
+                // Explicit allowlist — never spread client-supplied data directly.
+                // status and paymentStatus are always server-assigned to prevent
+                // a client injecting { paymentStatus: 'paid', status: 'delivered' }.
                 const finalOrder = {
-                    ...orderData,
-                    customerId: userId, // Enforce Authenticated ID
+                    storeId: orderData.storeId,
+                    storeName: orderData.storeName,
+                    items: orderData.items,
+                    subtotal: orderData.subtotal,
+                    deliveryFee: orderData.deliveryFee,
+                    tax: orderData.tax,
+                    total: orderData.total,
+                    paymentMethod: orderData.paymentMethod,
+                    deliveryAddress: orderData.deliveryAddress,
+                    // Server-enforced fields:
+                    customerId: userId,
                     customerName: userName,
                     customerEmail: userEmail,
+                    status: 'placed',
+                    paymentStatus: 'pending',
                     createdAt: admin.firestore.FieldValue.serverTimestamp(),
                     date: new Date().toISOString()
                 };
@@ -93,7 +107,7 @@ export const placeOrder = functions.https.onCall(async (data, context) => {
         return { orderIds, success: true };
 
     } catch (error: any) {
-        console.error('Place Order Transaction Failed:', error);
+        functions.logger.error('Place Order Transaction Failed:', error);
         // Re-throw HttpsErrors as-is to preserve the error code for the client
         if (error instanceof functions.https.HttpsError) {
             throw error;

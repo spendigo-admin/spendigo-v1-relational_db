@@ -1,44 +1,205 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import '../../styles/design-system.css';
 
 const HowItWorks: React.FC = () => {
+    const [openFaq, setOpenFaq] = useState<number | null>(null);
+
+    // SEO: Dynamic meta tags and structured data
+    useEffect(() => {
+        // Page title
+        document.title = 'How It Works — Spendigo | Compare Grocery Prices & Save Money in Canada';
+
+        // Meta description
+        const setMeta = (name: string, content: string, property?: boolean) => {
+            const attr = property ? 'property' : 'name';
+            let el = document.querySelector(`meta[${attr}="${name}"]`) as HTMLMetaElement;
+            if (!el) {
+                el = document.createElement('meta');
+                el.setAttribute(attr, name);
+                document.head.appendChild(el);
+            }
+            el.content = content;
+        };
+
+        setMeta('description', 'Learn how Spendigo helps Canadian shoppers save money on groceries. Compare prices across local stores, optimize your cart with AI, and save up to 15% on every grocery run.');
+        setMeta('keywords', 'grocery price comparison Canada, save money groceries, compare grocery prices, cheap groceries near me, SmartCart, grocery optimizer, local grocery deals, Spendigo');
+        setMeta('robots', 'index, follow');
+
+        // Open Graph
+        setMeta('og:title', 'How Spendigo Works — Compare Prices, Save on Groceries', true);
+        setMeta('og:description', 'Spendigo compares grocery prices across your local stores and builds the cheapest cart automatically. Learn how our SmartCart optimizer works.', true);
+        setMeta('og:url', 'https://spendigo.ca/how-it-works', true);
+        setMeta('og:type', 'website', true);
+
+        // Twitter
+        setMeta('twitter:title', 'How Spendigo Works — Compare Prices, Save on Groceries');
+        setMeta('twitter:description', 'Compare grocery prices across local stores and save. Learn how Spendigo SmartCart optimizer works.');
+
+        // Canonical URL
+        let canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement;
+        if (!canonical) {
+            canonical = document.createElement('link');
+            canonical.rel = 'canonical';
+            document.head.appendChild(canonical);
+        }
+        canonical.href = 'https://spendigo.ca/how-it-works';
+
+        // JSON-LD Structured Data: FAQPage (Google rich results)
+        const faqStructuredData = {
+            '@context': 'https://schema.org',
+            '@type': 'FAQPage',
+            mainEntity: [
+                { '@type': 'Question', name: 'Is Spendigo free to use?', acceptedAnswer: { '@type': 'Answer', text: 'Yes! Spendigo is completely free for shoppers. We partner with local stores who pay a small commission — you never pay extra.' } },
+                { '@type': 'Question', name: 'How does the SmartCart Optimizer work?', acceptedAnswer: { '@type': 'Answer', text: 'When you add items to your wishlist, our algorithm compares prices across all partner stores and finds the combination that gives you the lowest total. It can split your order across multiple stores if that saves you money.' } },
+                { '@type': 'Question', name: 'Which stores are available on Spendigo?', acceptedAnswer: { '@type': 'Answer', text: 'We partner with local grocery stores, ethnic food shops, specialty stores, and more in your area. New stores are added regularly.' } },
+                { '@type': 'Question', name: 'Do I have to visit multiple stores?', acceptedAnswer: { '@type': 'Answer', text: 'That is up to you! The optimizer shows you both the cheapest split-store option and a convenient single-store option. You decide what matters more — maximum savings or minimum trips.' } },
+                { '@type': 'Question', name: 'How are prices kept up to date?', acceptedAnswer: { '@type': 'Answer', text: 'Partner stores manage their own prices and inventory directly on Spendigo. Prices reflect what is currently available in-store.' } },
+            ]
+        };
+
+        // JSON-LD Structured Data: WebPage + HowTo
+        const howToStructuredData = {
+            '@context': 'https://schema.org',
+            '@type': 'HowTo',
+            name: 'How to Save Money on Groceries with Spendigo',
+            description: 'Use Spendigo SmartCart to compare grocery prices across local Canadian stores and automatically find the cheapest combination.',
+            step: [
+                { '@type': 'HowToStep', position: 1, name: 'Browse & Build Your List', text: 'Search for groceries across all local partner stores from one place. Add items to your SmartCart wishlist.' },
+                { '@type': 'HowToStep', position: 2, name: 'AI-Powered Optimization', text: 'Our SmartCart algorithm analyzes prices across every partner store and calculates the cheapest combination.' },
+                { '@type': 'HowToStep', position: 3, name: 'Review Your Savings', text: 'See a clear breakdown of where each item is cheapest and how much you are saving.' },
+                { '@type': 'HowToStep', position: 4, name: 'Add to Cart & Checkout', text: 'One tap adds your optimized selection to the cart. Confirm your order and we handle the rest.' },
+            ]
+        };
+
+        const addJsonLd = (data: object, id: string) => {
+            let script = document.getElementById(id) as HTMLScriptElement;
+            if (!script) {
+                script = document.createElement('script');
+                script.id = id;
+                script.type = 'application/ld+json';
+                document.head.appendChild(script);
+            }
+            script.textContent = JSON.stringify(data);
+        };
+
+        addJsonLd(faqStructuredData, 'ld-faq');
+        addJsonLd(howToStructuredData, 'ld-howto');
+
+        // Cleanup on unmount
+        return () => {
+            document.title = 'Spendigo — Shop Smarter, Save More';
+            document.getElementById('ld-faq')?.remove();
+            document.getElementById('ld-howto')?.remove();
+            document.querySelector('link[rel="canonical"]')?.remove();
+        };
+    }, []);
+
+    const steps = [
+        {
+            step: 1,
+            icon: '🛒',
+            title: 'Browse & Build Your List',
+            desc: 'Search for groceries across all local partner stores from one place. Add items to your SmartCart wishlist — no need to visit each store individually.',
+            detail: 'Use our search to find products by name, category, or even scan a barcode. We show you prices from every nearby store instantly.'
+        },
+        {
+            step: 2,
+            icon: '🧠',
+            title: 'AI-Powered Optimization',
+            desc: 'Our SmartCart algorithm analyzes prices across every partner store and calculates the cheapest combination — even if it means splitting your order.',
+            detail: 'The optimizer considers unit prices, package sizes, and availability to find savings you would never spot manually.'
+        },
+        {
+            step: 3,
+            icon: '⚡',
+            title: 'Review Your Savings',
+            desc: 'See a clear breakdown of where each item is cheapest, how much you\'re saving, and whether a single-store trip might be worth the convenience.',
+            detail: 'Our Trip Saver insight even shows you if consolidating to one store saves you time at a small extra cost.'
+        },
+        {
+            step: 4,
+            icon: '✅',
+            title: 'Add to Cart & Checkout',
+            desc: 'One tap adds your optimized selection to the cart. Confirm your order and we handle the rest — coordinating across stores seamlessly.',
+            detail: 'Each store fulfills their portion. You get the best price on every item without the legwork.'
+        },
+    ];
+
+    const features = [
+        { icon: '🔍', title: 'Cross-Store Search', desc: 'Compare prices across all partner stores in one search' },
+        { icon: '📊', title: 'SmartCart Optimizer', desc: 'AI splits your order to minimize total cost automatically' },
+        { icon: '🏪', title: 'Support Local Stores', desc: 'Shop from independent grocers, ethnic stores & specialty shops' },
+        { icon: '📱', title: 'Barcode Scanner', desc: 'Scan any product to instantly compare prices nearby' },
+        { icon: '🏷️', title: 'Live Flyers & Deals', desc: 'Browse digital flyers and exclusive merchant deals' },
+        { icon: '💰', title: '100% Free for Shoppers', desc: 'No fees, no subscriptions — just savings' },
+    ];
+
+    const faqs = [
+        { q: 'Is Spendigo free to use?', a: 'Yes! Spendigo is completely free for shoppers. We partner with local stores who pay a small commission — you never pay extra.' },
+        { q: 'Which stores are available?', a: 'We partner with local grocery stores, ethnic food shops, specialty stores, and more in your area. New stores are added regularly — check the Stores page to see who\'s nearby.' },
+        { q: 'How does the SmartCart Optimizer work?', a: 'When you add items to your wishlist, our algorithm compares prices across all partner stores and finds the combination that gives you the lowest total. It can split your order across multiple stores if that saves you money.' },
+        { q: 'What if a product isn\'t in the catalog?', a: 'Merchants can add products using barcode scanning or bulk upload. If a product you want is missing, you can request it and we\'ll work with local stores to add it.' },
+        { q: 'Do I have to visit multiple stores?', a: 'That\'s up to you! The optimizer shows you both the cheapest split-store option and a convenient single-store option. You decide what matters more — maximum savings or minimum trips.' },
+        { q: 'How are prices kept up to date?', a: 'Partner stores manage their own prices and inventory directly on Spendigo. Prices reflect what\'s currently available in-store.' },
+    ];
+
     return (
-        <div className="animate-fade-in pb-20">
-            {/* Hero Section */}
-            <div className="bg-gradient-to-br from-[var(--brand-primary)] via-[#4f46e5] to-[var(--brand-secondary)] text-white py-16 px-4">
-                <div className="max-w-3xl mx-auto text-center">
-                    <span className="text-5xl mb-4 block">✨</span>
-                    <h1 className="text-3xl md:text-4xl font-bold mb-4">Spendigo Optimizer</h1>
-                    <p className="text-lg text-white/90 max-w-xl mx-auto">
-                        Our algorithm automatically splits your order across stores to maximize savings.
-                        Customers save an average of <strong>15%</strong> per order.
+        <div className="animate-fade-in pb-24">
+            {/* Hero */}
+            <div className="relative overflow-hidden bg-gradient-to-br from-[var(--brand-primary)] via-[#2d8a55] to-[#4f46e5] text-white py-20 px-4">
+                <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 20% 50%, white 1px, transparent 1px), radial-gradient(circle at 80% 50%, white 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
+                <div className="max-w-3xl mx-auto text-center relative z-10">
+                    <div className="inline-flex items-center gap-2 bg-white/15 backdrop-blur-sm px-4 py-1.5 rounded-full text-sm font-medium mb-6">
+                        <span>🇨🇦</span> Built for Canadian Shoppers
+                    </div>
+                    <h1 className="text-3xl md:text-5xl font-black mb-4 leading-tight">
+                        Stop Overpaying for<br />Groceries
+                    </h1>
+                    <p className="text-lg text-white/85 max-w-xl mx-auto leading-relaxed">
+                        Spendigo compares prices across your local stores and builds the
+                        <strong className="text-white"> cheapest possible cart</strong> — automatically.
                     </p>
+                    <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
+                        <Link
+                            to="/stores"
+                            className="px-8 py-3.5 bg-white text-[var(--brand-primary)] font-bold rounded-full hover:scale-105 transition-transform shadow-lg shadow-black/20"
+                        >
+                            Browse Stores
+                        </Link>
+                        <Link
+                            to="/smartcart"
+                            className="px-8 py-3.5 bg-white/15 backdrop-blur-sm text-white font-bold rounded-full border border-white/30 hover:bg-white/25 transition-all"
+                        >
+                            Try SmartCart →
+                        </Link>
+                    </div>
                 </div>
             </div>
 
-            <div className="max-w-3xl mx-auto p-4 space-y-8">
-                {/* How It Works Steps */}
-                <section className="bg-white rounded-xl border border-[var(--glass-border)] p-6">
-                    <h2 className="text-2xl font-bold text-[var(--text-main)] mb-6 text-center">How It Works</h2>
+            <div className="max-w-3xl mx-auto p-4 space-y-10 mt-8">
 
-                    <div className="space-y-6">
-                        {[
-                            { step: 1, icon: '📝', title: 'Create Your Wishlist', desc: 'Add all the items you need to your wishlist. No need to visit each store individually.' },
-                            { step: 2, icon: '🔍', title: 'We Compare Prices', desc: 'Our algorithm scans prices across all partner stores in real-time to find the best deals.' },
-                            { step: 3, icon: '🧮', title: 'Smart Optimization', desc: 'We calculate the optimal combination of stores to minimize your total cost, factoring in delivery fees.' },
-                            { step: 4, icon: '🛒', title: 'One-Click Checkout', desc: 'Add the optimized cart with a single click. We handle the split orders automatically.' },
-                        ].map(item => (
-                            <div key={item.step} className="flex gap-4">
-                                <div className="flex-shrink-0 w-12 h-12 rounded-full bg-[var(--brand-primary)]/10 flex items-center justify-center text-2xl">
-                                    {item.icon}
-                                </div>
-                                <div>
-                                    <div className="flex items-center gap-2 mb-1">
-                                        <span className="w-6 h-6 rounded-full bg-[var(--brand-primary)] text-white text-sm font-bold flex items-center justify-center">{item.step}</span>
-                                        <h3 className="font-bold text-[var(--text-main)]">{item.title}</h3>
+                {/* Steps */}
+                <section>
+                    <h2 className="text-2xl font-black text-[var(--text-main)] mb-8 text-center">How It Works</h2>
+                    <div className="space-y-5">
+                        {steps.map((item, idx) => (
+                            <div key={item.step} className="relative">
+                                {idx < steps.length - 1 && (
+                                    <div className="absolute left-6 top-14 bottom-0 w-0.5 bg-gradient-to-b from-[var(--brand-primary)]/30 to-transparent" style={{ height: 'calc(100% + 6px)' }} />
+                                )}
+                                <div className="flex gap-4 bg-white rounded-2xl border border-[var(--glass-border)] p-5 shadow-sm hover:shadow-md transition-shadow">
+                                    <div className="flex-shrink-0 w-12 h-12 rounded-2xl bg-gradient-to-br from-[var(--brand-primary)] to-[#4f46e5] flex items-center justify-center text-2xl shadow-md shadow-[var(--brand-primary)]/20">
+                                        {item.icon}
                                     </div>
-                                    <p className="text-sm text-[var(--text-muted)]">{item.desc}</p>
+                                    <div className="flex-1">
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <span className="px-2 py-0.5 rounded-md bg-[var(--brand-primary)]/10 text-[var(--brand-primary)] text-xs font-bold">Step {item.step}</span>
+                                            <h3 className="font-bold text-[var(--text-main)]">{item.title}</h3>
+                                        </div>
+                                        <p className="text-sm text-[var(--text-muted)] leading-relaxed">{item.desc}</p>
+                                        <p className="text-xs text-[var(--text-muted)]/70 mt-2 italic">{item.detail}</p>
+                                    </div>
                                 </div>
                             </div>
                         ))}
@@ -46,103 +207,121 @@ const HowItWorks: React.FC = () => {
                 </section>
 
                 {/* Stats */}
-                <section className="grid grid-cols-3 gap-4">
+                <section className="grid grid-cols-3 gap-3">
                     {[
-                        { value: '15%', label: 'Average Savings' },
-                        { value: '7+', label: 'Partner Stores' },
-                        { value: '1000+', label: 'Products Compared' },
+                        { value: 'Free', label: 'For Shoppers', color: 'text-green-600' },
+                        { value: 'Live', label: 'Store Prices', color: 'text-blue-600' },
+                        { value: 'Local', label: 'Partner Stores', color: 'text-purple-600' },
                     ].map(stat => (
-                        <div key={stat.label} className="bg-white rounded-xl border border-[var(--glass-border)] p-4 text-center">
-                            <p className="text-2xl font-bold text-[var(--brand-primary)]">{stat.value}</p>
-                            <p className="text-xs text-[var(--text-muted)]">{stat.label}</p>
+                        <div key={stat.label} className="bg-white rounded-2xl border border-[var(--glass-border)] p-5 text-center shadow-sm">
+                            <p className={`text-2xl font-black ${stat.color}`}>{stat.value}</p>
+                            <p className="text-xs text-[var(--text-muted)] mt-1 font-medium">{stat.label}</p>
                         </div>
                     ))}
                 </section>
 
-                {/* Example Savings */}
-                <section className="bg-green-50 rounded-xl border border-green-200 p-6">
-                    <h2 className="text-xl font-bold text-green-800 mb-4 flex items-center gap-2">
-                        <span>💰</span> Example Savings
+                {/* Savings Example */}
+                <section className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl border border-green-200 p-6 shadow-sm">
+                    <h2 className="text-xl font-black text-green-800 mb-5 flex items-center gap-2">
+                        <span className="text-2xl">💡</span> SmartCart In Action
                     </h2>
+                    <p className="text-sm text-green-700 mb-4">
+                        Here's how a typical grocery run looks with Spendigo's optimizer:
+                    </p>
                     <div className="space-y-3">
-                        <div className="flex justify-between items-center">
-                            <span className="text-green-700">Avocados (5pk)</span>
-                            <div className="text-right">
-                                <span className="text-green-600 font-bold">$5.99</span>
-                                <span className="text-sm text-green-500 ml-2 line-through">$8.99</span>
+                        {[
+                            { item: 'Basmati Rice 10lb', store: 'Hasty Mart', price: '$12.99', was: '$18.99' },
+                            { item: 'Olive Oil 1L', store: 'Fresh Farms', price: '$6.49', was: '$9.99' },
+                            { item: 'Eggs (12pk)', store: 'Hasty Mart', price: '$4.99', was: '$7.49' },
+                            { item: 'Greek Yogurt 500g', store: 'Valley Grocers', price: '$3.99', was: '$5.49' },
+                        ].map((row, i) => (
+                            <div key={i} className="flex items-center justify-between bg-white/60 rounded-xl px-4 py-3">
+                                <div>
+                                    <span className="font-medium text-green-800 text-sm">{row.item}</span>
+                                    <span className="text-xs text-green-600 ml-2 bg-green-100 px-2 py-0.5 rounded-full">{row.store}</span>
+                                </div>
+                                <div className="text-right flex items-center gap-2">
+                                    <span className="text-green-700 font-bold">{row.price}</span>
+                                    <span className="text-xs text-green-400 line-through">{row.was}</span>
+                                </div>
                             </div>
-                        </div>
-                        <div className="flex justify-between items-center">
-                            <span className="text-green-700">Bananas (bunch)</span>
-                            <div className="text-right">
-                                <span className="text-green-600 font-bold">$2.49</span>
-                                <span className="text-sm text-green-500 ml-2 line-through">$2.99</span>
+                        ))}
+                        <div className="border-t border-green-300 pt-4 mt-4 flex justify-between items-center">
+                            <div>
+                                <span className="font-bold text-green-800">You Save</span>
+                                <span className="text-xs text-green-600 ml-2">across 3 stores</span>
                             </div>
-                        </div>
-                        <div className="flex justify-between items-center">
-                            <span className="text-green-700">Eggs (12pk)</span>
-                            <div className="text-right">
-                                <span className="text-green-600 font-bold">$5.99</span>
-                                <span className="text-sm text-green-500 ml-2 line-through">$8.99</span>
-                            </div>
-                        </div>
-                        <div className="border-t border-green-300 pt-3 mt-3 flex justify-between font-bold">
-                            <span className="text-green-800">Your Savings</span>
-                            <span className="text-green-600">$6.50 saved!</span>
+                            <span className="text-xl font-black text-green-600 bg-green-100 px-4 py-1 rounded-full">$13.50</span>
                         </div>
                     </div>
                 </section>
 
-                {/* Features */}
-                <section className="bg-white rounded-xl border border-[var(--glass-border)] p-6">
-                    <h2 className="text-xl font-bold text-[var(--text-main)] mb-4">Why Choose Spendigo?</h2>
-                    <div className="grid grid-cols-2 gap-4">
-                        {[
-                            { icon: '⚡', title: 'Real-Time Prices', desc: 'Prices updated hourly' },
-                            { icon: '🏪', title: 'Local Stores', desc: 'Support your community' },
-                            { icon: '🚚', title: 'Smart Delivery', desc: 'Optimized routes' },
-                            { icon: '💳', title: 'Split Payments', desc: 'One checkout, multiple stores' },
-                            { icon: '🔔', title: 'Price Alerts', desc: 'Never miss a deal' },
-                            { icon: '📊', title: 'Savings Tracker', desc: 'See your total savings' },
-                        ].map(feature => (
+                {/* Features Grid */}
+                <section className="bg-white rounded-2xl border border-[var(--glass-border)] p-6 shadow-sm">
+                    <h2 className="text-xl font-black text-[var(--text-main)] mb-5">Why Spendigo?</h2>
+                    <div className="grid grid-cols-2 gap-5">
+                        {features.map(feature => (
                             <div key={feature.title} className="flex items-start gap-3">
-                                <span className="text-2xl">{feature.icon}</span>
+                                <span className="text-2xl flex-shrink-0">{feature.icon}</span>
                                 <div>
-                                    <p className="font-medium text-[var(--text-main)]">{feature.title}</p>
-                                    <p className="text-xs text-[var(--text-muted)]">{feature.desc}</p>
+                                    <p className="font-bold text-sm text-[var(--text-main)]">{feature.title}</p>
+                                    <p className="text-xs text-[var(--text-muted)] leading-relaxed">{feature.desc}</p>
                                 </div>
                             </div>
                         ))}
                     </div>
                 </section>
 
-                {/* CTA */}
-                <section className="text-center">
-                    <Link
-                        to="/smartcart"
-                        className="inline-block px-8 py-4 bg-[var(--brand-primary)] text-white font-bold rounded-xl text-lg hover:brightness-110 transition-all"
-                    >
-                        Try SmartCart Now →
-                    </Link>
-                    <p className="text-sm text-[var(--text-muted)] mt-3">No account required. Start saving today!</p>
+                {/* For Merchants CTA */}
+                <section className="bg-gradient-to-r from-[#4f46e5] to-[var(--brand-primary)] rounded-2xl p-6 text-white shadow-lg shadow-[var(--brand-primary)]/20">
+                    <div className="flex items-center gap-4">
+                        <span className="text-4xl">🏪</span>
+                        <div className="flex-1">
+                            <h3 className="font-black text-lg">Own a Store?</h3>
+                            <p className="text-white/80 text-sm mt-1">
+                                Join Spendigo to reach new customers, manage products with barcode scanning, and grow your business online.
+                            </p>
+                        </div>
+                        <Link
+                            to="/register"
+                            className="flex-shrink-0 px-5 py-2.5 bg-white text-[var(--brand-primary)] font-bold rounded-full text-sm hover:scale-105 transition-transform shadow-md"
+                        >
+                            Join Free
+                        </Link>
+                    </div>
                 </section>
 
                 {/* FAQ */}
-                <section className="bg-white rounded-xl border border-[var(--glass-border)] p-6">
-                    <h2 className="text-xl font-bold text-[var(--text-main)] mb-4">FAQ</h2>
-                    <div className="space-y-4">
-                        {[
-                            { q: 'Is there an extra fee for using SmartCart?', a: 'No! SmartCart is completely free for customers. We make money from a small commission paid by partner stores.' },
-                            { q: 'What if a store is out of stock?', a: 'Our algorithm automatically finds the next best option and recalculates your savings.' },
-                            { q: 'How do split deliveries work?', a: 'Each store fulfills their portion of your order. You may receive multiple deliveries, but you only pay once at checkout.' },
-                            { q: 'Can I remove stores from comparison?', a: 'Yes! You can exclude any store from your SmartCart optimization in settings.' },
-                        ].map((faq, i) => (
-                            <div key={i}>
-                                <p className="font-medium text-[var(--text-main)]">{faq.q}</p>
-                                <p className="text-sm text-[var(--text-muted)] mt-1">{faq.a}</p>
+                <section className="bg-white rounded-2xl border border-[var(--glass-border)] p-6 shadow-sm">
+                    <h2 className="text-xl font-black text-[var(--text-main)] mb-5">Frequently Asked Questions</h2>
+                    <div className="space-y-1">
+                        {faqs.map((faq, i) => (
+                            <div key={i} className="border-b border-gray-100 last:border-0">
+                                <button
+                                    onClick={() => setOpenFaq(openFaq === i ? null : i)}
+                                    className="w-full flex items-center justify-between py-4 text-left hover:text-[var(--brand-primary)] transition-colors"
+                                >
+                                    <span className="font-medium text-sm text-[var(--text-main)] pr-4">{faq.q}</span>
+                                    <span className={`text-lg text-[var(--text-muted)] transition-transform duration-200 flex-shrink-0 ${openFaq === i ? 'rotate-45' : ''}`}>+</span>
+                                </button>
+                                <div className={`overflow-hidden transition-all duration-200 ${openFaq === i ? 'max-h-40 pb-4' : 'max-h-0'}`}>
+                                    <p className="text-sm text-[var(--text-muted)] leading-relaxed">{faq.a}</p>
+                                </div>
                             </div>
                         ))}
                     </div>
+                </section>
+
+                {/* Final CTA */}
+                <section className="text-center py-4">
+                    <h2 className="text-2xl font-black text-[var(--text-main)] mb-3">Ready to Save?</h2>
+                    <p className="text-[var(--text-muted)] mb-6 text-sm">Join thousands of Canadian shoppers who are paying less for groceries.</p>
+                    <Link
+                        to="/smartcart"
+                        className="inline-block px-10 py-4 bg-[var(--brand-primary)] text-white font-bold rounded-2xl text-lg hover:brightness-110 transition-all shadow-lg shadow-[var(--brand-primary)]/30 hover:scale-105"
+                    >
+                        Start Shopping Smarter →
+                    </Link>
                 </section>
             </div>
         </div>

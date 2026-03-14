@@ -20,7 +20,7 @@ export const stripeWebhook = functions.https.onRequest(async (req, res) => {
         // Verify the event came consistently from Stripe
         event = stripe.webhooks.constructEvent(req.rawBody, signature, endpointSecret);
     } catch (err: any) {
-        console.error(`Webhook Error: ${err.message}`);
+        functions.logger.error(`Webhook Error: ${err.message}`);
         res.status(400).send(`Webhook Error: ${err.message}`);
         return;
     }
@@ -45,12 +45,12 @@ export const stripeWebhook = functions.https.onRequest(async (req, res) => {
                 break;
 
             default:
-                console.log(`Unhandled event type ${event.type}`);
+                functions.logger.log(`Unhandled event type ${event.type}`);
         }
 
         res.json({ received: true });
     } catch (e) {
-        console.error(e);
+        functions.logger.error(e);
         res.status(500).send("Internal Server Error processing webhook");
     }
 });
@@ -60,7 +60,7 @@ async function handleCheckoutCompleted(session: any) {
     const tier = session.metadata?.targetTier;
 
     if (userId && tier) {
-        console.log(`Upgrading user ${userId} to ${tier}`);
+        functions.logger.log(`Upgrading user ${userId} to ${tier}`);
         await db.collection('users').doc(userId).set({
             subscriptionTier: tier,
             subscriptionStatus: 'active',
@@ -82,7 +82,7 @@ async function handleInvoicePaymentSucceeded(invoice: any) {
 
         if (subscriptionEnd) {
             const endDate = new Date(subscriptionEnd * 1000).toISOString();
-            console.log(`Updating subscription end for ${userDoc.id} to ${endDate}`);
+            functions.logger.log(`Updating subscription end for ${userDoc.id} to ${endDate}`);
             await userDoc.ref.set({
                 subscriptionStatus: 'active',
                 subscriptionEnd: endDate
@@ -96,7 +96,7 @@ async function handleSubscriptionDeleted(subscription: any) {
     const snapshot = await db.collection('users').where('subscriptionId', '==', subscription.id).get();
     if (!snapshot.empty) {
         const userDoc = snapshot.docs[0];
-        console.log(`Downgrading user ${userDoc.id} due to subscription cancellation`);
+        functions.logger.log(`Downgrading user ${userDoc.id} due to subscription cancellation`);
         await userDoc.ref.update({
             subscriptionTier: 'free',
             subscriptionStatus: 'canceled',

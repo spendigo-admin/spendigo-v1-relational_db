@@ -41,7 +41,7 @@ const admin = __importStar(require("firebase-admin"));
  * Deletes a user from Firebase Authentication and Firestore.
  */
 exports.deleteUser = functions.https.onCall(async (data, context) => {
-    var _a, _b, _c;
+    var _a;
     // 1. Verify Authentication and Admin Role
     if (!context.auth) {
         throw new functions.https.HttpsError('unauthenticated', 'The function must be called while authenticated.');
@@ -61,18 +61,17 @@ exports.deleteUser = functions.https.onCall(async (data, context) => {
         throw new functions.https.HttpsError('invalid-argument', 'You cannot delete your own account via this function.');
     }
     try {
-        console.log(`Admin ${callerUid} deleting user ${targetUid}`);
-        // 2. Delete from Firebase Authentication
-        await admin.auth().deleteUser(targetUid);
-        // 3. Delete User Profile from Firestore
-        await admin.firestore().collection('users').doc(targetUid).delete();
-        // 4. (Optional) Cleanup other data:
-        // - Orders: Keep for records? Or anonymize? usually keep for records.
-        // - Stores: If merchant, suspend store?
-        // Check if user was a merchant
+        functions.logger.log(`Admin ${callerUid} deleting user ${targetUid}`);
+        // 2. Fetch user data BEFORE deleting — needed for merchant store suspension below.
         const userDoc = await admin.firestore().collection('users').doc(targetUid).get();
-        if (userDoc.exists && ((_b = userDoc.data()) === null || _b === void 0 ? void 0 : _b.role) === 'merchant') {
-            const storeId = (_c = userDoc.data()) === null || _c === void 0 ? void 0 : _c.storeId;
+        const userData = userDoc.data();
+        // 3. Delete from Firebase Authentication
+        await admin.auth().deleteUser(targetUid);
+        // 4. Delete User Profile from Firestore
+        await admin.firestore().collection('users').doc(targetUid).delete();
+        // 5. If merchant, suspend their store to preserve order history but hide it publicly.
+        if ((userData === null || userData === void 0 ? void 0 : userData.role) === 'merchant') {
+            const storeId = userData === null || userData === void 0 ? void 0 : userData.storeId;
             if (storeId) {
                 // Suspend the store instead of deleting it to preserve order history
                 await admin.firestore().collection('stores').doc(storeId).update({
@@ -85,7 +84,7 @@ exports.deleteUser = functions.https.onCall(async (data, context) => {
         return { success: true, message: `User ${targetUid} deleted successfully.` };
     }
     catch (error) {
-        console.error('Error deleting user:', error);
+        functions.logger.error('Error deleting user:', error);
         throw new functions.https.HttpsError('internal', `Failed to delete user: ${error.message}`);
     }
 });

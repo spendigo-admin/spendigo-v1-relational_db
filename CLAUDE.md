@@ -64,6 +64,8 @@ This is a **Turbo monorepo** with npm workspaces:
 - [apps/web/src/lib/firebase.ts](apps/web/src/lib/firebase.ts) — Firebase SDK init; uses `VITE_` env vars; connects Functions emulator on `localhost:5001` in dev.
 - [apps/web/src/lib/algolia.ts](apps/web/src/lib/algolia.ts) — Algolia search client (gracefully null if env vars missing). Index: `master_products`.
 - [apps/web/src/utils/IntegrityUtils.ts](apps/web/src/utils/IntegrityUtils.ts) — Server-side price validation to detect order tampering.
+- [apps/web/src/utils/fuzzy-search.ts](apps/web/src/utils/fuzzy-search.ts) — Levenshtein + token overlap + brand boost, 4 match tiers (exact/partial/fuzzy/typo), 1-min cache. Used in SmartCart wishlist matching (score ≥ 65 threshold).
+- [apps/web/src/hooks/useSmartInsights.ts](apps/web/src/hooks/useSmartInsights.ts) — Gemini `gemini-2.5-flash` integration via `@google/generative-ai`. Debounces 1.5 s, generates 2–3 shopping insight strings from basket summary. Requires `VITE_GEMINI_API_KEY`.
 
 ### Backend (`services/api/src/`)
 
@@ -100,8 +102,9 @@ VITE_FIREBASE_APP_ID=
 VITE_ALGOLIA_APP_ID=
 VITE_ALGOLIA_SEARCH_KEY=
 VITE_ALGOLIA_INDEX_NAME=   # optional, defaults to 'master_products'
+VITE_GEMINI_API_KEY=       # Gemini API key for SmartInsights feature
 ```
 
 ## Testing
 
-Tests live in `tests/unit/` and use **Vitest**. Current tests cover `FraudEngine` (in `services/api/src/risk/`) and fuzzy search utilities (`apps/web/src/utils/fuzzy-search.ts`). Run from repo root with `npm test`.
+Tests live in `tests/unit/` and use **Vitest**. Current tests cover `FraudEngine` (`tests/unit/fraud.test.ts`), tax calculations (`tests/unit/tax.test.ts`), and fuzzy search utilities (`tests/unit/fuzzy-search.test.ts`). Run from repo root with `npm test`.

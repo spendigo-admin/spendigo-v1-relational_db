@@ -19,6 +19,23 @@ export default defineConfig(({ command }) => ({
         hmr: {
             host: 'spendigo.ca'
         }
+    },
+    build: {
+        rollupOptions: {
+            output: {
+                manualChunks: {
+                    'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+                    'vendor-firebase': ['firebase/app', 'firebase/auth', 'firebase/firestore', 'firebase/storage', 'firebase/functions', 'firebase/analytics'],
+                    'vendor-algolia': ['algoliasearch'],
+                    'vendor-stripe': ['@stripe/stripe-js'],
+                    'vendor-ai': ['@google/generative-ai'],
+                }
+            }
+        },
+        // Strip all console.* calls in production builds
+        minify: 'esbuild',
+        esbuildOptions: {
+            drop: ['console', 'debugger'],
+        }
     }
 }))
-

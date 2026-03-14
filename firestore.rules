@@ -105,8 +105,17 @@ service cloud.firestore {
     match /users/{userId} {
       allow read: if isOwner(userId) || isAdmin();
       allow list: if isAdmin() || (isMerchant() && resource.data.storeId == getMerchantStoreId());
-      allow create: if isAuthenticated() && request.auth.uid == userId;
-      allow update: if isOwner(userId) || isAdmin(); 
+      // New accounts may only register as consumer or merchant — admin/staff roles
+      // are assigned server-side only. storeId and status are also admin-only on create.
+      allow create: if isAuthenticated() && request.auth.uid == userId
+        && request.resource.data.role in ['consumer', 'merchant']
+        && !request.resource.data.keys().hasAny(['adminRole', 'status', 'storeId']);
+      // Owners may update their own profile but cannot self-promote:
+      // role, adminRole, merchantRole, storeId, and status are admin-only fields.
+      allow update: if isAdmin()
+        || (isOwner(userId)
+          && !request.resource.data.diff(resource.data).affectedKeys()
+              .hasAny(['role', 'adminRole', 'merchantRole', 'storeId', 'status']));
       allow delete: if isAdmin();
     }
 
@@ -120,7 +129,14 @@ service cloud.firestore {
     match /stores/{storeId} {
       allow read: if true;
       allow create: if isAdmin() || (isMerchant() && request.resource.data.ownerId == request.auth.uid);
-      allow update: if isAdmin() || (isMerchant() && getMerchantStoreId() == storeId);
+      // Merchants may update their store's operational fields.
+      // Privileged fields (subscriptionTier, status, Stripe config, ownerId) are admin-only
+      // to prevent self-upgrading subscriptions or re-activating suspended stores.
+      allow update: if isAdmin()
+        || (isMerchant() && getMerchantStoreId() == storeId
+            && !request.resource.data.diff(resource.data).affectedKeys()
+                .hasAny(['subscriptionTier', 'status', 'stripeAccountId',
+                         'stripeOnboardingStatus', 'ownerId']));
       allow delete: if isAdmin();
 
       match /flyers/{flyerId} {
@@ -142,19 +158,31 @@ service cloud.firestore {
         (isMerchant() && resource.data.storeId == getMerchantStoreId()) ||
         isAdmin()
       );
+      // Customers may only cancel their own orders (no other field changes).
+      // Merchants may update operational fields only (status, payment confirmation, timing).
+      // Admins have full update access.
       allow update: if isAuthenticated() && (
-        resource.data.customerId == request.auth.uid ||
-        (isMerchant() && resource.data.storeId == getMerchantStoreId()) ||
         isAdmin()
+        || (isMerchant() && resource.data.storeId == getMerchantStoreId()
+            // Merchants may only touch operational fields — never totals, items, or customer data
+            && request.resource.data.diff(resource.data).affectedKeys()
+                .hasOnly(['status', 'rejectionReason', 'estimatedTime',
+                          'paymentStatus', 'paymentCollectedBy', 'emailQueued',
+                          'emailQueuedAt', 'cancelledAt']))
+        || (resource.data.customerId == request.auth.uid
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
+          && request.resource.data.status == 'cancelled')
       );
     }
 
     // NOTIFICATIONS (Subcollection)
     match /users/{userId}/notifications/{notificationId} {
       // User can manage their own notifications
-      // Admin/System might create them (via backend or if allowed here)
       allow read, update, delete: if isOwner(userId);
-      allow create: if true; // Allow anyone (like Admin) to write a notification to a user
+      // Only admins and authenticated backend calls may create notifications.
+      // 'allow create: if true' was removed — it allowed unauthenticated users
+      // to inject arbitrary messages into any user's notification feed.
+      allow create: if isAdmin();
     }
 
     // Deprecated
