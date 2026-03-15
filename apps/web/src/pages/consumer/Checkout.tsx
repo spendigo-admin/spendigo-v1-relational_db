@@ -335,7 +335,16 @@ const Checkout: React.FC = () => {
                             <div key={storeId} className={`glass-panel p-6 ${isBlocked ? 'opacity-70 grayscale-[0.5] border-2 border-red-100' : ''}`}>
                                 <div className="flex items-center justify-between mb-4">
                                     <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-lg bg-[var(--surface-2)] flex items-center justify-center text-lg">🏪</div>
+                                        <div className="w-10 h-10 rounded-lg bg-white border border-[var(--glass-border)] flex items-center justify-center text-lg shadow-sm overflow-hidden">
+                                            {(() => {
+                                                const store = getStore(storeId) || STORE_DATA[storeId];
+                                                const logo = store?.logoUrl || store?.logo;
+                                                if (logo && logo.startsWith('http')) {
+                                                    return <img src={logo} alt={storeName} className="w-full h-full object-cover" />;
+                                                }
+                                                return <span>{logo || '🏪'}</span>;
+                                            })()}
+                                        </div>
                                         <div>
                                             <div className="flex items-center gap-2">
                                                 <h2 className="font-bold text-[var(--text-main)]">{storeName}</h2>
@@ -396,7 +405,16 @@ const Checkout: React.FC = () => {
                                     {
                                         items.map((item: any, idx) => (
                                             <div key={idx} className="flex justify-between text-sm">
-                                                <span className="text-[var(--text-muted)]">{item.quantity}x {item.productName}</span>
+                                                <div className="flex items-center gap-2">
+                                                    {item.image && (
+                                                        <img
+                                                            src={item.image}
+                                                            alt={item.productName}
+                                                            className="w-8 h-8 rounded-md object-cover border border-[var(--glass-border)] bg-[var(--surface-1)]"
+                                                        />
+                                                    )}
+                                                    <span className="text-[var(--text-muted)]">{item.quantity}x {item.productName}</span>
+                                                </div>
                                                 <span className="font-mono text-[var(--text-main)]">${(item.price * item.quantity).toFixed(2)}</span>
                                             </div>
                                         ))
