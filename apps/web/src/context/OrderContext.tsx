@@ -185,9 +185,10 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     // --- Notification Helper ---
     const sendOrderNotification = async (targetId: string, title: string, message: string, type: 'order' | 'alert' = 'order', orderId?: string) => {
         try {
-            const notifRef = doc(db, 'notifications', targetId);
+            const notifId = `notif-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
+            const notifRef = doc(db, 'users', targetId, 'notifications', notifId);
             const newNotif = {
-                id: `notif-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+                id: notifId,
                 type,
                 title,
                 message,
@@ -195,10 +196,8 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
                 read: false,
                 orderId
             };
-            await setDoc(notifRef, {
-                list: arrayUnion(newNotif),
-                updatedAt: new Date().toISOString()
-            }, { merge: true });
+            // Use setDoc to create the individual notification document
+            await setDoc(notifRef, newNotif);
         } catch (e) {
             console.error("Failed to send notification", e);
         }

@@ -59,7 +59,7 @@ function optimize_cart(shopping_list, store_data) {
     });
     return {
         optimized_items,
-        total_cost: optimized_items.reduce((sum, item) => sum + item.unit_price, 0),
+        total_cost: Math.round(optimized_items.reduce((sum, item) => sum + item.unit_price, 0) * 10000) / 10000,
         store_distribution,
     };
 }

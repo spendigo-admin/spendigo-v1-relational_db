@@ -24,6 +24,7 @@ function normalizeUnitPrice(price, packageSize) {
     }
     const baseQuantity = quantity * unitDefinition.multiplier;
     const pricePerBaseUnit = price / baseQuantity;
-    return pricePerBaseUnit * unitDefinition.comparisonQuantity;
+    const rawNormalized = pricePerBaseUnit * unitDefinition.comparisonQuantity;
+    return Math.round(rawNormalized * 10000) / 10000;
 }
 //# sourceMappingURL=priceNormalization.js.map
