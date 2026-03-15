@@ -130,7 +130,7 @@ export function calculateUnitPrice(input: UnitPriceCalculationInput): UnitPriceC
     }
 
     const pricePerBaseUnit = input.price / parsedSize.baseQuantity;
-    const pricePerComparisonUnit = pricePerBaseUnit * unitDefinition.comparisonQuantity;
+    const pricePerComparisonUnit = Math.round((pricePerBaseUnit * unitDefinition.comparisonQuantity) * 10000) / 10000;
 
     return {
         packageSize: parsedSize,

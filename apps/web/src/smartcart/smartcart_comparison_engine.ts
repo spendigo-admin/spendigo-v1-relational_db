@@ -54,7 +54,7 @@ export function compareOptimizedCartToSingleStore(
     }
 
     const best_single_store_cost = bestSingleStore.cart_cost;
-    const savings = best_single_store_cost - optimized_cost;
+    const savings = Math.round((best_single_store_cost - optimized_cost) * 10000) / 10000;
     const savingsRate = best_single_store_cost === 0 ? 0 : savings / best_single_store_cost;
 
     return {

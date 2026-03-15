@@ -60,7 +60,7 @@ export function simulateSingleStoreCart(
 
     return {
         store_id: input.store_product_data.store_id,
-        cart_cost: missing_items.length === 0 ? cart_cost : null,
+        cart_cost: missing_items.length === 0 ? Math.round(cart_cost * 10000) / 10000 : null,
         missing_items,
     };
 }

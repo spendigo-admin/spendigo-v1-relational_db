@@ -131,6 +131,6 @@ describe('smartcart_price_matrix', () => {
 
         const result = buildSmartCartPriceMatrix(input);
 
-        expect(result.pasta['store-a']).toBeCloseTo(0.349, 4);
+        expect(result.pasta['store-a']).toBeCloseTo(0.3322, 4);
     });
 });

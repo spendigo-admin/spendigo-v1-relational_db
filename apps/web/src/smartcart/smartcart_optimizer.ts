@@ -91,7 +91,7 @@ export function optimizeSmartCart(input: SmartCartOptimizerInput): SmartCartOpti
         store_distribution[selected.store_id].push(productId);
     });
 
-    const total_cost = optimized_items.reduce((sum, item) => sum + item.unit_price, 0);
+    const total_cost = Math.round(optimized_items.reduce((sum, item) => sum + item.unit_price, 0) * 10000) / 10000;
 
     return {
         optimized_items,

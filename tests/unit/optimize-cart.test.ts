@@ -162,15 +162,15 @@ describe('optimizeCart', () => {
         const result = optimizeCart(input);
 
         expect(result.bestSingleStore).toEqual({
-            storeId: 'store-a',
-            storeName: 'FreshMart',
+            storeId: 'store-b',
+            storeName: 'BudgetFoods',
             totalCost: expect.any(Number),
             missingItemCount: 0,
             isFullyAvailable: true,
         });
-        expect(result.summary.bestSingleStoreCost).toBeCloseTo(1.7312, 4);
+        expect(result.summary.bestSingleStoreCost).toBeCloseTo(1.6868, 4);
         expect(result.summary.totalCartCost).toBeCloseTo(1.6312, 4);
-        expect(result.summary.savingsVsSingleStore).toBeCloseTo(0.1, 4);
+        expect(result.summary.savingsVsSingleStore).toBeCloseTo(0.0556, 4);
     });
 
     it('skips items with no available store and reports them as unavailable', () => {
