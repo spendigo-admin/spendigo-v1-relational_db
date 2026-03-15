@@ -103,6 +103,169 @@ paths:
                     items:
                       type: string
 
+  /cart/optimize:
+    post:
+      summary: Optimize a cart across eligible stores using SmartCart
+      description: |
+        Cart price-comparison endpoint. Reuses the SmartCart optimizer and returns
+        the cheapest store combination without affecting existing checkout flows.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                shopping_list:
+                  type: array
+                  items:
+                    type: string
+                user_location:
+                  type: object
+                  properties:
+                    lat:
+                      type: number
+                    lng:
+                      type: number
+                store_filter:
+                  oneOf:
+                    - type: array
+                      items:
+                        type: string
+                    - type: object
+                      properties:
+                        store_ids:
+                          type: array
+                          items:
+                            type: string
+      responses:
+        "200":
+          description: Optimized cart result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  optimized_cart:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        product_id:
+                          type: string
+                        chosen_store:
+                          type: string
+                        price:
+                          type: number
+                        unit_price:
+                          type: number
+                  store_breakdown:
+                    type: object
+                    additionalProperties:
+                      type: array
+                      items:
+                        type: string
+                  total_cost:
+                    type: number
+                  best_single_store_option:
+                    type: object
+                    nullable: true
+                    properties:
+                      store_id:
+                        type: string
+                      store_name:
+                        type: string
+                      cart_cost:
+                        type: number
+                        nullable: true
+                      missing_items:
+                        type: array
+                        items:
+                          type: string
+                  savings:
+                    type: number
+                    nullable: true
+
+  /smartcart/optimize:
+    post:
+      summary: Optimize a SmartCart basket across eligible stores
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                shopping_list:
+                  type: array
+                  items:
+                    type: string
+                user_location:
+                  type: object
+                  properties:
+                    lat:
+                      type: number
+                    lng:
+                      type: number
+                store_filter:
+                  oneOf:
+                    - type: array
+                      items:
+                        type: string
+                    - type: object
+                      properties:
+                        store_ids:
+                          type: array
+                          items:
+                            type: string
+      responses:
+        "200":
+          description: Optimized SmartCart result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  optimized_cart:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        product_id:
+                          type: string
+                        chosen_store:
+                          type: string
+                        price:
+                          type: number
+                        unit_price:
+                          type: number
+                  store_breakdown:
+                    type: object
+                    additionalProperties:
+                      type: array
+                      items:
+                        type: string
+                  total_cost:
+                    type: number
+                  best_single_store_option:
+                    type: object
+                    nullable: true
+                    properties:
+                      store_id:
+                        type: string
+                      store_name:
+                        type: string
+                      cart_cost:
+                        type: number
+                        nullable: true
+                      missing_items:
+                        type: array
+                        items:
+                          type: string
+                  savings:
+                    type: number
+                    nullable: true
+
   /webhooks/stripe:
     post:
       summary: Stripe Webhook Endpoint

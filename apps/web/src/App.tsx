@@ -37,6 +37,7 @@ const Profile = lazy(() => import('./pages/consumer/Profile'));
 const OrderTracking = lazy(() => import('./pages/consumer/OrderTracking'));
 const Notifications = lazy(() => import('./pages/consumer/Notifications'));
 const SmartCartWishlist = lazy(() => import('./pages/consumer/SmartCartWishlist'));
+const SmartCartPrototype = lazy(() => import('./pages/consumer/SmartCartPrototype'));
 const Search = lazy(() => import('./pages/consumer/Search'));
 const HowItWorks = lazy(() => import('./pages/consumer/HowItWorks'));
 const ConsumerSurveys = lazy(() => import('./pages/consumer/Surveys'));
@@ -140,6 +141,7 @@ function App() {
                                                                     <Route path="/order/:id" element={<RequireVerification><OrderTracking /></RequireVerification>} />
                                                                     <Route path="/notifications" element={<RequireVerification><Notifications /></RequireVerification>} />
                                                                     <Route path="/smartcart" element={<RequireVerification><SmartCartWishlist /></RequireVerification>} />
+                                                                    <Route path="/smartcart/prototype" element={<SmartCartPrototype />} />
 
                                                                     <Route path="/search" element={<Search />} />
                                                                     <Route path="/how-it-works" element={<HowItWorks />} />

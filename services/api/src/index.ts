@@ -16,3 +16,5 @@ export { updateSubscriptionPlan } from './payments/updateSubscriptionPlan';
 export { placeOrder } from './orders/placeOrder';
 export { cancelOrder } from './orders/cancelOrder';
 export { onUserUpdate } from './triggers/userTriggers';
+export { smartcartOptimize } from './smartcart/optimizeEndpoint';
+export { cartOptimize } from './cart/optimizeCart';

@@ -28,7 +28,10 @@ const SmartCartWishlist: React.FC = () => {
         handleSelectionChange,
         totalCost,
         potentialSavings,
-        validCartItems
+        validCartItems,
+        optimizerRecommendation,
+        bestSingleStore,
+        singleStoreAlternatives,
     } = useOptimizedWishlist();
 
     const storeCount = new Set(validCartItems.map(i => i.storeId)).size;
@@ -199,6 +202,9 @@ const SmartCartWishlist: React.FC = () => {
                                 validCartItems={validCartItems} 
                                 totalCost={totalCost} 
                                 potentialSavings={potentialSavings} 
+                                optimizerRecommendation={optimizerRecommendation}
+                                bestSingleStore={bestSingleStore}
+                                singleStoreAlternatives={singleStoreAlternatives}
                             />
                         </div>
                     </div>

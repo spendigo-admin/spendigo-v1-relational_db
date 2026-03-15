@@ -6,6 +6,41 @@ import { MerchantProduct, OptimizedWishlistItem, StoreOption } from '../types/sm
 import { useWishlist } from '../context/WishlistContext';
 import { useMarketplace } from '../context/MarketplaceContext';
 import { useCatalog } from '../context/CatalogContext';
+import { calculateUnitPrice } from '../smartcart/priceNormalization';
+import { buildSmartCartPriceMatrix } from '../smartcart/smartcart_price_matrix';
+import { compareOptimizedCartToSingleStore } from '../smartcart/smartcart_comparison_engine';
+import {
+    optimizeSmartCart,
+    SmartCartOptimizerProductOffer,
+    SmartCartOptimizerStoreEntry,
+} from '../smartcart/smartcart_optimizer';
+import { simulateSingleStoreCart } from '../smartcart/smartcart_single_store_simulator';
+
+function getNormalizedUnitPrice(packageSize: string | undefined, price: number) {
+    if (!packageSize) {
+        return null;
+    }
+
+    return calculateUnitPrice({
+        price,
+        packageSize,
+    });
+}
+
+function compareStoreOptions(left: StoreOption, right: StoreOption) {
+    const leftComparablePrice = left.normalizedUnitPrice ?? left.price;
+    const rightComparablePrice = right.normalizedUnitPrice ?? right.price;
+
+    if (leftComparablePrice !== rightComparablePrice) {
+        return leftComparablePrice - rightComparablePrice;
+    }
+
+    if (left.price !== right.price) {
+        return left.price - right.price;
+    }
+
+    return left.storeName.localeCompare(right.storeName);
+}
 
 export const useOptimizedWishlist = () => {
     const { items: wishlistItems } = useWishlist();
@@ -60,6 +95,8 @@ export const useOptimizedWishlist = () => {
             }
 
             const masterProduct = catalogMap.get(masterId);
+            const packageSize = product.unit_size || product.net_quantity_unit || masterProduct?.unit;
+            const normalizedUnitPrice = getNormalizedUnitPrice(packageSize, product.price);
 
             productMap[masterId].stores.push({
                 storeId: product.merchant_id,
@@ -69,7 +106,9 @@ export const useOptimizedWishlist = () => {
                 productId: product.id, // Merchant Product ID
                 brand: product.brand || masterProduct?.brand,
                 name: product.product_name || masterProduct?.name,
-                unit: product.unit_size || product.net_quantity_unit || masterProduct?.unit
+                unit: packageSize,
+                normalizedUnitPrice: normalizedUnitPrice?.pricePerComparisonUnit,
+                comparisonUnit: normalizedUnitPrice?.comparisonUnit,
             });
         });
 
@@ -201,6 +240,7 @@ export const useOptimizedWishlist = () => {
                             let finalName = m.product_name;
                             let finalBrand = m.brand;
                             let finalUnit = m.unit_size || m.net_quantity_unit;
+                            const normalizedUnitPrice = getNormalizedUnitPrice(finalUnit, m.price);
 
                             if (m.master_product_id) {
                                 const master = catalogMap.get(m.master_product_id);
@@ -223,10 +263,13 @@ export const useOptimizedWishlist = () => {
                                 productId: m.id,
                                 brand: finalBrand || '',
                                 name: finalName || 'Unknown Item',
-                                unit: finalUnit || ''
+                                unit: finalUnit || '',
+                                normalizedUnitPrice: normalizedUnitPrice?.pricePerComparisonUnit,
+                                comparisonUnit: normalizedUnitPrice?.comparisonUnit,
                             };
 
-                            if (!storesMap.has(m.merchant_id) || storesMap.get(m.merchant_id).price > m.price) {
+                            const existingOption = storesMap.get(m.merchant_id);
+                            if (!existingOption || compareStoreOptions(option, existingOption) < 0) {
                                 storesMap.set(m.merchant_id, option);
                             }
                         });
@@ -243,10 +286,10 @@ export const useOptimizedWishlist = () => {
                 let maxPrice = 0;
 
                 if (globalData) {
-                    allOptions = globalData.stores.sort((a, b) => a.price - b.price);
+                    allOptions = [...globalData.stores].sort(compareStoreOptions);
                     if (allOptions.length > 0) {
                         cheapestOption = allOptions[0];
-                        maxPrice = Math.max(...allOptions.map(o => o.price));
+                        maxPrice = Math.max(...allOptions.map(o => o.normalizedUnitPrice ?? o.price));
                     }
                 }
 
@@ -279,7 +322,86 @@ export const useOptimizedWishlist = () => {
         return Array.from(seen.values());
     }, [wishlistItems, availabilityMap, merchantInventory, stores, catalogMap]);
 
-    // 4. Initialize Selections with Cheapest Option
+    const optimizerPipeline = useMemo(() => {
+        const shoppableItems = optimizerItems.filter((item): item is OptimizedWishlistItem => Boolean(item && item.options.length > 0));
+        const shopping_list = shoppableItems.map(item => item.id);
+        const storeMap = new Map<string, SmartCartOptimizerStoreEntry>();
+
+        shoppableItems.forEach(item => {
+            item.options.forEach(option => {
+                if (!storeMap.has(option.storeId)) {
+                    storeMap.set(option.storeId, {
+                        store_id: option.storeId,
+                        products: [],
+                    });
+                }
+
+                const storeEntry = storeMap.get(option.storeId);
+
+                if (!storeEntry) {
+                    return;
+                }
+
+                const offer: SmartCartOptimizerProductOffer = {
+                    product_id: item.id,
+                    price: option.price,
+                    package_size: option.unit || item.unit || '',
+                    unit_price: option.normalizedUnitPrice ?? option.price,
+                    available: option.inStock,
+                };
+
+                storeEntry.products.push(offer);
+            });
+        });
+
+        const store_products = Array.from(storeMap.values());
+        const price_matrix = buildSmartCartPriceMatrix({
+            normalized_products: shopping_list,
+            store_products,
+        });
+
+        if (shopping_list.length === 0) {
+            return {
+                shoppableItems,
+                shopping_list,
+                store_products,
+                price_matrix,
+                optimizedCart: null,
+                singleStoreResults: [],
+                comparisonResult: null,
+                optimizedSelections: {} as Record<string, string>,
+            };
+        }
+
+        const optimizedCart = optimizeSmartCart({
+            shopping_list,
+            store_products,
+        });
+        const singleStoreResults = store_products.map(store =>
+            simulateSingleStoreCart({
+                shopping_list,
+                store_product_data: store,
+            }),
+        );
+        const comparisonResult = compareOptimizedCartToSingleStore(optimizedCart, singleStoreResults);
+        const optimizedSelections = optimizedCart.optimized_items.reduce<Record<string, string>>((acc, item) => {
+            acc[item.product_id] = item.chosen_store;
+            return acc;
+        }, {});
+
+        return {
+            shoppableItems,
+            shopping_list,
+            store_products,
+            price_matrix,
+            optimizedCart,
+            singleStoreResults,
+            comparisonResult,
+            optimizedSelections,
+        };
+    }, [optimizerItems]);
+
+    // 4. Initialize Selections with Optimizer Result
     useEffect(() => {
         const newSelections = { ...selections };
         let hasChanges = false;
@@ -287,14 +409,18 @@ export const useOptimizedWishlist = () => {
         optimizerItems.forEach(item => {
             if (!item || !item.cheapest) return;
 
-            const cheapestStoreId = item.cheapest.storeId;
+            const optimizedStoreId = optimizerPipeline.optimizedSelections[item.id] || item.cheapest.storeId;
             const currentSelection = selections[item.id] || selections[item.name]; // Fallback to name if id key missing
 
             // Force update to cheapest if no selection or current is more expensive
-            if (!currentSelection || (currentSelection !== cheapestStoreId)) {
+            if (!currentSelection || (currentSelection !== optimizedStoreId)) {
                 const currentOption = item.options.find(o => o.storeId === currentSelection);
-                if (!currentOption || currentOption.price > item.cheapest.price) {
-                    newSelections[item.id] = cheapestStoreId;
+                const optimizedOption = item.options.find(o => o.storeId === optimizedStoreId) || item.cheapest;
+                const currentComparablePrice = currentOption?.normalizedUnitPrice ?? currentOption?.price ?? Number.POSITIVE_INFINITY;
+                const optimizedComparablePrice = optimizedOption.normalizedUnitPrice ?? optimizedOption.price;
+
+                if (!currentOption || currentComparablePrice > optimizedComparablePrice) {
+                    newSelections[item.id] = optimizedStoreId;
                     hasChanges = true;
                 }
             }
@@ -303,7 +429,7 @@ export const useOptimizedWishlist = () => {
         if (hasChanges) {
             setSelections(newSelections);
         }
-    }, [optimizerItems]);
+    }, [optimizerItems, optimizerPipeline.optimizedSelections, selections]);
 
     const handleSelectionChange = (id: string, storeId: string) => {
         setSelections(prev => ({ ...prev, [id]: storeId }));
@@ -312,21 +438,19 @@ export const useOptimizedWishlist = () => {
     // 5. Calculate Totals
     const { totalCost, potentialSavings, validCartItems } = useMemo(() => {
         let total = 0;
-        let savings = 0;
+        let normalizedTotal = 0;
         const cartItems: any[] = [];
 
         optimizerItems.forEach(item => {
             if (!item) return;
-            const selectedStoreId = selections[item.id] || (item.cheapest ? item.cheapest.storeId : null);
+            const selectedStoreId = selections[item.id]
+                || optimizerPipeline.optimizedSelections[item.id]
+                || (item.cheapest ? item.cheapest.storeId : null);
             const selectedOption = item.options.find(o => o.storeId === selectedStoreId);
 
             if (selectedOption) {
                 total += selectedOption.price;
-                // Savings vs. average market price across all stores (honest metric)
-                if (item.options.length > 1) {
-                    const avgPrice = item.options.reduce((sum: number, o: any) => sum + o.price, 0) / item.options.length;
-                    savings += Math.max(0, avgPrice - selectedOption.price);
-                }
+                normalizedTotal += selectedOption.normalizedUnitPrice ?? selectedOption.price;
 
                 // Smart Name formatting to avoid "Kraft Kraft Dinner"
                 const brand = selectedOption.brand || '';
@@ -348,8 +472,54 @@ export const useOptimizedWishlist = () => {
             }
         });
 
+        const bestSingleStoreCost = optimizerPipeline.comparisonResult?.best_single_store_cost ?? null;
+        const savings = bestSingleStoreCost !== null ? bestSingleStoreCost - normalizedTotal : 0;
+
         return { totalCost: total, potentialSavings: savings, validCartItems: cartItems };
-    }, [optimizerItems, selections]);
+    }, [optimizerItems, optimizerPipeline.comparisonResult, optimizerPipeline.optimizedSelections, selections]);
+
+    const bestSingleStore = useMemo(() => {
+        const comparisonResult = optimizerPipeline.comparisonResult;
+
+        if (!comparisonResult?.best_store) {
+            return null;
+        }
+
+        const matchingResult = optimizerPipeline.singleStoreResults.find(result => result.store_id === comparisonResult.best_store);
+        const store = stores[comparisonResult.best_store];
+
+        if (!matchingResult) {
+            return null;
+        }
+
+        return {
+            id: matchingResult.store_id,
+            name: store?.name || matchingResult.store_id,
+            cost: matchingResult.cart_cost,
+            missingItems: matchingResult.missing_items,
+        };
+    }, [optimizerPipeline.comparisonResult, optimizerPipeline.singleStoreResults, stores]);
+
+    const singleStoreAlternatives = useMemo(() => (
+        optimizerPipeline.singleStoreResults
+            .map(result => ({
+                id: result.store_id,
+                name: stores[result.store_id]?.name || result.store_id,
+                cost: result.cart_cost,
+                missingItems: result.missing_items,
+                isBest: optimizerPipeline.comparisonResult?.best_store === result.store_id,
+            }))
+            .sort((left, right) => {
+                const leftCost = left.cost ?? Number.POSITIVE_INFINITY;
+                const rightCost = right.cost ?? Number.POSITIVE_INFINITY;
+
+                if (leftCost !== rightCost) {
+                    return leftCost - rightCost;
+                }
+
+                return left.name.localeCompare(right.name);
+            })
+    ), [optimizerPipeline.comparisonResult, optimizerPipeline.singleStoreResults, stores]);
 
     return {
         selections,
@@ -362,6 +532,11 @@ export const useOptimizedWishlist = () => {
         handleSelectionChange,
         totalCost,
         potentialSavings,
-        validCartItems
+        validCartItems,
+        priceMatrix: optimizerPipeline.price_matrix,
+        optimizedCart: optimizerPipeline.optimizedCart,
+        optimizerRecommendation: optimizerPipeline.comparisonResult?.recommendation ?? null,
+        bestSingleStore,
+        singleStoreAlternatives,
     };
 };

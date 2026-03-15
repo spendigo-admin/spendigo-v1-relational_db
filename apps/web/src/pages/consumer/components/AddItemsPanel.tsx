@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useWishlist } from '../../../context/WishlistContext';
-import { OptimizedWishlistItem } from '../../../types/smartCart';
 
 interface AddItemsPanelProps {
     showAddItems: boolean;
@@ -12,6 +11,19 @@ interface AddItemsPanelProps {
 export const AddItemsPanel: React.FC<AddItemsPanelProps> = ({ showAddItems, setShowAddItems, availableStaples, AVAILABLE_ITEMS }) => {
     const { items: wishlistItems, addItem, removeItem } = useWishlist();
     const [customItemName, setCustomItemName] = useState('');
+    const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+
+    const handleCustomAdd = () => {
+        if (customItemName.trim()) {
+            addItem({
+                id: `generic-${Date.now()}`,
+                name: customItemName.trim(),
+                image: `https://ui-avatars.com/api/?name=${customItemName.trim().charAt(0)}&background=random&length=1&size=128`,
+                category: 'General'
+            } as any);
+            setCustomItemName('');
+        }
+    };
 
     return (
         <div className="mb-8">
@@ -37,29 +49,11 @@ export const AddItemsPanel: React.FC<AddItemsPanelProps> = ({ showAddItems, setS
                                 value={customItemName}
                                 onChange={(e) => setCustomItemName(e.target.value)}
                                 onKeyDown={(e) => {
-                                    if (e.key === 'Enter' && customItemName.trim()) {
-                                        addItem({
-                                            id: `generic-${customItemName.trim()}`,
-                                            name: customItemName.trim(),
-                                            image: `https://ui-avatars.com/api/?name=${customItemName.trim().charAt(0)}&background=random&length=1&size=128`,
-                                            category: 'General'
-                                        } as any);
-                                        setCustomItemName('');
-                                    }
+                                    if (e.key === 'Enter') handleCustomAdd();
                                 }}
                             />
                             <button
-                                onClick={() => {
-                                    if (customItemName.trim()) {
-                                        addItem({
-                                            id: `generic-${customItemName.trim()}`,
-                                            name: customItemName.trim(),
-                                            image: `https://ui-avatars.com/api/?name=${customItemName.trim().charAt(0)}&background=random&length=1&size=128`,
-                                            category: 'General'
-                                        } as any);
-                                        setCustomItemName('');
-                                    }
-                                }}
+                                onClick={handleCustomAdd}
                                 className="bg-[var(--brand-primary)] text-white px-4 py-2 rounded-lg text-sm font-bold"
                             >
                                 Add
@@ -68,31 +62,20 @@ export const AddItemsPanel: React.FC<AddItemsPanelProps> = ({ showAddItems, setS
 
                         <div className="flex flex-wrap gap-2">
                             {availableStaples.map(staple => {
-                                const isAdded = wishlistItems.some(w => w.name === staple.name);
+                                const isSelected = selectedCategory === staple.name;
                                 return (
                                     <button
                                         key={staple.name}
                                         onClick={() => {
-                                            if (isAdded) {
-                                                const toRemove = wishlistItems.find(w => w.name === staple.name);
-                                                if (toRemove) removeItem(toRemove.id);
-                                            } else {
-                                                addItem({
-                                                    id: `generic-${staple.name}`,
-                                                    name: staple.name,
-                                                    image: `https://ui-avatars.com/api/?name=${staple.emoji}&background=random&length=1&size=128`,
-                                                    category: staple.category
-                                                } as any);
-                                            }
+                                            setSelectedCategory(isSelected ? null : staple.name);
                                         }}
-                                        className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all flex items-center gap-1.5 ${isAdded
+                                        className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all flex items-center gap-1.5 ${isSelected
                                             ? 'bg-[var(--brand-primary)] text-white border-[var(--brand-primary)] shadow-md'
                                             : 'bg-white text-gray-600 border-gray-200 hover:border-[var(--brand-primary)] hover:text-[var(--brand-primary)]'
                                             }`}
                                     >
                                         <span className="text-sm">{staple.emoji}</span>
                                         {staple.name}
-                                        {isAdded && <span className="ml-1 text-[10px] opacity-80">✓</span>}
                                     </button>
                                 );
                             })}
@@ -100,20 +83,7 @@ export const AddItemsPanel: React.FC<AddItemsPanelProps> = ({ showAddItems, setS
                     </div>
 
                     {(() => {
-                        // Selected chips (staples that are in the wishlist)
-                        const selectedChips = availableStaples.filter(s =>
-                            wishlistItems.some(w => w.name === s.name)
-                        );
-                        // Filter catalog items to those matching a selected chip's name
-                        const filteredItems = selectedChips.length > 0
-                            ? AVAILABLE_ITEMS.filter(item =>
-                                selectedChips.some(chip =>
-                                    item.name.toLowerCase().includes(chip.name.toLowerCase())
-                                )
-                            )
-                            : [];
-
-                        if (selectedChips.length === 0) {
+                        if (!selectedCategory) {
                             return (
                                 <p className="text-xs text-gray-400 text-center py-4">
                                     Select a category above to browse matching products
@@ -121,10 +91,21 @@ export const AddItemsPanel: React.FC<AddItemsPanelProps> = ({ showAddItems, setS
                             );
                         }
 
+                        // Filter catalog items to those matching the selected category's name
+                        const filteredItems = AVAILABLE_ITEMS.filter(item =>
+                            item.name.toLowerCase().includes(selectedCategory.toLowerCase())
+                        );
+
                         return filteredItems.length > 0 ? (
                             <>
-                                <h3 className="font-bold text-[var(--text-main)] mb-3 text-sm">
-                                    Matching: {selectedChips.map(c => c.name).join(', ')}
+                                <h3 className="font-bold text-[var(--text-main)] mb-3 text-sm flex justify-between items-center">
+                                    <span>Matching: {selectedCategory}</span>
+                                    <button 
+                                        onClick={() => setSelectedCategory(null)}
+                                        className="text-xs text-gray-500 font-normal hover:text-[var(--brand-primary)]"
+                                    >
+                                        Clear Filter
+                                    </button>
                                 </h3>
                                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-60 overflow-y-auto">
                                     {filteredItems.map(item => {
@@ -155,7 +136,7 @@ export const AddItemsPanel: React.FC<AddItemsPanelProps> = ({ showAddItems, setS
                             </>
                         ) : (
                             <p className="text-xs text-gray-400 text-center py-4">
-                                No catalog items found for {selectedChips.map(c => c.name).join(', ')}
+                                No catalog items found for {selectedCategory}
                             </p>
                         );
                     })()}
@@ -164,3 +145,4 @@ export const AddItemsPanel: React.FC<AddItemsPanelProps> = ({ showAddItems, setS
         </div>
     );
 };
+
