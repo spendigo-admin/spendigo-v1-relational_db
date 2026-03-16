@@ -187,7 +187,8 @@ const MerchantFlyers: React.FC = () => {
                 updateStoreFlyer(storeId, {
                     title: newFlyer.title,
                     validUntil: new Date(newFlyer.validUntil).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-                    image: newFlyer.coverImage
+                    image: newFlyer.coverImage,
+                    items: newFlyer.items
                 });
             }
 

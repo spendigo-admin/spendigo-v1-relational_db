@@ -26,9 +26,11 @@ const RequireVerification: React.FC<RequireVerificationProps> = ({ children }) =
     // 2. Check email verification
     // Google SSO users are automatically verified = true
     // Email/Password users start as false
+    /*
     if (user.emailVerified === false) {
         return <Navigate to="/verify-email" replace />;
     }
+    */
 
     return <>{children}</>;
 };

@@ -196,6 +196,7 @@ const MerchantDeals: React.FC = () => {
 
                     const updatedOffers = [...currentOffers, {
                         id: newDeal.id,
+                        productId: newDeal.productId,
                         name: newDeal.productName,
                         price: newDeal.salePrice,
                         originalPrice: newDeal.originalPrice,
@@ -208,6 +209,7 @@ const MerchantDeals: React.FC = () => {
                     const currentSales = store?.saleItems || [];
                     const updatedSales = [...currentSales, {
                         id: newDeal.id,
+                        productId: newDeal.productId,
                         name: newDeal.productName,
                         price: newDeal.salePrice,
                         originalPrice: newDeal.originalPrice,
@@ -286,6 +288,7 @@ const MerchantDeals: React.FC = () => {
                                     const activeDeals = deals.filter(d => d.status === 'active');
                                     const oneDayOffers = activeDeals.filter(d => d.isFlashSale).map(d => ({
                                         id: d.id,
+                                        productId: d.productId,
                                         name: d.productName,
                                         price: d.salePrice,
                                         originalPrice: d.originalPrice,
@@ -295,6 +298,7 @@ const MerchantDeals: React.FC = () => {
                                     }));
                                     const saleItems = activeDeals.filter(d => !d.isFlashSale).map(d => ({
                                         id: d.id,
+                                        productId: d.productId,
                                         name: d.productName,
                                         price: d.salePrice,
                                         originalPrice: d.originalPrice,

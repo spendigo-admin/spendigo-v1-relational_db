@@ -18,6 +18,8 @@ export interface StoreOption {
     storeId: string;
     storeName: string;
     price: number;
+    originalPrice?: number;
+    discount?: string;
     inStock: boolean;
     productId: string;
     brand?: string;

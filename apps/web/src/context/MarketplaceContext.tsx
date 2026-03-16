@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { collection, onSnapshot, doc, updateDoc, setDoc, getDoc, deleteDoc } from 'firebase/firestore';
+import { collection, onSnapshot, doc, updateDoc, setDoc, getDoc, deleteDoc, collectionGroup, query, where } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 // Audit import removed
 
@@ -65,9 +65,15 @@ export const MarketplaceProvider: React.FC<{ children: ReactNode }> = ({ childre
         await updateDoc(storeRef, { products });
     };
 
-    const updateStoreFlyer = async (storeId: string | number, flyer: any) => {
+    const updateStoreFlyer = async (storeId: string | number, flyer: { title: string; validUntil: string; image: string; items?: any[] }) => {
         const storeRef = doc(db, 'stores', String(storeId));
-        await updateDoc(storeRef, { flyer });
+        const updateData: any = { flyer };
+        if (flyer.items) {
+            updateData.activeFlyerItems = flyer.items;
+        } else {
+            updateData.activeFlyerItems = []; // Clear if no active flyer
+        }
+        await updateDoc(storeRef, updateData);
     };
 
     const updateStoreDeals = async (storeId: string | number, type: 'oneDayOffers' | 'saleItems', deals: any[]) => {

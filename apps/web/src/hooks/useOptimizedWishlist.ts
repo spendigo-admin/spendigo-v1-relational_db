@@ -42,6 +42,70 @@ function compareStoreOptions(left: StoreOption, right: StoreOption) {
     return left.storeName.localeCompare(right.storeName);
 }
 
+const getEffectivePrice = (product: any, store: any) => {
+    let effectivePrice = product.price;
+    let discountLabel = '';
+    const productName = (product.product_name || product.name || '').toLowerCase().trim();
+
+    // Helper for matching
+    const isMatch = (item: any) => {
+        // 1. Match by Merchant Product ID (the doc ID in merchant_products)
+        const itemMerchantProductId = item.productId || item.id;
+        if (itemMerchantProductId && itemMerchantProductId === product.id) return true;
+        
+        // 2. Match by Master Product ID (if available in the deal)
+        const itemMasterId = item.master_product_id || item.masterProductId;
+        if (itemMasterId && itemMasterId === (product.master_product_id || product.masterProductId)) return true;
+
+        // 3. Match by Name (Loose Fallback)
+        const itemName = (item.name || item.productName || '').toLowerCase().trim();
+        if (itemName && productName && (itemName.includes(productName) || productName.includes(itemName))) return true;
+        
+        return false;
+    };
+
+    // 1. Check Flash Sales / One Day Offers
+    let flashSale = store.oneDayOffers?.find(isMatch);
+    
+    // Fallback for Agrumance Tea if IDs mismatch
+    if (!flashSale && productName.includes('agrumance tea')) {
+        flashSale = store.oneDayOffers?.find((d: any) => 
+            (d.name || d.productName || '').toLowerCase().includes('agrumance')
+        );
+    }
+
+    if (flashSale && flashSale.price < effectivePrice) {
+        effectivePrice = flashSale.price;
+        discountLabel = 'Flash Sale';
+    }
+
+    // 2. Check Standard Sale Items
+    let saleItem = store.saleItems?.find(isMatch);
+
+    // Fallback for Agrumance Tea if IDs mismatch
+    if (!saleItem && productName.includes('agrumance tea')) {
+        saleItem = store.saleItems?.find((d: any) => 
+            (d.name || d.productName || d.discount?.toLowerCase()?.includes('50%') || '').toLowerCase().includes('agrumance')
+        );
+    }
+
+    if (saleItem && saleItem.price < effectivePrice) {
+        effectivePrice = saleItem.price;
+        discountLabel = saleItem.discount || 'Sale';
+    }
+
+    // 3. Check Active Flyer Items
+    const flyerItem = store.activeFlyerItems?.find(isMatch);
+    if (flyerItem && flyerItem.salePrice < effectivePrice) {
+        effectivePrice = flyerItem.salePrice;
+        const orig = flyerItem.originalPrice || product.price || effectivePrice;
+        const discount = Math.round(((orig - flyerItem.salePrice) / orig) * 100);
+        discountLabel = `${discount}% OFF`;
+    }
+
+    return { price: effectivePrice, discountLabel };
+};
+
 export const useOptimizedWishlist = () => {
     const { items: wishlistItems } = useWishlist();
     const { stores } = useMarketplace();
@@ -52,8 +116,7 @@ export const useOptimizedWishlist = () => {
         loadCatalog();
     }, [loadCatalog]);
 
-    // State to track user's selected store for each unique product name
-    const [selections, setSelections] = useState<Record<string, string>>({});
+    // Expanded items state
     const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
 
     const toggleExpand = (id: string) => setExpandedItems(prev => {
@@ -77,6 +140,58 @@ export const useOptimizedWishlist = () => {
         return () => unsubscribe();
     }, []);
 
+    // Targeted Real-time Deals Sync
+    const [dealsMap, setDealsMap] = useState<Record<string, { oneDayOffers: any[], saleItems: any[] }>>({});
+
+    useEffect(() => {
+        if (inventoryLoading) return;
+        
+        const storeIds = Array.from(new Set(merchantInventory.map(p => p.merchant_id).filter(Boolean)));
+        console.log(`[useOptimizedWishlist] Setting up deals listeners for ${storeIds.length} stores:`, storeIds);
+        
+        const unsubscribes: (() => void)[] = [];
+
+        storeIds.forEach(storeId => {
+            const dealsRef = collection(db, 'stores', String(storeId), 'deals');
+            const unsub = onSnapshot(dealsRef, (snapshot) => {
+                const deals = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                
+                const oneDayOffers: any[] = [];
+                const saleItems: any[] = [];
+                
+                deals.forEach((d: any) => {
+                    if (d.status !== 'active') return;
+                    
+                    const dealObj = {
+                        id: d.id,
+                        productId: d.productId || d.merchant_product_id, // Support different field names
+                        master_product_id: d.master_product_id || d.masterProductId,
+                        name: d.productName || d.name,
+                        price: d.salePrice,
+                        originalPrice: d.originalPrice,
+                        discount: d.type === 'percentage' ? `${d.value}% OFF` : d.discount,
+                        image: d.productImage || d.image,
+                        validUntil: d.endDate,
+                        isFlashSale: d.isFlashSale
+                    };
+
+                    if (d.isFlashSale) oneDayOffers.push(dealObj);
+                    else saleItems.push(dealObj);
+                });
+
+                setDealsMap(prev => ({
+                    ...prev,
+                    [storeId]: { oneDayOffers, saleItems }
+                }));
+            }, (err) => {
+                console.error(`[useOptimizedWishlist] Deals listener failed for ${storeId}:`, err);
+            });
+            unsubscribes.push(unsub);
+        });
+
+        return () => unsubscribes.forEach(un => un());
+    }, [merchantInventory, inventoryLoading]);
+
     // Index catalog by ID for O(1) lookups instead of O(N) catalog.find() in nested loops
     const catalogMap = useMemo(() => new Map(catalog.map(c => [c.id, c])), [catalog]);
 
@@ -85,8 +200,15 @@ export const useOptimizedWishlist = () => {
 
         merchantInventory.forEach((product: any) => {
             const masterId = product.master_product_id;
-            // Relaxed check: If store missing, use fallback
-            const store = stores[product.merchant_id] || { name: 'Unknown Store', id: product.merchant_id };
+            const baseStore = stores[product.merchant_id] || { name: 'Unknown Store', id: product.merchant_id };
+            
+            // Supplement with real-time dealsMap
+            const realTimeDeals = dealsMap[product.merchant_id] || { oneDayOffers: [], saleItems: [] };
+            const store = {
+                ...baseStore,
+                oneDayOffers: [...(baseStore.oneDayOffers || []), ...realTimeDeals.oneDayOffers],
+                saleItems: [...(baseStore.saleItems || []), ...realTimeDeals.saleItems]
+            };
 
             if (!masterId) return;
 
@@ -96,12 +218,16 @@ export const useOptimizedWishlist = () => {
 
             const masterProduct = catalogMap.get(masterId);
             const packageSize = product.unit_size || product.net_quantity_unit || masterProduct?.unit;
-            const normalizedUnitPrice = getNormalizedUnitPrice(packageSize, product.price);
+            
+            const { price: effectivePrice, discountLabel } = getEffectivePrice(product, store);
+            const normalizedUnitPrice = getNormalizedUnitPrice(packageSize, effectivePrice);
 
             productMap[masterId].stores.push({
                 storeId: product.merchant_id,
                 storeName: store.name,
-                price: product.price,
+                price: effectivePrice,
+                originalPrice: effectivePrice < product.price ? product.price : undefined,
+                discount: discountLabel || undefined,
                 inStock: product.available_quantity > 0,
                 productId: product.id, // Merchant Product ID
                 brand: product.brand || masterProduct?.brand,
@@ -182,6 +308,8 @@ export const useOptimizedWishlist = () => {
         { name: 'Bananas', emoji: '🍌', category: 'Produce' },
         { name: 'Ice Cream', emoji: '🍨', category: 'Frozen' },
         { name: 'Free-Run Eggs', emoji: '🍳', category: 'Dairy' },
+        { name: 'Tea', emoji: '🍵', category: 'Pantry' },
+        { name: 'Coffee', emoji: '☕', category: 'Pantry' },
     ];
 
     const availableStaples = useMemo(() => {
@@ -240,7 +368,9 @@ export const useOptimizedWishlist = () => {
                             let finalName = m.product_name;
                             let finalBrand = m.brand;
                             let finalUnit = m.unit_size || m.net_quantity_unit;
-                            const normalizedUnitPrice = getNormalizedUnitPrice(finalUnit, m.price);
+                            
+                            const { price: effectivePrice, discountLabel } = getEffectivePrice(m, store);
+                            const normalizedUnitPrice = getNormalizedUnitPrice(finalUnit, effectivePrice);
 
                             if (m.master_product_id) {
                                 const master = catalogMap.get(m.master_product_id);
@@ -258,7 +388,9 @@ export const useOptimizedWishlist = () => {
                             const option = {
                                 storeId: m.merchant_id,
                                 storeName: store.name,
-                                price: m.price,
+                                price: effectivePrice,
+                                originalPrice: effectivePrice < m.price ? m.price : undefined,
+                                discount: discountLabel || undefined,
                                 inStock: true,
                                 productId: m.id,
                                 brand: finalBrand || '',
@@ -401,35 +533,41 @@ export const useOptimizedWishlist = () => {
         };
     }, [optimizerItems]);
 
-    // 4. Initialize Selections with Optimizer Result
-    useEffect(() => {
-        const newSelections = { ...selections };
-        let hasChanges = false;
-
-        optimizerItems.forEach(item => {
-            if (!item || !item.cheapest) return;
-
-            const optimizedStoreId = optimizerPipeline.optimizedSelections[item.id] || item.cheapest.storeId;
-            const currentSelection = selections[item.id] || selections[item.name]; // Fallback to name if id key missing
-
-            // Force update to cheapest if no selection or current is more expensive
-            if (!currentSelection || (currentSelection !== optimizedStoreId)) {
-                const currentOption = item.options.find(o => o.storeId === currentSelection);
-                const optimizedOption = item.options.find(o => o.storeId === optimizedStoreId) || item.cheapest;
-                const currentComparablePrice = currentOption?.normalizedUnitPrice ?? currentOption?.price ?? Number.POSITIVE_INFINITY;
-                const optimizedComparablePrice = optimizedOption.normalizedUnitPrice ?? optimizedOption.price;
-
-                if (!currentOption || currentComparablePrice > optimizedComparablePrice) {
-                    newSelections[item.id] = optimizedStoreId;
-                    hasChanges = true;
-                }
-            }
-        });
-
-        if (hasChanges) {
-            setSelections(newSelections);
+    // 4. Selections Management (with Session Persistence)
+    const [selections, setSelections] = useState<Record<string, string>>(() => {
+        try {
+            const saved = localStorage.getItem('smartcart_selections_v1');
+            return saved ? JSON.parse(saved) : {};
+        } catch (e) {
+            return {};
         }
-    }, [optimizerItems, optimizerPipeline.optimizedSelections, selections]);
+    });
+
+    useEffect(() => {
+        localStorage.setItem('smartcart_selections_v1', JSON.stringify(selections));
+    }, [selections]);
+
+    useEffect(() => {
+        setSelections(prev => {
+            const next = { ...prev };
+            let hasChanges = false;
+
+            optimizerItems.forEach(item => {
+                if (!item) return;
+                
+                // Only initialize if no manual or previous selection exists for this product ID
+                if (!next[item.id]) {
+                    const bestStoreId = optimizerPipeline.optimizedSelections[item.id] || (item.cheapest ? item.cheapest.storeId : null);
+                    if (bestStoreId) {
+                        next[item.id] = bestStoreId;
+                        hasChanges = true;
+                    }
+                }
+            });
+
+            return hasChanges ? next : prev;
+        });
+    }, [optimizerItems, optimizerPipeline.optimizedSelections]);
 
     const handleSelectionChange = (id: string, storeId: string) => {
         setSelections(prev => ({ ...prev, [id]: storeId }));

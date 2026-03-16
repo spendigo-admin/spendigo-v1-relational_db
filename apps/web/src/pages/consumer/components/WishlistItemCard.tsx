@@ -53,9 +53,23 @@ export const WishlistItemCard: React.FC<WishlistItemCardProps> = ({
                 {/* Right side: price + chevron + delete */}
                 <div className="flex items-center gap-2 flex-shrink-0">
                     {selectedOption && (
-                        <span className="font-bold text-[var(--brand-primary)] text-sm">
-                            ${selectedOption.price.toFixed(2)}
-                        </span>
+                        <div className="text-right">
+                             {selectedOption.originalPrice && (
+                                <p className="text-[10px] text-gray-400 line-through leading-none mb-0.5">
+                                    ${selectedOption.originalPrice.toFixed(2)}
+                                </p>
+                            )}
+                            <div className="flex items-center gap-1.5">
+                                {selectedOption.discount && (
+                                    <span className="text-[10px] bg-red-100 text-red-600 px-1 py-0.5 rounded font-bold">
+                                        {selectedOption.discount}
+                                    </span>
+                                )}
+                                <span className="font-bold text-[var(--brand-primary)] text-sm">
+                                    ${selectedOption.price.toFixed(2)}
+                                </span>
+                            </div>
+                        </div>
                     )}
                     <svg
                         className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
@@ -99,18 +113,25 @@ export const WishlistItemCard: React.FC<WishlistItemCardProps> = ({
                                         {isSelected && <div className="w-2 h-2 bg-white rounded-full" />}
                                     </div>
                                     <div>
-                                        <p className={`font-medium text-sm leading-tight ${isSelected ? 'text-[var(--brand-primary)]' : 'text-gray-700'}`}>
-                                            {(() => {
-                                                const showBrand = option.brand && !option.name?.toLowerCase().startsWith(option.brand.toLowerCase());
-                                                return (
-                                                    <>
-                                                        {showBrand && <span className="font-bold text-gray-900">{option.brand} </span>}
-                                                        <span>{option.name}</span>
-                                                        {option.unit && <span className="text-gray-400 text-xs"> ({option.unit})</span>}
-                                                    </>
-                                                );
-                                            })()}
-                                        </p>
+                                        <div className="flex items-center gap-2">
+                                            <p className={`font-medium text-sm leading-tight ${isSelected ? 'text-[var(--brand-primary)]' : 'text-gray-700'}`}>
+                                                {(() => {
+                                                    const showBrand = option.brand && !option.name?.toLowerCase().startsWith(option.brand.toLowerCase());
+                                                    return (
+                                                        <>
+                                                            {showBrand && <span className="font-bold text-gray-900">{option.brand} </span>}
+                                                            <span>{option.name}</span>
+                                                            {option.unit && <span className="text-gray-400 text-xs"> ({option.unit})</span>}
+                                                        </>
+                                                    );
+                                                })()}
+                                            </p>
+                                            {option.discount && (
+                                                <span className="text-[9px] bg-red-50 text-red-500 px-1 py-0.5 rounded font-bold uppercase tracking-tight">
+                                                    {option.discount}
+                                                </span>
+                                            )}
+                                        </div>
                                         <p className="text-[11px] text-gray-400 mt-0.5">{option.storeName}</p>
                                         {isCheapest && (
                                             <span className="inline-block px-1.5 py-0.5 bg-green-100 text-green-700 text-[10px] uppercase font-bold tracking-wider rounded mt-1">
@@ -121,6 +142,11 @@ export const WishlistItemCard: React.FC<WishlistItemCardProps> = ({
                                 </div>
 
                                 <div className="text-right flex-shrink-0 ml-2">
+                                    {option.originalPrice && (
+                                        <p className="text-[10px] text-gray-400 line-through leading-none mb-0.5">
+                                            ${option.originalPrice.toFixed(2)}
+                                        </p>
+                                    )}
                                     <p className={`font-bold text-sm ${isSelected ? 'text-[var(--brand-primary)]' : 'text-gray-900'}`}>
                                         ${option.price.toFixed(2)}
                                     </p>

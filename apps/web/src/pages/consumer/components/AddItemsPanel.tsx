@@ -83,28 +83,41 @@ export const AddItemsPanel: React.FC<AddItemsPanelProps> = ({ showAddItems, setS
                     </div>
 
                     {(() => {
-                        if (!selectedCategory) {
+                        const searchQuery = customItemName.trim().toLowerCase();
+                        
+                        // Decide what to show: Priority to search query if it's long enough, otherwise category
+                        const isActiveSearch = searchQuery.length >= 2;
+                        
+                        if (!selectedCategory && !isActiveSearch) {
                             return (
                                 <p className="text-xs text-gray-400 text-center py-4">
-                                    Select a category above to browse matching products
+                                    Type an item name above or select a category to browse products
                                 </p>
                             );
                         }
 
-                        // Filter catalog items to those matching the selected category's name
-                        const filteredItems = AVAILABLE_ITEMS.filter(item =>
-                            item.name.toLowerCase().includes(selectedCategory.toLowerCase())
-                        );
+                        // Filter catalog items
+                        const filteredItems = AVAILABLE_ITEMS.filter(item => {
+                            const name = item.name.toLowerCase();
+                            if (isActiveSearch) return name.includes(searchQuery);
+                            if (selectedCategory) return name.includes(selectedCategory.toLowerCase());
+                            return false;
+                        });
+
+                        const matchingLabel = isActiveSearch ? `Results for "${customItemName}"` : `Matching: ${selectedCategory}`;
 
                         return filteredItems.length > 0 ? (
                             <>
                                 <h3 className="font-bold text-[var(--text-main)] mb-3 text-sm flex justify-between items-center">
-                                    <span>Matching: {selectedCategory}</span>
+                                    <span>{matchingLabel}</span>
                                     <button 
-                                        onClick={() => setSelectedCategory(null)}
+                                        onClick={() => {
+                                            setSelectedCategory(null);
+                                            setCustomItemName('');
+                                        }}
                                         className="text-xs text-gray-500 font-normal hover:text-[var(--brand-primary)]"
                                     >
-                                        Clear Filter
+                                        Clear
                                     </button>
                                 </h3>
                                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-60 overflow-y-auto">
@@ -136,7 +149,7 @@ export const AddItemsPanel: React.FC<AddItemsPanelProps> = ({ showAddItems, setS
                             </>
                         ) : (
                             <p className="text-xs text-gray-400 text-center py-4">
-                                No catalog items found for {selectedCategory}
+                                No catalog items found for {isActiveSearch ? `"${customItemName}"` : selectedCategory}
                             </p>
                         );
                     })()}
