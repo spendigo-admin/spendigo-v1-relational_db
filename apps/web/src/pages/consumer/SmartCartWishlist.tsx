@@ -28,6 +28,7 @@ const SmartCartWishlist: React.FC = () => {
         handleSelectionChange,
         totalCost,
         potentialSavings,
+        dealSavings,
         validCartItems,
         optimizerRecommendation,
         bestSingleStore,
@@ -201,7 +202,8 @@ const SmartCartWishlist: React.FC = () => {
                                 optimizerItems={optimizerItems} 
                                 validCartItems={validCartItems} 
                                 totalCost={totalCost} 
-                                potentialSavings={potentialSavings} 
+                                potentialSavings={potentialSavings}
+                                dealSavings={dealSavings}
                                 optimizerRecommendation={optimizerRecommendation}
                                 bestSingleStore={bestSingleStore}
                                 singleStoreAlternatives={singleStoreAlternatives}

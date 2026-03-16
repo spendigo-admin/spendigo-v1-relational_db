@@ -574,8 +574,9 @@ export const useOptimizedWishlist = () => {
     };
 
     // 5. Calculate Totals
-    const { totalCost, potentialSavings, validCartItems } = useMemo(() => {
+    const { totalCost, potentialSavings, dealSavings, validCartItems } = useMemo(() => {
         let total = 0;
+        let originalTotal = 0;
         let normalizedTotal = 0;
         const cartItems: any[] = [];
 
@@ -588,6 +589,7 @@ export const useOptimizedWishlist = () => {
 
             if (selectedOption) {
                 total += selectedOption.price;
+                originalTotal += selectedOption.originalPrice ?? selectedOption.price;
                 normalizedTotal += selectedOption.normalizedUnitPrice ?? selectedOption.price;
 
                 // Smart Name formatting to avoid "Kraft Kraft Dinner"
@@ -612,8 +614,9 @@ export const useOptimizedWishlist = () => {
 
         const bestSingleStoreCost = optimizerPipeline.comparisonResult?.best_single_store_cost ?? null;
         const savings = bestSingleStoreCost !== null ? bestSingleStoreCost - normalizedTotal : 0;
+        const dealSavingsAmount = originalTotal - total;
 
-        return { totalCost: total, potentialSavings: savings, validCartItems: cartItems };
+        return { totalCost: total, potentialSavings: savings, dealSavings: dealSavingsAmount > 0.01 ? dealSavingsAmount : 0, validCartItems: cartItems };
     }, [optimizerItems, optimizerPipeline.comparisonResult, optimizerPipeline.optimizedSelections, selections]);
 
     const bestSingleStore = useMemo(() => {
@@ -670,6 +673,7 @@ export const useOptimizedWishlist = () => {
         handleSelectionChange,
         totalCost,
         potentialSavings,
+        dealSavings,
         validCartItems,
         priceMatrix: optimizerPipeline.price_matrix,
         optimizedCart: optimizerPipeline.optimizedCart,

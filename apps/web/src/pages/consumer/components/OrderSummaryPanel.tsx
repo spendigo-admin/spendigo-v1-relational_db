@@ -9,6 +9,7 @@ interface OrderSummaryPanelProps {
     validCartItems: any[];
     totalCost: number;
     potentialSavings: number;
+    dealSavings: number;
     optimizerRecommendation: 'single_store' | 'optimized_multi_store' | 'optimized_multi_store_only_feasible' | null;
     bestSingleStore: {
         id: string;
@@ -30,6 +31,7 @@ export const OrderSummaryPanel: React.FC<OrderSummaryPanelProps> = ({
     validCartItems,
     totalCost,
     potentialSavings,
+    dealSavings,
     optimizerRecommendation,
     bestSingleStore,
     singleStoreAlternatives,
@@ -89,9 +91,11 @@ export const OrderSummaryPanel: React.FC<OrderSummaryPanelProps> = ({
                 <div className="rounded-2xl border border-[var(--glass-border)] bg-[linear-gradient(135deg,rgba(46,125,50,0.12),rgba(255,255,255,0.96))] p-3">
                     <div className="text-[11px] uppercase tracking-[0.12em] text-[var(--text-muted)]">Savings</div>
                     <div className="mt-1 text-2xl font-black text-[var(--status-success)]">
-                        {potentialSavings > 0 ? `$${potentialSavings.toFixed(2)}` : '$0.00'}
+                        {(dealSavings > 0 || potentialSavings > 0) ? `$${(dealSavings + Math.max(0, potentialSavings)).toFixed(2)}` : '$0.00'}
                     </div>
-                    <div className="text-xs text-[var(--text-muted)]">vs best single store</div>
+                    <div className="text-xs text-[var(--text-muted)]">
+                        {dealSavings > 0 ? 'from active deals' : 'vs best single store'}
+                    </div>
                 </div>
             </div>
 
