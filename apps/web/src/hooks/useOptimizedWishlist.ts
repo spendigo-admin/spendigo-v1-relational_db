@@ -164,7 +164,7 @@ export const useOptimizedWishlist = () => {
                     
                     const dealObj = {
                         id: d.id,
-                        productId: d.productId || d.merchant_product_id, // Support different field names
+                        productId: d.productId || d.merchant_product_id,
                         master_product_id: d.master_product_id || d.masterProductId,
                         name: d.productName || d.name,
                         price: d.salePrice,
@@ -239,7 +239,7 @@ export const useOptimizedWishlist = () => {
         });
 
         return productMap;
-    }, [merchantInventory, stores, catalogMap]);
+    }, [merchantInventory, stores, catalogMap, dealsMap]);
 
     // 2. Derive Available Items from Global Catalog (Filtered by Availability)
     const AVAILABLE_ITEMS = useMemo(() => {
