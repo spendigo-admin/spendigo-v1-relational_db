@@ -607,7 +607,8 @@ export const useOptimizedWishlist = () => {
                     quantity: 1,
                     storeId: selectedOption.storeId,
                     storeName: selectedOption.storeName,
-                    image: item.image
+                    image: item.image,
+                    originalPrice: selectedOption.originalPrice
                 });
             }
         });

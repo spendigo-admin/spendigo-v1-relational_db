@@ -13,6 +13,7 @@ export interface CartItem {
     storeId: string;
     storeName: string;
     image?: string;
+    originalPrice?: number;
 }
 
 interface CartContextType {
@@ -149,7 +150,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (existing) {
             updatedItems = baseItems.map(i =>
                 i.productId === newItem.productId
-                    ? { ...i, quantity: i.quantity + newItem.quantity }
+                    ? { ...i, quantity: i.quantity + newItem.quantity, price: newItem.price, originalPrice: newItem.originalPrice }
                     : i
             );
         } else {
@@ -210,7 +211,9 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
             if (existingIndex > -1) {
                 updatedItems[existingIndex] = {
                     ...updatedItems[existingIndex],
-                    quantity: updatedItems[existingIndex].quantity + newItem.quantity
+                    quantity: updatedItems[existingIndex].quantity + newItem.quantity,
+                    price: newItem.price,
+                    originalPrice: newItem.originalPrice
                 };
             } else {
                 updatedItems.push({ ...newItem, id: Math.random().toString(36).substr(2, 9) });

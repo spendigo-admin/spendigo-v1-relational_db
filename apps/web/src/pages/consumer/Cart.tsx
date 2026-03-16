@@ -24,7 +24,13 @@ const Cart: React.FC = () => {
         let totalSavings = 0;
 
         items.forEach(cartItem => {
-            // Find all prices for this product across all stores
+            // Priority 1: Use specific item-level originalPrice (Deal Savings)
+            if (cartItem.originalPrice && cartItem.originalPrice > cartItem.price) {
+                totalSavings += (cartItem.originalPrice - cartItem.price) * cartItem.quantity;
+                return;
+            }
+
+            // Priority 2: Use STORE_DATA comparison (Legacy/Fallback)
             const allPrices: number[] = [];
             Object.values(STORE_DATA).forEach((store: any) => {
                 const product = store.products?.find((p: any) => p.name === cartItem.productName);
@@ -36,7 +42,7 @@ const Cart: React.FC = () => {
             if (allPrices.length > 0) {
                 const maxPrice = Math.max(...allPrices);
                 const savings = (maxPrice - cartItem.price) * cartItem.quantity;
-                totalSavings += savings;
+                if (savings > 0) totalSavings += savings;
             }
         });
 
