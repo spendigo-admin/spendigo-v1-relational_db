@@ -39,19 +39,6 @@ export const OrderSummaryPanel: React.FC<OrderSummaryPanelProps> = ({
     const { addItemsToCart } = useCart();
     const { items: wishlistItems } = useWishlist();
 
-    const insightPayload = useMemo(() => ({
-        items: optimizerItems.filter(Boolean).map(item => ({
-            name: item!.name,
-            category: wishlistItems.find(w => w.name === item!.name)?.category ?? '',
-            options: item!.options.map(o => ({ storeName: o.storeName, price: o.price }))
-        })),
-        totalCost,
-        storeCount: new Set(validCartItems.map(i => i.storeId)).size,
-        potentialSavings,
-        missingCount: optimizerItems.filter(i => i && i.options.length === 0).length
-    }), [optimizerItems, totalCost, potentialSavings, validCartItems, wishlistItems]);
-
-    const { insights, loading: insightsLoading } = useSmartInsights(insightPayload);
     const matchedCount = validCartItems.length;
     const storeCount = new Set(validCartItems.map(i => i.storeId)).size;
     const missingCount = optimizerItems.filter(i => i && i.options.length === 0).length;
@@ -67,7 +54,6 @@ export const OrderSummaryPanel: React.FC<OrderSummaryPanelProps> = ({
             {/* Panel Header */}
             <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-bold text-[var(--text-main)]">Order Summary</h2>
-                <span className="text-xs font-semibold text-purple-600 bg-purple-50 px-2 py-1 rounded-full border border-purple-100">Smart Insights</span>
             </div>
 
             <div className="grid grid-cols-2 gap-3 mb-5">
@@ -187,25 +173,6 @@ export const OrderSummaryPanel: React.FC<OrderSummaryPanelProps> = ({
                     </div>
                 </div>
             )}
-
-            {/* AI Insights Panel */}
-            <div className="mb-6 bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl p-4 border border-purple-100 relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-16 h-16 bg-purple-200/20 rounded-bl-full -mr-4 -mt-4"></div>
-
-                <h3 className="font-bold text-sm text-purple-900 mb-3 flex items-center gap-2">
-                    <span>✨</span> Smart Insights
-                </h3>
-
-                {insightsLoading && (
-                    <div className="space-y-2 animate-pulse">
-                        <div className="h-3 bg-purple-200 rounded w-3/4" />
-                        <div className="h-3 bg-purple-200 rounded w-1/2" />
-                    </div>
-                )}
-                {!insightsLoading && insights.map((line, i) => (
-                    <p key={i} className="text-xs text-purple-800 mb-2">• {line}</p>
-                ))}
-            </div>
 
             <div className="border-t border-[var(--glass-border)] my-4"></div>
 
