@@ -221,6 +221,7 @@ const StoreDetail: React.FC = () => {
     // Check for initial tab in state
     const [activeTab, setActiveTab] = useState<'products' | 'flyer' | 'offers' | 'reviews'>((location.state as any)?.initialTab || 'products');
     const [activeCategory, setActiveCategory] = useState('All');
+    const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
     if (!store) {
         return (
@@ -347,9 +348,9 @@ const StoreDetail: React.FC = () => {
             {/* TAB CONTENT */}
             {activeTab === 'products' && (
                 <>
-                    {/* Category Filters */}
-                    <div className="px-4 py-3 bg-[var(--surface-1)] border-b border-[var(--glass-border)]">
-                        <div className="overflow-x-auto scrollbar-hide">
+                    {/* Category Filters & View Toggle */}
+                    <div className="px-4 py-3 bg-[var(--surface-1)] border-b border-[var(--glass-border)] flex items-center justify-between">
+                        <div className="overflow-x-auto scrollbar-hide flex-1">
                             <div className="flex gap-2 min-w-max">
                                 {store.categories.map((cat: string) => (
                                     <button
@@ -362,13 +363,34 @@ const StoreDetail: React.FC = () => {
                                 ))}
                             </div>
                         </div>
+
+                        <div className="flex items-center gap-1 bg-[var(--surface-2)] p-1 rounded-lg ml-4">
+                            <button
+                                onClick={() => setViewMode('grid')}
+                                className={`p-1.5 rounded-md transition-all ${viewMode === 'grid' ? 'bg-white shadow-sm text-[var(--brand-primary)]' : 'text-[var(--text-muted)]'}`}
+                                title="Grid View"
+                            >
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                                </svg>
+                            </button>
+                            <button
+                                onClick={() => setViewMode('list')}
+                                className={`p-1.5 rounded-md transition-all ${viewMode === 'list' ? 'bg-white shadow-sm text-[var(--brand-primary)]' : 'text-[var(--text-muted)]'}`}
+                                title="List View"
+                            >
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                                </svg>
+                            </button>
+                        </div>
                     </div>
 
-                    {/* Product Grid */}
+                    {/* Product Grid/List View */}
                     <div className="p-4">
                         {filteredProducts.length === 0 ? (
                             <div className="text-center py-10 text-[var(--text-muted)]">No products found in this category.</div>
-                        ) : (
+                        ) : viewMode === 'grid' ? (
                             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                                 {filteredProducts.map((product: any) => (
                                     <div key={product.id} className="bg-white rounded-xl border border-[var(--glass-border)] overflow-hidden group shadow-sm hover:shadow-md transition-shadow">
@@ -408,6 +430,41 @@ const StoreDetail: React.FC = () => {
                                                 );
                                             })()}
                                         </div>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            /* List View */
+                            <div className="space-y-3">
+                                {filteredProducts.map((product: any) => (
+                                    <div key={product.id} className="bg-white rounded-xl border border-[var(--glass-border)] p-3 flex gap-4 items-center shadow-sm hover:shadow-md transition-shadow">
+                                        <div onClick={() => navigate(`/product/${product.id}`)} className="w-16 h-16 rounded-lg bg-[var(--surface-1)] flex-shrink-0 cursor-pointer overflow-hidden">
+                                            <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p onClick={() => navigate(`/product/${product.id}`)} className="font-medium text-[var(--text-main)] truncate cursor-pointer">{product.name}</p>
+                                            <div className="flex items-baseline gap-2">
+                                                <span className="font-bold text-[var(--brand-primary)] text-sm">${product.price.toFixed(2)}</span>
+                                                {product.originalPrice && (
+                                                    <span className="text-[10px] text-[var(--text-muted)] line-through">${product.originalPrice.toFixed(2)}</span>
+                                                )}
+                                            </div>
+                                        </div>
+                                        {(() => {
+                                            const isOutOfStock = product.available_quantity !== undefined && product.available_quantity <= 0;
+                                            return (
+                                                <button
+                                                    onClick={() => !isOutOfStock && handleQuickAdd(product)}
+                                                    disabled={isOutOfStock}
+                                                    className={`px-4 py-2 text-white text-xs font-bold rounded-lg transition-all ${isOutOfStock
+                                                        ? 'bg-gray-400 cursor-not-allowed'
+                                                        : 'bg-[var(--brand-primary)] hover:brightness-110 active:scale-95'
+                                                        }`}
+                                                >
+                                                    {isOutOfStock ? 'Out' : '+ Add'}
+                                                </button>
+                                            );
+                                        })()}
                                     </div>
                                 ))}
                             </div>
