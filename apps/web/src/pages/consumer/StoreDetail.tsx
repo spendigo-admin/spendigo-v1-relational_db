@@ -570,10 +570,19 @@ const StoreDetail: React.FC = () => {
                     <div className="bg-white p-6 rounded-2xl border border-[var(--glass-border)] shadow-sm">
                         <div className="flex flex-col md:flex-row gap-8 items-center">
                             <div className="text-center">
-                                <h4 className="text-5xl font-black text-[var(--text-main)] mb-1">{store.rating}</h4>
-                                <StarRating rating={store.rating} size="md" />
+                                <h4 className="text-5xl font-black text-[var(--text-main)] mb-1">
+                                    {reviews.length > 0 
+                                        ? (reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length).toFixed(1) 
+                                        : store.rating}
+                                </h4>
+                                <StarRating 
+                                    rating={reviews.length > 0 
+                                        ? reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length 
+                                        : store.rating} 
+                                    size="md" 
+                                />
                                 <p className="text-xs text-[var(--text-muted)] mt-2 font-medium uppercase tracking-wider">
-                                    {store.reviewCount || 0} REVIEWS
+                                    {reviews.length || store.reviewCount || 0} REVIEWS
                                 </p>
                             </div>
 
