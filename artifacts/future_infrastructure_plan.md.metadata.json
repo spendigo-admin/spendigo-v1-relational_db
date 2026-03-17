@@ -1,5 +1,0 @@
-{
-  "artifactType":  "ARTIFACT_TYPE_OTHER",
-  "summary":  "Infrastructure recommendations for future Beta launch.\n- Focus on cost-effective \"Scale to Zero\" options (Firebase/Supabase).\n- Comparison of Static Hosting vs Containers.\n- Migration strategy from localStorage.",
-  "updatedAt":  "2025-12-21T02:31:38.873085Z"
-}

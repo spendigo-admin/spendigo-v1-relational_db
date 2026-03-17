@@ -1,5 +1,0 @@
-{
-  "artifactType":  "ARTIFACT_TYPE_WALKTHROUGH",
-  "summary":  "Walkthrough to verify the Subscription Model Pivot.\n- Check Feature Gating (Free Tier).\n- Upgrade Plan.\n- Verify Features Unlocked.\n- Verify Checkout UI.",
-  "updatedAt":  "2025-12-20T22:11:39.481132Z"
-}
