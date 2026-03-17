@@ -202,6 +202,17 @@ const Checkout: React.FC = () => {
                     navigate('/profile/addresses');
                     return;
                 }
+                
+                const defaultAddr = profile.addresses.find(a => a.isDefault) || profile.addresses[0];
+                if (!defaultAddr) {
+                    addNotification({
+                        type: 'alert',
+                        title: 'Selection Required',
+                        message: `Please select or add a default delivery address in your profile.`
+                    });
+                    navigate('/profile/addresses');
+                    return;
+                }
             }
         }
 
@@ -279,8 +290,14 @@ const Checkout: React.FC = () => {
             console.log('All orders submitted successfully via batch');
 
             clearCart();
-            setOrderComplete(true);
-            // logEvent('checkout_completed', { total_amount: grandTotal, num_stores: Object.keys(groupedItems).length });
+            // Navigate to Profile page (Orders tab) instead of showing inline message
+            navigate('/profile', { state: { activeTab: 'orders' } });
+            
+            addNotification({
+                type: 'order',
+                title: 'Orders Confirmed! 🎉',
+                message: 'Your reservations have been successfully placed. You can track them in your profile.'
+            });
 
         } catch (err: any) {
             console.error('Checkout failed:', err);

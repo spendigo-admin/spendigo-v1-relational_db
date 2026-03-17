@@ -1,7 +1,7 @@
 # Spendigo SmartCart
 
 **Status**: Beta (Feature Complete)  
-**Last Updated**: 2026-01-02
+**Last Updated**: 2026-03-17
 
 Spendigo SmartCart is a Canada-first **Marketplace Facilitator** platform connecting independent convenience stores with local consumers. It features smart basket optimization, real-time order management, digital flyer integration, robust subscription management, and production-grade security.
 
@@ -175,10 +175,12 @@ npm run build
 
 ### Consumer Experience
 - 🔍 Cross-store product search
-- 💰 SmartCart price comparison
-- 📱 Real-time order tracking
+- 💰 SmartCart price comparison & discount synchronization
+- 📱 Real-time order tracking & reliability
 - ❤️ Wishlist with price alerts
 - 🧮 Provincial tax calculation
+- ⭐ **Production-Grade Reviews:** Verified purchase badges, helpfulness voting, and rating histograms
+- 🔲 **Flexible Layouts:** Grid vs High-Density List view toggle
 - ⚡ **Optimized Performance:** Lazy loading & Async decoding for images
 - 📈 **Real-Time Stats:** Live counter for active stores & products
 
@@ -279,6 +281,8 @@ Proprietary - All rights reserved.
 - **Core Experience**: Shopping, Order Management, Real-time Sync
 - **Growth Tools**: Carousel Ads, Survey Board, Digital Flyers, Traffic Analytics
 - **Merchant Tools**: Barcode Scanning, Revenue Analytics, Subscriptions
+- **Store Reviews**: Verified Badges, Rating Histograms, Helpfulness Voting (Production-Grade)
+- **Checkout & Delivery**: Unified Notification System, Minimum Order Validation, Redirection Fixes
 - **Security**: RBAC Enforcement, Audit Logs, Deployment Hardening
 - **Infrastructure**: Production Build, Image Optimization
 

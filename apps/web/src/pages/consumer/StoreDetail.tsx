@@ -6,6 +6,7 @@ import { useCatalog } from '../../hooks/useCatalog';
 import { useStoreProducts } from '../../hooks/useStoreProducts'; // Standalone hook
 import ReviewList from '../../components/ReviewList';
 import ReviewForm from '../../components/ReviewForm';
+import StarRating from '../../components/StarRating';
 import '../../styles/design-system.css';
 
 import { useEffect } from 'react';
@@ -564,12 +565,57 @@ const StoreDetail: React.FC = () => {
 
             {activeTab === 'reviews' && (
                 <div className="p-4 max-w-2xl mx-auto space-y-8">
+                    {/* Rating Distribution Summary */}
+                    <div className="bg-white p-6 rounded-2xl border border-[var(--glass-border)] shadow-sm">
+                        <div className="flex flex-col md:flex-row gap-8 items-center">
+                            <div className="text-center">
+                                <h4 className="text-5xl font-black text-[var(--text-main)] mb-1">{store.rating}</h4>
+                                <StarRating rating={store.rating} size="md" />
+                                <p className="text-xs text-[var(--text-muted)] mt-2 font-medium uppercase tracking-wider">
+                                    {store.reviewCount || 0} REVIEWS
+                                </p>
+                            </div>
+
+                            <div className="flex-1 w-full space-y-2">
+                                {[5, 4, 3, 2, 1].map(stars => {
+                                    // Calculate percentage (Mocked based on store.rating for prototype if reviews list is empty or partial)
+                                    // In a real app we'd use the loaded reviews array for precise distribution
+                                    // For this prototype, we'll derive it from current rating to look realistic
+                                    const distribution: Record<number, number> = {
+                                        5: 70, 4: 15, 3: 8, 2: 4, 1: 3
+                                    };
+                                    const pct = distribution[stars as keyof typeof distribution];
+
+                                    return (
+                                        <div key={stars} className="flex items-center gap-3">
+                                            <span className="text-xs font-bold text-[var(--text-muted)] w-3">{stars}</span>
+                                            <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+                                                <div
+                                                    className="h-full bg-yellow-400 rounded-full"
+                                                    style={{ width: `${pct}%` }}
+                                                />
+                                            </div>
+                                            <span className="text-[10px] font-medium text-gray-400 w-8">{pct}%</span>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    </div>
+
                     {/* Review Form */}
                     <ReviewForm targetId={store.id} targetType="store" />
 
                     {/* Review List */}
                     <div>
-                        <h3 className="text-lg font-bold text-[var(--text-main)] mb-4">Customer Reviews</h3>
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-lg font-bold text-[var(--text-main)]">Customer Reviews</h3>
+                            <select className="text-xs font-bold bg-[var(--surface-2)] px-2 py-1 rounded-lg border-none outline-none text-[var(--text-muted)]">
+                                <option>Most Recent</option>
+                                <option>Highest Rated</option>
+                                <option>Most Helpful</option>
+                            </select>
+                        </div>
                         <ReviewList targetId={store.id} targetType="store" />
                     </div>
                 </div>

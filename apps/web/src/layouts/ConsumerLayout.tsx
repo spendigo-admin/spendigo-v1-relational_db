@@ -11,7 +11,7 @@ import { logEvent } from 'firebase/analytics';
 const ConsumerLayout: React.FC = () => {
     const { itemCount, notification, clearNotification } = useCart();
     const { user, logout } = useAuth();
-    const { unreadCount } = useNotifications();
+    const { unreadCount, toast, setToast } = useNotifications();
     const navigate = useNavigate();
     const [searchQuery, setSearchQuery] = useState('');
     const location = useLocation();
@@ -226,7 +226,7 @@ const ConsumerLayout: React.FC = () => {
             {/* Bottom padding for mobile nav */}
             <div className="md:hidden h-[calc(4rem+var(--safe-area-bottom))]"></div>
 
-            {/* GLOBAL NOTIFICATION TOAST */}
+            {/* GLOBAL NOTIFICATION TOAST (Cart) */}
             {notification && (
                 <div className="fixed bottom-24 left-4 right-4 z-[100] animate-slide-up pointer-events-none">
                     <div className={`max-w-md mx-auto glass-panel p-4 text-white shadow-2xl flex items-center justify-between border-none pointer-events-auto ${notification.type === 'success' ? 'bg-[var(--status-success)]/95 backdrop-blur-md' : 'bg-orange-500/95 backdrop-blur-md'
@@ -258,6 +258,34 @@ const ConsumerLayout: React.FC = () => {
                         </div>
                         <button
                             onClick={clearNotification}
+                            className="bg-white/20 hover:bg-white/30 p-1.5 rounded-full transition-colors shrink-0"
+                        >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* SYSTEM TOAST (Notification Context) */}
+            {toast && (
+                <div className="fixed bottom-24 left-4 right-4 z-[110] animate-slide-up pointer-events-none">
+                    <div className={`max-w-md mx-auto glass-panel p-4 text-white shadow-2xl flex items-center justify-between border-none pointer-events-auto ${toast.type === 'alert' ? 'bg-red-500/95 backdrop-blur-md' : 'bg-[var(--brand-primary)]/95 backdrop-blur-md'
+                        }`}>
+                        <div className="flex-1 mr-4">
+                            <div className="flex items-center gap-2">
+                                <span className="text-xl">
+                                    {toast.type === 'alert' ? '⚠️' : '🔔'}
+                                </span>
+                                <div>
+                                    <p className="font-bold text-sm">{toast.title}</p>
+                                    <p className="text-xs opacity-90">{toast.message}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <button
+                            onClick={() => setToast(null)}
                             className="bg-white/20 hover:bg-white/30 p-1.5 rounded-full transition-colors shrink-0"
                         >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

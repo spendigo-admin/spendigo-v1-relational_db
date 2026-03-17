@@ -27,6 +27,8 @@ export interface Review {
     comment: string;
     timestamp: any;
     orderId?: string; // Optional, for verified purchase context
+    helpfulCount?: number;
+    voters?: string[]; // Array of user IDs who voted
 }
 
 interface ReviewContextType {
@@ -35,6 +37,7 @@ interface ReviewContextType {
     fetchReviews: (targetId: string, limitCount?: number) => void;
     addReview: (review: Omit<Review, 'id' | 'timestamp' | 'authorName' | 'authorAvatar'>) => Promise<void>;
     getAverageRating: (targetId: string) => Promise<{ rating: number, count: number }>;
+    voteReview: (reviewId: string) => Promise<void>;
 }
 
 const ReviewContext = createContext<ReviewContextType | undefined>(undefined);
@@ -78,7 +81,9 @@ export const ReviewProvider: React.FC<{ children: ReactNode }> = ({ children }) 
             authorId: user.id,
             authorName: user.name,
             authorAvatar: user.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase(),
-            timestamp: serverTimestamp()
+            timestamp: serverTimestamp(),
+            helpfulCount: 0,
+            voters: []
         };
 
         const docRef = await addDoc(collection(db, 'reviews'), newReview);
@@ -113,11 +118,26 @@ export const ReviewProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     };
 
     const getAverageRating = async (targetId: string) => {
-        // Implementation note: This function might be redundant if we store aggregations on the target object.
-        // But useful if we want to calc on the fly.
-        // For efficiency, we'll return what's in the stores/users collection usually.
-        // But here, let's just return 0 if not needed, or implement full query if strict.
         return { rating: 0, count: 0 };
+    };
+
+    const voteReview = async (reviewId: string) => {
+        if (!user) throw new Error("Must be logged in to vote");
+        
+        const reviewRef = doc(db, 'reviews', reviewId);
+        const reviewDoc = await getDoc(reviewRef);
+        
+        if (reviewDoc.exists()) {
+            const data = reviewDoc.data();
+            const voters = data.voters || [];
+            
+            if (voters.includes(user.id)) return; // Already voted
+
+            await updateDoc(reviewRef, {
+                helpfulCount: increment(1),
+                voters: [...voters, user.id]
+            });
+        }
     };
 
     return (
@@ -126,7 +146,8 @@ export const ReviewProvider: React.FC<{ children: ReactNode }> = ({ children }) 
             loading,
             fetchReviews,
             addReview,
-            getAverageRating
+            getAverageRating,
+            voteReview
         }}>
             {children}
         </ReviewContext.Provider>

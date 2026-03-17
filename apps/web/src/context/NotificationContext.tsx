@@ -74,6 +74,8 @@ interface NotificationContextType {
     addNotification: (n: Omit<AppNotification, 'id' | 'timestamp' | 'read'>) => void;
     deleteNotification: (id: string) => void;
     togglePreference: (key: keyof NotificationPreferences) => void;
+    toast: AppNotification | null;
+    setToast: (toast: AppNotification | null) => void;
 }
 
 // Imports updated
@@ -96,6 +98,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
     const [notifications, setNotifications] = useState<AppNotification[]>([]);
     const [preferences, setPreferences] = useState<NotificationPreferences>(DEFAULT_PREFERENCES);
+    const [toast, setToast] = useState<AppNotification | null>(null);
     const [loading, setLoading] = useState(true);
 
     // Sync Logic
@@ -154,8 +157,16 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
             read: false
         };
 
+        // --- Trigger Ephemeral Toast IMMEDIATELY for UI responsiveness ---
+        setToast({ ...payload, id: `toast-${Date.now()}` } as AppNotification);
+        setTimeout(() => setToast(null), 5000);
+
         if (isAuth && contextId) {
-            await addDoc(collection(db, 'users', contextId, 'notifications'), payload);
+            try {
+                await addDoc(collection(db, 'users', contextId, 'notifications'), payload);
+            } catch (e) {
+                console.error("Failed to save notification to Firestore:", e);
+            }
         } else {
             // Local
             const newNotif = { ...payload, id: `guest-${Date.now()}` };
@@ -234,7 +245,9 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
             clearAll,
             addNotification,
             deleteNotification,
-            togglePreference
+            togglePreference,
+            toast,
+            setToast
         }}>
             {children}
         </NotificationContext.Provider>

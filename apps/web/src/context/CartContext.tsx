@@ -18,8 +18,8 @@ export interface CartItem {
 
 interface CartContextType {
     items: CartItem[];
-    addToCart: (item: Omit<CartItem, 'id'>) => void;
-    addItemsToCart: (items: Omit<CartItem, 'id'>[], savedAmount?: number) => void;
+    addToCart: (item: Omit<CartItem, 'id'>) => Promise<void>;
+    addItemsToCart: (items: Omit<CartItem, 'id'>[], savedAmount?: number) => Promise<void>;
     removeFromCart: (itemId: string) => void;
     updateQuantity: (itemId: string, delta: number) => void;
     clearCart: () => void;
@@ -139,7 +139,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
     };
 
-    const addToCart = (newItem: Omit<CartItem, 'id'>) => {
+    const addToCart = async (newItem: Omit<CartItem, 'id'>) => {
         let updatedItems: CartItem[] = [];
 
         // Calculate new state logic (replicated for both flows to ensure consistency)
@@ -157,12 +157,12 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
             updatedItems = [...baseItems, { ...newItem, id: Math.random().toString(36).substr(2, 9) }];
         }
 
+        // Optimistic Update
+        setItems(updatedItems);
+        
         if (user) {
-            // Auth: Save to Cloud (Listener updates UI)
-            saveToCloud(updatedItems);
-        } else {
-            // Guest: Update State (Effect saves to LS)
-            setItems(updatedItems);
+            // Auth: Save to Cloud (Listener will keep it in sync, but we await for flow control)
+            await saveToCloud(updatedItems);
         }
 
         // Price Comparison Logic (Preserved)
@@ -204,7 +204,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setTimeout(() => setNotification(null), 4000);
     };
 
-    const addItemsToCart = (newItems: Omit<CartItem, 'id'>[], savedAmount?: number) => {
+    const addItemsToCart = async (newItems: Omit<CartItem, 'id'>[], savedAmount?: number) => {
         const updatedItems = [...items];
         newItems.forEach(newItem => {
             const existingIndex = updatedItems.findIndex(i => i.productId === newItem.productId);
@@ -220,8 +220,10 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
         });
 
-        if (user) saveToCloud(updatedItems);
-        else setItems(updatedItems);
+        // Optimistic Update
+        setItems(updatedItems);
+
+        if (user) await saveToCloud(updatedItems);
 
         // Summary notification remains same
         const names = newItems.map(i => i.productName).join(', ');

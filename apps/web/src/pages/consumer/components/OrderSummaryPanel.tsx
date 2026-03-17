@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useSmartInsights } from '../../../hooks/useSmartInsights';
 import { OptimizedWishlistItem } from '../../../types/smartCart';
 import { useCart } from '../../../context/CartContext';
@@ -38,14 +39,16 @@ export const OrderSummaryPanel: React.FC<OrderSummaryPanelProps> = ({
 }) => {
     const { addItemsToCart } = useCart();
     const { items: wishlistItems } = useWishlist();
+    const navigate = useNavigate();
 
     const matchedCount = validCartItems.length;
     const storeCount = new Set(validCartItems.map(i => i.storeId)).size;
     const missingCount = optimizerItems.filter(i => i && i.options.length === 0).length;
 
-    const handleAddAllToCart = () => {
+    const handleAddAllToCart = async () => {
         if (validCartItems.length > 0) {
-            addItemsToCart(validCartItems, potentialSavings > 0 ? parseFloat(potentialSavings.toFixed(2)) : undefined);
+            await addItemsToCart(validCartItems, potentialSavings > 0 ? parseFloat(potentialSavings.toFixed(2)) : undefined);
+            navigate('/cart');
         }
     };
 

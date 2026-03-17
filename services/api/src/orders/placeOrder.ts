@@ -1,5 +1,6 @@
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
+import { FieldValue, DocumentReference, DocumentSnapshot } from 'firebase-admin/firestore';
 
 const db = admin.firestore();
 
@@ -24,8 +25,8 @@ export const placeOrder = functions.https.onCall(async (data, context) => {
         await db.runTransaction(async (transaction) => {
             // PHASE 1: READS (Collect all product snapshots)
             const productChecks: {
-                ref: admin.firestore.DocumentReference,
-                snap: admin.firestore.DocumentSnapshot,
+                ref: DocumentReference,
+                snap: DocumentSnapshot,
                 item: any,
                 storeId: string
             }[] = [];
@@ -68,7 +69,7 @@ export const placeOrder = functions.https.onCall(async (data, context) => {
 
                 // Decrement Stock (Write)
                 transaction.update(ref, {
-                    available_quantity: admin.firestore.FieldValue.increment(-item.quantity)
+                    available_quantity: FieldValue.increment(-item.quantity)
                 });
             }
 
@@ -96,7 +97,7 @@ export const placeOrder = functions.https.onCall(async (data, context) => {
                     customerEmail: userEmail,
                     status: 'placed',
                     paymentStatus: 'pending',
-                    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+                    createdAt: FieldValue.serverTimestamp(),
                     date: new Date().toISOString()
                 };
 

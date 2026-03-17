@@ -36,6 +36,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.cancelOrder = void 0;
 const functions = __importStar(require("firebase-functions"));
 const admin = __importStar(require("firebase-admin"));
+const firestore_1 = require("firebase-admin/firestore");
 const db = admin.firestore();
 exports.cancelOrder = functions.https.onCall(async (data, context) => {
     if (!context.auth) {
@@ -79,12 +80,12 @@ exports.cancelOrder = functions.https.onCall(async (data, context) => {
             transaction.update(orderRef, {
                 status: 'cancelled',
                 rejectionReason: reason || 'Cancelled by user',
-                cancelledAt: admin.firestore.FieldValue.serverTimestamp()
+                cancelledAt: firestore_1.FieldValue.serverTimestamp()
             });
             // 2. Restore Stock
             for (const { ref, quantity } of productsToRestore) {
                 transaction.update(ref, {
-                    available_quantity: admin.firestore.FieldValue.increment(quantity)
+                    available_quantity: firestore_1.FieldValue.increment(quantity)
                 });
             }
         });

@@ -36,6 +36,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.placeOrder = void 0;
 const functions = __importStar(require("firebase-functions"));
 const admin = __importStar(require("firebase-admin"));
+const firestore_1 = require("firebase-admin/firestore");
 const db = admin.firestore();
 exports.placeOrder = functions.https.onCall(async (data, context) => {
     // 1. Security Check
@@ -90,7 +91,7 @@ exports.placeOrder = functions.https.onCall(async (data, context) => {
                 }
                 // Decrement Stock (Write)
                 transaction.update(ref, {
-                    available_quantity: admin.firestore.FieldValue.increment(-item.quantity)
+                    available_quantity: firestore_1.FieldValue.increment(-item.quantity)
                 });
             }
             // 3. Create Orders (Writes)
@@ -116,7 +117,7 @@ exports.placeOrder = functions.https.onCall(async (data, context) => {
                     customerEmail: userEmail,
                     status: 'placed',
                     paymentStatus: 'pending',
-                    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+                    createdAt: firestore_1.FieldValue.serverTimestamp(),
                     date: new Date().toISOString()
                 };
                 transaction.set(newOrderRef, finalOrder);

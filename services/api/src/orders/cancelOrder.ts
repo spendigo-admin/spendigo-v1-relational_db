@@ -1,5 +1,6 @@
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
+import { FieldValue, DocumentReference } from 'firebase-admin/firestore';
 
 const db = admin.firestore();
 
@@ -37,7 +38,7 @@ export const cancelOrder = functions.https.onCall(async (data, context) => {
             }
 
             // PHASE 1: READS
-            const productsToRestore: { ref: admin.firestore.DocumentReference, quantity: number }[] = [];
+            const productsToRestore: { ref: DocumentReference, quantity: number }[] = [];
 
             if (order?.items && Array.isArray(order.items)) {
                 for (const item of order.items) {
@@ -56,13 +57,13 @@ export const cancelOrder = functions.https.onCall(async (data, context) => {
             transaction.update(orderRef, {
                 status: 'cancelled',
                 rejectionReason: reason || 'Cancelled by user',
-                cancelledAt: admin.firestore.FieldValue.serverTimestamp()
+                cancelledAt: FieldValue.serverTimestamp()
             });
 
             // 2. Restore Stock
             for (const { ref, quantity } of productsToRestore) {
                 transaction.update(ref, {
-                    available_quantity: admin.firestore.FieldValue.increment(quantity)
+                    available_quantity: FieldValue.increment(quantity)
                 });
             }
         });

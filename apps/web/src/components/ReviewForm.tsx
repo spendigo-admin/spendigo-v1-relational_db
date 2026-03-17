@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useReviews } from '../context/ReviewContext';
 import { useAuth } from '../context/AuthContext';
+import { useOrders } from '../context/OrderContext';
 import StarRating from './StarRating';
 import { useNavigate } from 'react-router-dom';
 
@@ -13,12 +14,20 @@ interface ReviewFormProps {
 const ReviewForm: React.FC<ReviewFormProps> = ({ targetId, targetType, onSubmitted }) => {
     const { addReview } = useReviews();
     const { user } = useAuth();
+    const { orders } = useOrders();
     const navigate = useNavigate();
 
     const [rating, setRating] = useState(0);
     const [comment, setComment] = useState('');
+    const [orderId, setOrderId] = useState('');
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState('');
+
+    // Only show orders for this store that are delivered
+    const relevantOrders = orders.filter(o => 
+        o.storeId === targetId && 
+        (o.status === 'delivered' || o.status === 'placed') // placed for demo/prototype flexibility
+    );
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -41,10 +50,11 @@ const ReviewForm: React.FC<ReviewFormProps> = ({ targetId, targetType, onSubmitt
                 rating,
                 comment,
                 authorId: user?.id || '',
-                // Note: authorName/avatar handled in context for security typically, but passed here if needed or handled by context
+                orderId: orderId || undefined
             });
             setRating(0);
             setComment('');
+            setOrderId('');
             if (onSubmitted) onSubmitted();
         } catch (err: any) {
             console.error(err);
@@ -78,6 +88,27 @@ const ReviewForm: React.FC<ReviewFormProps> = ({ targetId, targetType, onSubmitt
                 <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Rating</label>
                 <StarRating rating={rating} editable onChange={setRating} size="lg" />
             </div>
+
+            {relevantOrders.length > 0 && (
+                <div className="mb-4">
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1 flex items-center gap-1">
+                        🛒 Verified Purchase
+                        <span className="text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full">Earn Badge</span>
+                    </label>
+                    <select
+                        value={orderId}
+                        onChange={(e) => setOrderId(e.target.value)}
+                        className="w-full p-2.5 rounded-lg border border-gray-200 text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                    >
+                        <option value="">Select an order to verify (optional)</option>
+                        {relevantOrders.map(order => (
+                            <option key={order.id} value={order.id}>
+                                Order #{order.id.slice(-6).toUpperCase()} ({new Date(order.date).toLocaleDateString()}) - ${order.total.toFixed(2)}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+            )}
 
             <div className="mb-4">
                 <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Comment</label>

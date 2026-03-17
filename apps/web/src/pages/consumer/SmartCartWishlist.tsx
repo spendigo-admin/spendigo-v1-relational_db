@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useWishlist } from '../../context/WishlistContext';
+import { useNavigate } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
 import { useOptimizedWishlist } from '../../hooks/useOptimizedWishlist';
 import { AddItemsPanel } from './components/AddItemsPanel';
@@ -10,6 +11,7 @@ import '../../styles/design-system.css';
 const SmartCartWishlist: React.FC = () => {
     const { items: wishlistItems, removeItem } = useWishlist();
     const { addItemsToCart } = useCart();
+    const navigate = useNavigate();
     const [showAddItems, setShowAddItems] = useState(false);
 
     // Auto-open add panel when wishlist is empty
@@ -37,9 +39,10 @@ const SmartCartWishlist: React.FC = () => {
 
     const storeCount = new Set(validCartItems.map(i => i.storeId)).size;
 
-    const handleAddAllToCart = () => {
+    const handleAddAllToCart = async () => {
         if (validCartItems.length > 0) {
-            addItemsToCart(validCartItems, potentialSavings > 0 ? parseFloat(potentialSavings.toFixed(2)) : undefined);
+            await addItemsToCart(validCartItems, potentialSavings > 0 ? parseFloat(potentialSavings.toFixed(2)) : undefined);
+            navigate('/cart');
         }
     };
 
