@@ -61,14 +61,20 @@ export const ReviewProvider: React.FC<{ children: ReactNode }> = ({ children }) 
             limit(limitCount)
         );
 
-        const unsub = onSnapshot(q, (snapshot) => {
-            const fetchedReviews: Review[] = [];
-            snapshot.forEach(doc => {
-                fetchedReviews.push({ id: doc.id, ...doc.data() } as Review);
-            });
-            setReviews(fetchedReviews);
-            setLoading(false);
-        });
+        const unsub = onSnapshot(q, 
+            (snapshot) => {
+                const fetchedReviews: Review[] = [];
+                snapshot.forEach(doc => {
+                    fetchedReviews.push({ id: doc.id, ...doc.data() } as Review);
+                });
+                setReviews(fetchedReviews);
+                setLoading(false);
+            },
+            (error) => {
+                console.error("Firestore Review Query Error:", error);
+                setLoading(false);
+            }
+        );
 
         setUnsubscribe(() => unsub);
     };
@@ -76,7 +82,7 @@ export const ReviewProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     const addReview = async (reviewData: Omit<Review, 'id' | 'timestamp' | 'authorName' | 'authorAvatar'>) => {
         if (!user) throw new Error("Must be logged in to review");
 
-        const newReview = {
+        const newReview: any = {
             ...reviewData,
             authorId: user.id,
             authorName: user.name,
@@ -85,6 +91,11 @@ export const ReviewProvider: React.FC<{ children: ReactNode }> = ({ children }) 
             helpfulCount: 0,
             voters: []
         };
+
+        // Remove undefined fields (like orderId) that Firestore rejects
+        Object.keys(newReview).forEach(key => 
+            newReview[key] === undefined && delete newReview[key]
+        );
 
         const docRef = await addDoc(collection(db, 'reviews'), newReview);
 

@@ -7,6 +7,7 @@ import { useStoreProducts } from '../../hooks/useStoreProducts'; // Standalone h
 import ReviewList from '../../components/ReviewList';
 import ReviewForm from '../../components/ReviewForm';
 import StarRating from '../../components/StarRating';
+import { useReviews } from '../../context/ReviewContext';
 import '../../styles/design-system.css';
 
 import { useEffect } from 'react';
@@ -293,7 +294,7 @@ const StoreDetail: React.FC = () => {
     const location = useLocation(); // Add useLocation import
     const { addToCart } = useCart();
     const { getStore } = useMarketplace();
-    // const { useStoreProducts } = useCatalog(); // Removed
+    const { reviews } = useReviews();
 
     const store = getStore(id || '') || null;
     const { products: catalogProducts, loading: loadingProducts } = useStoreProducts(id || '');
@@ -578,13 +579,8 @@ const StoreDetail: React.FC = () => {
 
                             <div className="flex-1 w-full space-y-2">
                                 {[5, 4, 3, 2, 1].map(stars => {
-                                    // Calculate percentage (Mocked based on store.rating for prototype if reviews list is empty or partial)
-                                    // In a real app we'd use the loaded reviews array for precise distribution
-                                    // For this prototype, we'll derive it from current rating to look realistic
-                                    const distribution: Record<number, number> = {
-                                        5: 70, 4: 15, 3: 8, 2: 4, 1: 3
-                                    };
-                                    const pct = distribution[stars as keyof typeof distribution];
+                                    const count = reviews.filter(r => Math.round(r.rating) === stars).length;
+                                    const pct = reviews.length > 0 ? Math.round((count / reviews.length) * 100) : 0;
 
                                     return (
                                         <div key={stars} className="flex items-center gap-3">
