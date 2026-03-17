@@ -242,9 +242,9 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const removeFromCart = (itemId: string) => {
         const itemToRemove = items.find(i => i.id === itemId);
         const updatedItems = items.filter(i => i.id !== itemId);
+        setItems(updatedItems);
 
         if (user) saveToCloud(updatedItems);
-        else setItems(updatedItems);
 
         if (itemToRemove) {
             setNotification({
@@ -263,9 +263,9 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
             return i;
         }).filter(i => i.quantity > 0);
+        setItems(updatedItems);
 
         if (user) saveToCloud(updatedItems);
-        else setItems(updatedItems);
 
         if (itemToUpdate && itemToUpdate.quantity + delta <= 0) {
             setNotification({
@@ -277,8 +277,8 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     const clearCart = () => {
+        setItems([]);
         if (user) saveToCloud([]);
-        else setItems([]);
     };
 
     const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);

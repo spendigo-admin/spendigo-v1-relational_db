@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
 import { useOrders } from '../../context/OrderContext';
+import { useWishlist } from '../../context/WishlistContext';
 import { useMarketplace } from '../../context/MarketplaceContext';
 // Audit import removed
 import { useAuth } from '../../context/AuthContext';
@@ -11,6 +12,7 @@ import '../../styles/design-system.css';
 
 const Checkout: React.FC = () => {
     const { items, subtotal, clearCart } = useCart();
+    const { clearWishlist } = useWishlist();
     const { addOrder, createBatchOrders, profile } = useOrders();
     const { user } = useAuth();
     const { addNotification } = useNotifications();
@@ -290,6 +292,9 @@ const Checkout: React.FC = () => {
             console.log('All orders submitted successfully via batch');
 
             clearCart();
+            clearWishlist();
+            localStorage.removeItem('smartcart_selections_v1');
+            
             // Navigate to Profile page (Orders tab) instead of showing inline message
             navigate('/profile', { state: { activeTab: 'orders' } });
             

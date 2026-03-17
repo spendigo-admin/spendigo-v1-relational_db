@@ -116,17 +116,17 @@ export const WishlistProvider: React.FC<{ children: ReactNode }> = ({ children }
         if (!items.find(i => i.id === item.id)) {
             const newItem = { ...item, addedAt: new Date().toISOString() };
             const updatedItems = [...items, newItem];
+            setItems(updatedItems);
 
             if (user) saveToCloud(updatedItems);
-            else setItems(updatedItems);
         }
     };
 
     const removeItem = (id: string) => {
         const updatedItems = items.filter(i => i.id !== id);
+        setItems(updatedItems);
 
         if (user) saveToCloud(updatedItems);
-        else setItems(updatedItems);
     };
 
     const isInWishlist = (id: string) => {
@@ -134,8 +134,8 @@ export const WishlistProvider: React.FC<{ children: ReactNode }> = ({ children }
     };
 
     const clearWishlist = () => {
+        setItems([]);
         if (user) saveToCloud([]);
-        else setItems([]);
     };
 
     return (
