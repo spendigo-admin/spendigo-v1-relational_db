@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback, useRef } from 'react';
 import {
     collection,
     addDoc,
@@ -47,13 +47,15 @@ export const ReviewProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     const [reviews, setReviews] = useState<Review[]>([]);
     const [loading, setLoading] = useState(false);
 
-    // Just a placeholder for subscription cleanup if needed
-    const [unsubscribe, setUnsubscribe] = useState<(() => void) | null>(null);
+    // Subscription cleanup
+    const unsubscribeRef = useRef<(() => void) | null>(null);
 
-    const fetchReviews = (targetId: string, limitCount: number = 20) => {
-        if (unsubscribe) unsubscribe();
+    const fetchReviews = useCallback((targetId: string, limitCount: number = 20) => {
+        if (unsubscribeRef.current) unsubscribeRef.current();
 
         setLoading(true);
+        setReviews([]); // Reset state to prevent stale data display
+        setReviews([]); // Reset state to prevent stale data display
         const q = query(
             collection(db, 'reviews'),
             where('targetId', '==', targetId),
@@ -76,10 +78,10 @@ export const ReviewProvider: React.FC<{ children: ReactNode }> = ({ children }) 
             }
         );
 
-        setUnsubscribe(() => unsub);
-    };
+        unsubscribeRef.current = unsub;
+    }, []);
 
-    const addReview = async (reviewData: Omit<Review, 'id' | 'timestamp' | 'authorName' | 'authorAvatar'>) => {
+    const addReview = useCallback(async (reviewData: Omit<Review, 'id' | 'timestamp' | 'authorName' | 'authorAvatar'>) => {
         if (!user) throw new Error("Must be logged in to review");
 
         const newReview: any = {
@@ -100,13 +102,8 @@ export const ReviewProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         const docRef = await addDoc(collection(db, 'reviews'), newReview);
 
         // Update Aggregate Rating on Target (Simulated for this prototype)
-        // In a real app, this should be done via Cloud Functions to ensure consistency
         const targetCollection = reviewData.targetType === 'store' ? 'stores' : 'users';
         const targetRef = doc(db, targetCollection, reviewData.targetId);
-
-        // We do a simple increment here. For perfect averages, we need to read-modify-write or use distributed counters.
-        // Simplified: Fetch current, calc new avg, update.
-        // Note: This is prone to race conditions but acceptable for prototype.
 
         try {
             const targetDoc = await getDoc(targetRef);
@@ -126,13 +123,13 @@ export const ReviewProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         } catch (e) {
             console.error("Failed to update aggregate rating", e);
         }
-    };
+    }, [user]);
 
-    const getAverageRating = async (targetId: string) => {
+    const getAverageRating = useCallback(async (targetId: string) => {
         return { rating: 0, count: 0 };
-    };
+    }, []);
 
-    const voteReview = async (reviewId: string) => {
+    const voteReview = useCallback(async (reviewId: string) => {
         if (!user) throw new Error("Must be logged in to vote");
         
         const reviewRef = doc(db, 'reviews', reviewId);
@@ -149,7 +146,7 @@ export const ReviewProvider: React.FC<{ children: ReactNode }> = ({ children }) 
                 voters: [...voters, user.id]
             });
         }
-    };
+    }, [user]);
 
     return (
         <ReviewContext.Provider value={{

@@ -302,6 +302,7 @@ const StoreDetail: React.FC = () => {
         }
     }, [id, fetchReviews]);
 
+
     const store = getStore(id || '') || null;
     const { products: catalogProducts, loading: loadingProducts } = useStoreProducts(id || '');
 
@@ -377,7 +378,9 @@ const StoreDetail: React.FC = () => {
                             )}
                         </div>
                         <div className="flex-1">
-                            <h1 className="text-2xl md:text-3xl font-bold text-[var(--text-main)]">{store.name}</h1>
+                            <h1 className="text-2xl md:text-3xl font-bold text-[var(--text-main)]">
+                                {store.name}
+                            </h1>
                             <p className="text-sm text-[var(--text-muted)]">{store.tagline}</p>
                         </div>
                     </div>
