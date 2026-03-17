@@ -382,7 +382,11 @@ const StoreDetail: React.FC = () => {
             <div className="px-4 py-4 flex items-center gap-4 text-sm border-b border-[var(--glass-border)] overflow-x-auto">
                 <div className="flex items-center gap-1 whitespace-nowrap">
                     <span className="text-yellow-500">★</span>
-                    <span className="font-medium text-[var(--text-main)]">{store.rating}</span>
+                    <span className="font-medium text-[var(--text-main)]">
+                        {reviews.length > 0 
+                            ? (reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length).toFixed(1) 
+                            : store.rating}
+                    </span>
                 </div>
                 <div className="w-px h-4 bg-[var(--glass-border)]"></div>
                 <div className="flex items-center gap-1 whitespace-nowrap">
