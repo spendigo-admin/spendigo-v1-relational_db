@@ -294,7 +294,13 @@ const StoreDetail: React.FC = () => {
     const location = useLocation(); // Add useLocation import
     const { addToCart } = useCart();
     const { getStore } = useMarketplace();
-    const { reviews } = useReviews();
+    const { reviews, fetchReviews } = useReviews();
+
+    useEffect(() => {
+        if (id) {
+            fetchReviews(id);
+        }
+    }, [id, fetchReviews]);
 
     const store = getStore(id || '') || null;
     const { products: catalogProducts, loading: loadingProducts } = useStoreProducts(id || '');
