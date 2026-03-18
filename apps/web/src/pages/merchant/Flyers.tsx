@@ -25,10 +25,11 @@ interface Flyer {
 }
 
 const COVER_PRESETS = [
-    { id: 'fresh', name: 'FreshGrocer', url: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=800&h=400&fit=crop' },
-    { id: 'holiday', name: 'Seasonal', url: 'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=800&h=400&fit=crop' },
-    { id: 'pantry', name: 'Essentials', url: 'https://images.unsplash.com/photo-1583258292688-d0213dc5a3a8?w=800&h=400&fit=crop' },
-    { id: 'deals', name: 'Mega Sale', url: 'https://images.unsplash.com/photo-1607082349566-187342175e2f?w=800&h=400&fit=crop' },
+    { id: 'fresh', name: 'Fresh Harvest', url: '/Users/I501801/.gemini/antigravity/brain/44cef421-3c7a-4262-98b6-a1f4c54ac377/flyer_fresh_produce_1773797582508.png' },
+    { id: 'bbq', name: 'Butcher\'s Best', url: '/Users/I501801/.gemini/antigravity/brain/44cef421-3c7a-4262-98b6-a1f4c54ac377/flyer_meat_bbq_1773797599426.png' },
+    { id: 'bakery', name: 'Morning Bakery', url: '/Users/I501801/.gemini/antigravity/brain/44cef421-3c7a-4262-98b6-a1f4c54ac377/flyer_bakery_breakfast_1773797643021.png' },
+    { id: 'deals', name: 'Weekly Super Sale', url: '/Users/I501801/.gemini/antigravity/brain/44cef421-3c7a-4262-98b6-a1f4c54ac377/flyer_weekly_deals_bold_1773797657136.png' },
+    { id: 'ethnic', name: 'Flavor Festival', url: '/Users/I501801/.gemini/antigravity/brain/44cef421-3c7a-4262-98b6-a1f4c54ac377/flyer_ethnic_market_spices_1773797669189.png' },
 ];
 
 const MerchantFlyers: React.FC = () => {
@@ -344,17 +345,20 @@ const MerchantFlyers: React.FC = () => {
                             <h3 className="font-bold text-lg mb-4">Appearance</h3>
                             <div className="mb-4">
                                 <label className="block text-sm font-medium mb-2 text-[var(--text-muted)]">Cover Image</label>
-                                <div className="grid grid-cols-2 gap-2">
+                                <div className="grid grid-cols-1 gap-3">
                                     {COVER_PRESETS.map(preset => (
                                         <div
                                             key={preset.id}
                                             onClick={() => setFormData({ ...formData, coverImage: preset.url })}
-                                            className={`relative h-20 rounded-lg overflow-hidden cursor-pointer border-2 transition-all ${formData.coverImage === preset.url ? 'border-[var(--brand-primary)] ring-2 ring-[var(--brand-primary)]/20' : 'border-transparent opacity-70 hover:opacity-100'}`}
+                                            className={`relative h-24 rounded-lg overflow-hidden cursor-pointer border-2 transition-all ${formData.coverImage === preset.url ? 'border-[var(--brand-primary)] ring-2 ring-[var(--brand-primary)]/20' : 'border-transparent opacity-70 hover:opacity-100'}`}
                                         >
                                             <img src={preset.url} alt={preset.name} className="w-full h-full object-cover" />
+                                            <div className="absolute top-2 left-2 px-2 py-1 bg-black/50 backdrop-blur-sm text-white text-[10px] font-bold rounded uppercase tracking-wider">
+                                                {preset.name}
+                                            </div>
                                             {formData.coverImage === preset.url && (
                                                 <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
-                                                    <div className="w-6 h-6 bg-white rounded-full flex items-center justify-center text-[var(--brand-primary)]">✓</div>
+                                                    <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center text-[var(--brand-primary)] shadow-lg">✓</div>
                                                 </div>
                                             )}
                                         </div>
