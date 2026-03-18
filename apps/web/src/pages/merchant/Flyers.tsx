@@ -32,6 +32,19 @@ const COVER_PRESETS = [
     { id: 'ethnic', name: 'Flavor Festival', url: '/assets/flyers/ethnic_spices.png' },
 ];
 
+const getValidFlyerImage = (imageUrl?: string): string | undefined => {
+    if (!imageUrl) return undefined;
+    if (imageUrl.includes('.gemini/antigravity/brain')) {
+        if (imageUrl.includes('produce')) return '/assets/flyers/fresh_produce.png';
+        if (imageUrl.includes('meat')) return '/assets/flyers/meat_bbq.png';
+        if (imageUrl.includes('bakery')) return '/assets/flyers/bakery_breakfast.png';
+        if (imageUrl.includes('deals')) return '/assets/flyers/weekly_deals.png';
+        if (imageUrl.includes('spices')) return '/assets/flyers/ethnic_spices.png';
+        return '/assets/flyers/fresh_produce.png';
+    }
+    return imageUrl;
+};
+
 const MerchantFlyers: React.FC = () => {
     const { getStore, updateStoreFlyer, subscribeToFlyers, saveFlyer, deleteFlyer } = useMarketplace();
     const can = (action: string) => true; // Bypass RBAC for now, rely on Plan
@@ -610,7 +623,7 @@ const MerchantFlyers: React.FC = () => {
                             <div key={flyer.id} className="bg-white rounded-xl border border-[var(--glass-border)] p-4 shadow-sm hover:shadow-md transition-shadow">
                                 <div className="flex items-center justify-between">
                                     <div className="flex gap-4 items-center">
-                                        <img src={flyer.coverImage} className="w-16 h-16 rounded-lg object-cover bg-gray-200" alt="" />
+                                        <img src={getValidFlyerImage(flyer.coverImage)} className="w-16 h-16 rounded-lg object-cover bg-gray-200" alt="" />
                                         <div>
                                             <div className="flex items-center gap-2 mb-1">
                                                 <h3 className="font-bold text-[var(--text-main)] text-lg">{flyer.title}</h3>

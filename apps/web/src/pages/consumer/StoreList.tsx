@@ -15,6 +15,19 @@ const parseDeliveryTime = (timeStr: string): number => {
     return match ? parseInt(match[1], 10) : 60;
 };
 
+const getValidFlyerImage = (imageUrl?: string): string | undefined => {
+    if (!imageUrl) return undefined;
+    if (imageUrl.includes('.gemini/antigravity/brain')) {
+        if (imageUrl.includes('produce')) return '/assets/flyers/fresh_produce.png';
+        if (imageUrl.includes('meat')) return '/assets/flyers/meat_bbq.png';
+        if (imageUrl.includes('bakery')) return '/assets/flyers/bakery_breakfast.png';
+        if (imageUrl.includes('deals')) return '/assets/flyers/weekly_deals.png';
+        if (imageUrl.includes('spices')) return '/assets/flyers/ethnic_spices.png';
+        return '/assets/flyers/fresh_produce.png';
+    }
+    return imageUrl;
+};
+
 const StoreList: React.FC = () => {
     const navigate = useNavigate();
     const { stores, loading } = useMarketplace();
@@ -191,7 +204,7 @@ const StoreList: React.FC = () => {
                     validUntil.setHours(23, 59, 59, 999);
                     return validUntil >= new Date();
                 })() : false,
-                flyerImage: store.flyer?.image,
+                flyerImage: getValidFlyerImage(store.flyer?.image),
                 activeDealsCount: [...(store.oneDayOffers || []), ...(store.saleItems || [])].filter((d: any) => {
                     if (!d.validUntil) return true;
                     const validUntil = new Date(d.validUntil);
