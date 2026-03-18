@@ -25,11 +25,11 @@ interface Flyer {
 }
 
 const COVER_PRESETS = [
-    { id: 'fresh', name: 'Fresh Harvest', url: '/Users/I501801/.gemini/antigravity/brain/44cef421-3c7a-4262-98b6-a1f4c54ac377/flyer_fresh_produce_1773797582508.png' },
-    { id: 'bbq', name: 'Butcher\'s Best', url: '/Users/I501801/.gemini/antigravity/brain/44cef421-3c7a-4262-98b6-a1f4c54ac377/flyer_meat_bbq_1773797599426.png' },
-    { id: 'bakery', name: 'Morning Bakery', url: '/Users/I501801/.gemini/antigravity/brain/44cef421-3c7a-4262-98b6-a1f4c54ac377/flyer_bakery_breakfast_1773797643021.png' },
-    { id: 'deals', name: 'Weekly Super Sale', url: '/Users/I501801/.gemini/antigravity/brain/44cef421-3c7a-4262-98b6-a1f4c54ac377/flyer_weekly_deals_bold_1773797657136.png' },
-    { id: 'ethnic', name: 'Flavor Festival', url: '/Users/I501801/.gemini/antigravity/brain/44cef421-3c7a-4262-98b6-a1f4c54ac377/flyer_ethnic_market_spices_1773797669189.png' },
+    { id: 'fresh', name: 'Fresh Harvest', url: '/assets/flyers/fresh_produce.png' },
+    { id: 'bbq', name: 'Butcher\'s Best', url: '/assets/flyers/meat_bbq.png' },
+    { id: 'bakery', name: 'Morning Bakery', url: '/assets/flyers/bakery_breakfast.png' },
+    { id: 'deals', name: 'Weekly Super Sale', url: '/assets/flyers/weekly_deals.png' },
+    { id: 'ethnic', name: 'Flavor Festival', url: '/assets/flyers/ethnic_spices.png' },
 ];
 
 const MerchantFlyers: React.FC = () => {
