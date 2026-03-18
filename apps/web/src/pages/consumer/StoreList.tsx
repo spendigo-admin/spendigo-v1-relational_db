@@ -186,7 +186,11 @@ const StoreList: React.FC = () => {
                 deliveryTime: store.deliveryTime,
                 deliveryFee: store.deliveryFee || '$3.99',
                 rating: store.rating,
-                hasFlyer: store.flyer?.validUntil ? true : false,
+                hasFlyer: store.flyer?.validUntil ? (() => {
+                    const validUntil = new Date(store.flyer.validUntil);
+                    validUntil.setHours(23, 59, 59, 999);
+                    return validUntil >= new Date();
+                })() : false,
                 flyerImage: store.flyer?.image,
                 activeDealsCount: [...(store.oneDayOffers || []), ...(store.saleItems || [])].filter((d: any) => {
                     if (!d.validUntil) return true;

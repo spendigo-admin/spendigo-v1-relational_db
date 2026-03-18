@@ -9,7 +9,10 @@ const Flyers: React.FC = () => {
 
     const activeFlyerStores = Object.values(stores || {}).filter((store: any) => {
         if (!store.flyer || !store.flyer.validUntil) return false;
-        return new Date(store.flyer.validUntil) > new Date();
+        const validUntil = new Date(store.flyer.validUntil);
+        // Set to end of day to be inclusive
+        validUntil.setHours(23, 59, 59, 999);
+        return validUntil >= new Date();
     });
 
     return (
