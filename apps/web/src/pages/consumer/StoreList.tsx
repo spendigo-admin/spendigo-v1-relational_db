@@ -255,20 +255,22 @@ const StoreList: React.FC = () => {
             <section className="py-8 px-4 bg-[var(--surface-1)] border-b border-[var(--glass-border)]">
                 <div className="max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
                     <div>
-                        <p className="text-3xl font-bold text-[var(--brand-primary)]">{stats.totalStores > 0 ? stats.totalStores : '50+'}</p>
+                        <p className="text-3xl font-bold text-[var(--brand-primary)]">{stats.totalStores}</p>
                         <p className="text-sm text-[var(--text-muted)]">Local Grocers</p>
                     </div>
                     <div>
-                        <p className="text-3xl font-bold text-[var(--brand-primary)]">{stats.totalFlyers > 0 ? stats.totalFlyers : '10+'}</p>
+                        <p className="text-3xl font-bold text-[var(--brand-primary)]">{stats.totalFlyers}</p>
                         <p className="text-sm text-[var(--text-muted)]">Active Flyers</p>
                     </div>
                     <div>
-                        <p className="text-3xl font-bold text-[var(--brand-primary)]">{stats.totalDeals > 0 ? stats.totalDeals : '100+'}</p>
+                        <p className="text-3xl font-bold text-[var(--brand-primary)]">{stats.totalDeals}</p>
                         <p className="text-sm text-[var(--text-muted)]">Active Deals</p>
                     </div>
                     <div>
-                        <p className="text-3xl font-bold text-[var(--brand-primary)]">{stats.totalProducts > 0 ? `${(stats.totalProducts / 1000).toFixed(1)}k+` : '15%'}</p>
-                        <p className="text-sm text-[var(--text-muted)]">{stats.totalProducts > 0 ? 'Products Available' : 'Estimated Savings'}</p>
+                        <p className="text-3xl font-bold text-[var(--brand-primary)]">
+                            {stats.totalProducts >= 1000 ? `${(stats.totalProducts / 1000).toFixed(1)}k+` : stats.totalProducts}
+                        </p>
+                        <p className="text-sm text-[var(--text-muted)]">Products Available</p>
                     </div>
                 </div>
             </section>
@@ -280,7 +282,7 @@ const StoreList: React.FC = () => {
                             <h2 className="text-xl font-bold flex items-center gap-2">
                                 <span className="text-2xl">📰</span> Weekly Flyers
                             </h2>
-                            <span className="text-sm text-[var(--brand-primary)] font-medium">Swipe for Savings →</span>
+                            <Link to="/flyers" className="text-sm text-[var(--brand-primary)] font-medium hover:underline">View All →</Link>
                         </div>
                         <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x">
                             {allStores.filter(s => s.hasFlyer).map(store => (

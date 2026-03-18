@@ -41,6 +41,7 @@ const SmartCartPrototype = lazy(() => import('./pages/consumer/SmartCartPrototyp
 const Search = lazy(() => import('./pages/consumer/Search'));
 const HowItWorks = lazy(() => import('./pages/consumer/HowItWorks'));
 const ConsumerSurveys = lazy(() => import('./pages/consumer/Surveys'));
+const Flyers = lazy(() => import('./pages/consumer/Flyers'));
 
 // Merchant Pages — lazy loaded
 const MerchantDashboard = lazy(() => import('./pages/merchant/Dashboard'));
@@ -146,6 +147,7 @@ function App() {
                                                                     <Route path="/search" element={<Search />} />
                                                                     <Route path="/how-it-works" element={<HowItWorks />} />
                                                                     <Route path="/surveys" element={<ConsumerSurveys />} />
+                                                                    <Route path="/flyers" element={<Flyers />} />
                                                                     <Route path="/consumer" element={<Navigate to="/" replace />} />
                                                                 </Route>
 
