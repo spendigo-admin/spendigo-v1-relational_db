@@ -22,13 +22,13 @@ const HowItWorks: React.FC = () => {
             el.content = content;
         };
 
-        setMeta('description', 'Learn how Spendigo helps Canadian shoppers save money on groceries. Compare prices across local stores, optimize your cart with AI, and save up to 15% on every grocery run.');
+        setMeta('description', 'Learn how Spendigo helps Canadian shoppers save money on groceries. Compare real-time prices across local stores, browse all weekly flyers in one place, and save up to 15% automatically.');
         setMeta('keywords', 'grocery price comparison Canada, save money groceries, compare grocery prices, cheap groceries near me, SmartCart, grocery optimizer, local grocery deals, Spendigo');
         setMeta('robots', 'index, follow');
 
         // Open Graph
-        setMeta('og:title', 'How Spendigo Works — Compare Prices, Save on Groceries', true);
-        setMeta('og:description', 'Spendigo compares grocery prices across your local stores and builds the cheapest cart automatically. Learn how our SmartCart optimizer works.', true);
+        setMeta('og:title', 'How Spendigo Works — Real-Time Prices & Weekly Flyers', true);
+        setMeta('og:description', 'Spendigo compares grocery prices across your local stores in real-time. Browse all weekly flyers and build the cheapest cart automatically.', true);
         setMeta('og:url', 'https://spendigo.ca/how-it-works', true);
         setMeta('og:type', 'website', true);
 
@@ -100,8 +100,8 @@ const HowItWorks: React.FC = () => {
             step: 1,
             icon: '🛒',
             title: 'Browse & Build Your List',
-            desc: 'Search for groceries across all local partner stores from one place. Add items to your SmartCart wishlist — no need to visit each store individually.',
-            detail: 'Use our search to find products by name, category, or even scan a barcode. We show you prices from every nearby store instantly.'
+            desc: 'Search for groceries and browse weekly flyers across all local stores from one place. Add items to your SmartCart wishlist instantly.',
+            detail: 'Use our search to find products, browse digital flyers, or scan a barcode. We show you real-time prices from every nearby store.'
         },
         {
             step: 2,
@@ -121,8 +121,8 @@ const HowItWorks: React.FC = () => {
             step: 4,
             icon: '✅',
             title: 'Add to Cart & Checkout',
-            desc: 'One tap adds your optimized selection to the cart. Confirm your order and we handle the rest — coordinating across stores seamlessly.',
-            detail: 'Each store fulfills their portion. You get the best price on every item without the legwork.'
+            desc: 'One tap adds your optimized selection to the cart. Confirm your order and we coordinate across stores in real-time.',
+            detail: 'Each store fulfills their portion. You get the best price on every item with 100% live inventory accuracy.'
         },
     ];
 
@@ -131,8 +131,8 @@ const HowItWorks: React.FC = () => {
         { icon: '📊', title: 'SmartCart Optimizer', desc: 'AI splits your order to minimize total cost automatically' },
         { icon: '🏪', title: 'Support Local Stores', desc: 'Shop from independent grocers, ethnic stores & specialty shops' },
         { icon: '📱', title: 'Barcode Scanner', desc: 'Scan any product to instantly compare prices nearby' },
-        { icon: '🏷️', title: 'Live Flyers & Deals', desc: 'Browse digital flyers and exclusive merchant deals' },
-        { icon: '💰', title: '100% Free for Shoppers', desc: 'No fees, no subscriptions — just savings' },
+        { icon: '🏷️', title: 'Global Flyer Browsing', desc: 'Browse all active weekly flyers from all local stores in one place' },
+        { icon: '⚡', title: 'Real-Time Sync', desc: 'Prices and inventory are synced directly from partner store systems' },
     ];
 
     const faqs = [
@@ -141,7 +141,7 @@ const HowItWorks: React.FC = () => {
         { q: 'How does the SmartCart Optimizer work?', a: 'When you add items to your wishlist, our algorithm compares prices across all partner stores and finds the combination that gives you the lowest total. It can split your order across multiple stores if that saves you money.' },
         { q: 'What if a product isn\'t in the catalog?', a: 'Merchants can add products using barcode scanning or bulk upload. If a product you want is missing, you can request it and we\'ll work with local stores to add it.' },
         { q: 'Do I have to visit multiple stores?', a: 'That\'s up to you! The optimizer shows you both the cheapest split-store option and a convenient single-store option. You decide what matters more — maximum savings or minimum trips.' },
-        { q: 'How are prices kept up to date?', a: 'Partner stores manage their own prices and inventory directly on Spendigo. Prices reflect what\'s currently available in-store.' },
+        { q: 'How are prices kept up to date?', a: 'Partner stores manage their own prices and inventory directly on Spendigo. All data—including flyers and deals—is synced in real-time to reflect what\'s currently available in-store.' },
     ];
 
     return (
