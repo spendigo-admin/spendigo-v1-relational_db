@@ -194,7 +194,9 @@ const StoreList: React.FC = () => {
                 flyerImage: store.flyer?.image,
                 activeDealsCount: [...(store.oneDayOffers || []), ...(store.saleItems || [])].filter((d: any) => {
                     if (!d.validUntil) return true;
-                    return new Date(d.validUntil) > new Date();
+                    const validUntil = new Date(d.validUntil);
+                    validUntil.setHours(23, 59, 59, 999);
+                    return validUntil >= new Date();
                 }).length,
                 productCount: store.productCount || store.products?.length || 0
             };
