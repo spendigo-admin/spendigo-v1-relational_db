@@ -1,6 +1,6 @@
 # Spendigo SmartCart — Tech Stack
 
-**Last Updated**: 2026-01-12
+**Last Updated**: 2026-03-19
 **Status**: Beta (Feature Complete)
 
 ---
@@ -8,7 +8,7 @@
 ## 1. Core Stack (As Implemented)
 
 ### Frontend (Web)
-- **Framework**: React 18.3.1
+- **Framework**: React 18.2.0
 - **Build Tool**: Vite 7.3.0
 - **Language**: TypeScript 5.0+ (Strict Mode)
 - **Styling**: TailwindCSS 3.4+ + Custom Design System (CSS Variables)
@@ -17,7 +17,7 @@
 - **Error Handling**: react-error-boundary 4.0.0
 
 ### Frontend (Mobile)
-- **Framework**: Capacitor 7.0.0 (Native wrapper for web app)
+- **Framework**: Capacitor 6.0.0 (Native wrapper for web app)
 - **Platforms**: iOS 17+ + Android 14+
 - **Build**: Same React codebase as web
 
@@ -43,7 +43,7 @@
 - **Formatter**: Prettier 3.0+
 - **Testing**: Vitest (configured, unit tests)
 - **Package Manager**: npm 11.7.0
-- **Monorepo**: Turbo 2.0.0 (build orchestration)
+- **Monorepo**: Turbo 1.10.0 (build orchestration)
 - **CI/CD**: GitHub Actions (Auto-deploy to Firebase)
 - **TypeScript Compiler**: 5.4+
 
@@ -103,22 +103,24 @@ The current implementation uses **Firebase** instead of the originally planned P
 Node.js:       v20.0.0+ (Required for Cloud Functions)
 npm:           10.0+
 TypeScript:    5.4+
-React:         18.3+
+React:         18.2+
 ```
 
 ### Production Dependencies
 ```json
 {
-  "react": "18.3.1",
-  "react-dom": "18.3.1",
-  "react-router-dom": "6.28.0",
-  "firebase": "10.14.1",
-  "@capacitor/core": "7.0.0",
-  "algoliasearch": "5.0.0",
-  "react-instantsearch": "7.0.0",
-  "html5-qrcode": "2.3.8",
-  "date-fns": "4.1.0",
-  "@stripe/stripe-js": "4.0.0"
+  "react": "^18.2.0",
+  "react-dom": "^18.2.0",
+  "react-router-dom": "^6.20.0",
+  "firebase": "^10.14.1",
+  "@capacitor/core": "^6.0.0",
+  "algoliasearch": "^5.46.2",
+  "react-instantsearch": "^7.22.1",
+  "html5-qrcode": "^2.3.8",
+  "date-fns": "^4.1.0",
+  "@stripe/stripe-js": "^8.6.0",
+  "@google/generative-ai": "^0.24.1",
+  "react-error-boundary": "^6.0.0"
 }
 ```
 

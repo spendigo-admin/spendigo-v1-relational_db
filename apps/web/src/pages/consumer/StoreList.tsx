@@ -198,7 +198,8 @@ const StoreList: React.FC = () => {
                 tags: store.tags || [],
                 deliveryTime: store.deliveryTime,
                 deliveryFee: store.deliveryFee || '$3.99',
-                rating: store.rating,
+                rating: store.rating || 0,
+                reviewCount: store.reviewCount || 0,
                 hasFlyer: store.flyer?.validUntil ? (() => {
                     const validUntil = new Date(store.flyer.validUntil);
                     validUntil.setHours(23, 59, 59, 999);
@@ -226,6 +227,7 @@ const StoreList: React.FC = () => {
     }, [allStores]);
 
     const [activeCategory, setActiveCategory] = useState('All');
+    const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
     const filteredStores = useMemo(() => {
         let result = [...allStores];
@@ -347,15 +349,25 @@ const StoreList: React.FC = () => {
                 <div className="max-w-5xl mx-auto">
                     <div className="flex items-center justify-between mb-6">
                         <h2 className="text-2xl font-bold text-[var(--text-main)]">{activeCategory === 'All' ? 'Stores Near You' : `${activeCategory} Stores`}</h2>
-                        <span className="text-sm text-[var(--text-muted)]">{filteredStores.length} stores</span>
+                        <div className="flex items-center gap-4">
+                            <span className="text-sm text-[var(--text-muted)] hidden sm:inline">{filteredStores.length} stores</span>
+                            <div className="flex bg-[var(--surface-2)] rounded-lg p-1 border border-[var(--glass-border)]">
+                                <button onClick={() => setViewMode('grid')} className={`p-1.5 rounded-md transition-colors ${viewMode === 'grid' ? 'bg-white shadow-sm text-[var(--brand-primary)]' : 'text-gray-400 hover:text-gray-600'}`}>
+                                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
+                                </button>
+                                <button onClick={() => setViewMode('list')} className={`p-1.5 rounded-md transition-colors ${viewMode === 'list' ? 'bg-white shadow-sm text-[var(--brand-primary)]' : 'text-gray-400 hover:text-gray-600'}`}>
+                                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" /></svg>
+                                </button>
+                            </div>
+                        </div>
                     </div>
 
                     {loading ? (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div className={viewMode === 'grid' ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" : "flex flex-col gap-4"}>
                             {[1, 2, 3, 4, 5, 6].map((n) => (
-                                <div key={n} className="h-80 bg-gray-100 rounded-xl animate-pulse border border-gray-200">
-                                    <div className="h-40 bg-gray-200 w-full mb-4"></div>
-                                    <div className="px-4">
+                                <div key={n} className={`bg-gray-100 rounded-xl animate-pulse border border-gray-200 ${viewMode === 'grid' ? 'h-80' : 'h-36 flex'}`}>
+                                    <div className={`bg-gray-200 ${viewMode === 'grid' ? 'h-40 w-full mb-4' : 'w-32 h-full'}`}></div>
+                                    <div className={`px-4 ${viewMode === 'grid' ? '' : 'flex flex-col justify-center flex-1'}`}>
                                         <div className="h-6 bg-gray-200 rounded w-3/4 mb-2"></div>
                                         <div className="h-4 bg-gray-200 rounded w-1/2"></div>
                                     </div>
@@ -368,31 +380,38 @@ const StoreList: React.FC = () => {
                             <p className="text-[var(--text-muted)]">No stores match this filter</p>
                         </div>
                     ) : (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div className={viewMode === 'grid' ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" : "flex flex-col gap-4"}>
                             {filteredStores.map(store => (
                                 <div
                                     key={store.id}
                                     onClick={() => navigate(`/store/${store.id}`)}
-                                    className="glass-panel overflow-hidden cursor-pointer group hover:border-[var(--brand-primary)] hover:shadow-lg hover:shadow-[var(--brand-primary)]/10 transition-all duration-300 relative"
+                                    className={`glass-panel overflow-hidden cursor-pointer group hover:border-[var(--brand-primary)] hover:shadow-lg hover:shadow-[var(--brand-primary)]/10 transition-all duration-300 relative ${viewMode === 'list' ? 'flex flex-row items-stretch' : ''}`}
                                 >
                                     <div className="absolute top-3 right-3 z-10 flex flex-col gap-1 items-end">
                                         {store.hasFlyer && <span className="bg-red-500 text-white text-[10px] uppercase font-bold px-2 py-0.5 rounded shadow-sm">New Flyer</span>}
                                         {store.activeDealsCount > 0 && <span className="bg-green-500 text-white text-[10px] uppercase font-bold px-2 py-0.5 rounded shadow-sm">{store.activeDealsCount} Deals</span>}
                                     </div>
 
-                                    <div className="h-36 bg-[var(--surface-2)] relative overflow-hidden">
+                                    <div className={`bg-[var(--surface-2)] relative overflow-hidden ${viewMode === 'list' ? 'w-32 md:w-48 shrink-0' : 'h-36'}`}>
                                         <img src={store.image} alt={store.name} loading="lazy" decoding="async" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 will-change-transform" />
                                         <div className="absolute top-3 left-3 bg-black/70 backdrop-blur-sm px-2 py-1 rounded-md text-xs text-white font-medium">{store.deliveryTime}</div>
                                     </div>
 
-                                    <div className="p-4 relative">
-                                        <div className="absolute -top-6 left-4 w-12 h-12 rounded-xl bg-[var(--surface-0)] border-2 border-[var(--glass-border)] flex items-center justify-center text-2xl shadow-lg overflow-hidden">
+                                    <div className={`p-4 relative flex-1 ${viewMode === 'list' ? 'flex flex-col justify-center' : ''}`}>
+                                        <div className={`w-12 h-12 rounded-xl bg-[var(--surface-0)] border-2 border-[var(--glass-border)] flex items-center justify-center text-2xl shadow-lg overflow-hidden ${viewMode === 'list' ? 'hidden' : 'absolute -top-6 left-4'}`}>
                                             {store.logoUrl && store.logoUrl.startsWith('http') ? <img src={store.logoUrl} alt="Logo" loading="lazy" decoding="async" className="w-full h-full object-cover" /> : <span>{store.logoUrl || '🏪'}</span>}
                                         </div>
 
-                                        <div className="ml-14">
+                                        <div className={`${viewMode === 'list' ? '' : 'ml-14'}`}>
                                             <h3 className="font-bold text-lg text-[var(--text-main)] group-hover:text-[var(--brand-primary)] transition-colors">{store.name}</h3>
-                                            <p className="text-sm text-[var(--text-muted)]">{store.distance} away</p>
+                                            <div className="flex items-center gap-2">
+                                                <p className="text-sm text-[var(--text-muted)]">{store.distance} away</p>
+                                                {store.rating > 0 && (
+                                                    <span className="text-xs font-semibold flex items-center gap-0.5 bg-yellow-100 text-yellow-800 px-1.5 py-0.5 rounded">
+                                                        ★ {store.rating.toFixed(1)} <span className="opacity-70 font-normal">({store.reviewCount})</span>
+                                                    </span>
+                                                )}
+                                            </div>
                                         </div>
 
                                         <div className="flex gap-2 mt-3 flex-wrap">
