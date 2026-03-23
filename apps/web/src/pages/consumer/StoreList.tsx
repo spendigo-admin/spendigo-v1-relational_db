@@ -2,9 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import '../../styles/design-system.css';
 import { useMarketplace } from '../../context/MarketplaceContext';
-import { useAuth } from '../../context/AuthContext';
-import { useOrders } from '../../context/OrderContext';
-import { useNotifications } from '../../context/NotificationContext';
+import { useLocation } from '../../context/LocationContext';
 import AdCarousel from '../../components/AdCarousel';
 
 const CATEGORIES = ['All', 'Fastest', 'Offers', 'Low Prices', 'Grocery', 'Convenience', 'Wholesale'];
@@ -31,155 +29,12 @@ const getValidFlyerImage = (imageUrl?: string): string | undefined => {
 const StoreList: React.FC = () => {
     const navigate = useNavigate();
     const { stores, loading } = useMarketplace();
-    const { user } = useAuth();
-    const { profile } = useOrders();
-    const { addNotification } = useNotifications();
-    const [userCoords, setUserCoords] = useState<{ lat: number, lng: number } | null>(null);
-    const [address, setAddress] = useState('');
-    const [isLocating, setIsLocating] = useState(false);
-
-    // Calculate distance between two points in km
-    const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
-        const R = 6371; // Radius of the earth in km
-        const dLat = (lat2 - lat1) * Math.PI / 180;
-        const dLon = (lon2 - lon1) * Math.PI / 180;
-        const a =
-            Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-            Math.sin(dLon / 2) * Math.sin(dLon / 2);
-        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        return R * c;
-    };
-
-    // Auto-detect location from profile or use saved coordinates
-    useEffect(() => {
-        const detectProfileLocation = async () => {
-            // Priority 1: Use saved coordinates from User Profile (set during registration)
-            if (user?.coordinates) {
-                setUserCoords(user.coordinates);
-                // Also try to set a friendly address name if possible
-                if (user.address) {
-                    setAddress("Home");
-                }
-                return;
-            }
-
-            // Priority 2: Geocode address from Profile Addresses list
-            if (user && profile.addresses.length > 0) {
-                const defaultAddr = profile.addresses.find(a => a.isDefault) || profile.addresses[0];
-                const addrStr = `${defaultAddr.street}, ${defaultAddr.city}, ${defaultAddr.province}, ${defaultAddr.postalCode}`;
-
-                // Set the display address
-                setAddress(defaultAddr.label || "Home");
-
-                try {
-                    const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(addrStr)}&countrycodes=ca`);
-                    const data = await response.json();
-                    if (data && data.length > 0) {
-                        setUserCoords({
-                            lat: parseFloat(data[0].lat),
-                            lng: parseFloat(data[0].lon)
-                        });
-                    }
-                } catch (e) {
-                    console.error("Failed to geocode profile address", e);
-                }
-            }
-        };
-
-        if (!userCoords && address === '') {
-            const t = setTimeout(detectProfileLocation, 0); // Defer to next tick to unblock render
-            return () => clearTimeout(t);
-        }
-    }, [user, profile.addresses, userCoords, address]);
-
-    const handleLocateMe = () => {
-        setIsLocating(true);
-        if (!navigator.geolocation) {
-            addNotification({ type: 'alert', title: 'Geolocation Not Supported', message: 'Your browser does not support Geolocation.' });
-            setIsLocating(false);
-            return;
-        }
-
-        navigator.geolocation.getCurrentPosition(
-            (position) => {
-                setUserCoords({
-                    lat: position.coords.latitude,
-                    lng: position.coords.longitude
-                });
-                setAddress("Current Location");
-                setIsLocating(false);
-            },
-            () => {
-                addNotification({ type: 'alert', title: 'Location Error', message: 'Unable to retrieve your location.' });
-                setIsLocating(false);
-            }
-        );
-    };
-
-    const handleSearch = async () => {
-        if (!address.trim() || address === "Current Location") return;
-        setIsLocating(true);
-
-        try {
-            // Improved Canadian Postal Code Handling
-            // Matches: "K6V", "K6V5T3", "K6V 5T3", "K6V-5T3"
-            const postalCodeRegex = /^([A-Za-z]\d[A-Za-z])\s?[-]?\s?(\d[A-Za-z]\d)?$/;
-            let query = address;
-
-            const match = address.trim().match(postalCodeRegex);
-
-            if (match) {
-                const fsa = match[1].toUpperCase();
-                const { CANADIAN_FSA_MAP } = await import('../../data/canadianFSAs');
-
-                if (CANADIAN_FSA_MAP[fsa]) {
-                    query = CANADIAN_FSA_MAP[fsa];
-                } else {
-                    const PROVINCE_MAP: Record<string, string> = {
-                        'A': 'NL', 'B': 'NS', 'C': 'PE', 'E': 'NB',
-                        'G': 'QC', 'H': 'QC', 'J': 'QC',
-                        'K': 'ON', 'L': 'ON', 'M': 'ON', 'N': 'ON', 'P': 'ON',
-                        'R': 'MB', 'S': 'SK', 'T': 'AB', 'V': 'BC',
-                        'X': 'NU', 'Y': 'YT'
-                    };
-                    const province = PROVINCE_MAP[fsa[0]];
-                    query = province ? `${fsa}, ${province}, Canada` : `${fsa}, Canada`;
-                }
-            }
-
-            console.log(`Searching location for: ${query}`);
-            const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=ca`);
-            const data = await response.json();
-
-            if (data && data.length > 0) {
-                const { lat, lon } = data[0];
-                setUserCoords({ lat: parseFloat(lat), lng: parseFloat(lon) });
-                if (match) setAddress(address.toUpperCase());
-            } else {
-                if (query !== address) {
-                    const fallbackResponse = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&countrycodes=ca`);
-                    const fallbackData = await fallbackResponse.json();
-                    if (fallbackData && fallbackData.length > 0) {
-                        const { lat, lon } = fallbackData[0];
-                        setUserCoords({ lat: parseFloat(lat), lng: parseFloat(lon) });
-                        return;
-                    }
-                }
-                addNotification({ type: 'alert', title: 'Location Not Found', message: `We couldn't find "${address}".` });
-            }
-        } catch (error) {
-            console.error('Search error:', error);
-            addNotification({ type: 'alert', title: 'Search Failed', message: 'Error finding location.' });
-        } finally {
-            setIsLocating(false);
-        }
-    };
+    const { userCoords, address, setAddress, searchDistance, setSearchDistance, isLocating, handleLocateMe, handleSearch, calculateDistance } = useLocation();
 
     const allStores = useMemo(() => {
         if (!stores) return [];
         const activeStores = Object.values(stores).filter((s: any) => s.status === 'active' || !s.status);
-        return activeStores.map((store: any) => {
+        let mappedStores = activeStores.map((store: any) => {
             let distanceVal = 'Distance unknown';
             let distanceNum = 9999;
 
@@ -215,7 +70,12 @@ const StoreList: React.FC = () => {
                 productCount: store.productCount || store.products?.length || 0
             };
         });
-    }, [stores, userCoords]);
+
+        if (userCoords && searchDistance > 0) {
+            mappedStores = mappedStores.filter(store => store.distanceNum <= searchDistance);
+        }
+        return mappedStores;
+    }, [stores, userCoords, searchDistance]);
 
     const stats = useMemo(() => {
         return {
@@ -253,7 +113,9 @@ const StoreList: React.FC = () => {
                 break;
             default: break;
         }
-        if (userCoords) result.sort((a, b) => a.distanceNum - b.distanceNum);
+        if (userCoords) {
+            result.sort((a, b) => a.distanceNum - b.distanceNum);
+        }
         return result;
     }, [activeCategory, allStores, userCoords]);
 
@@ -350,6 +212,15 @@ const StoreList: React.FC = () => {
                     <div className="flex items-center justify-between mb-6">
                         <h2 className="text-2xl font-bold text-[var(--text-main)]">{activeCategory === 'All' ? 'Stores Near You' : `${activeCategory} Stores`}</h2>
                         <div className="flex items-center gap-4">
+                            <select 
+                                value={searchDistance} 
+                                onChange={(e) => setSearchDistance(Number(e.target.value))}
+                                className="text-sm bg-[var(--surface-2)] border border-[var(--glass-border)] rounded-md px-2 py-1 text-[var(--text-main)] outline-none cursor-pointer"
+                            >
+                                <option value={5}>Within 5 km</option>
+                                <option value={10}>Within 10 km</option>
+                                <option value={25}>Within 25 km</option>
+                            </select>
                             <span className="text-sm text-[var(--text-muted)] hidden sm:inline">{filteredStores.length} stores</span>
                             <div className="flex bg-[var(--surface-2)] rounded-lg p-1 border border-[var(--glass-border)]">
                                 <button onClick={() => setViewMode('grid')} className={`p-1.5 rounded-md transition-colors ${viewMode === 'grid' ? 'bg-white shadow-sm text-[var(--brand-primary)]' : 'text-gray-400 hover:text-gray-600'}`}>
@@ -406,11 +277,9 @@ const StoreList: React.FC = () => {
                                             <h3 className="font-bold text-lg text-[var(--text-main)] group-hover:text-[var(--brand-primary)] transition-colors">{store.name}</h3>
                                             <div className="flex items-center gap-2">
                                                 <p className="text-sm text-[var(--text-muted)]">{store.distance} away</p>
-                                                {store.rating > 0 && (
-                                                    <span className="text-xs font-semibold flex items-center gap-0.5 bg-yellow-100 text-yellow-800 px-1.5 py-0.5 rounded">
-                                                        ★ {store.rating.toFixed(1)} <span className="opacity-70 font-normal">({store.reviewCount})</span>
-                                                    </span>
-                                                )}
+                                                <span className="text-xs font-semibold flex items-center gap-0.5 bg-yellow-100 text-yellow-800 px-1.5 py-0.5 rounded">
+                                                    ★ {store.rating > 0 ? store.rating.toFixed(1) : '0.0'} <span className="opacity-70 font-normal">({store.reviewCount || 0})</span>
+                                                </span>
                                             </div>
                                         </div>
 

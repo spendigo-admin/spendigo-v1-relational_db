@@ -92,16 +92,55 @@ exports.inviteTeamMember = functions.https.onCall(async (data, context) => {
             merchantRole: merchantRole,
             storeId: storeId,
             status: 'pending_invite',
+            subscriptionTier: callerData.subscriptionTier || 'starter',
             invitedAt: admin.firestore.FieldValue.serverTimestamp(),
             invitedBy: context.auth.uid,
             createdAt: admin.firestore.FieldValue.serverTimestamp(),
         });
         functions.logger.info(`Created Firestore user doc for ${email}`);
-        // 8. Return success
+        // 8. Generate Email Verification Link and Add to Mail Collection
+        const verificationLink = await admin.auth().generateEmailVerificationLink(email);
+        const htmlContent = `
+<!DOCTYPE html>
+<html>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <div style="text-align: center; padding: 30px; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: white; border-radius: 10px;">
+        <h1 style="margin: 0;">You've Been Invited!</h1>
+        <p style="margin: 10px 0 0 0;">Welcome to Spendigo</p>
+    </div>
+    
+    <div style="padding: 30px; background: white; border: 1px solid #e5e7eb; margin-top: 20px; border-radius: 10px;">
+        <p>Hi ${name},</p>
+        <p>You have been invited to join the team for your store on Spendigo. Here are your login details:</p>
+        
+        <div style="background: #f9fafb; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <p style="margin: 0;"><strong>Role:</strong> ${merchantRole}</p>
+            <p style="margin: 10px 0 0 0;"><strong>Email:</strong> ${email}</p>
+            <p style="margin: 10px 0 0 0;"><strong>Temporary Password:</strong> <code style="background: #e5e7eb; padding: 2px 6px; border-radius: 4px;">${tempPassword}</code></p>
+        </div>
+        
+        <p style="color: #ef4444; font-weight: bold;">Please verify your email and change your password immediately after logging in.</p>
+        
+        <div style="text-align: center; margin-top: 30px;">
+            <a href="${verificationLink}" style="display: inline-block; background: #6366f1; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px;">Verify Email & Login</a>
+        </div>
+    </div>
+</body>
+</html>`;
+        await admin.firestore().collection('mail').add({
+            to: [email],
+            message: {
+                subject: `You're invited to join a Spendigo Store Team!`,
+                html: htmlContent,
+            },
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+        functions.logger.info(`Queued invitation email for ${email}`);
+        // 9. Return success
         return {
             success: true,
             uid: authUser.uid,
-            message: `Successfully invited ${email} to join your team`,
+            message: `Successfully invited ${email} to join your team. An email has been sent to them.`,
         };
     }
     catch (error) {

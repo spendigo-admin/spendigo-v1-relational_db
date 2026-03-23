@@ -14,6 +14,7 @@ import { MarketplaceProvider } from './context/MarketplaceContext';
 import { AuditProvider } from './context/AuditContext';
 import { ReviewProvider } from './context/ReviewContext';
 import { ConfirmationProvider } from './context/ConfirmationContext';
+import { LocationProvider } from './context/LocationContext';
 
 import ConsumerLayout from './layouts/ConsumerLayout';
 import MerchantLayout from './layouts/MerchantLayout';
@@ -119,8 +120,9 @@ function App() {
                                         <CartProvider>
                                             <WishlistProvider>
                                                 <OrderProvider>
-                                                    <ConfirmationProvider>
-                                                        <Suspense fallback={<PageLoader />}>
+                                                    <LocationProvider>
+                                                        <ConfirmationProvider>
+                                                            <Suspense fallback={<PageLoader />}>
                                                             <Routes>
                                                                 {/* AUTH ROUTES (Fullscreen) */}
                                                                 <Route path="/login" element={<Login />} />
@@ -191,7 +193,8 @@ function App() {
                                                             </Routes>
                                                         </Suspense>
                                                     </ConfirmationProvider>
-                                                </OrderProvider>
+                                                </LocationProvider>
+                                            </OrderProvider>
                                             </WishlistProvider>
                                         </CartProvider>
                                     </ReviewProvider>

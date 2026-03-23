@@ -3,12 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
 import { useMarketplace } from '../../context/MarketplaceContext';
 import { useCatalog } from '../../hooks/useCatalog';
-
+import { useLocation } from '../../context/LocationContext';
 import { useDebounce } from '../../hooks/useDebounce';
 
 const Search: React.FC = () => {
     const navigate = useNavigate();
     const { addToCart } = useCart();
+    const { stores } = useMarketplace();
+    const { userCoords, searchDistance, calculateDistance } = useLocation();
 
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('All');
@@ -40,6 +42,16 @@ const Search: React.FC = () => {
     const filteredProducts = useMemo(() => {
         let results = allProducts;
 
+        // Filter by store distance
+        if (userCoords && searchDistance > 0) {
+            results = results.filter(p => {
+                const store = stores[p.storeId];
+                if (!store || !store.coordinates) return false;
+                const distance = calculateDistance(userCoords.lat, userCoords.lng, store.coordinates.lat, store.coordinates.lng);
+                return distance <= searchDistance;
+            });
+        }
+
         // Note: We do NOT filter by text here because useGlobalCatalog already returned
         // the relevant results from Algolia (which handles fuzzy/brand matching).
         // If we filter again here using .includes(), we break the fuzzy/brand logic.
@@ -57,7 +69,7 @@ const Search: React.FC = () => {
         }
 
         return results;
-    }, [searchQuery, selectedCategory, sortBy, allProducts]);
+    }, [searchQuery, selectedCategory, sortBy, allProducts, stores, userCoords, searchDistance, calculateDistance]);
 
     // Group by store
     const groupedByStore = useMemo(() => {

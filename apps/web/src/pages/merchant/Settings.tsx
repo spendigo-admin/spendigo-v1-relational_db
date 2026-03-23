@@ -219,6 +219,7 @@ const MerchantSettings: React.FC = () => {
     const [showInviteModal, setShowInviteModal] = useState(false);
     const [inviteSuccess, setInviteSuccess] = useState<{ name: string, email: string, password: string } | null>(null);
     const [inviteForm, setInviteForm] = useState({ name: '', email: '', role: 'STAFF' as MerchantRole });
+    const [inviteError, setInviteError] = useState('');
 
     // Fetch Real-time Team Members
     useEffect(() => {
@@ -240,9 +241,9 @@ const MerchantSettings: React.FC = () => {
                         name: d.name || 'Unknown',
                         email: d.email,
                         role: d.merchantRole || 'STAFF',
-                        lastActive: d.status === 'active'
-                            ? (d.lastLogin ? new Date(d.lastLogin).toLocaleDateString() : 'Active')
-                            : '🟡 Pending Invite'
+                        lastActive: d.status === 'pending_invite'
+                            ? '🟡 Pending Invite'
+                            : (d.lastLogin ? new Date(d.lastLogin).toLocaleDateString() : 'Active')
                     });
                 }
             });
@@ -374,6 +375,7 @@ const MerchantSettings: React.FC = () => {
     const handleInvite = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsSaving(true);
+        setInviteError('');
 
         try {
             // Generate temporary password
@@ -410,6 +412,7 @@ const MerchantSettings: React.FC = () => {
         } catch (error: any) {
             console.error('Error inviting team member:', error);
             const errorMessage = error.message || 'Failed to send invitation';
+            setInviteError(errorMessage);
             addNotification({ type: 'alert', title: 'Invitation Failed', message: errorMessage });
         } finally {
             setIsSaving(false);
@@ -602,9 +605,17 @@ const MerchantSettings: React.FC = () => {
                                 </p>
                             </div>
 
+                            {inviteError && (
+                                <div className="p-3 bg-red-50 text-red-700 text-sm rounded-lg border border-red-200">
+                                    {inviteError}
+                                </div>
+                            )}
+
                             <div className="flex justify-end gap-3 mt-6">
-                                <button type="button" onClick={() => setShowInviteModal(false)} className="px-4 py-2 font-bold text-gray-500 hover:bg-gray-100 rounded-lg">Cancel</button>
-                                <button type="submit" className="px-4 py-2 bg-[var(--brand-primary)] text-white font-bold rounded-lg hover:brightness-110">Send Invite</button>
+                                <button type="button" disabled={isSaving} onClick={() => setShowInviteModal(false)} className="px-4 py-2 font-bold text-gray-500 hover:bg-gray-100 rounded-lg disabled:opacity-50">Cancel</button>
+                                <button type="submit" disabled={isSaving} className="px-4 py-2 bg-[var(--brand-primary)] text-white font-bold rounded-lg hover:brightness-110 disabled:opacity-50 flex justify-center items-center min-w-[120px]">
+                                    {isSaving ? 'Sending...' : 'Send Invite'}
+                                </button>
                             </div>
                         </form>
                     </div>

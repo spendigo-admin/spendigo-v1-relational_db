@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMarketplace } from '../../context/MarketplaceContext';
+import { useLocation } from '../../context/LocationContext';
 import '../../styles/design-system.css';
 
 const getValidFlyerImage = (imageUrl?: string): string | undefined => {
@@ -19,13 +20,21 @@ const getValidFlyerImage = (imageUrl?: string): string | undefined => {
 const Flyers: React.FC = () => {
     const navigate = useNavigate();
     const { stores, loading } = useMarketplace();
+    const { userCoords, searchDistance, calculateDistance } = useLocation();
 
     const activeFlyerStores = Object.values(stores || {}).filter((store: any) => {
         if (!store.flyer || !store.flyer.validUntil) return false;
         const validUntil = new Date(store.flyer.validUntil);
         // Set to end of day to be inclusive
         validUntil.setHours(23, 59, 59, 999);
-        return validUntil >= new Date();
+        if (validUntil < new Date()) return false;
+
+        if (userCoords && searchDistance > 0 && store.coordinates) {
+            const distance = calculateDistance(userCoords.lat, userCoords.lng, store.coordinates.lat, store.coordinates.lng);
+            if (distance > searchDistance) return false;
+        }
+
+        return true;
     });
 
     return (
