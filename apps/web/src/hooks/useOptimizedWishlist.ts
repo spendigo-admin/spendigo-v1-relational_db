@@ -5,6 +5,7 @@ import { performCachedSearch } from '../utils/fuzzy-search';
 import { MerchantProduct, OptimizedWishlistItem, StoreOption } from '../types/smartCart';
 import { useWishlist } from '../context/WishlistContext';
 import { useMarketplace } from '../context/MarketplaceContext';
+import { useLocation } from '../context/LocationContext';
 import { useCatalog } from '../context/CatalogContext';
 import { calculateUnitPrice } from '../smartcart/priceNormalization';
 import { buildSmartCartPriceMatrix } from '../smartcart/smartcart_price_matrix';
@@ -109,6 +110,7 @@ const getEffectivePrice = (product: any, store: any) => {
 export const useOptimizedWishlist = () => {
     const { items: wishlistItems } = useWishlist();
     const { stores } = useMarketplace();
+    const { userCoords, searchDistance, calculateDistance } = useLocation();
     const { catalog, loadCatalog } = useCatalog();
 
     // Ensure Global Catalog is loaded
@@ -200,8 +202,13 @@ export const useOptimizedWishlist = () => {
 
         merchantInventory.forEach((product: any) => {
             const masterId = product.master_product_id;
-            const baseStore = stores[product.merchant_id] || { name: 'Unknown Store', id: product.merchant_id };
+            const baseStore = stores[product.merchant_id] || { name: 'Unknown Store', id: product.merchant_id, coordinates: null };
             
+            if (userCoords && searchDistance > 0 && baseStore.coordinates) {
+                const distance = calculateDistance(userCoords.lat, userCoords.lng, baseStore.coordinates.lat, baseStore.coordinates.lng);
+                if (distance > searchDistance) return;
+            }
+
             // Supplement with real-time dealsMap
             const realTimeDeals = dealsMap[product.merchant_id] || { oneDayOffers: [], saleItems: [] };
             const store = {
@@ -239,7 +246,7 @@ export const useOptimizedWishlist = () => {
         });
 
         return productMap;
-    }, [merchantInventory, stores, catalogMap, dealsMap]);
+    }, [merchantInventory, stores, catalogMap, dealsMap, userCoords, searchDistance, calculateDistance]);
 
     // 2. Derive Available Items from Global Catalog (Filtered by Availability)
     const AVAILABLE_ITEMS = useMemo(() => {
@@ -363,7 +370,14 @@ export const useOptimizedWishlist = () => {
 
                         matches.forEach((m: any) => {
                             // Relaxed check: Use fallback if store missing
-                            const store = stores[m.merchant_id] || { name: 'Unknown Store', id: m.merchant_id };
+                            const baseStore = stores[m.merchant_id] || { name: 'Unknown Store', id: m.merchant_id, coordinates: null };
+
+                            if (userCoords && searchDistance > 0 && baseStore.coordinates) {
+                                const distance = calculateDistance(userCoords.lat, userCoords.lng, baseStore.coordinates.lat, baseStore.coordinates.lng);
+                                if (distance > searchDistance) return;
+                            }
+
+                            const store = baseStore;
 
                             let finalName = m.product_name;
                             let finalBrand = m.brand;
@@ -452,7 +466,7 @@ export const useOptimizedWishlist = () => {
             }
         }
         return Array.from(seen.values());
-    }, [wishlistItems, availabilityMap, merchantInventory, stores, catalogMap]);
+    }, [wishlistItems, availabilityMap, merchantInventory, stores, catalogMap, userCoords, searchDistance, calculateDistance]);
 
     const optimizerPipeline = useMemo(() => {
         const shoppableItems = optimizerItems.filter((item): item is OptimizedWishlistItem => Boolean(item && item.options.length > 0));
