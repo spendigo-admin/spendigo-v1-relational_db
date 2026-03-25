@@ -110,7 +110,7 @@ const getEffectivePrice = (product: any, store: any) => {
 export const useOptimizedWishlist = () => {
     const { items: wishlistItems } = useWishlist();
     const { stores } = useMarketplace();
-    const { userCoords, searchDistance, calculateDistance } = useLocation();
+    const { userCoords, userPostalCode, searchDistance, calculateDistance } = useLocation();
     const { catalog, loadCatalog } = useCatalog();
 
     // Ensure Global Catalog is loaded
@@ -206,7 +206,17 @@ export const useOptimizedWishlist = () => {
             
             if (userCoords && searchDistance > 0 && baseStore.coordinates) {
                 const distance = calculateDistance(userCoords.lat, userCoords.lng, baseStore.coordinates.lat, baseStore.coordinates.lng);
-                if (distance > searchDistance) return;
+                if (distance > searchDistance) {
+                    let hasSameFSA = false;
+                    if (userPostalCode && baseStore.postalCode) {
+                        const userFSA = userPostalCode.trim().substring(0, 3).toUpperCase();
+                        const storeFSA = baseStore.postalCode.trim().substring(0, 3).toUpperCase();
+                        if (userFSA === storeFSA && /^[A-Z]\d[A-Z]$/.test(userFSA)) {
+                            hasSameFSA = true;
+                        }
+                    }
+                    if (!hasSameFSA) return;
+                }
             }
 
             // Supplement with real-time dealsMap
@@ -246,7 +256,7 @@ export const useOptimizedWishlist = () => {
         });
 
         return productMap;
-    }, [merchantInventory, stores, catalogMap, dealsMap, userCoords, searchDistance, calculateDistance]);
+    }, [merchantInventory, stores, catalogMap, dealsMap, userCoords, userPostalCode, searchDistance, calculateDistance]);
 
     // 2. Derive Available Items from Global Catalog (Filtered by Availability)
     const AVAILABLE_ITEMS = useMemo(() => {
@@ -374,7 +384,17 @@ export const useOptimizedWishlist = () => {
 
                             if (userCoords && searchDistance > 0 && baseStore.coordinates) {
                                 const distance = calculateDistance(userCoords.lat, userCoords.lng, baseStore.coordinates.lat, baseStore.coordinates.lng);
-                                if (distance > searchDistance) return;
+                                if (distance > searchDistance) {
+                                    let hasSameFSA = false;
+                                    if (userPostalCode && baseStore.postalCode) {
+                                        const userFSA = userPostalCode.trim().substring(0, 3).toUpperCase();
+                                        const storeFSA = baseStore.postalCode.trim().substring(0, 3).toUpperCase();
+                                        if (userFSA === storeFSA && /^[A-Z]\d[A-Z]$/.test(userFSA)) {
+                                            hasSameFSA = true;
+                                        }
+                                    }
+                                    if (!hasSameFSA) return;
+                                }
                             }
 
                             const store = baseStore;
@@ -466,7 +486,7 @@ export const useOptimizedWishlist = () => {
             }
         }
         return Array.from(seen.values());
-    }, [wishlistItems, availabilityMap, merchantInventory, stores, catalogMap, userCoords, searchDistance, calculateDistance]);
+    }, [wishlistItems, availabilityMap, merchantInventory, stores, catalogMap, userCoords, userPostalCode, searchDistance, calculateDistance]);
 
     const optimizerPipeline = useMemo(() => {
         const shoppableItems = optimizerItems.filter((item): item is OptimizedWishlistItem => Boolean(item && item.options.length > 0));

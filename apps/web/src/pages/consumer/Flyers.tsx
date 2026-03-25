@@ -20,7 +20,7 @@ const getValidFlyerImage = (imageUrl?: string): string | undefined => {
 const Flyers: React.FC = () => {
     const navigate = useNavigate();
     const { stores, loading } = useMarketplace();
-    const { userCoords, searchDistance, calculateDistance } = useLocation();
+    const { userCoords, userPostalCode, searchDistance, calculateDistance } = useLocation();
 
     const activeFlyerStores = Object.values(stores || {}).filter((store: any) => {
         if (!store.flyer || !store.flyer.validUntil) return false;
@@ -31,7 +31,16 @@ const Flyers: React.FC = () => {
 
         if (userCoords && searchDistance > 0 && store.coordinates) {
             const distance = calculateDistance(userCoords.lat, userCoords.lng, store.coordinates.lat, store.coordinates.lng);
-            if (distance > searchDistance) return false;
+            if (distance > searchDistance) {
+                if (userPostalCode && store.postalCode) {
+                    const userFSA = userPostalCode.trim().substring(0, 3).toUpperCase();
+                    const storeFSA = store.postalCode.trim().substring(0, 3).toUpperCase();
+                    if (userFSA === storeFSA && /^[A-Z]\d[A-Z]$/.test(userFSA)) {
+                        return true;
+                    }
+                }
+                return false;
+            }
         }
 
         return true;

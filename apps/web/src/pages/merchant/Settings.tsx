@@ -51,65 +51,140 @@ const ROLE_INFO: Record<MerchantRole, { label: string; desc: string; permissions
 
 
 const BUSINESS_TYPES: Record<string, { logo: string; cover: string; tagline: string }> = {
-    'Grocery': {
+    'Grocery Store': {
         logo: '/defaults/branding/grocery_logo.jpg?v=4',
         cover: '/defaults/branding/grocery_cover.jpg?v=4',
         tagline: 'Fresh groceries and daily essentials.'
     },
-    'Desi Grocery': {
-        logo: '/defaults/branding/desi_logo.jpg?v=4',
-        cover: '/defaults/branding/desi_cover.jpg?v=4',
-        tagline: 'Authentic flavors, spices and traditional ingredients.'
-    },
-    'Asian Market': {
-        logo: '/defaults/branding/asian_logo.jpg?v=4',
-        cover: '/defaults/branding/asian_cover.jpg?v=4',
-        tagline: 'Your destination for premium Asian products.'
-    },
-    'Organic Market': {
-        logo: '/defaults/branding/grocery_logo.jpg?v=4', // Re-use grocery for reliability
-        cover: '/defaults/branding/grocery_cover.jpg?v=4',
-        tagline: 'Healthy, organic, and locally sourced goodness.'
-    },
-    'Convenience': {
+    'Convenience Store': {
         logo: '/defaults/branding/convenience_logo.jpg?v=4',
         cover: '/defaults/branding/convenience_cover.jpg?v=4',
         tagline: 'Quick stops for all your immediate needs.'
     },
-    'Bakery': {
+    'Discount / Dollar Store': {
+        logo: '/defaults/branding/other_logo.jpg?v=4',
+        cover: '/defaults/branding/other_cover.jpg?v=4',
+        tagline: 'Great deals and everyday value.'
+    },
+    'Ethnic / Specialty Grocery': {
+        logo: '/defaults/branding/desi_logo.jpg?v=4',
+        cover: '/defaults/branding/desi_cover.jpg?v=4',
+        tagline: 'Authentic flavors, spices and traditional ingredients.'
+    },
+    'Farmers Market Vendor': {
+        logo: '/defaults/branding/grocery_logo.jpg?v=4',
+        cover: '/defaults/branding/grocery_cover.jpg?v=4',
+        tagline: 'Fresh, local, and direct from the farm.'
+    },
+    'Organic / Health Food Store': {
+        logo: '/defaults/branding/grocery_logo.jpg?v=4', // Re-use grocery for reliability
+        cover: '/defaults/branding/grocery_cover.jpg?v=4',
+        tagline: 'Healthy, organic, and locally sourced goodness.'
+    },
+    'Artisan Bakery': {
         logo: '/defaults/branding/bakery_logo.jpg?v=4',
         cover: '/defaults/branding/bakery_cover.jpg?v=4',
         tagline: 'Freshly baked breads and sweet treats daily.'
     },
-    'Cafe': {
-        logo: '/defaults/branding/cafe_logo.jpg?v=4',
-        cover: '/defaults/branding/cafe_cover.jpg?v=4',
-        tagline: 'Premium coffee and cozy vibes.'
-    },
-    'Butcher': {
+    'Butcher Shop': {
         logo: '/defaults/branding/butcher_logo.jpg?v=4',
         cover: '/defaults/branding/butcher_cover.jpg?v=4',
         tagline: 'Quality cuts and fresh meats.'
     },
-    'Florist': {
-        logo: '/defaults/branding/florist_logo.jpg?v=4',
-        cover: '/defaults/branding/florist_cover.jpg?v=4',
-        tagline: 'Beautiful blooms for every occasion.'
+    'Fishmonger / Seafood Shop': {
+        logo: '/defaults/branding/other_logo.jpg?v=4',
+        cover: '/defaults/branding/other_cover.jpg?v=4',
+        tagline: 'Fresh catches from the sea.'
+    },
+    'Deli / Prepared Foods': {
+        logo: '/defaults/branding/grocery_logo.jpg?v=4',
+        cover: '/defaults/branding/grocery_cover.jpg?v=4',
+        tagline: 'Ready-to-eat meals and deli meats.'
+    },
+    'Restaurant': {
+        logo: '/defaults/branding/cafe_logo.jpg?v=4',
+        cover: '/defaults/branding/cafe_cover.jpg?v=4',
+        tagline: 'Delicious meals made to order.'
+    },
+    'Local Café / Coffee Shop': {
+        logo: '/defaults/branding/cafe_logo.jpg?v=4',
+        cover: '/defaults/branding/cafe_cover.jpg?v=4',
+        tagline: 'Premium coffee and cozy vibes.'
+    },
+    'Dessert & Sweets Shop': {
+        logo: '/defaults/branding/bakery_logo.jpg?v=4',
+        cover: '/defaults/branding/bakery_cover.jpg?v=4',
+        tagline: 'Treat yourself to something sweet.'
+    },
+    'Meal Prep / Tiffin Service': {
+        logo: '/defaults/branding/grocery_logo.jpg?v=4',
+        cover: '/defaults/branding/grocery_cover.jpg?v=4',
+        tagline: 'Home-cooked meals delivered fresh.'
+    },
+    'Pharmacy / Health Store': {
+        logo: '/defaults/branding/pharmacy_logo.jpg?v=4',
+        cover: '/defaults/branding/pharmacy_cover.jpg?v=4',
+        tagline: 'Health, wellness, and prescriptions.'
     },
     'Pet Store': {
         logo: '/defaults/branding/pet_logo.jpg?v=4',
         cover: '/defaults/branding/pet_cover.jpg?v=4',
         tagline: 'Everything your furry friends need.'
     },
-    'Pharmacy': {
-        logo: '/defaults/branding/pharmacy_logo.jpg?v=4',
-        cover: '/defaults/branding/pharmacy_cover.jpg?v=4',
-        tagline: 'Health, wellness, and prescriptions.'
+    'Florist': {
+        logo: '/defaults/branding/florist_logo.jpg?v=4',
+        cover: '/defaults/branding/florist_cover.jpg?v=4',
+        tagline: 'Beautiful blooms for every occasion.'
     },
-    'Other': {
+    'Home & Garden Store': {
         logo: '/defaults/branding/other_logo.jpg?v=4',
         cover: '/defaults/branding/other_cover.jpg?v=4',
-        tagline: 'Quality service for our community.'
+        tagline: 'Everything to make your house a home.'
+    },
+    'Hardware Store': {
+        logo: '/defaults/branding/other_logo.jpg?v=4',
+        cover: '/defaults/branding/other_cover.jpg?v=4',
+        tagline: 'Tools and supplies for every project.'
+    },
+    'Bookstore / Stationery': {
+        logo: '/defaults/branding/other_logo.jpg?v=4',
+        cover: '/defaults/branding/other_cover.jpg?v=4',
+        tagline: 'Books, supplies, and inspiration.'
+    },
+    'Craft / Handmade Goods Store': {
+        logo: '/defaults/branding/other_logo.jpg?v=4',
+        cover: '/defaults/branding/other_cover.jpg?v=4',
+        tagline: 'Unique, handmade goods and crafts.'
+    },
+    'Clothing / Boutique': {
+        logo: '/defaults/branding/other_logo.jpg?v=4',
+        cover: '/defaults/branding/other_cover.jpg?v=4',
+        tagline: 'Apparel and accessories for every style.'
+    },
+    'Toy & Gift Store': {
+        logo: '/defaults/branding/other_logo.jpg?v=4',
+        cover: '/defaults/branding/other_cover.jpg?v=4',
+        tagline: 'Fun toys and perfect gifts.'
+    },
+    'Electronics / Mobile Accessories': {
+        logo: '/defaults/branding/other_logo.jpg?v=4',
+        cover: '/defaults/branding/other_cover.jpg?v=4',
+        tagline: 'Tech gadgets and accessories.'
+    },
+    'Thrift / Second-Hand Store': {
+        logo: '/defaults/branding/other_logo.jpg?v=4',
+        cover: '/defaults/branding/other_cover.jpg?v=4',
+        tagline: 'Pre-loved goods and hidden treasures.'
+    },
+    'General Retail': {
+        logo: '/defaults/branding/other_logo.jpg?v=4',
+        cover: '/defaults/branding/other_cover.jpg?v=4',
+        tagline: 'Quality goods and services.'
+    },
+    'Specialty Retail': {
+        logo: '/defaults/branding/other_logo.jpg?v=4',
+        cover: '/defaults/branding/other_cover.jpg?v=4',
+        tagline: 'Unique specialty items and goods.'
     }
 };
 
@@ -324,6 +399,27 @@ const MerchantSettings: React.FC = () => {
     const handleSave = async () => {
         setIsSaving(true);
 
+        let finalCoordinates = storeInfo.coordinates;
+        
+        // Auto-geocode if coordinates are missing or explicitly 0,0
+        if (!finalCoordinates || (finalCoordinates.lat === 0 && finalCoordinates.lng === 0) || (finalCoordinates.lat === 43.6510 && finalCoordinates.lng === -79.3820)) {
+            const fullAddress = `${storeInfo.address}, ${storeInfo.city}, ${storeInfo.province}, ${storeInfo.postalCode}, Canada`;
+            try {
+                const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(fullAddress)}`);
+                const data = await response.json();
+
+                if (data && data.length > 0) {
+                    finalCoordinates = {
+                        lat: parseFloat(data[0].lat),
+                        lng: parseFloat(data[0].lon)
+                    };
+                    setStoreInfo(prev => ({ ...prev, coordinates: finalCoordinates }));
+                }
+            } catch (error) {
+                console.warn('Auto-geocoding failed during save:', error);
+            }
+        }
+
         let displayFee = `$${operations.deliveryFee.toFixed(2)}`;
         if (operations.freeDeliveryThreshold > 0) {
             displayFee = `Free over $${operations.freeDeliveryThreshold}`;
@@ -341,7 +437,7 @@ const MerchantSettings: React.FC = () => {
             postalCode: storeInfo.postalCode,
             description: storeInfo.description,
             website: storeInfo.website,
-            coordinates: storeInfo.coordinates, // Save real coordinates!
+            coordinates: finalCoordinates, // Save real coordinates!
             businessType: storeInfo.businessType,
             logoUrl: storeInfo.logoUrl,
             image: storeInfo.coverUrl, // Map local coverUrl to DB 'image' field
@@ -1183,28 +1279,69 @@ const MerchantSettings: React.FC = () => {
                         </div>
                     ) : (
                         /* Not Connected State */
-                        <div className="flex flex-col md:flex-row items-center gap-6 p-6 bg-gray-50 border border-gray-200 rounded-xl mb-6">
-                            <div className="w-16 h-16 bg-[#635BFF] rounded-xl flex items-center justify-center text-white text-3xl shadow-lg shrink-0">
-                                S
+                        <div className="flex flex-col gap-6 mb-6">
+                            <div className="flex flex-col md:flex-row items-center gap-6 p-6 bg-gray-50 border border-gray-200 rounded-xl">
+                                <div className="w-16 h-16 bg-[#635BFF] rounded-xl flex items-center justify-center text-white text-3xl shadow-lg shrink-0">
+                                    S
+                                </div>
+                                <div className="flex-1 text-center md:text-left">
+                                    <h3 className="text-xl font-bold text-gray-900 mb-2">Connect with Stripe</h3>
+                                    <p className="text-gray-600 mb-4">
+                                        To start selling on Spendigo, you must connect a Stripe account. This allows us to securely transfer earnings to your bank account automatically.
+                                    </p>
+                                    <div className="flex flex-wrap gap-2 justify-center md:justify-start">
+                                        <span className="text-xs bg-white border px-2 py-1 rounded text-gray-500">🔒 Secure processing</span>
+                                        <span className="text-xs bg-white border px-2 py-1 rounded text-gray-500">⚡️ Daily payouts</span>
+                                        <span className="text-xs bg-white border px-2 py-1 rounded text-gray-500">🌍 Major cards accepted</span>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={handleConnectStripe}
+                                    disabled={isSaving}
+                                    className="px-6 py-3 bg-[#635BFF] text-white font-bold rounded-lg hover:brightness-110 shadow-lg shadow-[#635BFF]/30 transition-all whitespace-nowrap"
+                                >
+                                    {isSaving ? 'Connecting...' : 'Connect Stripe Account'}
+                                </button>
                             </div>
-                            <div className="flex-1 text-center md:text-left">
-                                <h3 className="text-xl font-bold text-gray-900 mb-2">Connect with Stripe</h3>
-                                <p className="text-gray-600 mb-4">
-                                    To start selling on Spendigo, you must connect a Stripe account. This allows us to securely transfer earnings to your bank account automatically.
-                                </p>
-                                <div className="flex flex-wrap gap-2 justify-center md:justify-start">
-                                    <span className="text-xs bg-white border px-2 py-1 rounded text-gray-500">🔒 Secure processing</span>
-                                    <span className="text-xs bg-white border px-2 py-1 rounded text-gray-500">⚡️ Daily payouts</span>
-                                    <span className="text-xs bg-white border px-2 py-1 rounded text-gray-500">🌍 Major cards accepted</span>
+
+                            <div className="bg-white p-6 rounded-xl border border-[var(--glass-border)]">
+                                <h4 className="font-bold text-gray-800 mb-2">Information Required to Connect</h4>
+                                <p className="text-sm text-gray-600 mb-6">Please have the following information ready before starting the Stripe onboarding process:</p>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                    <div className="flex gap-4">
+                                        <div className="text-2xl pt-1">🏢</div>
+                                        <div>
+                                            <div className="font-bold text-sm text-gray-800 mb-2">Business Details</div>
+                                            <ul className="text-xs text-gray-600 space-y-2 list-disc list-inside">
+                                                <li>Business type & structure</li>
+                                                <li>Business address</li>
+                                                <li>Tax ID / Registration number</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                    <div className="flex gap-4">
+                                        <div className="text-2xl pt-1">👤</div>
+                                        <div>
+                                            <div className="font-bold text-sm text-gray-800 mb-2">Representative Info</div>
+                                            <ul className="text-xs text-gray-600 space-y-2 list-disc list-inside">
+                                                <li>Full legal name & DOB</li>
+                                                <li>Home address</li>
+                                                <li>SSN / SIN details</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                    <div className="flex gap-4">
+                                        <div className="text-2xl pt-1">🏦</div>
+                                        <div>
+                                            <div className="font-bold text-sm text-gray-800 mb-2">Bank Account</div>
+                                            <ul className="text-xs text-gray-600 space-y-2 list-disc list-inside">
+                                                <li>Institution / Transit number</li>
+                                                <li>Checking account number</li>
+                                            </ul>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-                            <button
-                                onClick={handleConnectStripe}
-                                disabled={isSaving}
-                                className="px-6 py-3 bg-[#635BFF] text-white font-bold rounded-lg hover:brightness-110 shadow-lg shadow-[#635BFF]/30 transition-all whitespace-nowrap"
-                            >
-                                {isSaving ? 'Connecting...' : 'Connect Stripe Account'}
-                            </button>
                         </div>
                     )}
 

@@ -29,7 +29,7 @@ const getValidFlyerImage = (imageUrl?: string): string | undefined => {
 const StoreList: React.FC = () => {
     const navigate = useNavigate();
     const { stores, loading } = useMarketplace();
-    const { userCoords, address, setAddress, searchDistance, setSearchDistance, isLocating, handleLocateMe, handleSearch, calculateDistance } = useLocation();
+    const { userCoords, userPostalCode, address, setAddress, searchDistance, setSearchDistance, isLocating, handleLocateMe, handleSearch, calculateDistance } = useLocation();
 
     const allStores = useMemo(() => {
         if (!stores) return [];
@@ -48,6 +48,7 @@ const StoreList: React.FC = () => {
                 name: store.name,
                 distance: distanceVal,
                 distanceNum: distanceNum,
+                postalCode: store.postalCode || null,
                 image: store.image,
                 logoUrl: store.logoUrl || store.logo,
                 tags: store.tags || [],
@@ -72,10 +73,24 @@ const StoreList: React.FC = () => {
         });
 
         if (userCoords && searchDistance > 0) {
-            mappedStores = mappedStores.filter(store => store.distanceNum <= searchDistance);
+            mappedStores = mappedStores.filter(store => {
+                if (store.distanceNum <= searchDistance) return true;
+                
+                // Fallback: If distance calculation places them outside the radius
+                // but they share the same FSA (first 3 chars of postal code), we include them.
+                if (userPostalCode && store.postalCode) {
+                    const userFSA = userPostalCode.trim().substring(0, 3).toUpperCase();
+                    const storeFSA = store.postalCode.trim().substring(0, 3).toUpperCase();
+                    // Basic sanity check that it looks like an FSA
+                    if (userFSA === storeFSA && /^[A-Z]\d[A-Z]$/.test(userFSA)) {
+                        return true;
+                    }
+                }
+                return false;
+            });
         }
         return mappedStores;
-    }, [stores, userCoords, searchDistance]);
+    }, [stores, userCoords, userPostalCode, searchDistance]);
 
     const stats = useMemo(() => {
         return {
@@ -220,6 +235,7 @@ const StoreList: React.FC = () => {
                                 <option value={5}>Within 5 km</option>
                                 <option value={10}>Within 10 km</option>
                                 <option value={25}>Within 25 km</option>
+                                <option value={50}>Within 50 km</option>
                             </select>
                             <span className="text-sm text-[var(--text-muted)] hidden sm:inline">{filteredStores.length} stores</span>
                             <div className="flex bg-[var(--surface-2)] rounded-lg p-1 border border-[var(--glass-border)]">

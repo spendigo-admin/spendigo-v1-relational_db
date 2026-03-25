@@ -269,14 +269,14 @@ const MerchantDeals: React.FC = () => {
     const stats = calculateStats();
 
     return (
-        <div className="p-6">
-            <div className="flex items-center justify-between mb-8">
+        <div className="p-4 sm:p-6 animate-fade-in pb-20">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
                 <div>
                     <h1 className="text-2xl font-bold text-[var(--text-main)]">🏷️ Deals & Offers</h1>
                     <p className="text-sm text-[var(--text-muted)]">Target customers with special limited-time offers</p>
                 </div>
                 {hasWriteAccess && !isRestrictedPlan && (
-                    <div className="flex gap-2">
+                    <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                         <button
                             onClick={async () => {
                                 if (isSyncing) return;
@@ -326,7 +326,7 @@ const MerchantDeals: React.FC = () => {
                                     setIsSyncing(false);
                                 }
                             }}
-                            className="px-4 py-2 bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200 transition-all border border-gray-200 flex items-center gap-2"
+                            className="px-4 py-2 bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200 transition-all border border-gray-200 flex items-center justify-center gap-2 w-full sm:w-auto"
                             disabled={isSyncing}
                         >
                             <span className={isSyncing ? 'animate-spin' : ''}>🔄</span>
@@ -334,7 +334,7 @@ const MerchantDeals: React.FC = () => {
                         </button>
                         <button
                             onClick={() => setShowWizard(true)}
-                            className="px-4 py-2 bg-[var(--brand-primary)] text-white font-medium rounded-lg hover:brightness-110 shadow-lg shadow-[var(--brand-primary)]/20 transition-all"
+                            className="px-4 py-2 bg-[var(--brand-primary)] text-white font-medium rounded-lg hover:brightness-110 shadow-lg shadow-[var(--brand-primary)]/20 transition-all w-full sm:w-auto justify-center flex items-center"
                         >
                             + Create New Deal
                         </button>
@@ -354,7 +354,7 @@ const MerchantDeals: React.FC = () => {
             ) : (
                 <>
 
-                    <div className="grid grid-cols-3 gap-6 mb-8">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mb-8">
                         <div className="glass-panel p-4 flex items-center gap-4">
                             <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-xl text-blue-600">⚡</div>
                             <div>
@@ -378,19 +378,19 @@ const MerchantDeals: React.FC = () => {
                         </div>
                     </div>
 
-                    <div className="flex gap-2 mb-6 border-b border-[var(--glass-border)] pb-4">
+                    <div className="flex overflow-x-auto gap-2 mb-6 border-b border-[var(--glass-border)] pb-4 whitespace-nowrap hide-scrollbar">
                         {(['all', 'active', 'scheduled', 'expired'] as const).map(status => (
                             <button
                                 key={status}
                                 onClick={() => setFilterStatus(status)}
-                                className={`px-4 py-2 rounded-lg text-sm font-medium capitalize transition-colors ${filterStatus === status ? 'bg-[var(--brand-primary)] text-white' : 'text-[var(--text-muted)] hover:bg-[var(--surface-2)]'}`}
+                                className={`px-4 py-2 rounded-lg text-sm font-medium capitalize transition-colors flex-shrink-0 ${filterStatus === status ? 'bg-[var(--brand-primary)] text-white' : 'text-[var(--text-muted)] hover:bg-[var(--surface-2)]'}`}
                             >
                                 {status} Deals
                             </button>
                         ))}
                     </div>
 
-                    <div className="space-y-4 pb-20">
+                    <div className="space-y-4">
                         {filteredDeals.length === 0 ? (
                             <div className="text-center py-20 bg-white rounded-xl border border-dashed border-[var(--glass-border)]">
                                 <div className="text-4xl mb-4 opacity-50">🏷️</div>
@@ -401,8 +401,8 @@ const MerchantDeals: React.FC = () => {
                             </div>
                         ) : (
                             filteredDeals.map(deal => (
-                                <div key={deal.id} className="bg-white rounded-xl border border-[var(--glass-border)] p-5 hover:shadow-md transition-shadow">
-                                    <div className="flex flex-col md:flex-row gap-6 items-start md:items-center justify-between">
+                                <div key={deal.id} className="bg-white rounded-xl border border-[var(--glass-border)] p-4 sm:p-5 hover:shadow-md transition-shadow">
+                                    <div className="flex flex-col md:flex-row gap-4 sm:gap-6 items-start md:items-center justify-between">
                                         <div className="flex items-center gap-4 flex-1">
                                             <div className="relative">
                                                 <img src={deal.productImage} className="w-16 h-16 rounded-xl object-cover bg-gray-100" alt="" />
@@ -431,7 +431,7 @@ const MerchantDeals: React.FC = () => {
                                             </div>
                                         </div>
 
-                                        <div className="flex items-center gap-6 w-full md:w-auto justify-between md:justify-end">
+                                        <div className="flex flex-col sm:flex-row items-end sm:items-center gap-4 sm:gap-6 w-full md:w-auto justify-between md:justify-end">
                                             <div className="text-right text-sm text-[var(--text-muted)]">
                                                 <div>Ends: <strong>{new Date(deal.endDate).toLocaleDateString()}</strong></div>
                                                 <div className="text-xs">{new Date(deal.endDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
@@ -460,7 +460,7 @@ const MerchantDeals: React.FC = () => {
                     {showWizard && (
                         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
                             <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl">
-                                <div className="p-6 border-b border-[var(--glass-border)] flex justify-between items-center bg-[var(--surface-1)] rounded-t-2xl">
+                                <div className="p-4 sm:p-6 border-b border-[var(--glass-border)] flex justify-between items-center bg-[var(--surface-1)] rounded-t-2xl">
                                     <div>
                                         <h2 className="text-xl font-bold text-[var(--text-main)]">Create New Deal</h2>
                                         <p className="text-xs text-[var(--text-muted)] mt-1">Step {wizardStep} of 2: {wizardStep === 1 ? 'Select Product' : 'Configure Offer'}</p>
@@ -468,7 +468,7 @@ const MerchantDeals: React.FC = () => {
                                     <button onClick={closeWizard} className="text-[var(--text-muted)] hover:text-[var(--text-main)]">❌</button>
                                 </div>
 
-                                <div className="flex-1 overflow-y-auto p-6 bg-[var(--surface-1)]">
+                                <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-[var(--surface-1)]">
                                     {wizardStep === 1 ? (
                                         <div className="space-y-4">
                                             <input
@@ -511,7 +511,7 @@ const MerchantDeals: React.FC = () => {
                                                 <button onClick={() => setWizardStep(1)} className="text-xs text-blue-600 font-medium hover:underline">Change</button>
                                             </div>
 
-                                            <div className="grid grid-cols-3 gap-3">
+                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                                                 {(['percentage', 'fixed', 'bogo'] as const).map(type => (
                                                     <div
                                                         key={type}
@@ -578,7 +578,7 @@ const MerchantDeals: React.FC = () => {
                                                 )}
                                             </div>
 
-                                            <div className="grid grid-cols-2 gap-4">
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                                 <div>
                                                     <label className="block text-sm font-medium mb-1 text-[var(--text-muted)]">Starts</label>
                                                     <input
@@ -612,7 +612,7 @@ const MerchantDeals: React.FC = () => {
                                     )}
                                 </div>
 
-                                <div className="p-6 border-t border-[var(--glass-border)] bg-white rounded-b-2xl flex justify-end gap-3">
+                                <div className="p-4 sm:p-6 border-t border-[var(--glass-border)] bg-white rounded-b-2xl flex justify-end gap-3">
                                     <button onClick={closeWizard} className="px-5 py-2 border border-[var(--glass-border)] rounded-lg hover:bg-gray-50 text-[var(--text-main)] transition-colors">
                                         Cancel
                                     </button>

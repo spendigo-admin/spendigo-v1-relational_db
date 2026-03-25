@@ -287,8 +287,8 @@ const MerchantFlyers: React.FC = () => {
         const totalSavings = formData.items?.reduce((acc, item) => acc + (item.originalPrice - item.salePrice), 0) || 0;
 
         return (
-            <div className="p-6 animate-fade-in pb-20">
-                <div className="flex items-center justify-between mb-6">
+            <div className="p-4 sm:p-6 animate-fade-in pb-20">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                     <div>
                         <button onClick={() => setView('list')} className="text-[var(--text-muted)] hover:text-[var(--text-main)] mb-2 flex items-center gap-1">
                             ← Back to Flyers
@@ -298,11 +298,11 @@ const MerchantFlyers: React.FC = () => {
                         </h1>
                     </div>
                     {hasWriteAccess ? (
-                        <div className="flex gap-3">
-                            <button onClick={() => handleSave(false)} className="px-4 py-2 border border-[var(--glass-border)] rounded-lg hover:bg-[var(--surface-1)]">
+                        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                            <button onClick={() => handleSave(false)} className="w-full sm:w-auto px-4 py-2 border border-[var(--glass-border)] rounded-lg hover:bg-[var(--surface-1)] text-center">
                                 Save Draft
                             </button>
-                            <button onClick={() => handleSave(true)} className="px-6 py-2 bg-[var(--brand-primary)] text-white font-bold rounded-lg hover:brightness-110 shadow-lg shadow-[var(--brand-primary)]/20">
+                            <button onClick={() => handleSave(true)} className="w-full sm:w-auto px-6 py-2 bg-[var(--brand-primary)] text-white font-bold rounded-lg hover:brightness-110 shadow-lg shadow-[var(--brand-primary)]/20 text-center">
                                 Publish Flyer
                             </button>
                         </div>
@@ -384,7 +384,7 @@ const MerchantFlyers: React.FC = () => {
                     {/* Right Col: Items */}
                     <div className="lg:col-span-2">
                         {/* Stats Banner */}
-                        <div className="mb-4 grid grid-cols-2 gap-4">
+                        <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div className="glass-panel p-4 flex items-center gap-3">
                                 <div className="p-3 rounded-full bg-blue-100 text-blue-700 text-xl">🏷️</div>
                                 <div>
@@ -438,7 +438,8 @@ const MerchantFlyers: React.FC = () => {
                                 </div>
                             </div>
 
-                            <div className="overflow-x-auto">
+                            {/* Desktop View (Table) */}
+                            <div className="hidden md:block overflow-x-auto">
                                 <table className="w-full">
                                     <thead className="bg-[var(--surface-1)] text-left text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider">
                                         <tr>
@@ -503,6 +504,57 @@ const MerchantFlyers: React.FC = () => {
                                         )}
                                     </tbody>
                                 </table>
+                            </div>
+
+                            {/* Mobile View (Cards) */}
+                            <div className="md:hidden space-y-4 p-4">
+                                {(!formData.items || formData.items.length === 0) ? (
+                                    <div className="text-center py-8 text-[var(--text-muted)] bg-gray-50 rounded-lg">
+                                        No products added. Click "Add Products" to start.
+                                    </div>
+                                ) : (
+                                    formData.items.map((item, idx) => (
+                                        <div key={idx} className="bg-white rounded-xl border border-[var(--glass-border)] p-4 shadow-sm">
+                                            <div className="flex gap-3 mb-3">
+                                                <img src={item.image} alt="" className="w-16 h-16 rounded-lg object-cover bg-gray-100" />
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="font-medium text-[var(--text-main)] truncate block">{item.name}</div>
+                                                    <div className="text-xs text-[var(--text-muted)] capitalize mb-1">{item.category}</div>
+                                                    {(() => {
+                                                        const discount = calculateDiscount(item.originalPrice, item.salePrice);
+                                                        return (
+                                                            <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold ${discount > 0 ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                                                                {discount > 0 ? `${discount}% OFF` : 'No Discount'}
+                                                            </span>
+                                                        );
+                                                    })()}
+                                                </div>
+                                                <button onClick={() => removeItem(idx)} className="self-start text-red-500 hover:text-red-700 p-2 rounded hover:bg-red-50">
+                                                    🗑️
+                                                </button>
+                                            </div>
+                                            <div className="flex justify-between items-center bg-gray-50 p-3 rounded-lg">
+                                                <div>
+                                                    <div className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider font-bold mb-0.5">Original</div>
+                                                    <div className="text-sm line-through text-[var(--text-muted)]">${item.originalPrice.toFixed(2)}</div>
+                                                </div>
+                                                <div className="text-right flex items-center gap-2">
+                                                    <div className="text-[10px] text-[var(--brand-primary)] uppercase tracking-wider font-bold mb-0.5 mt-1">Sale</div>
+                                                    <div className="flex items-center gap-1">
+                                                        <span className="text-[var(--text-main)] font-medium">$</span>
+                                                        <input
+                                                            type="number"
+                                                            step="0.01"
+                                                            value={item.salePrice}
+                                                            onChange={(e) => updateItemPrice(idx, parseFloat(e.target.value))}
+                                                            className="w-20 px-2 py-1 border border-[var(--glass-border)] rounded text-sm font-bold text-[var(--brand-primary)] outline-none focus:border-[var(--brand-primary)]"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
                             </div>
                         </div>
                     </div>
@@ -577,8 +629,8 @@ const MerchantFlyers: React.FC = () => {
 
     // Default List View
     return (
-        <div className="p-6 animate-fade-in">
-            <div className="flex items-center justify-between mb-6">
+        <div className="p-4 sm:p-6 animate-fade-in pb-20">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                 <div>
                     <h1 className="text-2xl font-bold text-[var(--text-main)]">📰 Flyers</h1>
                     <p className="text-sm text-[var(--text-muted)]">Manage your store's digital flyers and weekly deals</p>
@@ -586,7 +638,7 @@ const MerchantFlyers: React.FC = () => {
                 {hasWriteAccess && !isRestrictedPlan && (
                     <button
                         onClick={handleCreateNew}
-                        className="px-4 py-2 bg-[var(--brand-primary)] text-white font-medium rounded-lg hover:brightness-110 shadow-lg shadow-[var(--brand-primary)]/20"
+                        className="px-4 py-2 bg-[var(--brand-primary)] text-white font-medium rounded-lg hover:brightness-110 shadow-lg shadow-[var(--brand-primary)]/20 w-full sm:w-auto"
                     >
                         + Create Flyer
                     </button>
@@ -621,39 +673,39 @@ const MerchantFlyers: React.FC = () => {
                     ) : (
                         flyers.map(flyer => (
                             <div key={flyer.id} className="bg-white rounded-xl border border-[var(--glass-border)] p-4 shadow-sm hover:shadow-md transition-shadow">
-                                <div className="flex items-center justify-between">
-                                    <div className="flex gap-4 items-center">
-                                        <img src={getValidFlyerImage(flyer.coverImage)} className="w-16 h-16 rounded-lg object-cover bg-gray-200" alt="" />
-                                        <div>
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <h3 className="font-bold text-[var(--text-main)] text-lg">{flyer.title}</h3>
-                                                <span className={`text-xs px-2 py-0.5 rounded-full capitalize ${getStatusColor(flyer.status)} font-medium border border-current opacity-80`}>
+                                <div className="flex flex-col gap-4">
+                                    <div className="flex gap-4 items-center w-full min-w-0">
+                                        <img src={getValidFlyerImage(flyer.coverImage)} className="w-16 h-16 rounded-lg object-cover bg-gray-200 shrink-0" alt="" />
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex flex-wrap items-center gap-2 mb-1">
+                                                <h3 className="font-bold text-[var(--text-main)] text-lg truncate">{flyer.title}</h3>
+                                                <span className={`text-[10px] px-2 py-0.5 rounded-full capitalize ${getStatusColor(flyer.status)} font-medium border border-[var(--glass-border)] opacity-80 shrink-0`}>
                                                     {flyer.status}
                                                 </span>
                                             </div>
-                                            <p className="text-sm text-[var(--text-muted)]">
+                                            <p className="text-sm text-[var(--text-muted)] line-clamp-1 break-all">
                                                 {new Date(flyer.validFrom).toLocaleDateString()} - {new Date(flyer.validUntil).toLocaleDateString()}
                                             </p>
-                                            <p className="text-sm text-[var(--text-muted)] mt-1 flex items-center gap-1">
-                                                <span>🏷️</span> {flyer.items?.length || 0} products included
+                                            <p className="text-sm text-[var(--text-muted)] mt-1 flex items-center gap-1 shrink-0">
+                                                <span>🏷️</span> {flyer.items?.length || 0} items
                                             </p>
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex flex-wrap items-center gap-2 w-full justify-between sm:justify-end border-t border-[var(--glass-border)] pt-3">
                                         {hasWriteAccess ? (
                                             <>
-                                                <button onClick={() => handleDuplicate(flyer)} className="px-3 py-1.5 border border-[var(--glass-border)] text-[var(--brand-primary)] rounded-lg text-sm hover:bg-[var(--surface-1)]" title="Duplicate Flyer">
+                                                <button onClick={() => handleDuplicate(flyer)} className="flex-1 sm:flex-none justify-center px-4 py-2 border border-[var(--glass-border)] text-[var(--brand-primary)] rounded-lg text-sm font-medium hover:bg-blue-50 transition-colors" title="Duplicate Flyer">
                                                     📋 Clone
                                                 </button>
-                                                <button onClick={() => handleEdit(flyer)} className="px-3 py-1.5 border border-[var(--glass-border)] rounded-lg text-sm text-[var(--text-main)] hover:bg-[var(--surface-1)]">
+                                                <button onClick={() => handleEdit(flyer)} className="flex-1 sm:flex-none justify-center px-4 py-2 border border-[var(--glass-border)] rounded-lg text-sm font-medium text-[var(--text-main)] hover:bg-gray-50 transition-colors">
                                                     ✏️ Edit
                                                 </button>
-                                                <button onClick={() => handleDelete(flyer.id)} className="px-3 py-1.5 text-red-500 text-sm hover:bg-red-50 rounded-lg">
+                                                <button onClick={() => handleDelete(flyer.id)} className="px-4 py-2 text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 rounded-lg transition-colors flex justify-center">
                                                     🗑️
                                                 </button>
                                             </>
                                         ) : (
-                                            <button onClick={() => handleEdit(flyer)} className="px-3 py-1.5 border border-[var(--glass-border)] rounded-lg text-sm text-[var(--text-main)] hover:bg-[var(--surface-1)]">
+                                            <button onClick={() => handleEdit(flyer)} className="w-full sm:w-auto px-4 py-2 border border-[var(--glass-border)] rounded-lg text-sm font-medium text-[var(--text-main)] hover:bg-gray-50 transition-colors">
                                                 👁️ View Details
                                             </button>
                                         )}

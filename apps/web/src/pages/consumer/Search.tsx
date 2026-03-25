@@ -10,7 +10,7 @@ const Search: React.FC = () => {
     const navigate = useNavigate();
     const { addToCart } = useCart();
     const { stores } = useMarketplace();
-    const { userCoords, searchDistance, calculateDistance } = useLocation();
+    const { userCoords, userPostalCode, searchDistance, calculateDistance } = useLocation();
 
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('All');
@@ -48,7 +48,17 @@ const Search: React.FC = () => {
                 const store = stores[p.storeId];
                 if (!store || !store.coordinates) return false;
                 const distance = calculateDistance(userCoords.lat, userCoords.lng, store.coordinates.lat, store.coordinates.lng);
-                return distance <= searchDistance;
+                if (distance <= searchDistance) return true;
+                
+                if (userPostalCode && store.postalCode) {
+                    const userFSA = userPostalCode.trim().substring(0, 3).toUpperCase();
+                    const storeFSA = store.postalCode.trim().substring(0, 3).toUpperCase();
+                    if (userFSA === storeFSA && /^[A-Z]\d[A-Z]$/.test(userFSA)) {
+                        return true;
+                    }
+                }
+                
+                return false;
             });
         }
 
@@ -69,7 +79,7 @@ const Search: React.FC = () => {
         }
 
         return results;
-    }, [searchQuery, selectedCategory, sortBy, allProducts, stores, userCoords, searchDistance, calculateDistance]);
+    }, [searchQuery, selectedCategory, sortBy, allProducts, stores, userCoords, userPostalCode, searchDistance, calculateDistance]);
 
     // Group by store
     const groupedByStore = useMemo(() => {

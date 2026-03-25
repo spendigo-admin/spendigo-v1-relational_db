@@ -33,6 +33,7 @@ export interface User {
     emailVerified?: boolean;
     // Consumer specific
     address?: string;
+    postalCode?: string;
     coordinates?: { lat: number; lng: number };
 }
 

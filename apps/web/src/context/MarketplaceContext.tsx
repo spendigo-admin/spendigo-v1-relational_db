@@ -40,10 +40,9 @@ export const MarketplaceProvider: React.FC<{ children: ReactNode }> = ({ childre
             const storeData: Record<string, any> = {};
             snapshot.forEach(doc => {
                 const data = doc.data();
-                // Only include active stores or stores without a status field (default to active)
-                if (!data.status || data.status === 'active') {
-                    storeData[doc.id] = { id: doc.id, ...data };
-                }
+                // Include all stores so merchants can access their pending/suspended stores
+                // Consumer views (like StoreList) will filter for active stores.
+                storeData[doc.id] = { id: doc.id, ...data };
             });
             setStores(storeData);
             setLoading(false);

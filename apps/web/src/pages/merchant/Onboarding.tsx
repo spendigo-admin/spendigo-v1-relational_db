@@ -37,6 +37,21 @@ const MerchantOnboarding: React.FC = () => {
             // 1. Create Store Document
             const newStoreId = `store-${user.id}`; // Simple deterministic ID for 1-1 mapping
 
+            let coordinates = null;
+            try {
+                const fullAddress = `${formData.address}, ${formData.city}, ${formData.province}, ${formData.postalCode}, Canada`;
+                const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(fullAddress)}`);
+                const data = await response.json();
+                if (data && data.length > 0) {
+                    coordinates = {
+                        lat: parseFloat(data[0].lat),
+                        lng: parseFloat(data[0].lon)
+                    };
+                }
+            } catch (e) {
+                console.warn("Geocoding failed during store onboarding", e);
+            }
+
             const newStore = {
                 id: newStoreId,
                 name: user.storeName || `${user.name}'s Store`,
@@ -46,6 +61,7 @@ const MerchantOnboarding: React.FC = () => {
                 city: formData.city,
                 province: formData.province,
                 postalCode: formData.postalCode,
+                coordinates: coordinates,
                 status: 'pending', // Pending verification
                 subscriptionTier: user.subscriptionTier || 'free',
                 rating: 0,
@@ -168,6 +184,7 @@ const MerchantOnboarding: React.FC = () => {
                             <h3 className="font-bold text-[var(--text-main)] mb-2">Marketplace Facilitator Agreement</h3>
                             <p>1. Relationship. You acknowledge that Spendigo is a Marketplace Facilitator platform.</p>
                             <p className="mt-2">2. Fees. Spendigo operates on a **Subscription Model**. We do not charge a percentage commission on your sales. You receive 100% of your revenue (minus standard payment processing fees).</p>
+                            <p className="mt-2">3. Compliance & Privacy. You agree to comply with all applicable Canadian laws, including PIPEDA and Anti-Spam Legislation (CASL). You acknowledge and agree to handle personal data in accordance with our Privacy Policy.</p>
                             {/* Truncated for brevity */}
                         </div>
 
@@ -179,7 +196,7 @@ const MerchantOnboarding: React.FC = () => {
                                 checked={formData.agreedToTerms}
                                 onChange={e => setFormData({ ...formData, agreedToTerms: e.target.checked })}
                             />
-                            <span className="text-[var(--text-main)]">I verify I have authority to bind the entity and agree to the terms.</span>
+                            <span className="text-[var(--text-main)]">I verify I have authority to bind the entity and agree to the terms and Privacy Policy.</span>
                         </label>
 
                         <button

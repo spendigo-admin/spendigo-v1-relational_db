@@ -404,24 +404,24 @@ const MerchantProducts: React.FC = () => {
     );
 
     return (
-        <div className="p-6">
-            <div className="flex items-center justify-between mb-6">
+        <div className="p-4 sm:p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                 <div>
                     <h1 className="text-2xl font-bold text-[var(--text-main)]">Inventory</h1>
                     <p className="text-sm text-[var(--text-muted)]">{products.length} products sync with Master Catalog</p>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex items-center gap-2 w-full sm:w-auto">
                     {hasWriteAccess && (
                         <>
                             <button
                                 onClick={() => { setView('bulk_upload'); setShowAddModal(true); }}
-                                className="px-4 py-2 border border-gray-200 text-gray-700 font-medium rounded-lg hover:bg-gray-50 flex items-center gap-2"
+                                className="flex-1 sm:flex-none px-4 py-2 border border-gray-200 text-gray-700 font-medium rounded-lg hover:bg-gray-50 flex items-center justify-center gap-2"
                             >
-                                <span>📄</span> Bulk Upload
+                                <span>📄</span> <span className="hidden sm:inline">Bulk</span> <span className="sm:hidden">Bulk Upload</span>
                             </button>
                             <button
                                 onClick={() => { setView('search_master'); setShowAddModal(true); }}
-                                className="px-4 py-2 bg-[var(--brand-primary)] text-white font-medium rounded-lg hover:brightness-110 shadow-lg shadow-[var(--brand-primary)]/20"
+                                className="flex-[2] sm:flex-none px-4 py-2 bg-[var(--brand-primary)] text-white font-medium rounded-lg hover:brightness-110 shadow-lg shadow-[var(--brand-primary)]/20 text-center"
                             >
                                 + Add Product
                             </button>
@@ -441,8 +441,8 @@ const MerchantProducts: React.FC = () => {
                 />
             </div>
 
-            {/* Table */}
-            <div className="bg-white rounded-xl border border-[var(--glass-border)] overflow-hidden shadow-sm">
+            {/* Desktop View (Table) */}
+            <div className="hidden md:block bg-white rounded-xl border border-[var(--glass-border)] overflow-hidden shadow-sm">
                 <table className="w-full">
                     <thead className="bg-[var(--surface-1)]">
                         <tr>
@@ -491,6 +491,50 @@ const MerchantProducts: React.FC = () => {
                         ))}
                     </tbody>
                 </table>
+            </div>
+
+            {/* Mobile View (Cards) */}
+            <div className="md:hidden space-y-4">
+                {loading && <div className="p-8 text-center text-gray-400 bg-white rounded-xl border border-[var(--glass-border)]">Loading catalog...</div>}
+                {!loading && filteredProducts.map(product => (
+                    <div key={product.id} className="bg-white rounded-xl border border-[var(--glass-border)] p-4 shadow-sm">
+                        <div className="flex gap-3 mb-3">
+                            <img src={product.image} alt="" className="w-16 h-16 rounded-lg object-cover bg-gray-100" />
+                            <div className="flex-1 min-w-0">
+                                <div className="font-medium text-[var(--text-main)] truncate block">{product.name}</div>
+                                <div className="text-sm text-gray-500 mb-1 truncate">{product.brand_name}</div>
+                                <div className="text-[10px] text-[var(--text-muted)] capitalize bg-gray-100 inline-block px-2 py-0.5 rounded-full">{product.category.replace(/^cat-/, '').replace(/-/g, ' ')}</div>
+                            </div>
+                        </div>
+                        <div className="flex justify-between items-center bg-gray-50 p-3 rounded-lg mb-3">
+                            <div>
+                                <div className="text-[10px] text-gray-500 uppercase font-bold mb-0.5">Price</div>
+                                <div className="font-bold text-[var(--text-main)]">${product.price.toFixed(2)}</div>
+                            </div>
+                            <div className="text-right">
+                                <div className="text-[10px] text-gray-500 uppercase font-bold mb-0.5">Stock</div>
+                                <div className={`${product.available_quantity < 10 ? 'text-orange-600 font-bold' : 'text-green-600 font-medium'}`}>
+                                    {product.available_quantity} <span className="text-xs">units</span>
+                                </div>
+                            </div>
+                        </div>
+                        {hasWriteAccess && (
+                            <div className="flex items-center gap-2 pt-2 border-t border-[var(--glass-border)]">
+                                <button onClick={() => openEdit(product)} className="flex-1 py-2 text-center text-[var(--brand-primary)] font-bold text-sm bg-blue-50 rounded-lg">Edit</button>
+                                <button 
+                                    onClick={() => handleDeleteProduct(product)} 
+                                    disabled={deletingId === product.id}
+                                    className="flex-1 py-2 text-center text-red-600 font-bold text-sm bg-red-50 rounded-lg disabled:opacity-50"
+                                >
+                                    {deletingId === product.id ? 'Removing...' : 'Remove'}
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                ))}
+                {!loading && filteredProducts.length === 0 && (
+                    <div className="p-8 text-center text-gray-400 bg-white rounded-xl border border-[var(--glass-border)]">No products found.</div>
+                )}
             </div>
 
             {/* MODAL */}

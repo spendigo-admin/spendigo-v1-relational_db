@@ -6,6 +6,8 @@ import { useNotifications } from './NotificationContext';
 interface LocationContextType {
     userCoords: { lat: number, lng: number } | null;
     setUserCoords: React.Dispatch<React.SetStateAction<{ lat: number, lng: number } | null>>;
+    userPostalCode: string | null;
+    setUserPostalCode: React.Dispatch<React.SetStateAction<string | null>>;
     address: string;
     setAddress: React.Dispatch<React.SetStateAction<string>>;
     searchDistance: number;
@@ -24,8 +26,9 @@ export const LocationProvider: React.FC<{ children: ReactNode }> = ({ children }
     const { addNotification } = useNotifications();
 
     const [userCoords, setUserCoords] = useState<{ lat: number, lng: number } | null>(null);
+    const [userPostalCode, setUserPostalCode] = useState<string | null>(null);
     const [address, setAddress] = useState('');
-    const [searchDistance, setSearchDistance] = useState<number>(5); // default 5km
+    const [searchDistance, setSearchDistance] = useState<number>(10); // default 10km
     const [isLocating, setIsLocating] = useState(false);
 
     // Calculate distance between two points in km
@@ -47,6 +50,11 @@ export const LocationProvider: React.FC<{ children: ReactNode }> = ({ children }
             // Priority 1: Use saved coordinates from User Profile (set during registration)
             if (user?.coordinates) {
                 setUserCoords(user.coordinates);
+                if (user.postalCode) setUserPostalCode(user.postalCode);
+                else if (user.address && typeof user.address === 'string') {
+                    const match = user.address.match(/([A-Za-z]\d[A-Za-z]\s?\d[A-Za-z]\d)/);
+                    if (match) setUserPostalCode(match[1]);
+                }
                 if (user.address) {
                     setAddress("Home");
                 }
@@ -58,6 +66,7 @@ export const LocationProvider: React.FC<{ children: ReactNode }> = ({ children }
                 const defaultAddr = profile.addresses.find((a: any) => a.isDefault) || profile.addresses[0];
                 const addrStr = `${defaultAddr.street}, ${defaultAddr.city}, ${defaultAddr.province}, ${defaultAddr.postalCode}`;
 
+                if (defaultAddr.postalCode) setUserPostalCode(defaultAddr.postalCode);
                 setAddress(defaultAddr.label || "Home");
 
                 try {
@@ -118,6 +127,7 @@ export const LocationProvider: React.FC<{ children: ReactNode }> = ({ children }
             const match = queryAddress.trim().match(postalCodeRegex);
 
             if (match) {
+                setUserPostalCode(queryAddress.toUpperCase());
                 const fsa = match[1].toUpperCase();
                 const { CANADIAN_FSA_MAP } = await import('../data/canadianFSAs');
 
@@ -154,6 +164,21 @@ export const LocationProvider: React.FC<{ children: ReactNode }> = ({ children }
                         return;
                     }
                 }
+
+                // NEW FALLBACK: Geocoder.ca for Canadian postal codes
+                try {
+                    console.log(`Fallback to geocoder.ca for: ${queryAddress}`);
+                    const geoResponse = await fetch(`https://geocoder.ca/?json=1&locate=${encodeURIComponent(queryAddress)}`);
+                    const geoData = await geoResponse.json();
+                    if (geoData && geoData.latt && geoData.longt) {
+                        setUserCoords({ lat: parseFloat(geoData.latt), lng: parseFloat(geoData.longt) });
+                        if (match) setAddress(queryAddress.toUpperCase());
+                        return;
+                    }
+                } catch (geoError) {
+                    console.warn('Geocoder.ca fallback failed', geoError);
+                }
+
                 addNotification({ type: 'alert', title: 'Location Not Found', message: `We couldn't find "${queryAddress}".` });
             }
         } catch (error) {
@@ -168,6 +193,8 @@ export const LocationProvider: React.FC<{ children: ReactNode }> = ({ children }
         <LocationContext.Provider value={{
             userCoords,
             setUserCoords,
+            userPostalCode,
+            setUserPostalCode,
             address,
             setAddress,
             searchDistance,
