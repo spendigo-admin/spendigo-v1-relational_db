@@ -70,6 +70,7 @@ import { useState, useEffect } from 'react';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from './lib/firebase';
 import MaintenancePage from './pages/Maintenance';
+import ThemeSwitcher from './components/ThemeSwitcher';
 
 const PageLoader = () => (
     <div className="min-h-screen flex items-center justify-center">Loading...</div>
@@ -188,7 +189,7 @@ function App() {
                                                                     <Route path="/admin/tools" element={<AdminSystemTools />} />
                                                                 </Route>
 
-                                                                {/* 404 Catch All */}
+                                                                    {/* 404 Catch All */}
                                                                 <Route path="*" element={<NotFound />} />
                                                             </Routes>
                                                         </Suspense>
@@ -203,6 +204,7 @@ function App() {
                         </NotificationProvider>
                     </MaintenanceGuard>
                 </AuthProvider>
+                <ThemeSwitcher />
             </Router>
         </ErrorBoundary>
     );
