@@ -15,7 +15,7 @@ interface AdCampaign {
     priority: number;
 }
 
-const DefaultHero = ({ onSearch, address, setAddress, isLocating, handleLocateMe }: any) => (
+const DefaultHero = ({ handleSearch, address, setAddress, isLocating, handleLocateMe }: any) => (
     <section className="relative overflow-hidden bg-gradient-to-br from-[var(--brand-primary)] via-[#4f46e5] to-[var(--brand-secondary)] py-12 px-4 pt-safe min-h-[400px] flex items-center justify-center">
         {/* Animated background shapes */}
         <div className="absolute inset-0 overflow-hidden opacity-20">
@@ -46,10 +46,10 @@ const DefaultHero = ({ onSearch, address, setAddress, isLocating, handleLocateMe
                     className="flex-1 py-3 px-2 bg-transparent outline-none text-gray-800 placeholder-gray-400"
                     value={address}
                     onChange={(e) => setAddress(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && onSearch()}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                 />
                 <button
-                    onClick={onSearch}
+                    onClick={() => handleSearch()}
                     disabled={isLocating}
                     className="bg-[var(--brand-primary)] text-white px-6 py-3 rounded-full font-bold hover:brightness-110 transition-all flex items-center justify-center min-w-[100px]"
                 >
@@ -188,7 +188,7 @@ const AdCarousel: React.FC<AdCarouselProps> = (props) => {
                         onKeyDown={(e) => e.key === 'Enter' && props.handleSearch()}
                     />
                     <button
-                        onClick={props.handleSearch}
+                        onClick={() => props.handleSearch()}
                         disabled={props.isLocating}
                         className="bg-[var(--brand-primary)] text-white px-6 py-3 rounded-full font-bold hover:brightness-110 transition-all flex items-center justify-center min-w-[100px]"
                     >

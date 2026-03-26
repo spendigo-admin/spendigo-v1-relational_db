@@ -12,6 +12,8 @@ npm run build        # Production build (all packages via Turbo)
 npm run lint         # ESLint across entire monorepo
 npm test             # Run Vitest unit tests (root)
 npm run stripe:listen  # Forward Stripe webhooks to local Firebase Functions emulator
+npm run format         # Prettier formatting across monorepo
+npm run benchmark:smartcart  # Benchmark SmartCart optimizer
 ```
 
 ### Web app only
@@ -45,7 +47,7 @@ npx vitest run tests/unit/<filename>.test.ts
 This is a **Turbo monorepo** with npm workspaces:
 
 - **`apps/web/`** — React 18 + TypeScript SPA (Vite 7). Single app serving Consumer, Merchant, and Admin portals via role-based routing.
-- **`apps/mobile/`** — Capacitor wrapper (iOS/Android) — no logic of its own, wraps the web build.
+- **`apps/mobile/`** — Capacitor wrapper (iOS/Android, app ID: `com.spendigo.smartcart`) — no logic of its own, wraps the web build.
 - **`services/api/`** — Firebase Cloud Functions (Node 20, TypeScript). Entry point: `src/index.ts`.
 - **`packages/shared/`** — Shared utilities (currently empty).
 
@@ -54,18 +56,37 @@ This is a **Turbo monorepo** with npm workspaces:
 **Role-based routing** in [App.tsx](apps/web/src/App.tsx): Three layout wrappers (`ConsumerLayout`, `MerchantLayout`, `AdminLayout`) enforce authentication at the layout level. `MerchantLayout` and `AdminLayout` do hard redirects if the user lacks the correct role. `MaintenanceGuard` (inline in App.tsx) blocks all traffic except admins and `/login`/`/admin` paths when `settings/platform.maintenanceMode` is `true` in Firestore.
 
 **Context providers** (wrap order in App.tsx matters):
+```
+AuthProvider → MaintenanceGuard → NotificationProvider → MarketplaceProvider
+  → CatalogProvider → ReviewProvider → CartProvider → WishlistProvider
+  → OrderProvider → LocationProvider → ConfirmationProvider
+```
 - `AuthContext` — Firebase Auth + Firestore user profiles, RBAC permissions via `can(permission)`. User roles: `consumer | merchant | admin`. Merchant sub-roles: `OWNER | MANAGER | STAFF | MARKETING`.
 - `MarketplaceContext` — Real-time `onSnapshot` of all `stores` collection (filters to `status === 'active'`).
 - `CatalogContext` — Master product catalog.
 - `CartContext` — Hybrid: localStorage for guests, Firestore `carts/{userId}` for authenticated users; merges guest cart on login.
+- `LocationContext` — User location and FSA (Forward Sortation Area / postal prefix) management.
 - `OrderContext`, `WishlistContext`, `NotificationContext`, `AuditContext`, `ReviewContext`, `ConfirmationContext`.
 
 **Key lib files:**
 - [apps/web/src/lib/firebase.ts](apps/web/src/lib/firebase.ts) — Firebase SDK init; uses `VITE_` env vars; connects Functions emulator on `localhost:5001` in dev.
 - [apps/web/src/lib/algolia.ts](apps/web/src/lib/algolia.ts) — Algolia search client (gracefully null if env vars missing). Index: `master_products`.
+- [apps/web/src/lib/openFoodFacts.ts](apps/web/src/lib/openFoodFacts.ts) — Open Food Facts API integration for product data enrichment.
 - [apps/web/src/utils/IntegrityUtils.ts](apps/web/src/utils/IntegrityUtils.ts) — Server-side price validation to detect order tampering.
 - [apps/web/src/utils/fuzzy-search.ts](apps/web/src/utils/fuzzy-search.ts) — Levenshtein + token overlap + brand boost, 4 match tiers (exact/partial/fuzzy/typo), 1-min cache. Used in SmartCart wishlist matching (score ≥ 65 threshold).
 - [apps/web/src/hooks/useSmartInsights.ts](apps/web/src/hooks/useSmartInsights.ts) — Gemini `gemini-2.5-flash` integration via `@google/generative-ai`. Debounces 1.5 s, generates 2–3 shopping insight strings from basket summary. Requires `VITE_GEMINI_API_KEY`.
+
+### SmartCart Module (`apps/web/src/smartcart/`)
+
+Cross-store price comparison and basket optimization. Key files:
+- `optimizeCart.ts` / `smartcart_optimizer.ts` — Entry point and core algorithm
+- `smartcart_comparison_engine.ts` — Cross-store comparison logic
+- `smartcart_price_matrix.ts` + `buildPriceMatrix.ts` — Price matrix construction
+- `smartcart_unit_price_normalizer.ts` + `priceNormalization.ts` — Normalize units for fair comparison
+- `analyzeTripConsolidation.ts` — Minimize number of store trips
+- `smartcart_single_store_simulator.ts` — Per-store cost simulation
+
+The backend mirror lives in `services/api/src/smartcart/` (Cloud Function endpoint `/smartcartOptimize`).
 
 ### Backend (`services/api/src/`)
 
@@ -76,6 +97,7 @@ Firebase Cloud Functions v4 (v1 API). Organized by domain:
 - `admin/` — Cleanup utilities
 - `email/` — Order confirmation emails
 - `triggers/` — Firestore-triggered functions (`userTriggers`)
+- `smartcart/` — Cart optimization HTTP endpoint (`/smartcartOptimize`) mirroring frontend logic
 
 Stripe webhook secret stored in Firebase Runtime Config: `stripe.webhook_secret`. Local testing uses `services/api/.runtimeconfig.json`.
 
@@ -87,7 +109,38 @@ Stripe webhook secret stored in Firebase Runtime Config: `stripe.webhook_secret`
 
 ### Firestore Collections
 
-`/users`, `/stores`, `/orders`, `/catalog`, `/master_products`, `/audit_logs`, `/carts`, `/notifications`, `/settings` (platform config).
+`/users`, `/stores`, `/orders`, `/catalog`, `/master_products`, `/pending_master_products`, `/merchant_products`, `/product_creation_requests`, `/categories`, `/substitution_groups`, `/reviews`, `/audit_logs`, `/carts`, `/notifications`, `/settings` (platform config).
+
+**Key Firestore write restrictions** (enforced in rules):
+- **Orders**: Created server-side only via Admin SDK (Cloud Functions). Clients cannot create orders directly.
+- **Users**: `role`, `adminRole`, `merchantRole`, `storeId` are admin-only fields. Self-registration only sets `consumer` or `merchant` role.
+- **Stores**: Merchants cannot change `subscriptionTier`, `status`, Stripe config, or `ownerId`.
+- **Master products**: Merchants can create; admins approve and can modify. Merchants submit via `pending_master_products/` + `product_creation_requests/`.
+- **Audit logs**: Append-only. Users create; nobody updates/deletes.
+
+### Firestore Composite Indexes
+
+Defined in `firestore.indexes.json`:
+- `orders`: `storeId` (ASC) + `date` (DESC) — merchant order queries.
+- `orders`: `customerId` (ASC) + `date` (DESC) — customer order history.
+- `reviews`: `targetId` (ASC) + `timestamp` (DESC) — store/product review listing.
+- Field overrides: `master_products.barcode` and `pending_master_products.original_barcode` indexed for barcode lookups.
+
+### Cloud Storage Paths
+
+Defined in `storage.rules`:
+- `merchant-assets/{storeId}/**` — Merchant store content (read: all auth, write: owning merchant).
+- `user-avatars/{userId}/**` — Profile pictures (read/write: owner only).
+- `admin-assets/**` — Platform content (read: all auth, write: admin only).
+- Default `/**` — Deny all.
+
+### Merchant Subscription Tiers
+
+Three tiers — **Free**, **Core**, **Growth** — managed via Stripe. `updateSubscriptionPlan` Cloud Function updates Firestore on webhook receipt. Tier determines feature access in `MerchantLayout`.
+
+### Vite Code Splitting
+
+`vite.config.ts` splits vendor chunks: `react-vendor`, `firebase-vendor`, `algolia-vendor`, `stripe-vendor`, `ai-vendor`. All page routes are lazy-loaded (except auth pages). Production build strips `console` and `debugger` via esbuild.
 
 ## Environment Variables
 
@@ -107,4 +160,17 @@ VITE_GEMINI_API_KEY=       # Gemini API key for SmartInsights feature
 
 ## Testing
 
-Tests live in `tests/unit/` and use **Vitest**. Current tests cover `FraudEngine` (`tests/unit/fraud.test.ts`), tax calculations (`tests/unit/tax.test.ts`), and fuzzy search utilities (`tests/unit/fuzzy-search.test.ts`). Run from repo root with `npm test`.
+Tests live in `tests/unit/` and use **Vitest**. Run from repo root with `npm test`. Tests currently focus on:
+- **SmartCart module** (11 test files): optimizer, comparison engine, price matrix, unit price normalizer, trip consolidation, single-store simulator, price normalization.
+- **FraudEngine**: `fraud.test.ts`
+- **Tax calculations**: `tax.test.ts`
+- **Fuzzy search**: `fuzzy-search.test.ts`
+
+## CI/CD
+
+GitHub Actions (`.github/workflows/main.yml`) runs on push to `main` or manual dispatch:
+1. Install (`npm ci`) → Build (with env secrets) → Test (`npm test`)
+2. Deploy hosting via `FirebaseExtended/action-hosting-deploy` to live channel
+3. Deploy functions + Firestore rules + storage rules via `w9jds/firebase-action`
+
+Firebase project: `spendigo-8540c`. Service account secret: `FIREBASE_SERVICE_ACCOUNT_SPENDIGO_8540C`.
