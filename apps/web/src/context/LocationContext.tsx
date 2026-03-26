@@ -21,7 +21,7 @@ interface LocationContextType {
 const LocationContext = createContext<LocationContextType | undefined>(undefined);
 
 export const LocationProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-    const { user } = useAuth();
+    const { user, loading: authLoading } = useAuth();
     const { profile } = useOrders();
     const { addNotification } = useNotifications();
 
@@ -47,6 +47,8 @@ export const LocationProvider: React.FC<{ children: ReactNode }> = ({ children }
     // Auto-detect location from profile or use saved coordinates
     useEffect(() => {
         const detectProfileLocation = async () => {
+            if (authLoading) return; // Wait until auth state resolves
+
             // Priority 1: Use saved coordinates from User Profile (set during registration)
             if (user?.coordinates) {
                 setUserCoords(user.coordinates);
@@ -77,10 +79,23 @@ export const LocationProvider: React.FC<{ children: ReactNode }> = ({ children }
                             lat: parseFloat(data[0].lat),
                             lng: parseFloat(data[0].lon)
                         });
+                        return; // Successfully got location from profile address
                     }
                 } catch (e) {
                     console.error("Failed to geocode profile address", e);
                 }
+            }
+
+            // Priority 3: Fallback to IP geolocation for visitors or users without location
+            try {
+                const response = await fetch('https://get.geojs.io/v1/ip/geo.json');
+                const data = await response.json();
+                if (data && data.latitude && data.longitude) {
+                    setUserCoords({ lat: parseFloat(data.latitude), lng: parseFloat(data.longitude) });
+                    setAddress(data.city ? `${data.city}, ${data.region}` : 'Current Location');
+                }
+            } catch (e) {
+                console.error("Failed to detect IP location", e);
             }
         };
 
@@ -88,7 +103,7 @@ export const LocationProvider: React.FC<{ children: ReactNode }> = ({ children }
             const t = setTimeout(detectProfileLocation, 0); // Defer to next tick to unblock render
             return () => clearTimeout(t);
         }
-    }, [user, profile, userCoords, address]);
+    }, [user, profile, userCoords, address, authLoading]);
 
     const handleLocateMe = () => {
         setIsLocating(true);
