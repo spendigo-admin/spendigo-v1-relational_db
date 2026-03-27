@@ -3,14 +3,14 @@ import { useNavigate, Link, useLocation } from 'react-router-dom';
 import '../../styles/design-system.css';
 
 import { useAuth } from '../../context/AuthContext';
-// Audit import removed
 import { DEMO_USERS } from '../../data/demoUsers';
+import { useTranslation } from 'react-i18next';
 
 const Login = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const { login, user, loginWithGoogle, loginWithFacebook } = useAuth();
-    // Audit logging removed
+    const { t } = useTranslation();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
@@ -51,23 +51,23 @@ const Login = () => {
                 // await logEvent('AUTH_LOGIN_SUCCESS', { email: email }, 'auth/login');
                 // useEffect will handle redirect when user state updates
             } else {
-                setError('Login failed. Please try again.');
+                setError(t('loginFailed'));
             }
         } catch (err) {
             console.error(err);
-            setError('Invalid credentials');
+            setError(t('invalidCredentials'));
         } finally {
             setIsLoading(false);
         }
     };
 
-    if (isLoading) return <div className="p-10 text-center">Loading...</div>;
+    if (isLoading) return <div className="p-10 text-center">{t('loading')}</div>;
 
     return (
         <div className="min-h-screen flex items-center justify-center p-4 bg-[var(--surface-0)]">
             <div className="glass-panel w-full max-w-md p-8 animate-fade-in">
-                <h1 className="text-3xl font-bold mb-2 text-[var(--brand-primary)]">Welcome Back</h1>
-                <p className="text-[var(--text-muted)] mb-8">Sign in to access your dashboard.</p>
+                <h1 className="text-3xl font-bold mb-2 text-[var(--brand-primary)]">{t('welcomeBack')}</h1>
+                <p className="text-[var(--text-muted)] mb-8">{t('signInToAccess')}</p>
 
                 <div className="space-y-3 mb-6 animate-fade-in">
                     <button
@@ -85,7 +85,7 @@ const Login = () => {
                             <path fill="#FFF" d="M6.9 13.8c-.4-1.2-.4-2.4 0-3.6l-2.9-2.3C2.8 9.6 2.8 14.4 4 16.1l2.9-2.3z" />
                             <path fill="none" d="M3 3h18v18H3z" />
                         </svg>
-                        <span className="text-sm">Sign in with Google</span>
+                        <span className="text-sm">{t('signInGoogle')}</span>
                     </button>
 
                     <button
@@ -98,19 +98,19 @@ const Login = () => {
                         <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
                         </svg>
-                        <span className="text-sm">Sign in with Facebook</span>
+                        <span className="text-sm">{t('signInFacebook')}</span>
                     </button>
 
                     <div className="relative flex items-center py-2">
                         <div className="flex-grow border-t border-[var(--glass-border)]"></div>
-                        <span className="flex-shrink-0 mx-4 text-xs text-[var(--text-muted)] uppercase">Or sign in with email</span>
+                        <span className="flex-shrink-0 mx-4 text-xs text-[var(--text-muted)] uppercase">{t('orSignInEmail')}</span>
                         <div className="flex-grow border-t border-[var(--glass-border)]"></div>
                     </div>
                 </div>
 
                 <form onSubmit={handleLogin} className="space-y-4">
                     <div>
-                        <label className="block text-sm font-medium mb-1 text-[var(--text-main)]">Email</label>
+                        <label className="block text-sm font-medium mb-1 text-[var(--text-main)]">{t('email')}</label>
                         <input
                             type="email"
                             required
@@ -121,8 +121,8 @@ const Login = () => {
                     </div>
                     <div>
                         <div className="flex justify-between items-center mb-1">
-                            <label className="block text-sm font-medium text-[var(--text-main)]">Password</label>
-                            <Link to="/forgot-password" className="text-xs text-[var(--brand-primary)] hover:underline">Forgot Password?</Link>
+                            <label className="block text-sm font-medium text-[var(--text-main)]">{t('password')}</label>
+                            <Link to="/forgot-password" className="text-xs text-[var(--brand-primary)] hover:underline">{t('forgotPassword')}</Link>
                         </div>
                         <input
                             type="password"
@@ -136,14 +136,14 @@ const Login = () => {
                     {error && <p className="text-red-500 text-sm">{error}</p>}
 
                     <button type="submit" className="w-full py-3 rounded-[var(--radius-md)] bg-[var(--brand-primary)] text-white font-bold hover:brightness-110 shadow-lg shadow-[var(--brand-primary)]/20 transition-all">
-                        Sign In
+                        {t('signIn')}
                     </button>
                 </form>
 
 
 
                 <p className="mt-6 text-center text-sm text-[var(--text-muted)]">
-                    Don't have an account? <Link to="/register" className="text-[var(--brand-secondary)] hover:underline">Sign up</Link>
+                    {t('noAccount')} <Link to="/register" className="text-[var(--brand-secondary)] hover:underline">{t('signUp')}</Link>
                 </p>
             </div>
         </div>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { collection, query, where, orderBy, getDocs, updateDoc, doc, increment } from 'firebase/firestore';
 import { db } from '../lib/firebase';
+import { useTranslation } from 'react-i18next';
 import '../styles/design-system.css';
 
 interface AdCampaign {
@@ -15,7 +16,9 @@ interface AdCampaign {
     priority: number;
 }
 
-const DefaultHero = ({ handleSearch, address, setAddress, isLocating, handleLocateMe }: any) => (
+const DefaultHero = ({ handleSearch, address, setAddress, isLocating, handleLocateMe }: any) => {
+    const { t } = useTranslation();
+    return (
     <section className="relative overflow-hidden bg-gradient-to-br from-[var(--brand-primary)] via-[#4f46e5] to-[var(--brand-secondary)] py-12 px-4 pt-safe min-h-[400px] flex items-center justify-center">
         {/* Animated background shapes */}
         <div className="absolute inset-0 overflow-hidden opacity-20">
@@ -25,11 +28,11 @@ const DefaultHero = ({ handleSearch, address, setAddress, isLocating, handleLoca
 
         <div className="relative z-10 max-w-4xl mx-auto text-center w-full">
             <h1 className="text-4xl md:text-6xl font-extrabold text-white mb-6 leading-tight tracking-tight drop-shadow-sm">
-                When You Shop Local,<br />
-                <span className="text-yellow-300">Everyone Wins.</span>
+                {t('shopLocal')}<br />
+                <span className="text-yellow-300">{t('everyoneWins')}</span>
             </h1>
             <p className="text-white/90 text-lg md:text-xl mb-8 max-w-2xl mx-auto font-medium">
-                Supporting local businesses while rewarding shoppers.
+                {t('supportLocal')}
             </p>
             {/* Search Bar pass-through */}
             <div className="flex items-center bg-white rounded-full p-2 max-w-xl mx-auto shadow-xl">
@@ -58,7 +61,8 @@ const DefaultHero = ({ handleSearch, address, setAddress, isLocating, handleLoca
             </div>
         </div>
     </section>
-);
+    );
+};
 
 interface AdCarouselProps {
     handleSearch: () => void;
@@ -69,6 +73,7 @@ interface AdCarouselProps {
 }
 
 const AdCarousel: React.FC<AdCarouselProps> = (props) => {
+    const { t } = useTranslation();
     const [ads, setAds] = useState<AdCampaign[]>([]);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [loading, setLoading] = useState(true);
@@ -209,7 +214,7 @@ const AdCarousel: React.FC<AdCarouselProps> = (props) => {
             {/* Tagline Watermark: Moved to Section Root for correct positioning */}
             <div className="absolute bottom-12 left-0 right-0 text-center pointer-events-none z-20">
                 <p className="text-white/70 text-[10px] uppercase tracking-[0.2em] font-medium drop-shadow-md">
-                    Spendigo • When You Shop Local, <span className="text-white">Everyone Wins</span>
+                    Spendigo • {t('shopLocal')} <span className="text-white">{t('everyoneWinsNoDot')}</span>
                 </p>
             </div>
 

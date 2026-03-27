@@ -2,6 +2,8 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+Spendigo SmartCart is a Canada-first Marketplace Facilitator connecting independent convenience stores with local consumers. Status: Beta (Feature Complete). Firebase serverless backend, React 18 SPA frontend, Capacitor mobile wrapper.
+
 ## Commands
 
 ### Development
@@ -15,6 +17,8 @@ npm run stripe:listen  # Forward Stripe webhooks to local Firebase Functions emu
 npm run format         # Prettier formatting across monorepo
 npm run benchmark:smartcart  # Benchmark SmartCart optimizer
 ```
+
+**Lint rules** (`.eslintrc.cjs`): `@typescript-eslint/no-explicit-any` is **warn** (not error) — `any` is tolerated. `no-unused-vars` is off; `@typescript-eslint/no-unused-vars` is **warn**.
 
 ### Web app only
 ```bash
@@ -68,25 +72,27 @@ AuthProvider → MaintenanceGuard → NotificationProvider → MarketplaceProvid
 - `LocationContext` — User location and FSA (Forward Sortation Area / postal prefix) management.
 - `OrderContext`, `WishlistContext`, `NotificationContext`, `AuditContext`, `ReviewContext`, `ConfirmationContext`.
 
+**Permission system** (`AuthContext.tsx`):
+Merchant sub-roles grant specific permissions checked via `can(permission)` from `useAuth()`:
+- **OWNER**: products:write, orders:read, orders:write, flyers:write, deals:write, settings:write, team:manage, delivery:manage, analytics:read
+- **MANAGER**: same as OWNER except team:manage
+- **STAFF**: orders:read, orders:write, delivery:manage
+- **MARKETING**: flyers:write, deals:write, analytics:read
+
+Admin sub-roles: SUPER_ADMIN (admin:all), MODERATOR (admin:users, admin:stores), SUPPORT (admin:users), AUDITOR (admin:audit). All permission gates are client-side; server-side enforcement is in `firestore.rules`.
+
 **Key lib files:**
 - [apps/web/src/lib/firebase.ts](apps/web/src/lib/firebase.ts) — Firebase SDK init; uses `VITE_` env vars; connects Functions emulator on `localhost:5001` in dev.
 - [apps/web/src/lib/algolia.ts](apps/web/src/lib/algolia.ts) — Algolia search client (gracefully null if env vars missing). Index: `master_products`.
-- [apps/web/src/lib/openFoodFacts.ts](apps/web/src/lib/openFoodFacts.ts) — Open Food Facts API integration for product data enrichment.
 - [apps/web/src/utils/IntegrityUtils.ts](apps/web/src/utils/IntegrityUtils.ts) — Server-side price validation to detect order tampering.
 - [apps/web/src/utils/fuzzy-search.ts](apps/web/src/utils/fuzzy-search.ts) — Levenshtein + token overlap + brand boost, 4 match tiers (exact/partial/fuzzy/typo), 1-min cache. Used in SmartCart wishlist matching (score ≥ 65 threshold).
 - [apps/web/src/hooks/useSmartInsights.ts](apps/web/src/hooks/useSmartInsights.ts) — Gemini `gemini-2.5-flash` integration via `@google/generative-ai`. Debounces 1.5 s, generates 2–3 shopping insight strings from basket summary. Requires `VITE_GEMINI_API_KEY`.
 
 ### SmartCart Module (`apps/web/src/smartcart/`)
 
-Cross-store price comparison and basket optimization. Key files:
-- `optimizeCart.ts` / `smartcart_optimizer.ts` — Entry point and core algorithm
-- `smartcart_comparison_engine.ts` — Cross-store comparison logic
-- `smartcart_price_matrix.ts` + `buildPriceMatrix.ts` — Price matrix construction
-- `smartcart_unit_price_normalizer.ts` + `priceNormalization.ts` — Normalize units for fair comparison
-- `analyzeTripConsolidation.ts` — Minimize number of store trips
-- `smartcart_single_store_simulator.ts` — Per-store cost simulation
+Cross-store price comparison and basket optimization (12 files). Pipeline: build price matrix → normalize unit prices → compare across stores → simulate single-store costs → analyze trip consolidation → select optimal allocation. Entry points: `optimizeCart.ts` (main) and `smartcart_optimizer.ts` (orchestrator).
 
-The backend mirror lives in `services/api/src/smartcart/` (Cloud Function endpoint `/smartcartOptimize`).
+The backend mirror lives in `services/api/src/smartcart/` (Cloud Function endpoint `/smartcartOptimize`). A separate `services/api/src/cart/optimizeCart.ts` exposes an additional `/cartOptimize` endpoint using the same service layer.
 
 ### Backend (`services/api/src/`)
 
@@ -98,6 +104,10 @@ Firebase Cloud Functions v4 (v1 API). Organized by domain:
 - `email/` — Order confirmation emails
 - `triggers/` — Firestore-triggered functions (`userTriggers`)
 - `smartcart/` — Cart optimization HTTP endpoint (`/smartcartOptimize`) mirroring frontend logic
+- `cart/` — Additional `/cartOptimize` HTTP endpoint (delegates to smartcart service layer)
+- `models/` — Shared TypeScript interfaces: `MasterProductRecord`, `StoreRecord`, `MerchantProductRecord`
+
+**Note:** `services/functions/` and `services/smartcart_optimizer/` are legacy/experimental — all active Cloud Functions are in `services/api/`.
 
 Stripe webhook secret stored in Firebase Runtime Config: `stripe.webhook_secret`. Local testing uses `services/api/.runtimeconfig.json`.
 
@@ -140,7 +150,11 @@ Three tiers — **Free**, **Core**, **Growth** — managed via Stripe. `updateSu
 
 ### Vite Code Splitting
 
-`vite.config.ts` splits vendor chunks: `react-vendor`, `firebase-vendor`, `algolia-vendor`, `stripe-vendor`, `ai-vendor`. All page routes are lazy-loaded (except auth pages). Production build strips `console` and `debugger` via esbuild.
+`vite.config.ts` splits vendor chunks: `vendor-react`, `vendor-firebase`, `vendor-algolia`, `vendor-stripe`, `vendor-ai`. All page routes are lazy-loaded (except auth pages). Production build strips `console` and `debugger` via esbuild.
+
+### Theming & CSS Architecture
+
+Tailwind CSS configured in `apps/web/tailwind.config.js` maps CSS custom properties to utility classes: `brand-primary`, `brand-secondary`, `surface-0/1/2`. Base variables defined in `apps/web/src/styles/design-system.css` (`:root`). Three switchable theme overlays in `apps/web/src/styles/themes.css`: `theme-night` (dark), `theme-eco` (organic), `theme-deal` (vibrant). Components use Tailwind classes like `bg-brand-primary`, `text-surface-1`.
 
 ## Environment Variables
 
@@ -174,3 +188,15 @@ GitHub Actions (`.github/workflows/main.yml`) runs on push to `main` or manual d
 3. Deploy functions + Firestore rules + storage rules via `w9jds/firebase-action`
 
 Firebase project: `spendigo-8540c`. Service account secret: `FIREBASE_SERVICE_ACCOUNT_SPENDIGO_8540C`.
+
+## Data Seeding
+
+Seed scripts in `scripts/`: `seedFirebase.ts` (full database), `seedMasterCatalog.ts` (product catalog), `seedCatalog.ts` (categories). Run with `tsx scripts/<file>.ts`. Requires `service-account.json` in `scripts/`. See `scripts/README.md` for Firebase migration setup.
+
+## Troubleshooting
+
+**Port 443 in use**: `sudo lsof -ti:443 | xargs sudo kill -9` then restart `npm run dev`.
+
+**SSL cert not trusted**: Dev server uses self-signed cert via `@vitejs/plugin-basic-ssl`. On macOS, trust it: `sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain apps/web/.certs/cert.pem`.
+
+**"Cannot find module" errors**: `rm -rf node_modules package-lock.json && npm install`.

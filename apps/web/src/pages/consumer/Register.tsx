@@ -2,10 +2,12 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import '../../styles/design-system.css';
 import { useAuth } from '../../context/AuthContext';
+import { useTranslation } from 'react-i18next';
 
 const Register: React.FC = () => {
     const navigate = useNavigate();
     const { register, loginWithGoogle, loginWithFacebook } = useAuth();
+    const { t } = useTranslation();
     const [error, setError] = useState<string | null>(null);
     const [role, setRole] = useState<'consumer' | 'merchant'>('consumer');
     const [formData, setFormData] = useState({
@@ -27,7 +29,7 @@ const Register: React.FC = () => {
         setError(null);
 
         if (formData.password.length < 6) {
-            setError('Password must be at least 6 characters long.');
+            setError(t('passwordLength'));
             return;
         }
 
@@ -55,8 +57,8 @@ const Register: React.FC = () => {
     return (
         <div className="min-h-screen flex items-center justify-center p-4 bg-[var(--surface-0)]">
             <div className="glass-panel w-full max-w-md p-8 animate-fade-in">
-                <h1 className="text-3xl font-bold mb-2 text-[var(--brand-primary)]">Join Spendigo</h1>
-                <p className="text-[var(--text-muted)] mb-8">Smart savings for everyone.</p>
+                <h1 className="text-3xl font-bold mb-2 text-[var(--brand-primary)]">{t('joinSpendigo')}</h1>
+                <p className="text-[var(--text-muted)] mb-8">{t('smartSavings')}</p>
 
                 {/* Role Switcher */}
                 <div className="flex p-1 bg-[var(--surface-2)] rounded-lg mb-6">
@@ -68,7 +70,7 @@ const Register: React.FC = () => {
                             : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
                             }`}
                     >
-                        🛒 Shopper
+                        🛒 {t('shopper')}
                     </button>
                     <button
                         type="button"
@@ -78,7 +80,7 @@ const Register: React.FC = () => {
                             : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
                             }`}
                     >
-                        🏪 Merchant
+                        🏪 {t('merchant')}
                     </button>
                 </div>
 
@@ -103,7 +105,7 @@ const Register: React.FC = () => {
                             <path fill="#FFF" d="M6.9 13.8c-.4-1.2-.4-2.4 0-3.6l-2.9-2.3C2.8 9.6 2.8 14.4 4 16.1l2.9-2.3z" />
                             <path fill="none" d="M3 3h18v18H3z" />
                         </svg>
-                        <span className="text-sm">Sign up with Google</span>
+                        <span className="text-sm">{t('signUpGoogle')}</span>
                     </button>
 
                     <button
@@ -117,12 +119,12 @@ const Register: React.FC = () => {
                         <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
                         </svg>
-                        <span className="text-sm">Sign up with Facebook</span>
+                        <span className="text-sm">{t('signUpFacebook')}</span>
                     </button>
 
                     <div className="relative flex items-center py-2">
                         <div className="flex-grow border-t border-[var(--glass-border)]"></div>
-                        <span className="flex-shrink-0 mx-4 text-xs text-[var(--text-muted)] uppercase">Or continue with email</span>
+                        <span className="flex-shrink-0 mx-4 text-xs text-[var(--text-muted)] uppercase">{t('orContinueEmail')}</span>
                         <div className="flex-grow border-t border-[var(--glass-border)]"></div>
                     </div>
                 </div>
@@ -130,7 +132,7 @@ const Register: React.FC = () => {
 
                 <form onSubmit={handleRegister} className="space-y-4">
                     <div>
-                        <label className="block text-sm font-medium mb-1 text-[var(--text-main)]">Full Name</label>
+                        <label className="block text-sm font-medium mb-1 text-[var(--text-main)]">{t('fullName')}</label>
                         <input
                             type="text"
                             required
@@ -141,7 +143,7 @@ const Register: React.FC = () => {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium mb-1 text-[var(--text-main)]">Email</label>
+                        <label className="block text-sm font-medium mb-1 text-[var(--text-main)]">{t('email')}</label>
                         <input
                             type="email"
                             required
@@ -152,7 +154,7 @@ const Register: React.FC = () => {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium mb-1 text-[var(--text-main)]">Phone Number</label>
+                        <label className="block text-sm font-medium mb-1 text-[var(--text-main)]">{t('phoneNumber')}</label>
                         <input
                             type="tel"
                             required
@@ -167,7 +169,7 @@ const Register: React.FC = () => {
                     {role === 'merchant' && (
                         <>
                             <div className="animate-fade-in">
-                                <label className="block text-sm font-medium mb-1 text-[var(--text-main)]">Store Name</label>
+                                <label className="block text-sm font-medium mb-1 text-[var(--text-main)]">{t('storeName')}</label>
                                 <input
                                     type="text"
                                     required
@@ -178,7 +180,7 @@ const Register: React.FC = () => {
                                 />
                             </div>
                             <div className="animate-fade-in">
-                                <label className="block text-sm font-medium mb-1 text-[var(--text-main)]">Business Registration Number (BN)</label>
+                                <label className="block text-sm font-medium mb-1 text-[var(--text-main)]">{t('businessRegNum')}</label>
                                 <input
                                     type="text"
                                     required
@@ -187,10 +189,10 @@ const Register: React.FC = () => {
                                     value={formData.businessRegistrationNumber}
                                     onChange={e => setFormData({ ...formData, businessRegistrationNumber: e.target.value })}
                                 />
-                                <p className="text-xs text-[var(--text-muted)] mt-1">This helps us verify your business.</p>
+                                <p className="text-xs text-[var(--text-muted)] mt-1">{t('verifyBusinessHelp')}</p>
                             </div>
                             <div className="animate-fade-in">
-                                <label className="block text-sm font-medium mb-1 text-[var(--text-main)]">Business Type</label>
+                                <label className="block text-sm font-medium mb-1 text-[var(--text-main)]">{t('businessType')}</label>
                                 <select
                                     className="w-full p-3 rounded-[var(--radius-sm)] bg-[var(--surface-1)] border border-[var(--glass-border)] text-[var(--text-main)] focus:border-[var(--brand-primary)] outline-none transition-colors"
                                     value={formData.businessType}
@@ -231,7 +233,7 @@ const Register: React.FC = () => {
                     {/* Address Fields (Common) */}
                     <div className="space-y-3 animate-fade-in">
                         <label className="block text-sm font-medium text-[var(--text-main)]">
-                            {role === 'merchant' ? 'Store Location' : 'Delivery Address'}
+                            {role === 'merchant' ? t('storeLocation') : t('deliveryAddress')}
                         </label>
 
                         <input
@@ -247,7 +249,7 @@ const Register: React.FC = () => {
                             <input
                                 type="text"
                                 required
-                                placeholder="City"
+                                placeholder={t('city')}
                                 className="flex-[2] p-3 rounded-[var(--radius-sm)] bg-[var(--surface-1)] border border-[var(--glass-border)] text-[var(--text-main)] focus:border-[var(--brand-primary)] outline-none transition-colors"
                                 value={formData.city}
                                 onChange={e => setFormData({ ...formData, city: e.target.value })}
@@ -273,7 +275,7 @@ const Register: React.FC = () => {
                         <input
                             type="text"
                             required
-                            placeholder="Postal Code (e.g. K6V 5T3)"
+                            placeholder={t('postalCode')}
                             className="w-full p-3 rounded-[var(--radius-sm)] bg-[var(--surface-1)] border border-[var(--glass-border)] text-[var(--text-main)] focus:border-[var(--brand-primary)] outline-none transition-colors"
                             value={formData.postalCode}
                             onChange={e => setFormData({ ...formData, postalCode: e.target.value })}
@@ -281,7 +283,7 @@ const Register: React.FC = () => {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium mb-1 text-[var(--text-main)]">Password</label>
+                        <label className="block text-sm font-medium mb-1 text-[var(--text-main)]">{t('password')}</label>
                         <input
                             type="password"
                             required
@@ -292,12 +294,12 @@ const Register: React.FC = () => {
                     </div>
 
                     <button type="submit" className="w-full py-3 rounded-[var(--radius-md)] bg-[var(--brand-primary)] text-white font-bold hover:brightness-110 transition-all shadow-lg shadow-[var(--brand-primary)]/20">
-                        {role === 'merchant' ? 'Start Selling' : 'Create Account'}
+                        {role === 'merchant' ? t('startSelling') : t('createAccount')}
                     </button>
                 </form>
 
                 <p className="mt-6 text-center text-sm text-[var(--text-muted)]">
-                    Already have an account? <Link to="/login" className="text-[var(--brand-secondary)] hover:underline">Log in</Link>
+                    {t('alreadyHaveAccount')} <Link to="/login" className="text-[var(--brand-secondary)] hover:underline">{t('logIn')}</Link>
                 </p>
             </div>
         </div>

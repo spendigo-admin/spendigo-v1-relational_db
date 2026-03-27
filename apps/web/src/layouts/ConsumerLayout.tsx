@@ -4,6 +4,8 @@ import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationContext';
 import NotificationPopover from '../components/NotificationPopover';
+import { LanguageSwitcher } from '../components/LanguageSwitcher';
+import { useTranslation } from 'react-i18next';
 import '../styles/design-system.css';
 import { analytics } from '../lib/firebase';
 import { logEvent } from 'firebase/analytics';
@@ -15,6 +17,7 @@ const ConsumerLayout: React.FC = () => {
     const navigate = useNavigate();
     const [searchQuery, setSearchQuery] = useState('');
     const location = useLocation();
+    const { t } = useTranslation();
 
     // Track Page Views
     React.useEffect(() => {
@@ -66,7 +69,7 @@ const ConsumerLayout: React.FC = () => {
                     <form onSubmit={handleSearch} className="hidden md:flex flex-1 relative group max-w-lg">
                         <input
                             type="text"
-                            placeholder="Search Products"
+                            placeholder={t('searchProducts')}
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             className="w-full h-10 pl-10 pr-4 bg-[var(--surface-1)] border border-transparent rounded-full text-sm focus:bg-white focus:border-[var(--brand-primary)] focus:ring-4 focus:ring-[var(--brand-primary)]/10 transition-all outline-none group-hover:bg-[var(--surface-2)]"
@@ -88,7 +91,7 @@ const ConsumerLayout: React.FC = () => {
                     {/* Desktop Cart */}
                     <NavLink to="/cart" className={({ isActive }) => `hidden md:flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${isActive ? 'bg-[var(--brand-primary)]/10 text-[var(--brand-primary)]' : 'text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--surface-2)]'}`}>
                         <span className="text-lg">🛒</span>
-                        <span>Cart</span>
+                        <span>{t('cart')}</span>
                         {itemCount > 0 && (
                             <span className="bg-[var(--brand-primary)] text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold">
                                 {itemCount}
@@ -121,6 +124,10 @@ const ConsumerLayout: React.FC = () => {
                         )}
                     </Link>
 
+                    <div className="hidden sm:block">
+                        <LanguageSwitcher />
+                    </div>
+
                     {/* Profile / Auth */}
                     {user ? (
                         <div className="relative group">
@@ -148,26 +155,26 @@ const ConsumerLayout: React.FC = () => {
                                     to="/profile"
                                     className="block px-4 py-2 text-sm text-[var(--text-main)] hover:bg-[var(--surface-2)] transition-colors"
                                 >
-                                    👤 My Profile
+                                    {t('myProfile')}
                                 </Link>
                                 <Link
                                     to="/profile"
                                     state={{ activeTab: 'orders' }}
                                     className="block px-4 py-2 text-sm text-[var(--text-main)] hover:bg-[var(--surface-2)] transition-colors"
                                 >
-                                    📦 Order History
+                                    {t('orderHistory')}
                                 </Link>
                                 <button
                                     onClick={logout}
                                     className="w-full text-left px-4 py-2 text-sm text-red-500 hover:bg-red-50 transition-colors border-t border-[var(--glass-border)]"
                                 >
-                                    🚪 Sign Out
+                                    {t('signOut')}
                                 </button>
                             </div>
                         </div>
                     ) : (
                         <Link to="/login" className="hidden sm:inline-flex items-center justify-center px-4 py-2 rounded-full bg-[var(--brand-primary)] text-white text-sm font-bold shadow-lg shadow-[var(--brand-primary)]/20 hover:brightness-110 transition-all">
-                            Sign In
+                            {t('signIn')}
                         </Link>
                     )}
 
@@ -192,17 +199,17 @@ const ConsumerLayout: React.FC = () => {
             <nav className="md:hidden fixed bottom-0 left-0 right-0 h-[calc(4rem+var(--safe-area-bottom))] pb-safe bg-white border-t border-[var(--glass-border)] z-50 flex items-center justify-around">
                 <NavLink to="/" end className={({ isActive }) => `flex flex-col items-center justify-center flex-1 h-full gap-0.5 transition-colors ${isActive ? 'text-[var(--brand-primary)]' : 'text-[var(--text-muted)]'}`}>
                     <span className="text-xl">🏠</span>
-                    <span className="text-[10px] font-medium">Home</span>
+                    <span className="text-[10px] font-medium">{t('homeNav')}</span>
                 </NavLink>
 
                 <NavLink to="/search" className={({ isActive }) => `flex flex-col items-center justify-center flex-1 h-full gap-0.5 transition-colors ${isActive ? 'text-[var(--brand-primary)]' : 'text-[var(--text-muted)]'}`}>
                     <span className="text-xl">🔍</span>
-                    <span className="text-[10px] font-medium">Search</span>
+                    <span className="text-[10px] font-medium">{t('searchNav')}</span>
                 </NavLink>
 
                 <NavLink to="/smartcart" className={({ isActive }) => `flex flex-col items-center justify-center flex-1 h-full gap-0.5 transition-colors ${isActive ? 'text-[var(--brand-primary)]' : 'text-[var(--text-muted)]'}`}>
                     <span className="text-xl">✨</span>
-                    <span className="text-[10px] font-medium">SmartCart</span>
+                    <span className="text-[10px] font-medium">{t('smartCartNav')}</span>
                 </NavLink>
 
                 <NavLink to="/cart" className={({ isActive }) => `flex flex-col items-center justify-center flex-1 h-full gap-0.5 transition-colors ${isActive ? 'text-[var(--brand-primary)]' : 'text-[var(--text-muted)]'}`}>
@@ -214,12 +221,12 @@ const ConsumerLayout: React.FC = () => {
                             </span>
                         )}
                     </div>
-                    <span className="text-[10px] font-medium">Cart</span>
+                    <span className="text-[10px] font-medium">{t('cart')}</span>
                 </NavLink>
 
                 <NavLink to="/profile" className={({ isActive }) => `flex flex-col items-center justify-center flex-1 h-full gap-0.5 transition-colors ${isActive ? 'text-[var(--brand-primary)]' : 'text-[var(--text-muted)]'}`}>
                     <span className="text-xl">👤</span>
-                    <span className="text-[10px] font-medium">Profile</span>
+                    <span className="text-[10px] font-medium">{t('profileNav')}</span>
                 </NavLink>
             </nav>
 

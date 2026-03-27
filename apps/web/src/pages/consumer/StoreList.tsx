@@ -4,6 +4,7 @@ import '../../styles/design-system.css';
 import { useMarketplace } from '../../context/MarketplaceContext';
 import { useLocation } from '../../context/LocationContext';
 import AdCarousel from '../../components/AdCarousel';
+import { useTranslation } from 'react-i18next';
 
 const CATEGORIES = ['All', 'Fastest', 'Offers', 'Low Prices', 'Grocery', 'Convenience', 'Wholesale'];
 
@@ -30,6 +31,7 @@ const StoreList: React.FC = () => {
     const navigate = useNavigate();
     const { stores, loading } = useMarketplace();
     const { userCoords, userPostalCode, address, setAddress, searchDistance, setSearchDistance, isLocating, handleLocateMe, handleSearch, calculateDistance } = useLocation();
+    const { t } = useTranslation();
 
     const allStores = useMemo(() => {
         if (!stores) return [];
@@ -154,21 +156,21 @@ const StoreList: React.FC = () => {
                 <div className="max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
                     <div>
                         <p className="text-3xl font-bold text-[var(--brand-primary)]">{stats.totalStores}</p>
-                        <p className="text-sm text-[var(--text-muted)]">Local Grocers</p>
+                        <p className="text-sm text-[var(--text-muted)]">{t('localGrocers')}</p>
                     </div>
                     <div>
                         <p className="text-3xl font-bold text-[var(--brand-primary)]">{stats.totalFlyers}</p>
-                        <p className="text-sm text-[var(--text-muted)]">Active Flyers</p>
+                        <p className="text-sm text-[var(--text-muted)]">{t('activeFlyers')}</p>
                     </div>
                     <div>
                         <p className="text-3xl font-bold text-[var(--brand-primary)]">{stats.totalDeals}</p>
-                        <p className="text-sm text-[var(--text-muted)]">Active Deals</p>
+                        <p className="text-sm text-[var(--text-muted)]">{t('activeDeals')}</p>
                     </div>
                     <div>
                         <p className="text-3xl font-bold text-[var(--brand-primary)]">
                             {stats.totalProducts >= 1000 ? `${(stats.totalProducts / 1000).toFixed(1)}k+` : stats.totalProducts}
                         </p>
-                        <p className="text-sm text-[var(--text-muted)]">Products Available</p>
+                        <p className="text-sm text-[var(--text-muted)]">{t('productsAvailable')}</p>
                     </div>
                 </div>
             </section>
@@ -178,9 +180,9 @@ const StoreList: React.FC = () => {
                     <div className="max-w-5xl mx-auto">
                         <div className="flex items-center justify-between mb-4">
                             <h2 className="text-xl font-bold flex items-center gap-2">
-                                <span className="text-2xl">📰</span> Weekly Flyers
+                                <span className="text-2xl">📰</span> {t('weeklyFlyers')}
                             </h2>
-                            <Link to="/flyers" className="text-sm text-[var(--brand-primary)] font-medium hover:underline">View All →</Link>
+                            <Link to="/flyers" className="text-sm text-[var(--brand-primary)] font-medium hover:underline">{t('viewAll')}</Link>
                         </div>
                         <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x">
                             {allStores.filter(s => s.hasFlyer).map(store => (
@@ -194,10 +196,10 @@ const StoreList: React.FC = () => {
                                         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-4">
                                             <div>
                                                 <h3 className="text-white font-bold text-lg drop-shadow-md">{store.name}</h3>
-                                                <p className="text-white/90 text-xs">Expires soon</p>
+                                                <p className="text-white/90 text-xs">{t('expiresSoon')}</p>
                                             </div>
                                         </div>
-                                        <div className="absolute top-3 right-3 bg-red-600 text-white text-[10px] uppercase font-bold px-2 py-1 rounded shadow-sm animate-pulse">Live Flyer</div>
+                                        <div className="absolute top-3 right-3 bg-red-600 text-white text-[10px] uppercase font-bold px-2 py-1 rounded shadow-sm animate-pulse">{t('liveFlyer')}</div>
                                     </div>
                                 </div>
                             ))}
@@ -225,19 +227,19 @@ const StoreList: React.FC = () => {
             <section className="py-8 px-4">
                 <div className="max-w-5xl mx-auto">
                     <div className="flex items-center justify-between mb-6">
-                        <h2 className="text-2xl font-bold text-[var(--text-main)]">{activeCategory === 'All' ? 'Stores Near You' : `${activeCategory} Stores`}</h2>
+                        <h2 className="text-2xl font-bold text-[var(--text-main)]">{activeCategory === 'All' ? t('storesNearYou') : `${activeCategory} ${t('storesWord')}`}</h2>
                         <div className="flex items-center gap-4">
                             <select 
                                 value={searchDistance} 
                                 onChange={(e) => setSearchDistance(Number(e.target.value))}
                                 className="text-sm bg-[var(--surface-2)] border border-[var(--glass-border)] rounded-md px-2 py-1 text-[var(--text-main)] outline-none cursor-pointer"
                             >
-                                <option value={5}>Within 5 km</option>
-                                <option value={10}>Within 10 km</option>
-                                <option value={25}>Within 25 km</option>
-                                <option value={50}>Within 50 km</option>
+                                <option value={5}>{t('within5km')}</option>
+                                <option value={10}>{t('within10km')}</option>
+                                <option value={25}>{t('within25km')}</option>
+                                <option value={50}>{t('within50km')}</option>
                             </select>
-                            <span className="text-sm text-[var(--text-muted)] hidden sm:inline">{filteredStores.length} stores</span>
+                            <span className="text-sm text-[var(--text-muted)] hidden sm:inline">{filteredStores.length} {t('storesCount')}</span>
                             <div className="flex bg-[var(--surface-2)] rounded-lg p-1 border border-[var(--glass-border)]">
                                 <button onClick={() => setViewMode('grid')} className={`p-1.5 rounded-md transition-colors ${viewMode === 'grid' ? 'bg-white shadow-sm text-[var(--brand-primary)]' : 'text-gray-400 hover:text-gray-600'}`}>
                                     <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
@@ -264,7 +266,7 @@ const StoreList: React.FC = () => {
                     ) : filteredStores.length === 0 ? (
                         <div className="text-center py-12">
                             <p className="text-5xl mb-4">🔍</p>
-                            <p className="text-[var(--text-muted)]">No stores match this filter</p>
+                            <p className="text-[var(--text-muted)]">{t('noStoresMatch')}</p>
                         </div>
                     ) : (
                         <div className={viewMode === 'grid' ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" : "flex flex-col gap-4"}>
@@ -275,8 +277,8 @@ const StoreList: React.FC = () => {
                                     className={`glass-panel overflow-hidden cursor-pointer group hover:border-[var(--brand-primary)] hover:shadow-lg hover:shadow-[var(--brand-primary)]/10 transition-all duration-300 relative ${viewMode === 'list' ? 'flex flex-row items-stretch' : ''}`}
                                 >
                                     <div className="absolute top-3 right-3 z-10 flex flex-col gap-1 items-end">
-                                        {store.hasFlyer && <span className="bg-red-500 text-white text-[10px] uppercase font-bold px-2 py-0.5 rounded shadow-sm">New Flyer</span>}
-                                        {store.activeDealsCount > 0 && <span className="bg-green-500 text-white text-[10px] uppercase font-bold px-2 py-0.5 rounded shadow-sm">{store.activeDealsCount} Deals</span>}
+                                        {store.hasFlyer && <span className="bg-red-500 text-white text-[10px] uppercase font-bold px-2 py-0.5 rounded shadow-sm">{t('newFlyer')}</span>}
+                                        {store.activeDealsCount > 0 && <span className="bg-green-500 text-white text-[10px] uppercase font-bold px-2 py-0.5 rounded shadow-sm">{store.activeDealsCount} {t('dealsWord')}</span>}
                                     </div>
 
                                     <div className={`bg-[var(--surface-2)] relative overflow-hidden ${viewMode === 'list' ? 'w-32 md:w-48 shrink-0' : 'h-36'}`}>
@@ -292,7 +294,7 @@ const StoreList: React.FC = () => {
                                         <div className={`${viewMode === 'list' ? '' : 'ml-14'}`}>
                                             <h3 className="font-bold text-lg text-[var(--text-main)] group-hover:text-[var(--brand-primary)] transition-colors">{store.name}</h3>
                                             <div className="flex items-center gap-2">
-                                                <p className="text-sm text-[var(--text-muted)]">{store.distance} away</p>
+                                                <p className="text-sm text-[var(--text-muted)]">{store.distance} {t('away')}</p>
                                                 <span className="text-xs font-semibold flex items-center gap-0.5 bg-yellow-100 text-yellow-800 px-1.5 py-0.5 rounded">
                                                     ★ {store.rating > 0 ? store.rating.toFixed(1) : '0.0'} <span className="opacity-70 font-normal">({store.reviewCount || 0})</span>
                                                 </span>
@@ -318,14 +320,14 @@ const StoreList: React.FC = () => {
                         <div className="flex flex-col md:flex-row items-center gap-6">
                             <div className="text-5xl">🛒✨</div>
                             <div className="flex-1 text-center md:text-left">
-                                <h3 className="text-xl font-bold text-[var(--text-main)] mb-2">Spendigo Optimizer</h3>
+                                <h3 className="text-xl font-bold text-[var(--text-main)] mb-2">{t('optimizerTitle')}</h3>
                                 <p className="text-[var(--text-muted)]">
-                                    Our algorithm automatically splits your order across stores to maximize savings.
-                                    Customers save an average of <span className="text-[var(--brand-secondary)] font-bold">15%</span> per order.
+                                    {t('optimizerDesc')}<br/>
+                                    {t('optimizerSave1')} <span className="text-[var(--brand-secondary)] font-bold">15%</span> {t('optimizerSave2')}
                                 </p>
                             </div>
                             <Link to="/how-it-works" className="px-6 py-3 bg-[var(--brand-primary)] text-white font-bold rounded-full hover:brightness-110 transition-all whitespace-nowrap">
-                                Learn More
+                                {t('learnMore')}
                             </Link>
                         </div>
                     </div>
