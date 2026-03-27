@@ -33,7 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.cartOptimize = exports.smartcartOptimize = exports.onUserUpdate = exports.cancelOrder = exports.placeOrder = exports.updateSubscriptionPlan = exports.sendOrderStatusUpdate = exports.sendOrderConfirmation = exports.getPaymentHistory = exports.stripeWebhook = exports.createCheckoutSession = exports.removeTeamMember = exports.deleteUser = exports.inviteTeamMember = exports.cleanupOrphanedUsers = void 0;
+exports.cartOptimize = exports.smartcartOptimize = exports.onMasterProductWrite = exports.onUserUpdate = exports.cancelOrder = exports.placeOrder = exports.updateSubscriptionPlan = exports.sendOrderStatusUpdate = exports.sendOrderConfirmation = exports.getPaymentHistory = exports.stripeWebhook = exports.createCheckoutSession = exports.removeTeamMember = exports.deleteUser = exports.inviteTeamMember = exports.cleanupOrphanedUsers = void 0;
 const admin = __importStar(require("firebase-admin"));
 // Initialize Firebase Admin
 admin.initializeApp();
@@ -63,6 +63,8 @@ var cancelOrder_1 = require("./orders/cancelOrder");
 Object.defineProperty(exports, "cancelOrder", { enumerable: true, get: function () { return cancelOrder_1.cancelOrder; } });
 var userTriggers_1 = require("./triggers/userTriggers");
 Object.defineProperty(exports, "onUserUpdate", { enumerable: true, get: function () { return userTriggers_1.onUserUpdate; } });
+var productTriggers_1 = require("./triggers/productTriggers");
+Object.defineProperty(exports, "onMasterProductWrite", { enumerable: true, get: function () { return productTriggers_1.onMasterProductWrite; } });
 var optimizeEndpoint_1 = require("./smartcart/optimizeEndpoint");
 Object.defineProperty(exports, "smartcartOptimize", { enumerable: true, get: function () { return optimizeEndpoint_1.smartcartOptimize; } });
 var optimizeCart_1 = require("./cart/optimizeCart");
