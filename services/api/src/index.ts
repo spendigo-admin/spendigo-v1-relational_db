@@ -7,6 +7,7 @@ admin.initializeApp();
 export { cleanupOrphanedUsers } from './admin/cleanupOrphanedUsers';
 export { inviteTeamMember } from './auth/inviteTeamMember';
 export { deleteUser } from './auth/deleteUser';
+export { requestAccountDeletion } from './auth/requestAccountDeletion';
 export { removeTeamMember } from './auth/removeTeamMember';
 export { createCheckoutSession } from './payments/createCheckoutSession';
 export { stripeWebhook } from './payments/stripeWebhook';

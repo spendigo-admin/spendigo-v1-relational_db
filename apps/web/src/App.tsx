@@ -43,6 +43,8 @@ const Search = lazy(() => import('./pages/consumer/Search'));
 const HowItWorks = lazy(() => import('./pages/consumer/HowItWorks'));
 const ConsumerSurveys = lazy(() => import('./pages/consumer/Surveys'));
 const Flyers = lazy(() => import('./pages/consumer/Flyers'));
+const Legal = lazy(() => import('./pages/consumer/Legal'));
+const PartnerWithUs = lazy(() => import('./pages/consumer/PartnerWithUs'));
 
 // Merchant Pages — lazy loaded
 const MerchantDashboard = lazy(() => import('./pages/merchant/Dashboard'));
@@ -149,6 +151,9 @@ function App() {
 
                                                                     <Route path="/search" element={<Search />} />
                                                                     <Route path="/how-it-works" element={<HowItWorks />} />
+                                                                    <Route path="/privacy" element={<Legal />} />
+                                                                    <Route path="/terms" element={<Legal />} />
+                                                                    <Route path="/partner" element={<PartnerWithUs />} />
                                                                     <Route path="/surveys" element={<ConsumerSurveys />} />
                                                                     <Route path="/flyers" element={<Flyers />} />
                                                                     <Route path="/consumer" element={<Navigate to="/" replace />} />

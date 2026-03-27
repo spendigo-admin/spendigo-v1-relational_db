@@ -1,11 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useOrders } from '../../context/OrderContext';
+import { useAuth } from '../../context/AuthContext';
+import { httpsCallable } from 'firebase/functions';
+import { functions } from '../../lib/firebase';
 import '../../styles/design-system.css';
 
 const Profile: React.FC = () => {
     const { profile, orders, updateProfile, addAddress, deleteAddress, setDefaultAddress } = useOrders();
+    const { logout } = useAuth();
     const location = useLocation();
+    const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState<'account' | 'addresses' | 'orders'>(
         (location.state as any)?.activeTab || 'account'
     );
@@ -31,6 +36,29 @@ const Profile: React.FC = () => {
     const [newAddress, setNewAddress] = useState({ label: '', street: '', city: '', province: 'ON', postalCode: '', isDefault: false });
     const [isValidating, setIsValidating] = useState(false);
     const [validationError, setValidationError] = useState('');
+
+    // Deletion flow state
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [deleteConfirmText, setDeleteConfirmText] = useState('');
+    const [isDeleting, setIsDeleting] = useState(false);
+    const [deleteError, setDeleteError] = useState('');
+
+    const handleDeleteAccount = async () => {
+        if (deleteConfirmText !== 'DELETE') return;
+        setIsDeleting(true);
+        setDeleteError('');
+        try {
+            const deleteFn = httpsCallable(functions, 'requestAccountDeletion');
+            await deleteFn();
+            await logout();
+            navigate('/login', { replace: true });
+        } catch (err: any) {
+            console.error('Account deletion failed:', err);
+            setDeleteError(err.message || 'Failed to delete account. Please try again.');
+        } finally {
+            setIsDeleting(false);
+        }
+    };
 
     // Sync profile data when it loads
     useEffect(() => {
@@ -178,6 +206,81 @@ const Profile: React.FC = () => {
                                 </div>
                             </div>
                         )}
+
+                        {/* DANGER ZONE */}
+                        <div className="mt-10 pt-6 border-t-2 border-red-200">
+                            <h3 className="text-lg font-bold text-red-600 mb-2 flex items-center gap-2">
+                                <span>⚠️</span> Danger Zone
+                            </h3>
+                            <p className="text-sm text-[var(--text-muted)] mb-4">
+                                Permanently delete your account and all associated data. This action cannot be undone.
+                            </p>
+                            <button
+                                onClick={() => setShowDeleteModal(true)}
+                                className="px-6 py-3 bg-red-50 text-red-600 font-bold text-sm rounded-xl border-2 border-red-200 hover:bg-red-100 hover:border-red-400 transition-all"
+                            >
+                                🗑️ Delete My Account
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* DELETE ACCOUNT MODAL */}
+                {showDeleteModal && (
+                    <div className="fixed inset-0 z-[200] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => !isDeleting && setShowDeleteModal(false)}>
+                        <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 animate-fade-in" onClick={e => e.stopPropagation()}>
+                            <div className="text-center mb-6">
+                                <div className="text-5xl mb-3">🚨</div>
+                                <h3 className="text-xl font-bold text-[var(--text-main)] mb-2">Delete Your Account?</h3>
+                                <p className="text-sm text-[var(--text-muted)] leading-relaxed">
+                                    This will <strong>permanently</strong> erase your profile, addresses, and login credentials.
+                                    Your order history will be anonymized for merchant accounting purposes.
+                                </p>
+                            </div>
+
+                            <div className="mb-4">
+                                <label className="block text-sm font-bold text-[var(--text-main)] mb-2">
+                                    Type <span className="text-red-600 font-mono bg-red-50 px-2 py-0.5 rounded">DELETE</span> to confirm:
+                                </label>
+                                <input
+                                    type="text"
+                                    value={deleteConfirmText}
+                                    onChange={e => setDeleteConfirmText(e.target.value)}
+                                    placeholder="Type DELETE"
+                                    className="w-full px-4 py-3 border-2 border-red-200 rounded-xl font-mono text-center text-lg focus:border-red-500 focus:ring-4 focus:ring-red-100 outline-none transition-all"
+                                    disabled={isDeleting}
+                                    autoFocus
+                                />
+                            </div>
+
+                            {deleteError && (
+                                <p className="text-sm text-red-600 bg-red-50 rounded-lg p-3 mb-4 font-medium">
+                                    ⚠️ {deleteError}
+                                </p>
+                            )}
+
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => { setShowDeleteModal(false); setDeleteConfirmText(''); setDeleteError(''); }}
+                                    disabled={isDeleting}
+                                    className="flex-1 py-3 border border-[var(--glass-border)] rounded-xl font-medium text-[var(--text-muted)] hover:bg-[var(--surface-2)] transition-colors disabled:opacity-50"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleDeleteAccount}
+                                    disabled={deleteConfirmText !== 'DELETE' || isDeleting}
+                                    className="flex-1 py-3 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                >
+                                    {isDeleting ? (
+                                        <>
+                                            <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                                            Deleting...
+                                        </>
+                                    ) : 'Permanently Delete'}
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 )}
 

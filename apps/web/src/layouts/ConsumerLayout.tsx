@@ -191,9 +191,20 @@ const ConsumerLayout: React.FC = () => {
             </header>
 
             {/* MAIN CONTENT AREA */}
-            <main className="pt-[calc(3.5rem+var(--safe-area-top))]">
+            <main className="pt-[calc(3.5rem+var(--safe-area-top))] min-h-[calc(100vh-12rem)] pb-8">
                 <Outlet />
             </main>
+
+            {/* GLOBAL FOOTER */}
+            <footer className="pb-[calc(4rem+var(--safe-area-bottom)+2rem)] md:pb-8 pt-8 px-4 text-center text-[var(--text-muted)] text-sm border-t border-[var(--glass-border)]">
+                <div className="flex flex-wrap justify-center gap-x-6 gap-y-3 mb-4 font-medium">
+                    <Link to="/how-it-works" className="hover:text-[var(--brand-primary)] transition-colors">{t('howItWorks', 'How it Works')}</Link>
+                    <Link to="/privacy" className="hover:text-[var(--brand-primary)] transition-colors">Privacy Policy</Link>
+                    <Link to="/terms" className="hover:text-[var(--brand-primary)] transition-colors">Terms of Service</Link>
+                    <Link to="/partner" className="hover:text-[var(--brand-primary)] transition-colors">Partner with Us</Link>
+                </div>
+                <p>&copy; {new Date().getFullYear()} Spendigo Inc. All rights reserved.</p>
+            </footer>
 
             {/* MOBILE BOTTOM TAB BAR */}
             <nav className="md:hidden fixed bottom-0 left-0 right-0 h-[calc(4rem+var(--safe-area-bottom))] pb-safe bg-white border-t border-[var(--glass-border)] z-50 flex items-center justify-around">

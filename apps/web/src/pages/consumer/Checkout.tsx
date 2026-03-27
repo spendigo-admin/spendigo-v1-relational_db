@@ -76,6 +76,10 @@ const Checkout: React.FC = () => {
     // Audit logging removed
     const [isProcessing, setIsProcessing] = useState(false);
     const [orderComplete, setOrderComplete] = useState(false);
+    const [ageVerified, setAgeVerified] = useState(false);
+
+    // Check if any item in the cart is age-restricted
+    const hasAgeRestricted = items.some((item: any) => item.age_restricted);
 
     // Initialize fulfillment methods based on tier capabilities
     useEffect(() => {
@@ -484,25 +488,55 @@ const Checkout: React.FC = () => {
                 </div>
             </div >
 
+            {/* AGE VERIFICATION ATTESTATION */}
+            {hasAgeRestricted && (
+                <div className="mt-6 glass-panel p-5 border-2 border-orange-200 bg-orange-50/50">
+                    <div className="flex items-start gap-3 mb-3">
+                        <span className="text-2xl">🔞</span>
+                        <div>
+                            <h3 className="font-bold text-[var(--text-main)] mb-1">Age Verification Required</h3>
+                            <p className="text-sm text-[var(--text-muted)] leading-relaxed">
+                                Your cart contains age-restricted items. Under provincial law, you must be
+                                of legal age to purchase these products.
+                            </p>
+                        </div>
+                    </div>
+                    <label className="flex items-start gap-3 cursor-pointer p-3 rounded-xl bg-white border border-[var(--glass-border)] hover:border-orange-300 transition-colors">
+                        <input
+                            type="checkbox"
+                            checked={ageVerified}
+                            onChange={e => setAgeVerified(e.target.checked)}
+                            className="mt-0.5 w-5 h-5 accent-[var(--brand-primary)] rounded"
+                        />
+                        <span className="text-sm text-[var(--text-main)] leading-relaxed">
+                            I confirm I am of <strong>legal age</strong> to purchase restricted items in my jurisdiction
+                            and agree to present <strong>valid government-issued ID</strong> upon delivery or pickup.
+                        </span>
+                    </label>
+                </div>
+            )}
+
             {/* FIXED ACTION BUTTON */}
             < div className="fixed bottom-20 left-0 right-0 p-4 bg-[var(--surface-0)] border-t border-[var(--glass-border)]" >
                 <div className="max-w-3xl mx-auto">
                     {(() => {
                         // Check if ANY store blocks the entire checkout
                         const hasBlockers = Object.values(groupedItems).some(g => !g.isOpen || (!g.deliveryEnabled && !g.pickupEnabled));
+                        const ageBlocked = hasAgeRestricted && !ageVerified;
 
                         return (
                             <button
                                 onClick={handlePayment}
-                                disabled={isProcessing || hasBlockers}
-                                className={`w-full py-4 text-white font-bold text-lg rounded-2xl transition-all flex items-center justify-center gap-2 shadow-lg ${isProcessing || hasBlockers
+                                disabled={isProcessing || hasBlockers || ageBlocked}
+                                className={`w-full py-4 text-white font-bold text-lg rounded-2xl transition-all flex items-center justify-center gap-2 shadow-lg ${isProcessing || hasBlockers || ageBlocked
                                     ? 'bg-gray-400 cursor-not-allowed opacity-80'
                                     : 'bg-[var(--brand-primary)] hover:brightness-110 active:scale-95 shadow-[var(--brand-primary)]/30'
                                     }`}
                             >
                                 {isProcessing ? 'Confirming Orders...' :
                                     hasBlockers ? '⚠️ Cannot Checkout (Store Closed or Disabled)' :
-                                        `Confirm Reservations • $${grandTotal.toFixed(2)}`}
+                                        ageBlocked ? '🔞 Please Verify Your Age Above' :
+                                            `Confirm Reservations • $${grandTotal.toFixed(2)}`}
                             </button>
                         );
                     })()}

@@ -52,6 +52,7 @@ export interface Product {
     is_sold_by_weight?: boolean;
     tax_category_id?: string;
     suggested_retail_price?: number;
+    age_restricted?: boolean;
 }
 
 // Helper to generate barcode variants for robust deduplication
@@ -287,6 +288,7 @@ export const useCatalog = () => {
                             is_sold_by_weight: master.is_sold_by_weight,
                             tax_category_id: master.tax_category_id,
                             suggested_retail_price: master.suggested_retail_price,
+                            age_restricted: master.age_restricted || false,
 
                             originalPrice: data.original_price,
                             discount: data.discount_label
@@ -366,6 +368,7 @@ export const useCatalog = () => {
                                 is_sold_by_weight: mData.is_sold_by_weight,
                                 tax_category_id: mData.tax_category_id,
                                 suggested_retail_price: mData.suggested_retail_price,
+                                age_restricted: mData.age_restricted || false,
 
                                 originalPrice: pData.original_price,
                                 discount: pData.discount_label
@@ -502,6 +505,7 @@ export const useCatalog = () => {
                         is_sold_by_weight: master.is_sold_by_weight,
                         tax_category_id: master.tax_category_id,
                         suggested_retail_price: master.suggested_retail_price,
+                        age_restricted: master.age_restricted || false,
 
                         originalPrice: data.original_price,
                         discount: data.discount_label
