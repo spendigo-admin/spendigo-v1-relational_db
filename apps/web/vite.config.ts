@@ -32,13 +32,15 @@ export default defineConfig(({ command }) => ({
                     'vendor-algolia': ['algoliasearch'],
                     'vendor-stripe': ['@stripe/stripe-js'],
                     'vendor-ai': ['@google/generative-ai'],
+                    'vendor-sentry': ['@sentry/react'],
                 }
             }
         },
-        // Strip all console.* calls in production builds
+        // Strip debugger statements in production builds
+        // Note: console.* is kept for Sentry breadcrumb capture
         minify: 'esbuild',
         esbuildOptions: {
-            drop: ['console', 'debugger'],
+            drop: ['debugger'],
         }
     }
 }))

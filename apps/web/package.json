@@ -12,6 +12,7 @@
     "dependencies": {
         "@capacitor/core": "^6.0.0",
         "@google/generative-ai": "^0.24.1",
+        "@sentry/react": "^10.46.0",
         "@stripe/stripe-js": "^8.6.0",
         "algoliasearch": "^5.46.2",
         "date-fns": "^4.1.0",

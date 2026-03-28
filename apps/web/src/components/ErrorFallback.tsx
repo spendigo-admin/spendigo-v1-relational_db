@@ -1,7 +1,13 @@
 import React from 'react';
 import { FallbackProps } from 'react-error-boundary';
+import { Sentry } from '../lib/sentry';
 
 const ErrorFallback: React.FC<FallbackProps> = ({ error, resetErrorBoundary }) => {
+    // Report the error to Sentry (if configured)
+    React.useEffect(() => {
+        Sentry.captureException(error);
+    }, [error]);
+
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
             <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 text-center animate-fade-in">
@@ -33,10 +39,18 @@ const ErrorFallback: React.FC<FallbackProps> = ({ error, resetErrorBoundary }) =
                         Try Again
                     </button>
                 </div>
+
+                {/* User feedback — Sentry dialog */}
+                <button
+                    onClick={() => Sentry.showReportDialog({ eventId: Sentry.lastEventId() })}
+                    className="mt-4 text-xs text-gray-400 hover:text-gray-600 underline transition-colors"
+                >
+                    Report this issue
+                </button>
             </div>
 
             <p className="mt-8 text-xs text-gray-400">
-                Error ID: {Date.now().toString(36)}
+                Error ID: {Sentry.lastEventId() || Date.now().toString(36)}
             </p>
         </div>
     );
