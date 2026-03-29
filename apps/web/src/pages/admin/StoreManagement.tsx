@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, doc, updateDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import '../../styles/design-system.css';
 import { useAuth } from '../../context/AuthContext';
 import { useMarketplace } from '../../context/MarketplaceContext';
 import { useNotifications } from '../../context/NotificationContext';
 import { useConfirmation } from '../../context/ConfirmationContext';
+import { BUSINESS_TYPES } from '../merchant/Settings';
 
 const StoreManagement: React.FC = () => {
     const { user } = useAuth();
@@ -17,11 +18,37 @@ const StoreManagement: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [newStore, setNewStore] = useState({
+    const [editingStoreId, setEditingStoreId] = useState<string | null>(null);
+    const [formData, setFormData] = useState({
         name: '',
+        legalName: '',
         merchantEmail: '',
-        type: 'grocery'
+        type: 'Grocery Store',
+        address: '',
+        city: '',
+        province: 'ON',
+        postalCode: '',
+        subscriptionTier: 'free',
+        subscriptionStatus: 'inactive',
+        subscriptionEnd: ''
     });
+
+    const resetForm = () => {
+        setFormData({
+            name: '',
+            legalName: '',
+            merchantEmail: '',
+            type: 'Grocery Store',
+            address: '',
+            city: '',
+            province: 'ON',
+            postalCode: '',
+            subscriptionTier: 'free',
+            subscriptionStatus: 'inactive',
+            subscriptionEnd: ''
+        });
+        setEditingStoreId(null);
+    };
 
     // --- Subscription Data Logic ---
     const [merchantDataMap, setMerchantDataMap] = useState<{ byEmail: Record<string, any>, byStoreId: Record<string, any[]> }>({ byEmail: {}, byStoreId: {} });
@@ -36,6 +63,7 @@ const StoreManagement: React.FC = () => {
             snapshot.forEach(doc => {
                 const data = doc.data();
                 const subInfo = {
+                    uid: doc.id,
                     tier: data.subscriptionTier || 'free',
                     status: data.subscriptionStatus || 'inactive',
                     end: data.subscriptionEnd,
@@ -68,17 +96,122 @@ const StoreManagement: React.FC = () => {
         return matchesSearch && matchesStatus;
     });
 
-    const handleAddStore = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        addStore({
-            ...newStore,
-            status: 'pending', // Default to pending for approval
-            rating: 0,
-            products: [],
-            logo: `https://ui-avatars.com/api/?name=${newStore.name}&background=random`
+
+        try {
+            let finalCoordinates = null;
+            const storeToUpdate = editingStoreId ? stores[editingStoreId] : null;
+            
+            // Re-geocode only if address components changed or it's a new store
+            const addressChanged = !storeToUpdate || 
+                storeToUpdate.address !== formData.address || 
+                storeToUpdate.city !== formData.city || 
+                storeToUpdate.postalCode !== formData.postalCode;
+
+            if (addressChanged) {
+                try {
+                    const fullAddress = `${formData.address}, ${formData.city}, ${formData.province}, ${formData.postalCode}, Canada`;
+                    const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(fullAddress)}`);
+                    const data = await response.json();
+                    if (data && data.length > 0) {
+                        finalCoordinates = {
+                            lat: parseFloat(data[0].lat),
+                            lng: parseFloat(data[0].lon)
+                        };
+                    }
+                } catch (geocodingError) {
+                    console.warn("Geocoding failed during admin update", geocodingError);
+                }
+            }
+
+            if (editingStoreId) {
+                const updateData: any = {
+                    name: formData.name,
+                    legalName: formData.legalName,
+                    merchantEmail: formData.merchantEmail,
+                    businessType: formData.type, // Map 'type' to 'businessType' for consistency
+                    address: formData.address,
+                    city: formData.city,
+                    province: formData.province,
+                    postalCode: formData.postalCode
+                };
+                if (finalCoordinates) updateData.coordinates = finalCoordinates;
+
+                await updateStore(editingStoreId, updateData);
+                addNotification({ type: 'system', title: 'Store Updated', message: `${formData.name} updated successfully.` });
+            } else {
+                await addStore({
+                    ...formData,
+                    businessType: formData.type,
+                    status: 'pending',
+                    rating: 0,
+                    products: [],
+                    coordinates: finalCoordinates,
+                    logo: `https://ui-avatars.com/api/?name=${formData.name}&background=random`
+                });
+                addNotification({ type: 'system', title: 'Store Created', message: `${formData.name} added to marketplace.` });
+            }
+
+            // --- Subscription Update Logic ---
+            if (editingStoreId) {
+                const storeOwners = merchantDataMap.byStoreId[editingStoreId];
+                const emailKey = formData.merchantEmail?.toLowerCase();
+                const owner = storeOwners?.find(u => u.merchantRole === 'OWNER') || storeOwners?.[0] || merchantDataMap.byEmail[emailKey];
+
+                if (owner && owner.uid) {
+                    const userRef = doc(db, 'users', owner.uid);
+                    await updateDoc(userRef, {
+                        subscriptionTier: formData.subscriptionTier,
+                        subscriptionStatus: formData.subscriptionStatus,
+                        subscriptionEnd: formData.subscriptionEnd,
+                        manualOverride: true,
+                        lastAdminEdit: new Date().toISOString()
+                    });
+                }
+            }
+
+            setIsModalOpen(false);
+            resetForm();
+        } catch (error) {
+            console.error(error);
+            addNotification({ type: 'alert', title: 'Operation Failed', message: 'Could not save store changes.' });
+        }
+    };
+
+    const handleEditClick = (store: any) => {
+        const MASTER_TYPES = Object.keys(BUSINESS_TYPES);
+        const legacyType = store.businessType || store.type || 'Grocery Store';
+        // Case-insensitive match for legacy data (e.g. 'grocery' -> 'Grocery Store')
+        const normalizedType = MASTER_TYPES.find(t => 
+            t.toLowerCase() === legacyType.toLowerCase() || 
+            t.toLowerCase().startsWith(legacyType.toLowerCase())
+        ) || 'Grocery Store';
+
+        const emailKey = (store.merchantEmail || '').toLowerCase();
+        const storeOwners = merchantDataMap.byStoreId[store.id];
+        let subData: any = { tier: 'free', status: 'active' };
+        if (Array.isArray(storeOwners) && storeOwners.length > 0) {
+            subData = storeOwners.find(u => u.merchantRole === 'OWNER') || storeOwners[0];
+        } else if (merchantDataMap.byEmail[emailKey]) {
+            subData = merchantDataMap.byEmail[emailKey];
+        }
+
+        setFormData({
+            name: store.name || '',
+            legalName: store.legalName || '',
+            merchantEmail: store.merchantEmail || '',
+            type: normalizedType,
+            address: store.address || '',
+            city: store.city || '',
+            province: store.province || 'ON',
+            postalCode: store.postalCode || '',
+            subscriptionTier: subData.tier || 'free',
+            subscriptionStatus: subData.status || 'inactive',
+            subscriptionEnd: subData.end || ''
         });
-        setIsModalOpen(false);
-        setNewStore({ name: '', merchantEmail: '', type: 'grocery' });
+        setEditingStoreId(store.id);
+        setIsModalOpen(true);
     };
     const handleSyncEmail = async (storeId: string, ownerEmail: string) => {
         try {
@@ -102,8 +235,11 @@ const StoreManagement: React.FC = () => {
                         Export List
                     </button>
                     <button
-                        onClick={() => setIsModalOpen(true)}
-                        className="px-4 py-2 bg-[var(--brand-primary)] text-white rounded-lg text-sm font-medium hover:brightness-110"
+                        onClick={() => {
+                            resetForm();
+                            setIsModalOpen(true);
+                        }}
+                        className="px-4 py-2 bg-[var(--brand-primary)] text-white rounded-lg text-sm font-medium hover:brightness-110 shadow-sm"
                     >
                         + Add Store
                     </button>
@@ -264,7 +400,13 @@ const StoreManagement: React.FC = () => {
                                                     {(store.status || 'active').replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}
                                                 </span>
                                             </td>
-                                            <td className="p-4 text-right space-x-2">
+                                             <td className="p-4 text-right space-x-2">
+                                                <button
+                                                    onClick={() => handleEditClick(store)}
+                                                    className="text-xs text-blue-600 hover:text-blue-800 font-bold px-2 py-1 bg-blue-50 rounded border border-blue-100 transition-colors"
+                                                >
+                                                    Edit
+                                                </button>
                                                 {store.status === 'pending' && (
                                                     <>
                                                         <button
@@ -374,61 +516,173 @@ const StoreManagement: React.FC = () => {
             {/* Add Store Modal */}
             {
                 isModalOpen && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
-                        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
-                            <div className="p-6 border-b border-gray-100 flex justify-between items-center">
-                                <h2 className="text-xl font-bold">Add New Store</h2>
-                                <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-600">✕</button>
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in shadow-2xl">
+                        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
+                            <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+                                <div>
+                                    <h2 className="text-xl font-bold text-gray-900">{editingStoreId ? 'Edit Store Details' : 'Add New Store'}</h2>
+                                    <p className="text-xs text-gray-500 mt-0.5">{editingStoreId ? `Updating unique ID: ${editingStoreId}` : 'Register a new merchant manually'}</p>
+                                </div>
+                                <button onClick={() => { setIsModalOpen(false); resetForm(); }} className="w-8 h-8 flex items-center justify-center bg-white border border-gray-200 rounded-full text-gray-400 hover:text-gray-600 hover:border-gray-300 transition-all">✕</button>
                             </div>
-                            <form onSubmit={handleAddStore} className="p-6 space-y-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Store Name</label>
-                                    <input
-                                        type="text"
-                                        required
-                                        className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--brand-primary)] focus:border-transparent outline-none"
-                                        value={newStore.name}
-                                        onChange={e => setNewStore({ ...newStore, name: e.target.value })}
-                                        placeholder="e.g. Green Valley Grocers"
-                                    />
+                            
+                            <form onSubmit={handleSubmit} className="overflow-y-auto p-6 space-y-6">
+                                {/* Section: Core Identity */}
+                                <div className="space-y-4">
+                                    <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400 border-b border-gray-100 pb-2">Core Identity</h3>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="col-span-2">
+                                            <label className="block text-xs font-bold text-gray-700 mb-1 uppercase">Store Public Name</label>
+                                            <input
+                                                type="text"
+                                                required
+                                                className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--brand-primary)] focus:border-transparent outline-none transition-all"
+                                                value={formData.name}
+                                                onChange={e => setFormData({ ...formData, name: e.target.value })}
+                                                placeholder="e.g. Green Valley Grocers"
+                                            />
+                                        </div>
+                                        <div className="col-span-2">
+                                            <label className="block text-xs font-bold text-gray-700 mb-1 uppercase">Legal Business Name</label>
+                                            <input
+                                                type="text"
+                                                className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--brand-primary)] focus:border-transparent outline-none transition-all"
+                                                value={formData.legalName}
+                                                onChange={e => setFormData({ ...formData, legalName: e.target.value })}
+                                                placeholder="e.g. 1234567 Ontario Inc."
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-700 mb-1 uppercase">Merchant Email</label>
+                                            <input
+                                                type="email"
+                                                required
+                                                className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--brand-primary)] focus:border-transparent outline-none transition-all"
+                                                value={formData.merchantEmail}
+                                                onChange={e => setFormData({ ...formData, merchantEmail: e.target.value })}
+                                                placeholder="merchant@example.com"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-700 mb-1 uppercase">Store Type</label>
+                                            <select
+                                                className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--brand-primary)] outline-none transition-all bg-white"
+                                                value={formData.type}
+                                                onChange={e => setFormData({ ...formData, type: e.target.value })}
+                                            >
+                                                {Object.keys(BUSINESS_TYPES).sort().map(type => (
+                                                    <option key={type} value={type}>{type}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Merchant Email</label>
-                                    <input
-                                        type="email"
-                                        required
-                                        className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--brand-primary)] focus:border-transparent outline-none"
-                                        value={newStore.merchantEmail}
-                                        onChange={e => setNewStore({ ...newStore, merchantEmail: e.target.value })}
-                                        placeholder="merchant@example.com"
-                                    />
+
+                                {/* Section: Registration & Location */}
+                                <div className="space-y-4">
+                                    <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400 border-b border-gray-100 pb-2">Location & Registration</h3>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="col-span-2">
+                                            <label className="block text-xs font-bold text-gray-700 mb-1 uppercase">Street Address</label>
+                                            <input
+                                                type="text"
+                                                className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--brand-primary)] focus:border-transparent outline-none transition-all"
+                                                value={formData.address}
+                                                onChange={e => setFormData({ ...formData, address: e.target.value })}
+                                                placeholder="123 Shopping St"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-700 mb-1 uppercase">City</label>
+                                            <input
+                                                type="text"
+                                                className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--brand-primary)] focus:border-transparent outline-none transition-all"
+                                                value={formData.city}
+                                                onChange={e => setFormData({ ...formData, city: e.target.value })}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-700 mb-1 uppercase">Province</label>
+                                            <select
+                                                className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--brand-primary)] outline-none bg-white"
+                                                value={formData.province}
+                                                onChange={e => setFormData({ ...formData, province: e.target.value })}
+                                            >
+                                                {['ON', 'BC', 'AB', 'QC', 'MB', 'NS', 'NB', 'SK', 'NL', 'PE'].map(p => (
+                                                    <option key={p} value={p}>{p}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        <div className="col-span-2">
+                                            <label className="block text-xs font-bold text-gray-700 mb-1 uppercase">Postal Code</label>
+                                            <input
+                                                type="text"
+                                                className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--brand-primary)] focus:border-transparent outline-none transition-all"
+                                                value={formData.postalCode}
+                                                onChange={e => setFormData({ ...formData, postalCode: e.target.value })}
+                                                placeholder="L5V 2H1"
+                                            />
+                                        </div>
+                                    </div>
                                 </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Store Type</label>
-                                    <select
-                                        className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--brand-primary)] outline-none"
-                                        value={newStore.type}
-                                        onChange={e => setNewStore({ ...newStore, type: e.target.value })}
-                                    >
-                                        <option value="grocery">Grocery Store</option>
-                                        <option value="convenience">Convenience Store</option>
-                                        <option value="bakery">Bakery</option>
-                                        <option value="butcher">Butcher</option>
-                                    </select>
+
+                                {/* Section: Subscription Override */}
+                                <div className="space-y-4">
+                                    <h3 className="text-xs font-bold uppercase tracking-wider text-blue-500 border-b border-blue-50 pb-2 flex items-center gap-2">
+                                        <span className="text-sm">💳</span> Subscription Lifecycle
+                                    </h3>
+                                    <div className="grid grid-cols-2 gap-4 bg-blue-50/30 p-4 rounded-xl border border-blue-100/50">
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-700 mb-1 uppercase">Subscription Tier</label>
+                                            <select
+                                                className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white font-medium"
+                                                value={formData.subscriptionTier}
+                                                onChange={e => setFormData({ ...formData, subscriptionTier: e.target.value })}
+                                            >
+                                                <option value="free">Free Starter</option>
+                                                <option value="core">Core Professional</option>
+                                                <option value="growth">Growth Enterprise</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-700 mb-1 uppercase">Billing Status</label>
+                                            <select
+                                                className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white font-medium"
+                                                value={formData.subscriptionStatus}
+                                                onChange={e => setFormData({ ...formData, subscriptionStatus: e.target.value })}
+                                            >
+                                                <option value="active">Active</option>
+                                                <option value="trialing">Trialing</option>
+                                                <option value="past_due">Past Due / Error</option>
+                                                <option value="inactive">Inactive</option>
+                                            </select>
+                                        </div>
+                                        <div className="col-span-2">
+                                            <label className="block text-xs font-bold text-gray-700 mb-1 uppercase">Expiration Date</label>
+                                            <input
+                                                type="date"
+                                                className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                                                value={formData.subscriptionEnd}
+                                                onChange={e => setFormData({ ...formData, subscriptionEnd: e.target.value })}
+                                            />
+                                            <p className="text-[10px] text-blue-600/70 mt-1 italic">Note: Manual changes will set the "Manual Override" flag on the merchant record.</p>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div className="pt-4 flex gap-3">
+
+                                <div className="pt-4 flex gap-3 sticky bottom-0 bg-white border-t border-gray-100 pt-6">
                                     <button
                                         type="button"
-                                        onClick={() => setIsModalOpen(false)}
-                                        className="flex-1 py-2.5 border border-gray-300 text-gray-700 rounded-lg font-bold hover:bg-gray-50"
+                                        onClick={() => { setIsModalOpen(false); resetForm(); }}
+                                        className="flex-1 py-3 border border-gray-200 text-gray-600 rounded-xl font-bold hover:bg-gray-50 transition-colors"
                                     >
                                         Cancel
                                     </button>
                                     <button
                                         type="submit"
-                                        className="flex-1 py-2.5 bg-[var(--brand-primary)] text-white rounded-lg font-bold hover:brightness-110 shadow-lg shadow-[var(--brand-primary)]/20"
+                                        className="flex-1 py-3 bg-[var(--brand-primary)] text-white rounded-xl font-bold hover:brightness-110 shadow-lg shadow-[var(--brand-primary)]/20 transition-all active:scale-[0.98]"
                                     >
-                                        Create Store
+                                        {editingStoreId ? 'Save Changes' : 'Create Store'}
                                     </button>
                                 </div>
                             </form>

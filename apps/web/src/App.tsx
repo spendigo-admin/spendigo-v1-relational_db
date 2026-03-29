@@ -132,7 +132,13 @@ function MaintenanceGuard({ children }: { children: React.ReactNode }) {
     return <>{children}</>;
 }
 
+import { trackVisit } from './lib/analytics';
+
 function App() {
+    useEffect(() => {
+        trackVisit();
+    }, []);
+
     return (
         <ErrorBoundary FallbackComponent={ErrorFallback} onReset={() => window.location.href = '/'}>
             <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>

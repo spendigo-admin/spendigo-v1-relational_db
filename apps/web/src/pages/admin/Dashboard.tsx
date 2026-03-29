@@ -204,13 +204,23 @@ const AdminDashboard: React.FC = () => {
             </div>
 
             {/* Platform Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8 mt-[-2rem]">
                 {stats.map((stat, idx) => (
-                    <div key={idx} className="bg-white p-5 rounded-xl border border-[var(--glass-border)] shadow-sm hover:shadow-md transition-shadow relative">
+                    <div key={idx} className="bg-white p-6 rounded-2xl border border-[var(--glass-border)] shadow-sm hover:shadow-md transition-all relative overflow-hidden group">
                         {stat.isTraffic && (
-                            <div className="absolute top-4 right-4">
+                            <div className="absolute top-4 right-4 flex items-center gap-2">
+                                <button 
+                                    onClick={trafficStats.refreshStats}
+                                    disabled={trafficStats.isSyncing}
+                                    title="Fetch latest stats from Google Analytics"
+                                    className={`text-[10px] font-bold px-2 py-0.5 rounded border transition-all flex items-center gap-1
+                                        ${trafficStats.isSyncing ? 'bg-gray-50 text-gray-400 border-gray-100 cursor-not-allowed' : 
+                                        'bg-blue-50 text-blue-600 border-blue-100 hover:bg-blue-100 cursor-pointer'}`}
+                                >
+                                    {trafficStats.isSyncing ? '⌛ Syncing...' : '↻ Sync'}
+                                </button>
                                 <select
-                                    className="text-xs border-none bg-[var(--surface-1)] rounded p-1 font-bold text-[var(--text-muted)] cursor-pointer outline-none hover:text-[var(--text-main)] transition-colors"
+                                    className="text-[10px] border-none bg-gray-50 rounded p-1 font-bold text-gray-500 cursor-pointer outline-none hover:text-[var(--text-main)] transition-colors"
                                     value={trafficRange}
                                     onChange={(e) => setTrafficRange(e.target.value as any)}
                                 >
@@ -227,9 +237,21 @@ const AdminDashboard: React.FC = () => {
                             </div>
                         </div>
                         <div className="mt-2">
-                            <p className="text-[var(--text-muted)] text-sm font-medium">{stat.label}</p>
+                            <div className="flex items-center justify-between mb-0.5">
+                                <p className="text-[var(--text-muted)] text-[10px] uppercase font-bold tracking-wider">{stat.label}</p>
+                                {stat.isTraffic && trafficStats.source === 'Google Analytics' && (
+                                    <span className="text-[9px] text-green-600 font-bold bg-green-50 px-1 rounded border border-green-100">GA4</span>
+                                )}
+                            </div>
                             <h3 className="text-2xl font-bold text-[var(--text-main)]">{stat.value}</h3>
-                            <p className="text-xs text-[var(--text-muted)] mt-1">{stat.change}</p>
+                            <div className="flex items-center justify-between mt-1">
+                                <p className="text-xs text-[var(--text-muted)] font-medium">{stat.change}</p>
+                                {stat.isTraffic && trafficStats.lastSynced && (
+                                    <p className="text-[9px] text-gray-400 italic">
+                                        Last: {trafficStats.lastSynced.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                    </p>
+                                )}
+                            </div>
                         </div>
                     </div>
                 ))}
@@ -244,26 +266,32 @@ const AdminDashboard: React.FC = () => {
                             <span className="text-xs font-bold bg-[var(--surface-1)] px-2 py-1 rounded text-[var(--text-muted)]">Live Feed</span>
                         </div>
                         <div className="space-y-4">
-                            {/* Dynamically Map top stores, sorted by ID to ensure consistent 1-5 ranking match */}
+                            {/* Dynamically Map top stores, sorted by Rating desc for true 'Live Feed' leadership */}
                             {Object.values(stores)
-                                .sort((a: any, b: any) => parseInt(a.id) - parseInt(b.id)) // Ensure 1,2,3,4,5...
+                                .sort((a: any, b: any) => (b.rating || 0) - (a.rating || 0))
                                 .slice(0, 5)
                                 .map((store: any, idx) => (
                                     <div key={store.id} className="flex items-center justify-between p-3 hover:bg-[var(--surface-1)] rounded-lg transition-colors border border-transparent hover:border-[var(--glass-border)]">
                                         <div className="flex items-center gap-3">
                                             <div className="font-bold text-[var(--text-muted)] w-4 text-center">{idx + 1}</div>
-                                            <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-2xl">{store.logo}</div>
+                                            <div className="w-10 h-10 rounded-full bg-white border border-gray-100 flex items-center justify-center text-2xl overflow-hidden shadow-sm">
+                                                {store.logoUrl ? (
+                                                    <img src={store.logoUrl} alt="" className="w-full h-full object-cover" />
+                                                ) : (
+                                                    <span>{store.logo || '🏪'}</span>
+                                                )}
+                                            </div>
                                             <div>
                                                 <div className="font-bold text-sm text-[var(--text-main)]">{store.name}</div>
                                                 <div className="text-xs text-[var(--text-muted)] flex items-center gap-2">
-                                                    <span>📦 {store.productCount || store.products?.length || 0} Products</span>
-                                                    {store.flyer?.title && <span className="text-green-600"> • Has Flyer</span>}
+                                                    <span>📦 {store.productCount || (store.products ? store.products.length : 0)} Products</span>
+                                                    {(store.flyer?.title || store.hasFlyer) && <span className="text-green-600 font-medium"> • Has Flyer</span>}
                                                 </div>
                                             </div>
                                         </div>
                                         <div className="text-right">
-                                            <div className="text-xs px-2 py-0.5 bg-yellow-100 text-yellow-700 rounded-full font-bold">
-                                                ⭐ {store.rating}
+                                            <div className="text-xs px-2 py-0.5 bg-yellow-50 text-yellow-700 border border-yellow-200 rounded-full font-bold shadow-sm">
+                                                ⭐ {(store.rating || 0).toFixed(1)}
                                             </div>
                                         </div>
                                     </div>
@@ -292,20 +320,20 @@ const AdminDashboard: React.FC = () => {
                 <div className="space-y-6">
                     <div className="bg-white rounded-xl border border-[var(--glass-border)] p-6 shadow-sm">
                         <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-xl font-bold text-[var(--text-main)]">System Health</h2>
+                            <div>
+                                <h2 className="text-xl font-bold text-[var(--text-main)]">System Health</h2>
+                                <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-widest font-bold">Real-time Performance</p>
+                            </div>
                             <div className="flex items-center gap-2">
                                 <a 
-                                    href="https://sentry.io" 
+                                    href="https://sentry.io/organizations/spendigo/issues/" 
                                     target="_blank" 
                                     rel="noreferrer"
-                                    className="text-xs font-bold bg-purple-50 text-purple-700 border border-purple-200 px-3 py-1 rounded hover:bg-purple-100 transition-colors flex items-center gap-1"
+                                    className="text-[10px] font-bold bg-red-50 text-red-600 border border-red-100 px-3 py-1.5 rounded-full hover:bg-red-100 transition-all flex items-center gap-1.5 shadow-sm"
                                 >
-                                    🐞 Error Logs (Sentry) ↗
+                                    <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+                                    Sentry Diagnostics ↗
                                 </a>
-                                <div className="flex items-center gap-2 bg-green-50 px-3 py-1 rounded-full border border-green-100">
-                                    <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-                                    <span className="text-xs font-bold text-green-700">Live Pooling</span>
-                                </div>
                             </div>
                         </div>
 

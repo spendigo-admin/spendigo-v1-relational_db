@@ -21,3 +21,4 @@ export { onMasterProductWrite } from './triggers/productTriggers';
 export { smartcartOptimize } from './smartcart/optimizeEndpoint';
 export { cartOptimize } from './cart/optimizeCart';
 export { syncMasterProductToAlgolia } from './triggers/algoliaTriggers';
+export { syncTrafficStats } from './admin/syncTrafficStats';

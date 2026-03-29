@@ -33,7 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.syncMasterProductToAlgolia = exports.cartOptimize = exports.smartcartOptimize = exports.onMasterProductWrite = exports.onUserUpdate = exports.cancelOrder = exports.placeOrder = exports.updateSubscriptionPlan = exports.sendOrderStatusUpdate = exports.sendOrderConfirmation = exports.getPaymentHistory = exports.stripeWebhook = exports.createCheckoutSession = exports.removeTeamMember = exports.requestAccountDeletion = exports.deleteUser = exports.inviteTeamMember = exports.cleanupOrphanedUsers = void 0;
+exports.syncTrafficStats = exports.syncMasterProductToAlgolia = exports.cartOptimize = exports.smartcartOptimize = exports.onMasterProductWrite = exports.onUserUpdate = exports.cancelOrder = exports.placeOrder = exports.updateSubscriptionPlan = exports.sendOrderStatusUpdate = exports.sendOrderConfirmation = exports.getPaymentHistory = exports.stripeWebhook = exports.createCheckoutSession = exports.removeTeamMember = exports.requestAccountDeletion = exports.deleteUser = exports.inviteTeamMember = exports.cleanupOrphanedUsers = void 0;
 const admin = __importStar(require("firebase-admin"));
 // Initialize Firebase Admin
 admin.initializeApp();
@@ -73,4 +73,6 @@ var optimizeCart_1 = require("./cart/optimizeCart");
 Object.defineProperty(exports, "cartOptimize", { enumerable: true, get: function () { return optimizeCart_1.cartOptimize; } });
 var algoliaTriggers_1 = require("./triggers/algoliaTriggers");
 Object.defineProperty(exports, "syncMasterProductToAlgolia", { enumerable: true, get: function () { return algoliaTriggers_1.syncMasterProductToAlgolia; } });
+var syncTrafficStats_1 = require("./admin/syncTrafficStats");
+Object.defineProperty(exports, "syncTrafficStats", { enumerable: true, get: function () { return syncTrafficStats_1.syncTrafficStats; } });
 //# sourceMappingURL=index.js.map
