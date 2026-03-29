@@ -84,7 +84,7 @@ const AdminDashboard: React.FC = () => {
             // Count total objects in the stores to simulate DB load
             const allStores = Object.values(stores || {});
             const totalItems = allStores.reduce((acc: number, store: any) =>
-                acc + (store.products?.length || 0) + (store.oneDayOffers?.length || 0) + (store.saleItems?.length || 0), 0);
+                acc + (store.productCount || store.products?.length || 0) + (store.oneDayOffers?.length || 0) + (store.saleItems?.length || 0), 0);
             // Assume 1000 items is "100% load" for this demo
             const calculatedDbLoad = Math.min(100, Math.round((totalItems / 1000) * 100) + 10); // +10 for base overhead
 
@@ -115,7 +115,7 @@ const AdminDashboard: React.FC = () => {
         const allStores = Object.values(stores || {});
         const totalStores = allStores.length;
         const pendingStores = allStores.filter((s: any) => s.status === 'pending').length;
-        const totalProducts = allStores.reduce((acc: number, store: any) => acc + (store.products?.length || 0), 0);
+        const totalProducts = allStores.reduce((acc: number, store: any) => acc + (store.productCount || store.products?.length || 0), 0);
         const totalDeals = allStores.reduce((acc: number, store: any) =>
             acc + (store.oneDayOffers?.length || 0) + (store.saleItems?.length || 0), 0);
         const mrr = allStores.reduce((acc: number, store: any) => {
@@ -256,7 +256,7 @@ const AdminDashboard: React.FC = () => {
                                             <div>
                                                 <div className="font-bold text-sm text-[var(--text-main)]">{store.name}</div>
                                                 <div className="text-xs text-[var(--text-muted)] flex items-center gap-2">
-                                                    <span>📦 {store.products?.length || 0} Products</span>
+                                                    <span>📦 {store.productCount || store.products?.length || 0} Products</span>
                                                     {store.flyer?.title && <span className="text-green-600"> • Has Flyer</span>}
                                                 </div>
                                             </div>
@@ -293,9 +293,19 @@ const AdminDashboard: React.FC = () => {
                     <div className="bg-white rounded-xl border border-[var(--glass-border)] p-6 shadow-sm">
                         <div className="flex items-center justify-between mb-4">
                             <h2 className="text-xl font-bold text-[var(--text-main)]">System Health</h2>
-                            <div className="flex items-center gap-2 bg-green-50 px-3 py-1 rounded-full border border-green-100">
-                                <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-                                <span className="text-xs font-bold text-green-700">Live Pooling</span>
+                            <div className="flex items-center gap-2">
+                                <a 
+                                    href="https://sentry.io" 
+                                    target="_blank" 
+                                    rel="noreferrer"
+                                    className="text-xs font-bold bg-purple-50 text-purple-700 border border-purple-200 px-3 py-1 rounded hover:bg-purple-100 transition-colors flex items-center gap-1"
+                                >
+                                    🐞 Error Logs (Sentry) ↗
+                                </a>
+                                <div className="flex items-center gap-2 bg-green-50 px-3 py-1 rounded-full border border-green-100">
+                                    <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                                    <span className="text-xs font-bold text-green-700">Live Pooling</span>
+                                </div>
                             </div>
                         </div>
 

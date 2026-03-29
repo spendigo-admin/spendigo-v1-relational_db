@@ -50,7 +50,7 @@ const ROLE_INFO: Record<MerchantRole, { label: string; desc: string; permissions
 };
 
 
-const BUSINESS_TYPES: Record<string, { logo: string; cover: string; tagline: string }> = {
+export const BUSINESS_TYPES: Record<string, { logo: string; cover: string; tagline: string }> = {
     'Grocery Store': {
         logo: '/defaults/branding/grocery_logo.jpg?v=4',
         cover: '/defaults/branding/grocery_cover.jpg?v=4',
@@ -236,7 +236,7 @@ const MerchantSettings: React.FC = () => {
         postalCode: 'M5V 2H1',
         description: 'Your local source for fresh produce and daily essentials. We partner with local farmers to bring you the best quality items.',
         website: 'www.freshmart.ca',
-        businessType: 'Grocery', // Default
+        businessType: 'Grocery Store', // Fixed default to match BUSINESS_TYPES key
         logoUrl: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=200',
         coverUrl: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=800&h=300&fit=crop',
         coordinates: { lat: 0, lng: 0 }
@@ -349,7 +349,7 @@ const MerchantSettings: React.FC = () => {
                 website: store.website || '',
                 logoUrl: store.logoUrl || store.logo || 'https://via.placeholder.com/150?text=Logo', // Handle emoji vs url vs empty
                 coverUrl: store.image || '',
-                businessType: store.businessType || 'Grocery',
+                businessType: store.businessType || 'Grocery Store',
                 coordinates: store.coordinates || { lat: 43.6510, lng: -79.3820 } // default Toronto
             });
 
@@ -399,73 +399,83 @@ const MerchantSettings: React.FC = () => {
     const handleSave = async () => {
         setIsSaving(true);
 
-        let finalCoordinates = storeInfo.coordinates;
-        
-        // Auto-geocode if coordinates are missing or explicitly 0,0
-        if (!finalCoordinates || (finalCoordinates.lat === 0 && finalCoordinates.lng === 0) || (finalCoordinates.lat === 43.6510 && finalCoordinates.lng === -79.3820)) {
-            const fullAddress = `${storeInfo.address}, ${storeInfo.city}, ${storeInfo.province}, ${storeInfo.postalCode}, Canada`;
-            try {
-                const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(fullAddress)}`);
-                const data = await response.json();
+        try {
+            let finalCoordinates = storeInfo.coordinates;
+            
+            // Auto-geocode if coordinates are missing or explicitly 0,0
+            if (!finalCoordinates || (finalCoordinates.lat === 0 && finalCoordinates.lng === 0) || (finalCoordinates.lat === 43.6510 && finalCoordinates.lng === -79.3820)) {
+                const fullAddress = `${storeInfo.address}, ${storeInfo.city}, ${storeInfo.province}, ${storeInfo.postalCode}, Canada`;
+                try {
+                    const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(fullAddress)}`);
+                    const data = await response.json();
 
-                if (data && data.length > 0) {
-                    finalCoordinates = {
-                        lat: parseFloat(data[0].lat),
-                        lng: parseFloat(data[0].lon)
-                    };
-                    setStoreInfo(prev => ({ ...prev, coordinates: finalCoordinates }));
+                    if (data && data.length > 0) {
+                        finalCoordinates = {
+                            lat: parseFloat(data[0].lat),
+                            lng: parseFloat(data[0].lon)
+                        };
+                        setStoreInfo(prev => ({ ...prev, coordinates: finalCoordinates }));
+                    }
+                } catch (error) {
+                    console.warn('Auto-geocoding failed during save:', error);
                 }
-            } catch (error) {
-                console.warn('Auto-geocoding failed during save:', error);
             }
+
+            let displayFee = `$${Number(operations.deliveryFee || 0).toFixed(2)}`;
+            if (operations.freeDeliveryThreshold > 0) {
+                displayFee = `Free over $${operations.freeDeliveryThreshold}`;
+            }
+
+            const updates: any = {
+                // Profile
+                name: storeInfo.name,
+                tagline: storeInfo.tagline,
+                phone: storeInfo.phone,
+                email: storeInfo.email,
+                address: storeInfo.address,
+                city: storeInfo.city,
+                province: storeInfo.province,
+                postalCode: storeInfo.postalCode,
+                description: storeInfo.description,
+                website: storeInfo.website,
+                coordinates: finalCoordinates, // Save real coordinates!
+                businessType: storeInfo.businessType,
+                logoUrl: storeInfo.logoUrl,
+                image: storeInfo.coverUrl, // Map local coverUrl to DB 'image' field
+                // Operations
+                deliveryRadiusKm: operations.deliveryRadiusKm,
+                minDeliveryOrder: operations.minOrder,
+                deliveryFeeValue: operations.deliveryFee, // Numeric
+                freeDeliveryThreshold: operations.freeDeliveryThreshold,
+                pickupEnabled: operations.pickupEnabled,
+                defaultPrepTime: operations.defaultPrepTime,
+                autoAcceptOrders: operations.autoAcceptOrders,
+                taxRate: operations.taxRate,
+                deliveryEnabled: operations.deliveryEnabled,
+                deliveryTime: operations.deliveryTime,
+                hours: hours,
+                // Legacy/Display Fields
+                deliveryFee: displayFee
+            };
+
+            // Remove any undefined payload fields to prevent Firestore crashes
+            Object.keys(updates).forEach(key => {
+                if (updates[key] === undefined) {
+                    delete updates[key];
+                }
+            });
+
+            // Simulate processing for UX
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            await updateStore(storeId, updates);
+            addNotification({ type: 'system', title: 'Settings Saved', message: 'Store configuration updated successfully.' });
+        } catch (error: any) {
+            console.error("Save failed:", error);
+            addNotification({ type: 'alert', title: 'Error Saving Settings', message: error.message || 'An unexpected error occurred.' });
+        } finally {
+            setIsSaving(false);
         }
-
-        let displayFee = `$${operations.deliveryFee.toFixed(2)}`;
-        if (operations.freeDeliveryThreshold > 0) {
-            displayFee = `Free over $${operations.freeDeliveryThreshold}`;
-        }
-
-        const updates = {
-            // Profile
-            name: storeInfo.name,
-            tagline: storeInfo.tagline,
-            phone: storeInfo.phone,
-            email: storeInfo.email,
-            address: storeInfo.address,
-            city: storeInfo.city,
-            province: storeInfo.province,
-            postalCode: storeInfo.postalCode,
-            description: storeInfo.description,
-            website: storeInfo.website,
-            coordinates: finalCoordinates, // Save real coordinates!
-            businessType: storeInfo.businessType,
-            logoUrl: storeInfo.logoUrl,
-            image: storeInfo.coverUrl, // Map local coverUrl to DB 'image' field
-            // Operations
-            deliveryRadiusKm: operations.deliveryRadiusKm,
-            minDeliveryOrder: operations.minOrder,
-            deliveryFeeValue: operations.deliveryFee, // Numeric
-            freeDeliveryThreshold: operations.freeDeliveryThreshold,
-            pickupEnabled: operations.pickupEnabled,
-            defaultPrepTime: operations.defaultPrepTime,
-            autoAcceptOrders: operations.autoAcceptOrders,
-            taxRate: operations.taxRate,
-            deliveryEnabled: operations.deliveryEnabled,
-            deliveryTime: operations.deliveryTime,
-            hours: hours,
-            // Force sync subscription tier from user profile to store
-            // This fixes issues where the store doc might be out of sync with user doc
-            subscriptionTier: user?.subscriptionTier || 'free',
-            // Legacy/Display Fields
-            deliveryFee: displayFee
-        };
-
-        // Simulate processing for UX
-        await new Promise(resolve => setTimeout(resolve, 1500));
-
-        await updateStore(storeId, updates);
-        setIsSaving(false);
-        addNotification({ type: 'system', title: 'Settings Saved', message: 'Store configuration updated successfully.' });
     };
 
     const handleInvite = async (e: React.FormEvent) => {
@@ -831,78 +841,15 @@ const MerchantSettings: React.FC = () => {
                         <label className="block text-sm font-bold text-blue-900 mb-2">Primary Business Type</label>
                         <select
                             value={storeInfo.businessType}
-                            disabled={isApplyingPreset || isSaving}
-                            onChange={async (e) => {
-                                const newType = e.target.value;
-                                const defaultAssets = BUSINESS_TYPES[newType];
-                                if (!defaultAssets) {
-                                    setStoreInfo(prev => ({ ...prev, businessType: newType }));
-                                    return;
-                                }
-
-                                setIsApplyingPreset(true);
-                                let newLogoUrl = defaultAssets.logo;
-                                let newCoverUrl = defaultAssets.cover;
-
-                                try {
-                                    // Helper to fetch and upload an asset
-                                    const mirrorAsset = async (url: string, type: 'logo' | 'cover'): Promise<string> => {
-                                        try {
-                                            // Determine fetch options based on URL type
-                                            const isLocal = url.startsWith('/');
-                                            const options = isLocal ? {} : { method: 'GET', mode: 'cors' as RequestMode, credentials: 'omit' as RequestCredentials };
-
-                                            const response = await fetch(url, options);
-                                            if (!response.ok) throw new Error(`Network response was not ok: ${response.status}`);
-
-                                            const blob = await response.blob();
-                                            // Generate a unique name for the new file
-                                            const fileName = `${type}_preset_${newType.replace(/\s+/g, '_').toLowerCase()}_${Date.now()}.jpg`;
-                                            const path = `stores/${storeId}/${fileName}`;
-
-                                            const uploadedUrl = await uploadFile(new File([blob], fileName, { type: 'image/jpeg' }), path);
-                                            return uploadedUrl || url;
-                                        } catch (err) {
-                                            console.warn(`Failed to mirror ${type}, falling back to source link`, err);
-                                            // Don't show alert for local files, just fallback silently if it fails (it will still work as a path)
-                                            return url;
-                                        }
-                                    };
-
-                                    addNotification({ type: 'system', title: 'Updating Branding', message: `Applying ${newType} theme...` });
-
-                                    // 1. Mirror Logo
-                                    newLogoUrl = await mirrorAsset(defaultAssets.logo, 'logo');
-                                    // 2. Mirror Cover
-                                    newCoverUrl = await mirrorAsset(defaultAssets.cover, 'cover');
-
-                                    // 3. Clean up old assets to save space
-                                    // The deleteFile hook automatically checks if it's a firebase URL before deleting
-                                    if (storeInfo.logoUrl) await deleteFile(storeInfo.logoUrl);
-                                    if (storeInfo.coverUrl) await deleteFile(storeInfo.coverUrl);
-
-                                } catch (err) {
-                                    console.error('Preset application failed', err);
-                                    addNotification({ type: 'alert', title: 'Warning', message: 'Could not save images to storage. Using external links.' });
-                                } finally {
-                                    setStoreInfo(prev => ({
-                                        ...prev,
-                                        businessType: newType,
-                                        logoUrl: newLogoUrl,
-                                        coverUrl: newCoverUrl,
-                                        tagline: defaultAssets.tagline || prev.tagline
-                                    }));
-                                    setIsApplyingPreset(false);
-                                }
-                            }}
-                            className="w-full p-3 border border-blue-200 rounded-lg bg-white font-medium focus:ring-2 ring-blue-500 outline-none disabled:opacity-50"
+                            disabled={true}
+                            className="w-full p-2 border rounded-lg bg-white/50 focus:ring-2 ring-[var(--brand-primary)] outline-none text-[var(--text-main)] font-semibold cursor-not-allowed opacity-75"
                         >
                             {Object.keys(BUSINESS_TYPES).map(type => (
                                 <option key={type} value={type}>{type}</option>
                             ))}
                         </select>
-                        <p className="text-xs text-blue-700 mt-2">
-                            {isApplyingPreset ? '⏳ Uploading assets to your storage...' : '✨ Selecting a type will automatically suggest match.'}
+                        <p className="text-xs text-blue-700 mt-2 font-medium">
+                            🔒 Business type is locked. Please contact support if you need to change this.
                         </p>
                     </div>
 
@@ -1455,10 +1402,10 @@ const MerchantSettings: React.FC = () => {
                     {hasSettingsAccess ? (
                         <button
                             onClick={handleSave}
-                            disabled={isSaving}
-                            className="px-6 py-2 bg-[var(--brand-primary)] text-white font-bold rounded-lg shadow-lg shadow-[var(--brand-primary)]/20 hover:brightness-110 transition-all flex items-center gap-2"
+                            disabled={isSaving || isApplyingPreset || isLocatingStatus === 'loading'}
+                            className="px-6 py-2 bg-[var(--brand-primary)] text-white font-bold rounded-lg shadow-lg shadow-[var(--brand-primary)]/20 hover:brightness-110 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            {isSaving ? 'Saving...' : '💾 Save All Changes'}
+                            {isSaving || isApplyingPreset ? 'Saving...' : '💾 Save All Changes'}
                         </button>
                     ) : (
                         <div className="text-sm font-medium text-orange-600 bg-orange-50 px-4 py-2 rounded-lg border border-orange-100 flex items-center gap-2">

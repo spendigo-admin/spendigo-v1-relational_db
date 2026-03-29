@@ -4,6 +4,7 @@ import { useCart } from '../../context/CartContext';
 import { useOrders } from '../../context/OrderContext';
 import { useWishlist } from '../../context/WishlistContext';
 import { useMarketplace } from '../../context/MarketplaceContext';
+import { useLocation } from '../../context/LocationContext';
 // Audit import removed
 import { useAuth } from '../../context/AuthContext';
 import { useNotifications } from '../../context/NotificationContext';
@@ -17,6 +18,7 @@ const Checkout: React.FC = () => {
     const { user } = useAuth();
     const { addNotification } = useNotifications();
     const { getStore } = useMarketplace(); // Moved up
+    const { userCoords, calculateDistance } = useLocation();
     const navigate = useNavigate();
 
     // Helper to check if store is open
@@ -54,22 +56,42 @@ const Checkout: React.FC = () => {
     // Group items by store
     const groupedItems = items.reduce((acc, item) => {
         const store = getStore(item.storeId);
+        
+        // --- RADIUS CHECK ---
+        const maxRadius = store?.deliveryRadiusKm || 5;
+        let distanceViolation = false;
+        let distance = 0;
+        
+        if (store?.coordinates && userCoords) {
+             distance = calculateDistance(
+                 userCoords.lat, 
+                 userCoords.lng, 
+                 store.coordinates.lat, 
+                 store.coordinates.lng
+             );
+             if (distance > maxRadius) {
+                 distanceViolation = true;
+             }
+        }
+
         if (!acc[item.storeId]) {
             acc[item.storeId] = {
                 storeName: item.storeName,
                 total: 0,
                 items: [],
                 tier: store?.subscriptionTier || STORE_DATA[item.storeId]?.subscriptionTier || 'free',
-                deliveryEnabled: store?.deliveryEnabled !== false,
+                deliveryEnabled: (store?.deliveryEnabled !== false) && !distanceViolation,
                 pickupEnabled: store?.pickupEnabled !== false,
                 isOpen: isStoreOpen(store),
-                acceptsOnlinePayment: !!store?.stripeAccountId && store?.stripeOnboardingStatus === 'complete'
+                acceptsOnlinePayment: !!store?.stripeAccountId && store?.stripeOnboardingStatus === 'complete',
+                distanceViolation,
+                distance
             };
         }
         acc[item.storeId].total += item.price * item.quantity;
         acc[item.storeId].items.push(item);
         return acc;
-    }, {} as Record<string, { storeName: string; total: number; items: any[]; tier: string; deliveryEnabled: boolean; pickupEnabled: boolean; isOpen: boolean; acceptsOnlinePayment: boolean }>);
+    }, {} as Record<string, { storeName: string; total: number; items: any[]; tier: string; deliveryEnabled: boolean; pickupEnabled: boolean; isOpen: boolean; acceptsOnlinePayment: boolean; distanceViolation: boolean; distance: number }>);
 
     // State for fulfillment method PER STORE
     const [fulfillmentMethods, setFulfillmentMethods] = useState<Record<string, 'delivery' | 'pickup'>>({});
@@ -87,8 +109,8 @@ const Checkout: React.FC = () => {
         Object.entries(groupedItems).forEach(([storeId, data]) => {
             const store = getStore(storeId);
             const tier = store?.subscriptionTier || data.tier || 'free';
-            const deliveryEnabled = store?.deliveryEnabled !== false;
-            const pickupEnabled = store?.pickupEnabled !== false;
+            const deliveryEnabled = data.deliveryEnabled; // Use computed value that respects distance
+            const pickupEnabled = data.pickupEnabled;
 
             // Determine default method
             if (tier !== 'free' && deliveryEnabled) {
@@ -101,7 +123,7 @@ const Checkout: React.FC = () => {
             }
         });
         setFulfillmentMethods(methods);
-    }, [items.length, getStore]);
+    }, [items.length, getStore, userCoords]);
 
     const toggleFulfillment = (storeId: string, method: 'delivery' | 'pickup') => {
         const storeData = groupedItems[storeId];
@@ -189,6 +211,15 @@ const Checkout: React.FC = () => {
             const store = getStore(storeId);
 
             if (method === 'delivery') {
+                if (data.distanceViolation) {
+                    addNotification({
+                        type: 'alert',
+                        title: 'Delivery Not Available',
+                        message: `${data.storeName} does not deliver to your specified location.`
+                    });
+                    return;
+                }
+
                 if (store && store.minDeliveryOrder && data.total < store.minDeliveryOrder) {
                     addNotification({
                         type: 'alert',
@@ -379,6 +410,11 @@ const Checkout: React.FC = () => {
                                                         💳 Online Pay
                                                     </span>
                                                 )}
+                                                {groupedItems[storeId].distanceViolation && (
+                                                    <span className="text-[10px] bg-red-100 text-red-700 border border-red-200 px-2 py-0.5 rounded ml-2 font-bold cursor-help" title={`You are ${groupedItems[storeId].distance.toFixed(1)}km away. Store delivers within ${getStore(storeId)?.deliveryRadiusKm || 5}km.`}>
+                                                        Too Far for Delivery
+                                                    </span>
+                                                )}
                                             </div>
                                             <p className="text-xs text-[var(--text-muted)]">{items.length} items • ${total.toFixed(2)}</p>
                                         </div>
@@ -422,7 +458,8 @@ const Checkout: React.FC = () => {
                                             }`}
                                     >
                                         🚚 Delivery
-                                        {(tier === 'free' || !deliveryEnabled) && <span className="text-[8px] border border-gray-300 px-1 rounded">UNAVAILABLE</span>}
+                                        {(!deliveryEnabled && groupedItems[storeId].distanceViolation) && <span className="text-[8px] bg-purple-100 text-purple-700 border border-purple-200 px-1 rounded">TOO FAR</span>}
+                                        {(tier === 'free' || (!deliveryEnabled && !groupedItems[storeId].distanceViolation)) && <span className="text-[8px] border border-gray-300 px-1 rounded">UNAVAILABLE</span>}
                                     </button>
                                 </div>
 

@@ -304,6 +304,39 @@ const SystemTools = () => {
                     </div>
                 ))}
             </div>
+
+            <div className="mt-12 pt-8 border-t border-[var(--glass-border)]">
+                <h2 className="text-xl font-bold text-[var(--text-main)] mb-2">Observability & Diagnostics</h2>
+                <p className="text-sm text-[var(--text-muted)] mb-6">
+                    External tools configured for tracking application health and running End-to-End tests.
+                </p>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <a href="https://sentry.io" target="_blank" rel="noreferrer" className="flex items-start gap-4 bg-white p-5 rounded-xl border border-[var(--glass-border)] hover:border-purple-300 hover:shadow-md transition-all group">
+                        <div className="w-12 h-12 bg-purple-50 text-purple-600 rounded-lg flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
+                            🐞
+                        </div>
+                        <div>
+                            <h3 className="font-bold text-[var(--text-main)] mb-1 flex items-center gap-2">
+                                Sentry Error Tracking <span className="text-xs text-purple-600 bg-purple-50 px-2 py-0.5 rounded font-bold">Live</span>
+                            </h3>
+                            <p className="text-sm text-[var(--text-muted)]">View real-time JavaScript exceptions, unhandled promises, and React crash reports.</p>
+                        </div>
+                    </a>
+
+                    <div className="flex items-start gap-4 bg-white p-5 rounded-xl border border-[var(--glass-border)] hover:border-blue-300 hover:shadow-md transition-all group cursor-help" title="Run 'npx playwright test' in your terminal to execute.">
+                        <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
+                            🎭
+                        </div>
+                        <div>
+                            <h3 className="font-bold text-[var(--text-main)] mb-1 flex items-center gap-2">
+                                Playwright E2E Suite <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded font-bold">Local</span>
+                            </h3>
+                            <p className="text-sm text-[var(--text-muted)]">Automated browser testing suite. View HTML test reports in your local terminal output.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     );
 };

@@ -25,20 +25,34 @@ const ErrorFallback: React.FC<FallbackProps> = ({ error, resetErrorBoundary }) =
                     {error.message}
                 </div>
 
-                <div className="flex gap-3">
-                    <button
-                        onClick={() => window.location.href = '/'}
-                        className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-colors"
-                    >
-                        Go Home
-                    </button>
-                    <button
-                        onClick={resetErrorBoundary}
-                        className="flex-1 px-4 py-2 bg-[var(--brand-primary)] text-white rounded-lg font-medium hover:brightness-110 transition-all shadow-lg shadow-[var(--brand-primary)]/20"
-                    >
-                        Try Again
-                    </button>
-                </div>
+                {error.message?.includes('Failed to fetch dynamically imported module') ? (
+                    <div className="flex flex-col gap-3">
+                        <button
+                            onClick={() => window.location.href = window.location.pathname + '?reload=' + Date.now()}
+                            className="w-full px-4 py-3 bg-[var(--brand-primary)] text-white rounded-lg font-bold hover:brightness-110 transition-all shadow-lg shadow-[var(--brand-primary)]/20 animate-pulse"
+                        >
+                            🔄 Update App to Latest Version
+                        </button>
+                        <p className="text-xs text-red-500 font-bold">
+                            A new version of the app was just deployed! Click above to get the latest update.
+                        </p>
+                    </div>
+                ) : (
+                    <div className="flex gap-3">
+                        <button
+                            onClick={() => window.location.href = '/'}
+                            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-colors"
+                        >
+                            Go Home
+                        </button>
+                        <button
+                            onClick={resetErrorBoundary}
+                            className="flex-1 px-4 py-2 bg-[var(--brand-primary)] text-white rounded-lg font-medium hover:brightness-110 transition-all shadow-lg shadow-[var(--brand-primary)]/20"
+                        >
+                            Try Again
+                        </button>
+                    </div>
+                )}
 
                 {/* User feedback — Sentry dialog */}
                 <button

@@ -7,6 +7,8 @@ import { useMarketplace } from '../../context/MarketplaceContext';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 
+import { BUSINESS_TYPES } from './Settings';
+
 const MerchantOnboarding: React.FC = () => {
     const navigate = useNavigate();
     const { user } = useAuth();
@@ -21,6 +23,7 @@ const MerchantOnboarding: React.FC = () => {
         city: (user as any)?.addresses?.[0]?.city || '',
         province: (user as any)?.addresses?.[0]?.province || 'ON',
         postalCode: (user as any)?.addresses?.[0]?.postalCode || '',
+        businessType: 'Grocery Store',
         agreedToTerms: false
     });
 
@@ -52,6 +55,8 @@ const MerchantOnboarding: React.FC = () => {
                 console.warn("Geocoding failed during store onboarding", e);
             }
 
+            const defaultAssets = BUSINESS_TYPES[formData.businessType] || BUSINESS_TYPES['Grocery Store'];
+
             const newStore = {
                 id: newStoreId,
                 name: user.storeName || `${user.name}'s Store`,
@@ -69,8 +74,11 @@ const MerchantOnboarding: React.FC = () => {
                 deliveryTime: '45-60 min', // Default
                 tags: ['New'],
                 categories: ['All'],
+                businessType: formData.businessType,
                 products: [], // Empty inventory
-                image: 'https://images.unsplash.com/photo-1604719312566-8912e9227c6a?w=1200&h=400&fit=crop' // Placeholder
+                image: defaultAssets.cover,
+                logoUrl: defaultAssets.logo,
+                tagline: defaultAssets.tagline
             };
 
             await addStore(newStore);
@@ -170,6 +178,23 @@ const MerchantOnboarding: React.FC = () => {
                                     onChange={e => setFormData({ ...formData, postalCode: e.target.value })}
                                 />
                             </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium mb-2 text-[var(--text-muted)]">Primary Business Type</label>
+                            <select
+                                required
+                                className="w-full p-3 rounded-[var(--radius-sm)] bg-[var(--surface-0)] border border-[var(--glass-border)] text-[var(--text-main)]"
+                                value={formData.businessType}
+                                onChange={e => setFormData({ ...formData, businessType: e.target.value })}
+                            >
+                                {Object.keys(BUSINESS_TYPES).map(type => (
+                                    <option key={type} value={type}>{type}</option>
+                                ))}
+                            </select>
+                            <p className="text-xs text-[var(--text-muted)] mt-2">
+                                ✨ This sets your store's default imagery and taglines. It cannot be changed later.
+                            </p>
                         </div>
 
                         <button type="submit" className="w-full py-4 rounded-[var(--radius-md)] bg-[var(--brand-primary)] text-white font-bold hover:bg-[var(--brand-primary-dark)] transition-transform active:scale-95">

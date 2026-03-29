@@ -61,6 +61,7 @@ export interface SmartCartStoreInput {
     freeDeliveryThreshold?: number;
     pickupEnabled?: boolean;
     deliveryEnabled?: boolean;
+    maxDeliveryRadiusKm?: number;
 }
 
 export interface SmartCartPriceInput {

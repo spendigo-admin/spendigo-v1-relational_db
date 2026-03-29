@@ -28,45 +28,67 @@ import ForgotPassword from './pages/consumer/ForgotPassword';
 import VerifyEmail from './pages/consumer/VerifyEmail';
 import ResetPassword from './pages/consumer/ResetPassword';
 
+// Wrapper to catch Vite 'failed to fetch dynamically imported module' (Chunk/Hash mismatches after deploy)
+const lazyWithRetry = (componentImport: () => Promise<any>) =>
+    lazy(async () => {
+        const pageHasAlreadyBeenForceRefreshed = JSON.parse(
+            window.sessionStorage.getItem('page-has-been-force-refreshed') || 'false'
+        );
+
+        try {
+            const component = await componentImport();
+            window.sessionStorage.setItem('page-has-been-force-refreshed', 'false');
+            return component;
+        } catch (error: any) {
+            if (!pageHasAlreadyBeenForceRefreshed) {
+                console.warn('Handling dynamic import failure (Stale chunks). Forcing page reload...');
+                window.sessionStorage.setItem('page-has-been-force-refreshed', 'true');
+                window.location.reload();
+                return { default: () => null } as any; // Halt rendering while reloading
+            }
+            throw error;
+        }
+    });
+
 // Consumer Pages — lazy loaded
-const StoreList = lazy(() => import('./pages/consumer/StoreList'));
-const StoreDetail = lazy(() => import('./pages/consumer/StoreDetail'));
-const ProductDetail = lazy(() => import('./pages/consumer/ProductDetail'));
-const Cart = lazy(() => import('./pages/consumer/Cart'));
-const Checkout = lazy(() => import('./pages/consumer/Checkout'));
-const Profile = lazy(() => import('./pages/consumer/Profile'));
-const OrderTracking = lazy(() => import('./pages/consumer/OrderTracking'));
-const Notifications = lazy(() => import('./pages/consumer/Notifications'));
-const SmartCartWishlist = lazy(() => import('./pages/consumer/SmartCartWishlist'));
-const SmartCartPrototype = lazy(() => import('./pages/consumer/SmartCartPrototype'));
-const Search = lazy(() => import('./pages/consumer/Search'));
-const HowItWorks = lazy(() => import('./pages/consumer/HowItWorks'));
-const ConsumerSurveys = lazy(() => import('./pages/consumer/Surveys'));
-const Flyers = lazy(() => import('./pages/consumer/Flyers'));
-const Legal = lazy(() => import('./pages/consumer/Legal'));
-const PartnerWithUs = lazy(() => import('./pages/consumer/PartnerWithUs'));
+const StoreList = lazyWithRetry(() => import('./pages/consumer/StoreList'));
+const StoreDetail = lazyWithRetry(() => import('./pages/consumer/StoreDetail'));
+const ProductDetail = lazyWithRetry(() => import('./pages/consumer/ProductDetail'));
+const Cart = lazyWithRetry(() => import('./pages/consumer/Cart'));
+const Checkout = lazyWithRetry(() => import('./pages/consumer/Checkout'));
+const Profile = lazyWithRetry(() => import('./pages/consumer/Profile'));
+const OrderTracking = lazyWithRetry(() => import('./pages/consumer/OrderTracking'));
+const Notifications = lazyWithRetry(() => import('./pages/consumer/Notifications'));
+const SmartCartWishlist = lazyWithRetry(() => import('./pages/consumer/SmartCartWishlist'));
+const SmartCartPrototype = lazyWithRetry(() => import('./pages/consumer/SmartCartPrototype'));
+const Search = lazyWithRetry(() => import('./pages/consumer/Search'));
+const HowItWorks = lazyWithRetry(() => import('./pages/consumer/HowItWorks'));
+const ConsumerSurveys = lazyWithRetry(() => import('./pages/consumer/Surveys'));
+const Flyers = lazyWithRetry(() => import('./pages/consumer/Flyers'));
+const Legal = lazyWithRetry(() => import('./pages/consumer/Legal'));
+const PartnerWithUs = lazyWithRetry(() => import('./pages/consumer/PartnerWithUs'));
 
 // Merchant Pages — lazy loaded
-const MerchantDashboard = lazy(() => import('./pages/merchant/Dashboard'));
-const MerchantOnboarding = lazy(() => import('./pages/merchant/Onboarding'));
-const MerchantProducts = lazy(() => import('./pages/merchant/Products'));
-const MerchantOrders = lazy(() => import('./pages/merchant/Orders'));
-const MerchantFlyers = lazy(() => import('./pages/merchant/Flyers'));
-const MerchantDeals = lazy(() => import('./pages/merchant/Deals'));
-const MerchantSettings = lazy(() => import('./pages/merchant/Settings'));
-const MerchantSubscription = lazy(() => import('./pages/merchant/Subscription'));
+const MerchantDashboard = lazyWithRetry(() => import('./pages/merchant/Dashboard'));
+const MerchantOnboarding = lazyWithRetry(() => import('./pages/merchant/Onboarding'));
+const MerchantProducts = lazyWithRetry(() => import('./pages/merchant/Products'));
+const MerchantOrders = lazyWithRetry(() => import('./pages/merchant/Orders'));
+const MerchantFlyers = lazyWithRetry(() => import('./pages/merchant/Flyers'));
+const MerchantDeals = lazyWithRetry(() => import('./pages/merchant/Deals'));
+const MerchantSettings = lazyWithRetry(() => import('./pages/merchant/Settings'));
+const MerchantSubscription = lazyWithRetry(() => import('./pages/merchant/Subscription'));
 
 // Admin Pages — lazy loaded
-const AdminDashboard = lazy(() => import('./pages/admin/Dashboard'));
-const AdminUserManagement = lazy(() => import('./pages/admin/UserManagement'));
-const AdminStoreManagement = lazy(() => import('./pages/admin/StoreManagement'));
-const AdminAuditLogs = lazy(() => import('./pages/admin/AuditLogs'));
-const AdminFlyerModeration = lazy(() => import('./pages/admin/FlyerModeration'));
-const AdminSettings = lazy(() => import('./pages/admin/Settings'));
-const AdminMasterCatalog = lazy(() => import('./pages/admin/MasterCatalog'));
-const AdminAdManager = lazy(() => import('./pages/admin/AdManager'));
-const AdminSurveyManager = lazy(() => import('./pages/admin/SurveyManager'));
-const AdminSystemTools = lazy(() => import('./pages/admin/SystemTools'));
+const AdminDashboard = lazyWithRetry(() => import('./pages/admin/Dashboard'));
+const AdminUserManagement = lazyWithRetry(() => import('./pages/admin/UserManagement'));
+const AdminStoreManagement = lazyWithRetry(() => import('./pages/admin/StoreManagement'));
+const AdminAuditLogs = lazyWithRetry(() => import('./pages/admin/AuditLogs'));
+const AdminFlyerModeration = lazyWithRetry(() => import('./pages/admin/FlyerModeration'));
+const AdminSettings = lazyWithRetry(() => import('./pages/admin/Settings'));
+const AdminMasterCatalog = lazyWithRetry(() => import('./pages/admin/MasterCatalog'));
+const AdminAdManager = lazyWithRetry(() => import('./pages/admin/AdManager'));
+const AdminSurveyManager = lazyWithRetry(() => import('./pages/admin/SurveyManager'));
+const AdminSystemTools = lazyWithRetry(() => import('./pages/admin/SystemTools'));
 
 import { useState, useEffect } from 'react';
 import { doc, onSnapshot } from 'firebase/firestore';
