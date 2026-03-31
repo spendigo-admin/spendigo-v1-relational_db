@@ -43,6 +43,7 @@ export interface MerchantProductRecord {
     merchant_sku?: string;
     original_price?: number;
     discount_label?: string;
+    discount_valid_until?: string | null;
     is_active?: boolean;
     product_name?: string;
     brand?: string;

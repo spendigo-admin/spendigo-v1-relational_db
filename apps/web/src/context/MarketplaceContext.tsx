@@ -167,8 +167,7 @@ export const MarketplaceProvider: React.FC<{ children: ReactNode }> = ({ childre
         await deleteDoc(dealRef);
     };
 
-    const getStore = (storeId: string | number) => {
-        const store = stores[storeId];
+    const filterStoreData = (store: any) => {
         if (!store) return store;
 
         const now = new Date();
@@ -207,9 +206,19 @@ export const MarketplaceProvider: React.FC<{ children: ReactNode }> = ({ childre
         return filteredStore;
     };
 
+    const filteredStores = React.useMemo(() => {
+        const result: Record<string, any> = {};
+        Object.keys(stores).forEach(id => {
+            result[id] = filterStoreData(stores[id]);
+        });
+        return result;
+    }, [stores]);
+
+    const getStore = (storeId: string | number) => filteredStores[storeId];
+
     return (
         <MarketplaceContext.Provider value={{
-            stores,
+            stores: filteredStores,
             updateStore,
             updateStoreProducts,
             updateStoreFlyer,

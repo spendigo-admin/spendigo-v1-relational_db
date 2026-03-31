@@ -61,7 +61,6 @@ export const useStoreProducts = (storeId: string) => {
                         storeAddress: 'Loading...',
 
                         merchant_sku: data.merchant_sku,
-                        price: data.price,
                         currency: data.currency || 'CAD',
                         available_quantity: data.available_quantity,
 
@@ -83,8 +82,11 @@ export const useStoreProducts = (storeId: string) => {
                         tax_category_id: master.tax_category_id,
                         suggested_retail_price: master.suggested_retail_price,
 
-                        originalPrice: data.original_price,
-                        discount: data.discount_label
+                        price: (data.discount_valid_until && new Date(data.discount_valid_until) < new Date() && data.original_price > 0) 
+                            ? data.original_price : data.price,
+                        originalPrice: (data.price < data.original_price) ? data.original_price : undefined,
+                        discount: (data.discount_valid_until && new Date(data.discount_valid_until) < new Date()) 
+                            ? undefined : data.discount_label
                     } as Product);
                 }
             });

@@ -22,9 +22,17 @@ const FlyerTab: React.FC<{ storeId: string; storeName: string; summary: any; vie
 
     useEffect(() => {
         const unsubscribe = subscribeToFlyers(storeId, (flyers) => {
-            // Find active flyer (status=active OR if summary exists match it)
-            // Simplified: Just take the first active one or the one matching summary
-            const active = flyers.find(f => f.status === 'active') || flyers.find(f => f.title === summary?.title);
+            const now = new Date();
+            const activeFlyers = flyers.filter(f => {
+                if (f.status !== 'active') return false;
+                if (!f.validUntil) return true;
+                const end = new Date(f.validUntil);
+                if (f.validUntil.indexOf(':') === -1) end.setHours(23, 59, 59, 999);
+                return end >= now;
+            });
+
+            // Find best matching active flyer
+            const active = activeFlyers.find(f => f.title === summary?.title) || activeFlyers[0];
             setFlyer(active);
             setLoading(false);
         });
@@ -141,7 +149,13 @@ const OffersTab: React.FC<{ storeId: string, storeName: string; viewMode: 'grid'
 
     useEffect(() => {
         const unsubscribe = subscribeToDeals(storeId, (data) => {
-            setDeals(data);
+            const now = new Date();
+            const filteredDeals = data.filter(d => {
+                if (d.status !== 'active') return false;
+                if (!d.endDate) return true;
+                return new Date(d.endDate) >= now;
+            });
+            setDeals(filteredDeals);
             setLoading(false);
         });
         return () => unsubscribe();

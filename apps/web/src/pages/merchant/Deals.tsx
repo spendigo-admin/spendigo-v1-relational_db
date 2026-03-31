@@ -3,6 +3,8 @@ import '../../styles/design-system.css';
 import { useMarketplace } from '../../context/MarketplaceContext';
 import { useAuth } from '../../context/AuthContext';
 import { useNotifications } from '../../context/NotificationContext';
+import { doc, writeBatch, serverTimestamp, updateDoc } from 'firebase/firestore';
+import { db } from '../../lib/firebase';
 import { useStoreProducts } from '../../hooks/useStoreProducts';
 
 // Types
@@ -74,10 +76,10 @@ const MerchantDeals: React.FC = () => {
     // Subscribe to Deals
     const getEffectiveStatus = (deal: Partial<Deal>): Deal['status'] => {
         const now = new Date();
-        const start = new Date(deal.startDate || '');
-        const end = new Date(deal.endDate || '');
+        const start = deal.startDate ? new Date(deal.startDate) : now;
+        const end = deal.endDate ? new Date(deal.endDate) : null;
 
-        if (end < now) return 'expired';
+        if (end && end < now) return 'expired';
         if (start > now) return 'scheduled';
         return 'active';
     };
@@ -231,6 +233,16 @@ const MerchantDeals: React.FC = () => {
                     }];
                     updateStoreDeals(storeId, 'saleItems', updatedSales);
                 }
+
+                // 3. Sync individual merchant product document
+                const pRef = doc(db, 'merchant_products', newDeal.productId);
+                await updateDoc(pRef, {
+                    price: newDeal.salePrice,
+                    original_price: newDeal.originalPrice,
+                    discount_label: newDeal.type === 'percentage' ? `${newDeal.value}% OFF` : 'Special Offer',
+                    discount_valid_until: newDeal.endDate,
+                    updated_at: serverTimestamp()
+                });
             }
 
             closeWizard();
@@ -256,6 +268,15 @@ const MerchantDeals: React.FC = () => {
                         const newSales = (store?.saleItems || []).filter((s: any) => s.id !== id);
                         updateStoreDeals(storeId, 'saleItems', newSales);
                     }
+
+                    // 3. Revert individual merchant product document
+                    const pRef = doc(db, 'merchant_products', dealToDelete.productId);
+                    await updateDoc(pRef, {
+                        price: dealToDelete.originalPrice,
+                        discount_label: undefined,
+                        discount_valid_until: null,
+                        updated_at: serverTimestamp()
+                    });
                 }
             } catch (error) {
                 console.error("Failed to delete deal:", error);
@@ -321,6 +342,23 @@ const MerchantDeals: React.FC = () => {
 
                                     await updateStoreDeals(storeId, 'oneDayOffers', oneDayOffers);
                                     await updateStoreDeals(storeId, 'saleItems', saleItems);
+
+                                    // 3. Batch Update Merchant Products to ensure they have the expiration field
+                                    // This allows search and other views to correctly revert prices after expiration
+                                    const batch = writeBatch(db);
+                                    
+                                    activeDeals.forEach(d => {
+                                        const pRef = doc(db, 'merchant_products', d.productId);
+                                        batch.update(pRef, {
+                                            price: d.salePrice,
+                                            original_price: d.originalPrice,
+                                            discount_label: d.type === 'percentage' ? `${d.value}% OFF` : 'Special Offer',
+                                            discount_valid_until: d.endDate,
+                                            updated_at: serverTimestamp()
+                                        });
+                                    });
+                                    
+                                    await batch.commit();
 
                                     addNotification({
                                         type: 'system',

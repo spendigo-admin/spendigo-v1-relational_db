@@ -68,6 +68,12 @@ const getEffectivePrice = (product: any, store: any) => {
     // 1. Check Flash Sales / One Day Offers
     let flashSale = store.oneDayOffers?.find(isMatch);
     
+    // Check for expiration if available
+    const isExpired = (endDate: string) => {
+        if (!endDate) return false;
+        return new Date(endDate) < new Date();
+    };
+
     // Fallback for Agrumance Tea if IDs mismatch
     if (!flashSale && productName.includes('agrumance tea')) {
         flashSale = store.oneDayOffers?.find((d: any) => 
@@ -75,7 +81,7 @@ const getEffectivePrice = (product: any, store: any) => {
         );
     }
 
-    if (flashSale && flashSale.price < effectivePrice) {
+    if (flashSale && !isExpired(flashSale.validUntil) && flashSale.price < effectivePrice) {
         effectivePrice = flashSale.price;
         discountLabel = 'Flash Sale';
     }
@@ -90,14 +96,17 @@ const getEffectivePrice = (product: any, store: any) => {
         );
     }
 
-    if (saleItem && saleItem.price < effectivePrice) {
+    if (saleItem && !isExpired(saleItem.validUntil) && saleItem.price < effectivePrice) {
         effectivePrice = saleItem.price;
         discountLabel = saleItem.discount || 'Sale';
     }
 
     // 3. Check Active Flyer Items
     const flyerItem = store.activeFlyerItems?.find(isMatch);
-    if (flyerItem && flyerItem.salePrice < effectivePrice) {
+    // Flyer expiration check
+    const flyerExpired = store.flyer?.validUntil ? isExpired(store.flyer.validUntil) : false;
+
+    if (flyerItem && !flyerExpired && flyerItem.salePrice < effectivePrice) {
         effectivePrice = flyerItem.salePrice;
         const orig = flyerItem.originalPrice || product.price || effectivePrice;
         const discount = Math.round(((orig - flyerItem.salePrice) / orig) * 100);
@@ -163,6 +172,9 @@ export const useOptimizedWishlist = () => {
                 
                 deals.forEach((d: any) => {
                     if (d.status !== 'active') return;
+                    
+                    // Expiration check
+                    if (d.endDate && new Date(d.endDate) < new Date()) return;
                     
                     const dealObj = {
                         id: d.id,

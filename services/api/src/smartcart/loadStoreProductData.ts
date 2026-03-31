@@ -151,17 +151,30 @@ export async function loadStoreProductData(
             });
         }
 
+        let displayPrice = Number(data.price);
+        let discountLabel = data.discount_label;
+        const validUntil = data.discount_valid_until;
+        
+        if (validUntil && new Date(validUntil) < new Date()) {
+            // Discount expired, revert to original price if available
+            if (data.original_price && Number(data.original_price) > 0) {
+                displayPrice = Number(data.original_price);
+                discountLabel = undefined;
+            }
+        }
+
         const inventoryRecord: MerchantProductRecord = {
             id,
             merchant_product_id: String(data.merchant_product_id ?? id),
             merchant_id: storeId,
             master_product_id: String(data.master_product_id),
-            price: Number(data.price),
+            price: displayPrice,
             currency: String(data.currency ?? 'CAD'),
             available_quantity: availableQuantity,
             merchant_sku: data.merchant_sku,
-            original_price: data.original_price,
-            discount_label: data.discount_label,
+            original_price: displayPrice < Number(data.original_price || 0) ? data.original_price : undefined,
+            discount_label: discountLabel,
+            discount_valid_until: validUntil,
             is_active: data.is_active,
             product_name: data.product_name,
             brand: data.brand,

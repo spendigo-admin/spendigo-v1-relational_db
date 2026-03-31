@@ -89,6 +89,18 @@ export const syncMerchantProductToAlgolia = functions.firestore
           lng: storeData.geoloc.longitude
         };
       }
+      
+      let displayPrice = Number(data.price || 0);
+      let discountLabel = data.discount_label;
+      const validUntil = data.discount_valid_until;
+      
+      if (validUntil && new Date(validUntil) < new Date()) {
+        // Revert to original_price if expired
+        if (data.original_price && Number(data.original_price) > 0) {
+            displayPrice = Number(data.original_price);
+            discountLabel = null;
+        }
+      }
 
       const algoliaPayload = {
         objectID: merchantProductId,
@@ -96,11 +108,12 @@ export const syncMerchantProductToAlgolia = functions.firestore
         merchant_id: data.merchant_id,
         master_product_id: data.master_product_id,
         // Merchant Specific Data
-        price: data.price || 0,
-        original_price: data.original_price || null,
+        price: displayPrice,
+        original_price: displayPrice < Number(data.original_price || 0) ? data.original_price : null,
         available_quantity: data.available_quantity || 0,
         merchant_sku: data.merchant_sku || '',
-        discount_label: data.discount_label || '',
+        discount_label: discountLabel || '',
+        discount_valid_until: validUntil || null,
         
         // Master Catalog Normalized Data
         product_name: masterData?.product_name || '',
