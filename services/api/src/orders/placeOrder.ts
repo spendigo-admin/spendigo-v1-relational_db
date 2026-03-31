@@ -1,14 +1,22 @@
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import { FieldValue, DocumentReference, DocumentSnapshot } from 'firebase-admin/firestore';
+import { checkRateLimit } from '../utils/rateLimiter';
+import { stripe } from '../config/stripe';
 
 const db = admin.firestore();
 
 export const placeOrder = functions.https.onCall(async (data, context) => {
     // 1. Security Check
+    if (!context.app && process.env.FUNCTIONS_EMULATOR !== 'true') {
+        throw new functions.https.HttpsError('failed-precondition', 'The function must be called from an App Check verified app.');
+    }
     if (!context.auth) {
         throw new functions.https.HttpsError('unauthenticated', 'User must be logged in.');
     }
+
+    // Rate Limit Check: Max 3 requests per minute per user
+    await checkRateLimit(context.auth.uid, 'placeOrder', 3, 60 * 1000);
 
     const { orders } = data; // Array of Order objects
     const userId = context.auth.uid;
@@ -32,7 +40,6 @@ export const placeOrder = functions.https.onCall(async (data, context) => {
             }[] = [];
 
             for (const order of orders) {
-                // Ensure storeId is present
                 if (!order.storeId) throw new functions.https.HttpsError('invalid-argument', 'Order missing storeId');
 
                 for (const item of order.items) {
@@ -47,19 +54,14 @@ export const placeOrder = functions.https.onCall(async (data, context) => {
                 }
             }
 
-            // PHASE 2: WRITES (Check Logic & Update)
-            // It is safe to perform updates now as long as we don't read again.
-
+            // PHASE 2: WRITES (Stock Updates)
             for (const { ref, snap, item, storeId } of productChecks) {
                 if (!snap.exists) {
-                    // Heuristic: New System products likely start with "storeId_"
                     const isNewSystemProduct = item.productId.startsWith(`${storeId}_`);
                     if (isNewSystemProduct) {
                         throw new functions.https.HttpsError('failed-precondition', `Product "${item.productName}" is no longer available.`);
-                    } else {
-                        // Legacy Product - valid, but no stock tracking
-                        continue;
                     }
+                    continue;
                 }
 
                 const currentStock = snap.data()?.available_quantity || 0;
@@ -67,20 +69,28 @@ export const placeOrder = functions.https.onCall(async (data, context) => {
                     throw new functions.https.HttpsError('failed-precondition', `Insufficient stock for "${item.productName}". Only ${currentStock} left.`);
                 }
 
-                // Decrement Stock (Write)
                 transaction.update(ref, {
                     available_quantity: FieldValue.increment(-item.quantity)
                 });
             }
 
-            // 3. Create Orders (Writes)
+            // PHASE 3: CREATE ORDERS
             for (const orderData of orders) {
                 const newOrderRef = db.collection('orders').doc();
                 orderIds.push(newOrderRef.id);
 
-                // Explicit allowlist — never spread client-supplied data directly.
-                // status and paymentStatus are always server-assigned to prevent
-                // a client injecting { paymentStatus: 'paid', status: 'delivered' }.
+                let paymentSucceeded = false;
+                if (orderData.paymentIntentId) {
+                     // Verify this intent was successful in Stripe
+                     const intent = await stripe.paymentIntents.retrieve(orderData.paymentIntentId);
+                     if (intent.status === 'succeeded') {
+                         paymentSucceeded = true;
+                     } else {
+                         functions.logger.error(`Checkout abort: Payment Intent ${orderData.paymentIntentId} status is ${intent.status}`);
+                         throw new functions.https.HttpsError('failed-precondition', 'Payment verification failed.');
+                     }
+                }
+
                 const finalOrder = {
                     storeId: orderData.storeId,
                     storeName: orderData.storeName,
@@ -89,14 +99,14 @@ export const placeOrder = functions.https.onCall(async (data, context) => {
                     deliveryFee: orderData.deliveryFee,
                     tax: orderData.tax,
                     total: orderData.total,
-                    paymentMethod: orderData.paymentMethod,
+                    paymentMethod: orderData.paymentMethod || 'card',
                     deliveryAddress: orderData.deliveryAddress,
-                    // Server-enforced fields:
                     customerId: userId,
                     customerName: userName,
                     customerEmail: userEmail,
+                    paymentIntentId: orderData.paymentIntentId || null,
                     status: 'placed',
-                    paymentStatus: 'pending',
+                    paymentStatus: paymentSucceeded ? 'paid' : (orderData.paymentMethod === 'in_store' ? 'pending' : 'unpaid'),
                     createdAt: FieldValue.serverTimestamp(),
                     date: new Date().toISOString()
                 };
@@ -109,7 +119,6 @@ export const placeOrder = functions.https.onCall(async (data, context) => {
 
     } catch (error: any) {
         functions.logger.error('Place Order Transaction Failed:', error);
-        // Re-throw HttpsErrors as-is to preserve the error code for the client
         if (error instanceof functions.https.HttpsError) {
             throw error;
         }

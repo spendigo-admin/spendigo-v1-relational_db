@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useNotifications } from '../../context/NotificationContext';
 import { useOrders, Order } from '../../context/OrderContext';
 import { useMarketplace } from '../../context/MarketplaceContext';
+import { useConfirmation } from '../../context/ConfirmationContext';
 import { validateOrderIntegrity } from '../../utils/IntegrityUtils';
 import NotificationPopover from '../../components/NotificationPopover';
 import ReviewForm from '../../components/ReviewForm';
@@ -17,9 +18,12 @@ const MerchantOrders: React.FC = () => {
         updatePaymentStatus,
         updateEstimatedTime,
         cancelOrder,
+        refundOrder,
+        downloadOrderReceipt,
         loading
     } = useOrders();
     const { getStore } = useMarketplace();
+    const { confirm } = useConfirmation();
     const storeId = user?.storeId;
     const store = storeId ? getStore(storeId) : null;
     const storeProducts = store?.products || [];
@@ -37,6 +41,7 @@ const MerchantOrders: React.FC = () => {
     const [rejectionReason, setRejectionReason] = useState('');
     const [estTimeInput, setEstTimeInput] = useState('');
     const [mobileStatusFilter, setMobileStatusFilter] = useState<string>('placed'); // Default to 'New Orders' on mobile
+    const [downloadingReceiptId, setDownloadingReceiptId] = useState<string | null>(null);
 
     // Timer Tick
     useEffect(() => {
@@ -134,6 +139,46 @@ const MerchantOrders: React.FC = () => {
         }
     };
 
+    const handleRefundOrder = async (order: Order) => {
+        if (!rejectionReason.trim()) {
+            addNotification({ type: 'alert', title: 'Required', message: "Please provide a reason for refund" });
+            return;
+        }
+
+        const confirmed = await confirm({
+            title: 'Confirm Refund',
+            message: `Are you sure you want to refund $${order.total.toFixed(2)} to ${order.customerName}? This will process immediately through Stripe.`,
+            confirmText: 'Issue Refund',
+            type: 'danger'
+        });
+
+        if (!confirmed) return;
+
+        try {
+            await refundOrder(order.id, rejectionReason);
+            setRejectionReason('');
+            addNotification({ type: 'system', title: 'Refund Initiated', message: "Funds are being transferred back to the customer." });
+        } catch (e: any) {
+            console.error("Refund failed", e);
+            addNotification({ type: 'alert', title: 'Refund Failed', message: e.message || "Failed to process refund" });
+        }
+    };
+
+    const handleDownloadReceipt = async (orderId: string) => {
+        setDownloadingReceiptId(orderId);
+        try {
+            await downloadOrderReceipt(orderId);
+        } catch (error: any) {
+            addNotification({
+                type: 'alert',
+                title: 'Receipt Failed',
+                message: error.message || 'Failed to generate PDF receipt'
+            });
+        } finally {
+            setDownloadingReceiptId(null);
+        }
+    };
+
     const handleUpdatePayment = async (order: Order) => {
         const auditEntry = {
             id: user?.id || 'unknown',
@@ -171,109 +216,7 @@ const MerchantOrders: React.FC = () => {
 
 
 
-    // Components
-    const OrderCard = ({ order }: { order: Order }) => {
-        const elapsed = getMinutesElapsed(order.date);
-        const isLate = elapsed > 20 && order.status !== 'delivered';
-        const isDelivery = !!order.deliveryAddress;
-
-        return (
-            <div
-                onClick={() => setSelectedOrder(order)}
-                className={`bg-white rounded-xl p-4 shadow-sm border cursor-pointer hover:shadow-md transition-all relative overflow-hidden group ${isLate ? 'border-red-200' : 'border-[var(--glass-border)]'}`}
-            >
-                {/* Urgent Strip */}
-                {isLate && <div className="absolute top-0 left-0 w-1 h-full bg-red-400"></div>}
-
-                <div className="flex justify-between items-start mb-2 pl-2">
-                    <div>
-                        <div className="font-bold text-[var(--text-main)] flex items-center gap-2">
-                            {order.id.substr(0, 8)}...
-                            {isDelivery ? <span>🛵</span> : <span>🛍️</span>}
-                        </div>
-                        <div className="text-xs text-[var(--text-muted)]">{order.customerName}</div>
-                    </div>
-                    <div className={`text-xs font-bold px-2 py-1 rounded-lg ${isLate ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-600'}`}>
-                        {elapsed}m ago
-                    </div>
-                </div>
-
-                <div className="space-y-1 mb-3 pl-2 border-l-2 border-transparent group-hover:border-[var(--brand-primary)]/20 transition-all max-h-24 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent pr-1">
-                    {order.items.map((item, i) => (
-                        <div key={i} className="text-sm flex justify-between">
-                            <span className="truncate"><span className="font-bold">{item.quantity}x</span> {item.productName}</span>
-                        </div>
-                    ))}
-                </div>
-
-                <div className="mt-3 pt-3 border-t border-[var(--glass-border)] pl-2">
-                    <div className="flex justify-between items-center mb-2">
-                        <span className="font-bold text-[var(--text-main)]">${order.total.toFixed(2)}</span>
-                        {order.estimatedTime && (
-                            <span className="text-[10px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded font-bold">
-                                ⏱️ {order.estimatedTime}
-                            </span>
-                        )}
-                        <span className={`text-xs px-2 py-1 rounded-full ${order.paymentStatus === 'paid' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
-                            {order.paymentStatus === 'paid' ? (order.paymentMethod === 'card' ? 'Paid Online' : 'Paid in Store') : 'Pay Pending'}
-                        </span>
-                    </div>
-
-                    {/* Quick Actions */}
-                    <div className="flex justify-end gap-2">
-                        {hasWriteAccess ? (
-                            <>
-                                {order.status === 'placed' && (
-                                    <button
-                                        onClick={(e) => { e.stopPropagation(); handleUpdateStatus(order.id, 'preparing'); }}
-                                        className="px-3 py-1 bg-blue-600 text-white text-xs font-bold rounded-md hover:brightness-110"
-                                    >
-                                        Accept
-                                    </button>
-                                )}
-                                {order.status === 'preparing' && (
-                                    <button
-                                        onClick={(e) => { e.stopPropagation(); handleUpdateStatus(order.id, 'out_for_delivery'); }}
-                                        className="px-3 py-1 bg-purple-500 text-white text-xs font-bold rounded-md hover:brightness-110"
-                                    >
-                                        Ready
-                                    </button>
-                                )}
-                                {order.status === 'out_for_delivery' && (
-                                    <div className="flex gap-2">
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                handleCompleteOrder(order);
-                                            }}
-                                            className="px-3 py-1 bg-green-600 text-white text-xs font-bold rounded-md hover:brightness-110"
-                                        >
-                                            Complete
-                                        </button>
-                                        {order.paymentStatus === 'pending' && (
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    handleUpdatePayment(order);
-                                                }}
-                                                className="px-3 py-1 bg-orange-500 text-white text-xs font-bold rounded-md hover:brightness-110"
-                                            >
-                                                Mark Paid
-                                            </button>
-                                        )}
-                                    </div>
-                                )}
-                            </>
-                        ) : (
-                            <span className="text-[10px] text-[var(--text-muted)] font-bold uppercase py-1 px-2 bg-gray-50 border rounded">
-                                {getStatusLabel(order)}
-                            </span>
-                        )}
-                    </div>
-                </div>
-            </div>
-        );
-    };
+    // Render Logic moved to outside component
 
     return (
         <div className="flex flex-col h-full w-full overflow-hidden bg-[var(--surface-1)]">
@@ -360,7 +303,17 @@ const MerchantOrders: React.FC = () => {
                                     </div>
                                     <div className="flex-1 overflow-y-auto p-3 space-y-3 scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent">
                                         {filteredOrders.filter(o => o.status === col.id).map(order => (
-                                            <OrderCard key={order.id} order={order} />
+                                            <OrderCard
+                                                key={order.id}
+                                                order={order}
+                                                onClick={() => setSelectedOrder(order)}
+                                                onUpdateStatus={handleUpdateStatus}
+                                                onComplete={handleCompleteOrder}
+                                                onMarkPaid={handleUpdatePayment}
+                                                minutesElapsed={getMinutesElapsed(order.date)}
+                                                hasWriteAccess={hasWriteAccess}
+                                                statusLabel={getStatusLabel(order)}
+                                            />
                                         ))}
                                         {filteredOrders.filter(o => o.status === col.id).length === 0 && (
                                             <div className="text-center py-10 text-[var(--text-muted)] text-sm opacity-60">
@@ -577,7 +530,7 @@ const MerchantOrders: React.FC = () => {
                                                     type="text"
                                                     value={rejectionReason}
                                                     onChange={(e) => setRejectionReason(e.target.value)}
-                                                    placeholder="e.g. Out of stock: Milk"
+                                                    placeholder="e.g. Out of stock"
                                                     className="flex-1 p-2 text-sm border rounded-lg min-w-0"
                                                 />
                                                 <button
@@ -588,7 +541,38 @@ const MerchantOrders: React.FC = () => {
                                                 </button>
                                             </div>
                                         </div>
-                                        {/* Customer Review Section (Only independent logic) */}
+
+                                        {selectedOrder.paymentStatus === 'paid' && selectedOrder.paymentMethod === 'card' && (
+                                            <div className="pt-3 border-t border-gray-200">
+                                                <div className="flex justify-between items-center mb-2">
+                                                    <label className="text-[10px] text-[var(--text-muted)] font-bold uppercase">Payment Management</label>
+                                                    <button
+                                                        onClick={() => handleDownloadReceipt(selectedOrder.id)}
+                                                        disabled={downloadingReceiptId === selectedOrder.id}
+                                                        className="text-[10px] font-bold text-blue-600 hover:underline flex items-center gap-1"
+                                                    >
+                                                        {downloadingReceiptId === selectedOrder.id ? '...' : '📄 Download Receipt'}
+                                                    </button>
+                                                </div>
+                                                <div className="flex gap-2">
+                                                    <input
+                                                        type="text"
+                                                        value={rejectionReason}
+                                                        onChange={(e) => setRejectionReason(e.target.value)}
+                                                        placeholder="Reason for refund (required)"
+                                                        className="flex-1 p-2 text-sm border rounded-lg min-w-0"
+                                                    />
+                                                    <button
+                                                        onClick={() => handleRefundOrder(selectedOrder)}
+                                                        className="px-4 py-2 bg-orange-100 text-orange-700 text-xs font-bold rounded-lg hover:bg-orange-200 whitespace-nowrap"
+                                                    >
+                                                        Refund
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Customer Review Section */}
                                         {selectedOrder.status === 'delivered' && hasWriteAccess && (
                                             <div className="pt-3 border-t border-gray-200">
                                                 <h4 className="text-[10px] text-[var(--text-muted)] font-bold mb-2 uppercase">Review Customer</h4>
@@ -657,7 +641,123 @@ const MerchantOrders: React.FC = () => {
                     </div>
                 )
             }
-        </div >
+        </div>
+    );
+};
+
+// --- Internal Components ---
+
+interface OrderCardProps {
+    order: Order;
+    onClick: () => void;
+    onUpdateStatus: (id: string, status: Order['status']) => void;
+    onComplete: (order: Order) => void;
+    onMarkPaid: (order: Order) => void;
+    minutesElapsed: number;
+    hasWriteAccess: boolean;
+    statusLabel: string;
+}
+
+const OrderCard = ({ order, onClick, onUpdateStatus, onComplete, onMarkPaid, minutesElapsed, hasWriteAccess, statusLabel }: OrderCardProps) => {
+    const isLate = minutesElapsed > 20 && order.status !== 'delivered';
+    const isDelivery = !!order.deliveryAddress;
+
+    return (
+        <div
+            onClick={onClick}
+            className={`bg-white rounded-xl p-4 shadow-sm border cursor-pointer hover:shadow-md transition-all relative overflow-hidden group ${isLate ? 'border-red-200' : 'border-[var(--glass-border)]'}`}
+        >
+            {/* Urgent Strip */}
+            {isLate && <div className="absolute top-0 left-0 w-1 h-full bg-red-400"></div>}
+
+            <div className="flex justify-between items-start mb-2 pl-2">
+                <div>
+                    <div className="font-bold text-[var(--text-main)] flex items-center gap-2">
+                        {order.id.substr(0, 8)}...
+                        {isDelivery ? <span>🛵</span> : <span>🛍️</span>}
+                    </div>
+                    <div className="text-xs text-[var(--text-muted)]">{order.customerName}</div>
+                </div>
+                <div className={`text-xs font-bold px-2 py-1 rounded-lg ${isLate ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-600'}`}>
+                    {minutesElapsed}m ago
+                </div>
+            </div>
+
+            {/* Item list shortcut */}
+            <div className="space-y-1 mb-3 pl-2 border-l-2 border-transparent group-hover:border-[var(--brand-primary)]/20 transition-all max-h-24 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent pr-1">
+                {order.items.map((item, i) => (
+                    <div key={i} className="text-sm flex justify-between">
+                        <span className="truncate"><span className="font-bold">{item.quantity}x</span> {item.productName}</span>
+                    </div>
+                ))}
+            </div>
+
+            <div className="mt-3 pt-3 border-t border-[var(--glass-border)] pl-2">
+                <div className="flex justify-between items-center mb-2">
+                    <span className="font-bold text-[var(--text-main)]">${order.total.toFixed(2)}</span>
+                    {order.estimatedTime && (
+                        <span className="text-[10px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded font-bold">
+                            ⏱️ {order.estimatedTime}
+                        </span>
+                    )}
+                    <span className={`text-xs px-2 py-1 rounded-full ${order.paymentStatus === 'paid' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
+                        {order.paymentStatus === 'paid' ? (order.paymentMethod === 'card' ? 'Paid Online' : 'Paid in Store') : 'Pay Pending'}
+                    </span>
+                </div>
+
+                {/* Quick Actions */}
+                <div className="flex justify-end gap-2">
+                    {hasWriteAccess ? (
+                        <>
+                            {order.status === 'placed' && (
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); onUpdateStatus(order.id, 'preparing'); }}
+                                    className="px-3 py-1 bg-blue-600 text-white text-xs font-bold rounded-md hover:brightness-110"
+                                >
+                                    Accept
+                                </button>
+                            )}
+                            {order.status === 'preparing' && (
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); onUpdateStatus(order.id, 'out_for_delivery'); }}
+                                    className="px-3 py-1 bg-purple-500 text-white text-xs font-bold rounded-md hover:brightness-110"
+                                >
+                                    Ready
+                                </button>
+                            )}
+                            {order.status === 'out_for_delivery' && (
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            onComplete(order);
+                                        }}
+                                        className="px-3 py-1 bg-green-600 text-white text-xs font-bold rounded-md hover:brightness-110"
+                                    >
+                                        Complete
+                                    </button>
+                                    {order.paymentStatus === 'pending' && (
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                onMarkPaid(order);
+                                            }}
+                                            className="px-3 py-1 bg-orange-500 text-white text-xs font-bold rounded-md hover:brightness-110"
+                                        >
+                                            Mark Paid
+                                        </button>
+                                    )}
+                                </div>
+                            )}
+                        </>
+                    ) : (
+                        <span className="text-[10px] text-[var(--text-muted)] font-bold uppercase py-1 px-2 bg-gray-50 border rounded">
+                            {statusLabel}
+                        </span>
+                    )}
+                </div>
+            </div>
+        </div>
     );
 };
 

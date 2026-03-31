@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { collection, query, where, onSnapshot, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, addDoc, serverTimestamp, orderBy, getCountFromServer, limit } from 'firebase/firestore';
 import { db, storage } from '../lib/firebase';
 import { ref, deleteObject } from 'firebase/storage';
-import { searchClient, ALGOLIA_INDEX_NAME } from '../lib/algolia';
+import { searchClient, ALGOLIA_INDEX_NAME, ALGOLIA_MERCHANT_INDEX_NAME } from '../lib/algolia';
 
 export interface Product {
     id: string; // Merchant Product ID
@@ -389,7 +389,7 @@ export const useCatalog = () => {
     };
 
     // Fetch all products (Global Search)
-    const useGlobalCatalog = (searchQuery?: string) => {
+    const useGlobalCatalog = (searchQuery?: string, location?: { lat: number; lng: number }, searchDistance?: number) => {
         const [products, setProducts] = useState<Product[]>([]);
         const [loadingProducts, setLoading] = useState(true);
 
@@ -399,32 +399,61 @@ export const useCatalog = () => {
                 try {
                     // STRATEGY A: ALGOLIA SEARCH (If query exists)
                     if (searchQuery && searchQuery.trim().length > 2 && searchClient) {
-                        // 1. Search Algolia for Master Products
+                        const searchOptions: any = {
+                            hitsPerPage: 40,
+                        };
+                        
+                        // Apply Geo-Spatial Filtering
+                        if (location?.lat && location?.lng) {
+                           searchOptions.aroundLatLng = `${location.lat},${location.lng}`;
+                           if (searchDistance && searchDistance > 0) {
+                               searchOptions.aroundRadius = searchDistance * 1000; // Convert km to meters if needed, wait calculateDistance in Search.tsx looks like km. Let's assume searchDistance is in km.
+                           }
+                        }
+
+                        // 1. Search Algolia for Merchant Products
                         const { results } = await searchClient.search({
                             requests: [{
-                                indexName: ALGOLIA_INDEX_NAME,
+                                indexName: ALGOLIA_MERCHANT_INDEX_NAME,
                                 query: searchQuery,
-                                hitsPerPage: 20,
+                                ...searchOptions
                             }]
                         });
                         const hits = (results[0] as any).hits;
-                        const masterIds = hits.map((h: any) => h.objectID);
 
-                        if (masterIds.length === 0) {
+                        if (hits.length === 0) {
                             setProducts([]);
                             setLoading(false);
                             return;
                         }
 
-                        // 2. Find Stores Selling These Products
-                        // Firestore "IN" query is limited to 10-30 items. We batch if needed.
-                        const q = query(
-                            collection(db, 'merchant_products'),
-                            where('master_product_id', 'in', masterIds.slice(0, 30)) // Limit to top 30 matches
-                        );
+                        // 2. Direct mapping since merchant_products index is fully denormalized
+                        const fetchedProducts: Product[] = hits.map((hit: any) => ({
+                            id: hit.objectID,
+                            merchant_id: hit.merchant_id,
+                            master_product_id: hit.master_product_id,
 
-                        const snapshot = await getDocs(q);
-                        const fetchedProducts = await mapSnapshotToProducts(snapshot);
+                            storeId: hit.merchant_id,
+                            storeName: 'Available Nearby', // Store name mapping can be resolved at UI level or cached
+                            storeAddress: '',
+
+                            merchant_sku: hit.merchant_sku || '',
+                            price: hit.price,
+                            currency: 'CAD',
+                            available_quantity: hit.available_quantity,
+
+                            name: hit.product_name,
+                            description: hit.short_description,
+                            image: hit.primary_image_url,
+                            images: [hit.primary_image_url],
+                            category: hit.category_id,
+                            brand_name: hit.brand_name,
+                            barcode: hit.barcode || hit.upc_gtin,
+                            
+                            originalPrice: hit.original_price,
+                            discount: hit.discount_label
+                        } as Product));
+
                         setProducts(fetchedProducts);
                     }
                     // STRATEGY B: DEFAULT LISTING (No query)

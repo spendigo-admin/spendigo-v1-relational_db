@@ -3,6 +3,7 @@ initSentry();
 
 import React from 'react'
 import ReactDOM from 'react-dom/client'
+import { HelmetProvider } from 'react-helmet-async'
 import App from './App.tsx'
 import './styles/reset.css'
 import './styles/design-system.css'
@@ -11,6 +12,8 @@ import './i18n'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
     <React.StrictMode>
-        <App />
+        <HelmetProvider>
+            <App />
+        </HelmetProvider>
     </React.StrictMode>,
 )

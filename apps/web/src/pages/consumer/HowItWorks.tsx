@@ -2,52 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import '../../styles/design-system.css';
+import SEO from '../../components/SEO';
 
 const HowItWorks: React.FC = () => {
     const { t } = useTranslation();
     const [openFaq, setOpenFaq] = useState<number | null>(null);
 
-    // SEO: Dynamic meta tags and structured data
+    // SEO: JSON-LD Structured Data (kept — Helmet can't do script tags easily)
     useEffect(() => {
-        // Page title
-        document.title = 'How It Works — Spendigo | Compare Grocery Prices & Save Money in Canada';
-
-        // Meta description
-        const setMeta = (name: string, content: string, property?: boolean) => {
-            const attr = property ? 'property' : 'name';
-            let el = document.querySelector(`meta[${attr}="${name}"]`) as HTMLMetaElement;
-            if (!el) {
-                el = document.createElement('meta');
-                el.setAttribute(attr, name);
-                document.head.appendChild(el);
-            }
-            el.content = content;
-        };
-
-        setMeta('description', 'Learn how Spendigo helps Canadian shoppers save money on groceries. Compare real-time prices across local stores, browse all weekly flyers in one place, and save up to 15% automatically.');
-        setMeta('keywords', 'grocery price comparison Canada, save money groceries, compare grocery prices, cheap groceries near me, SmartCart, grocery optimizer, local grocery deals, Spendigo');
-        setMeta('robots', 'index, follow');
-
-        // Open Graph
-        setMeta('og:title', 'How Spendigo Works — Real-Time Prices & Weekly Flyers', true);
-        setMeta('og:description', 'Spendigo compares grocery prices across your local stores in real-time. Browse all weekly flyers and build the cheapest cart automatically.', true);
-        setMeta('og:url', 'https://spendigo.ca/how-it-works', true);
-        setMeta('og:type', 'website', true);
-
-        // Twitter
-        setMeta('twitter:title', 'How Spendigo Works — Compare Prices, Save on Groceries');
-        setMeta('twitter:description', 'Compare grocery prices across local stores and save. Learn how Spendigo SmartCart optimizer works.');
-
-        // Canonical URL
-        let canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement;
-        if (!canonical) {
-            canonical = document.createElement('link');
-            canonical.rel = 'canonical';
-            document.head.appendChild(canonical);
-        }
-        canonical.href = 'https://spendigo.ca/how-it-works';
-
-        // JSON-LD Structured Data: FAQPage (Google rich results)
         const faqStructuredData = {
             '@context': 'https://schema.org',
             '@type': 'FAQPage',
@@ -60,7 +22,6 @@ const HowItWorks: React.FC = () => {
             ]
         };
 
-        // JSON-LD Structured Data: WebPage + HowTo
         const howToStructuredData = {
             '@context': 'https://schema.org',
             '@type': 'HowTo',
@@ -88,12 +49,9 @@ const HowItWorks: React.FC = () => {
         addJsonLd(faqStructuredData, 'ld-faq');
         addJsonLd(howToStructuredData, 'ld-howto');
 
-        // Cleanup on unmount
         return () => {
-            document.title = 'Spendigo — Shop Smarter, Save More';
             document.getElementById('ld-faq')?.remove();
             document.getElementById('ld-howto')?.remove();
-            document.querySelector('link[rel="canonical"]')?.remove();
         };
     }, []);
 
@@ -148,6 +106,11 @@ const HowItWorks: React.FC = () => {
 
     return (
         <div className="animate-fade-in pb-24">
+            <SEO
+                title="How It Works"
+                description="Learn how Spendigo helps Canadian shoppers save money on groceries. Compare real-time prices across local stores, browse weekly flyers, and save up to 15% automatically."
+                path="/how-it-works"
+            />
             {/* Hero */}
             <div className="relative overflow-hidden bg-gradient-to-br from-[var(--brand-primary)] via-[#2d8a55] to-[#4f46e5] text-white py-20 px-4">
                 <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 20% 50%, white 1px, transparent 1px), radial-gradient(circle at 80% 50%, white 1px, transparent 1px)', backgroundSize: '40px 40px' }} />

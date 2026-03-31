@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useMarketplace } from '../../context/MarketplaceContext';
 import { useLocation } from '../../context/LocationContext';
 import '../../styles/design-system.css';
+import SEO from '../../components/SEO';
 
 const getValidFlyerImage = (imageUrl?: string): string | undefined => {
     if (!imageUrl) return undefined;
@@ -48,6 +49,7 @@ const Flyers: React.FC = () => {
 
     return (
         <div className="animate-fade-in pb-20">
+            <SEO title="Weekly Flyers" description="Browse all weekly grocery flyers from local stores near you. Compare deals and save more with Spendigo." path="/flyers" />
             {/* Header */}
             <div className="bg-[var(--surface-0)] border-b border-[var(--glass-border)] sticky top-0 z-30 px-4 py-4">
                 <div className="max-w-5xl mx-auto flex items-center gap-4">

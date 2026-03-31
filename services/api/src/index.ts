@@ -16,9 +16,21 @@ export { sendOrderConfirmation, sendOrderStatusUpdate } from './email/sendOrderE
 export { updateSubscriptionPlan } from './payments/updateSubscriptionPlan';
 export { placeOrder } from './orders/placeOrder';
 export { cancelOrder } from './orders/cancelOrder';
+export { downloadReceipt } from './orders/downloadReceipt';
 export { onUserUpdate } from './triggers/userTriggers';
 export { onMasterProductWrite } from './triggers/productTriggers';
 export { smartcartOptimize } from './smartcart/optimizeEndpoint';
 export { cartOptimize } from './cart/optimizeCart';
 export { syncMasterProductToAlgolia } from './triggers/algoliaTriggers';
 export { syncTrafficStats } from './admin/syncTrafficStats';
+export { syncMerchantProductToAlgolia } from './triggers/algoliaMerchantTriggers';
+export { onboardStore } from './payments/onboardStore';
+export { checkStripeAccountStatus } from './payments/checkStripeStatus';
+export { createPaymentIntent } from './payments/createPaymentIntent';
+export { refundOrder } from './payments/refundOrder';
+export { onOrderStatusUpdated } from './triggers/orderTriggers';
+
+
+
+
+

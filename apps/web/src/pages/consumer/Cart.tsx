@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
 import { STORE_DATA } from '../../data/productData';
 import '../../styles/design-system.css';
+import SEO from '../../components/SEO';
 
 const Cart: React.FC = () => {
     const navigate = useNavigate();
@@ -67,6 +68,7 @@ const Cart: React.FC = () => {
 
     return (
         <div className="animate-fade-in pb-12">
+            <SEO title="Your Cart" description="Review your shopping cart and proceed to checkout on Spendigo." path="/cart" noIndex />
             <div className="max-w-6xl mx-auto px-4 py-8">
                 {/* PAGE HEADER */}
                 <div className="mb-6">

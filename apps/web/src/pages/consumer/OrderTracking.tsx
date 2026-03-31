@@ -1,16 +1,19 @@
 import React from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useOrders } from '../../context/OrderContext';
 import { useMarketplace } from '../../context/MarketplaceContext';
 import '../../styles/design-system.css';
+import SEO from '../../components/SEO';
 
 const ORDER_STEPS = ['placed', 'preparing', 'out_for_delivery', 'delivered'] as const;
 
 const OrderTracking: React.FC = () => {
     const { id } = useParams<{ id: string }>();
-    const { orders, cancelOrder } = useOrders();
+    const navigate = useNavigate();
+    const { orders, cancelOrder, reorder } = useOrders();
     const { getStore } = useMarketplace();
     const [showHelpModal, setShowHelpModal] = React.useState(false);
+    const [reorderingId, setReorderingId] = React.useState<string | null>(null);
 
     const order = orders.find(o => o.id === id);
     const store = order ? getStore(order.storeId) : null;
@@ -22,6 +25,21 @@ const OrderTracking: React.FC = () => {
         address: '123 Market Street, Toronto, ON'
     };
 
+    const handleReorder = async () => {
+        if (!order) return;
+        setReorderingId(order.id);
+        try {
+            const messages = await reorder(order.id);
+            if (messages.length > 0) {
+                alert("Some items could not be perfectly reordered:\n\n" + messages.join("\n"));
+            }
+            navigate('/cart');
+        } catch (error: any) {
+             alert(error.message);
+        } finally {
+            setReorderingId(null);
+        }
+    };
 
     if (!order) {
         return (
@@ -64,6 +82,7 @@ const OrderTracking: React.FC = () => {
 
     return (
         <div className="animate-fade-in pb-20">
+            <SEO title="Order Tracking" description="Track your Spendigo order status." noIndex />
             {/* Header */}
             <div className={`p-6 ${isDelivered ? 'bg-green-500' : isCancelled ? 'bg-red-500' : isOnHold ? 'bg-yellow-500' : 'bg-[var(--brand-primary)]'} text-white transition-colors duration-500`}>
                 <div className="max-w-3xl mx-auto">
@@ -214,6 +233,13 @@ const OrderTracking: React.FC = () => {
                     >
                         🏪 Visit Store Page
                     </Link>
+                    <button
+                        onClick={handleReorder}
+                        disabled={reorderingId === order.id}
+                        className="flex-1 py-3 bg-[var(--brand-primary)] text-white rounded-xl font-bold hover:bg-blue-600 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
+                    >
+                        {reorderingId === order.id ? 'Reordering...' : '🔄 Reorder'}
+                    </button>
                     {order.status === 'placed' && (
                         <button
                             onClick={() => {
@@ -223,14 +249,14 @@ const OrderTracking: React.FC = () => {
                             }}
                             className="flex-1 py-3 border border-red-200 text-red-600 bg-red-50 rounded-xl font-bold hover:bg-red-100 transition-colors"
                         >
-                            Cancel Order
+                            Cancel
                         </button>
                     )}
                     <button
                         onClick={() => setShowHelpModal(true)}
                         className="flex-1 py-3 border border-[var(--glass-border)] rounded-xl font-medium text-[var(--text-main)] hover:bg-gray-50 transition-colors flex items-center justify-center"
                     >
-                        ❓ Get Help
+                        ❓ Help
                     </button>
                 </div>
             </div>

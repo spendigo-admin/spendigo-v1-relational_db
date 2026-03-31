@@ -5,6 +5,7 @@ import { useMarketplace } from '../../context/MarketplaceContext';
 import { useCatalog } from '../../hooks/useCatalog';
 import { useLocation } from '../../context/LocationContext';
 import { useDebounce } from '../../hooks/useDebounce';
+import SEO from '../../components/SEO';
 
 const Search: React.FC = () => {
     const navigate = useNavigate();
@@ -21,7 +22,7 @@ const Search: React.FC = () => {
 
     // Use new global catalog search
     const { useGlobalCatalog } = useCatalog();
-    const { products: allProducts, loading } = useGlobalCatalog(debouncedSearchQuery);
+    const { products: allProducts, loading } = useGlobalCatalog(debouncedSearchQuery, userCoords || undefined, searchDistance);
 
     // Derived categories
     const categories = useMemo(() => {
@@ -116,6 +117,7 @@ const Search: React.FC = () => {
 
     return (
         <div className="animate-fade-in pb-20">
+            <SEO title="Search Products" description="Search across all local grocery stores on Spendigo. Find the best prices and compare products." path="/search" />
             {/* Search Header */}
             <div className="sticky top-14 z-30 bg-white border-b border-[var(--glass-border)] p-4">
                 <div className="max-w-3xl mx-auto">

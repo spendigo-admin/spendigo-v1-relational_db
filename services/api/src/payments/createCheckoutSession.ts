@@ -1,6 +1,7 @@
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import { stripe } from '../config/stripe';
+import { checkRateLimit } from '../utils/rateLimiter';
 
 const db = admin.firestore();
 
@@ -18,9 +19,15 @@ const PRICE_IDS = {
 
 export const createCheckoutSession = functions.https.onCall(async (data, context) => {
     // 1. Security Check
+    if (!context.app && process.env.FUNCTIONS_EMULATOR !== 'true') {
+        throw new functions.https.HttpsError('failed-precondition', 'The function must be called from an App Check verified app.');
+    }
     if (!context.auth) {
         throw new functions.https.HttpsError('unauthenticated', 'User must be logged in.');
     }
+
+    // Rate Limit Check: Max 3 checkout sessions initialized per minute
+    await checkRateLimit(context.auth.uid, 'createCheckoutSession', 3, 60 * 1000);
 
     const { tier, promoCode } = data; // 'core' or 'growth'
     const userId = context.auth.uid;

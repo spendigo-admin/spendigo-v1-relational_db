@@ -37,11 +37,17 @@ exports.cancelOrder = void 0;
 const functions = __importStar(require("firebase-functions"));
 const admin = __importStar(require("firebase-admin"));
 const firestore_1 = require("firebase-admin/firestore");
+const rateLimiter_1 = require("../utils/rateLimiter");
 const db = admin.firestore();
 exports.cancelOrder = functions.https.onCall(async (data, context) => {
+    if (!context.app && process.env.FUNCTIONS_EMULATOR !== 'true') {
+        throw new functions.https.HttpsError('failed-precondition', 'The function must be called from an App Check verified app.');
+    }
     if (!context.auth) {
         throw new functions.https.HttpsError('unauthenticated', 'User must be logged in.');
     }
+    // Rate Limit Check: Max 5 requests per minute per user
+    await (0, rateLimiter_1.checkRateLimit)(context.auth.uid, 'cancelOrder', 5, 60 * 1000);
     const { orderId, reason } = data;
     const userId = context.auth.uid;
     if (!orderId) {

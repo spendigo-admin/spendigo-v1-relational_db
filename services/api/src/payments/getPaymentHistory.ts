@@ -6,6 +6,9 @@ const db = admin.firestore();
 
 export const getPaymentHistory = functions.https.onCall(async (data, context) => {
     // 1. Security Check
+    if (!context.app && process.env.FUNCTIONS_EMULATOR !== 'true') {
+        throw new functions.https.HttpsError('failed-precondition', 'The function must be called from an App Check verified app.');
+    }
     if (!context.auth) {
         throw new functions.https.HttpsError('unauthenticated', 'User must be logged in.');
     }

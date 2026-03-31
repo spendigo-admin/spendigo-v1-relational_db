@@ -3,6 +3,7 @@ import { collection, query, where, getDocs, doc, setDoc, getDoc } from 'firebase
 import { db } from '../../lib/firebase';
 import { useAuth } from '../../context/AuthContext';
 import { useNotifications } from '../../context/NotificationContext';
+import SEO from '../../components/SEO';
 
 interface SurveyQuestion {
     id: string;
@@ -127,6 +128,7 @@ const ConsumerSurveys: React.FC = () => {
 
     return (
         <div className="max-w-3xl mx-auto p-6 pb-24 relative">
+            <SEO title="Community Surveys" description="Share your feedback and help improve the Spendigo platform." path="/surveys" noIndex />
             <div className="text-center mb-8">
                 <h1 className="text-3xl font-bold bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)] bg-clip-text text-transparent">
                     Community Board

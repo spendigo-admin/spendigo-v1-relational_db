@@ -42,6 +42,9 @@ const admin = __importStar(require("firebase-admin"));
  */
 exports.removeTeamMember = functions.https.onCall(async (data, context) => {
     var _a, _b, _c, _d;
+    if (!context.app && process.env.FUNCTIONS_EMULATOR !== 'true') {
+        throw new functions.https.HttpsError('failed-precondition', 'The function must be called from an App Check verified app.');
+    }
     // 1. Verify Authentication
     if (!context.auth) {
         throw new functions.https.HttpsError('unauthenticated', 'Must be authenticated');

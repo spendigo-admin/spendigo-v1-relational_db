@@ -1,13 +1,20 @@
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import { FieldValue, DocumentReference } from 'firebase-admin/firestore';
+import { checkRateLimit } from '../utils/rateLimiter';
 
 const db = admin.firestore();
 
 export const cancelOrder = functions.https.onCall(async (data, context) => {
+    if (!context.app && process.env.FUNCTIONS_EMULATOR !== 'true') {
+        throw new functions.https.HttpsError('failed-precondition', 'The function must be called from an App Check verified app.');
+    }
     if (!context.auth) {
         throw new functions.https.HttpsError('unauthenticated', 'User must be logged in.');
     }
+
+    // Rate Limit Check: Max 5 requests per minute per user
+    await checkRateLimit(context.auth.uid, 'cancelOrder', 5, 60 * 1000);
 
     const { orderId, reason } = data;
     const userId = context.auth.uid;

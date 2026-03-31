@@ -50,6 +50,9 @@ const admin = __importStar(require("firebase-admin"));
  */
 exports.requestAccountDeletion = functions.https.onCall(async (data, context) => {
     // 1. Must be authenticated
+    if (!context.app && process.env.FUNCTIONS_EMULATOR !== 'true') {
+        throw new functions.https.HttpsError('failed-precondition', 'The function must be called from an App Check verified app.');
+    }
     if (!context.auth) {
         throw new functions.https.HttpsError('unauthenticated', 'You must be signed in to delete your account.');
     }

@@ -36,16 +36,22 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.inviteTeamMember = void 0;
 const functions = __importStar(require("firebase-functions"));
 const admin = __importStar(require("firebase-admin"));
+const rateLimiter_1 = require("../utils/rateLimiter");
 /**
  * Callable HTTPS Cloud Function to invite team members
  * Creates both Firebase Auth account and Firestore user record
  */
 exports.inviteTeamMember = functions.https.onCall(async (data, context) => {
     var _a, _b;
+    if (!context.app && process.env.FUNCTIONS_EMULATOR !== 'true') {
+        throw new functions.https.HttpsError('failed-precondition', 'The function must be called from an App Check verified app.');
+    }
     // 1. Verify caller is authenticated
     if (!context.auth) {
         throw new functions.https.HttpsError('unauthenticated', 'Must be authenticated to invite team members');
     }
+    // Rate Limit Check: Max 10 invites per 15 minutes to prevent email spam
+    await (0, rateLimiter_1.checkRateLimit)(context.auth.uid, 'inviteTeamMember', 10, 15 * 60 * 1000);
     // 2. Validate input
     const { email, name, merchantRole, storeId, tempPassword } = data;
     if (!email || !name || !merchantRole || !storeId || !tempPassword) {

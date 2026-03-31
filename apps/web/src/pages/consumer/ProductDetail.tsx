@@ -4,6 +4,7 @@ import { useCart } from '../../context/CartContext';
 import { STORE_DATA } from '../../data/productData';
 import { useCatalog } from '../../hooks/useCatalog';
 import '../../styles/design-system.css';
+import SEO from '../../components/SEO';
 
 const ProductDetail: React.FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -77,6 +78,7 @@ const ProductDetail: React.FC = () => {
 
     return (
         <div className="animate-fade-in pb-28">
+            <SEO title={displayProduct.name} description={`Buy ${displayProduct.name} from ${displayProduct.storeName} on Spendigo. ${displayProduct.description?.substring(0, 120) || ''}`} path={`/product/${displayProduct.id}`} />
             {/* BREADCRUMBS */}
             <nav className="px-4 py-3 text-sm text-[var(--text-muted)] overflow-x-auto whitespace-nowrap">
                 <Link to="/" className="hover:text-[var(--brand-primary)]">Home</Link>

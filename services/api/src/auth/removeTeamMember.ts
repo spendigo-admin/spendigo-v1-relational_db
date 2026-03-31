@@ -6,6 +6,9 @@ import * as admin from 'firebase-admin';
  * Removes the storeId and merchantRole from the target user
  */
 export const removeTeamMember = functions.https.onCall(async (data, context) => {
+    if (!context.app && process.env.FUNCTIONS_EMULATOR !== 'true') {
+        throw new functions.https.HttpsError('failed-precondition', 'The function must be called from an App Check verified app.');
+    }
     // 1. Verify Authentication
     if (!context.auth) {
         throw new functions.https.HttpsError('unauthenticated', 'Must be authenticated');

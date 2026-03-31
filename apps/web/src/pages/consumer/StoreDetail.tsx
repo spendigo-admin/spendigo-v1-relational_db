@@ -9,6 +9,7 @@ import ReviewForm from '../../components/ReviewForm';
 import StarRating from '../../components/StarRating';
 import { useReviews } from '../../context/ReviewContext';
 import '../../styles/design-system.css';
+import SEO from '../../components/SEO';
 
 import { useEffect } from 'react';
 
@@ -354,6 +355,7 @@ const StoreDetail: React.FC = () => {
 
     return (
         <div className="animate-fade-in pb-20">
+            <SEO title={store.name} description={`Shop at ${store.name} on Spendigo. Browse products, weekly flyers, and deals from this local store.`} path={`/store/${store.id}`} />
             {/* STORE HEADER */}
             <div className="relative h-48 md:h-64 bg-[var(--surface-2)]">
                 <img src={store.image} alt={store.name} className="w-full h-full object-cover opacity-80" decoding="async" />

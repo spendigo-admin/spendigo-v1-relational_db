@@ -46,6 +46,9 @@ const analyticsDataClient = new data_1.BetaAnalyticsDataClient();
 exports.syncTrafficStats = functions.https.onCall(async (data, context) => {
     var _a;
     // Auth Check: Admin only
+    if (!context.app && process.env.FUNCTIONS_EMULATOR !== 'true') {
+        throw new functions.https.HttpsError('failed-precondition', 'The function must be called from an App Check verified app.');
+    }
     if (!context.auth || context.auth.token.role !== 'admin') {
         throw new functions.https.HttpsError('permission-denied', 'Only admins can sync traffic stats.');
     }

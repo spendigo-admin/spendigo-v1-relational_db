@@ -9,6 +9,7 @@ const APP_ID = import.meta.env.VITE_ALGOLIA_APP_ID;
 const SEARCH_KEY = import.meta.env.VITE_ALGOLIA_SEARCH_KEY;
 
 export const ALGOLIA_INDEX_NAME = import.meta.env.VITE_ALGOLIA_INDEX_NAME || 'master_products';
+export const ALGOLIA_MERCHANT_INDEX_NAME = import.meta.env.VITE_ALGOLIA_MERCHANT_INDEX_NAME || 'merchant_products';
 
 export const searchClient = (APP_ID && SEARCH_KEY)
     ? algoliasearch(APP_ID, SEARCH_KEY)

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import '../../styles/design-system.css';
 import { useAuth } from '../../context/AuthContext';
+import SEO from '../../components/SEO';
 
 const ForgotPassword = () => {
     const navigate = useNavigate();
@@ -45,6 +46,7 @@ const ForgotPassword = () => {
 
     return (
         <div className="min-h-screen bg-[var(--surface-color)] flex flex-col items-center justify-center p-4 relative overflow-hidden">
+            <SEO title="Reset Password" description="Reset your Spendigo account password." path="/forgot-password" noIndex />
             {/* Background Elements */}
             <div className="absolute top-[-20%] right-[-10%] w-[600px] h-[600px] bg-[var(--brand-primary)] rounded-full opacity-[0.03] blur-[120px]" />
             <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] bg-[var(--brand-secondary)] rounded-full opacity-[0.03] blur-[100px]" />

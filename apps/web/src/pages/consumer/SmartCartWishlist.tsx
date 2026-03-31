@@ -7,6 +7,7 @@ import { AddItemsPanel } from './components/AddItemsPanel';
 import { WishlistItemCard } from './components/WishlistItemCard';
 import { OrderSummaryPanel } from './components/OrderSummaryPanel';
 import '../../styles/design-system.css';
+import SEO from '../../components/SEO';
 
 const SmartCartWishlist: React.FC = () => {
     const { items: wishlistItems, removeItem } = useWishlist();
@@ -48,6 +49,7 @@ const SmartCartWishlist: React.FC = () => {
 
     return (
         <div className="animate-fade-in pb-12 lg:pb-12">
+            <SEO title="SmartCart Optimizer" description="Compare grocery prices across local stores and build the cheapest cart with Spendigo SmartCart." path="/smartcart" />
             {/* Mobile Sticky Bottom Bar */}
             {!inventoryLoading && wishlistItems.length > 0 && (
                 <div className="fixed bottom-0 left-0 right-0 lg:hidden bg-white border-t border-gray-200 px-4 py-3 pb-safe z-50 flex items-center gap-3 shadow-2xl">

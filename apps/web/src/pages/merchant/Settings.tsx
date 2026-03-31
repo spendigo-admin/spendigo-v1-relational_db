@@ -296,6 +296,37 @@ const MerchantSettings: React.FC = () => {
     const [inviteForm, setInviteForm] = useState({ name: '', email: '', role: 'STAFF' as MerchantRole });
     const [inviteError, setInviteError] = useState('');
 
+    // NEW: Check Stripe status when returning from Stripe
+    useEffect(() => {
+        const stripeParam = searchParams.get('stripe');
+        if (stripeParam === 'return' || stripeParam === 'refresh') {
+            const checkStatus = async () => {
+                try {
+                    const functions = getFunctions();
+                    const checkStatusFn = httpsCallable(functions, 'checkStripeAccountStatus');
+                    const result = await checkStatusFn({ storeId }) as { data: { status: string } };
+                    
+                    if (result.data.status === 'complete') {
+                        addNotification({ 
+                            type: 'system', 
+                            title: 'Stripe Connected!', 
+                            message: 'Your account is fully verified and ready for payouts.' 
+                        });
+                    } else {
+                        addNotification({ 
+                            type: 'system', 
+                            title: 'Stripe Sync', 
+                            message: 'We updated your connection status. Some details may still be pending.' 
+                        });
+                    }
+                } catch (err) {
+                    console.error("Status check failed:", err);
+                }
+            };
+            checkStatus();
+        }
+    }, [searchParams, storeId, addNotification]);
+
     // Fetch Real-time Team Members
     useEffect(() => {
         if (!storeId) return;
@@ -1148,26 +1179,35 @@ const MerchantSettings: React.FC = () => {
         const store = stores[storeId];
         const isConnected = !!store?.stripeAccountId;
 
+        // --- STRIPE CONNECT LOGIC ---
         const handleConnectStripe = async () => {
             setIsSaving(true);
             try {
-                // Simulate OAuth Redirect & Webhook delay
-                await new Promise(resolve => setTimeout(resolve, 2000));
+                const functions = getFunctions();
+                const onboardStoreFn = httpsCallable(functions, 'onboardStore');
+                
+                const result = await onboardStoreFn({ storeId }) as { data: { url: string } };
 
-                await updateStore(storeId, {
-                    stripeAccountId: `acct_test_${Math.random().toString(36).substr(2, 9)}`,
-                    stripeOnboardingStatus: 'complete',
-                    stripeConnectedAt: new Date().toISOString()
+                if (result.data?.url) {
+                    // Redirect to Stripe Onboarding
+                    window.location.href = result.data.url;
+                } else {
+                    throw new Error('No redirect URL returned from Stripe.');
+                }
+            } catch (err: any) {
+                console.error("Stripe Onboarding Error:", err);
+                addNotification({ 
+                    type: 'alert', 
+                    title: 'Connection Failed', 
+                    message: err.message || 'Could not initiate Stripe connection.' 
                 });
-
-                addNotification({ type: 'system', title: 'Stripe Connected', message: 'Your account is now ready to receive payouts.' });
-            } catch (err) {
-                console.error(err);
-                addNotification({ type: 'alert', title: 'Connection Failed', message: 'Could not connect to Stripe. Try again.' });
             } finally {
                 setIsSaving(false);
             }
         };
+
+
+
 
         const handleDisconnectStripe = async () => {
             if (await confirm({ title: 'Disconnect Stripe?', message: 'You will stop receiving payouts until you reconnect.', confirmText: 'Disconnect', type: 'danger' })) {

@@ -5,6 +5,7 @@ import '../../styles/design-system.css';
 import { useAuth } from '../../context/AuthContext';
 import { DEMO_USERS } from '../../data/demoUsers';
 import { useTranslation } from 'react-i18next';
+import SEO from '../../components/SEO';
 
 const Login = () => {
     const navigate = useNavigate();
@@ -65,6 +66,7 @@ const Login = () => {
 
     return (
         <div className="min-h-screen flex items-center justify-center p-4 bg-[var(--surface-0)]">
+            <SEO title="Sign In" description="Sign in to your Spendigo account to start shopping local and saving more." path="/login" />
             <div className="glass-panel w-full max-w-md p-8 animate-fade-in">
                 <h1 className="text-3xl font-bold mb-2 text-[var(--brand-primary)]">{t('welcomeBack')}</h1>
                 <p className="text-[var(--text-muted)] mb-8">{t('signInToAccess')}</p>

@@ -6,6 +6,9 @@ import * as admin from 'firebase-admin';
  * Deletes a user from Firebase Authentication and Firestore.
  */
 export const deleteUser = functions.https.onCall(async (data, context) => {
+    if (!context.app && process.env.FUNCTIONS_EMULATOR !== 'true') {
+        throw new functions.https.HttpsError('failed-precondition', 'The function must be called from an App Check verified app.');
+    }
     // 1. Verify Authentication and Admin Role
     if (!context.auth) {
         throw new functions.https.HttpsError('unauthenticated', 'The function must be called while authenticated.');

@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { confirmPasswordReset, verifyPasswordResetCode } from 'firebase/auth';
 import { auth } from '../../lib/firebase';
 import '../../styles/design-system.css';
+import SEO from '../../components/SEO';
 
 const ResetPassword = () => {
     const navigate = useNavigate();
@@ -70,6 +71,7 @@ const ResetPassword = () => {
 
     return (
         <div className="min-h-screen bg-[var(--surface-color)] flex flex-col items-center justify-center p-4 relative overflow-hidden">
+            <SEO title="Set New Password" description="Set a new password for your Spendigo account." noIndex />
             {/* Background Elements */}
             <div className="absolute top-[-20%] right-[-10%] w-[600px] h-[600px] bg-[var(--brand-primary)] rounded-full opacity-[0.03] blur-[120px]" />
             <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] bg-[var(--brand-secondary)] rounded-full opacity-[0.03] blur-[100px]" />

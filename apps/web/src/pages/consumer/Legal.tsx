@@ -2,6 +2,7 @@ import React from 'react';
 import { useLocation, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import '../../styles/design-system.css';
+import SEO from '../../components/SEO';
 
 const Legal: React.FC = () => {
     const location = useLocation();
@@ -87,6 +88,11 @@ const Legal: React.FC = () => {
 
     return (
         <div className="animate-fade-in pb-20 pt-8" style={{ minHeight: 'calc(100vh - 4rem)' }}>
+            <SEO
+                title={isPrivacy ? 'Privacy Policy' : 'Terms of Service'}
+                description={isPrivacy ? 'Read the Spendigo privacy policy. Learn how we protect your data.' : 'Read the Spendigo terms of service for shoppers and merchants.'}
+                path={isPrivacy ? '/privacy' : '/terms'}
+            />
             <div className="max-w-3xl mx-auto px-4">
                 
                 {/* Back button */}

@@ -37,12 +37,19 @@ exports.placeOrder = void 0;
 const functions = __importStar(require("firebase-functions"));
 const admin = __importStar(require("firebase-admin"));
 const firestore_1 = require("firebase-admin/firestore");
+const rateLimiter_1 = require("../utils/rateLimiter");
+const stripe_1 = require("../config/stripe");
 const db = admin.firestore();
 exports.placeOrder = functions.https.onCall(async (data, context) => {
     // 1. Security Check
+    if (!context.app && process.env.FUNCTIONS_EMULATOR !== 'true') {
+        throw new functions.https.HttpsError('failed-precondition', 'The function must be called from an App Check verified app.');
+    }
     if (!context.auth) {
         throw new functions.https.HttpsError('unauthenticated', 'User must be logged in.');
     }
+    // Rate Limit Check: Max 3 requests per minute per user
+    await (0, rateLimiter_1.checkRateLimit)(context.auth.uid, 'placeOrder', 3, 60 * 1000);
     const { orders } = data; // Array of Order objects
     const userId = context.auth.uid;
     const userEmail = context.auth.token.email;
@@ -57,7 +64,6 @@ exports.placeOrder = functions.https.onCall(async (data, context) => {
             // PHASE 1: READS (Collect all product snapshots)
             const productChecks = [];
             for (const order of orders) {
-                // Ensure storeId is present
                 if (!order.storeId)
                     throw new functions.https.HttpsError('invalid-argument', 'Order missing storeId');
                 for (const item of order.items) {
@@ -71,36 +77,39 @@ exports.placeOrder = functions.https.onCall(async (data, context) => {
                     });
                 }
             }
-            // PHASE 2: WRITES (Check Logic & Update)
-            // It is safe to perform updates now as long as we don't read again.
+            // PHASE 2: WRITES (Stock Updates)
             for (const { ref, snap, item, storeId } of productChecks) {
                 if (!snap.exists) {
-                    // Heuristic: New System products likely start with "storeId_"
                     const isNewSystemProduct = item.productId.startsWith(`${storeId}_`);
                     if (isNewSystemProduct) {
                         throw new functions.https.HttpsError('failed-precondition', `Product "${item.productName}" is no longer available.`);
                     }
-                    else {
-                        // Legacy Product - valid, but no stock tracking
-                        continue;
-                    }
+                    continue;
                 }
                 const currentStock = ((_a = snap.data()) === null || _a === void 0 ? void 0 : _a.available_quantity) || 0;
                 if (currentStock < item.quantity) {
                     throw new functions.https.HttpsError('failed-precondition', `Insufficient stock for "${item.productName}". Only ${currentStock} left.`);
                 }
-                // Decrement Stock (Write)
                 transaction.update(ref, {
                     available_quantity: firestore_1.FieldValue.increment(-item.quantity)
                 });
             }
-            // 3. Create Orders (Writes)
+            // PHASE 3: CREATE ORDERS
             for (const orderData of orders) {
                 const newOrderRef = db.collection('orders').doc();
                 orderIds.push(newOrderRef.id);
-                // Explicit allowlist — never spread client-supplied data directly.
-                // status and paymentStatus are always server-assigned to prevent
-                // a client injecting { paymentStatus: 'paid', status: 'delivered' }.
+                let paymentSucceeded = false;
+                if (orderData.paymentIntentId) {
+                    // Verify this intent was successful in Stripe
+                    const intent = await stripe_1.stripe.paymentIntents.retrieve(orderData.paymentIntentId);
+                    if (intent.status === 'succeeded') {
+                        paymentSucceeded = true;
+                    }
+                    else {
+                        functions.logger.error(`Checkout abort: Payment Intent ${orderData.paymentIntentId} status is ${intent.status}`);
+                        throw new functions.https.HttpsError('failed-precondition', 'Payment verification failed.');
+                    }
+                }
                 const finalOrder = {
                     storeId: orderData.storeId,
                     storeName: orderData.storeName,
@@ -109,14 +118,14 @@ exports.placeOrder = functions.https.onCall(async (data, context) => {
                     deliveryFee: orderData.deliveryFee,
                     tax: orderData.tax,
                     total: orderData.total,
-                    paymentMethod: orderData.paymentMethod,
+                    paymentMethod: orderData.paymentMethod || 'card',
                     deliveryAddress: orderData.deliveryAddress,
-                    // Server-enforced fields:
                     customerId: userId,
                     customerName: userName,
                     customerEmail: userEmail,
+                    paymentIntentId: orderData.paymentIntentId || null,
                     status: 'placed',
-                    paymentStatus: 'pending',
+                    paymentStatus: paymentSucceeded ? 'paid' : (orderData.paymentMethod === 'in_store' ? 'pending' : 'unpaid'),
                     createdAt: firestore_1.FieldValue.serverTimestamp(),
                     date: new Date().toISOString()
                 };
@@ -127,7 +136,6 @@ exports.placeOrder = functions.https.onCall(async (data, context) => {
     }
     catch (error) {
         functions.logger.error('Place Order Transaction Failed:', error);
-        // Re-throw HttpsErrors as-is to preserve the error code for the client
         if (error instanceof functions.https.HttpsError) {
             throw error;
         }

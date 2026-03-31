@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { sendEmailVerification } from 'firebase/auth';
 import { auth } from '../../lib/firebase';
 import '../../styles/design-system.css';
+import SEO from '../../components/SEO';
 
 const VerifyEmail: React.FC = () => {
     const { user, logout } = useAuth();
@@ -63,6 +64,7 @@ const VerifyEmail: React.FC = () => {
 
     return (
         <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-[var(--brand-primary)]/10 to-[var(--brand-secondary)]/10">
+            <SEO title="Verify Email" description="Verify your email address to complete Spendigo registration." noIndex />
             <div className="glass-panel max-w-md w-full p-8 text-center animate-fade-in">
                 {/* Icon */}
                 <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-secondary)] flex items-center justify-center text-4xl">

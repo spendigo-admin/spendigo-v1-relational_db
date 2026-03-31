@@ -2,13 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useOrders } from '../../context/OrderContext';
 import { useAuth } from '../../context/AuthContext';
+import { usePushNotifications } from '../../hooks/usePushNotifications';
 import { httpsCallable } from 'firebase/functions';
 import { functions } from '../../lib/firebase';
 import '../../styles/design-system.css';
+import SEO from '../../components/SEO';
 
 const Profile: React.FC = () => {
-    const { profile, orders, updateProfile, addAddress, deleteAddress, setDefaultAddress } = useOrders();
-    const { logout } = useAuth();
+    const { profile, orders, updateProfile, addAddress, deleteAddress, setDefaultAddress, reorder, downloadOrderReceipt } = useOrders();
+    const { user, logout } = useAuth();
     const location = useLocation();
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState<'account' | 'addresses' | 'orders'>(
@@ -26,6 +28,48 @@ const Profile: React.FC = () => {
     }, [location.state]);
     const [editingProfile, setEditingProfile] = useState(false);
     const [showAddAddress, setShowAddAddress] = useState(false);
+
+    // Push Notifications
+    const { permissionStatus, requestPermission } = usePushNotifications(user?.id);
+    const [isRequestingNotifications, setIsRequestingNotifications] = useState(false);
+    
+    const handleRequestNotifications = async () => {
+        setIsRequestingNotifications(true);
+        await requestPermission();
+        setIsRequestingNotifications(false);
+    };
+
+    // Reorder Handlers
+    const [reorderingId, setReorderingId] = useState<string | null>(null);
+
+    const handleReorder = async (e: React.MouseEvent, orderId: string) => {
+        e.preventDefault(); // Prevent navigating to OrderTracking
+        setReorderingId(orderId);
+        try {
+            const messages = await reorder(orderId);
+            if (messages.length > 0) {
+                alert("Some items could not be perfectly reordered:\n\n" + messages.join("\n"));
+            }
+            navigate('/cart');
+        } catch (error: any) {
+             alert(error.message);
+        } finally {
+            setReorderingId(null);
+        }
+    };
+
+    const [downloadingReceiptId, setDownloadingReceiptId] = useState<string | null>(null);
+    const handleDownloadReceipt = async (e: React.MouseEvent, orderId: string) => {
+        e.preventDefault();
+        setDownloadingReceiptId(orderId);
+        try {
+            await downloadOrderReceipt(orderId);
+        } catch (error: any) {
+            alert("Failed to generate receipt: " + error.message);
+        } finally {
+            setDownloadingReceiptId(null);
+        }
+    };
 
     // Form states
     const [formName, setFormName] = useState(profile.name);
@@ -129,6 +173,7 @@ const Profile: React.FC = () => {
 
     return (
         <div className="animate-fade-in pb-20">
+            <SEO title="My Profile" description="Manage your Spendigo account, addresses, and order history." path="/profile" noIndex />
             {/* Header */}
             <div className="bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)] text-white p-6">
                 <div className="max-w-3xl mx-auto flex items-center gap-4">
@@ -206,6 +251,30 @@ const Profile: React.FC = () => {
                                 </div>
                             </div>
                         )}
+
+                        {/* NOTIFICATIONS */}
+                        <div className="mt-10 pt-6 border-t border-[var(--glass-border)]">
+                            <h3 className="text-lg font-bold text-[var(--text-main)] mb-2 flex items-center gap-2">
+                                <span>🔔</span> Push Notifications
+                            </h3>
+                            <p className="text-sm text-[var(--text-muted)] mb-4">
+                                Receive alerts for order updates and price drops on your devices.
+                            </p>
+                            {permissionStatus === 'granted' ? (
+                                <div className="inline-flex items-center gap-2 px-4 py-2 bg-green-50 text-green-700 rounded-lg text-sm font-bold border border-green-200">
+                                    <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                                    Enabled
+                                </div>
+                            ) : (
+                                <button
+                                    onClick={handleRequestNotifications}
+                                    disabled={isRequestingNotifications}
+                                    className="px-6 py-2.5 bg-blue-50 text-[var(--brand-primary)] font-bold text-sm rounded-xl border border-blue-200 hover:bg-blue-100 hover:border-blue-300 transition-all disabled:opacity-50"
+                                >
+                                    {isRequestingNotifications ? 'Enabling...' : 'Enable Push Notifications'}
+                                </button>
+                            )}
+                        </div>
 
                         {/* DANGER ZONE */}
                         <div className="mt-10 pt-6 border-t-2 border-red-200">
@@ -403,6 +472,22 @@ const Profile: React.FC = () => {
                                             <p className="text-xs text-[var(--text-muted)]">{order.items.length} item{order.items.length > 1 ? 's' : ''}</p>
                                         </div>
                                         <p className="font-bold text-[var(--text-main)]">${order.total.toFixed(2)}</p>
+                                    </div>
+                                    <div className="mt-2 pt-3 border-t border-[var(--glass-border)] flex justify-end gap-2">
+                                        <button
+                                            onClick={(e) => handleDownloadReceipt(e, order.id)}
+                                            disabled={downloadingReceiptId === order.id}
+                                            className="px-4 py-2 bg-[var(--surface-3)] text-[var(--text-muted)] text-sm font-bold rounded-lg hover:bg-gray-200 disabled:opacity-50 transition-colors flex items-center gap-1"
+                                        >
+                                            {downloadingReceiptId === order.id ? '...' : <span>📄 Receipt</span>}
+                                        </button>
+                                        <button
+                                            onClick={(e) => handleReorder(e, order.id)}
+                                            disabled={reorderingId === order.id}
+                                            className="px-4 py-2 bg-[var(--surface-3)] text-[var(--brand-primary)] text-sm font-bold rounded-lg hover:bg-[var(--brand-primary)] hover:text-white disabled:opacity-50 transition-colors"
+                                        >
+                                            {reorderingId === order.id ? 'Reordering...' : 'Reorder'}
+                                        </button>
                                     </div>
                                 </Link>
                             ))

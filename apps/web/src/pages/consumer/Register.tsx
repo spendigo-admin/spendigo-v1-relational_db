@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import '../../styles/design-system.css';
 import { useAuth } from '../../context/AuthContext';
 import { useTranslation } from 'react-i18next';
+import SEO from '../../components/SEO';
 
 const Register: React.FC = () => {
     const navigate = useNavigate();
@@ -56,6 +57,7 @@ const Register: React.FC = () => {
 
     return (
         <div className="min-h-screen flex items-center justify-center p-4 bg-[var(--surface-0)]">
+            <SEO title="Create Account" description="Join Spendigo and start saving on groceries. Sign up as a shopper or a local merchant." path="/register" />
             <div className="glass-panel w-full max-w-md p-8 animate-fade-in">
                 <h1 className="text-3xl font-bold mb-2 text-[var(--brand-primary)]">{t('joinSpendigo')}</h1>
                 <p className="text-[var(--text-muted)] mb-8">{t('smartSavings')}</p>

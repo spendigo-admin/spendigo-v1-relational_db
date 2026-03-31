@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import '../../styles/design-system.css';
+import SEO from '../../components/SEO';
 
 const steps = [
     {
@@ -47,6 +48,7 @@ const benefits = [
 const PartnerWithUs: React.FC = () => {
     return (
         <div className="animate-fade-in pb-20">
+            <SEO title="Partner with Us" description="Join Spendigo as a local merchant. Get discovered by nearby shoppers, manage orders, and grow your business — for free." path="/partner" />
             {/* HERO */}
             <div className="bg-gradient-to-br from-[var(--brand-primary)] via-[var(--brand-secondary)] to-purple-600 text-white py-16 px-4 text-center">
                 <div className="max-w-3xl mx-auto">

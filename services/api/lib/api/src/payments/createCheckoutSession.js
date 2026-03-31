@@ -38,6 +38,7 @@ exports.createCheckoutSession = void 0;
 const functions = __importStar(require("firebase-functions"));
 const admin = __importStar(require("firebase-admin"));
 const stripe_1 = require("../config/stripe");
+const rateLimiter_1 = require("../utils/rateLimiter");
 const db = admin.firestore();
 // MAP YOUR STRIPE PRICE IDs HERE (From your Stripe Dashboard)
 // Run `firebase functions:config:set stripe.price_core="price_..." stripe.price_growth="price_..."`
@@ -53,9 +54,14 @@ const PRICE_IDS = {
 exports.createCheckoutSession = functions.https.onCall(async (data, context) => {
     var _a;
     // 1. Security Check
+    if (!context.app && process.env.FUNCTIONS_EMULATOR !== 'true') {
+        throw new functions.https.HttpsError('failed-precondition', 'The function must be called from an App Check verified app.');
+    }
     if (!context.auth) {
         throw new functions.https.HttpsError('unauthenticated', 'User must be logged in.');
     }
+    // Rate Limit Check: Max 3 checkout sessions initialized per minute
+    await (0, rateLimiter_1.checkRateLimit)(context.auth.uid, 'createCheckoutSession', 3, 60 * 1000);
     const { tier, promoCode } = data; // 'core' or 'growth'
     const userId = context.auth.uid;
     const userEmail = context.auth.token.email;

@@ -5,6 +5,7 @@ import { useMarketplace } from '../../context/MarketplaceContext';
 import { useLocation } from '../../context/LocationContext';
 import AdCarousel from '../../components/AdCarousel';
 import { useTranslation } from 'react-i18next';
+import SEO from '../../components/SEO';
 
 const CATEGORIES = ['All', 'Fastest', 'Offers', 'Low Prices', 'Grocery', 'Convenience', 'Wholesale'];
 
@@ -138,6 +139,11 @@ const StoreList: React.FC = () => {
 
     return (
         <div className="animate-fade-in">
+            <SEO
+                title="Home"
+                description="Discover local grocery stores near you. Compare prices, browse weekly flyers, and save money with Spendigo SmartCart."
+                path="/"
+            />
             {loading && (
                 <div className="fixed inset-0 bg-white/50 backdrop-blur-sm z-50 flex items-center justify-center">
                     <div className="animate-spin text-4xl">⏳</div>

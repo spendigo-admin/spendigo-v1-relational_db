@@ -1,5 +1,6 @@
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
+import { checkRateLimit } from '../utils/rateLimiter';
 
 interface InviteData {
     email: string;
@@ -15,6 +16,12 @@ interface InviteData {
  */
 export const inviteTeamMember = functions.https.onCall(
     async (data: InviteData, context) => {
+        if (!context.app && process.env.FUNCTIONS_EMULATOR !== 'true') {
+            throw new functions.https.HttpsError(
+                'failed-precondition',
+                'The function must be called from an App Check verified app.'
+            );
+        }
         // 1. Verify caller is authenticated
         if (!context.auth) {
             throw new functions.https.HttpsError(
@@ -22,6 +29,9 @@ export const inviteTeamMember = functions.https.onCall(
                 'Must be authenticated to invite team members'
             );
         }
+
+        // Rate Limit Check: Max 10 invites per 15 minutes to prevent email spam
+        await checkRateLimit(context.auth.uid, 'inviteTeamMember', 10, 15 * 60 * 1000);
 
         // 2. Validate input
         const { email, name, merchantRole, storeId, tempPassword } = data;

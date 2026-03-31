@@ -7,6 +7,7 @@ import {
     SmartCartListItemInput
 } from '../../types/smartCart';
 import '../../styles/design-system.css';
+import SEO from '../../components/SEO';
 
 const mockShoppingList: SmartCartListItemInput[] = [
     { id: 'list-milk', name: 'Milk 2L', quantity: 1, preferredMasterProductId: 'mp-milk-2l', category: 'Dairy' },
@@ -170,6 +171,7 @@ const SmartCartPrototype: React.FC = () => {
 
     return (
         <div className="animate-fade-in pb-16">
+            <SEO title="SmartCart Prototype" description="Internal SmartCart optimizer interface preview." noIndex />
             <section className="relative overflow-hidden border-b border-[var(--glass-border)] bg-[radial-gradient(circle_at_top_left,_rgba(33,150,243,0.15),_transparent_35%),linear-gradient(135deg,_#f7f3ea_0%,_#ffffff_55%,_#eef8f4_100%)]">
                 <div className="max-w-7xl mx-auto px-4 py-12 md:py-16">
                     <div className="max-w-3xl">

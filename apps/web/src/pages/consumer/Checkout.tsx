@@ -1,17 +1,24 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
 import { useOrders } from '../../context/OrderContext';
 import { useWishlist } from '../../context/WishlistContext';
 import { useMarketplace } from '../../context/MarketplaceContext';
 import { useLocation } from '../../context/LocationContext';
-// Audit import removed
 import { useAuth } from '../../context/AuthContext';
 import { useNotifications } from '../../context/NotificationContext';
 import { STORE_DATA } from '../../data/productData';
 import '../../styles/design-system.css';
+import SEO from '../../components/SEO';
+import { loadStripe } from '@stripe/stripe-js';
+import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
+import { stripePromise } from '../../lib/stripe';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 
 const Checkout: React.FC = () => {
+
+    const stripe = useStripe();
+    const elements = useElements();
     const { items, subtotal, clearCart } = useCart();
     const { clearWishlist } = useWishlist();
     const { addOrder, createBatchOrders, profile } = useOrders();
@@ -54,7 +61,7 @@ const Checkout: React.FC = () => {
     }, [user, navigate, items.length]);
 
     // Group items by store
-    const groupedItems = items.reduce((acc, item) => {
+    const groupedItems = useMemo(() => items.reduce((acc, item) => {
         const store = getStore(item.storeId);
         
         // --- RADIUS CHECK ---
@@ -91,7 +98,7 @@ const Checkout: React.FC = () => {
         acc[item.storeId].total += item.price * item.quantity;
         acc[item.storeId].items.push(item);
         return acc;
-    }, {} as Record<string, { storeName: string; total: number; items: any[]; tier: string; deliveryEnabled: boolean; pickupEnabled: boolean; isOpen: boolean; acceptsOnlinePayment: boolean; distanceViolation: boolean; distance: number }>);
+    }, {} as Record<string, { storeName: string; total: number; items: any[]; tier: string; deliveryEnabled: boolean; pickupEnabled: boolean; isOpen: boolean; acceptsOnlinePayment: boolean; distanceViolation: boolean; distance: number }>), [items, getStore, userCoords, calculateDistance]);
 
     // State for fulfillment method PER STORE
     const [fulfillmentMethods, setFulfillmentMethods] = useState<Record<string, 'delivery' | 'pickup'>>({});
@@ -141,7 +148,7 @@ const Checkout: React.FC = () => {
     const taxRate = 0.13; // 13% HST Ontario
 
     // Calculate totals including Delivery Fees
-    const { orderSubtotal, deliveryFees, calculatedTax, grandTotal } = React.useMemo(() => {
+    const { orderSubtotal, deliveryFees, calculatedTax, grandTotal } = useMemo(() => {
         let sub = 0;
         const taxableSub = 0;
         let fees = 0;
@@ -257,7 +264,7 @@ const Checkout: React.FC = () => {
 
         try {
             // Prepare orders for batch submission
-            const ordersToCreate = Object.entries(groupedItems).map(([storeId, data]) => {
+            const ordersToCreate = await Promise.all(Object.entries(groupedItems).map(async ([storeId, data]) => {
                 const method = fulfillmentMethods[storeId] || 'pickup';
                 const store = getStore(storeId) || STORE_DATA[storeId];
 
@@ -276,13 +283,52 @@ const Checkout: React.FC = () => {
                     }
                 }
 
-                // Re-calculate tax based on item taxability (OUTSIDE RETURN)
+                // Re-calculate tax based on item taxability
                 const taxableAmount = data.items.reduce((sum: number, i: any) => {
                     return (i.taxable !== false) ? sum + (i.price * i.quantity) : sum;
                 }, 0);
 
-                // Delivery fee is also taxable
                 const taxAmount = (taxableAmount + fee) * rate;
+                const grandTotal = data.total + taxAmount + fee;
+
+                let paymentIntentId = null;
+
+                // --- NEW: Real Stripe Payment Logic ---
+                if (data.acceptsOnlinePayment && stripe && elements) {
+                    const cardElement = elements.getElement(CardElement);
+                    if (!cardElement) throw new Error("Payment input missing.");
+
+                    // 1. Create PaymentIntent on server
+                    const functions = getFunctions();
+                    const createIntentFn = httpsCallable(functions, 'createPaymentIntent');
+                    const intentResult = await createIntentFn({ 
+                        amount: Math.round(grandTotal * 100), // in cents
+                        storeId: storeId,
+                        metadata: { storeName: data.storeName }
+                    }) as { data: { clientSecret: string, paymentIntentId: string } };
+
+                    const clientSecret = intentResult.data.clientSecret;
+                    paymentIntentId = intentResult.data.paymentIntentId;
+
+                    // 2. Confirm Payment on Client
+                    const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
+                        payment_method: {
+                            card: cardElement,
+                            billing_details: {
+                                name: profile.name || user?.email,
+                                email: user?.email
+                            }
+                        }
+                    });
+
+                    if (error) {
+                        throw new Error(`Payment for ${data.storeName} failed: ${error.message}`);
+                    }
+                    
+                    if (paymentIntent?.status !== 'succeeded') {
+                        throw new Error(`Payment for ${data.storeName} is ${paymentIntent?.status}.`);
+                    }
+                }
 
                 return {
                     storeId,
@@ -290,9 +336,10 @@ const Checkout: React.FC = () => {
                     storeProvince: province,
                     appliedTaxRate: rate,
                     status: 'placed' as const,
+                    paymentStatus: data.acceptsOnlinePayment ? 'paid' as const : 'pending' as const,
                     items: data.items.map((i: any) => ({
                         productId: i.productId || i.id,
-                        productName: i.productName || i.name, // Fallback for safety
+                        productName: i.productName || i.name,
                         price: i.price,
                         quantity: i.quantity,
                         image: i.image,
@@ -301,9 +348,9 @@ const Checkout: React.FC = () => {
                     subtotal: data.total,
                     tax: taxAmount,
                     deliveryFee: fee,
-                    total: data.total + taxAmount + fee,
-                    paymentMethod: 'in_store' as const,
-                    paymentStatus: 'pending' as const,
+                    total: grandTotal,
+                    paymentMethod: data.acceptsOnlinePayment ? ('card' as const) : ('in_store' as const),
+                    paymentIntentId: paymentIntentId,
                     deliveryAddress: method === 'delivery'
                         ? (() => {
                             const addr = (profile.addresses.find(a => a.isDefault) || profile.addresses[0]);
@@ -320,7 +367,7 @@ const Checkout: React.FC = () => {
                         })()
                         : undefined
                 };
-            });
+            }));
 
             console.log(`Submitting batch of ${ordersToCreate.length} orders`);
             await createBatchOrders(ordersToCreate);
@@ -379,6 +426,7 @@ const Checkout: React.FC = () => {
 
     return (
         <div className="animate-fade-in pb-40">
+            <SEO title="Checkout" description="Complete your order and confirm reservations on Spendigo." path="/checkout" noIndex />
             <div className="max-w-3xl mx-auto px-4 py-6">
                 <h1 className="text-3xl font-bold text-[var(--text-main)] mb-6">Checkout</h1>
 
@@ -519,8 +567,9 @@ const Checkout: React.FC = () => {
                         </div>
                     </div>
                     <p className="text-sm text-[var(--text-muted)] leading-relaxed bg-blue-50 p-4 rounded-xl border border-blue-100 text-blue-800">
-                        <strong>Note:</strong> Spendigo is a marketplace facilitator. You are reserving these items directly from the merchants.
-                        Please complete payment at the store or with the delivery driver upon receipt.
+                        <strong>Note:</strong> Spendigo is a marketplace facilitator. {Object.values(groupedItems).some(g => g.acceptsOnlinePayment) 
+                            ? "Your online payment will be securely transferred to the merchant(s) upon order confirmation." 
+                            : "You are reserving these items. Please complete payment at the store or with the delivery driver upon receipt."}
                     </p>
                 </div>
             </div >
@@ -560,21 +609,51 @@ const Checkout: React.FC = () => {
                         // Check if ANY store blocks the entire checkout
                         const hasBlockers = Object.values(groupedItems).some(g => !g.isOpen || (!g.deliveryEnabled && !g.pickupEnabled));
                         const ageBlocked = hasAgeRestricted && !ageVerified;
+                        const hasOnlinePay = Object.values(groupedItems).some(g => g.acceptsOnlinePayment);
 
                         return (
-                            <button
-                                onClick={handlePayment}
-                                disabled={isProcessing || hasBlockers || ageBlocked}
-                                className={`w-full py-4 text-white font-bold text-lg rounded-2xl transition-all flex items-center justify-center gap-2 shadow-lg ${isProcessing || hasBlockers || ageBlocked
-                                    ? 'bg-gray-400 cursor-not-allowed opacity-80'
-                                    : 'bg-[var(--brand-primary)] hover:brightness-110 active:scale-95 shadow-[var(--brand-primary)]/30'
-                                    }`}
-                            >
-                                {isProcessing ? 'Confirming Orders...' :
-                                    hasBlockers ? '⚠️ Cannot Checkout (Store Closed or Disabled)' :
-                                        ageBlocked ? '🔞 Please Verify Your Age Above' :
-                                            `Confirm Reservations • $${grandTotal.toFixed(2)}`}
-                            </button>
+                            <div className="space-y-4">
+                                {hasOnlinePay && (
+                                    <div className="bg-white p-4 rounded-xl border-2 border-[var(--brand-primary)] shadow-sm animate-fade-in mb-4">
+                                        <div className="flex items-center gap-2 mb-3">
+                                            <span className="text-xl">💳</span>
+                                            <div>
+                                                <h3 className="font-bold text-[var(--text-main)] text-sm">Online Payment Required</h3>
+                                                <p className="text-[10px] text-[var(--text-muted)]">Participating merchants require upfront payment for orders.</p>
+                                            </div>
+                                        </div>
+                                        <div className="p-3 bg-[var(--surface-1)] rounded-lg border border-[var(--glass-border)]">
+                                            <CardElement options={{
+                                                style: {
+                                                    base: {
+                                                        fontSize: '16px',
+                                                        color: '#1a1a1a',
+                                                        '::placeholder': { color: '#888' },
+                                                    }
+                                                }
+                                            }} />
+                                        </div>
+                                        <div className="flex items-center gap-1 mt-2 text-[10px] text-[var(--text-muted)] justify-center">
+                                            <span>🔒 Securely processed by</span>
+                                            <span className="font-bold text-[#635BFF]">Stripe</span>
+                                        </div>
+                                    </div>
+                                )}
+                                <button
+                                    onClick={handlePayment}
+                                    disabled={isProcessing || hasBlockers || ageBlocked}
+                                    className={`w-full py-4 text-white font-bold text-lg rounded-2xl transition-all flex items-center justify-center gap-2 shadow-lg ${isProcessing || hasBlockers || ageBlocked
+                                        ? 'bg-gray-400 cursor-not-allowed opacity-80'
+                                        : 'bg-[var(--brand-primary)] hover:brightness-110 active:scale-95 shadow-[var(--brand-primary)]/30'
+                                        }`}
+                                >
+                                    {isProcessing ? 'Processing Secure Payment...' :
+                                        hasBlockers ? '⚠️ Checkout Disabled' :
+                                            ageBlocked ? '🔞 Verify Age Above' :
+                                                hasOnlinePay ? `Complete Payment & Order • $${grandTotal.toFixed(2)}` :
+                                                    `Confirm Reservations • $${grandTotal.toFixed(2)}`}
+                                </button>
+                            </div>
                         );
                     })()}
                 </div>
@@ -583,4 +662,16 @@ const Checkout: React.FC = () => {
     );
 };
 
-export default Checkout;
+/**
+ * Main Export - Wrapped with Stripe Elements
+ */
+const CheckoutWrapped: React.FC = () => {
+    return (
+        <Elements stripe={stripePromise}>
+            <Checkout />
+        </Elements>
+    );
+};
+
+export default CheckoutWrapped;
+

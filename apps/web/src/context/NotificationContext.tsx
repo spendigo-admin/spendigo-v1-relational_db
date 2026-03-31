@@ -80,7 +80,8 @@ interface NotificationContextType {
 
 // Imports updated
 import { doc, onSnapshot, setDoc, getDoc, collection, query, orderBy, addDoc, updateDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from '../lib/firebase';
+import { db, messaging } from '../lib/firebase';
+import { onMessage } from 'firebase/messaging';
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
 
@@ -132,6 +133,26 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
                     setNotifications(MOCK_NOTIFICATIONS);
                 }
                 setLoading(false);
+            }
+
+            // Foreground Messages Listener
+            if (messaging) {
+                onMessage(messaging, (payload) => {
+                    console.log('Foreground message received. ', payload);
+                    if (payload.notification) {
+                        // Construct AppNotification from FCM Payload
+                        const newNotif: Omit<AppNotification, 'id' | 'timestamp' | 'read'> = {
+                            type: (payload.data?.type as any) || 'system',
+                            title: payload.notification.title || 'New Notification',
+                            message: payload.notification.body || '',
+                            link: payload.data?.link,
+                            orderId: payload.data?.orderId
+                        };
+                        
+                        // Use the context's own function to trigger toast and save to Firestore
+                        addNotification(newNotif);
+                    }
+                });
             }
         };
 

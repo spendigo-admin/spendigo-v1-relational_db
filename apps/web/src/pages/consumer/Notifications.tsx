@@ -1,9 +1,21 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import '../../styles/design-system.css';
 import { useNotifications, AppNotification } from '../../context/NotificationContext';
+import { usePushNotifications } from '../../hooks/usePushNotifications';
+import { useAuth } from '../../context/AuthContext';
+import SEO from '../../components/SEO';
 
 const Notifications: React.FC = () => {
+    const { user } = useAuth();
     const { notifications, unreadCount, markAsRead, markAllRead, preferences, togglePreference } = useNotifications();
+    const { permissionStatus, requestPermission } = usePushNotifications(user?.id);
+    const [isRequesting, setIsRequesting] = useState(false);
+
+    const handleRequestPermission = async () => {
+        setIsRequesting(true);
+        await requestPermission();
+        setIsRequesting(false);
+    };
 
     const getIconConfig = (type: string) => {
         switch (type) {
@@ -74,6 +86,7 @@ const Notifications: React.FC = () => {
 
     return (
         <div className="animate-fade-in pb-24 bg-[var(--surface-1)] min-h-screen">
+            <SEO title="Notifications" description="Your Spendigo notifications." noIndex />
             {/* Header */}
             <div className="bg-white/80 backdrop-blur-md border-b border-[var(--glass-border)] p-5 sticky top-14 z-30 pt-safe">
                 <div className="max-w-xl mx-auto flex items-center justify-between">
@@ -128,8 +141,30 @@ const Notifications: React.FC = () => {
                     </>
                 )}
 
+                {/* Push Notification Opt-In */}
+                {permissionStatus !== 'granted' && (
+                    <div className="bg-gradient-to-br from-[var(--brand-primary)] to-indigo-600 rounded-[2rem] p-6 shadow-md text-white mt-12 mb-6 animate-fade-in text-center sm:text-left flex flex-col sm:flex-row items-center gap-6">
+                        <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center text-3xl backdrop-blur-sm shrink-0">
+                            🔔
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <h3 className="font-black text-xl mb-1">Stay in the Loop</h3>
+                            <p className="text-blue-100 text-sm mb-4 leading-relaxed">
+                                Get instant alerts when your order is out for delivery or prices drop on your wishlist.
+                            </p>
+                            <button 
+                                onClick={handleRequestPermission}
+                                disabled={isRequesting}
+                                className="bg-white text-[var(--brand-primary)] px-6 py-2.5 rounded-full font-bold text-sm hover:scale-105 active:scale-95 transition-transform shadow-lg disabled:opacity-75"
+                            >
+                                {isRequesting ? 'Enabling...' : 'Enable Notifications'}
+                            </button>
+                        </div>
+                    </div>
+                )}
+
                 {/* Preferences Section Redesign */}
-                <div className="bg-white rounded-[2rem] border border-[var(--glass-border)] p-6 shadow-sm mt-12">
+                <div className={`bg-white rounded-[2rem] border border-[var(--glass-border)] p-6 shadow-sm ${permissionStatus !== 'granted' ? 'mt-4' : 'mt-12'}`}>
                     <div className="flex items-center gap-3 mb-6">
                         <div className="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl">⚙️</div>
                         <div>

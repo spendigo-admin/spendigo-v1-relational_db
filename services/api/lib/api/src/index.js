@@ -33,7 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.syncTrafficStats = exports.syncMasterProductToAlgolia = exports.cartOptimize = exports.smartcartOptimize = exports.onMasterProductWrite = exports.onUserUpdate = exports.cancelOrder = exports.placeOrder = exports.updateSubscriptionPlan = exports.sendOrderStatusUpdate = exports.sendOrderConfirmation = exports.getPaymentHistory = exports.stripeWebhook = exports.createCheckoutSession = exports.removeTeamMember = exports.requestAccountDeletion = exports.deleteUser = exports.inviteTeamMember = exports.cleanupOrphanedUsers = void 0;
+exports.onOrderStatusUpdated = exports.refundOrder = exports.createPaymentIntent = exports.checkStripeAccountStatus = exports.onboardStore = exports.syncMerchantProductToAlgolia = exports.syncTrafficStats = exports.syncMasterProductToAlgolia = exports.cartOptimize = exports.smartcartOptimize = exports.onMasterProductWrite = exports.onUserUpdate = exports.downloadReceipt = exports.cancelOrder = exports.placeOrder = exports.updateSubscriptionPlan = exports.sendOrderStatusUpdate = exports.sendOrderConfirmation = exports.getPaymentHistory = exports.stripeWebhook = exports.createCheckoutSession = exports.removeTeamMember = exports.requestAccountDeletion = exports.deleteUser = exports.inviteTeamMember = exports.cleanupOrphanedUsers = void 0;
 const admin = __importStar(require("firebase-admin"));
 // Initialize Firebase Admin
 admin.initializeApp();
@@ -63,6 +63,8 @@ var placeOrder_1 = require("./orders/placeOrder");
 Object.defineProperty(exports, "placeOrder", { enumerable: true, get: function () { return placeOrder_1.placeOrder; } });
 var cancelOrder_1 = require("./orders/cancelOrder");
 Object.defineProperty(exports, "cancelOrder", { enumerable: true, get: function () { return cancelOrder_1.cancelOrder; } });
+var downloadReceipt_1 = require("./orders/downloadReceipt");
+Object.defineProperty(exports, "downloadReceipt", { enumerable: true, get: function () { return downloadReceipt_1.downloadReceipt; } });
 var userTriggers_1 = require("./triggers/userTriggers");
 Object.defineProperty(exports, "onUserUpdate", { enumerable: true, get: function () { return userTriggers_1.onUserUpdate; } });
 var productTriggers_1 = require("./triggers/productTriggers");
@@ -75,4 +77,16 @@ var algoliaTriggers_1 = require("./triggers/algoliaTriggers");
 Object.defineProperty(exports, "syncMasterProductToAlgolia", { enumerable: true, get: function () { return algoliaTriggers_1.syncMasterProductToAlgolia; } });
 var syncTrafficStats_1 = require("./admin/syncTrafficStats");
 Object.defineProperty(exports, "syncTrafficStats", { enumerable: true, get: function () { return syncTrafficStats_1.syncTrafficStats; } });
+var algoliaMerchantTriggers_1 = require("./triggers/algoliaMerchantTriggers");
+Object.defineProperty(exports, "syncMerchantProductToAlgolia", { enumerable: true, get: function () { return algoliaMerchantTriggers_1.syncMerchantProductToAlgolia; } });
+var onboardStore_1 = require("./payments/onboardStore");
+Object.defineProperty(exports, "onboardStore", { enumerable: true, get: function () { return onboardStore_1.onboardStore; } });
+var checkStripeStatus_1 = require("./payments/checkStripeStatus");
+Object.defineProperty(exports, "checkStripeAccountStatus", { enumerable: true, get: function () { return checkStripeStatus_1.checkStripeAccountStatus; } });
+var createPaymentIntent_1 = require("./payments/createPaymentIntent");
+Object.defineProperty(exports, "createPaymentIntent", { enumerable: true, get: function () { return createPaymentIntent_1.createPaymentIntent; } });
+var refundOrder_1 = require("./payments/refundOrder");
+Object.defineProperty(exports, "refundOrder", { enumerable: true, get: function () { return refundOrder_1.refundOrder; } });
+var orderTriggers_1 = require("./triggers/orderTriggers");
+Object.defineProperty(exports, "onOrderStatusUpdated", { enumerable: true, get: function () { return orderTriggers_1.onOrderStatusUpdated; } });
 //# sourceMappingURL=index.js.map
