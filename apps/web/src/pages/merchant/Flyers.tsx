@@ -62,12 +62,36 @@ const MerchantFlyers: React.FC = () => {
     const [view, setView] = useState<'list' | 'editor'>('list');
     const [activeFlyerId, setActiveFlyerId] = useState<string | null>(null);
 
+    const getEffectiveStatus = (flyer: Partial<Flyer>): Flyer['status'] => {
+        if (flyer.status === 'draft') return 'draft';
+
+        const now = new Date();
+        const validFrom = flyer.validFrom || '';
+        const validUntil = flyer.validUntil || '';
+
+        if (!validFrom || !validUntil) return 'draft';
+
+        const [y1, m1, d1] = validFrom.split('-').map(Number);
+        const start = new Date(y1, m1 - 1, d1);
+
+        const [y2, m2, d2] = validUntil.split('-').map(Number);
+        const end = new Date(y2, m2 - 1, d2);
+        end.setHours(23, 59, 59, 999);
+
+        if (end < now) return 'expired';
+        if (start > now) return 'scheduled';
+        return 'active';
+    };
+
     // Subscribe to real-time flyer data
     useEffect(() => {
         if (!storeId) return;
         const unsubscribe = subscribeToFlyers(storeId, (data) => {
-            // Map data to match Flyer interface if needed, relying on data structure consistency
-            setFlyers(data as Flyer[]);
+            const normalized = (data as Flyer[]).map(f => ({
+                ...f,
+                status: getEffectiveStatus(f)
+            }));
+            setFlyers(normalized);
         });
         return () => unsubscribe();
     }, [storeId, subscribeToFlyers]);
@@ -166,22 +190,7 @@ const MerchantFlyers: React.FC = () => {
             return;
         }
 
-        let status: Flyer['status'] = 'draft';
-        if (publish) {
-            const now = new Date();
-
-            // Parse YYYY-MM-DD explicitly to Local Time (avoiding UTC conversion issues)
-            const [y1, m1, d1] = formData.validFrom.split('-').map(Number);
-            const start = new Date(y1, m1 - 1, d1); // Start of day 00:00
-
-            const [y2, m2, d2] = formData.validUntil.split('-').map(Number);
-            const end = new Date(y2, m2 - 1, d2);
-            end.setHours(23, 59, 59, 999); // End of day 23:59
-
-            if (end < now) status = 'expired';
-            else if (start > now) status = 'scheduled';
-            else status = 'active';
-        }
+        let status: Flyer['status'] = publish ? getEffectiveStatus(formData) : 'draft';
 
         const newFlyer: Flyer = {
             id: activeFlyerId || `f${Date.now()}`,

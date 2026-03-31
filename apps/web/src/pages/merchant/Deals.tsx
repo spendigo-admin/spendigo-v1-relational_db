@@ -72,10 +72,24 @@ const MerchantDeals: React.FC = () => {
     const { addNotification } = useNotifications();
 
     // Subscribe to Deals
+    const getEffectiveStatus = (deal: Partial<Deal>): Deal['status'] => {
+        const now = new Date();
+        const start = new Date(deal.startDate || '');
+        const end = new Date(deal.endDate || '');
+
+        if (end < now) return 'expired';
+        if (start > now) return 'scheduled';
+        return 'active';
+    };
+
     React.useEffect(() => {
         if (!storeId) return;
         const unsubscribe = subscribeToDeals(storeId, (data) => {
-            setDeals(data as Deal[]);
+            const normalized = (data as Deal[]).map(d => ({
+                ...d,
+                status: getEffectiveStatus(d)
+            }));
+            setDeals(normalized);
         });
         return () => unsubscribe();
     }, [storeId, subscribeToDeals]);
@@ -162,9 +176,7 @@ const MerchantDeals: React.FC = () => {
         const start = new Date(dealConfig.startDate);
         const end = new Date(dealConfig.endDate);
 
-        let status: Deal['status'] = 'active';
-        if (end < now) status = 'expired';
-        else if (start > now) status = 'scheduled';
+        const status = getEffectiveStatus({ startDate: dealConfig.startDate, endDate: dealConfig.endDate });
 
         const newDeal: Deal = {
             id: `d${Date.now()}`,

@@ -144,15 +144,6 @@ export const MarketplaceProvider: React.FC<{ children: ReactNode }> = ({ childre
 
     const deleteFlyer = async (storeId: string | number, flyerId: string) => {
         const flyerRef = doc(db, 'stores', String(storeId), 'flyers', flyerId);
-        // deleteDoc is not imported, let's fix imports first or assume it is available? 
-        // Wait, I need to check imports. I'll just use deleteDoc here and update imports in next step if needed. 
-        // Actually, I can't easily see imports without view_file again. 
-        // Better to use updateDoc to mark as deleted? No, physical delete is requested.
-        // Let's assume I need to add deleteDoc to imports.
-        // For now, I will use the imported 'updateDoc' etc. I see 'doc' 'collection' 'onSnapshot' 'updateDoc' 'setDoc' 'getDoc'. 'deleteDoc' is MISSING.
-        // I will add it to imports in a separate call or same call if possible.
-        // Since I can't effectively multi-replace safely without ensuring I have the import, 
-        // I'll stick to defining the functions here and then fix the import.
         await deleteDoc(flyerRef);
     };
 
@@ -176,7 +167,45 @@ export const MarketplaceProvider: React.FC<{ children: ReactNode }> = ({ childre
         await deleteDoc(dealRef);
     };
 
-    const getStore = (storeId: string | number) => stores[storeId];
+    const getStore = (storeId: string | number) => {
+        const store = stores[storeId];
+        if (!store) return store;
+
+        const now = new Date();
+        const filteredStore = { ...store };
+
+        // 1. Filter Flyer
+        if (filteredStore.flyer?.validUntil && filteredStore.flyer.title) {
+            const flyerEnd = new Date(filteredStore.flyer.validUntil);
+            // If it's just a date format (like "Mar 24, 2026" or "2026-03-24"), set to end of day
+            if (filteredStore.flyer.validUntil.indexOf(':') === -1) {
+                flyerEnd.setHours(23, 59, 59, 999);
+            }
+            if (flyerEnd < now) {
+                // Flyer expired, treat as empty in view
+                filteredStore.flyer = { title: '', validUntil: '', image: '' };
+                filteredStore.activeFlyerItems = [];
+            }
+        }
+
+        // 2. Filter Sale Items
+        if (filteredStore.saleItems) {
+            filteredStore.saleItems = filteredStore.saleItems.filter((item: any) => {
+                if (!item.validUntil) return true;
+                return new Date(item.validUntil) >= now;
+            });
+        }
+
+        // 3. Filter One Day Offers
+        if (filteredStore.oneDayOffers) {
+            filteredStore.oneDayOffers = filteredStore.oneDayOffers.filter((item: any) => {
+                if (!item.validUntil) return true;
+                return new Date(item.validUntil) >= now;
+            });
+        }
+
+        return filteredStore;
+    };
 
     return (
         <MarketplaceContext.Provider value={{
