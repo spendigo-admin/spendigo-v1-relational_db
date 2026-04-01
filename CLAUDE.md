@@ -35,6 +35,9 @@ firebase deploy                    # Deploy hosting + functions + Firestore rule
 ```
 
 ### Mobile (Capacitor)
+
+Capacitor config in `apps/web/capacitor.config.ts`: app ID `com.spendigo.smartcart`, web dir `dist`. Plugins: StatusBar (dark, overlays), SplashScreen (2 s, immersive), Keyboard (resize body, scroll to input). Android uses HTTPS scheme.
+
 ```bash
 npx cap sync         # Sync web build to native projects
 npx cap open ios     # Open Xcode
@@ -65,12 +68,15 @@ AuthProvider → MaintenanceGuard → NotificationProvider → MarketplaceProvid
   → CatalogProvider → ReviewProvider → CartProvider → WishlistProvider
   → OrderProvider → LocationProvider → ConfirmationProvider
 ```
+`AuditProvider` is scoped only to admin routes (not global) — wraps `AdminLayout` in the route tree.
 - `AuthContext` — Firebase Auth + Firestore user profiles, RBAC permissions via `can(permission)`. User roles: `consumer | merchant | admin`. Merchant sub-roles: `OWNER | MANAGER | STAFF | MARKETING`.
 - `MarketplaceContext` — Real-time `onSnapshot` of all `stores` collection (filters to `status === 'active'`).
 - `CatalogContext` — Master product catalog.
 - `CartContext` — Hybrid: localStorage for guests, Firestore `carts/{userId}` for authenticated users; merges guest cart on login.
-- `LocationContext` — User location and FSA (Forward Sortation Area / postal prefix) management.
+- `LocationContext` — Geolocation with Haversine distance, Nominatim geocoding (OpenStreetMap), FSA (Forward Sortation Area / postal prefix) fallback. Default search radius: 10 km.
 - `OrderContext`, `WishlistContext`, `NotificationContext`, `AuditContext`, `ReviewContext`, `ConfirmationContext`.
+
+**Internationalization**: `i18next` + `react-i18next` with `i18next-browser-languagedetector`. Two locales: English (`en`) and French (`fr`), translations in `apps/web/src/locales/{lang}/translation.json`. Initialized before React renders in `main.tsx`. `LanguageSwitcher` component in layouts for manual toggle.
 
 **Permission system** (`AuthContext.tsx`):
 Merchant sub-roles grant specific permissions checked via `can(permission)` from `useAuth()`:
@@ -81,12 +87,26 @@ Merchant sub-roles grant specific permissions checked via `can(permission)` from
 
 Admin sub-roles: SUPER_ADMIN (admin:all), MODERATOR (admin:users, admin:stores), SUPPORT (admin:users), AUDITOR (admin:audit). All permission gates are client-side; server-side enforcement is in `firestore.rules`.
 
+**Key hooks:**
+- [apps/web/src/hooks/useOptimizedWishlist.ts](apps/web/src/hooks/useOptimizedWishlist.ts) — Core SmartCart engine (730+ lines). Real-time deal sync from `stores/{storeId}/deals` subcollection, effective price calculation with deal hierarchy (flash sale → standard sale → flyer → regular price), fuzzy matching fallback, distance filtering via Haversine + FSA, and full optimizer pipeline. Persists store selections to localStorage (`smartcart_selections_v1`).
+- [apps/web/src/hooks/useCatalog.ts](apps/web/src/hooks/useCatalog.ts) — Catalog management (1400+ lines). Master/merchant product CRUD, Algolia search with geo-filtering, barcode deduplication via GTIN variant generation (8/12/13/14-digit), Open Food Facts UPC lookup (tries multiple endpoints for CORS), `bulkAddMerchantProducts` for CSV import, pending product workflow for admin approval.
+- [apps/web/src/hooks/usePushNotifications.ts](apps/web/src/hooks/usePushNotifications.ts) — Firebase Cloud Messaging. Registers SW at `/firebase-messaging-sw.js`, stores FCM tokens in user document `fcmTokens` array, uses VAPID key.
+- [apps/web/src/hooks/useFileUpload.ts](apps/web/src/hooks/useFileUpload.ts) — Firebase Storage uploads with 2 MB max, image-only validation, 30 s timeout.
+- [apps/web/src/hooks/useTrafficStats.ts](apps/web/src/hooks/useTrafficStats.ts) — Admin analytics dashboard. Listens to `stats/traffic`, calculates day-over-day change, `refreshStats()` calls `syncTrafficStats` Cloud Function (GA4 integration).
+- [apps/web/src/utils/imageOptimizer.ts](apps/web/src/utils/imageOptimizer.ts) — Client-side image compression via Canvas (max 1024 px, JPEG 0.7 quality).
+
 **Key lib files:**
 - [apps/web/src/lib/firebase.ts](apps/web/src/lib/firebase.ts) — Firebase SDK init; uses `VITE_` env vars; connects Functions emulator on `localhost:5001` in dev.
 - [apps/web/src/lib/algolia.ts](apps/web/src/lib/algolia.ts) — Algolia search client (gracefully null if env vars missing). Index: `master_products`.
 - [apps/web/src/utils/IntegrityUtils.ts](apps/web/src/utils/IntegrityUtils.ts) — Server-side price validation to detect order tampering.
 - [apps/web/src/utils/fuzzy-search.ts](apps/web/src/utils/fuzzy-search.ts) — Levenshtein + token overlap + brand boost, 4 match tiers (exact/partial/fuzzy/typo), 1-min cache. Used in SmartCart wishlist matching (score ≥ 65 threshold).
 - [apps/web/src/hooks/useSmartInsights.ts](apps/web/src/hooks/useSmartInsights.ts) — Gemini `gemini-2.5-flash` integration via `@google/generative-ai`. Debounces 1.5 s, generates 2–3 shopping insight strings from basket summary. Requires `VITE_GEMINI_API_KEY`.
+- [apps/web/src/lib/analytics.ts](apps/web/src/lib/analytics.ts) — `trackVisit()` called once on App mount.
+- [apps/web/src/lib/sentry.ts](apps/web/src/lib/sentry.ts) — Sentry error tracking. Performance sampling: 20% in prod, 100% in dev. Session replay: 10% of sessions, 100% of error sessions. Gracefully no-ops if `VITE_SENTRY_DSN` not set.
+
+**`lazyWithRetry` pattern** (App.tsx): All non-auth page routes use this wrapper instead of bare `lazy()`. On a dynamic import failure (stale chunks after deploy), it forces a single page reload via `sessionStorage` guard before re-throwing. `ErrorFallback` component detects stale chunk errors specifically and prompts the user to reload.
+
+**AppCheck**: ReCaptchaV3 enabled in production only (skipped in dev). Configured in `firebase.ts`.
 
 ### SmartCart Module (`apps/web/src/smartcart/`)
 
@@ -97,12 +117,16 @@ The backend mirror lives in `services/api/src/smartcart/` (Cloud Function endpoi
 ### Backend (`services/api/src/`)
 
 Firebase Cloud Functions v4 (v1 API). Organized by domain:
-- `payments/` — Stripe checkout session creation, webhook handler, subscription updates
-- `orders/` — `placeOrder`, `cancelOrder`
-- `auth/` — Team member invite/delete/remove
-- `admin/` — Cleanup utilities
-- `email/` — Order confirmation emails
-- `triggers/` — Firestore-triggered functions (`userTriggers`)
+- `payments/` — Stripe checkout session creation, webhook handler, subscription updates; also `createPaymentIntent`, `refundOrder`, `onboardStore` (Stripe Connect onboarding), `checkStripeAccountStatus`, `getPaymentHistory`
+  - **Stripe Connect (Standard)**: Merchants onboard via `onboardStore` → creates connected account (country `CA`). Payments use destination charges: platform fee = 5% + $0.30, remainder auto-transfers to merchant.
+  - **Promo code**: `FIRST100` hard-coded — if < 100 stores exist, new merchants get 90-day free trial.
+  - **Subscription proration**: Upgrades use `always_invoice` (immediate charge); downgrades use `none` (effective next cycle). Tier order: `{free:0, core:1, growth:2}`.
+  - **Webhook race condition**: Payment webhook can arrive before `placeOrder` finishes; temporary `payments` collection stores webhook data for later reconciliation.
+- `orders/` — `placeOrder` (transactional: reads stock → verifies quantity → decrements → validates payment → creates order), `cancelOrder` (restores stock), `downloadReceipt` (PDF via PDFKit, stored with Firebase download token)
+- `auth/` — Team member invite/delete/remove. Role-based rank: OWNER (3) > MANAGER (2) > STAFF/MARKETING (1) — prevents privilege escalation.
+- `email/` — `sendOrderConfirmation` (Firestore onCreate trigger), `sendOrderStatusUpdate` (onUpdate trigger). Emails are **not sent directly** — they write styled HTML to the `/mail` Firestore collection; a Firebase Extension handles SMTP delivery.
+- `triggers/` — Firestore-triggered functions: `onUserUpdate` (syncs subscriptionTier to store doc), `onMasterProductWrite` (downloads external images to Storage with 1-year cache), `onOrderStatusUpdated` (sends FCM push notifications with emoji-prefixed titles, auto-removes stale tokens), `syncMasterProductToAlgolia`, `syncMerchantProductToAlgolia` (includes `_geoloc` for location-based search)
+- `admin/` — Cleanup utilities (`cleanupOrphanedUsers`, `syncTrafficStats`)
 - `smartcart/` — Cart optimization HTTP endpoint (`/smartcartOptimize`) mirroring frontend logic
 - `cart/` — Additional `/cartOptimize` HTTP endpoint (delegates to smartcart service layer)
 - `models/` — Shared TypeScript interfaces: `MasterProductRecord`, `StoreRecord`, `MerchantProductRecord`
@@ -116,16 +140,18 @@ Stripe webhook secret stored in Firebase Runtime Config: `stripe.webhook_secret`
 - **Firestore rules**: `firestore.rules` at repo root. RBAC enforced server-side: consumers, merchants (by `storeId`), and admins have separate access patterns.
 - **Hosting**: `apps/web/dist/` deployed to Firebase Hosting with SPA rewrite.
 - **Dev SSL**: Self-signed cert via `@vitejs/plugin-basic-ssl` stored in `apps/web/.certs/`. Dev server binds to `spendigo.ca:443` (requires `/etc/hosts` entry).
+- **Hosting headers**: CSP allows scripts from Stripe, Google reCAPTCHA, Sentry; connects to Firebase, Algolia, Stripe, OpenStreetMap, Sentry, Open Food Facts, Generative Language API. HSTS (1 year), X-Frame-Options: DENY, nosniff. HTML is no-cache/no-store.
+- **Terraform**: Infrastructure config in `infra/` (`main.tf`, `variables.tf`).
 
 ### Firestore Collections
 
-`/users`, `/stores`, `/orders`, `/catalog`, `/master_products`, `/pending_master_products`, `/merchant_products`, `/product_creation_requests`, `/categories`, `/substitution_groups`, `/reviews`, `/audit_logs`, `/carts`, `/notifications`, `/settings` (platform config).
+`/users`, `/stores`, `/orders`, `/catalog`, `/master_products`, `/pending_master_products`, `/merchant_products`, `/product_creation_requests`, `/categories`, `/substitution_groups`, `/reviews`, `/audit_logs`, `/carts`, `/wishlists`, `/notifications`, `/settings` (platform config), `/staff`, `/mail`, `/ads`, `/surveys`, `/stats`.
 
 **Key Firestore write restrictions** (enforced in rules):
-- **Orders**: Created server-side only via Admin SDK (Cloud Functions). Clients cannot create orders directly.
+- **Orders**: Created server-side only via Admin SDK (Cloud Functions). Clients cannot create orders directly. Updates use `diff().affectedKeys()` for field-level control — merchants can only change `status`, `rejectionReason`, `estimatedTime`, `paymentStatus`; customers can only set status to `cancelled`.
 - **Users**: `role`, `adminRole`, `merchantRole`, `storeId` are admin-only fields. Self-registration only sets `consumer` or `merchant` role.
-- **Stores**: Merchants cannot change `subscriptionTier`, `status`, Stripe config, or `ownerId`.
-- **Master products**: Merchants can create; admins approve and can modify. Merchants submit via `pending_master_products/` + `product_creation_requests/`.
+- **Stores**: Merchants cannot change `subscriptionTier`, `status`, Stripe config, or `ownerId`. Deals live in `stores/{storeId}/deals` subcollection (flash sales, standard sales, flyer items).
+- **Merchant products**: Must reference an existing `master_products` or `pending_master_products` document (enforced by `exists()` in rules). Merchants cannot change `merchant_id` or `master_product_id` after creation (admin can).
 - **Audit logs**: Append-only. Users create; nobody updates/deletes.
 
 ### Firestore Composite Indexes
@@ -142,6 +168,7 @@ Defined in `storage.rules`:
 - `merchant-assets/{storeId}/**` — Merchant store content (read: all auth, write: owning merchant).
 - `user-avatars/{userId}/**` — Profile pictures (read/write: owner only).
 - `admin-assets/**` — Platform content (read: all auth, write: admin only).
+- `products/**` — Product images downloaded by `onMasterProductWrite` trigger (read: public/unauthenticated, write: none — server-only).
 - Default `/**` — Deny all.
 
 ### Merchant Subscription Tiers
@@ -150,7 +177,7 @@ Three tiers — **Free**, **Core**, **Growth** — managed via Stripe. `updateSu
 
 ### Vite Code Splitting
 
-`vite.config.ts` splits vendor chunks: `vendor-react`, `vendor-firebase`, `vendor-algolia`, `vendor-stripe`, `vendor-ai`. All page routes are lazy-loaded (except auth pages). Production build strips `console` and `debugger` via esbuild.
+`vite.config.ts` splits vendor chunks: `vendor-react`, `vendor-firebase`, `vendor-algolia`, `vendor-stripe`, `vendor-ai`, `vendor-sentry`. All page routes are lazy-loaded (except auth pages). Production build strips `debugger` via esbuild (console statements preserved for Sentry breadcrumbs).
 
 ### Theming & CSS Architecture
 
@@ -170,15 +197,18 @@ VITE_ALGOLIA_APP_ID=
 VITE_ALGOLIA_SEARCH_KEY=
 VITE_ALGOLIA_INDEX_NAME=   # optional, defaults to 'master_products'
 VITE_GEMINI_API_KEY=       # Gemini API key for SmartInsights feature
+VITE_SENTRY_DSN=           # Sentry DSN for error tracking (optional, no-ops if missing)
 ```
 
 ## Testing
 
-Tests live in `tests/unit/` and use **Vitest**. Run from repo root with `npm test`. Tests currently focus on:
-- **SmartCart module** (11 test files): optimizer, comparison engine, price matrix, unit price normalizer, trip consolidation, single-store simulator, price normalization.
-- **FraudEngine**: `fraud.test.ts`
-- **Tax calculations**: `tax.test.ts`
-- **Fuzzy search**: `fuzzy-search.test.ts`
+Tests live in `tests/unit/` and use **Vitest**. Run from repo root with `npm test`. Tests currently cover the **SmartCart module** (11 test files): optimizer, comparison engine, price matrix, unit price normalizer, trip consolidation, single-store simulator, price normalization, and simulation.
+
+E2E tests use **Playwright** (`npm run test:e2e`):
+- Config in `playwright.config.ts`. Base URL: `https://localhost`. 60 s test timeout, 15 s expect timeout. Retries: 2 on CI, 0 locally. Screenshots on failure, video on first retry.
+- Auth setup in `tests/e2e/auth.setup.ts` — saves browser state to `.auth/user.json`. Requires env vars `SPENDIGO_TEST_EMAIL` and `SPENDIGO_TEST_PASSWORD`.
+- Does **not** auto-start the dev server — run `npm run dev` first.
+- 4 spec files: `checkout-flow`, `legal-pages`, `shopper-login`, `store-browse`.
 
 ## CI/CD
 
@@ -191,7 +221,11 @@ Firebase project: `spendigo-8540c`. Service account secret: `FIREBASE_SERVICE_AC
 
 ## Data Seeding
 
-Seed scripts in `scripts/`: `seedFirebase.ts` (full database), `seedMasterCatalog.ts` (product catalog), `seedCatalog.ts` (categories). Run with `tsx scripts/<file>.ts`. Requires `service-account.json` in `scripts/`. See `scripts/README.md` for Firebase migration setup.
+Seed scripts in `scripts/`: `seedFirebase.ts` (full database — 11 test users + 5 stores, password: `Spendigo123!`), `seedMasterCatalog.ts` (product catalog), `seedCatalog.ts` (categories). Run with `tsx scripts/<file>.ts`. Requires `service-account.json` in `scripts/`. Other scripts: `cleanup-duplicates.ts`, `linkAuthUsers.ts`, `benchmark-smartcart.mjs` (100 stores / 10k products / 25 items, target < 100 ms, 10 measured runs). See `scripts/README.md` for Firebase migration setup.
+
+## Documentation
+
+Architecture docs in `docs/` (25 files): `ARCHITECTURE.md`, `SEARCH_IMPLEMENTATION.md`, `SMARTCART_INTERFACE_DESIGN.md`, `MERCHANT_BILLING.md`, `SECURITY_VERIFICATION.md`, `EMAIL_SETUP_GUIDE.md`, `MASTER_CATALOG_PLAN.md`, `MOBILE_DEPLOYMENT.md`, `OPENAPI.yaml` (REST API spec), and more. Terraform infra config in `infra/` (`main.tf`, `variables.tf`).
 
 ## Troubleshooting
 

@@ -10,7 +10,7 @@ import '../../styles/design-system.css';
 import SEO from '../../components/SEO';
 
 const SmartCartWishlist: React.FC = () => {
-    const { items: wishlistItems, removeItem } = useWishlist();
+    const { items: wishlistItems, removeItem, addItem } = useWishlist();
     const { addItemsToCart } = useCart();
     const navigate = useNavigate();
     const [showAddItems, setShowAddItems] = useState(false);
@@ -36,6 +36,10 @@ const SmartCartWishlist: React.FC = () => {
         optimizerRecommendation,
         bestSingleStore,
         singleStoreAlternatives,
+        nearbyDeals,
+        locationChanged,
+        preferredStoreId,
+        setPreferredStore,
     } = useOptimizedWishlist();
 
     const storeCount = new Set(validCartItems.map(i => i.storeId)).size;
@@ -47,9 +51,26 @@ const SmartCartWishlist: React.FC = () => {
         }
     };
 
+    // Handle substitution swap: remove current item and add substitute
+    const handleSwapItem = (currentId: string, substituteId: string) => {
+        const currentWishlistItem = wishlistItems.find(w => w.id === currentId);
+        const substituteItem = AVAILABLE_ITEMS.find((item: any) => item.id === substituteId);
+        if (currentWishlistItem) removeItem(currentWishlistItem.id);
+        if (substituteItem) addItem(substituteItem);
+    };
+
     return (
         <div className="animate-fade-in pb-12 lg:pb-12">
             <SEO title="SmartCart Optimizer" description="Compare grocery prices across local stores and build the cheapest cart with Spendigo SmartCart." path="/smartcart" />
+
+            {/* Location Change Toast */}
+            {locationChanged && (
+                <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[60] bg-blue-600 text-white px-5 py-3 rounded-xl shadow-xl text-sm font-medium flex items-center gap-2 animate-fade-in">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                    Location updated — prices recalculated
+                </div>
+            )}
+
             {/* Mobile Sticky Bottom Bar */}
             {!inventoryLoading && wishlistItems.length > 0 && (
                 <div className="fixed bottom-0 left-0 right-0 lg:hidden bg-white border-t border-gray-200 px-4 py-3 pb-safe z-50 flex items-center gap-3 shadow-2xl">
@@ -66,7 +87,7 @@ const SmartCartWishlist: React.FC = () => {
                     </button>
                 </div>
             )}
-            
+
             {/* Header */}
             <div className="bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)] text-white p-6 shadow-md mb-6">
                 <div className="max-w-6xl mx-auto px-4">
@@ -94,12 +115,68 @@ const SmartCartWishlist: React.FC = () => {
 
             <div className="max-w-6xl mx-auto px-4 pb-28 lg:pb-8">
                 {/* Add Items Panel */}
-                <AddItemsPanel 
-                    showAddItems={showAddItems} 
-                    setShowAddItems={setShowAddItems} 
-                    availableStaples={availableStaples} 
-                    AVAILABLE_ITEMS={AVAILABLE_ITEMS} 
+                <AddItemsPanel
+                    showAddItems={showAddItems}
+                    setShowAddItems={setShowAddItems}
+                    availableStaples={availableStaples}
+                    AVAILABLE_ITEMS={AVAILABLE_ITEMS}
                 />
+
+                {/* Nearby Deals Discovery */}
+                {!inventoryLoading && nearbyDeals.length > 0 && (
+                    <div className="mb-6 bg-gradient-to-r from-red-50 to-orange-50 rounded-xl border border-red-100 p-4">
+                        <h3 className="text-sm font-bold text-red-700 mb-3 flex items-center gap-2">
+                            <span className="text-base">🔥</span> Hot Deals Near You
+                        </h3>
+                        <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-hide">
+                            {nearbyDeals.map(deal => (
+                                <button
+                                    key={`${deal.storeId}-${deal.id}`}
+                                    onClick={() => {
+                                        if (deal.masterProductId) {
+                                            const catalogItem = AVAILABLE_ITEMS.find((item: any) => item.id === deal.masterProductId);
+                                            if (catalogItem) addItem(catalogItem);
+                                        }
+                                    }}
+                                    className="flex-shrink-0 w-36 bg-white rounded-lg border border-red-100 p-2.5 hover:shadow-md transition-shadow text-left"
+                                >
+                                    {deal.image && (
+                                        <img src={deal.image} alt="" className="w-full h-16 object-cover rounded mb-2" />
+                                    )}
+                                    <p className="text-xs font-medium text-gray-800 truncate">{deal.productName}</p>
+                                    <p className="text-[10px] text-gray-400 truncate">{deal.storeName}</p>
+                                    <div className="flex items-center gap-1.5 mt-1">
+                                        <span className="text-xs font-bold text-red-600">${deal.salePrice.toFixed(2)}</span>
+                                        <span className="text-[10px] text-gray-400 line-through">${deal.originalPrice.toFixed(2)}</span>
+                                    </div>
+                                    <span className="inline-block mt-1 text-[9px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded font-bold">
+                                        {deal.isFlashSale ? '⚡ ' : ''}{deal.discount}
+                                    </span>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* Preferred Store Toggle */}
+                {!inventoryLoading && singleStoreAlternatives.length > 0 && (
+                    <div className="mb-4 flex items-center gap-2 text-xs">
+                        <span className="text-gray-500">Preferred store:</span>
+                        <select
+                            value={preferredStoreId || ''}
+                            onChange={e => setPreferredStore(e.target.value || null)}
+                            className="border border-gray-200 rounded-lg px-2 py-1 text-xs text-gray-700 bg-white"
+                        >
+                            <option value="">None (pure price optimization)</option>
+                            {singleStoreAlternatives.map(store => (
+                                <option key={store.id} value={store.id}>{store.name}</option>
+                            ))}
+                        </select>
+                        {preferredStoreId && (
+                            <span className="text-[10px] text-gray-400">Picks this store when within 2% of cheapest</span>
+                        )}
+                    </div>
+                )}
 
                 {/* Main Content */}
                 {inventoryLoading ? (
@@ -145,13 +222,14 @@ const SmartCartWishlist: React.FC = () => {
                                     const currentSelection = selections[item.id];
 
                                     return (
-                                        <WishlistItemCard 
-                                            key={item.id} 
-                                            item={item} 
-                                            isExpanded={isExpanded} 
-                                            toggleExpand={toggleExpand} 
-                                            currentSelection={currentSelection} 
-                                            handleSelectionChange={handleSelectionChange} 
+                                        <WishlistItemCard
+                                            key={item.id}
+                                            item={item}
+                                            isExpanded={isExpanded}
+                                            toggleExpand={toggleExpand}
+                                            currentSelection={currentSelection}
+                                            handleSelectionChange={handleSelectionChange}
+                                            onSwapItem={handleSwapItem}
                                         />
                                     );
                                 })}
@@ -203,10 +281,10 @@ const SmartCartWishlist: React.FC = () => {
 
                         {/* RIGHT COLUMN: Sticky Summary */}
                         <div className="lg:col-span-4 mt-8 lg:mt-0">
-                            <OrderSummaryPanel 
-                                optimizerItems={optimizerItems} 
-                                validCartItems={validCartItems} 
-                                totalCost={totalCost} 
+                            <OrderSummaryPanel
+                                optimizerItems={optimizerItems}
+                                validCartItems={validCartItems}
+                                totalCost={totalCost}
                                 potentialSavings={potentialSavings}
                                 dealSavings={dealSavings}
                                 optimizerRecommendation={optimizerRecommendation}

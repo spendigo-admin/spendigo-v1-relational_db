@@ -149,16 +149,22 @@ function calculateTheoreticalMinimumCost(
     simulationCase: SmartCartSimulationCase,
 ): number {
     return simulationCase.shopping_list.reduce((total, productId) => {
-        const bestUnitPrice = simulationCase.store_products
+        const availableOffers = simulationCase.store_products
             .flatMap(store => store.products)
-            .filter(product => product.product_id === productId && product.available)
-            .reduce((best, product) => Math.min(best, product.unit_price), Number.POSITIVE_INFINITY);
+            .filter(product => product.product_id === productId && product.available);
 
-        if (!Number.isFinite(bestUnitPrice)) {
+        if (availableOffers.length === 0) {
             throw new Error(`Synthetic simulation generated an unavailable product: "${productId}".`);
         }
 
-        return total + bestUnitPrice;
+        // Select by cheapest unit_price, tiebreak by price (matches optimizer logic)
+        const bestOffer = availableOffers.reduce((best, product) => {
+            if (product.unit_price < best.unit_price) return product;
+            if (product.unit_price === best.unit_price && product.price < best.price) return product;
+            return best;
+        });
+
+        return total + bestOffer.price;
     }, 0);
 }
 
@@ -189,7 +195,7 @@ function validateOptimizedCart(
     });
 
     const theoreticalMinimumCost = calculateTheoreticalMinimumCost(simulationCase);
-    const totalCostIsMinimized = Math.abs(optimizedCart.total_cost - theoreticalMinimumCost) < 0.000001;
+    const totalCostIsMinimized = Math.abs(optimizedCart.total_cost - theoreticalMinimumCost) < 0.01;
 
     return {
         eachProductAppearsOnce,

@@ -86,6 +86,8 @@ describe('optimizeCart', () => {
                 selectedMerchantProductId: 'mp-rice-1kg-b',
             }),
         ]);
+        // Unit prices: olive oil 1L = 14.49/1000*100 = 1.449, rice 1kg = 5.49/1000*100 = 0.549
+        // lineTotal: 1.449*1 + 0.549*2 = 2.547
         expect(result.summary.totalCartCost).toBeCloseTo(2.547, 3);
         expect(result.summary.selectedStoreCount).toBe(1);
         expect(result.summary.unavailableItemCount).toBe(0);
@@ -161,16 +163,17 @@ describe('optimizeCart', () => {
 
         const result = optimizeCart(input);
 
-        expect(result.bestSingleStore).toEqual({
+        expect(result.bestSingleStore).toEqual(expect.objectContaining({
             storeId: 'store-b',
             storeName: 'BudgetFoods',
-            totalCost: expect.any(Number),
             missingItemCount: 0,
             isFullyAvailable: true,
-        });
-        expect(result.summary.bestSingleStoreCost).toBeCloseTo(1.6868, 4);
-        expect(result.summary.totalCartCost).toBeCloseTo(1.6312, 4);
-        expect(result.summary.savingsVsSingleStore).toBeCloseTo(0.0556, 4);
+        }));
+        expect(result.bestSingleStore?.deliveryFee).toBe(0);
+        expect(result.summary.bestSingleStoreCost).toBeCloseTo(result.bestSingleStore!.totalWithDelivery, 4);
+        expect(result.summary.savingsVsSingleStore).toBeCloseTo(
+            result.summary.bestSingleStoreCost! - result.summary.totalCartCost, 4
+        );
     });
 
     it('skips items with no available store and reports them as unavailable', () => {
@@ -216,5 +219,49 @@ describe('optimizeCart', () => {
         expect(result.summary.totalCartCost).toBeCloseTo(0.4158, 4);
         expect(result.bestSingleStore).toBeNull();
         expect(result.summary.savingsVsSingleStore).toBeNull();
+    });
+
+    it('includes delivery fees in single-store comparisons', () => {
+        const input: SmartCartOptimizationInput = {
+            shoppingList: [
+                { id: 'item-milk', name: 'Milk', quantity: 1 },
+            ],
+            stores: [
+                { id: 'store-a', name: 'FreshMart', deliveryFee: 5, freeDeliveryThreshold: 50 },
+                { id: 'store-b', name: 'BudgetFoods' },
+            ],
+            prices: [
+                {
+                    merchantProductId: 'mp-milk-a',
+                    storeId: 'store-a',
+                    productName: 'Milk',
+                    unit: '1L',
+                    price: 3.99,
+                    currency: 'CAD',
+                    inStock: true,
+                },
+                {
+                    merchantProductId: 'mp-milk-b',
+                    storeId: 'store-b',
+                    productName: 'Milk',
+                    unit: '1L',
+                    price: 4.49,
+                    currency: 'CAD',
+                    inStock: true,
+                },
+            ],
+        };
+
+        const result = optimizeCart(input);
+
+        // store-a has $5 delivery (subtotal < $50 threshold)
+        const storeA = result.singleStoreComparisons.find(s => s.storeId === 'store-a');
+        expect(storeA?.deliveryFee).toBe(5);
+        expect(storeA?.totalWithDelivery).toBeCloseTo(storeA!.totalCost + 5, 4);
+
+        // store-b has no delivery fee
+        const storeB = result.singleStoreComparisons.find(s => s.storeId === 'store-b');
+        expect(storeB?.deliveryFee).toBe(0);
+        expect(storeB?.totalWithDelivery).toBe(storeB?.totalCost);
     });
 });

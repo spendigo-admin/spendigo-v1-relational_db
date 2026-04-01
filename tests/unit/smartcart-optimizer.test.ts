@@ -80,7 +80,7 @@ describe('smartcart_optimizer', () => {
                     unit_price: 0.499,
                 },
             ],
-            total_cost: 2.497,
+            total_cost: 24.97,
             store_distribution: {
                 'store-b': ['olive-oil', 'rice', 'milk'],
             },

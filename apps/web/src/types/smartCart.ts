@@ -27,6 +27,8 @@ export interface StoreOption {
     unit?: string;
     normalizedUnitPrice?: number;
     comparisonUnit?: string;
+    priceTrend?: 'up' | 'down' | 'stable';
+    previousPrice?: number;
 }
 
 export interface OptimizedWishlistItem {
@@ -41,6 +43,17 @@ export interface OptimizedWishlistItem {
     options: StoreOption[];
     cheapest: StoreOption | null;
     maxPrice: number;
+    substitutions?: SubstitutionSuggestion[];
+}
+
+export interface SubstitutionSuggestion {
+    id: string;
+    name: string;
+    image: string;
+    brand?: string;
+    cheapestPrice: number;
+    cheapestStore: string;
+    priceDifference: number;
 }
 
 export interface SmartCartListItemInput {
@@ -154,6 +167,8 @@ export interface SmartCartSingleStoreComparison {
     storeId: string;
     storeName: string;
     totalCost: number;
+    deliveryFee: number;
+    totalWithDelivery: number;
     missingItemCount: number;
     isFullyAvailable: boolean;
 }

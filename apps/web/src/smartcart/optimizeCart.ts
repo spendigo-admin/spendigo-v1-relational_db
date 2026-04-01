@@ -6,6 +6,7 @@ import {
     SmartCartOptimizer,
     SmartCartPriceMatrixCell,
     SmartCartSingleStoreComparison,
+    SmartCartStoreInput,
 } from '../types/smartCart';
 import { buildPriceMatrix } from './buildPriceMatrix';
 import { buildSingleStoreComparisons } from './buildSingleStoreComparisons';
@@ -50,16 +51,39 @@ function findBestSingleStore(
     }
 
     return fullyAvailable.reduce((best, candidate) => {
-        if (candidate.totalCost < best.totalCost) {
+        if (candidate.totalWithDelivery < best.totalWithDelivery) {
             return candidate;
         }
 
-        if (candidate.totalCost === best.totalCost) {
+        if (candidate.totalWithDelivery === best.totalWithDelivery) {
             return candidate.storeName.localeCompare(best.storeName) < 0 ? candidate : best;
         }
 
         return best;
     });
+}
+
+function calculateMultiStoreDeliveryFees(
+    items: SmartCartItemDecision[],
+    stores: SmartCartStoreInput[],
+): number {
+    const storeMap = new Map(stores.map(s => [s.id, s]));
+    const storeSubtotals = new Map<string, number>();
+
+    items.forEach(item => {
+        const current = storeSubtotals.get(item.selectedStoreId) ?? 0;
+        storeSubtotals.set(item.selectedStoreId, current + item.lineTotal);
+    });
+
+    let totalFees = 0;
+    storeSubtotals.forEach((subtotal, storeId) => {
+        const store = storeMap.get(storeId);
+        if (!store?.deliveryFee || store.deliveryFee <= 0) return;
+        if (store.freeDeliveryThreshold && subtotal >= store.freeDeliveryThreshold) return;
+        totalFees += store.deliveryFee;
+    });
+
+    return totalFees;
 }
 
 export function optimizeCart(input: SmartCartOptimizationInput): SmartCartOptimizationResult {
@@ -102,16 +126,20 @@ export function optimizeCart(input: SmartCartOptimizationInput): SmartCartOptimi
     });
 
     const totalCartCost = items.reduce((sum, item) => sum + item.lineTotal, 0);
+    const deliveryFees = calculateMultiStoreDeliveryFees(items, input.stores);
+    const totalWithDelivery = totalCartCost + deliveryFees;
     const unavailableItemCount = matrix.rows.length - items.length;
     const selectedStoreCount = new Set(items.map(item => item.selectedStoreId)).size;
+
+    const bestSingleStoreWithDelivery = bestSingleStore?.totalWithDelivery ?? null;
 
     return {
         items,
         summary: {
             selectedStoreCount,
-            totalCartCost,
-            bestSingleStoreCost: bestSingleStore?.totalCost ?? null,
-            savingsVsSingleStore: bestSingleStore ? bestSingleStore.totalCost - totalCartCost : null,
+            totalCartCost: totalWithDelivery,
+            bestSingleStoreCost: bestSingleStoreWithDelivery,
+            savingsVsSingleStore: bestSingleStoreWithDelivery !== null ? bestSingleStoreWithDelivery - totalWithDelivery : null,
             unavailableItemCount,
         },
         bestSingleStore,

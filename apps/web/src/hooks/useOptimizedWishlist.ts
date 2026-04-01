@@ -1,8 +1,8 @@
-import { useState, useMemo, useEffect } from 'react';
-import { collection, onSnapshot, query, where } from 'firebase/firestore';
+import { useState, useMemo, useEffect, useRef } from 'react';
+import { collection, onSnapshot, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { performCachedSearch } from '../utils/fuzzy-search';
-import { MerchantProduct, OptimizedWishlistItem, StoreOption } from '../types/smartCart';
+import { MerchantProduct, OptimizedWishlistItem, StoreOption, SubstitutionSuggestion } from '../types/smartCart';
 import { useWishlist } from '../context/WishlistContext';
 import { useMarketplace } from '../context/MarketplaceContext';
 import { useLocation } from '../context/LocationContext';
@@ -46,64 +46,122 @@ function compareStoreOptions(left: StoreOption, right: StoreOption) {
 const getEffectivePrice = (product: any, store: any) => {
     let effectivePrice = product.price;
     let discountLabel = '';
+    let bogoHint = '';
     const productName = (product.product_name || product.name || '').toLowerCase().trim();
 
     // Helper for matching
     const isMatch = (item: any) => {
-        // 1. Match by Merchant Product ID (the doc ID in merchant_products)
         const itemMerchantProductId = item.productId || item.id;
         if (itemMerchantProductId && itemMerchantProductId === product.id) return true;
-        
-        // 2. Match by Master Product ID (if available in the deal)
+
         const itemMasterId = item.master_product_id || item.masterProductId;
         if (itemMasterId && itemMasterId === (product.master_product_id || product.masterProductId)) return true;
 
-        // 3. Match by Name (Loose Fallback)
         const itemName = (item.name || item.productName || '').toLowerCase().trim();
         if (itemName && productName && (itemName.includes(productName) || productName.includes(itemName))) return true;
-        
+
         return false;
+    };
+
+    // BOGO effective price calculator
+    const calculateBogoEffectivePrice = (deal: any, basePrice: number): { price: number; label: string; hint: string } | null => {
+        const bogoType = deal.bogoType;
+        if (!bogoType) return null;
+
+        switch (bogoType) {
+            case '1_1': // Buy 1 Get 1 Free → effective price per unit = basePrice / 2
+                return { price: basePrice / 2, label: 'BOGO Free', hint: 'Buy 2 to activate' };
+            case '2_1': // Buy 2 Get 1 Free → effective price per unit = (2 * basePrice) / 3
+                return { price: (2 * basePrice) / 3, label: 'B2G1 Free', hint: 'Buy 3 to activate' };
+            case '50_2nd': // 50% off 2nd → effective price per unit = (basePrice + basePrice * 0.5) / 2
+                return { price: (basePrice * 1.5) / 2, label: '50% 2nd', hint: 'Buy 2 to activate' };
+            default:
+                return null;
+        }
+    };
+
+    // Multi-buy effective price calculator (e.g., "3 for $5")
+    const calculateMultibuyEffectivePrice = (deal: any): { price: number; label: string; hint: string } | null => {
+        const multibuyQty = deal.multibuyQuantity || deal.multibuy_quantity;
+        const multibuyPrice = deal.multibuyPrice || deal.multibuy_price;
+        if (!multibuyQty || !multibuyPrice || multibuyQty <= 0) return null;
+
+        const effectivePerUnit = multibuyPrice / multibuyQty;
+        return {
+            price: Math.round(effectivePerUnit * 100) / 100,
+            label: `${multibuyQty} for $${multibuyPrice.toFixed(2)}`,
+            hint: `Buy ${multibuyQty} to activate`,
+        };
     };
 
     // 1. Check Flash Sales / One Day Offers
     let flashSale = store.oneDayOffers?.find(isMatch);
-    
-    // Check for expiration if available
+
     const isExpired = (endDate: string) => {
         if (!endDate) return false;
         return new Date(endDate) < new Date();
     };
 
-    // Fallback for Agrumance Tea if IDs mismatch
     if (!flashSale && productName.includes('agrumance tea')) {
-        flashSale = store.oneDayOffers?.find((d: any) => 
+        flashSale = store.oneDayOffers?.find((d: any) =>
             (d.name || d.productName || '').toLowerCase().includes('agrumance')
         );
     }
 
-    if (flashSale && !isExpired(flashSale.validUntil) && flashSale.price < effectivePrice) {
-        effectivePrice = flashSale.price;
-        discountLabel = 'Flash Sale';
+    if (flashSale && !isExpired(flashSale.validUntil)) {
+        // Check if it's a BOGO deal
+        if (flashSale.bogoType) {
+            const bogoResult = calculateBogoEffectivePrice(flashSale, product.price);
+            if (bogoResult && bogoResult.price < effectivePrice) {
+                effectivePrice = Math.round(bogoResult.price * 100) / 100;
+                discountLabel = bogoResult.label;
+                bogoHint = bogoResult.hint;
+            }
+        } else if (flashSale.multibuyQuantity || flashSale.multibuy_quantity) {
+            const multibuyResult = calculateMultibuyEffectivePrice(flashSale);
+            if (multibuyResult && multibuyResult.price < effectivePrice) {
+                effectivePrice = multibuyResult.price;
+                discountLabel = multibuyResult.label;
+                bogoHint = multibuyResult.hint;
+            }
+        } else if (flashSale.price < effectivePrice) {
+            effectivePrice = flashSale.price;
+            discountLabel = 'Flash Sale';
+        }
     }
 
     // 2. Check Standard Sale Items
     let saleItem = store.saleItems?.find(isMatch);
 
-    // Fallback for Agrumance Tea if IDs mismatch
     if (!saleItem && productName.includes('agrumance tea')) {
-        saleItem = store.saleItems?.find((d: any) => 
+        saleItem = store.saleItems?.find((d: any) =>
             (d.name || d.productName || d.discount?.toLowerCase()?.includes('50%') || '').toLowerCase().includes('agrumance')
         );
     }
 
-    if (saleItem && !isExpired(saleItem.validUntil) && saleItem.price < effectivePrice) {
-        effectivePrice = saleItem.price;
-        discountLabel = saleItem.discount || 'Sale';
+    if (saleItem && !isExpired(saleItem.validUntil)) {
+        if (saleItem.bogoType) {
+            const bogoResult = calculateBogoEffectivePrice(saleItem, product.price);
+            if (bogoResult && bogoResult.price < effectivePrice) {
+                effectivePrice = Math.round(bogoResult.price * 100) / 100;
+                discountLabel = bogoResult.label;
+                bogoHint = bogoResult.hint;
+            }
+        } else if (saleItem.multibuyQuantity || saleItem.multibuy_quantity) {
+            const multibuyResult = calculateMultibuyEffectivePrice(saleItem);
+            if (multibuyResult && multibuyResult.price < effectivePrice) {
+                effectivePrice = multibuyResult.price;
+                discountLabel = multibuyResult.label;
+                bogoHint = multibuyResult.hint;
+            }
+        } else if (saleItem.price < effectivePrice) {
+            effectivePrice = saleItem.price;
+            discountLabel = saleItem.discount || 'Sale';
+        }
     }
 
     // 3. Check Active Flyer Items
     const flyerItem = store.activeFlyerItems?.find(isMatch);
-    // Flyer expiration check
     const flyerExpired = store.flyer?.validUntil ? isExpired(store.flyer.validUntil) : false;
 
     if (flyerItem && !flyerExpired && flyerItem.salePrice < effectivePrice) {
@@ -113,7 +171,7 @@ const getEffectivePrice = (product: any, store: any) => {
         discountLabel = `${discount}% OFF`;
     }
 
-    return { price: effectivePrice, discountLabel };
+    return { price: effectivePrice, discountLabel, bogoHint };
 };
 
 export const useOptimizedWishlist = () => {
@@ -206,6 +264,54 @@ export const useOptimizedWishlist = () => {
         return () => unsubscribes.forEach(un => un());
     }, [merchantInventory, inventoryLoading]);
 
+    // Price trend tracking: fetch recent price history for merchant products in wishlist
+    const [priceTrends, setPriceTrends] = useState<Record<string, { trend: 'up' | 'down' | 'stable'; previousPrice: number }>>({});
+
+    useEffect(() => {
+        if (merchantInventory.length === 0 || wishlistItems.length === 0) return;
+
+        // Get merchant product IDs from inventory that match wishlist items
+        const wishlistIds = new Set(wishlistItems.map(w => w.id));
+        const relevantProductIds = new Set<string>();
+        merchantInventory.forEach((p: any) => {
+            if (p.master_product_id && wishlistIds.has(p.master_product_id)) {
+                relevantProductIds.add(p.id);
+            }
+        });
+
+        if (relevantProductIds.size === 0) return;
+
+        // Fetch price history for up to 20 products (avoid excessive reads)
+        const productIds = Array.from(relevantProductIds).slice(0, 20);
+        const trends: Record<string, { trend: 'up' | 'down' | 'stable'; previousPrice: number }> = {};
+
+        Promise.all(
+            productIds.map(async (productId) => {
+                try {
+                    const historyRef = collection(db, 'merchant_products', productId, 'price_history');
+                    const q = query(historyRef, orderBy('date', 'desc'), limit(1));
+                    const snapshot = await getDocs(q);
+                    if (!snapshot.empty) {
+                        const data = snapshot.docs[0].data();
+                        if (data.previousPrice != null && data.price != null) {
+                            const diff = data.price - data.previousPrice;
+                            trends[productId] = {
+                                trend: diff > 0 ? 'up' : diff < 0 ? 'down' : 'stable',
+                                previousPrice: data.previousPrice,
+                            };
+                        }
+                    }
+                } catch {
+                    // Silently ignore — price history is optional
+                }
+            })
+        ).then(() => {
+            if (Object.keys(trends).length > 0) {
+                setPriceTrends(trends);
+            }
+        });
+    }, [merchantInventory, wishlistItems]);
+
     // Index catalog by ID for O(1) lookups instead of O(N) catalog.find() in nested loops
     const catalogMap = useMemo(() => new Map(catalog.map(c => [c.id, c])), [catalog]);
 
@@ -264,11 +370,13 @@ export const useOptimizedWishlist = () => {
                 unit: packageSize,
                 normalizedUnitPrice: normalizedUnitPrice?.pricePerComparisonUnit,
                 comparisonUnit: normalizedUnitPrice?.comparisonUnit,
+                priceTrend: priceTrends[product.id]?.trend,
+                previousPrice: priceTrends[product.id]?.previousPrice,
             });
         });
 
         return productMap;
-    }, [merchantInventory, stores, catalogMap, dealsMap, userCoords, userPostalCode, searchDistance, calculateDistance]);
+    }, [merchantInventory, stores, catalogMap, dealsMap, userCoords, userPostalCode, searchDistance, calculateDistance, priceTrends]);
 
     // 2. Derive Available Items from Global Catalog (Filtered by Availability)
     const AVAILABLE_ITEMS = useMemo(() => {
@@ -500,6 +608,68 @@ export const useOptimizedWishlist = () => {
         return Array.from(seen.values());
     }, [wishlistItems, availabilityMap, merchantInventory, stores, catalogMap, userCoords, userPostalCode, searchDistance, calculateDistance]);
 
+    // Substitution group suggestions: find cheaper alternatives in the same substitution group
+    const optimizerItemsWithSubstitutions = useMemo(() => {
+        // Build substitution group index from catalog
+        const subGroupIndex = new Map<string, Array<{ id: string; name: string; image: string; brand?: string }>>();
+        catalog.forEach(item => {
+            const groupId = (item as any).substitution_group_id;
+            if (!groupId) return;
+            if (!subGroupIndex.has(groupId)) subGroupIndex.set(groupId, []);
+            subGroupIndex.get(groupId)!.push({ id: item.id, name: item.name, image: item.image, brand: (item as any).brand });
+        });
+
+        return optimizerItems.map(item => {
+            if (!item || item.options.length === 0) return item;
+
+            const masterItem = catalogMap.get(item.id);
+            const groupId = (masterItem as any)?.substitution_group_id;
+            if (!groupId) return item;
+
+            const groupMembers = subGroupIndex.get(groupId);
+            if (!groupMembers || groupMembers.length <= 1) return item;
+
+            const currentCheapest = item.cheapest?.price ?? Infinity;
+            const substitutions: SubstitutionSuggestion[] = [];
+
+            groupMembers.forEach(member => {
+                if (member.id === item.id) return; // Skip self
+                const availability = availabilityMap[member.id];
+                if (!availability || availability.stores.length === 0) return;
+
+                const cheapestOption = [...availability.stores].sort(compareStoreOptions)[0];
+                if (!cheapestOption) return;
+
+                const priceDiff = currentCheapest - cheapestOption.price;
+                if (priceDiff <= 0) return; // Only suggest if cheaper
+
+                substitutions.push({
+                    id: member.id,
+                    name: member.name,
+                    image: member.image,
+                    brand: member.brand,
+                    cheapestPrice: cheapestOption.price,
+                    cheapestStore: cheapestOption.storeName,
+                    priceDifference: priceDiff,
+                });
+            });
+
+            if (substitutions.length === 0) return item;
+
+            // Sort by biggest savings first
+            substitutions.sort((a, b) => b.priceDifference - a.priceDifference);
+
+            return { ...item, substitutions: substitutions.slice(0, 3) };
+        });
+    }, [optimizerItems, catalog, catalogMap, availabilityMap]);
+
+    // Preferred store management
+    const [preferredStoreId, setPreferredStoreId] = useState<string | null>(() => {
+        try {
+            return localStorage.getItem('smartcart_preferred_store') || null;
+        } catch { return null; }
+    });
+
     const optimizerPipeline = useMemo(() => {
         const shoppableItems = optimizerItems.filter((item): item is OptimizedWishlistItem => Boolean(item && item.options.length > 0));
         const shopping_list = shoppableItems.map(item => item.id);
@@ -554,6 +724,7 @@ export const useOptimizedWishlist = () => {
         const optimizedCart = optimizeSmartCart({
             shopping_list,
             store_products,
+            preferredStoreId: preferredStoreId || undefined,
         });
         const singleStoreResults = store_products.map(store =>
             simulateSingleStoreCart({
@@ -577,7 +748,7 @@ export const useOptimizedWishlist = () => {
             comparisonResult,
             optimizedSelections,
         };
-    }, [optimizerItems]);
+    }, [optimizerItems, preferredStoreId]);
 
     // 4. Selections Management (with Session Persistence)
     const [selections, setSelections] = useState<Record<string, string>>(() => {
@@ -709,6 +880,84 @@ export const useOptimizedWishlist = () => {
             })
     ), [optimizerPipeline.comparisonResult, optimizerPipeline.singleStoreResults, stores]);
 
+    // Proactive deal discovery: surface active deals from nearby stores regardless of wishlist
+    const nearbyDeals = useMemo(() => {
+        const deals: Array<{
+            id: string;
+            productName: string;
+            image: string;
+            salePrice: number;
+            originalPrice: number;
+            discount: string;
+            storeName: string;
+            storeId: string;
+            isFlashSale: boolean;
+            masterProductId?: string;
+        }> = [];
+
+        const wishlistIds = new Set(wishlistItems.map(w => w.id));
+
+        Object.entries(dealsMap).forEach(([storeId, storeDealData]) => {
+            const store = stores[storeId];
+            if (!store) return;
+            const storeName = store.name || storeId;
+
+            const allDeals = [...(storeDealData.oneDayOffers || []), ...(storeDealData.saleItems || [])];
+            allDeals.forEach((deal: any) => {
+                if (deal.master_product_id && wishlistIds.has(deal.master_product_id)) return;
+
+                const orig = deal.originalPrice || 0;
+                const sale = deal.price || 0;
+                if (sale <= 0 || orig <= 0 || sale >= orig) return;
+
+                deals.push({
+                    id: deal.id,
+                    productName: deal.name || 'Unknown',
+                    image: deal.image || '',
+                    salePrice: sale,
+                    originalPrice: orig,
+                    discount: deal.discount || `${Math.round(((orig - sale) / orig) * 100)}% OFF`,
+                    storeName,
+                    storeId,
+                    isFlashSale: !!deal.isFlashSale,
+                    masterProductId: deal.master_product_id,
+                });
+            });
+        });
+
+        deals.sort((a, b) => {
+            if (a.isFlashSale !== b.isFlashSale) return a.isFlashSale ? -1 : 1;
+            const aDisc = (a.originalPrice - a.salePrice) / a.originalPrice;
+            const bDisc = (b.originalPrice - b.salePrice) / b.originalPrice;
+            return bDisc - aDisc;
+        });
+
+        return deals.slice(0, 8);
+    }, [dealsMap, stores, wishlistItems]);
+
+    // Location change tracking
+    const [locationChanged, setLocationChanged] = useState(false);
+    const prevCoordsRef = useRef(userCoords);
+
+    useEffect(() => {
+        if (prevCoordsRef.current && userCoords &&
+            (prevCoordsRef.current.lat !== userCoords.lat || prevCoordsRef.current.lng !== userCoords.lng)) {
+            setLocationChanged(true);
+            const timer = setTimeout(() => setLocationChanged(false), 5000);
+            return () => clearTimeout(timer);
+        }
+        prevCoordsRef.current = userCoords;
+    }, [userCoords]);
+
+    const setPreferredStore = (storeId: string | null) => {
+        setPreferredStoreId(storeId);
+        if (storeId) {
+            localStorage.setItem('smartcart_preferred_store', storeId);
+        } else {
+            localStorage.removeItem('smartcart_preferred_store');
+        }
+    };
+
     return {
         selections,
         expandedItems,
@@ -716,7 +965,7 @@ export const useOptimizedWishlist = () => {
         inventoryLoading,
         AVAILABLE_ITEMS,
         availableStaples,
-        optimizerItems,
+        optimizerItems: optimizerItemsWithSubstitutions,
         handleSelectionChange,
         totalCost,
         potentialSavings,
@@ -727,5 +976,9 @@ export const useOptimizedWishlist = () => {
         optimizerRecommendation: optimizerPipeline.comparisonResult?.recommendation ?? null,
         bestSingleStore,
         singleStoreAlternatives,
+        nearbyDeals,
+        locationChanged,
+        preferredStoreId,
+        setPreferredStore,
     };
 };

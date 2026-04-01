@@ -124,17 +124,24 @@ export const OrderSummaryPanel: React.FC<OrderSummaryPanelProps> = ({
 
             <div className="mb-4 rounded-xl border border-[var(--glass-border)] bg-[var(--surface-2)]/70 p-4">
                 <h3 className="text-sm font-bold text-[var(--text-main)] mb-2">Trip Recommendation</h3>
-                <p className="text-sm text-[var(--text-main)]">
-                    {optimizerRecommendation === 'optimized_multi_store' && 'Multi-store optimizer recommended.'}
-                    {optimizerRecommendation === 'single_store' && 'Single-store trip recommended for convenience.'}
-                    {optimizerRecommendation === 'optimized_multi_store_only_feasible' && 'Multi-store trip is the only full-basket option.'}
-                    {!optimizerRecommendation && 'Recommendation will appear once matches are available.'}
-                </p>
-                {bestSingleStore?.cost !== null && bestSingleStore && (
-                    <p className="mt-2 text-xs text-[var(--text-muted)]">
-                        Best single-store alternative: {bestSingleStore.name} at ${bestSingleStore.cost?.toFixed(2)}
-                    </p>
-                )}
+                <div className="flex items-start gap-2">
+                    <span className="text-base flex-shrink-0 mt-0.5">
+                        {optimizerRecommendation === 'optimized_multi_store' ? '🛒' : optimizerRecommendation === 'single_store' ? '🏪' : optimizerRecommendation === 'optimized_multi_store_only_feasible' ? '🔀' : '⏳'}
+                    </span>
+                    <div>
+                        <p className="text-sm font-medium text-[var(--text-main)]">
+                            {optimizerRecommendation === 'optimized_multi_store' && `Split across ${storeCount} stores to save $${(dealSavings + Math.max(0, potentialSavings)).toFixed(2)}.`}
+                            {optimizerRecommendation === 'single_store' && `One-stop shop recommended — savings are too small to justify multiple trips.`}
+                            {optimizerRecommendation === 'optimized_multi_store_only_feasible' && 'Multi-store trip is the only full-basket option.'}
+                            {!optimizerRecommendation && 'Recommendation will appear once matches are available.'}
+                        </p>
+                        {bestSingleStore?.cost !== null && bestSingleStore && (
+                            <p className="mt-1.5 text-xs text-[var(--text-muted)]">
+                                Best single-store: {bestSingleStore.name} at ${bestSingleStore.cost?.toFixed(2)}
+                            </p>
+                        )}
+                    </div>
+                </div>
             </div>
 
             {singleStoreAlternatives.length > 0 && (

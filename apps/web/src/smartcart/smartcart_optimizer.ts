@@ -27,7 +27,10 @@ export interface SmartCartOptimizedCart {
 export interface SmartCartOptimizerInput {
     shopping_list: string[];
     store_products: SmartCartOptimizerStoreEntry[];
+    preferredStoreId?: string;
 }
+
+const PREFERRED_STORE_TOLERANCE = 0.02; // 2% tolerance for preferred store bias
 
 function compareOffers(
     left: { store_id: string; offer: SmartCartOptimizerProductOffer },
@@ -74,7 +77,20 @@ export function optimizeSmartCart(input: SmartCartOptimizerInput): SmartCartOpti
             throw new Error(`Unable to optimize cart: product "${productId}" is unavailable in all stores.`);
         }
 
-        const selected = availableOffers[0];
+        let selected = availableOffers[0];
+
+        // Preferred store bias: if preferred store has an offer within tolerance, pick it
+        if (input.preferredStoreId && selected.store_id !== input.preferredStoreId) {
+            const preferredOffer = availableOffers.find(o => o.store_id === input.preferredStoreId);
+            if (preferredOffer) {
+                const cheapestPrice = selected.offer.unit_price;
+                const preferredPrice = preferredOffer.offer.unit_price;
+                if (cheapestPrice > 0 && (preferredPrice - cheapestPrice) / cheapestPrice <= PREFERRED_STORE_TOLERANCE) {
+                    selected = preferredOffer;
+                }
+            }
+        }
+
         const optimizedItem: SmartCartOptimizedItem = {
             product_id: productId,
             chosen_store: selected.store_id,
@@ -91,7 +107,7 @@ export function optimizeSmartCart(input: SmartCartOptimizerInput): SmartCartOpti
         store_distribution[selected.store_id].push(productId);
     });
 
-    const total_cost = Math.round(optimized_items.reduce((sum, item) => sum + item.unit_price, 0) * 10000) / 10000;
+    const total_cost = Math.round(optimized_items.reduce((sum, item) => sum + item.price, 0) * 10000) / 10000;
 
     return {
         optimized_items,

@@ -8,6 +8,7 @@ interface WishlistItemCardProps {
     toggleExpand: (id: string) => void;
     currentSelection?: string;
     handleSelectionChange: (id: string, storeId: string) => void;
+    onSwapItem?: (currentId: string, substituteId: string) => void;
 }
 
 export const WishlistItemCard: React.FC<WishlistItemCardProps> = ({
@@ -15,10 +16,24 @@ export const WishlistItemCard: React.FC<WishlistItemCardProps> = ({
     isExpanded,
     toggleExpand,
     currentSelection,
-    handleSelectionChange
+    handleSelectionChange,
+    onSwapItem
 }) => {
     const { items: wishlistItems, removeItem } = useWishlist();
     const selectedOption = item.options.find(o => o.storeId === currentSelection);
+
+    // Per-item reasoning
+    const reasonText = (() => {
+        if (!selectedOption) return null;
+        if (item.options.length === 1) return 'Only store with this item';
+        if (item.cheapest && selectedOption.storeId === item.cheapest.storeId) {
+            if (selectedOption.normalizedUnitPrice && selectedOption.comparisonUnit) {
+                return `Cheapest at $${selectedOption.normalizedUnitPrice.toFixed(2)}/${selectedOption.comparisonUnit}`;
+            }
+            return 'Lowest price available';
+        }
+        return null;
+    })();
 
     return (
         <div className="bg-white rounded-xl border border-[var(--glass-border)] overflow-hidden shadow-sm transition-shadow hover:shadow-md">
@@ -32,16 +47,21 @@ export const WishlistItemCard: React.FC<WishlistItemCardProps> = ({
                     <h3 className="font-bold text-[var(--text-main)] text-sm truncate">
                         {selectedOption ? selectedOption.name : item.name}
                     </h3>
-                    {/* Collapsed summary: store name + price */}
+                    {/* Collapsed summary: store name + price + reason */}
                     {!isExpanded && selectedOption && (
-                        <p className="text-xs text-[var(--text-muted)] mt-0.5 truncate">
-                            {selectedOption.storeName}
-                            {item.options.length > 1 && (
-                                <span className="ml-1.5 text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-full">
-                                    +{item.options.length - 1} more
-                                </span>
+                        <div className="mt-0.5">
+                            <p className="text-xs text-[var(--text-muted)] truncate">
+                                {selectedOption.storeName}
+                                {item.options.length > 1 && (
+                                    <span className="ml-1.5 text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-full">
+                                        +{item.options.length - 1} more
+                                    </span>
+                                )}
+                            </p>
+                            {reasonText && (
+                                <p className="text-[10px] text-green-600 font-medium mt-0.5">{reasonText}</p>
                             )}
-                        </p>
+                        </div>
                     )}
                     {isExpanded && selectedOption?.brand && (
                         <span className="text-[10px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">
@@ -133,11 +153,18 @@ export const WishlistItemCard: React.FC<WishlistItemCardProps> = ({
                                             )}
                                         </div>
                                         <p className="text-[11px] text-gray-400 mt-0.5">{option.storeName}</p>
-                                        {isCheapest && (
-                                            <span className="inline-block px-1.5 py-0.5 bg-green-100 text-green-700 text-[10px] uppercase font-bold tracking-wider rounded mt-1">
-                                                Best Price
-                                            </span>
-                                        )}
+                                        <div className="flex items-center gap-2 mt-0.5">
+                                            {isCheapest && (
+                                                <span className="inline-block px-1.5 py-0.5 bg-green-100 text-green-700 text-[10px] uppercase font-bold tracking-wider rounded">
+                                                    Best Price
+                                                </span>
+                                            )}
+                                            {option.normalizedUnitPrice != null && option.comparisonUnit && (
+                                                <span className="text-[10px] text-gray-500 bg-gray-50 px-1.5 py-0.5 rounded">
+                                                    ${option.normalizedUnitPrice.toFixed(2)}/{option.comparisonUnit}
+                                                </span>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
 
@@ -147,9 +174,16 @@ export const WishlistItemCard: React.FC<WishlistItemCardProps> = ({
                                             ${option.originalPrice.toFixed(2)}
                                         </p>
                                     )}
-                                    <p className={`font-bold text-sm ${isSelected ? 'text-[var(--brand-primary)]' : 'text-gray-900'}`}>
-                                        ${option.price.toFixed(2)}
-                                    </p>
+                                    <div className="flex items-center justify-end gap-1">
+                                        {option.priceTrend && option.priceTrend !== 'stable' && (
+                                            <span className={`text-[10px] ${option.priceTrend === 'down' ? 'text-green-500' : 'text-red-400'}`}>
+                                                {option.priceTrend === 'down' ? '↓' : '↑'}
+                                            </span>
+                                        )}
+                                        <p className={`font-bold text-sm ${isSelected ? 'text-[var(--brand-primary)]' : 'text-gray-900'}`}>
+                                            ${option.price.toFixed(2)}
+                                        </p>
+                                    </div>
                                     {priceDelta > 0 && (
                                         <p className="text-[10px] text-amber-600 font-medium">
                                             +${priceDelta.toFixed(2)} more
@@ -159,6 +193,40 @@ export const WishlistItemCard: React.FC<WishlistItemCardProps> = ({
                             </div>
                         );
                     })}
+                </div>
+            )}
+            {/* Substitution Suggestions */}
+            {isExpanded && item.substitutions && item.substitutions.length > 0 && (
+                <div className="border-t border-[var(--glass-border)] bg-amber-50/50 p-3">
+                    <p className="text-[10px] uppercase tracking-wider font-bold text-amber-700 mb-2">Cheaper Alternative{item.substitutions.length > 1 ? 's' : ''}</p>
+                    {item.substitutions.map(sub => (
+                        <div key={sub.id} className="flex items-center justify-between gap-2 py-1.5">
+                            <div className="flex items-center gap-2 min-w-0">
+                                <img src={sub.image} alt="" className="w-7 h-7 rounded object-cover flex-shrink-0" />
+                                <div className="min-w-0">
+                                    <p className="text-xs font-medium text-gray-700 truncate">
+                                        {sub.brand && <span className="text-gray-500">{sub.brand} </span>}
+                                        {sub.name}
+                                    </p>
+                                    <p className="text-[10px] text-gray-400">{sub.cheapestStore}</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                                <div className="text-right">
+                                    <p className="text-xs font-bold text-amber-700">${sub.cheapestPrice.toFixed(2)}</p>
+                                    <p className="text-[10px] text-green-600 font-medium">Save ${sub.priceDifference.toFixed(2)}</p>
+                                </div>
+                                {onSwapItem && (
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); onSwapItem(item.id, sub.id); }}
+                                        className="text-[10px] font-bold text-amber-700 bg-amber-100 hover:bg-amber-200 px-2 py-1 rounded transition-colors"
+                                    >
+                                        Swap
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                    ))}
                 </div>
             )}
         </div>

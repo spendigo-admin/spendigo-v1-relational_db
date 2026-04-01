@@ -4,6 +4,16 @@ import {
 } from '../types/smartCart';
 import { getComparableCellCost } from './costing';
 
+function calculateDeliveryFee(store: { deliveryFee?: number; freeDeliveryThreshold?: number }, subtotal: number): number {
+    if (!store.deliveryFee || store.deliveryFee <= 0) {
+        return 0;
+    }
+    if (store.freeDeliveryThreshold && subtotal >= store.freeDeliveryThreshold) {
+        return 0;
+    }
+    return store.deliveryFee;
+}
+
 export function buildSingleStoreComparisons(matrix: SmartCartPriceMatrix): SmartCartSingleStoreComparison[] {
     return matrix.storeColumns.map(store => {
         let totalCost = 0;
@@ -21,10 +31,14 @@ export function buildSingleStoreComparisons(matrix: SmartCartPriceMatrix): Smart
             totalCost += comparableCost * row.quantity;
         });
 
+        const deliveryFee = calculateDeliveryFee(store, totalCost);
+
         return {
             storeId: store.id,
             storeName: store.name,
             totalCost,
+            deliveryFee,
+            totalWithDelivery: totalCost + deliveryFee,
             missingItemCount,
             isFullyAvailable: missingItemCount === 0,
         };

@@ -33,7 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.onOrderStatusUpdated = exports.refundOrder = exports.createPaymentIntent = exports.checkStripeAccountStatus = exports.onboardStore = exports.syncMerchantProductToAlgolia = exports.syncTrafficStats = exports.syncMasterProductToAlgolia = exports.cartOptimize = exports.smartcartOptimize = exports.onMasterProductWrite = exports.onUserUpdate = exports.downloadReceipt = exports.cancelOrder = exports.placeOrder = exports.updateSubscriptionPlan = exports.sendOrderStatusUpdate = exports.sendOrderConfirmation = exports.getPaymentHistory = exports.stripeWebhook = exports.createCheckoutSession = exports.removeTeamMember = exports.requestAccountDeletion = exports.deleteUser = exports.inviteTeamMember = exports.cleanupOrphanedUsers = void 0;
+exports.onMerchantProductPriceChange = exports.onOrderStatusUpdated = exports.refundOrder = exports.createPaymentIntent = exports.checkStripeAccountStatus = exports.onboardStore = exports.syncMerchantProductToAlgolia = exports.syncTrafficStats = exports.syncMasterProductToAlgolia = exports.cartOptimize = exports.smartcartOptimize = exports.onMasterProductWrite = exports.onUserUpdate = exports.downloadReceipt = exports.cancelOrder = exports.placeOrder = exports.updateSubscriptionPlan = exports.sendOrderStatusUpdate = exports.sendOrderConfirmation = exports.getPaymentHistory = exports.stripeWebhook = exports.createCheckoutSession = exports.removeTeamMember = exports.requestAccountDeletion = exports.deleteUser = exports.inviteTeamMember = exports.cleanupOrphanedUsers = void 0;
 const admin = __importStar(require("firebase-admin"));
 // Initialize Firebase Admin
 admin.initializeApp();
@@ -89,4 +89,6 @@ var refundOrder_1 = require("./payments/refundOrder");
 Object.defineProperty(exports, "refundOrder", { enumerable: true, get: function () { return refundOrder_1.refundOrder; } });
 var orderTriggers_1 = require("./triggers/orderTriggers");
 Object.defineProperty(exports, "onOrderStatusUpdated", { enumerable: true, get: function () { return orderTriggers_1.onOrderStatusUpdated; } });
+var priceHistoryTrigger_1 = require("./triggers/priceHistoryTrigger");
+Object.defineProperty(exports, "onMerchantProductPriceChange", { enumerable: true, get: function () { return priceHistoryTrigger_1.onMerchantProductPriceChange; } });
 //# sourceMappingURL=index.js.map

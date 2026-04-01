@@ -4,10 +4,10 @@ import { SmartCartOptimizedCart } from '../../apps/web/src/smartcart/smartcart_o
 import { SmartCartSingleStoreSimulationResult } from '../../apps/web/src/smartcart/smartcart_single_store_simulator';
 
 describe('smartcart_comparison_engine', () => {
-    it('recommends optimized multi-store when savings are at least 5%', () => {
+    it('recommends optimized multi-store when savings exceed hybrid threshold', () => {
         const optimizedCart: SmartCartOptimizedCart = {
             optimized_items: [],
-            total_cost: 18,
+            total_cost: 15,
             store_distribution: {
                 'store-a': ['milk'],
                 'store-b': ['eggs'],
@@ -27,16 +27,17 @@ describe('smartcart_comparison_engine', () => {
             },
         ];
 
-        expect(compareOptimizedCartToSingleStore(optimizedCart, singleStoreResults)).toEqual({
-            optimized_cost: 18,
-            best_single_store_cost: 19.5,
-            best_store: 'store-b',
-            savings: 1.5,
-            recommendation: 'optimized_multi_store',
-        });
+        const result = compareOptimizedCartToSingleStore(optimizedCart, singleStoreResults);
+        expect(result.optimized_cost).toBe(15);
+        expect(result.best_single_store_cost).toBe(19.5);
+        expect(result.best_store).toBe('store-b');
+        expect(result.savings).toBe(4.5);
+        expect(result.store_count).toBe(2);
+        // 4.5 >= $3 AND (4.5/19.5 = 23%) - (1 extra store * 2%) = 21% >= 5%
+        expect(result.recommendation).toBe('optimized_multi_store');
     });
 
-    it('recommends single store when savings are below 5%', () => {
+    it('recommends single store when savings are below absolute minimum', () => {
         const optimizedCart: SmartCartOptimizedCart = {
             optimized_items: [],
             total_cost: 19.2,
@@ -59,13 +60,13 @@ describe('smartcart_comparison_engine', () => {
             },
         ];
 
-        expect(compareOptimizedCartToSingleStore(optimizedCart, singleStoreResults)).toEqual({
-            optimized_cost: 19.2,
-            best_single_store_cost: 20,
-            best_store: 'store-a',
-            savings: 0.8,
-            recommendation: 'single_store',
-        });
+        const result = compareOptimizedCartToSingleStore(optimizedCart, singleStoreResults);
+        expect(result.optimized_cost).toBe(19.2);
+        expect(result.best_single_store_cost).toBe(20);
+        expect(result.best_store).toBe('store-a');
+        expect(result.savings).toBe(0.8);
+        // 0.8 < $3 minimum → single_store
+        expect(result.recommendation).toBe('single_store');
     });
 
     it('uses deterministic tie-breaking for best single store', () => {
@@ -88,13 +89,10 @@ describe('smartcart_comparison_engine', () => {
             },
         ];
 
-        expect(compareOptimizedCartToSingleStore(optimizedCart, singleStoreResults)).toEqual({
-            optimized_cost: 15,
-            best_single_store_cost: 18,
-            best_store: 'store-a',
-            savings: 3,
-            recommendation: 'optimized_multi_store',
-        });
+        const result = compareOptimizedCartToSingleStore(optimizedCart, singleStoreResults);
+        expect(result.best_store).toBe('store-a');
+        expect(result.savings).toBe(3);
+        expect(result.store_count).toBe(0);
     });
 
     it('returns only-feasible recommendation when no single store can fulfill the cart', () => {
@@ -120,12 +118,12 @@ describe('smartcart_comparison_engine', () => {
             },
         ];
 
-        expect(compareOptimizedCartToSingleStore(optimizedCart, singleStoreResults)).toEqual({
-            optimized_cost: 14,
-            best_single_store_cost: null,
-            best_store: null,
-            savings: null,
-            recommendation: 'optimized_multi_store_only_feasible',
-        });
+        const result = compareOptimizedCartToSingleStore(optimizedCart, singleStoreResults);
+        expect(result.optimized_cost).toBe(14);
+        expect(result.best_single_store_cost).toBeNull();
+        expect(result.best_store).toBeNull();
+        expect(result.savings).toBeNull();
+        expect(result.savings_rate).toBeNull();
+        expect(result.recommendation).toBe('optimized_multi_store_only_feasible');
     });
 });

@@ -11,8 +11,14 @@ export interface SmartCartComparisonResult {
     best_single_store_cost: number | null;
     best_store: string | null;
     savings: number | null;
+    savings_rate: number | null;
+    store_count: number;
     recommendation: SmartCartComparisonRecommendation;
 }
+
+const MIN_ABSOLUTE_SAVINGS = 3; // $3 minimum to justify multi-store
+const MIN_SAVINGS_RATE = 0.05; // 5% minimum savings rate
+const STORE_PENALTY = 0.02; // 2% penalty per additional store beyond 1
 
 function findBestSingleStore(
     singleStoreResults: SmartCartSingleStoreSimulationResult[],
@@ -41,6 +47,7 @@ export function compareOptimizedCartToSingleStore(
     listOfSingleStoreCartCosts: SmartCartSingleStoreSimulationResult[],
 ): SmartCartComparisonResult {
     const optimized_cost = optimizedCartResult.total_cost;
+    const store_count = Object.keys(optimizedCartResult.store_distribution).length;
     const bestSingleStore = findBestSingleStore(listOfSingleStoreCartCosts);
 
     if (!bestSingleStore || bestSingleStore.cart_cost === null) {
@@ -49,6 +56,8 @@ export function compareOptimizedCartToSingleStore(
             best_single_store_cost: null,
             best_store: null,
             savings: null,
+            savings_rate: null,
+            store_count,
             recommendation: 'optimized_multi_store_only_feasible',
         };
     }
@@ -57,11 +66,20 @@ export function compareOptimizedCartToSingleStore(
     const savings = Math.round((best_single_store_cost - optimized_cost) * 10000) / 10000;
     const savingsRate = best_single_store_cost === 0 ? 0 : savings / best_single_store_cost;
 
+    // Hybrid threshold: must exceed both absolute minimum AND percentage minimum
+    // Additional stores add friction — penalize each extra store beyond 1
+    const extraStores = Math.max(0, store_count - 1);
+    const adjustedSavingsRate = savingsRate - (extraStores * STORE_PENALTY);
+
+    const worthMultiStore = savings >= MIN_ABSOLUTE_SAVINGS && adjustedSavingsRate >= MIN_SAVINGS_RATE;
+
     return {
         optimized_cost,
         best_single_store_cost,
         best_store: bestSingleStore.store_id,
         savings,
-        recommendation: savingsRate < 0.05 ? 'single_store' : 'optimized_multi_store',
+        savings_rate: savingsRate,
+        store_count,
+        recommendation: worthMultiStore ? 'optimized_multi_store' : 'single_store',
     };
 }

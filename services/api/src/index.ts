@@ -29,6 +29,7 @@ export { checkStripeAccountStatus } from './payments/checkStripeStatus';
 export { createPaymentIntent } from './payments/createPaymentIntent';
 export { refundOrder } from './payments/refundOrder';
 export { onOrderStatusUpdated } from './triggers/orderTriggers';
+export { onMerchantProductPriceChange } from './triggers/priceHistoryTrigger';
 
 
 

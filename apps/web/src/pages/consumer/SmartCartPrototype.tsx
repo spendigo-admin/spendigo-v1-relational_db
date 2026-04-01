@@ -94,13 +94,15 @@ const mockResult: SmartCartOptimizationResult = {
         storeId: 'budgetfoods',
         storeName: 'Budget Foods',
         totalCost: 19.46,
+        deliveryFee: 0,
+        totalWithDelivery: 19.46,
         missingItemCount: 0,
         isFullyAvailable: true
     },
     singleStoreComparisons: [
-        { storeId: 'budgetfoods', storeName: 'Budget Foods', totalCost: 19.46, missingItemCount: 0, isFullyAvailable: true },
-        { storeId: 'freshmart', storeName: 'FreshMart', totalCost: 20.05, missingItemCount: 0, isFullyAvailable: true },
-        { storeId: 'greenbasket', storeName: 'Green Basket', totalCost: 23.25, missingItemCount: 1, isFullyAvailable: false }
+        { storeId: 'budgetfoods', storeName: 'Budget Foods', totalCost: 19.46, deliveryFee: 0, totalWithDelivery: 19.46, missingItemCount: 0, isFullyAvailable: true },
+        { storeId: 'freshmart', storeName: 'FreshMart', totalCost: 20.05, deliveryFee: 0, totalWithDelivery: 20.05, missingItemCount: 0, isFullyAvailable: true },
+        { storeId: 'greenbasket', storeName: 'Green Basket', totalCost: 23.25, deliveryFee: 0, totalWithDelivery: 23.25, missingItemCount: 1, isFullyAvailable: false }
     ],
     explanations: [
         {
