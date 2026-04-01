@@ -366,7 +366,7 @@ export const useOptimizedWishlist = () => {
                 inStock: product.available_quantity > 0,
                 productId: product.id, // Merchant Product ID
                 brand: product.brand || masterProduct?.brand,
-                name: product.product_name || masterProduct?.name,
+                name: masterProduct?.name || product.product_name,
                 unit: packageSize,
                 normalizedUnitPrice: normalizedUnitPrice?.pricePerComparisonUnit,
                 comparisonUnit: normalizedUnitPrice?.comparisonUnit,
@@ -392,6 +392,22 @@ export const useOptimizedWishlist = () => {
         merchantInventory.forEach((p: any) => {
             if (p.available_quantity <= 0) return;
 
+            // Apply the same distance filter used in availabilityMap so that
+            // out-of-range merchant products don't appear as browsable items.
+            const baseStore = stores[p.merchant_id] || { coordinates: null, postalCode: null };
+            if (userCoords && searchDistance > 0 && baseStore.coordinates) {
+                const distance = calculateDistance(userCoords.lat, userCoords.lng, baseStore.coordinates.lat, baseStore.coordinates.lng);
+                if (distance > searchDistance) {
+                    let hasSameFSA = false;
+                    if (userPostalCode && baseStore.postalCode) {
+                        const userFSA = userPostalCode.trim().substring(0, 3).toUpperCase();
+                        const storeFSA = (baseStore.postalCode as string).trim().substring(0, 3).toUpperCase();
+                        if (userFSA === storeFSA && /^[A-Z]\d[A-Z]$/.test(userFSA)) hasSameFSA = true;
+                    }
+                    if (!hasSameFSA) return;
+                }
+            }
+
             // Check if this product is already covered by a Master Product
             const hasValidMaster = p.master_product_id && availabilityMap[p.master_product_id];
 
@@ -410,9 +426,10 @@ export const useOptimizedWishlist = () => {
 
                 if (!isAlreadyListed) {
                     // Group by name to avoid showing duplicate entries (e.g. "Local Bread" from 3 stores -> 1 entry)
+                    // Prefer master product ID as the item ID so the optimizer can resolve it directly.
                     if (!localItemsMap.has(name)) {
                         localItemsMap.set(name, {
-                            id: p.id, // Use merchant product ID as the item ID
+                            id: p.master_product_id || p.id,
                             name: name,
                             image: p.image || p.primary_image_url || `https://ui-avatars.com/api/?name=${name}&background=random&length=1&size=128`,
                             category: p.category || 'Store Item',
@@ -429,7 +446,7 @@ export const useOptimizedWishlist = () => {
         const localItems = Array.from(localItemsMap.values());
 
         return [...masterItems, ...localItems].sort((a, b) => a.name.localeCompare(b.name));
-    }, [catalog, availabilityMap, merchantInventory, catalogMap]);
+    }, [catalog, availabilityMap, merchantInventory, catalogMap, stores, userCoords, userPostalCode, searchDistance, calculateDistance]);
 
     const GENERIC_STAPLES = [
         { name: 'Milk', emoji: '🥛', category: 'Dairy' },
@@ -474,8 +491,12 @@ export const useOptimizedWishlist = () => {
                 // Match by Master ID (Strong Link)
                 let globalData = availabilityMap[item.id];
 
-                // Fallback: Match by Name (Weak Link for legacy or generic items)
-                if (!globalData) {
+                // Fallback: Match by Name (Weak Link for generic/custom items only)
+                // Skip fuzzy fallback for catalog items (real master product IDs) — if their
+                // store is out of range, show them as unavailable rather than fuzzy-matching
+                // to unrelated products.
+                const isCatalogItem = !item.id.startsWith('generic-') && catalogMap.has(item.id);
+                if (!globalData && !isCatalogItem) {
                     const searchName = item.name.toLowerCase();
 
                     // Find all merchant products that match using fuzzy search
