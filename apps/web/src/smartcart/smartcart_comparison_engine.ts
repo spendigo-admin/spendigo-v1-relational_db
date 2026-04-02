@@ -16,9 +16,14 @@ export interface SmartCartComparisonResult {
     recommendation: SmartCartComparisonRecommendation;
 }
 
-const MIN_ABSOLUTE_SAVINGS = 3; // $3 minimum to justify multi-store
 const MIN_SAVINGS_RATE = 0.05; // 5% minimum savings rate
 const STORE_PENALTY = 0.02; // 2% penalty per additional store beyond 1
+
+// Dynamic absolute minimum: 1.5% of the basket value, bounded $1.50–$5.
+// Mirrors analyzeTripConsolidation.ts — kept in sync to avoid split behaviour.
+function dynamicMinAbsoluteSavings(basketCost: number): number {
+    return Math.min(5, Math.max(1.5, basketCost * 0.015));
+}
 
 function findBestSingleStore(
     singleStoreResults: SmartCartSingleStoreSimulationResult[],
@@ -71,7 +76,7 @@ export function compareOptimizedCartToSingleStore(
     const extraStores = Math.max(0, store_count - 1);
     const adjustedSavingsRate = savingsRate - (extraStores * STORE_PENALTY);
 
-    const worthMultiStore = savings >= MIN_ABSOLUTE_SAVINGS && adjustedSavingsRate >= MIN_SAVINGS_RATE;
+    const worthMultiStore = savings >= dynamicMinAbsoluteSavings(best_single_store_cost) && adjustedSavingsRate >= MIN_SAVINGS_RATE;
 
     return {
         optimized_cost,

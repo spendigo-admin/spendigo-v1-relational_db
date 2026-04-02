@@ -1,5 +1,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import '../../styles/design-system.css';
+import { collection, onSnapshot } from 'firebase/firestore';
+import { db } from '../../lib/firebase';
 import { useMarketplace } from '../../context/MarketplaceContext';
 import { useAudit } from '../../context/AuditContext';
 import { useNotifications } from '../../context/NotificationContext';
@@ -107,6 +109,33 @@ const AdminDashboard: React.FC = () => {
 
     const trafficStats = useTrafficStats(); // Real-time hook
 
+    // Real-time active deal count from subcollections
+    const [liveDealsCount, setLiveDealsCount] = useState<number | null>(null);
+    useEffect(() => {
+        const storeIds = Object.keys(stores);
+        if (storeIds.length === 0) return;
+
+        const now = new Date();
+        const counts: Record<string, number> = {};
+        const unsubscribes: (() => void)[] = [];
+
+        storeIds.forEach(storeId => {
+            const dealsRef = collection(db, 'stores', storeId, 'deals');
+            const unsub = onSnapshot(dealsRef, (snap) => {
+                counts[storeId] = snap.docs.filter(d => {
+                    const data = d.data();
+                    if (data.status !== 'active') return false;
+                    if (data.endDate && new Date(data.endDate) < now) return false;
+                    return true;
+                }).length;
+                setLiveDealsCount(Object.values(counts).reduce((a, b) => a + b, 0));
+            });
+            unsubscribes.push(unsub);
+        });
+
+        return () => unsubscribes.forEach(u => u());
+    }, [Object.keys(stores).join(',')]); // eslint-disable-line react-hooks/exhaustive-deps
+
     const [trafficRange, setTrafficRange] = useState<'24h' | '7d' | '30d' | '365d'>('24h');
 
     // specific aggregation logic
@@ -116,8 +145,10 @@ const AdminDashboard: React.FC = () => {
         const totalStores = allStores.length;
         const pendingStores = allStores.filter((s: any) => s.status === 'pending').length;
         const totalProducts = allStores.reduce((acc: number, store: any) => acc + (store.productCount || store.products?.length || 0), 0);
-        const totalDeals = allStores.reduce((acc: number, store: any) =>
-            acc + (store.oneDayOffers?.length || 0) + (store.saleItems?.length || 0), 0);
+        const totalDeals = liveDealsCount !== null
+            ? liveDealsCount
+            : allStores.reduce((acc: number, store: any) =>
+                acc + (store.oneDayOffers?.length || 0) + (store.saleItems?.length || 0), 0);
         const mrr = allStores.reduce((acc: number, store: any) => {
             const tier = store.subscriptionTier || 'free';
             if (tier === 'growth') return acc + 99;
@@ -155,7 +186,7 @@ const AdminDashboard: React.FC = () => {
             },
             {
                 label: 'Active Deals',
-                value: totalDeals.toString(),
+                value: liveDealsCount === null ? '...' : totalDeals.toString(),
                 change: 'Live Offers',
                 icon: '🏷️',
                 color: 'bg-orange-100 text-orange-700'
@@ -176,7 +207,7 @@ const AdminDashboard: React.FC = () => {
                 isTraffic: true // Flag to render dropdown
             }
         ];
-    }, [stores, trafficStats, trafficRange]);
+    }, [stores, trafficStats, trafficRange, liveDealsCount]);
 
     const getHealthColor = (val: number) => {
         if (val < 50) return 'bg-green-500 text-green-600';

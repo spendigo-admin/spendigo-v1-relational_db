@@ -70,8 +70,13 @@ const UNIT_ALIASES: Record<string, { unit: string; measureType: PackageMeasureTy
 };
 
 const PACKAGE_SIZE_PATTERNS = [
+    // Standard: "500ml", "1.5L", "200g", "3 pack", "12ct"
     /(\d+(?:\.\d+)?)\s*(ml|milliliters?|millilitres?|l|liters?|litres?|g|gr|grams?|kg|kilograms?|ea|each|count|ct|pk|packs?|package|packages)\b/i,
+    // Hyphenated pack: "3-pack", "12-pk"
     /(\d+(?:\.\d+)?)\s*-\s*(pack|pk)\b/i,
+    // Multi-pack with inner volume/weight: "12 x 355ml", "6x500ml", "4 × 330 ml"
+    // Resolves to total volume/weight so unit price is comparable.
+    /(\d+(?:\.\d+)?)\s*[x×]\s*(\d+(?:\.\d+)?)\s*(ml|milliliters?|millilitres?|l|liters?|litres?|g|gr|grams?|kg|kilograms?)\b/i,
 ];
 
 function getUnitDefinition(rawUnit: string) {
@@ -89,7 +94,28 @@ export function parsePackageSize(packageSize: string): NormalizedPackageSize | n
         return null;
     }
 
-    for (const pattern of PACKAGE_SIZE_PATTERNS) {
+    // Multi-pack with inner unit pattern: "12 x 355ml" → total = 12 × 355 = 4260 ml
+    const multiPackPattern = PACKAGE_SIZE_PATTERNS[2];
+    const multiPackMatch = trimmed.match(multiPackPattern);
+    if (multiPackMatch) {
+        const packCount = Number(multiPackMatch[1]);
+        const innerQty = Number(multiPackMatch[2]);
+        const unitDefinition = getUnitDefinition(multiPackMatch[3]);
+
+        if (Number.isFinite(packCount) && packCount > 0 && Number.isFinite(innerQty) && innerQty > 0 && unitDefinition) {
+            const totalQuantity = packCount * innerQty;
+            return {
+                rawSize: packageSize,
+                quantity: totalQuantity,
+                unit: unitDefinition.unit,
+                measureType: unitDefinition.measureType,
+                baseQuantity: totalQuantity * unitDefinition.multiplier,
+                baseUnit: unitDefinition.baseUnit,
+            };
+        }
+    }
+
+    for (const pattern of PACKAGE_SIZE_PATTERNS.slice(0, 2)) {
         const match = trimmed.match(pattern);
 
         if (!match) {

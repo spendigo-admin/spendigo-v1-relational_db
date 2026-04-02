@@ -9,6 +9,7 @@ export interface SmartCartOptimizerProductOffer {
 export interface SmartCartOptimizerStoreEntry {
     store_id: string;
     products: SmartCartOptimizerProductOffer[];
+    distanceKm?: number; // pre-computed distance from shopper, used for tie-breaking
 }
 
 export interface SmartCartOptimizedItem {
@@ -33,8 +34,8 @@ export interface SmartCartOptimizerInput {
 const PREFERRED_STORE_TOLERANCE = 0.02; // 2% tolerance for preferred store bias
 
 function compareOffers(
-    left: { store_id: string; offer: SmartCartOptimizerProductOffer },
-    right: { store_id: string; offer: SmartCartOptimizerProductOffer },
+    left: { store_id: string; offer: SmartCartOptimizerProductOffer; distanceKm?: number },
+    right: { store_id: string; offer: SmartCartOptimizerProductOffer; distanceKm?: number },
 ): number {
     if (left.offer.unit_price !== right.offer.unit_price) {
         return left.offer.unit_price - right.offer.unit_price;
@@ -44,13 +45,20 @@ function compareOffers(
         return left.offer.price - right.offer.price;
     }
 
+    // Equal price: prefer closer store
+    const leftDist = left.distanceKm ?? Number.POSITIVE_INFINITY;
+    const rightDist = right.distanceKm ?? Number.POSITIVE_INFINITY;
+    if (leftDist !== rightDist) {
+        return leftDist - rightDist;
+    }
+
     return left.store_id.localeCompare(right.store_id);
 }
 
 function findAvailableOffers(
     productId: string,
     storeProducts: SmartCartOptimizerStoreEntry[],
-): Array<{ store_id: string; offer: SmartCartOptimizerProductOffer }> {
+): Array<{ store_id: string; offer: SmartCartOptimizerProductOffer; distanceKm?: number }> {
     return storeProducts.flatMap(store => {
         const matchingOffers = store.products.filter(product =>
             product.product_id === productId
@@ -62,6 +70,7 @@ function findAvailableOffers(
         return matchingOffers.map(offer => ({
             store_id: store.store_id,
             offer,
+            distanceKm: store.distanceKm,
         }));
     });
 }

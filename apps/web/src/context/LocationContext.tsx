@@ -28,7 +28,15 @@ export const LocationProvider: React.FC<{ children: ReactNode }> = ({ children }
     const [userCoords, setUserCoords] = useState<{ lat: number, lng: number } | null>(null);
     const [userPostalCode, setUserPostalCode] = useState<string | null>(null);
     const [address, setAddress] = useState('');
-    const [searchDistance, setSearchDistance] = useState<number>(10); // default 10km
+    const [searchDistance, setSearchDistance] = useState<number>(() => {
+        const saved = sessionStorage.getItem('spendigo_search_distance');
+        return saved ? Number(saved) : 10; // default 10km
+    });
+
+    // Persist distance selection for the session
+    useEffect(() => {
+        sessionStorage.setItem('spendigo_search_distance', String(searchDistance));
+    }, [searchDistance]);
     const [isLocating, setIsLocating] = useState(false);
 
     // Calculate distance between two points in km

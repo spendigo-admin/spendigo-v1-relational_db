@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { collection, onSnapshot, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { performCachedSearch } from '../utils/fuzzy-search';
+import { performCachedSearch, performFuzzySearch } from '../utils/fuzzy-search';
 import { MerchantProduct, OptimizedWishlistItem, StoreOption, SubstitutionSuggestion } from '../types/smartCart';
 import { useWishlist } from '../context/WishlistContext';
 import { useMarketplace } from '../context/MarketplaceContext';
@@ -26,6 +26,20 @@ function getNormalizedUnitPrice(packageSize: string | undefined, price: number) 
         price,
         packageSize,
     });
+}
+
+// Returns a quantity warning when a shopper's needed count can't be evenly bought
+// in whole pack units (e.g. need 3, pack = 6 → must buy 6).
+function getQuantityWarning(neededQty: number, unit: string | undefined): { needed: number; packSize: number; mustBuy: number } | undefined {
+    if (!unit || neededQty <= 1) return undefined;
+    const parsed = calculateUnitPrice({ price: 1, packageSize: unit });
+    if (!parsed || parsed.packageSize.measureType !== 'count') return undefined;
+    const packSize = parsed.packageSize.quantity;
+    if (packSize <= 1) return undefined;
+    // Warn only when the shopper's quantity doesn't divide evenly into packSize
+    if (neededQty % packSize === 0) return undefined;
+    const mustBuy = Math.ceil(neededQty / packSize) * packSize;
+    return { needed: neededQty, packSize, mustBuy };
 }
 
 function compareStoreOptions(left: StoreOption, right: StoreOption) {
@@ -57,8 +71,16 @@ const getEffectivePrice = (product: any, store: any) => {
         const itemMasterId = item.master_product_id || item.masterProductId;
         if (itemMasterId && itemMasterId === (product.master_product_id || product.masterProductId)) return true;
 
+        // Name match: require the product name to be a whole-word match inside the
+        // deal name (or vice-versa) to avoid "Tea" matching "Teatime Biscuits".
         const itemName = (item.name || item.productName || '').toLowerCase().trim();
-        if (itemName && productName && (itemName.includes(productName) || productName.includes(itemName))) return true;
+        if (itemName && productName) {
+            const wordBoundary = (haystack: string, needle: string) => {
+                const escaped = needle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                return new RegExp(`(?<![\\w])${escaped}(?![\\w])`).test(haystack);
+            };
+            if (wordBoundary(itemName, productName) || wordBoundary(productName, itemName)) return true;
+        }
 
         return false;
     };
@@ -97,9 +119,18 @@ const getEffectivePrice = (product: any, store: any) => {
     // 1. Check Flash Sales / One Day Offers
     let flashSale = store.oneDayOffers?.find(isMatch);
 
-    const isExpired = (endDate: string) => {
-        if (!endDate) return false;
-        return new Date(endDate) < new Date();
+    const isExpired = (endDate: string | undefined | null, startDate?: string | null) => {
+        const now = new Date();
+        // If an explicit end date is set and it's in the past → expired
+        if (endDate) return new Date(endDate) < now;
+        // No end date: treat as expired if we can tell the deal started more
+        // than 30 days ago, otherwise allow it (merchant may not set end dates).
+        if (startDate) {
+            const msPerDay = 86_400_000;
+            return now.getTime() - new Date(startDate).getTime() > 30 * msPerDay;
+        }
+        // No date information at all — treat as permanent (backwards-compatible).
+        return false;
     };
 
     if (!flashSale && productName.includes('agrumance tea')) {
@@ -108,7 +139,7 @@ const getEffectivePrice = (product: any, store: any) => {
         );
     }
 
-    if (flashSale && !isExpired(flashSale.validUntil)) {
+    if (flashSale && !isExpired(flashSale.validUntil, flashSale.startDate || flashSale.validFrom)) {
         // Check if it's a BOGO deal
         if (flashSale.bogoType) {
             const bogoResult = calculateBogoEffectivePrice(flashSale, product.price);
@@ -139,7 +170,7 @@ const getEffectivePrice = (product: any, store: any) => {
         );
     }
 
-    if (saleItem && !isExpired(saleItem.validUntil)) {
+    if (saleItem && !isExpired(saleItem.validUntil, saleItem.startDate || saleItem.validFrom)) {
         if (saleItem.bogoType) {
             const bogoResult = calculateBogoEffectivePrice(saleItem, product.price);
             if (bogoResult && bogoResult.price < effectivePrice) {
@@ -162,7 +193,9 @@ const getEffectivePrice = (product: any, store: any) => {
 
     // 3. Check Active Flyer Items
     const flyerItem = store.activeFlyerItems?.find(isMatch);
-    const flyerExpired = store.flyer?.validUntil ? isExpired(store.flyer.validUntil) : false;
+    const flyerExpired = store.flyer?.validUntil
+        ? isExpired(store.flyer.validUntil, store.flyer.startDate || store.flyer.validFrom)
+        : true; // No flyer date info → treat as expired to avoid stale prices
 
     if (flyerItem && !flyerExpired && flyerItem.salePrice < effectivePrice) {
         effectivePrice = flyerItem.salePrice;
@@ -591,9 +624,15 @@ export const useOptimizedWishlist = () => {
                 let allOptions: StoreOption[] = [];
                 let cheapestOption = null;
                 let maxPrice = 0;
+                const neededQty = (item as any).quantity ?? 1;
 
                 if (globalData) {
-                    allOptions = [...globalData.stores].sort(compareStoreOptions);
+                    allOptions = [...globalData.stores]
+                        .map(option => ({
+                            ...option,
+                            quantityWarning: getQuantityWarning(neededQty, option.unit),
+                        }))
+                        .sort(compareStoreOptions);
                     if (allOptions.length > 0) {
                         cheapestOption = allOptions[0];
                         maxPrice = Math.max(...allOptions.map(o => o.normalizedUnitPrice ?? o.price));
@@ -607,7 +646,28 @@ export const useOptimizedWishlist = () => {
                     category: item.category,
                     options: allOptions,
                     cheapest: cheapestOption,
-                    maxPrice
+                    maxPrice,
+                    bulkSavingHint: (() => {
+                        if (!cheapestOption || !cheapestOption.normalizedUnitPrice || !cheapestOption.comparisonUnit) return undefined;
+                        // Look for another option at the same store (or any store) with a better unit price
+                        // that implies a larger package size (i.e. lower unit price, same comparison unit).
+                        const betterBulk = allOptions.find(o =>
+                            o.storeId === cheapestOption.storeId &&
+                            o.productId !== cheapestOption.productId &&
+                            o.comparisonUnit === cheapestOption.comparisonUnit &&
+                            o.normalizedUnitPrice !== undefined &&
+                            o.normalizedUnitPrice < cheapestOption.normalizedUnitPrice! &&
+                            o.unit !== cheapestOption.unit
+                        );
+                        if (!betterBulk || !betterBulk.normalizedUnitPrice || !betterBulk.unit) return undefined;
+                        return {
+                            storeName: betterBulk.storeName,
+                            largerUnit: betterBulk.unit,
+                            largerPrice: betterBulk.price,
+                            unitPriceSaving: Math.round((cheapestOption.normalizedUnitPrice - betterBulk.normalizedUnitPrice) * 10000) / 10000,
+                            comparisonUnit: betterBulk.comparisonUnit!,
+                        };
+                    })(),
                 } as OptimizedWishlistItem;
             });
 
@@ -640,21 +700,26 @@ export const useOptimizedWishlist = () => {
             subGroupIndex.get(groupId)!.push({ id: item.id, name: item.name, image: item.image, brand: (item as any).brand });
         });
 
+        // Build a flat list of catalog items with availability for fuzzy fallback
+        const availableCatalogItems = catalog
+            .filter(c => availabilityMap[c.id] && availabilityMap[c.id].stores.length > 0)
+            .map(c => ({ id: c.id, name: c.name, brand: (c as any).brand, image: c.image, category: c.category }));
+
         return optimizerItems.map(item => {
             if (!item || item.options.length === 0) return item;
 
-            const masterItem = catalogMap.get(item.id);
-            const groupId = (masterItem as any)?.substitution_group_id;
-            if (!groupId) return item;
-
-            const groupMembers = subGroupIndex.get(groupId);
-            if (!groupMembers || groupMembers.length <= 1) return item;
-
             const currentCheapest = item.cheapest?.price ?? Infinity;
             const substitutions: SubstitutionSuggestion[] = [];
+            const seenIds = new Set<string>([item.id]);
+
+            // Primary: substitution_group_id
+            const masterItem = catalogMap.get(item.id);
+            const groupId = (masterItem as any)?.substitution_group_id;
+            const groupMembers = groupId ? (subGroupIndex.get(groupId) ?? []) : [];
 
             groupMembers.forEach(member => {
-                if (member.id === item.id) return; // Skip self
+                if (seenIds.has(member.id)) return;
+                seenIds.add(member.id);
                 const availability = availabilityMap[member.id];
                 if (!availability || availability.stores.length === 0) return;
 
@@ -662,7 +727,7 @@ export const useOptimizedWishlist = () => {
                 if (!cheapestOption) return;
 
                 const priceDiff = currentCheapest - cheapestOption.price;
-                if (priceDiff <= 0) return; // Only suggest if cheaper
+                if (priceDiff <= 0) return;
 
                 substitutions.push({
                     id: member.id,
@@ -674,6 +739,42 @@ export const useOptimizedWishlist = () => {
                     priceDifference: priceDiff,
                 });
             });
+
+            // Fallback: fuzzy name match within same category when no substitution group
+            if (substitutions.length === 0 && item.category) {
+                const sameCategoryItems = availableCatalogItems.filter(c =>
+                    c.category === item.category && !seenIds.has(c.id)
+                );
+                const fuzzyResults = performFuzzySearch(item.name, sameCategoryItems, { minSimilarityRatio: 0.7 });
+                fuzzyResults
+                    .filter(r => r.confidenceScore >= 70)
+                    .slice(0, 5) // check top 5 candidates
+                    .forEach(r => {
+                        if (seenIds.has(r.productId)) return;
+                        seenIds.add(r.productId);
+                        const availability = availabilityMap[r.productId];
+                        if (!availability || availability.stores.length === 0) return;
+
+                        const cheapestOption = [...availability.stores].sort(compareStoreOptions)[0];
+                        if (!cheapestOption) return;
+
+                        const priceDiff = currentCheapest - cheapestOption.price;
+                        if (priceDiff <= 0) return;
+
+                        const catalogEntry = availableCatalogItems.find(c => c.id === r.productId);
+                        if (!catalogEntry) return;
+
+                        substitutions.push({
+                            id: r.productId,
+                            name: catalogEntry.name,
+                            image: catalogEntry.image,
+                            brand: catalogEntry.brand,
+                            cheapestPrice: cheapestOption.price,
+                            cheapestStore: cheapestOption.storeName,
+                            priceDifference: priceDiff,
+                        });
+                    });
+            }
 
             if (substitutions.length === 0) return item;
 
@@ -699,9 +800,15 @@ export const useOptimizedWishlist = () => {
         shoppableItems.forEach(item => {
             item.options.forEach(option => {
                 if (!storeMap.has(option.storeId)) {
+                    const storeData = stores[option.storeId];
+                    const distanceKm = (userCoords && storeData?.coordinates)
+                        ? calculateDistance(userCoords.lat, userCoords.lng, storeData.coordinates.lat, storeData.coordinates.lng)
+                        : undefined;
+
                     storeMap.set(option.storeId, {
                         store_id: option.storeId,
                         products: [],
+                        distanceKm,
                     });
                 }
 
@@ -956,6 +1063,60 @@ export const useOptimizedWishlist = () => {
         return deals.slice(0, 8);
     }, [dealsMap, stores, wishlistItems]);
 
+    // Price trend signals: summarise which wishlist items are at a historic low
+    // (good time to buy) or rising (consider buying now before price goes up).
+    const priceTrendSignals = useMemo(() => {
+        const signals: Record<string, { signal: 'buy_now' | 'price_rising' | 'price_dropping'; previousPrice: number; currentPrice: number }> = {};
+
+        optimizerItemsWithSubstitutions.forEach(item => {
+            if (!item) return;
+            // Use the cheapest option's trend
+            const cheapest = item.cheapest;
+            if (!cheapest || cheapest.priceTrend === 'stable' || !cheapest.priceTrend || !cheapest.previousPrice) return;
+
+            if (cheapest.priceTrend === 'down') {
+                signals[item.id] = { signal: 'buy_now', previousPrice: cheapest.previousPrice, currentPrice: cheapest.price };
+            } else if (cheapest.priceTrend === 'up') {
+                signals[item.id] = { signal: 'price_rising', previousPrice: cheapest.previousPrice, currentPrice: cheapest.price };
+            }
+        });
+
+        return signals;
+    }, [optimizerItemsWithSubstitutions]);
+    // by the optimizer so the UI can show "these two stores are 0.3 km apart".
+    const storeClusterInfo = useMemo(() => {
+        const optimizedCart = optimizerPipeline.optimizedCart;
+        if (!optimizedCart) return null;
+
+        const selectedStoreIds = Object.keys(optimizedCart.store_distribution);
+        if (selectedStoreIds.length < 2) return null;
+
+        const storeCoords = selectedStoreIds
+            .map(id => ({ id, name: stores[id]?.name ?? id, coords: stores[id]?.coordinates ?? null }))
+            .filter(s => s.coords !== null) as Array<{ id: string; name: string; coords: { lat: number; lng: number } }>;
+
+        if (storeCoords.length < 2) return null;
+
+        // Compute all pairwise distances
+        const pairs: Array<{ storeA: string; storeB: string; distanceKm: number }> = [];
+        for (let i = 0; i < storeCoords.length; i++) {
+            for (let j = i + 1; j < storeCoords.length; j++) {
+                const a = storeCoords[i];
+                const b = storeCoords[j];
+                pairs.push({
+                    storeA: a.name,
+                    storeB: b.name,
+                    distanceKm: Math.round(calculateDistance(a.coords.lat, a.coords.lng, b.coords.lat, b.coords.lng) * 10) / 10,
+                });
+            }
+        }
+
+        const maxDistKm = Math.max(...pairs.map(p => p.distanceKm));
+        const isCluster = maxDistKm <= 2; // stores within 2 km of each other
+
+        return { pairs, maxDistKm, isCluster };
+    }, [optimizerPipeline.optimizedCart, stores, calculateDistance]);
+
     // Location change tracking
     const [locationChanged, setLocationChanged] = useState(false);
     const prevCoordsRef = useRef(userCoords);
@@ -998,6 +1159,8 @@ export const useOptimizedWishlist = () => {
         bestSingleStore,
         singleStoreAlternatives,
         nearbyDeals,
+        storeClusterInfo,
+        priceTrendSignals,
         locationChanged,
         preferredStoreId,
         setPreferredStore,

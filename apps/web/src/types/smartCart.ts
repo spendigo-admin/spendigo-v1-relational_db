@@ -29,6 +29,9 @@ export interface StoreOption {
     comparisonUnit?: string;
     priceTrend?: 'up' | 'down' | 'stable';
     previousPrice?: number;
+    // Set when the shopper's requested quantity can't be met in whole pack units
+    // e.g. shopper needs 3, smallest sellable unit is a 6-pack
+    quantityWarning?: { needed: number; packSize: number; mustBuy: number };
 }
 
 export interface OptimizedWishlistItem {
@@ -44,6 +47,14 @@ export interface OptimizedWishlistItem {
     cheapest: StoreOption | null;
     maxPrice: number;
     substitutions?: SubstitutionSuggestion[];
+    // Surfaced when a larger size of the same product has a better unit price
+    bulkSavingHint?: {
+        storeName: string;
+        largerUnit: string;
+        largerPrice: number;
+        unitPriceSaving: number; // saving per comparison unit (e.g. per 100ml)
+        comparisonUnit: string;
+    };
 }
 
 export interface SubstitutionSuggestion {
@@ -75,6 +86,8 @@ export interface SmartCartStoreInput {
     pickupEnabled?: boolean;
     deliveryEnabled?: boolean;
     maxDeliveryRadiusKm?: number;
+    coordinates?: { lat: number; lng: number };
+    distanceKm?: number; // pre-computed distance from shopper to this store
 }
 
 export interface SmartCartPriceInput {
@@ -109,6 +122,7 @@ export interface SmartCartOptimizationInput {
     shoppingList: SmartCartListItemInput[];
     stores: SmartCartStoreInput[];
     prices: SmartCartPriceInput[];
+    preferredStoreId?: string;
 }
 
 export interface SmartCartPriceMatrixCell {

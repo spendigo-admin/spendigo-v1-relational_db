@@ -119,7 +119,7 @@ describe('analyzeTripConsolidation', () => {
         expect(analysis.summary).toContain('North Market');
     });
 
-    it('recommends single store when savings are below $3 minimum', () => {
+    it('recommends multi-store when savings exceed the dynamic minimum threshold', () => {
         const result: SmartCartOptimizationResult = {
             items: [],
             summary: {
@@ -143,7 +143,7 @@ describe('analyzeTripConsolidation', () => {
         };
 
         const analysis = analyzeTripConsolidation(result);
-        // $2 savings < $3 minimum → best_single_store
-        expect(analysis.recommendation).toBe('best_single_store');
+        // $2 savings on a $20 basket = 10%; dynamic min = max(1.50, min(5, 20×1.5%)) = $1.50 → exceeds threshold
+        expect(analysis.recommendation).toBe('optimized_multi_store');
     });
 });
