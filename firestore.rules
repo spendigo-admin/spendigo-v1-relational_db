@@ -184,10 +184,9 @@ service cloud.firestore {
     match /users/{userId}/notifications/{notificationId} {
       // User can manage their own notifications
       allow read, update, delete: if isOwner(userId);
-      // Only admins and authenticated backend calls may create notifications.
-      // 'allow create: if true' was removed — it allowed unauthenticated users
-      // to inject arbitrary messages into any user's notification feed.
-      allow create: if isAdmin();
+      // Owner can create their own notifications (e.g. order confirmations client-side)
+      // Admins can create notifications for any user
+      allow create: if isOwner(userId) || isAdmin();
     }
 
     // Deprecated
