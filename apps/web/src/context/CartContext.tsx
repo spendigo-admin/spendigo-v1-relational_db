@@ -133,7 +133,10 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const saveToCloud = async (newItems: CartItem[]) => {
         if (!user) return;
         try {
-            await setDoc(doc(db, 'carts', user.id), { items: newItems }, { merge: true });
+            const sanitized = newItems.map(item =>
+                Object.fromEntries(Object.entries(item).filter(([, v]) => v !== undefined))
+            );
+            await setDoc(doc(db, 'carts', user.id), { items: sanitized }, { merge: true });
         } catch (e) {
             console.error("Failed to sync cart", e);
         }
