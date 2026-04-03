@@ -67,6 +67,7 @@ const ConsumerSurveys = lazyWithRetry(() => import('./pages/consumer/Surveys'));
 const Flyers = lazyWithRetry(() => import('./pages/consumer/Flyers'));
 const Legal = lazyWithRetry(() => import('./pages/consumer/Legal'));
 const PartnerWithUs = lazyWithRetry(() => import('./pages/consumer/PartnerWithUs'));
+const MerchantRegister = lazyWithRetry(() => import('./pages/consumer/MerchantRegister'));
 
 // Merchant Pages — lazy loaded
 const MerchantDashboard = lazyWithRetry(() => import('./pages/merchant/Dashboard'));
@@ -159,6 +160,7 @@ function App() {
                                                                 <Route path="/login" element={<Login />} />
                                                                 <Route path="/forgot-password" element={<ForgotPassword />} />
                                                                 <Route path="/register" element={<Register />} />
+                                                                <Route path="/register/business" element={<MerchantRegister />} />
                                                                 <Route path="/verify-email" element={<VerifyEmail />} />
                                                                 <Route path="/reset-password" element={<ResetPassword />} />
 

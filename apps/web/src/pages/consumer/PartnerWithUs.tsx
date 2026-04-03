@@ -61,7 +61,7 @@ const PartnerWithUs: React.FC = () => {
                     </p>
                     <div className="flex flex-col sm:flex-row gap-4 justify-center">
                         <Link
-                            to="/register"
+                            to="/register/business"
                             className="inline-flex items-center justify-center px-8 py-4 bg-white text-[var(--brand-primary)] font-bold text-lg rounded-2xl shadow-xl hover:shadow-2xl hover:scale-105 transition-all"
                         >
                             🚀 Get Started Free
@@ -127,7 +127,7 @@ const PartnerWithUs: React.FC = () => {
                     No contracts, no hidden fees — just more customers walking through your door.
                 </p>
                 <Link
-                    to="/register"
+                    to="/register/business"
                     className="inline-flex items-center justify-center px-10 py-4 bg-[var(--brand-primary)] text-white font-bold text-lg rounded-2xl shadow-xl shadow-[var(--brand-primary)]/20 hover:brightness-110 hover:scale-105 active:scale-95 transition-all"
                 >
                     Create Your Free Store →

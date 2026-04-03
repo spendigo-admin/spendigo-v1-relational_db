@@ -10,15 +10,11 @@ const Register: React.FC = () => {
     const { register, loginWithGoogle, loginWithFacebook } = useAuth();
     const { t } = useTranslation();
     const [error, setError] = useState<string | null>(null);
-    const [role, setRole] = useState<'consumer' | 'merchant'>('consumer');
     const [formData, setFormData] = useState({
         name: '',
         email: '',
         password: '',
         phoneNumber: '',
-        storeName: '',
-        businessRegistrationNumber: '',
-        businessType: 'Grocery Store',
         street: '',
         city: '',
         province: 'ON',
@@ -37,15 +33,11 @@ const Register: React.FC = () => {
         try {
             const success = await register({
                 ...formData,
-                role
+                role: 'consumer'
             });
 
             if (success) {
-                if (role === 'merchant') {
-                    navigate('/merchant/onboarding'); // Redirect to merchant setup
-                } else {
-                    navigate('/'); // Redirect to home
-                }
+                navigate('/'); // Redirect to home
             } else {
                 setError('Registration failed. Please try again.');
             }
@@ -57,45 +49,20 @@ const Register: React.FC = () => {
 
     return (
         <div className="min-h-screen flex items-center justify-center p-4 bg-[var(--surface-0)]">
-            <SEO title="Create Account" description="Join Spendigo and start saving on groceries. Sign up as a shopper or a local merchant." path="/register" />
-            <div className="glass-panel w-full max-w-md p-8 animate-fade-in">
-                <h1 className="text-3xl font-bold mb-2 text-[var(--brand-primary)]">{t('joinSpendigo')}</h1>
-                <p className="text-[var(--text-muted)] mb-8">{t('smartSavings')}</p>
-
-                {/* Role Switcher */}
-                <div className="flex p-1 bg-[var(--surface-2)] rounded-lg mb-6">
-                    <button
-                        type="button"
-                        onClick={() => setRole('consumer')}
-                        className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${role === 'consumer'
-                            ? 'bg-white text-[var(--brand-primary)] shadow-sm'
-                            : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
-                            }`}
-                    >
-                        🛒 {t('shopper')}
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => setRole('merchant')}
-                        className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${role === 'merchant'
-                            ? 'bg-white text-[var(--brand-primary)] shadow-sm'
-                            : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
-                            }`}
-                    >
-                        🏪 {t('merchant')}
-                    </button>
+            <SEO title="Shopper Registration" description="Create your Spendigo shopper account and start saving." path="/register" />
+            <div className="glass-panel w-full max-w-md p-8 animate-fade-in relative">
+                <div className="text-center mb-8">
+                    <h1 className="text-3xl font-bold text-[var(--brand-primary)] mb-2">{t('joinSpendigo')}</h1>
+                    <p className="text-[var(--text-muted)]">{t('shopperSubtitle')}</p>
                 </div>
 
-                {/* Social Login for Both Roles */}
-                <div className="space-y-3 mb-6 animate-fade-in">
+                {/* Social Login */}
+                <div className="space-y-3 mb-6">
                     <button
                         type="button"
                         onClick={async () => {
-                            const success = await loginWithGoogle(role);
-                            if (success) {
-                                if (role === 'merchant') navigate('/merchant/dashboard'); // Or onboarding
-                                else navigate('/');
-                            }
+                            const success = await loginWithGoogle('consumer');
+                            if (success) navigate('/');
                         }}
                         className="w-full flex items-center justify-center gap-2 py-2.5 rounded-[var(--radius-sm)] bg-white border border-[var(--glass-border)] text-gray-700 font-medium hover:bg-gray-50 transition-all shadow-sm"
                     >
@@ -131,6 +98,7 @@ const Register: React.FC = () => {
                     </div>
                 </div>
 
+                {error && <p className="mb-4 text-red-500 text-sm text-center">{error}</p>}
 
                 <form onSubmit={handleRegister} className="space-y-4">
                     <div>
@@ -167,75 +135,10 @@ const Register: React.FC = () => {
                         />
                     </div>
 
-                    {/* Merchant Specific Fields */}
-                    {role === 'merchant' && (
-                        <>
-                            <div className="animate-fade-in">
-                                <label className="block text-sm font-medium mb-1 text-[var(--text-main)]">{t('storeName')}</label>
-                                <input
-                                    type="text"
-                                    required
-                                    placeholder="e.g. FreshMart Queen St"
-                                    className="w-full p-3 rounded-[var(--radius-sm)] bg-[var(--surface-1)] border border-[var(--glass-border)] text-[var(--text-main)] focus:border-[var(--brand-primary)] outline-none transition-colors"
-                                    value={formData.storeName}
-                                    onChange={e => setFormData({ ...formData, storeName: e.target.value })}
-                                />
-                            </div>
-                            <div className="animate-fade-in">
-                                <label className="block text-sm font-medium mb-1 text-[var(--text-main)]">{t('businessRegNum')}</label>
-                                <input
-                                    type="text"
-                                    required
-                                    placeholder="e.g. 12345 6789 RT0001"
-                                    className="w-full p-3 rounded-[var(--radius-sm)] bg-[var(--surface-1)] border border-[var(--glass-border)] text-[var(--text-main)] focus:border-[var(--brand-primary)] outline-none transition-colors"
-                                    value={formData.businessRegistrationNumber}
-                                    onChange={e => setFormData({ ...formData, businessRegistrationNumber: e.target.value })}
-                                />
-                                <p className="text-xs text-[var(--text-muted)] mt-1">{t('verifyBusinessHelp')}</p>
-                            </div>
-                            <div className="animate-fade-in">
-                                <label className="block text-sm font-medium mb-1 text-[var(--text-main)]">{t('businessType')}</label>
-                                <select
-                                    className="w-full p-3 rounded-[var(--radius-sm)] bg-[var(--surface-1)] border border-[var(--glass-border)] text-[var(--text-main)] focus:border-[var(--brand-primary)] outline-none transition-colors"
-                                    value={formData.businessType}
-                                    onChange={e => setFormData({ ...formData, businessType: e.target.value })}
-                                >
-                                    <option>Grocery Store</option>
-                                    <option>Convenience Store</option>
-                                    <option>Discount / Dollar Store</option>
-                                    <option>Ethnic / Specialty Grocery</option>
-                                    <option>Farmers Market Vendor</option>
-                                    <option>Organic / Health Food Store</option>
-                                    <option>Artisan Bakery</option>
-                                    <option>Butcher Shop</option>
-                                    <option>Fishmonger / Seafood Shop</option>
-                                    <option>Deli / Prepared Foods</option>
-                                    <option>Restaurant</option>
-                                    <option>Local Café / Coffee Shop</option>
-                                    <option>Dessert & Sweets Shop</option>
-                                    <option>Meal Prep / Tiffin Service</option>
-                                    <option>Pharmacy / Health Store</option>
-                                    <option>Pet Store</option>
-                                    <option>Florist</option>
-                                    <option>Home & Garden Store</option>
-                                    <option>Hardware Store</option>
-                                    <option>Bookstore / Stationery</option>
-                                    <option>Craft / Handmade Goods Store</option>
-                                    <option>Clothing / Boutique</option>
-                                    <option>Toy & Gift Store</option>
-                                    <option>Electronics / Mobile Accessories</option>
-                                    <option>Thrift / Second-Hand Store</option>
-                                    <option>General Retail</option>
-                                    <option>Specialty Retail</option>
-                                </select>
-                            </div>
-                        </>
-                    )}
-
-                    {/* Address Fields (Common) */}
-                    <div className="space-y-3 animate-fade-in">
+                    {/* Address Fields */}
+                    <div className="space-y-3">
                         <label className="block text-sm font-medium text-[var(--text-main)]">
-                            {role === 'merchant' ? t('storeLocation') : t('deliveryAddress')}
+                            {t('deliveryAddress')}
                         </label>
 
                         <input
@@ -296,13 +199,20 @@ const Register: React.FC = () => {
                     </div>
 
                     <button type="submit" className="w-full py-3 rounded-[var(--radius-md)] bg-[var(--brand-primary)] text-white font-bold hover:brightness-110 transition-all shadow-lg shadow-[var(--brand-primary)]/20">
-                        {role === 'merchant' ? t('startSelling') : t('createAccount')}
+                        {t('createAccount')}
                     </button>
                 </form>
 
                 <p className="mt-6 text-center text-sm text-[var(--text-muted)]">
                     {t('alreadyHaveAccount')} <Link to="/login" className="text-[var(--brand-secondary)] hover:underline">{t('logIn')}</Link>
                 </p>
+
+                <div className="mt-8 pt-6 border-t border-[var(--glass-border)] text-center">
+                    <p className="text-xs text-[var(--text-muted)] mb-2">Are you a local business owner?</p>
+                    <Link to="/partner" className="text-sm font-bold text-[var(--brand-primary)] hover:underline">
+                        Partner with Spendigo →
+                    </Link>
+                </div>
             </div>
         </div>
     );
