@@ -4,6 +4,7 @@ import { useMarketplace } from '../../context/MarketplaceContext';
 import { useLocation } from '../../context/LocationContext';
 import '../../styles/design-system.css';
 import SEO from '../../components/SEO';
+import { isFlyerActive } from '../../utils/date-helpers';
 
 const getValidFlyerImage = (imageUrl?: string): string | undefined => {
     if (!imageUrl) return undefined;
@@ -24,11 +25,7 @@ const Flyers: React.FC = () => {
     const { userCoords, userPostalCode, searchDistance, calculateDistance } = useLocation();
 
     const activeFlyerStores = Object.values(stores || {}).filter((store: any) => {
-        if (!store.flyer || !store.flyer.validUntil) return false;
-        const validUntil = new Date(store.flyer.validUntil);
-        // Set to end of day to be inclusive
-        validUntil.setHours(23, 59, 59, 999);
-        if (validUntil < new Date()) return false;
+        if (!isFlyerActive(store.flyer)) return false;
 
         if (userCoords && searchDistance > 0 && store.coordinates) {
             const distance = calculateDistance(userCoords.lat, userCoords.lng, store.coordinates.lat, store.coordinates.lng);

@@ -10,6 +10,7 @@ import StarRating from '../../components/StarRating';
 import { useReviews } from '../../context/ReviewContext';
 import '../../styles/design-system.css';
 import SEO from '../../components/SEO';
+import { isFlyerActive, filterActiveDeals } from '../../utils/date-helpers';
 
 import { useEffect } from 'react';
 
@@ -437,13 +438,13 @@ const StoreDetail: React.FC = () => {
                         onClick={() => setActiveTab('flyer')}
                         className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${activeTab === 'flyer' ? 'bg-[var(--brand-primary)] text-white' : 'bg-[var(--surface-2)] text-[var(--text-muted)]'}`}
                     >
-                        📰 Weekly Flyer {store.flyer?.validUntil && '🔴'}
+                        📰 Weekly Flyer {isFlyerActive(store.flyer) && '🔴'}
                     </button>
                     <button
                         onClick={() => setActiveTab('offers')}
                         className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${activeTab === 'offers' ? 'bg-[var(--brand-primary)] text-white' : 'bg-[var(--surface-2)] text-[var(--text-muted)]'}`}
                     >
-                        🔥 Deals {((store.oneDayOffers?.length || 0) + (store.saleItems?.length || 0) > 0) && '🔴'}
+                        🔥 Deals {(filterActiveDeals([...(store.oneDayOffers || []), ...(store.saleItems || [])]).length > 0) && '🔴'}
                     </button>
                     <button
                         onClick={() => setActiveTab('reviews')}

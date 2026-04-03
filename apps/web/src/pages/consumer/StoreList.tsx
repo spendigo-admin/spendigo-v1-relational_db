@@ -6,6 +6,7 @@ import { useLocation } from '../../context/LocationContext';
 import AdCarousel from '../../components/AdCarousel';
 import { useTranslation } from 'react-i18next';
 import SEO from '../../components/SEO';
+import { isFlyerActive, filterActiveDeals } from '../../utils/date-helpers';
 
 const CATEGORIES = ['All', 'Fastest', 'Offers', 'Low Prices', 'Grocery', 'Convenience', 'Wholesale'];
 
@@ -59,18 +60,9 @@ const StoreList: React.FC = () => {
                 deliveryFee: store.deliveryFee || '$3.99',
                 rating: store.rating || 0,
                 reviewCount: store.reviewCount || 0,
-                hasFlyer: store.flyer?.validUntil ? (() => {
-                    const validUntil = new Date(store.flyer.validUntil);
-                    validUntil.setHours(23, 59, 59, 999);
-                    return validUntil >= new Date();
-                })() : false,
+                hasFlyer: isFlyerActive(store.flyer),
                 flyerImage: getValidFlyerImage(store.flyer?.image),
-                activeDealsCount: [...(store.oneDayOffers || []), ...(store.saleItems || [])].filter((d: any) => {
-                    if (!d.validUntil) return true;
-                    const validUntil = new Date(d.validUntil);
-                    validUntil.setHours(23, 59, 59, 999);
-                    return validUntil >= new Date();
-                }).length,
+                activeDealsCount: filterActiveDeals([...(store.oneDayOffers || []), ...(store.saleItems || [])]).length,
                 productCount: store.productCount || store.products?.length || 0
             };
         });

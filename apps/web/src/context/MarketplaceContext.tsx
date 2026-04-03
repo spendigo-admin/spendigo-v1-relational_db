@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { collection, onSnapshot, doc, updateDoc, setDoc, getDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
+import { isFlyerActive, filterActiveDeals } from '../utils/date-helpers';
 // Audit import removed
 
 interface MarketplaceContextType {
@@ -52,6 +53,15 @@ export const MarketplaceProvider: React.FC<{ children: ReactNode }> = ({ childre
         });
 
         return () => unsubscribe();
+    }, []);
+
+    // Time-based reactivity: Refresh filtered stores every minute to handle expirations
+    const [lastTimeRefreshed, setLastTimeRefreshed] = useState(Date.now());
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setLastTimeRefreshed(Date.now());
+        }, 60000); // 60 seconds
+        return () => clearInterval(interval);
     }, []);
 
     const updateStore = async (storeId: string | number, data: any) => {
@@ -170,37 +180,23 @@ export const MarketplaceProvider: React.FC<{ children: ReactNode }> = ({ childre
     const filterStoreData = (store: any) => {
         if (!store) return store;
 
-        const now = new Date();
         const filteredStore = { ...store };
+        const tier = filteredStore.subscriptionTier || 'free';
 
-        // 1. Filter Flyer
-        if (filteredStore.flyer?.validUntil && filteredStore.flyer.title) {
-            const flyerEnd = new Date(filteredStore.flyer.validUntil);
-            // If it's just a date format (like "Mar 24, 2026" or "2026-03-24"), set to end of day
-            if (filteredStore.flyer.validUntil.indexOf(':') === -1) {
-                flyerEnd.setHours(23, 59, 59, 999);
-            }
-            if (flyerEnd < now) {
-                // Flyer expired, treat as empty in view
-                filteredStore.flyer = { title: '', validUntil: '', image: '' };
-                filteredStore.activeFlyerItems = [];
-            }
+        // 1. Filter Flyer - only clear if it's actually expired OR if store is on free tier
+        if (!isFlyerActive(filteredStore.flyer) || tier === 'free') {
+            filteredStore.flyer = { title: '', validUntil: '', image: '' };
+            filteredStore.activeFlyerItems = [];
         }
 
-        // 2. Filter Sale Items
+        // 2. Filter Sale Items - clear if expired OR if store is on free tier
         if (filteredStore.saleItems) {
-            filteredStore.saleItems = filteredStore.saleItems.filter((item: any) => {
-                if (!item.validUntil) return true;
-                return new Date(item.validUntil) >= now;
-            });
+            filteredStore.saleItems = tier === 'free' ? [] : filterActiveDeals(filteredStore.saleItems);
         }
 
-        // 3. Filter One Day Offers
+        // 3. Filter One Day Offers - clear if expired OR if store is on free tier
         if (filteredStore.oneDayOffers) {
-            filteredStore.oneDayOffers = filteredStore.oneDayOffers.filter((item: any) => {
-                if (!item.validUntil) return true;
-                return new Date(item.validUntil) >= now;
-            });
+            filteredStore.oneDayOffers = tier === 'free' ? [] : filterActiveDeals(filteredStore.oneDayOffers);
         }
 
         return filteredStore;
@@ -212,7 +208,7 @@ export const MarketplaceProvider: React.FC<{ children: ReactNode }> = ({ childre
             result[id] = filterStoreData(stores[id]);
         });
         return result;
-    }, [stores]);
+    }, [stores, lastTimeRefreshed]); // Depend on lastTimeRefreshed to re-calc every minute
 
     const getStore = (storeId: string | number) => filteredStores[storeId];
 
