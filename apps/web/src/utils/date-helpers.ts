@@ -36,7 +36,7 @@ export const isFlyerActive = (flyer: any): boolean => {
   if (flyer.status && flyer.status !== 'active') return false;
 
   // 2. Check expiry
-  if (!flyer.validUntil) return true; // If no expiry, assume active if status is OK
+  if (!flyer.validUntil) return false; // Strict: Active promos must have an end date
   return isDateActive(flyer.validUntil);
 };
 
@@ -46,18 +46,15 @@ export const isFlyerActive = (flyer: any): boolean => {
 export const filterActiveDeals = (deals: any[]): any[] => {
   if (!Array.isArray(deals)) return [];
   return deals.filter(deal => {
+    if (!deal) return false;
+    
     // 1. Check status if present
     if (deal.status && deal.status !== 'active') return false;
 
     // 2. Check expiry
     const expiry = deal.validUntil || deal.endDate || deal.expiryDate;
     
-    // Strict mode: If it's a flash sale (one-day offer) or has an "endsIn" timer,
-    // it MUST have an explicit expiry date to be considered active.
-    if (!expiry) {
-      if (deal.isFlashSale || deal.endsIn) return false;
-      return true; // Keep traditional sale items if no date, to avoid breaking legacy data
-    }
+    if (!expiry) return false; // Strict: Active deals must have an expiry date
     
     return isDateActive(expiry);
   });

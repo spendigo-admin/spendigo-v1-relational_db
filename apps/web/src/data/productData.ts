@@ -19,14 +19,14 @@ export const STORE_DATA: Record<string, any> = {
         categories: ['All', 'Dairy & Refrigerated', 'Bakery & Grains', 'Pantry Staples', 'Breakfast & Beverages', 'Produce & Frozen', 'Snacks & Household'],
         flyer: {
             title: 'Weekly Savings Flyer',
-            validUntil: 'Dec 22, 2024',
+            validUntil: 'Dec 22, 2026',
             image: 'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=600&h=400&fit=crop'
         },
         oneDayOffers: [
-            { id: 'GROC-PROD-001', name: 'Bananas (Bunch)', price: 1.99, originalPrice: 3.29, endsIn: '10 hours', image: 'https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e?w=300&h=300&fit=crop' }
+            { id: 'GROC-PROD-001', name: 'Bananas (Bunch)', price: 1.99, originalPrice: 3.29, endsIn: '10 hours', image: 'https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e?w=300&h=300&fit=crop', validUntil: 'Dec 22, 2026' }
         ],
         saleItems: [
-            { id: 'GROC-DAIRY-004', name: 'Eggs (6-pack)', price: 2.49, originalPrice: 3.49, discount: '20% OFF', image: 'https://images.unsplash.com/photo-1582722872445-44dc5f7e3c8f?w=300&h=300&fit=crop' }
+            { id: 'GROC-DAIRY-004', name: 'Eggs (6-pack)', price: 2.49, originalPrice: 3.49, discount: '20% OFF', image: 'https://images.unsplash.com/photo-1582722872445-44dc5f7e3c8f?w=300&h=300&fit=crop', validUntil: 'Dec 22, 2026' }
         ],
         products: GROCERY_CATALOG
     },
@@ -95,14 +95,14 @@ export const STORE_DATA: Record<string, any> = {
         categories: ['All', 'Meat', 'Seafood', 'Frozen', 'Dairy'],
         flyer: {
             title: 'Fresh Meat Specials',
-            validUntil: 'Dec 21, 2024',
+            validUntil: 'Dec 21, 2026',
             image: 'https://images.unsplash.com/photo-1607623814075-e51df1bdc82f?w=600&h=400&fit=crop'
         },
         oneDayOffers: [
-            { id: 'od4', name: 'Prime Ribeye Steak', price: 14.99, originalPrice: 24.99, endsIn: '10 hours', image: 'https://images.unsplash.com/photo-1600891964092-4316c288032e?w=300&h=300&fit=crop' }
+            { id: 'od4', name: 'Prime Ribeye Steak', price: 14.99, originalPrice: 24.99, endsIn: '10 hours', image: 'https://images.unsplash.com/photo-1600891964092-4316c288032e?w=300&h=300&fit=crop', validUntil: 'Dec 21, 2026' }
         ],
         saleItems: [
-            { id: 's4', name: 'Frozen Shrimp (1lb)', price: 9.99, originalPrice: 15.99, discount: '37% OFF', image: 'https://images.unsplash.com/photo-1565680018434-b513d5e5fd47?w=300&h=300&fit=crop' }
+            { id: 's4', name: 'Frozen Shrimp (1lb)', price: 9.99, originalPrice: 15.99, discount: '37% OFF', image: 'https://images.unsplash.com/photo-1565680018434-b513d5e5fd47?w=300&h=300&fit=crop', validUntil: 'Dec 21, 2026' }
         ],
         products: [
             { id: 'p10', name: 'Chicken Breast (1kg)', price: 14.99, category: 'Meat', image: 'https://images.unsplash.com/photo-1604503468506-a8da13d82791?w=300&h=300&fit=crop' },
@@ -147,10 +147,10 @@ export const STORE_DATA: Record<string, any> = {
             image: 'https://images.unsplash.com/photo-1604719312566-8912e9227c6a?w=600&h=400&fit=crop'
         },
         oneDayOffers: [
-            { id: 'od5', name: 'Toilet Paper (48 rolls)', price: 19.99, originalPrice: 34.99, endsIn: '12 hours', image: 'https://images.unsplash.com/photo-1584556812952-905ffd0c611a?w=300&h=300&fit=crop' },
+            { id: 'od5', name: 'Toilet Paper (48 rolls)', price: 19.99, originalPrice: 34.99, endsIn: '12 hours', image: 'https://images.unsplash.com/photo-1584556812952-905ffd0c611a?w=300&h=300&fit=crop', validUntil: 'Dec 25, 2024' },
         ],
         saleItems: [
-            { id: 's5', name: 'Laundry Detergent (5L)', price: 14.99, originalPrice: 24.99, discount: '40% OFF', image: 'https://images.unsplash.com/photo-1582735689369-4fe89db7114c?w=300&h=300&fit=crop' },
+            { id: 's5', name: 'Laundry Detergent (5L)', price: 14.99, originalPrice: 24.99, discount: '40% OFF', image: 'https://images.unsplash.com/photo-1582735689369-4fe89db7114c?w=300&h=300&fit=crop', validUntil: 'Dec 25, 2024' },
         ],
         products: [
             { id: 'p12', name: 'Paper Towels (12pk)', price: 24.99, category: 'Cleaning', image: 'https://images.unsplash.com/photo-1583947215259-38e31be8751f?w=300&h=300&fit=crop' },
@@ -221,10 +221,10 @@ export const STORE_DATA: Record<string, any> = {
             image: 'https://images.unsplash.com/photo-1601758124096-1fd661873b95?w=600&h=400&fit=crop'
         },
         oneDayOffers: [
-            { id: 'od7', name: 'Coffee (Any Size)', price: 0.99, originalPrice: 2.29, endsIn: '8 hours', image: 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=300&h=300&fit=crop' },
+            { id: 'od7', name: 'Coffee (Any Size)', price: 0.99, originalPrice: 2.29, endsIn: '8 hours', image: 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=300&h=300&fit=crop', validUntil: 'Dec 21, 2024' },
         ],
         saleItems: [
-            { id: 's7', name: 'Candy Bar (3pk)', price: 1.99, originalPrice: 3.49, discount: '43% OFF', image: 'https://images.unsplash.com/photo-1575377427642-087cf684f29d?w=300&h=300&fit=crop' },
+            { id: 's7', name: 'Candy Bar (3pk)', price: 1.99, originalPrice: 3.49, discount: '43% OFF', image: 'https://images.unsplash.com/photo-1575377427642-087cf684f29d?w=300&h=300&fit=crop', validUntil: 'Dec 21, 2024' },
         ],
         products: [
             { id: 'p20', name: 'Monster Energy', price: 3.99, category: 'Drinks', image: 'https://images.unsplash.com/photo-1622543925917-763c34d1a86e?w=300&h=300&fit=crop' },
@@ -297,14 +297,14 @@ export const STORE_DATA: Record<string, any> = {
         categories: ['All', 'Produce', 'Honey', 'Preserves'],
         flyer: {
             title: 'Harvest Season',
-            validUntil: 'Dec 24, 2024',
+            validUntil: 'Dec 24, 2026',
             image: 'https://images.unsplash.com/photo-1610348725531-843dff563e2c?w=600&h=400&fit=crop'
         },
         oneDayOffers: [
-            { id: 'od9', name: 'Strawberries Box', price: 4.99, originalPrice: 8.99, endsIn: '5 hours', image: 'https://images.unsplash.com/photo-1464965911861-746a04b4bca6?w=300&h=300&fit=crop' }
+            { id: 'od9', name: 'Strawberries Box', price: 4.99, originalPrice: 8.99, endsIn: '5 hours', image: 'https://images.unsplash.com/photo-1464965911861-746a04b4bca6?w=300&h=300&fit=crop', validUntil: 'Dec 24, 2026' }
         ],
         saleItems: [
-            { id: 's9', name: 'Organic Kale', price: 2.99, originalPrice: 4.99, discount: '40% OFF', image: 'https://images.unsplash.com/photo-1624300477446-d379e923eca8?w=300&h=300&fit=crop' },
+            { id: 's9', name: 'Organic Kale', price: 2.99, originalPrice: 4.99, discount: '40% OFF', image: 'https://images.unsplash.com/photo-1624300477446-d379e923eca8?w=300&h=300&fit=crop', validUntil: 'Dec 24, 2026' },
         ],
         products: [
             { id: 'p32', name: 'Local Honey (500ml)', price: 12.99, category: 'Honey', image: 'https://images.unsplash.com/photo-1587049352846-4a222e784d38?w=300&h=300&fit=crop' },
@@ -334,14 +334,14 @@ export const STORE_DATA: Record<string, any> = {
         categories: ['All', 'Bread', 'Pastries', 'Coffee'],
         flyer: {
             title: 'Holiday Treats',
-            validUntil: 'Dec 25, 2024',
+            validUntil: 'Dec 25, 2026',
             image: 'https://images.unsplash.com/photo-1517433670267-08bbd4be890f?w=600&h=400&fit=crop'
         },
         oneDayOffers: [
-            { id: 'od10', name: 'Croissant Box (6pk)', price: 10.99, originalPrice: 15.99, endsIn: '3 hours', image: 'https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=300&h=300&fit=crop' }
+            { id: 'od10', name: 'Croissant Box (6pk)', price: 10.99, originalPrice: 15.99, endsIn: '3 hours', image: 'https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=300&h=300&fit=crop', validUntil: 'Dec 25, 2026' }
         ],
         saleItems: [
-            { id: 's10', name: 'Sourdough Loaf', price: 5.99, originalPrice: 7.99, discount: '25% OFF', image: 'https://images.unsplash.com/photo-1613396874083-2d5fbe59ae79?w=300&h=300&fit=crop' },
+            { id: 's10', name: 'Sourdough Loaf', price: 5.99, originalPrice: 7.99, discount: '25% OFF', image: 'https://images.unsplash.com/photo-1613396874083-2d5fbe59ae79?w=300&h=300&fit=crop', validUntil: 'Dec 25, 2026' },
         ],
         products: [
             { id: 'p35', name: 'Baguette', price: 3.99, category: 'Bread', image: 'https://images.unsplash.com/photo-1554475659-9fd915c8f156?w=300&h=300&fit=crop' },
@@ -373,10 +373,10 @@ export const STORE_DATA: Record<string, any> = {
             image: 'https://images.unsplash.com/photo-1529193591184-b1d58069ecdd?w=600&h=400&fit=crop'
         },
         oneDayOffers: [
-            { id: 'od11', name: 'Wagyu Burger Patties (4pk)', price: 19.99, originalPrice: 29.99, endsIn: '7 hours', image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=300&h=300&fit=crop' }
+            { id: 'od11', name: 'Wagyu Burger Patties (4pk)', price: 19.99, originalPrice: 29.99, endsIn: '7 hours', image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=300&h=300&fit=crop', validUntil: 'Dec 30, 2024' }
         ],
         saleItems: [
-            { id: 's11', name: 'Pork Chops (2lb)', price: 12.99, originalPrice: 16.99, discount: '23% OFF', image: 'https://images.unsplash.com/photo-1432139555190-58524dae6a55?w=300&h=300&fit=crop' }
+            { id: 's11', name: 'Pork Chops (2lb)', price: 12.99, originalPrice: 16.99, discount: '23% OFF', image: 'https://images.unsplash.com/photo-1432139555190-58524dae6a55?w=300&h=300&fit=crop', validUntil: 'Dec 30, 2024' }
         ],
         products: [
             { id: 'p38', name: 'Ribeye Steak (10oz)', price: 18.99, category: 'Beef', image: 'https://images.unsplash.com/photo-1600891964092-4316c288032e?w=300&h=300&fit=crop' },
