@@ -5,6 +5,7 @@ admin.initializeApp();
 
 // Export all functions
 export { cleanupOrphanedUsers } from './admin/cleanupOrphanedUsers';
+export { cleanupOrphanedStoreData } from './admin/cleanupOrphanedStoreData';
 export { inviteTeamMember } from './auth/inviteTeamMember';
 export { deleteUser } from './auth/deleteUser';
 export { requestAccountDeletion } from './auth/requestAccountDeletion';

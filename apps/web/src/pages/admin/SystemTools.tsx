@@ -3,7 +3,8 @@ import { useCatalog } from '../../hooks/useCatalog';
 import { useNotifications } from '../../context/NotificationContext';
 import { useConfirmation } from '../../context/ConfirmationContext';
 import { collection, getDocs, query, where, writeBatch, doc, getCountFromServer, getDoc } from 'firebase/firestore';
-import { db } from '../../lib/firebase';
+import { httpsCallable } from 'firebase/functions';
+import { db, functions } from '../../lib/firebase';
 
 const SystemTools = () => {
     const { migrateCategories, loading: catalogLoading } = useCatalog();
@@ -248,6 +249,30 @@ const SystemTools = () => {
                         if (opCount > 0) await batch.commit();
 
                         addNotification({ type: 'system', title: 'Cleanup Complete', message: `Deleted ${deletedCount} ghost inventory items.` });
+                    }
+                }
+            }
+        },
+        {
+            id: 'cleanup-orphaned-stores',
+            title: 'Cleanup Deleted Stores Data',
+            description: 'Scans and removes all lingering data (products, deals, flyers) belonging to previously deleted stores.',
+            icon: '🏢',
+            action: async () => {
+                if (await confirm({
+                    title: 'Clean Deleted Stores Data?',
+                    message: 'This will irreversibly delete any dangling data left behind by stores deleted prior to the automatic triggers. Proceed?',
+                    confirmText: 'Run Store Cleanup',
+                    type: 'danger'
+                })) {
+                    addNotification({ type: 'system', title: 'Scan Initiated', message: 'Calling Cloud Function for heavy scan...' });
+                    try {
+                        const cleanupFn = httpsCallable(functions, 'cleanupOrphanedStoreData');
+                        const result = await cleanupFn();
+                        const { details, message } = result.data as any;
+                        addNotification({ type: 'system', title: 'Cleanup Complete', message: message });
+                    } catch (e: any) {
+                        throw new Error(e.message || 'Error occurred while cleaning up store data.');
                     }
                 }
             }

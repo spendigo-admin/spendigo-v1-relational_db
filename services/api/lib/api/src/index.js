@@ -33,13 +33,15 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.onStoreDelete = exports.onMerchantProductPriceChange = exports.onOrderStatusUpdated = exports.refundOrder = exports.createPaymentIntent = exports.checkStripeAccountStatus = exports.onboardStore = exports.syncMerchantProductToAlgolia = exports.syncTrafficStats = exports.syncMasterProductToAlgolia = exports.cartOptimize = exports.smartcartOptimize = exports.onMasterProductWrite = exports.onUserUpdate = exports.downloadReceipt = exports.cancelOrder = exports.placeOrder = exports.updateSubscriptionPlan = exports.sendOrderStatusUpdate = exports.sendOrderConfirmation = exports.getPaymentHistory = exports.stripeWebhook = exports.createCheckoutSession = exports.removeTeamMember = exports.requestAccountDeletion = exports.deleteUser = exports.inviteTeamMember = exports.cleanupOrphanedUsers = void 0;
+exports.onStoreDelete = exports.onMerchantProductPriceChange = exports.onOrderStatusUpdated = exports.refundOrder = exports.createPaymentIntent = exports.checkStripeAccountStatus = exports.onboardStore = exports.syncMerchantProductToAlgolia = exports.syncTrafficStats = exports.syncMasterProductToAlgolia = exports.cartOptimize = exports.smartcartOptimize = exports.onMasterProductWrite = exports.onUserUpdate = exports.downloadReceipt = exports.cancelOrder = exports.placeOrder = exports.updateSubscriptionPlan = exports.sendOrderStatusUpdate = exports.sendOrderConfirmation = exports.getPaymentHistory = exports.stripeWebhook = exports.createCheckoutSession = exports.removeTeamMember = exports.requestAccountDeletion = exports.deleteUser = exports.inviteTeamMember = exports.cleanupOrphanedStoreData = exports.cleanupOrphanedUsers = void 0;
 const admin = __importStar(require("firebase-admin"));
 // Initialize Firebase Admin
 admin.initializeApp();
 // Export all functions
 var cleanupOrphanedUsers_1 = require("./admin/cleanupOrphanedUsers");
 Object.defineProperty(exports, "cleanupOrphanedUsers", { enumerable: true, get: function () { return cleanupOrphanedUsers_1.cleanupOrphanedUsers; } });
+var cleanupOrphanedStoreData_1 = require("./admin/cleanupOrphanedStoreData");
+Object.defineProperty(exports, "cleanupOrphanedStoreData", { enumerable: true, get: function () { return cleanupOrphanedStoreData_1.cleanupOrphanedStoreData; } });
 var inviteTeamMember_1 = require("./auth/inviteTeamMember");
 Object.defineProperty(exports, "inviteTeamMember", { enumerable: true, get: function () { return inviteTeamMember_1.inviteTeamMember; } });
 var deleteUser_1 = require("./auth/deleteUser");
