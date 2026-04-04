@@ -4,6 +4,7 @@ import '../../styles/design-system.css';
 import { useAuth } from '../../context/AuthContext';
 import { useTranslation } from 'react-i18next';
 import SEO from '../../components/SEO';
+import { BUSINESS_TYPES } from '../merchant/Settings';
 
 const MerchantRegister: React.FC = () => {
     const navigate = useNavigate();
@@ -217,13 +218,9 @@ const MerchantRegister: React.FC = () => {
                                         onChange={e => setFormData({ ...formData, businessType: e.target.value })}
                                         disabled={isLoading}
                                     >
-                                        <option>Grocery Store</option>
-                                        <option>Convenience Store</option>
-                                        <option>Ethnic / Specialty Grocery</option>
-                                        <option>Bakery & Cafe</option>
-                                        <option>Pharmacy / Health</option>
-                                        <option>Deli & Meat Shop</option>
-                                        <option>Other Retail</option>
+                                        {Object.keys(BUSINESS_TYPES).map(type => (
+                                            <option key={type} value={type}>{type}</option>
+                                        ))}
                                     </select>
                                 </div>
                             </div>

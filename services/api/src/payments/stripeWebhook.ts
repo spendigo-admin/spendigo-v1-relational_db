@@ -69,6 +69,42 @@ export const stripeWebhook = functions.https.onRequest(async (req, res) => {
                 break;
             }
 
+            case 'checkout.session.completed': {
+                const session = event.data.object as any;
+
+                if (session.mode === 'subscription') {
+                    const { firebaseUID, targetTier } = session.metadata;
+
+                    if (firebaseUID && targetTier) {
+                        const userRef = db.collection('users').doc(firebaseUID);
+                        const userDoc = await userRef.get();
+
+                        if (userDoc.exists) {
+                            const userData = userDoc.data();
+                            const storeId = userData?.storeId;
+
+                            // Update user record
+                            await userRef.update({
+                                subscriptionTier: targetTier,
+                                subscriptionStatus: 'active',
+                                stripeSubscriptionId: session.subscription
+                            });
+
+                            // Update store record
+                            if (storeId) {
+                                await db.collection('stores').doc(storeId).update({
+                                    subscriptionTier: targetTier,
+                                    subscriptionStatus: 'active'
+                                });
+                            }
+
+                            functions.logger.log(`✅ Subscription ${targetTier} activated for user ${firebaseUID} & store ${storeId}`);
+                        }
+                    }
+                }
+                break;
+            }
+
             case 'charge.refunded': {
                 const charge = event.data.object as any;
                 const paymentIntentId = charge.payment_intent;
