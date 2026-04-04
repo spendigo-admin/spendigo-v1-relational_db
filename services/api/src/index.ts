@@ -30,8 +30,4 @@ export { createPaymentIntent } from './payments/createPaymentIntent';
 export { refundOrder } from './payments/refundOrder';
 export { onOrderStatusUpdated } from './triggers/orderTriggers';
 export { onMerchantProductPriceChange } from './triggers/priceHistoryTrigger';
-
-
-
-
-
+export { onStoreDelete } from './triggers/storeTriggers';

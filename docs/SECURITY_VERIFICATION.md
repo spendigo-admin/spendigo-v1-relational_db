@@ -1,7 +1,7 @@
 # Spendigo Platform — Security Verification Report
 
-**Version**: 1.1  
-**Date**: January 11, 2026  
+**Version**: 1.2  
+**Date**: April 4, 2026  
 **Auditor**: Development Team  
 **Classification**: Internal
 
@@ -165,6 +165,7 @@ service firebase.storage {
 | `stripeWebhook` | Stripe signature verification | N/A |
 | `getPaymentHistory` | Required | Restricted |
 | `deleteUser` | Admin only | Restricted |
+| `requestAccountDeletion` | Required | Restricted |
 
 ---
 
@@ -236,10 +237,10 @@ const event = stripe.webhooks.constructEvent(
 ## 9. Compliance Checklist
 
 ### 9.1 PIPEDA (Canadian Privacy)
-- [ ] Privacy Policy published and accessible
-- [ ] Terms of Service published
+- [x] Privacy Policy published and accessible
+- [x] Terms of Service published
 - [x] User data access controls implemented
-- [x] Data deletion capability (admin function)
+- [x] Data deletion capability (admin function & user requests)
 
 ### 9.2 PCI-DSS
 - [x] Card data handled by Stripe (PCI Level 1)
@@ -251,9 +252,9 @@ const event = stripe.webhooks.constructEvent(
 ## 10. Recommendations Summary
 
 ### Immediate (Pre-Launch)
-1. ⬜ Publish Privacy Policy page
-2. ⬜ Publish Terms of Service page
-3. ⬜ Deploy current Firestore rules to production
+- ✅ Publish Privacy Policy page
+- ✅ Publish Terms of Service page
+- ✅ Deploy current Firestore rules to production
 
 ### Short-Term (Post-Launch)
 4. ⬜ Enable Firebase App Check
@@ -279,7 +280,6 @@ The Spendigo platform implements **industry-standard security controls** for a m
 
 **Areas for Improvement**:
 - Firebase Storage rules need path-based restrictions
-- Privacy Policy and Terms of Service pages needed
 - Consider App Check for bot protection
 
 ---
@@ -289,6 +289,8 @@ The Spendigo platform implements **industry-standard security controls** for a m
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
 | 1.0 | 2026-01-03 | Dev Team | Initial security assessment |
+| 1.1 | 2026-01-11 | Dev Team | Added webhook checks |
+| 1.2 | 2026-04-04 | Dev Team | Verified deployment of Legal Pages, Data Deletion, and updated PIPEDA controls |
 
 ---
 
