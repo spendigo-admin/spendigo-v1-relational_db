@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useMarketplace } from '../context/MarketplaceContext';
 import NotificationPopover from '../components/NotificationPopover';
 import '../styles/design-system.css';
+import { LogoIcon } from '../components/LogoIcon';
 
 const MerchantLayout: React.FC = () => {
     const { user, logout, can } = useAuth();
@@ -92,9 +93,12 @@ const MerchantLayout: React.FC = () => {
                 ${isSidebarOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'}
             `}>
                 <div className="p-6 mb-2 hidden md:block">
-                    <div className="flex flex-col">
-                        <span className="text-xl font-bold text-[var(--brand-primary)]">Spendigo</span>
-                        <span className="text-xs font-semibold text-[var(--text-main)] tracking-widest uppercase">MERCHANT</span>
+                    <div className="flex items-center gap-2 group">
+                        <img src="/app-icon.png" alt="Spendigo Logo" className="w-8 h-8 rounded-[8px] shadow-sm group-hover:scale-105 transition-transform" />
+                        <div className="flex flex-col">
+                            <span className="text-xl font-bold text-[var(--brand-primary)] leading-tight">Spendigo</span>
+                            <span className="text-[10px] font-semibold text-[var(--text-muted)] tracking-wider uppercase">MERCHANT</span>
+                        </div>
                     </div>
                 </div>
 

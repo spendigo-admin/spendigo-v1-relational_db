@@ -9,6 +9,7 @@ import { useTranslation } from 'react-i18next';
 import '../styles/design-system.css';
 import { analytics } from '../lib/firebase';
 import { logEvent } from 'firebase/analytics';
+import { LogoIcon } from '../components/LogoIcon';
 
 const ConsumerLayout: React.FC = () => {
     const { itemCount, notification, clearNotification } = useCart();
@@ -60,9 +61,12 @@ const ConsumerLayout: React.FC = () => {
                 {/* LEFT: Logo + Search */}
                 <div className="flex items-center gap-6 flex-1 max-w-3xl">
                     {/* Logo (Home) */}
-                    <Link to="/" className="flex flex-col leading-tight group shrink-0">
-                        <span className="text-xl font-bold bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)] bg-clip-text text-transparent group-hover:brightness-110 transition-all">Spendigo</span>
-                        <span className="text-xs font-semibold text-[var(--text-main)] tracking-widest uppercase">SmartCart</span>
+                    <Link to="/" className="flex items-center gap-2 group shrink-0">
+                        <img src="/app-icon.png" alt="Spendigo Logo" className="w-8 h-8 rounded-[8px] shadow-sm group-hover:scale-105 transition-transform" />
+                        <div className="flex flex-col leading-tight">
+                            <span className="text-xl font-bold bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)] bg-clip-text text-transparent group-hover:brightness-110 transition-all">Spendigo</span>
+                            <span className="text-[9px] sm:text-[10px] font-semibold text-[var(--text-muted)] tracking-wider uppercase">Powered by SmartCart AI</span>
+                        </div>
                     </Link>
 
                     {/* Expanded Search Bar */}

@@ -2,6 +2,7 @@ import React from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import '../styles/design-system.css';
+import { LogoIcon } from '../components/LogoIcon';
 
 const AdminLayout: React.FC = () => {
     const location = useLocation();
@@ -66,9 +67,13 @@ const AdminLayout: React.FC = () => {
             `}>
                 {/* Logo */}
                 <div className="p-6 border-b border-[var(--glass-border)] hidden md:block">
-                    <h1 className="text-xl font-bold text-[var(--brand-primary)]">
-                        Spendigo Admin
-                    </h1>
+                    <div className="flex items-center gap-2 group">
+                        <img src="/app-icon.png" alt="Spendigo Logo" className="w-8 h-8 rounded-[8px] shadow-sm group-hover:scale-105 transition-transform" />
+                        <div className="flex flex-col">
+                            <span className="text-xl font-bold text-[var(--brand-primary)] leading-tight">Spendigo</span>
+                            <span className="text-[10px] font-semibold text-[var(--text-muted)] tracking-wider uppercase">ADMIN</span>
+                        </div>
+                    </div>
                 </div>
 
                 {/* Mobile spacer */}
