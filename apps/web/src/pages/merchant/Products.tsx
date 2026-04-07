@@ -247,21 +247,33 @@ const MerchantProducts: React.FC = () => {
             let finalBarcodeUrl = form.reqBarcodeImage;
 
             // Upload Product Image
-            if (imageFile && user?.storeId) {
-                const compressed = await compressImage(imageFile);
-                const path = `product-requests/${user.storeId}/${Date.now()}_product_${compressed.name}`;
-                const storageRef = ref(storage, path);
-                await uploadBytes(storageRef, compressed);
-                finalImageUrl = await getDownloadURL(storageRef);
+            if (imageFile && (user?.storeId || user?.id)) {
+                const ownerId = user?.storeId || user?.id;
+                try {
+                    const compressed = await compressImage(imageFile);
+                    const path = `product-requests/${ownerId}/${Date.now()}_product_${compressed.name}`;
+                    const storageRef = ref(storage, path);
+                    await uploadBytes(storageRef, compressed);
+                    finalImageUrl = await getDownloadURL(storageRef);
+                } catch (imgErr: any) {
+                    console.error("Product image upload failed", imgErr);
+                    addNotification({ type: 'alert', title: 'Image Error', message: 'Failed to upload product photo, continuing...' });
+                }
             }
 
             // Upload Barcode Image
-            if (barcodeFile && user?.storeId) {
-                const compressed = await compressImage(barcodeFile);
-                const path = `product-requests/${user.storeId}/${Date.now()}_barcode_${compressed.name}`;
-                const storageRef = ref(storage, path);
-                await uploadBytes(storageRef, compressed);
-                finalBarcodeUrl = await getDownloadURL(storageRef);
+            if (barcodeFile && (user?.storeId || user?.id)) {
+                const ownerId = user?.storeId || user?.id;
+                try {
+                    const compressed = await compressImage(barcodeFile);
+                    const path = `product-requests/${ownerId}/${Date.now()}_barcode_${compressed.name}`;
+                    const storageRef = ref(storage, path);
+                    await uploadBytes(storageRef, compressed);
+                    finalBarcodeUrl = await getDownloadURL(storageRef);
+                } catch (bcErr: any) {
+                    console.error("Barcode image upload failed", bcErr);
+                    addNotification({ type: 'alert', title: 'Image Error', message: 'Failed to upload barcode photo, continuing...' });
+                }
             }
 
             await requestMasterProduct(user?.storeId || 'unknown', {
@@ -804,7 +816,7 @@ const MerchantProducts: React.FC = () => {
                                                 ) : (
                                                     <div className="text-gray-400 text-xs text-center">Tap to Capture<br />or Upload Photo</div>
                                                 )}
-                                                <input id="file-product" type="file" accept="image/*" className="hidden" onChange={e => {
+                                                <input id="file-product" type="file" accept="image/*" capture="environment" className="hidden" onChange={e => {
                                                     if (e.target.files?.[0]) setImageFile(e.target.files[0]);
                                                 }} />
                                             </div>
@@ -817,7 +829,7 @@ const MerchantProducts: React.FC = () => {
                                                 ) : (
                                                     <div className="text-gray-400 text-xs text-center">Tap to Capture<br />or Upload Proof</div>
                                                 )}
-                                                <input id="file-barcode" type="file" accept="image/*" className="hidden" onChange={e => {
+                                                <input id="file-barcode" type="file" accept="image/*" capture="environment" className="hidden" onChange={e => {
                                                     if (e.target.files?.[0]) setBarcodeFile(e.target.files[0]);
                                                 }} />
                                             </div>
