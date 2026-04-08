@@ -206,6 +206,7 @@ const ConsumerLayout: React.FC = () => {
                     <Link to="/privacy" className="hover:text-[var(--brand-primary)] transition-colors">Privacy Policy</Link>
                     <Link to="/terms" className="hover:text-[var(--brand-primary)] transition-colors">Terms of Service</Link>
                     <Link to="/partner" className="hover:text-[var(--brand-primary)] transition-colors">Partner with Us</Link>
+                    <Link to="/careers" className="hover:text-[var(--brand-primary)] transition-colors">Careers</Link>
                 </div>
                 <p>&copy; {new Date().getFullYear()} Spendigo Inc. All rights reserved.</p>
             </footer>
