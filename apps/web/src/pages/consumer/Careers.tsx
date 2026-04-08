@@ -6,6 +6,8 @@ import { db, storage } from '../../lib/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 
+import { jobs, values, benefits } from '../../data/careers';
+
 const Careers: React.FC = () => {
     const { t } = useTranslation();
     const [selectedJob, setSelectedJob] = React.useState<any>(null);
@@ -74,133 +76,6 @@ const Careers: React.FC = () => {
             setIsSubmitting(false);
         }
     };
-
-    const values = [
-        {
-            icon: '🚀',
-            title: 'Innovation First',
-            description: 'We push the boundaries of AI to simplify shopping for everyone, everywhere.'
-        },
-        {
-            icon: '🤝',
-            title: 'Collaboration',
-            description: 'We believe the best ideas come from diverse perspectives and working together.'
-        },
-        {
-            icon: '💎',
-            title: 'Quality & Integrity',
-            description: 'We are committed to delivering the highest standards of code and service.'
-        },
-        {
-            icon: '🌍',
-            title: 'Global Impact',
-            description: 'Our goal is to help millions of families save money and time through technology.'
-        }
-    ];
-
-    const benefits = [
-        {
-            icon: '🏠',
-            title: 'Remote-Friendly',
-            description: 'Work from where you are most productive. We embrace flexibility.'
-        },
-        {
-            icon: '📈',
-            title: 'Growth Budget',
-            description: 'Annual budget for learning, conferences, and professional development.'
-        },
-        {
-            icon: '🏥',
-            title: 'Premium Health',
-            description: 'Comprehensive health, dental, and vision coverage for you and your family.'
-        },
-        {
-            icon: '🕶️',
-            title: 'Work-Life Harmony',
-            description: 'Generous time off and a culture that respects your personal time.'
-        }
-    ];
-
-    const jobs = [
-        {
-            id: 1,
-            title: 'Senior AI Engineer',
-            location: 'Toronto, ON (Remote-friendly)',
-            team: 'Engineering',
-            type: 'Full-time',
-            requirements: [
-                'Master’s or PhD in Computer Science, AI, or a related field',
-                '5+ years of experience with Machine Learning and Natural Language Processing',
-                'Proficiency in Python, TensorFlow/PyTorch, and cloud infrastructure (AWS/GCP)',
-                'Track record of deploying AI models at scale'
-            ]
-        },
-        {
-            id: 2,
-            title: 'Marketing Intern Associate (SWPP)',
-            location: 'Toronto, ON',
-            team: 'Marketing',
-            type: 'Internship',
-            requirements: [
-                'Currently enrolled in a Canadian post-secondary institution',
-                'Eligible for the Student Work Placement Program (SWPP)',
-                'Strong understanding of digital marketing and social media trends',
-                'Excellent written and verbal communication skills in English'
-            ]
-        },
-        {
-            id: 3,
-            title: 'Marketing Intern Associate (SWPP)',
-            location: 'Ottawa, ON',
-            team: 'Marketing',
-            type: 'Internship',
-            requirements: [
-                'Currently enrolled in a Canadian post-secondary institution',
-                'Eligible for the Student Work Placement Program (SWPP)',
-                'Bilingual in English and French is a strong asset',
-                'Analytical mindset with a passion for consumer technology'
-            ]
-        },
-        {
-            id: 4,
-            title: 'Marketing Intern Associate (SWPP)',
-            location: 'Cornwall, ON',
-            team: 'Marketing',
-            type: 'Internship',
-            requirements: [
-                'Currently enrolled in a Canadian post-secondary institution',
-                'Eligible for the Student Work Placement Program (SWPP)',
-                'Knowledge of local market trends in Eastern Ontario',
-                'Ability to work independently and meet deadlines'
-            ]
-        },
-        {
-            id: 5,
-            title: 'Frontend Developer (React)',
-            location: 'Toronto, ON (Remote-friendly)',
-            team: 'Product',
-            type: 'Full-time',
-            requirements: [
-                '3+ years of professional experience with React and TypeScript',
-                'Deep understanding of CSS-in-JS and modern UI libraries',
-                'Experience with state management (Redux, Zustand, or similar)',
-                'Eye for detail and passion for building premium user experiences'
-            ]
-        },
-        {
-            id: 6,
-            title: 'Product Designer',
-            location: 'Toronto, ON (Remote-friendly)',
-            team: 'Design',
-            type: 'Full-time',
-            requirements: [
-                'Strong portfolio demonstrating experience in mobile and web product design',
-                'Proficiency in Figma and advanced prototyping tools',
-                'Experience conducting user research and usability testing',
-                'Ability to translate complex AI features into intuitive interfaces'
-            ]
-        }
-    ];
 
     return (
         <>

@@ -69,6 +69,7 @@ const Legal = lazyWithRetry(() => import('./pages/consumer/Legal'));
 const PartnerWithUs = lazyWithRetry(() => import('./pages/consumer/PartnerWithUs'));
 const MerchantRegister = lazyWithRetry(() => import('./pages/consumer/MerchantRegister'));
 const Careers = lazyWithRetry(() => import('./pages/consumer/Careers'));
+const CareerDetail = lazyWithRetry(() => import('./pages/consumer/CareerDetail'));
 
 // Merchant Pages — lazy loaded
 const MerchantDashboard = lazyWithRetry(() => import('./pages/merchant/Dashboard'));
@@ -186,6 +187,7 @@ function App() {
                                                                     <Route path="/terms" element={<Legal />} />
                                                                     <Route path="/partner" element={<PartnerWithUs />} />
                                                                     <Route path="/careers" element={<Careers />} />
+                                                                    <Route path="/careers/:id" element={<CareerDetail />} />
                                                                     <Route path="/surveys" element={<ConsumerSurveys />} />
                                                                     <Route path="/flyers" element={<Flyers />} />
                                                                     <Route path="/consumer" element={<Navigate to="/" replace />} />
