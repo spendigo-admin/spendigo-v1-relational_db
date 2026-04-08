@@ -41,6 +41,7 @@ const AdminLayout: React.FC = () => {
         { icon: '📋', label: 'Survey Board', path: '/admin/surveys' },
         { icon: '🛡️', label: 'Audit Logs', path: '/admin/audit-logs' },
         { icon: '🛠️', label: 'System Tools', path: '/admin/tools' },
+        { icon: '💼', label: 'Careers', path: '/admin/careers' },
         { icon: '⚙️', label: 'Settings', path: '/admin/settings' },
     ];
 

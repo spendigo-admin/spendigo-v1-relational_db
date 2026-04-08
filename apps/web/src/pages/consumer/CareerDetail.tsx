@@ -2,9 +2,8 @@ import React from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import SEO from '../../components/SEO';
-import { jobs } from '../../data/careers';
 import { db, storage } from '../../lib/firebase';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 
 const CareerDetail: React.FC = () => {
@@ -12,18 +11,64 @@ const CareerDetail: React.FC = () => {
     const navigate = useNavigate();
     const { t } = useTranslation();
     
-    const job = jobs.find(j => j.id === Number(id));
-
+    const [job, setJob] = React.useState<any>(null);
+    const [careersEnabled, setCareersEnabled] = React.useState(true);
+    const [loading, setLoading] = React.useState(true);
     const [isApplying, setIsApplying] = React.useState(false);
     const [isSubmitting, setIsSubmitting] = React.useState(false);
     const [uploadProgress, setUploadProgress] = React.useState(0);
     const [submissionStatus, setSubmissionStatus] = React.useState<'idle' | 'success' | 'error'>('idle');
 
-    if (!job) {
+    React.useEffect(() => {
+        if (!id) return;
+
+        // 1. Fetch Global Setting
+        const settingsRef = doc(db, 'settings', 'platform');
+        const unsubscribeSettings = onSnapshot(settingsRef, (snap) => {
+            if (snap.exists()) {
+                setCareersEnabled(snap.data().careersEnabled !== false);
+            }
+        });
+
+        // 2. Fetch Job Details
+        const fetchJob = async () => {
+            try {
+                const jobSnap = await getDoc(doc(db, 'careers', id));
+                if (jobSnap.exists()) {
+                    setJob({ id: jobSnap.id, ...jobSnap.data() });
+                }
+            } catch (err) {
+                console.error('Error fetching job:', err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchJob();
+        return () => unsubscribeSettings();
+    }, [id]);
+
+    if (loading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center">
+                <div className="w-10 h-10 border-4 border-[var(--brand-primary)] border-t-transparent rounded-full animate-spin"></div>
+            </div>
+        );
+    }
+
+    if (!job || !careersEnabled || !job.isVisible) {
         return (
             <div className="min-h-screen flex flex-col items-center justify-center p-4">
-                <h2 className="text-2xl font-bold mb-4">Job Not Found</h2>
-                <Link to="/careers" className="text-[var(--brand-primary)] font-bold hover:underline">
+                <div className="text-6xl mb-6">🔍</div>
+                <h2 className="text-2xl font-bold mb-2 text-[var(--text-main)]">
+                    {!careersEnabled ? 'Careers Section Disabled' : 'Job Not Found'}
+                </h2>
+                <p className="text-[var(--text-muted)] mb-8 max-w-sm text-center">
+                    {!careersEnabled 
+                        ? 'The careers section is currently under maintenance. Please check back later.' 
+                        : 'This position may have been filled or the link is incorrect.'}
+                </p>
+                <Link to="/careers" className="px-8 py-3 bg-[var(--brand-primary)] text-white font-bold rounded-xl shadow-lg">
                     Back to Careers
                 </Link>
             </div>

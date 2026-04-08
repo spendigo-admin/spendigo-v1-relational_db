@@ -70,6 +70,7 @@ const PartnerWithUs = lazyWithRetry(() => import('./pages/consumer/PartnerWithUs
 const MerchantRegister = lazyWithRetry(() => import('./pages/consumer/MerchantRegister'));
 const Careers = lazyWithRetry(() => import('./pages/consumer/Careers'));
 const CareerDetail = lazyWithRetry(() => import('./pages/consumer/CareerDetail'));
+const CareerManagement = lazyWithRetry(() => import('./pages/admin/CareerManagement'));
 
 // Merchant Pages — lazy loaded
 const MerchantDashboard = lazyWithRetry(() => import('./pages/merchant/Dashboard'));
@@ -226,6 +227,7 @@ function App() {
                                                                     <Route path="/admin/ads" element={<AdminAdManager />} />
                                                                     <Route path="/admin/surveys" element={<AdminSurveyManager />} />
                                                                     <Route path="/admin/tools" element={<AdminSystemTools />} />
+                                                                    <Route path="/admin/careers" element={<CareerManagement />} />
                                                                 </Route>
 
                                                                     {/* 404 Catch All */}

@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import { useCatalog } from '../../hooks/useCatalog';
 import { useNotifications } from '../../context/NotificationContext';
 import { useConfirmation } from '../../context/ConfirmationContext';
-import { collection, getDocs, query, where, writeBatch, doc, getCountFromServer, getDoc } from 'firebase/firestore';
+import { collection, getDocs, query, where, writeBatch, doc, getCountFromServer, getDoc, serverTimestamp } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
 import { db, functions } from '../../lib/firebase';
+import { jobs as staticJobs } from '../../data/careers';
 
 const SystemTools = () => {
     const { migrateCategories, loading: catalogLoading } = useCatalog();
@@ -274,6 +275,37 @@ const SystemTools = () => {
                     } catch (e: any) {
                         throw new Error(e.message || 'Error occurred while cleaning up store data.');
                     }
+                }
+            }
+        },
+        {
+            id: 'seed-careers',
+            title: 'Seed Careers Data',
+            description: 'Migrates static job listings from code files to Firestore for dynamic management.',
+            icon: '💼',
+            action: async () => {
+                if (await confirm({
+                    title: 'Seed Careers?',
+                    message: 'This will copy all current static job roles into the database. Existing database entries will NOT be overwritten but may be duplicated if IDs match. Proceed?',
+                    confirmText: 'Start Seeding'
+                })) {
+                    console.log('Seeding Careers...');
+                    const batch = writeBatch(db);
+                    let count = 0;
+
+                    for (const job of staticJobs) {
+                        const jobRef = doc(db, 'careers', job.id.toString());
+                        batch.set(jobRef, {
+                            ...job,
+                            isVisible: true,
+                            createdAt: serverTimestamp(),
+                            updatedAt: serverTimestamp()
+                        });
+                        count++;
+                    }
+
+                    await batch.commit();
+                    addNotification({ type: 'system', title: 'Seeding Complete', message: `Successfully seeded ${count} job roles.` });
                 }
             }
         }

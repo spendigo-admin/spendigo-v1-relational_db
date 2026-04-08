@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import SEO from '../../components/SEO';
 import { db, storage } from '../../lib/firebase';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, doc, onSnapshot, query, where } from 'firebase/firestore';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 
 import { jobs, values, benefits } from '../../data/careers';
@@ -15,6 +15,33 @@ const Careers: React.FC = () => {
     const [isSubmitting, setIsSubmitting] = React.useState(false);
     const [uploadProgress, setUploadProgress] = React.useState(0);
     const [submissionStatus, setSubmissionStatus] = React.useState<'idle' | 'success' | 'error'>('idle');
+    const [careersEnabled, setCareersEnabled] = React.useState(true);
+    const [dynamicJobs, setDynamicJobs] = React.useState<any[]>([]);
+    const [loading, setLoading] = React.useState(true);
+
+    React.useEffect(() => {
+        // 1. Fetch Platform Settings
+        const settingsRef = doc(db, 'settings', 'platform');
+        const unsubscribeSettings = onSnapshot(settingsRef, (snap) => {
+            if (snap.exists()) {
+                setCareersEnabled(snap.data().careersEnabled !== false);
+            }
+        });
+
+        // 2. Fetch Active Careers
+        const careersRef = collection(db, 'careers');
+        const q = query(careersRef, where('isVisible', '==', true));
+        const unsubscribeCareers = onSnapshot(q, (snap) => {
+            const jobsList = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            setDynamicJobs(jobsList);
+            setLoading(false);
+        });
+
+        return () => {
+            unsubscribeSettings();
+            unsubscribeCareers();
+        };
+    }, []);
 
     const handleApply = (job: any, e: React.MouseEvent) => {
         e.preventDefault();
@@ -186,53 +213,69 @@ const Careers: React.FC = () => {
                     <div className="text-center mb-12">
                         <h2 className="text-3xl font-bold text-[var(--text-main)] mb-4">Open Positions</h2>
                         <p className="text-[var(--text-muted)]">
-                            Join us in reshaping the digital shopping experience.
+                            {careersEnabled 
+                                ? 'Join us in reshaping the digital shopping experience.' 
+                                : 'We currently have no open vacancies at this time.'}
                         </p>
                     </div>
 
-                    <div className="space-y-4">
-                        {jobs.map((job) => (
-                            <Link 
-                                key={job.id} 
-                                to={`/careers/${job.id}`} 
-                                className="block glass-panel p-6 hover:border-[var(--brand-primary)] hover:bg-[var(--brand-primary)]/[0.02] transition-colors"
-                            >
-                                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                                    <div className="flex-1">
-                                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
-                                            <div>
-                                                <h3 className="text-lg font-bold text-[var(--text-main)] mb-1">{job.title}</h3>
-                                                <div className="flex flex-wrap gap-x-4 gap-y-2">
-                                                    <span className="text-sm text-[var(--text-muted)] flex items-center gap-1">📍 {job.location}</span>
-                                                    <span className="text-sm text-[var(--text-muted)] flex items-center gap-1">📁 {job.team}</span>
-                                                    <span className="text-sm text-[var(--text-muted)] flex items-center gap-1">🕒 {job.type}</span>
+                    {!careersEnabled || (dynamicJobs.length === 0 && !loading) ? (
+                        <div className="text-center py-16 glass-panel">
+                            <div className="text-5xl mb-4">✨</div>
+                            <h3 className="text-xl font-bold text-[var(--text-main)] mb-2">No Open Vacancies</h3>
+                            <p className="text-[var(--text-muted)] max-w-sm mx-auto">
+                                We're not actively hiring for any roles right now, but we're always looking for talented dreamers to join our talent pool.
+                            </p>
+                        </div>
+                    ) : loading ? (
+                        <div className="flex justify-center p-20">
+                            <div className="w-10 h-10 border-4 border-[var(--brand-primary)] border-t-transparent rounded-full animate-spin"></div>
+                        </div>
+                    ) : (
+                        <div className="space-y-4">
+                            {dynamicJobs.map((job) => (
+                                <Link 
+                                    key={job.id} 
+                                    to={`/careers/${job.id}`} 
+                                    className="block glass-panel p-6 hover:border-[var(--brand-primary)] hover:bg-[var(--brand-primary)]/[0.02] transition-colors"
+                                >
+                                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                        <div className="flex-1">
+                                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+                                                <div>
+                                                    <h3 className="text-lg font-bold text-[var(--text-main)] mb-1">{job.title}</h3>
+                                                    <div className="flex flex-wrap gap-x-4 gap-y-2">
+                                                        <span className="text-sm text-[var(--text-muted)] flex items-center gap-1">📍 {job.location}</span>
+                                                        <span className="text-sm text-[var(--text-muted)] flex items-center gap-1">📁 {job.team}</span>
+                                                        <span className="text-sm text-[var(--text-muted)] flex items-center gap-1">🕒 {job.type}</span>
+                                                    </div>
                                                 </div>
+                                                <button 
+                                                    onClick={(e) => handleApply(job, e)}
+                                                    className="px-5 py-2 rounded-lg border border-[var(--brand-primary)] text-[var(--brand-primary)] font-bold text-sm hover:bg-[var(--brand-primary)] hover:text-white transition-colors self-start md:self-center"
+                                                >
+                                                    Apply Now
+                                                </button>
                                             </div>
-                                            <button 
-                                                onClick={(e) => handleApply(job, e)}
-                                                className="px-5 py-2 rounded-lg border border-[var(--brand-primary)] text-[var(--brand-primary)] font-bold text-sm hover:bg-[var(--brand-primary)] hover:text-white transition-colors self-start md:self-center"
-                                            >
-                                                Apply Now
-                                            </button>
-                                        </div>
-                                        
-                                        {/* Requirements List */}
-                                        <div className="mt-4 pt-4 border-t border-[var(--glass-border)]">
-                                            <p className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider mb-3">Requirements:</p>
-                                            <ul className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2">
-                                                {job.requirements.map((req, i) => (
-                                                    <li key={i} className="text-sm text-[var(--text-muted)] flex items-start gap-2">
-                                                        <span className="text-[10px] mt-1.5 text-[var(--brand-primary)]">●</span>
-                                                        <span>{req}</span>
-                                                    </li>
-                                                ))}
-                                            </ul>
+                                            
+                                            {/* Requirements List */}
+                                            <div className="mt-4 pt-4 border-t border-[var(--glass-border)]">
+                                                <p className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider mb-3">Requirements:</p>
+                                                <ul className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2">
+                                                    {(job.requirements || []).map((req, i) => (
+                                                        <li key={i} className="text-sm text-[var(--text-muted)] flex items-start gap-3">
+                                                            <span className="text-[10px] mt-1.5 text-[var(--brand-primary)]">●</span>
+                                                            <span className="text-left">{req}</span>
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            </Link>
-                        ))}
-                    </div>
+                                </Link>
+                            ))}
+                        </div>
+                    )}
 
                     {/* TALENT POOL CTA */}
                     <div className="mt-16 text-center glass-panel p-8">
