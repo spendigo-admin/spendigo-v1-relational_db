@@ -1,3 +1,17 @@
+export interface Job {
+    id: string | number;
+    title: string;
+    location: string;
+    team: string;
+    type: string;
+    description: string;
+    requirements: string[];
+    responsibilities?: string[];
+    isVisible?: boolean;
+    createdAt?: any;
+    updatedAt?: any;
+}
+
 export const values = [
     {
         icon: '🚀',

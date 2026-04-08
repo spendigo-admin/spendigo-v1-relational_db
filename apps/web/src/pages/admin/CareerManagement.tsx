@@ -4,27 +4,15 @@ import { db } from '../../lib/firebase';
 import { useNotifications } from '../../context/NotificationContext';
 import { useConfirmation } from '../../context/ConfirmationContext';
 
-interface JobPosting {
-    id: string;
-    title: string;
-    location: string;
-    team: string;
-    type: string;
-    description: string;
-    requirements: string[];
-    responsibilities: string[];
-    isVisible: boolean;
-    createdAt?: any;
-    updatedAt?: any;
-}
+import { Job } from '../../data/careers';
 
 const CareerManagement: React.FC = () => {
     const { addNotification } = useNotifications();
     const { confirm } = useConfirmation();
-    const [jobs, setJobs] = useState<JobPosting[]>([]);
+    const [jobs, setJobs] = useState<Job[]>([]);
     const [loading, setLoading] = useState(true);
     const [isEditing, setIsEditing] = useState(false);
-    const [currentJob, setCurrentJob] = useState<Partial<JobPosting> | null>(null);
+    const [currentJob, setCurrentJob] = useState<Partial<Job> | null>(null);
 
     useEffect(() => {
         const q = query(collection(db, 'careers'), orderBy('createdAt', 'desc'));
@@ -32,7 +20,7 @@ const CareerManagement: React.FC = () => {
             const jobsData = snapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data()
-            } as JobPosting));
+            } as Job));
             setJobs(jobsData);
             setLoading(false);
         });
@@ -54,7 +42,7 @@ const CareerManagement: React.FC = () => {
             };
 
             if (currentJob.id) {
-                await setDoc(doc(db, 'careers', currentJob.id), jobData);
+                await setDoc(doc(db, 'careers', currentJob.id.toString()), jobData);
                 addNotification({ type: 'system', title: 'Updated', message: 'Job posting updated successfully.' });
             } else {
                 await addDoc(collection(db, 'careers'), {
@@ -88,9 +76,9 @@ const CareerManagement: React.FC = () => {
         }
     };
 
-    const toggleVisibility = async (job: JobPosting) => {
+    const toggleVisibility = async (job: Job) => {
         try {
-            await setDoc(doc(db, 'careers', job.id), {
+            await setDoc(doc(db, 'careers', job.id.toString()), {
                 ...job,
                 isVisible: !job.isVisible,
                 updatedAt: serverTimestamp()
@@ -128,7 +116,7 @@ const CareerManagement: React.FC = () => {
                 </div>
             ) : (
                 <div className="grid grid-cols-1 gap-4">
-                    {jobs.map(job => (
+                    {jobs.map((job: Job) => (
                         <div key={job.id} className="glass-panel p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:border-[var(--brand-primary)]/30 transition-colors">
                             <div className="flex-1">
                                 <div className="flex items-center gap-3 mb-1">
@@ -160,7 +148,7 @@ const CareerManagement: React.FC = () => {
                                     Edit
                                 </button>
                                 <button 
-                                    onClick={() => handleDelete(job.id)}
+                                    onClick={() => handleDelete(job.id.toString())}
                                     className="px-3 py-1.5 bg-red-50 text-red-600 rounded-lg text-xs font-bold hover:bg-red-100 transition-colors"
                                 >
                                     Delete

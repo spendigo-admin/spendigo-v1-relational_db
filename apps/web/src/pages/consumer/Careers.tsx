@@ -6,17 +6,17 @@ import { db, storage } from '../../lib/firebase';
 import { collection, addDoc, serverTimestamp, doc, onSnapshot, query, where } from 'firebase/firestore';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 
-import { jobs, values, benefits } from '../../data/careers';
+import { jobs, values, benefits, Job } from '../../data/careers';
 
 const Careers: React.FC = () => {
     const { t } = useTranslation();
-    const [selectedJob, setSelectedJob] = React.useState<any>(null);
+    const [selectedJob, setSelectedJob] = React.useState<Job | null>(null);
     const [isApplying, setIsApplying] = React.useState(false);
     const [isSubmitting, setIsSubmitting] = React.useState(false);
     const [uploadProgress, setUploadProgress] = React.useState(0);
     const [submissionStatus, setSubmissionStatus] = React.useState<'idle' | 'success' | 'error'>('idle');
     const [careersEnabled, setCareersEnabled] = React.useState(true);
-    const [dynamicJobs, setDynamicJobs] = React.useState<any[]>([]);
+    const [dynamicJobs, setDynamicJobs] = React.useState<Job[]>([]);
     const [loading, setLoading] = React.useState(true);
 
     React.useEffect(() => {
@@ -32,7 +32,7 @@ const Careers: React.FC = () => {
         const careersRef = collection(db, 'careers');
         const q = query(careersRef, where('isVisible', '==', true));
         const unsubscribeCareers = onSnapshot(q, (snap) => {
-            const jobsList = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            const jobsList = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Job));
             setDynamicJobs(jobsList);
             setLoading(false);
         });
@@ -43,7 +43,7 @@ const Careers: React.FC = () => {
         };
     }, []);
 
-    const handleApply = (job: any, e: React.MouseEvent) => {
+    const handleApply = (job: Job, e: React.MouseEvent) => {
         e.preventDefault();
         setSelectedJob(job);
         setIsApplying(true);
@@ -60,6 +60,8 @@ const Careers: React.FC = () => {
             const email = formData.get('email') as string;
             const phone = formData.get('phone') as string;
             const message = formData.get('message') as string;
+
+            if (!selectedJob) return;
 
             if (!resumeFile) throw new Error('Resume is required');
 
@@ -233,7 +235,7 @@ const Careers: React.FC = () => {
                         </div>
                     ) : (
                         <div className="space-y-4">
-                            {dynamicJobs.map((job) => (
+                            {dynamicJobs.map((job: Job) => (
                                 <Link 
                                     key={job.id} 
                                     to={`/careers/${job.id}`} 
@@ -262,7 +264,7 @@ const Careers: React.FC = () => {
                                             <div className="mt-4 pt-4 border-t border-[var(--glass-border)]">
                                                 <p className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider mb-3">Requirements:</p>
                                                 <ul className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2">
-                                                    {(job.requirements || []).map((req, i) => (
+                                                    {(job.requirements || []).map((req: string, i: number) => (
                                                         <li key={i} className="text-sm text-[var(--text-muted)] flex items-start gap-3">
                                                             <span className="text-[10px] mt-1.5 text-[var(--brand-primary)]">●</span>
                                                             <span className="text-left">{req}</span>
@@ -328,7 +330,7 @@ const Careers: React.FC = () => {
                                 <div className="text-6xl mb-6">🎉</div>
                                 <h2 className="text-2xl font-black text-[var(--text-main)] mb-3">Application Sent!</h2>
                                 <p className="text-[var(--text-muted)] mb-8">
-                                    Thank you, {selectedJob.title} candidate. Your application has been successfully sent to **support@spendigo.ca**. We'll get back to you soon.
+                                    Thank you, {selectedJob?.title} candidate. Your application has been successfully sent to **support@spendigo.ca**. We'll get back to you soon.
                                 </p>
                                 <button 
                                     onClick={() => setIsApplying(false)}
@@ -338,11 +340,12 @@ const Careers: React.FC = () => {
                                 </button>
                             </div>
                         ) : (
-                            <>
-                                <h2 className="text-2xl font-black text-[var(--text-main)] mb-2">Apply for {selectedJob.title}</h2>
-                                <p className="text-sm text-[var(--text-muted)] mb-8 flex items-center gap-2">
-                                    📍 {selectedJob.location} • 🕒 {selectedJob.type}
-                                </p>
+                            selectedJob && (
+                                <>
+                                    <h2 className="text-2xl font-black text-[var(--text-main)] mb-2">Apply for {selectedJob.title}</h2>
+                                    <p className="text-sm text-[var(--text-muted)] mb-8 flex items-center gap-2">
+                                        📍 {selectedJob.location} • 🕒 {selectedJob.type}
+                                    </p>
 
                                 <form onSubmit={(e) => {
                                     e.preventDefault();
@@ -412,6 +415,7 @@ const Careers: React.FC = () => {
                                     </div>
                                 </form>
                             </>
+                            )
                         )}
                     </div>
                 </div>

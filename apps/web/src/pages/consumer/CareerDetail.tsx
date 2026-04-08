@@ -6,12 +6,14 @@ import { db, storage } from '../../lib/firebase';
 import { collection, addDoc, serverTimestamp, doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 
+import { Job } from '../../data/careers';
+
 const CareerDetail: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const { t } = useTranslation();
     
-    const [job, setJob] = React.useState<any>(null);
+    const [job, setJob] = React.useState<Job | null>(null);
     const [careersEnabled, setCareersEnabled] = React.useState(true);
     const [loading, setLoading] = React.useState(true);
     const [isApplying, setIsApplying] = React.useState(false);
@@ -35,7 +37,7 @@ const CareerDetail: React.FC = () => {
             try {
                 const jobSnap = await getDoc(doc(db, 'careers', id));
                 if (jobSnap.exists()) {
-                    setJob({ id: jobSnap.id, ...jobSnap.data() });
+                    setJob({ id: jobSnap.id, ...jobSnap.data() } as Job);
                 }
             } catch (err) {
                 console.error('Error fetching job:', err);
@@ -167,7 +169,7 @@ const CareerDetail: React.FC = () => {
                     <section>
                         <h2 className="text-2xl font-bold text-[var(--text-main)] mb-6 text-left">Requirements</h2>
                         <ul className="space-y-4">
-                            {job.requirements.map((req, i) => (
+                            {job.requirements.map((req: string, i: number) => (
                                 <li key={i} className="flex items-start gap-3 group text-left">
                                     <span className="w-6 h-6 rounded-full bg-[var(--brand-primary)]/10 text-[var(--brand-primary)] flex items-center justify-center text-xs shrink-0 mt-1 font-bold">
                                         {i + 1}
@@ -184,7 +186,7 @@ const CareerDetail: React.FC = () => {
                         <section>
                             <h2 className="text-2xl font-bold text-[var(--text-main)] mb-6 text-left">Key Responsibilities</h2>
                             <ul className="space-y-4">
-                                {job.responsibilities.map((resp, i) => (
+                                {job.responsibilities.map((resp: string, i: number) => (
                                     <li key={i} className="flex items-start gap-3 group text-left">
                                         <div className="w-1.5 h-1.5 rounded-full bg-[var(--brand-primary)] mt-2.5 shrink-0 shadow-[0_0_8px_var(--brand-primary)]"></div>
                                         <span className="text-[var(--text-muted)] leading-relaxed group-hover:text-[var(--text-main)] transition-colors">
