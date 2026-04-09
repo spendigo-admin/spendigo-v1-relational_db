@@ -229,6 +229,19 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // CAREERS
+    match /careers/{jobId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // JOB APPLICATIONS
+    match /job_applications/{applicationId} {
+      allow read: if isAdmin();
+      allow create: if true;
+      allow update, delete: if isAdmin();
+    }
+
     // SURVEYS & POLLS
     match /surveys/{surveyId} {
       allow read: if true;
