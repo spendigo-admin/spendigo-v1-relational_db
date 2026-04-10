@@ -201,6 +201,11 @@ const Search: React.FC = () => {
                                         </div>
                                         <div className="p-3">
                                             <p className="font-medium text-sm text-[var(--text-main)] truncate">{product.name}</p>
+                                            {product.is_canadian_local && (
+                                                <span className="inline-flex mt-1 px-1.5 py-0.5 bg-red-50 text-red-700 text-[10px] font-bold rounded shadow-sm border border-red-100 uppercase items-center gap-1 w-max">
+                                                    <span className="text-xs">🍁</span> Canadian Local
+                                                </span>
+                                            )}
                                             <div className="flex items-baseline gap-2 mt-1">
                                                 <span className="font-bold text-[var(--brand-primary)]">${product.price.toFixed(2)}</span>
                                                 {product.originalPrice && (

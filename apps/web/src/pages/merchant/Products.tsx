@@ -102,6 +102,7 @@ const MerchantProducts: React.FC = () => {
     const [form, setForm] = useState({
         price: '',
         stock: '100',
+        isCanadianLocal: false,
         reqBarcode: '',
         reqName: '',
         reqBrand: '',
@@ -226,7 +227,7 @@ const MerchantProducts: React.FC = () => {
         if (!storeId || !selectedMasterItem) return;
 
         try {
-            await addMerchantProduct(storeId, selectedMasterItem.id, parseFloat(form.price) || 0, parseInt(form.stock) || 0);
+            await addMerchantProduct(storeId, selectedMasterItem.id, parseFloat(form.price) || 0, parseInt(form.stock) || 0, { is_canadian_local: form.isCanadianLocal });
             addNotification({ type: 'system', title: 'Product Added', message: `${selectedMasterItem.product_name} added to your store.` });
             closeModal();
         } catch (err: any) {
@@ -361,7 +362,8 @@ const MerchantProducts: React.FC = () => {
         try {
             await updateMerchantProduct(editingProduct.id, {
                 price: parseFloat(form.price),
-                available_quantity: parseInt(form.stock)
+                available_quantity: parseInt(form.stock),
+                is_canadian_local: form.isCanadianLocal
             });
             addNotification({ type: 'system', title: 'Updated', message: 'Product updated successfully.' });
             closeModal();
@@ -390,7 +392,8 @@ const MerchantProducts: React.FC = () => {
         setForm(f => ({
             ...f,
             price: product.price.toString(),
-            stock: product.available_quantity.toString()
+            stock: product.available_quantity.toString(),
+            isCanadianLocal: product.is_canadian_local || false
         }));
         setView('add_details'); // Re-use view
         setShowAddModal(true);
@@ -406,7 +409,7 @@ const MerchantProducts: React.FC = () => {
         setRestockProduct(null);
         setBulkText('');
         setBulkProcessing(false);
-        setForm({ price: '', stock: '50', reqName: '', reqBrand: '', reqDescription: '', reqImage: '', reqCategory: 'General', reqBarcode: '', reqBarcodeImage: '' });
+        setForm({ price: '', stock: '50', isCanadianLocal: false, reqName: '', reqBrand: '', reqDescription: '', reqImage: '', reqCategory: 'General', reqBarcode: '', reqBarcodeImage: '' });
     };
 
     // Filter local list
@@ -746,6 +749,19 @@ const MerchantProducts: React.FC = () => {
                                     <div>
                                         <label className="block text-sm font-bold mb-1">Qty</label>
                                         <input type="number" className="w-full p-3 border rounded-lg" value={form.stock} onChange={e => setForm({ ...form, stock: e.target.value })} />
+                                    </div>
+                                    
+                                    <div className="flex items-center gap-2 pt-2 pb-2">
+                                        <input 
+                                            type="checkbox" 
+                                            id="localToggle" 
+                                            className="w-5 h-5 accent-red-600 rounded" 
+                                            checked={form.isCanadianLocal} 
+                                            onChange={e => setForm({ ...form, isCanadianLocal: e.target.checked })} 
+                                        />
+                                        <label htmlFor="localToggle" className="text-sm font-medium text-gray-700 flex items-center gap-1 cursor-pointer">
+                                            <span className="text-lg">🍁</span> Highlight as <strong className="text-[var(--text-main)]">Canadian Local</strong>
+                                        </label>
                                     </div>
 
                                     <div className="flex gap-3 pt-4">

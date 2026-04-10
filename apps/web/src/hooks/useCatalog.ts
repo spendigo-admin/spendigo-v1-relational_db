@@ -53,6 +53,7 @@ export interface Product {
     tax_category_id?: string;
     suggested_retail_price?: number;
     age_restricted?: boolean;
+    is_canadian_local?: boolean;
 }
 
 // Helper to generate barcode variants for robust deduplication
@@ -143,6 +144,9 @@ export interface MasterProduct {
 
     // Usage (Read Only)
     number_of_merchants_listing?: number;
+    
+    // Sourcing
+    is_canadian_local?: boolean;
 }
 
 export const useCatalog = () => {
@@ -197,7 +201,8 @@ export const useCatalog = () => {
                         data_source: data.data_source || 'admin',
                         confidence_score: data.confidence_score,
                         created_at: data.created_at,
-                        number_of_merchants_listing: data.number_of_merchants_listing || 0
+                        number_of_merchants_listing: data.number_of_merchants_listing || 0,
+                        is_canadian_local: data.is_canadian_local || false
                     } as MasterProduct;
                 });
                 setMasterProducts(fetched);
@@ -289,6 +294,7 @@ export const useCatalog = () => {
                             tax_category_id: master.tax_category_id,
                             suggested_retail_price: master.suggested_retail_price,
                             age_restricted: master.age_restricted || false,
+                            is_canadian_local: data.is_canadian_local ?? master.is_canadian_local ?? false,
 
                             originalPrice: data.original_price,
                             discount: data.discount_label
@@ -369,6 +375,7 @@ export const useCatalog = () => {
                                 tax_category_id: mData.tax_category_id,
                                 suggested_retail_price: mData.suggested_retail_price,
                                 age_restricted: mData.age_restricted || false,
+                                is_canadian_local: pData.is_canadian_local ?? mData.is_canadian_local ?? false,
 
                                 originalPrice: pData.original_price,
                                 discount: pData.discount_label
@@ -449,6 +456,7 @@ export const useCatalog = () => {
                             category: hit.category_id,
                             brand_name: hit.brand_name,
                             barcode: hit.barcode || hit.upc_gtin,
+                            is_canadian_local: hit.is_canadian_local || false,
                             
                             originalPrice: hit.original_price,
                             discount: hit.discount_label
@@ -535,6 +543,7 @@ export const useCatalog = () => {
                         tax_category_id: master.tax_category_id,
                         suggested_retail_price: master.suggested_retail_price,
                         age_restricted: master.age_restricted || false,
+                        is_canadian_local: data.is_canadian_local ?? master.is_canadian_local ?? false,
 
                         originalPrice: data.original_price,
                         discount: data.discount_label
@@ -649,11 +658,11 @@ export const useCatalog = () => {
     };
 
     // Add Product to Store (Link Merchant -> Master)
-    const addMerchantProduct = async (storeId: string, masterId: string, price: number, quantity: number) => {
+    const addMerchantProduct = async (storeId: string, masterId: string, price: number, quantity: number, options?: { is_canadian_local?: boolean }) => {
         const merchantProductId = `${storeId}_${masterId}`; // Deterministic ID
         const ref = doc(db, 'merchant_products', merchantProductId);
 
-        await setDoc(ref, {
+        const productData: any = {
             merchant_product_id: merchantProductId,
             merchant_id: storeId,
             master_product_id: masterId,
@@ -663,7 +672,13 @@ export const useCatalog = () => {
             status: 'active',
             created_at: serverTimestamp(),
             updated_at: serverTimestamp()
-        });
+        };
+
+        if (options?.is_canadian_local !== undefined) {
+            productData.is_canadian_local = Boolean(options.is_canadian_local);
+        }
+
+        await setDoc(ref, productData);
         await syncStoreProductCount(storeId);
     };
 
@@ -675,6 +690,7 @@ export const useCatalog = () => {
         if (data.price !== undefined) safeData.price = Number(data.price);
         if (data.available_quantity !== undefined) safeData.available_quantity = Number(data.available_quantity);
         if (data.merchant_sku !== undefined) safeData.merchant_sku = data.merchant_sku;
+        if (data.is_canadian_local !== undefined) safeData.is_canadian_local = Boolean(data.is_canadian_local);
 
         safeData.updated_at = serverTimestamp();
 

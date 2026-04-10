@@ -521,6 +521,11 @@ const StoreDetail: React.FC = () => {
                                         </div>
                                         <div className="p-3">
                                             <p onClick={() => navigate(`/product/${product.id}`)} className="font-medium text-sm text-[var(--text-main)] truncate cursor-pointer hover:text-[var(--brand-primary)]">{product.name}</p>
+                                            {product.is_canadian_local && (
+                                                <span className="inline-flex mt-1 px-1.5 py-0.5 bg-red-50 text-red-700 text-[10px] font-bold rounded shadow-sm border border-red-100 uppercase items-center gap-1 w-max">
+                                                    <span className="text-xs">🍁</span> Canadian Local
+                                                </span>
+                                            )}
                                             <div className="flex items-baseline gap-2 mt-1">
                                                 <span className="font-bold text-[var(--brand-primary)]">${product.price.toFixed(2)}</span>
                                                 {product.originalPrice && (
@@ -556,6 +561,11 @@ const StoreDetail: React.FC = () => {
                                         </div>
                                         <div className="flex-1 min-w-0">
                                             <p onClick={() => navigate(`/product/${product.id}`)} className="font-medium text-[var(--text-main)] truncate cursor-pointer">{product.name}</p>
+                                            {product.is_canadian_local && (
+                                                <span className="inline-flex mt-0.5 px-1.5 py-0.5 bg-red-50 text-red-700 text-[10px] font-bold rounded shadow-sm border border-red-100 uppercase items-center gap-1 w-max">
+                                                    <span className="text-xs">🍁</span> Canadian Local
+                                                </span>
+                                            )}
                                             <div className="flex items-baseline gap-2">
                                                 <span className="font-bold text-[var(--brand-primary)] text-sm">${product.price.toFixed(2)}</span>
                                                 {product.originalPrice && (
