@@ -223,30 +223,29 @@ const MerchantDashboard: React.FC = () => {
     }));
 
     return (
-        <div className="p-6 animate-fade-in pb-20">
+        <div className="p-4 md:p-6 animate-fade-in pb-20 space-y-6">
             {/* Hero Section */}
-            <div className="mb-8 relative overflow-hidden rounded-2xl bg-gradient-to-r from-[var(--brand-primary)] to-purple-600 p-8 text-white shadow-lg">
-                <div className="relative z-10 flex justify-between items-center">
-                    <div>
-                        <h1 className="text-3xl font-bold mb-2">👋 Welcome back, {store?.name || 'Partner'}!</h1>
-                        <p className="text-blue-100 text-lg font-medium">Your store is live and accepting orders.</p>
+            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[var(--brand-primary)] to-purple-600 p-6 md:p-10 text-white shadow-xl">
+                <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                    <div className="max-w-xl">
+                        <h1 className="text-2xl md:text-4xl font-black mb-2 tracking-tight">👋 Welcome back, {store?.name || 'Partner'}!</h1>
+                        <p className="text-blue-100 text-base md:text-xl font-medium opacity-90">Your store is live and accepting orders.</p>
                     </div>
-                    <div className="hidden md:flex items-center gap-6">
-                        <div className="text-right">
-                            <div className="text-sm opacity-80 uppercase tracking-wider font-medium">Current Status</div>
-                            <div className="text-2xl font-bold flex items-center justify-end gap-2">
-                                <span className="w-3 h-3 bg-green-400 rounded-full animate-pulse shadow-[0_0_10px_rgba(74,222,128,0.5)]"></span>
-                                Online
+                    <div className="flex items-center gap-4 w-full md:w-auto">
+                        <div className="bg-white/10 backdrop-blur-md px-4 py-2 rounded-2xl border border-white/20 flex-1 md:flex-none flex items-center justify-between md:justify-start gap-4">
+                            <div className="text-right md:text-left">
+                                <div className="text-[10px] opacity-70 uppercase tracking-widest font-black">Status</div>
+                                <div className="text-sm font-bold flex items-center gap-2">
+                                    <span className="w-2.5 h-2.5 bg-green-400 rounded-full animate-pulse shadow-[0_0_8px_rgba(74,222,128,0.5)]"></span>
+                                    ONLINE
+                                </div>
                             </div>
-                        </div>
-                        <div className="bg-white/20 p-2 rounded-xl backdrop-blur-sm border border-white/20">
-                            <NotificationPopover />
                         </div>
                     </div>
                 </div>
-                {/* Decorative circles */}
-                <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-5 rounded-full -translate-y-1/2 translate-x-1/3"></div>
-                <div className="absolute bottom-0 left-0 w-48 h-48 bg-white opacity-5 rounded-full translate-y-1/3 -translate-x-1/4"></div>
+                {/* Decorative elements */}
+                <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-3xl"></div>
+                <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-purple-400/20 rounded-full blur-3xl"></div>
             </div>
 
             {/* Time Period Selector - Only for Analytics */}
@@ -269,42 +268,38 @@ const MerchantDashboard: React.FC = () => {
                 </div>
             )}
 
-            {/* Stats Grid - Toggles based on Permission */}
+            {/* Stats Grid */}
             {can('analytics:read') ? (
-                // Financial Stats (Owner/Manager)
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
                     {displayStats.map((stat, idx) => (
-                        <div key={idx} className="bg-white p-5 rounded-xl border border-[var(--glass-border)] shadow-sm hover:shadow-md transition-shadow">
-                            <div className="flex justify-between items-start mb-2">
-                                <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl ${stat.color}`}>
+                        <div key={idx} className="bg-white p-4 md:p-5 rounded-2xl border border-[var(--glass-border)] shadow-sm hover:shadow-md transition-shadow">
+                            <div className="flex justify-between items-start mb-3">
+                                <div className={`w-10 h-10 md:w-12 md:h-12 rounded-xl flex items-center justify-center text-xl md:text-2xl ${stat.color}`}>
                                     {stat.icon}
                                 </div>
-                                {stat.change && (
-                                    <span className="text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded-full border border-green-100">
-                                        {stat.change}
+                            </div>
+                            <div>
+                                <p className="text-[var(--text-muted)] text-[10px] md:text-xs font-bold uppercase tracking-wider">{stat.label}</p>
+                                <h3 className="text-lg md:text-2xl font-black text-[var(--text-main)] mt-0.5">{stat.value}</h3>
+                                {stat.change !== 'n/a' && (
+                                    <span className="text-[9px] font-bold text-green-600 bg-green-50 px-1.5 py-0.5 rounded-full border border-green-100 flex items-center gap-0.5 w-fit mt-1">
+                                        ↑ {stat.change}
                                     </span>
                                 )}
-                            </div>
-                            <div className="mt-2">
-                                <p className="text-[var(--text-muted)] text-sm font-medium">{stat.label}</p>
-                                <h3 className="text-2xl font-bold text-[var(--text-main)]">{stat.value}</h3>
                             </div>
                         </div>
                     ))}
                 </div>
             ) : (
-                // Operational Stats (Staff)
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
                     {operationalStats.map((stat, idx) => (
-                        <div key={idx} onClick={stat.action} className="bg-white p-5 rounded-xl border border-[var(--glass-border)] shadow-sm hover:shadow-md hover:border-[var(--brand-primary)] transition-all cursor-pointer group">
-                            <div className="flex justify-between items-start mb-2">
-                                <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl ${stat.color} group-hover:scale-110 transition-transform`}>
-                                    {stat.icon}
-                                </div>
+                        <div key={idx} onClick={stat.action} className="bg-white p-4 md:p-5 rounded-2xl border border-[var(--glass-border)] shadow-sm hover:shadow-md hover:border-[var(--brand-primary)] transition-all cursor-pointer group active:scale-95">
+                            <div className={`w-10 h-10 md:w-12 md:h-12 rounded-xl flex items-center justify-center text-xl md:text-2xl mb-3 ${stat.color} group-hover:scale-110 transition-transform`}>
+                                {stat.icon}
                             </div>
-                            <div className="mt-2">
-                                <p className="text-[var(--text-muted)] text-sm font-medium group-hover:text-[var(--brand-primary)] transition-colors">{stat.label}</p>
-                                <h3 className="text-3xl font-bold text-[var(--text-main)]">{stat.value}</h3>
+                            <div>
+                                <p className="text-[var(--text-muted)] text-[10px] md:text-sm font-bold uppercase tracking-wider group-hover:text-[var(--brand-primary)] transition-colors">{stat.label}</p>
+                                <h3 className="text-2xl md:text-3xl font-black text-[var(--text-main)] mt-0.5">{stat.value}</h3>
                             </div>
                         </div>
                     ))}
@@ -467,28 +462,34 @@ const MerchantDashboard: React.FC = () => {
 
                     {/* Recent Orders List (Real Data) */}
                     {can('orders:read') && (
-                        <section className="bg-white p-6 rounded-xl border border-[var(--glass-border)] shadow-sm">
-                            <div className="flex justify-between items-center mb-4">
-                                <h2 className="font-bold text-[var(--text-main)]">Live Orders</h2>
-                                <button onClick={() => navigate('/merchant/orders')} className="text-sm text-[var(--brand-primary)] font-medium hover:underline">View All</button>
+                        <section className="bg-white p-5 md:p-6 rounded-2xl border border-[var(--glass-border)] shadow-sm">
+                            <div className="flex justify-between items-center mb-5">
+                                <h2 className="font-black text-[var(--text-main)] flex items-center gap-2">
+                                    <span className="w-2 h-2 rounded-full bg-red-500"></span>
+                                    Live Orders
+                                </h2>
+                                <button onClick={() => navigate('/merchant/orders')} className="text-xs text-[var(--brand-primary)] font-black hover:underline uppercase tracking-widest">View All</button>
                             </div>
-                            <div className="space-y-4">
+                            <div className="space-y-3">
                                 {recentOrdersDisplay.length > 0 ? recentOrdersDisplay.map((order, i) => (
-                                    <div key={i} className="flex items-center justify-between p-3 hover:bg-[var(--surface-1)] rounded-lg transition-colors border border-transparent hover:border-[var(--glass-border)] cursor-pointer" onClick={() => navigate('/merchant/orders')}>
-                                        <div className="flex items-center gap-3">
-                                            <div className={`w-2 h-2 rounded-full ${order.status === 'delivered' ? 'bg-green-400' : 'bg-yellow-400'}`}></div>
-                                            <div>
-                                                <div className="font-bold text-sm text-[var(--text-main)]">{order.customer}</div>
-                                                <div className="text-xs text-[var(--text-muted)]">{order.items}</div>
+                                    <div key={i} className="flex items-center justify-between p-4 bg-gray-50/50 hover:bg-[var(--surface-1)] rounded-2xl transition-all border border-transparent hover:border-[var(--glass-border)] cursor-pointer active:scale-[0.98]" onClick={() => navigate('/merchant/orders')}>
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center text-lg">
+                                                {order.status === 'delivered' ? '✅' : '🔔'}
+                                            </div>
+                                            <div className="min-w-0">
+                                                <div className="font-bold text-sm text-[var(--text-main)] truncate">{order.customer}</div>
+                                                <div className="text-[10px] text-[var(--text-muted)] font-medium uppercase tracking-wider">{order.items}</div>
                                             </div>
                                         </div>
-                                        <div className="text-right">
-                                            <div className="font-bold text-sm">{order.total}</div>
-                                            <div className="text-[10px] text-[var(--text-muted)] uppercase">{order.time}</div>
+                                        <div className="text-right shrink-0">
+                                            <div className="font-black text-sm text-[var(--brand-primary)]">{order.total}</div>
+                                            <div className="text-[9px] font-bold text-[var(--text-muted)] uppercase mt-0.5">{order.time}</div>
                                         </div>
                                     </div>
                                 )) : (
-                                    <div className="text-center py-6 text-[var(--text-muted)] text-sm">
+                                    <div className="text-center py-10 text-[var(--text-muted)] text-sm">
+                                        <div className="text-4xl mb-3 opacity-20">📭</div>
                                         No recent orders
                                     </div>
                                 )}

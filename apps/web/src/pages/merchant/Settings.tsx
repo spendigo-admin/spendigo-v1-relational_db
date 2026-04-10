@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import '../../styles/design-system.css';
 import { useAuth } from '../../context/AuthContext';
@@ -210,17 +210,60 @@ const MerchantSettings: React.FC = () => {
     const [isApplyingPreset, setIsApplyingPreset] = useState(false);
 
     const TABS = [
-        { id: 'profile', label: '🏪 Store Profile', visible: true },
-        { id: 'operations', label: '⚙️ Operations', visible: hasSettingsAccess },
-        { id: 'team', label: '👥 Team & Roles', visible: hasTeamAccess },
-        { id: 'payments', label: '💳 Payments', visible: hasSettingsAccess },
-        { id: 'notifications', label: '🔔 Notifications', visible: true }
+        { id: 'profile', label: 'Store Profile', icon: '🏪', visible: true },
+        { id: 'operations', label: 'Operations', icon: '⚙️', visible: hasSettingsAccess },
+        { id: 'team', label: 'Team Roles', icon: '👥', visible: hasTeamAccess },
+        { id: 'payments', label: 'Payments', icon: '💳', visible: hasSettingsAccess },
+        { id: 'notifications', label: 'Alerts', icon: '🔔', visible: true }
     ];
+
+    // Scroll Sync for Settings Sections
+    const settingsContainerRef = useRef<HTMLDivElement>(null);
+    const isScrollingRef = useRef(false); // To prevent observer from triggering while we are programmatic scrolling
+
+    useEffect(() => {
+        const observerOptions = {
+            root: null, // Use viewport
+            rootMargin: '-10% 0px -80% 0px', // Trigger when section is near top
+            threshold: 0
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            if (isScrollingRef.current) return;
+            
+            entries.forEach((entry) => {
+                if (entry.isIntersecting) {
+                    const tabId = entry.target.id.replace('section-', '');
+                    setActiveTab(tabId as any);
+                }
+            });
+        }, observerOptions);
+
+        const sections = document.querySelectorAll('[id^="section-"]');
+        sections.forEach((sec) => observer.observe(sec));
+
+        return () => observer.disconnect();
+    }, []);
+
+    const scrollToSection = (id: string) => {
+        const element = document.getElementById(`section-${id}`);
+        if (element) {
+            isScrollingRef.current = true;
+            setActiveTab(id as any);
+            element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            
+            // Re-enable observer after scroll finishes
+            setTimeout(() => {
+                isScrollingRef.current = false;
+            }, 800);
+        }
+    };
 
     useEffect(() => {
         const tab = searchParams.get('tab');
         if (tab && ['profile', 'operations', 'team', 'payments', 'notifications'].includes(tab)) {
             setActiveTab(tab as any);
+            setTimeout(() => scrollToSection(tab), 100);
         }
     }, [searchParams]);
 
@@ -616,22 +659,6 @@ const MerchantSettings: React.FC = () => {
         fileInputRef.current?.click();
     };
 
-    const renderTabs = () => (
-        <div className="flex gap-2 overflow-x-auto pb-2 border-b border-[var(--glass-border)] mb-6 scrollbar-hide">
-            {TABS.filter(t => t.visible).map(tab => (
-                <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id as any)}
-                    className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-all ${activeTab === tab.id
-                        ? 'bg-[var(--brand-primary)] text-white shadow-md'
-                        : 'text-[var(--text-muted)] hover:bg-[var(--surface-2)]'
-                        }`}
-                >
-                    {tab.label}
-                </button>
-            ))}
-        </div>
-    );
 
     const renderTeam = () => (
         <div className="space-y-6 animate-fade-in">
@@ -1433,35 +1460,92 @@ const MerchantSettings: React.FC = () => {
 
     return (
         <div className="p-6 animate-fade-in max-w-5xl mx-auto pb-24">
-            <div className="flex items-center justify-between mb-6">
-                <h1 className="text-2xl font-bold text-[var(--text-main)]">Store Settings</h1>
-                <div className="flex gap-3">
-                    <button onClick={() => window.location.reload()} className="px-4 py-2 text-[var(--text-muted)] hover:text-[var(--text-main)] font-medium">
-                        Discard Changes
-                    </button>
-                    {hasSettingsAccess ? (
-                        <button
-                            onClick={handleSave}
-                            disabled={isSaving || isApplyingPreset || isLocatingStatus === 'loading'}
-                            className="px-6 py-2 bg-[var(--brand-primary)] text-white font-bold rounded-lg shadow-lg shadow-[var(--brand-primary)]/20 hover:brightness-110 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            {isSaving || isApplyingPreset ? 'Saving...' : '💾 Save All Changes'}
+            {/* Combined Sticky Header */}
+            <div className="sticky top-[64px] md:top-0 z-30 -mx-6 px-6 pt-6 pb-2 bg-[var(--surface-1)]/95 backdrop-blur-xl border-b border-[var(--glass-border)] mb-8">
+                <div className="flex items-center justify-between mb-6">
+                    <div>
+                        <h1 className="text-xl md:text-2xl font-bold text-[var(--text-main)]">Store Settings</h1>
+                        <p className="text-xs text-[var(--text-muted)] hidden md:block">Configure your marketplace presence and logistics.</p>
+                    </div>
+                    <div className="flex gap-2 md:gap-3">
+                        <button onClick={() => window.location.reload()} className="px-3 py-1.5 md:px-4 md:py-2 text-[var(--text-muted)] hover:text-[var(--text-main)] font-medium text-xs md:text-sm">
+                            Discard
                         </button>
-                    ) : (
-                        <div className="text-sm font-medium text-orange-600 bg-orange-50 px-4 py-2 rounded-lg border border-orange-100 flex items-center gap-2">
-                            <span>🛡️</span> View Only Mode
-                        </div>
-                    )}
+                        {hasSettingsAccess ? (
+                            <button
+                                onClick={handleSave}
+                                disabled={isSaving || isApplyingPreset || isLocatingStatus === 'loading'}
+                                className="px-4 py-1.5 md:px-6 md:py-2 bg-[var(--brand-primary)] text-white font-bold rounded-xl shadow-lg shadow-[var(--brand-primary)]/20 hover:brightness-110 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed text-xs md:text-sm"
+                            >
+                                {isSaving || isApplyingPreset ? 'Saving...' : '💾 Save All'}
+                            </button>
+                        ) : (
+                            <div className="text-[10px] md:text-sm font-medium text-orange-600 bg-orange-50 px-3 py-1.5 md:px-4 md:py-2 rounded-lg border border-orange-100 flex items-center gap-2">
+                                <span>🛡️</span> View Only
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                <div className="bg-[var(--surface-2)] p-1 rounded-2xl shadow-inner flex overflow-x-auto no-scrollbar scroll-smooth">
+                    {TABS.filter(t => t.visible).map(tab => (
+                        <button
+                            key={tab.id}
+                            onClick={() => scrollToSection(tab.id as any)}
+                            className={`flex-1 min-w-[70px] md:min-w-[120px] px-1 py-2 md:py-3 rounded-xl text-[9px] md:text-sm font-black whitespace-nowrap transition-all flex flex-col items-center gap-1 ${activeTab === tab.id
+                                ? 'bg-white shadow-md text-[var(--brand-primary)] scale-100'
+                                : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
+                                }`}
+                        >
+                            <span className="text-sm md:text-lg">{tab.icon}</span>
+                            <span className="hidden md:inline">{tab.label}</span>
+                            <span className="md:hidden">{tab.id.charAt(0).toUpperCase() + tab.id.slice(1)}</span>
+                        </button>
+                    ))}
                 </div>
             </div>
 
-            {renderTabs()}
+            <div className="space-y-16">
+                <div id="section-profile" className="scroll-mt-48">
+                    <h3 className="text-xl font-black text-[var(--brand-primary)] mb-6 flex items-center gap-3 bg-[var(--surface-2)] p-4 rounded-2xl border border-[var(--glass-border)]">
+                        <span className="text-2xl">🏪</span>
+                        Store Profile & Branding
+                    </h3>
+                    {renderProfile()}
+                </div>
 
-            {activeTab === 'profile' && renderProfile()}
-            {activeTab === 'operations' && renderOperations()}
-            {activeTab === 'team' && renderTeam()}
-            {activeTab === 'payments' && renderPayments()}
-            {activeTab === 'notifications' && renderNotifications()}
+                <div id="section-operations" className="scroll-mt-48">
+                    <h3 className="text-xl font-black text-[var(--brand-primary)] mb-6 flex items-center gap-3 bg-[var(--surface-2)] p-4 rounded-2xl border border-[var(--glass-border)]">
+                        <span className="text-2xl">⚙️</span>
+                        Store Operations & Logistics
+                    </h3>
+                    {renderOperations()}
+                </div>
+
+                <div id="section-team" className="scroll-mt-48">
+                    <h2 className="text-xl font-black text-[var(--brand-primary)] mb-6 flex items-center gap-3 bg-[var(--surface-2)] p-4 rounded-2xl border border-[var(--glass-border)]">
+                        <span className="text-2xl">👥</span>
+                        Team & User Management
+                    </h2>
+                    {renderTeam()}
+                </div>
+
+                <div id="section-payments" className="scroll-mt-48">
+                    <h2 className="text-xl font-black text-[var(--brand-primary)] mb-6 flex items-center gap-3 bg-[var(--surface-2)] p-4 rounded-2xl border border-[var(--glass-border)]">
+                        <span className="text-2xl">💳</span>
+                        Payments & Payouts
+                    </h2>
+                    {renderPayments()}
+                </div>
+
+                <div id="section-notifications" className="scroll-mt-48">
+                    <h2 className="text-xl font-black text-[var(--brand-primary)] mb-6 flex items-center gap-3 bg-[var(--surface-2)] p-4 rounded-2xl border border-[var(--glass-border)]">
+                        <span className="text-2xl">🔔</span>
+                        Notification Preferences
+                    </h2>
+                    {renderNotifications()}
+                </div>
+            </div>
 
             {/* Close Store Modal */}
             {showCloseStoreModal && (

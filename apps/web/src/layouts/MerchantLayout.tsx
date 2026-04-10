@@ -74,13 +74,20 @@ const MerchantLayout: React.FC = () => {
     return (
         <div className="min-h-screen bg-[var(--surface-0)] flex flex-col md:grid md:grid-cols-[250px_1fr]">
             {/* Mobile Header */}
-            <header className="md:hidden h-16 bg-white border-b border-[var(--glass-border)] flex items-center justify-between px-4 sticky top-0 z-20">
-                <div className="flex flex-col">
-                    <span className="text-lg font-bold text-[var(--brand-primary)]">Spendigo Merchant</span>
+            <header className="md:hidden h-16 bg-white/80 backdrop-blur-md border-b border-[var(--glass-border)] flex items-center justify-between px-4 sticky top-0 z-[40]">
+                <div className="flex items-center gap-2">
+                    <LogoIcon size={32} />
+                    <div className="flex flex-col">
+                        <span className="text-sm font-bold text-[var(--brand-primary)] leading-tight">Spendigo</span>
+                        <span className="text-[8px] font-bold text-[var(--text-muted)] tracking-tighter uppercase">Merchant Console</span>
+                    </div>
                 </div>
                 <div className="flex items-center gap-2">
                     <NotificationPopover />
-                    <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 text-2xl text-[var(--text-main)]">
+                    <button 
+                        onClick={() => setIsSidebarOpen(!isSidebarOpen)} 
+                        className="w-10 h-10 flex items-center justify-center rounded-xl bg-[var(--surface-1)] text-[var(--text-main)] active:scale-90 transition-transform"
+                    >
                         {isSidebarOpen ? '✕' : '☰'}
                     </button>
                 </div>
@@ -88,13 +95,13 @@ const MerchantLayout: React.FC = () => {
 
             {/* Sidebar */}
             <aside className={`
-                fixed inset-y-0 left-0 z-30 w-[250px] bg-white border-r border-[var(--glass-border)] flex flex-col transition-transform duration-300 ease-in-out
+                fixed inset-y-0 left-0 z-[50] w-[260px] bg-white border-r border-[var(--glass-border)] flex flex-col transition-transform duration-300 ease-in-out
                 md:translate-x-0 md:static md:h-screen
                 ${isSidebarOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'}
             `}>
                 <div className="p-6 mb-2 hidden md:block">
                     <div className="flex items-center gap-2 group">
-                        <img src="/app-icon.png" alt="Spendigo Logo" className="w-8 h-8 rounded-[8px] shadow-sm group-hover:scale-105 transition-transform" />
+                        <LogoIcon size={36} />
                         <div className="flex flex-col">
                             <span className="text-xl font-bold text-[var(--brand-primary)] leading-tight">Spendigo</span>
                             <span className="text-[10px] font-semibold text-[var(--text-muted)] tracking-wider uppercase">MERCHANT</span>
@@ -102,34 +109,34 @@ const MerchantLayout: React.FC = () => {
                     </div>
                 </div>
 
-                {/* Mobile-only spacer */}
-                <div className="md:hidden h-4"></div>
+                {/* Mobile spacer */}
+                <div className="md:hidden h-6"></div>
 
-                <nav className="flex-1 space-y-1 px-4 overflow-y-auto">
+                <nav className="flex-1 space-y-1 px-4 overflow-y-auto scrollbar-hide">
                     <NavLink
                         to="/merchant/dashboard"
-                        className={({ isActive }) => `flex items-center gap-3 p-3 rounded-lg font-medium transition-colors ${isActive ? 'bg-[var(--brand-primary)] text-white' : 'text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text-main)]'}`}
+                        className={({ isActive }) => `flex items-center gap-3 p-3 rounded-lg font-medium transition-all ${isActive ? 'bg-[var(--brand-primary)] text-white shadow-lg shadow-[var(--brand-primary)]/30' : 'text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text-main)]'}`}
                     >
                         <span>📊</span> Dashboard
                     </NavLink>
                     {can('orders:read') && (
                         <NavLink
                             to="/merchant/orders"
-                            className={({ isActive }) => `flex items-center gap-3 p-3 rounded-lg font-medium transition-colors ${isActive ? 'bg-[var(--brand-primary)] text-white' : 'text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text-main)]'}`}
+                            className={({ isActive }) => `flex items-center gap-3 p-3 rounded-lg font-medium transition-all ${isActive ? 'bg-[var(--brand-primary)] text-white shadow-lg shadow-[var(--brand-primary)]/30' : 'text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text-main)]'}`}
                         >
                             <span>📋</span> Orders
                         </NavLink>
                     )}
                     <NavLink
                         to="/merchant/products"
-                        className={({ isActive }) => `flex items-center gap-3 p-3 rounded-lg font-medium transition-colors ${isActive ? 'bg-[var(--brand-primary)] text-white' : 'text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text-main)]'}`}
+                        className={({ isActive }) => `flex items-center gap-3 p-3 rounded-lg font-medium transition-all ${isActive ? 'bg-[var(--brand-primary)] text-white shadow-lg shadow-[var(--brand-primary)]/30' : 'text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text-main)]'}`}
                     >
                         <span>📦</span> Products
                     </NavLink>
                     {can('flyers:write') && (
                         <NavLink
                             to="/merchant/flyers"
-                            className={({ isActive }) => `flex items-center gap-3 p-3 rounded-lg font-medium transition-colors ${isActive ? 'bg-[var(--brand-primary)] text-white' : 'text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text-main)]'}`}
+                            className={({ isActive }) => `flex items-center gap-3 p-3 rounded-lg font-medium transition-all ${isActive ? 'bg-[var(--brand-primary)] text-white shadow-lg shadow-[var(--brand-primary)]/30' : 'text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text-main)]'}`}
                         >
                             <span>📰</span> Flyers
                         </NavLink>
@@ -137,7 +144,7 @@ const MerchantLayout: React.FC = () => {
                     {can('deals:write') && (
                         <NavLink
                             to="/merchant/deals"
-                            className={({ isActive }) => `flex items-center gap-3 p-3 rounded-lg font-medium transition-colors ${isActive ? 'bg-[var(--brand-primary)] text-white' : 'text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text-main)]'}`}
+                            className={({ isActive }) => `flex items-center gap-3 p-3 rounded-lg font-medium transition-all ${isActive ? 'bg-[var(--brand-primary)] text-white shadow-lg shadow-[var(--brand-primary)]/30' : 'text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text-main)]'}`}
                         >
                             <span>🏷️</span> Deals
                         </NavLink>
@@ -145,13 +152,13 @@ const MerchantLayout: React.FC = () => {
 
                     <NavLink
                         to="/merchant/subscription"
-                        className={({ isActive }) => `flex items-center gap-3 p-3 rounded-lg font-medium transition-colors ${isActive ? 'bg-[var(--brand-primary)] text-white' : 'text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text-main)]'}`}
+                        className={({ isActive }) => `flex items-center gap-3 p-3 rounded-lg font-medium transition-all ${isActive ? 'bg-[var(--brand-primary)] text-white shadow-lg shadow-[var(--brand-primary)]/30' : 'text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text-main)]'}`}
                     >
                         <span>💳</span> Billing & Plan
                     </NavLink>
                     <NavLink
                         to="/merchant/settings"
-                        className={`flex items-center gap-3 p-3 rounded-lg font-medium transition-colors ${isSettingsActive ? 'bg-[var(--brand-primary)] text-white' : 'text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text-main)]'}`}
+                        className={`flex items-center gap-3 p-3 rounded-lg font-medium transition-all ${isSettingsActive ? 'bg-[var(--brand-primary)] text-white shadow-lg shadow-[var(--brand-primary)]/30' : 'text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text-main)]'}`}
                     >
                         <span>⚙️</span> Settings
                     </NavLink>
@@ -170,15 +177,15 @@ const MerchantLayout: React.FC = () => {
 
                 <div className="border-t border-[var(--glass-border)] pt-4 mt-auto p-4 pb-safe">
                     <div className="flex items-center gap-2 mb-2">
-                        <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                        <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
                         <span className="text-sm font-medium text-[var(--text-main)]">Store Online</span>
                     </div>
                     <div className="flex items-center justify-between text-xs">
-                        <div>
-                            <p className="text-[var(--text-main)] font-bold truncate max-w-[130px]">{user?.storeName || 'My Store'}</p>
-                            <p className="text-[var(--text-muted)] truncate max-w-[130px]">{user?.email}</p>
+                        <div className="min-w-0 pr-2">
+                            <p className="text-[var(--text-main)] font-bold truncate">{user?.storeName || 'My Store'}</p>
+                            <p className="text-[var(--text-muted)] truncate">{user?.email}</p>
                         </div>
-                        <button onClick={logout} className="text-red-500 hover:text-red-700 font-bold" title="Logout">
+                        <button onClick={logout} className="w-8 h-8 flex items-center justify-center rounded-lg text-red-500 hover:bg-red-50 transition-colors" title="Logout">
                             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.36 6.64a9 9 0 11-12.73 0" />
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 2v10" />
@@ -191,7 +198,7 @@ const MerchantLayout: React.FC = () => {
             {/* Overlay for mobile sidebar */}
             {isSidebarOpen && (
                 <div
-                    className="fixed inset-0 bg-black/50 z-20 md:hidden animate-fade-in"
+                    className="fixed inset-0 bg-black/40 backdrop-blur-[2px] z-[45] md:hidden animate-fade-in"
                     onClick={() => setIsSidebarOpen(false)}
                 ></div>
             )}
