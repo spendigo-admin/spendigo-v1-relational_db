@@ -329,85 +329,125 @@ const MasterCatalog: React.FC = () => {
                     </div>
 
                     {/* Filters */}
-                    <div className="flex flex-col sm:flex-row gap-4 mb-6">
-                        <div className="flex-1">
+                    <div className="flex flex-col md:flex-row gap-3 mb-6">
+                        <div className="flex-1 relative">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
                             <input
                                 type="text"
-                                placeholder="Search by name, brand, or UPC/GTIN..."
+                                placeholder="Search products, brand, or UPC..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="w-full px-4 py-3 border border-[var(--glass-border)] rounded-lg outline-none focus:border-[var(--brand-primary)]"
+                                className="w-full pl-9 pr-4 py-2 text-sm border border-[var(--glass-border)] rounded-lg outline-none focus:border-[var(--brand-primary)]"
                             />
                         </div>
-                        <div>
-                            <select
-                                value={filterCategory}
-                                onChange={(e) => setFilterCategory(e.target.value)}
-                                className="w-full sm:w-64 px-4 py-3 border border-[var(--glass-border)] rounded-lg outline-none"
-                            >
-                                <option value="">All Categories</option>
-                                {categories.map(c => <option key={c} value={c}>{c}</option>)}
-                            </select>
-                        </div>
+                        <select
+                            value={filterCategory}
+                            onChange={(e) => setFilterCategory(e.target.value)}
+                            className="w-full md:w-48 px-3 py-2 text-sm border border-[var(--glass-border)] rounded-lg outline-none bg-white"
+                        >
+                            <option value="">All Categories</option>
+                            {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                        </select>
                     </div>
 
                     <div className="bg-white rounded-xl border border-[var(--glass-border)] shadow-sm overflow-hidden">
-                        <table className="w-full text-left">
-                            <thead className="bg-[var(--surface-1)] border-b border-[var(--glass-border)]">
-                                <tr>
-                                    <th className="p-4 text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">Identity</th>
-                                    <th className="p-4 text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">Category</th>
-                                    <th className="p-4 text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">Packaging</th>
-                                    <th className="p-4 text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">Status</th>
-                                    <th className="p-4 text-xs font-bold uppercase tracking-wider text-[var(--text-muted)] text-right">Usage</th>
-                                    <th className="p-4 text-xs font-bold uppercase tracking-wider text-[var(--text-muted)] text-right">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-[var(--glass-border)]">
-                                {loading && <tr><td colSpan={6} className="p-8 text-center text-gray-400">Loading catalog...</td></tr>}
-                                {filteredItems.map(item => (
-                                    <tr key={item.master_product_id} className="hover:bg-[var(--surface-1)] transition-colors group">
-                                        <td className="p-4">
-                                            <div className="flex items-center gap-3">
-                                                <img src={item.primary_image_url || 'https://placehold.co/50'} className="w-10 h-10 rounded-lg object-cover bg-gray-100 flex-shrink-0" />
-                                                <div className="min-w-0">
-                                                    <div className="font-bold text-[var(--text-main)] truncate">{item.product_name}</div>
-                                                    <div className="text-xs text-[var(--text-muted)] flex gap-2">
-                                                        <span>{item.brand_name}</span>
-                                                        {item.upc_gtin && <span className="font-mono bg-gray-100 px-1 rounded">{item.upc_gtin}</span>}
+                        {/* Desktop Table View */}
+                        <div className="hidden md:block">
+                            <table className="w-full text-left">
+                                <thead className="bg-[var(--surface-1)] border-b border-[var(--glass-border)]">
+                                    <tr>
+                                        <th className="p-4 text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">Identity</th>
+                                        <th className="p-4 text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">Category</th>
+                                        <th className="p-4 text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">Packaging</th>
+                                        <th className="p-4 text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">Status</th>
+                                        <th className="p-4 text-xs font-bold uppercase tracking-wider text-[var(--text-muted)] text-right">Usage</th>
+                                        <th className="p-4 text-xs font-bold uppercase tracking-wider text-[var(--text-muted)] text-right">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-[var(--glass-border)]">
+                                    {loading && <tr><td colSpan={6} className="p-8 text-center text-gray-400">Loading catalog...</td></tr>}
+                                    {filteredItems.map(item => (
+                                        <tr key={item.master_product_id} className="hover:bg-[var(--surface-1)] transition-colors group">
+                                            <td className="p-4">
+                                                <div className="flex items-center gap-3">
+                                                    <img src={item.primary_image_url || 'https://placehold.co/50'} className="w-10 h-10 rounded-lg object-cover bg-gray-100 flex-shrink-0" />
+                                                    <div className="min-w-0">
+                                                        <div className="font-bold text-[var(--text-main)] truncate text-sm">{item.product_name}</div>
+                                                        <div className="text-[10px] text-[var(--text-muted)] flex gap-2">
+                                                            <span>{item.brand_name}</span>
+                                                            {item.upc_gtin && <span className="font-mono bg-gray-100 px-1 rounded">{item.upc_gtin}</span>}
+                                                        </div>
                                                     </div>
                                                 </div>
+                                            </td>
+                                            <td className="p-4">
+                                                <div className="text-xs capitalize">{item.category_id.replace(/^cat-/, '').replace(/-/g, ' ')}</div>
+                                                <div className="text-[10px] text-[var(--text-muted)]">{item.product_type}</div>
+                                            </td>
+                                            <td className="p-4 text-xs">
+                                                {item.net_quantity_value} {item.net_quantity_unit}
+                                            </td>
+                                            <td className="p-4">
+                                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${item.status === 'active' ? 'bg-green-100 text-green-700 border border-green-200' :
+                                                    item.status === 'deprecated' ? 'bg-yellow-100 text-yellow-700 border border-yellow-200' : 'bg-red-100 text-red-700 border border-red-200'
+                                                    }`}>
+                                                    {item.status}
+                                                </span>
+                                            </td>
+                                            <td className="p-4 text-right">
+                                                <MerchantCountCell masterProductId={item.master_product_id} />
+                                            </td>
+                                            <td className="p-4 text-right">
+                                                <button
+                                                    onClick={() => setSelectedProduct(item)}
+                                                    className="px-3 py-1 text-[10px] border rounded-lg hover:bg-gray-50 font-bold"
+                                                >
+                                                    Details
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        {/* Mobile Card View */}
+                        <div className="md:hidden divide-y divide-[var(--glass-border)] bg-[var(--surface-1)]">
+                            {loading && <div className="p-8 text-center text-gray-400">Loading...</div>}
+                            {filteredItems.map(item => (
+                                <div key={item.master_product_id} className="p-4 space-y-4 hover:bg-[var(--surface-2)] transition-colors" onClick={() => setSelectedProduct(item)}>
+                                    <div className="flex gap-3">
+                                        <img src={item.primary_image_url || 'https://placehold.co/50'} className="w-16 h-16 rounded-xl object-cover bg-gray-100 border border-gray-200 shadow-sm" />
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex justify-between items-start mb-1">
+                                                <span className={`px-1.5 py-0.5 rounded text-[8px] font-bold uppercase border ${item.status === 'active' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'}`}>
+                                                    {item.status}
+                                                </span>
+                                                {item.upc_gtin && <span className="font-mono text-[8px] bg-gray-100 px-1 rounded text-[var(--text-muted)]">{item.upc_gtin}</span>}
                                             </div>
-                                        </td>
-                                        <td className="p-4">
-                                            <div className="text-sm capitalize">{item.category_id.replace(/^cat-/, '').replace(/-/g, ' ')}</div>
-                                            <div className="text-xs text-[var(--text-muted)]">{item.product_type}</div>
-                                        </td>
-                                        <td className="p-4 text-sm">
-                                            {item.net_quantity_value} {item.net_quantity_unit}
-                                        </td>
-                                        <td className="p-4">
-                                            <span className={`px-2 py-1 rounded-full text-xs font-bold ${item.status === 'active' ? 'bg-green-100 text-green-700' :
-                                                item.status === 'deprecated' ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'
-                                                }`}>
-                                                {item.status}
-                                            </span>
-                                        </td>
-                                        <td className="p-4 text-right">
-                                            <MerchantCountCell masterProductId={item.master_product_id} />
-                                        </td>
-                                        <td className="p-4 text-right">
-                                            <button
-                                                onClick={() => setSelectedProduct(item)}
-                                                className="px-3 py-1 text-xs border rounded hover:bg-gray-50"
-                                            >
-                                                View Details
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                                            <div className="font-bold text-[var(--text-main)] text-sm leading-tight mb-1">{item.product_name}</div>
+                                            <div className="text-xs text-[var(--text-muted)]">{item.brand_name}</div>
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-3 gap-2">
+                                        <div className="bg-white/50 p-2 rounded-lg border border-[var(--glass-border)]">
+                                            <p className="text-[8px] uppercase font-bold text-[var(--text-muted)] mb-0.5">Category</p>
+                                            <p className="text-[10px] font-bold text-[var(--text-main)] truncate capitalize">{item.category_id.replace(/^cat-/, '').replace(/-/g, ' ')}</p>
+                                        </div>
+                                        <div className="bg-white/50 p-2 rounded-lg border border-[var(--glass-border)]">
+                                            <p className="text-[8px] uppercase font-bold text-[var(--text-muted)] mb-0.5">Size</p>
+                                            <p className="text-[10px] font-bold text-[var(--text-main)] truncate">{item.net_quantity_value} {item.net_quantity_unit}</p>
+                                        </div>
+                                        <div className="bg-white/50 p-2 rounded-lg border border-[var(--glass-border)]">
+                                            <p className="text-[8px] uppercase font-bold text-[var(--text-muted)] mb-0.5">Stores</p>
+                                            <div className="flex items-center gap-1">
+                                                <MerchantCountCell masterProductId={item.master_product_id} />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 </div>
             )}
@@ -422,10 +462,10 @@ const MasterCatalog: React.FC = () => {
                     )}
 
                     {requests.map(req => (
-                        <div key={req.id} className="bg-white p-6 rounded-xl border border-[var(--glass-border)] shadow-sm flex flex-col md:flex-row gap-6">
+                        <div key={req.id} className="bg-white p-4 md:p-6 rounded-xl border border-[var(--glass-border)] shadow-sm flex flex-col md:flex-row gap-6">
                             {/* Image Preview */}
                             <div className="w-full md:w-48 flex flex-col gap-2">
-                                <div className="w-full h-48 bg-gray-100 rounded-lg flex-shrink-0 overflow-hidden relative">
+                                <div className="w-full h-48 md:h-48 bg-gray-100 rounded-lg flex-shrink-0 overflow-hidden relative">
                                     {req.requested_image_url ? (
                                         <img src={req.requested_image_url} className="w-full h-full object-cover" />
                                     ) : (
@@ -445,40 +485,42 @@ const MasterCatalog: React.FC = () => {
 
                             {/* Details */}
                             <div className="flex-1 space-y-4">
-                                <div className="flex justify-between items-start">
+                                <div className="flex flex-col md:flex-row justify-between items-start gap-4">
                                     <div>
-                                        <h3 className="text-xl font-bold">{req.requested_product_name}</h3>
-                                        <p className="text-gray-500">{req.requested_brand} • {req.requested_category}</p>
+                                        <h3 className="text-lg md:text-xl font-bold">{req.requested_product_name}</h3>
+                                        <p className="text-sm text-gray-500">{req.requested_brand} • {req.requested_category}</p>
                                     </div>
-                                    <div className="text-right">
-                                        <span className="text-xs text-gray-400 block mb-1">Confidence Score</span>
-                                        <div className="h-2 w-24 bg-gray-200 rounded-full overflow-hidden">
-                                            <div className="h-full bg-green-500 w-[85%]"></div>
+                                    <div className="flex md:flex-col items-center md:items-end justify-between w-full md:w-auto p-2 md:p-0 bg-green-50 md:bg-transparent rounded-lg md:rounded-none">
+                                        <span className="text-[10px] text-gray-400 uppercase font-bold">Confidence</span>
+                                        <div className="flex items-center gap-2">
+                                            <div className="h-1.5 w-16 md:w-24 bg-gray-200 rounded-full overflow-hidden">
+                                                <div className="h-full bg-green-500 w-[85%]"></div>
+                                            </div>
+                                            <span className="text-[10px] font-bold text-green-600">85%</span>
                                         </div>
-                                        <span className="text-xs font-bold text-green-600">85% Match (AI)</span>
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-gray-50 rounded-lg text-sm">
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4 p-3 md:p-4 bg-gray-50 rounded-lg text-[10px] md:text-sm">
                                     <div>
-                                        <span className="text-gray-500 block text-xs">Barcode / GTIN</span>
-                                        <span className="font-mono font-bold">{req.requested_barcode || "N/A"}</span>
+                                        <span className="text-gray-500 block text-[9px] uppercase font-bold mb-0.5">Barcode</span>
+                                        <span className="font-mono font-bold break-all">{req.requested_barcode || "N/A"}</span>
                                     </div>
                                     <div>
-                                        <span className="text-gray-500 block text-xs">Merchant</span>
-                                        <span className="font-mono">{req.submitted_by_merchant_id}</span>
+                                        <span className="text-gray-500 block text-[9px] uppercase font-bold mb-0.5">Merchant</span>
+                                        <span className="font-mono truncate block">{req.submitted_by_merchant_id}</span>
                                     </div>
                                     <div>
-                                        <span className="text-gray-500 block text-xs">Submitted</span>
+                                        <span className="text-gray-500 block text-[9px] uppercase font-bold mb-0.5">Submitted</span>
                                         <span>Just now</span>
                                     </div>
                                     <div>
-                                        <span className="text-gray-500 block text-xs">Source</span>
-                                        <span>Merchant App</span>
+                                        <span className="text-gray-500 block text-[9px] uppercase font-bold mb-0.5">Source</span>
+                                        <span>App</span>
                                     </div>
                                 </div>
 
-                                <div className="text-sm text-gray-700">
+                                <div className="text-xs md:text-sm text-gray-700">
                                     <span className="font-bold">Description: </span>
                                     {req.requested_description || "No description provided."}
                                 </div>
@@ -491,15 +533,15 @@ const MasterCatalog: React.FC = () => {
 
                                     if (duplicate) {
                                         return (
-                                            <div className="border text-xs rounded p-2 bg-red-50 border-red-100 text-red-800 mt-2 flex justify-between items-center">
+                                            <div className="border text-[10px] rounded p-2 bg-red-50 border-red-100 text-red-800 mt-2 flex justify-between items-center">
                                                 <span>
-                                                    <strong>⚠️ Duplicate Barcode Detected:</strong> Exists as "<span className="font-bold">{duplicate.product_name}</span>" (Category: {duplicate.category_id}).
+                                                    <strong>⚠️ Duplicate:</strong> "{duplicate.product_name}"
                                                 </span>
                                                 <button
                                                     onClick={() => { setSelectedProduct(duplicate); setActiveTab('catalog'); }}
-                                                    className="underline text-red-900 font-bold hover:no-underline"
+                                                    className="underline text-red-900 font-bold"
                                                 >
-                                                    View Existing
+                                                    View
                                                 </button>
                                             </div>
                                         );
@@ -509,16 +551,16 @@ const MasterCatalog: React.FC = () => {
                             </div>
 
                             {/* Actions */}
-                            <div className="flex flex-col gap-2 justify-center border-l pl-6 min-w-[150px]">
+                            <div className="flex md:flex-col gap-2 justify-center border-t md:border-t-0 md:border-l pt-4 md:pt-0 md:pl-6 min-w-0 md:min-w-[150px]">
                                 <button
                                     onClick={() => handleApprove(req)}
-                                    className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg shadow-sm w-full text-center"
+                                    className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg shadow-sm text-sm"
                                 >
                                     ✓ Approve
                                 </button>
                                 <button
                                     onClick={() => handleReject(req)}
-                                    className="px-4 py-2 bg-white border border-red-200 text-red-600 hover:bg-red-50 font-medium rounded-lg w-full text-center"
+                                    className="flex-1 px-4 py-2 bg-white border border-red-200 text-red-600 hover:bg-red-50 font-medium rounded-lg text-sm"
                                 >
                                     ✕ Reject
                                 </button>
@@ -528,37 +570,37 @@ const MasterCatalog: React.FC = () => {
                 </div>
             )}
 
-            {/* DETAIL MODAL */}
+            {/* DETAIL MODAL - Optimized as Side Panel or Fullscreen on mobile */}
             {selectedProduct && (
-                <div className="fixed inset-0 bg-black/50 z-50 flex justify-end">
-                    <div className="w-full max-w-2xl bg-white h-full shadow-2xl overflow-y-auto animate-slide-in-right">
-                        <div className="sticky top-0 bg-white border-b p-6 flex justify-between items-center z-10">
-                            <div className="flex-1 mr-4">
+                <div className="fixed inset-0 bg-black/50 z-[100] flex justify-end">
+                    <div className="w-full md:max-w-2xl bg-white h-full shadow-2xl overflow-y-auto animate-slide-in-right">
+                        <div className="sticky top-0 bg-white border-b p-4 md:p-6 flex justify-between items-center z-10">
+                            <div className="flex-1 mr-4 min-w-0">
                                 {isEditing ? (
                                     <input
-                                        className="text-xl font-bold border-b border-gray-300 focus:border-blue-500 outline-none w-full"
+                                        className="text-lg md:text-xl font-bold border-b border-gray-300 focus:border-blue-500 outline-none w-full"
                                         value={editForm.product_name || ''}
                                         onChange={e => setEditForm({ ...editForm, product_name: e.target.value })}
                                         placeholder="Product Name"
                                     />
                                 ) : (
-                                    <h2 className="text-xl font-bold">{selectedProduct.product_name}</h2>
+                                    <h2 className="text-lg md:text-xl font-bold truncate">{selectedProduct.product_name}</h2>
                                 )}
-                                <p className="text-sm text-gray-500">{selectedProduct.master_product_id}</p>
+                                <p className="text-[10px] text-gray-500 font-mono truncate">{selectedProduct.master_product_id}</p>
                             </div>
                             <div className="flex items-center gap-2">
                                 {isEditing ? (
                                     <>
-                                        <button onClick={() => setIsEditing(false)} className="px-3 py-1 text-gray-600 hover:bg-gray-100 rounded text-sm font-medium">Cancel</button>
-                                        <button onClick={handleUpdate} className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 font-bold text-sm">Save</button>
+                                        <button onClick={() => setIsEditing(false)} className="px-3 py-1 text-gray-600 hover:bg-gray-100 rounded text-xs font-medium">Cancel</button>
+                                        <button onClick={handleUpdate} className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 font-bold text-xs">Save</button>
                                     </>
                                 ) : (
                                     <>
                                         <button onClick={handleDelete} className="p-2 text-red-500 hover:bg-red-50 rounded" title="Delete Product">
-                                            <span className="text-lg">🗑️</span>
+                                            <span className="text-base">🗑️</span>
                                         </button>
-                                        <button onClick={() => setIsEditing(true)} className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium text-sm flex items-center gap-2">
-                                            <span>✏️</span> Edit
+                                        <button onClick={() => setIsEditing(true)} className="p-2 md:px-4 md:py-2 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium text-xs flex items-center gap-2">
+                                            <span>✏️</span> <span className="hidden md:inline">Edit</span>
                                         </button>
                                         <button onClick={() => setSelectedProduct(null)} className="p-2 hover:bg-gray-100 rounded-full text-gray-400 hover:text-gray-600">✕</button>
                                     </>
@@ -566,116 +608,85 @@ const MasterCatalog: React.FC = () => {
                             </div>
                         </div>
 
-                        <div className="p-6 space-y-8">
-                            {/* A. Identity */}
+                        <div className="p-4 md:p-6 space-y-6 md:space-y-8">
+                            {/* Identity Section */}
                             <section>
-                                <h3 className="text-sm font-bold uppercase text-gray-400 mb-4 border-b pb-2">A. Identity & Classification</h3>
-                                <div className="grid grid-cols-2 gap-6">
-                                    <div>
-                                        <label className="block text-sm text-gray-500 mb-1">Brand Name</label>
+                                <h3 className="text-[10px] font-bold uppercase text-gray-400 mb-4 border-b pb-2 tracking-widest">A. Identity & Classification</h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                                    <div className="bg-gray-50 md:bg-transparent p-3 md:p-0 rounded-xl">
+                                        <label className="block text-[10px] uppercase font-bold text-gray-400 mb-1">Brand Name</label>
                                         {isEditing ? (
-                                            <input className="w-full p-2 border rounded-lg outline-none focus:border-blue-500" value={editForm.brand_name || ''} onChange={e => setEditForm({ ...editForm, brand_name: e.target.value })} />
-                                        ) : <span className="font-medium">{selectedProduct.brand_name}</span>}
+                                            <input className="w-full px-3 py-2 text-sm border rounded-lg outline-none focus:border-blue-500 bg-white" value={editForm.brand_name || ''} onChange={e => setEditForm({ ...editForm, brand_name: e.target.value })} />
+                                        ) : <span className="font-bold text-sm">{selectedProduct.brand_name}</span>}
                                     </div>
-                                    <div>
-                                        <label className="block text-sm text-gray-500 mb-1">UPC / GTIN</label>
+                                    <div className="bg-gray-50 md:bg-transparent p-3 md:p-0 rounded-xl">
+                                        <label className="block text-[10px] uppercase font-bold text-gray-400 mb-1">UPC / GTIN</label>
                                         {isEditing ? (
-                                            <input className="w-full p-2 border rounded-lg font-mono outline-none focus:border-blue-500" value={editForm.upc_gtin || ''} onChange={e => setEditForm({ ...editForm, upc_gtin: e.target.value, barcode: e.target.value })} />
-                                        ) : <span className="font-mono bg-gray-100 px-2 py-1 rounded text-sm">{selectedProduct.upc_gtin || 'N/A'}</span>}
+                                            <input className="w-full px-3 py-2 text-sm border rounded-lg font-mono outline-none focus:border-blue-500 bg-white" value={editForm.upc_gtin || ''} onChange={e => setEditForm({ ...editForm, upc_gtin: e.target.value, barcode: e.target.value })} />
+                                        ) : <span className="font-mono bg-white md:bg-gray-100 px-2 py-1 rounded text-xs border md:border-none">{selectedProduct.upc_gtin || 'N/A'}</span>}
                                     </div>
-                                    <div>
-                                        <label className="block text-sm text-gray-500 mb-1">Category</label>
+                                    <div className="bg-gray-50 md:bg-transparent p-3 md:p-0 rounded-xl">
+                                        <label className="block text-[10px] uppercase font-bold text-gray-400 mb-1">Category</label>
                                         {isEditing ? (
-                                            <select className="w-full p-2 border rounded-lg outline-none focus:border-blue-500" value={editForm.category_id} onChange={e => setEditForm({ ...editForm, category_id: e.target.value })}>
+                                            <select className="w-full px-3 py-2 text-sm border rounded-lg outline-none focus:border-blue-500 bg-white" value={editForm.category_id} onChange={e => setEditForm({ ...editForm, category_id: e.target.value })}>
                                                 {categories.map(c => <option key={c} value={c}>{c}</option>)}
                                             </select>
-                                        ) : <span className="font-medium capitalize">{selectedProduct.category_id.replace(/^cat-/, '').replace(/-/g, ' ')}</span>}
+                                        ) : <span className="font-bold text-sm capitalize">{selectedProduct.category_id.replace(/^cat-/, '').replace(/-/g, ' ')}</span>}
                                     </div>
-                                    <div>
-                                        <label className="block text-sm text-gray-500 mb-1">Status</label>
+                                    <div className="bg-gray-50 md:bg-transparent p-3 md:p-0 rounded-xl">
+                                        <label className="block text-[10px] uppercase font-bold text-gray-400 mb-1">Status</label>
                                         {isEditing ? (
-                                            <select className="w-full p-2 border rounded-lg outline-none focus:border-blue-500" value={editForm.status} onChange={e => setEditForm({ ...editForm, status: e.target.value as any })}>
+                                            <select className="w-full px-3 py-2 border rounded-lg outline-none focus:border-blue-500 bg-white text-sm" value={editForm.status} onChange={e => setEditForm({ ...editForm, status: e.target.value as any })}>
                                                 <option value="active">Active</option>
                                                 <option value="deprecated">Deprecated</option>
                                                 <option value="blocked">Blocked</option>
                                             </select>
-                                        ) : <span className={`px-2 py-1 rounded-full text-xs font-bold w-fit ${selectedProduct.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{selectedProduct.status}</span>}
+                                        ) : <span className={`px-2 py-1 rounded-full text-[10px] font-bold w-fit border ${selectedProduct.status === 'active' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'}`}>{selectedProduct.status.toUpperCase()}</span>}
                                     </div>
                                 </div>
                             </section>
 
-                            {/* B. Size & Packaging */}
+                            {/* Logistics */}
                             <section>
-                                <h3 className="text-sm font-bold uppercase text-gray-400 mb-4 border-b pb-2">B. Size & Packaging</h3>
-                                <div className="grid grid-cols-2 gap-6">
-                                    <div>
-                                        <label className="block text-sm text-gray-500 mb-1">Net Quantity</label>
-                                        {isEditing ? (
-                                            <div className="flex gap-2">
-                                                <input type="number" className="w-24 p-2 border rounded-lg outline-none focus:border-blue-500" value={editForm.net_quantity_value || ''} onChange={e => setEditForm({ ...editForm, net_quantity_value: Number(e.target.value) })} placeholder="Value" />
-                                                <input className="w-20 p-2 border rounded-lg outline-none focus:border-blue-500" value={editForm.net_quantity_unit || ''} onChange={e => setEditForm({ ...editForm, net_quantity_unit: e.target.value })} placeholder="Unit" />
-                                            </div>
-                                        ) : <span className="font-medium">{selectedProduct.net_quantity_value} {selectedProduct.net_quantity_unit}</span>}
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm text-gray-500 mb-1">Package Count</label>
-                                        {isEditing ? (
-                                            <input type="number" className="w-24 p-2 border rounded-lg outline-none focus:border-blue-500" value={editForm.package_count || 1} onChange={e => setEditForm({ ...editForm, package_count: Number(e.target.value) })} />
-                                        ) : <span className="font-medium">{selectedProduct.package_count} pk</span>}
-                                    </div>
-                                </div>
-                            </section>
-
-                            {/* IMAGES */}
-                            <section>
-                                <h3 className="text-sm font-bold uppercase text-gray-400 mb-4 border-b pb-2">Media</h3>
-                                <div className="flex gap-4 items-start">
-                                    <div className="w-32 h-32 bg-gray-50 border rounded-lg flex items-center justify-center p-2">
+                                <h3 className="text-[10px] font-bold uppercase text-gray-400 mb-4 border-b pb-2 tracking-widest">B. Logistics & Media</h3>
+                                <div className="flex flex-col md:flex-row gap-6">
+                                    <div className="w-full md:w-40 h-40 bg-gray-50 border rounded-2xl flex items-center justify-center p-4 relative group">
                                         <img src={editForm.primary_image_url || '/placeholder.png'} className="max-w-full max-h-full object-contain" />
+                                        {isEditing && <button className="absolute inset-0 bg-black/40 text-white text-[10px] font-bold opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl">CHANGE IMAGE</button>}
                                     </div>
-                                    <div className="flex-1">
-                                        <label className="block text-sm text-gray-500 mb-1">Primary Image URL</label>
-                                        {isEditing ? (
-                                            <div className="space-y-2">
-                                                <input className="w-full p-2 border rounded-lg text-sm font-mono outline-none focus:border-blue-500" value={editForm.primary_image_url || ''} onChange={e => setEditForm({ ...editForm, primary_image_url: e.target.value })} placeholder="https://..." />
-                                                <p className="text-[10px] text-gray-400">Paste a direct image link.</p>
-                                            </div>
-                                        ) : <a href={selectedProduct.primary_image_url} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:underline break-all block">{selectedProduct.primary_image_url}</a>}
-                                    </div>
-                                </div>
-                            </section>
-
-                            {/* Usage Section (Read Only) */}
-                            <section>
-                                <h3 className="text-sm font-bold uppercase text-gray-400 mb-4 border-b pb-2">Usage</h3>
-                                <div className="bg-blue-50 p-4 rounded-xl flex justify-between items-center border border-blue-100">
-                                    <div>
-                                        <span className="text-2xl font-bold text-blue-700">{merchantCount}</span>
-                                        <span className="block text-sm text-blue-800 font-medium">Active Merchant Listings</span>
-                                    </div>
-
-                                    {isEditing && (
-                                        <div className="text-sm text-blue-700 bg-blue-100 px-3 py-1 rounded">
-                                            Edits will propagate to all stores.
+                                    <div className="flex-1 space-y-4">
+                                        <div className="bg-gray-50 md:bg-transparent p-3 md:p-0 rounded-xl">
+                                            <label className="block text-[10px] uppercase font-bold text-gray-400 mb-1">Packaging Size</label>
+                                            {isEditing ? (
+                                                <div className="flex gap-2">
+                                                    <input type="number" className="w-full px-3 py-2 text-sm border rounded-lg outline-none focus:border-blue-500 bg-white" value={editForm.net_quantity_value || ''} onChange={e => setEditForm({ ...editForm, net_quantity_value: Number(e.target.value) })} />
+                                                    <input className="w-24 px-3 py-2 text-sm border rounded-lg outline-none focus:border-blue-500 bg-white" value={editForm.net_quantity_unit || ''} onChange={e => setEditForm({ ...editForm, net_quantity_unit: e.target.value })} />
+                                                </div>
+                                            ) : <span className="font-bold text-sm">{selectedProduct.net_quantity_value} {selectedProduct.net_quantity_unit} / {selectedProduct.package_count || 1}pk</span>}
                                         </div>
-                                    )}
+                                        <div className="bg-gray-50 md:bg-transparent p-3 md:p-0 rounded-xl">
+                                            <label className="block text-[10px] uppercase font-bold text-gray-400 mb-1">Image Reference</label>
+                                            {isEditing ? (
+                                                <input className="w-full px-3 py-2 text-xs border rounded-lg font-mono outline-none focus:border-blue-500 bg-white" value={editForm.primary_image_url || ''} onChange={e => setEditForm({ ...editForm, primary_image_url: e.target.value })} />
+                                            ) : <a href={selectedProduct.primary_image_url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:underline break-all block truncate">{selectedProduct.primary_image_url}</a>}
+                                        </div>
+                                    </div>
                                 </div>
                             </section>
 
-                            {selectedProduct.data_source === 'open_food_facts' && selectedProduct.status !== 'active' && !isEditing && (
-                                <div className="p-6 bg-purple-50 border-t border-purple-100 flex items-center justify-between sticky bottom-0 -mx-6 -mb-6">
-                                    <div className="text-sm font-medium text-purple-900">
-                                        External Data Source
+                            {/* Usage */}
+                            <section className="bg-blue-50 border border-blue-100 p-4 md:p-6 rounded-2xl">
+                                <h3 className="text-[10px] font-bold uppercase text-blue-400 mb-4 border-b border-blue-100 pb-2 tracking-widest">Platform Footprint</h3>
+                                <div className="flex justify-between items-center">
+                                    <div>
+                                        <span className="text-3xl font-bold text-blue-700">{merchantCount}</span>
+                                        <span className="block text-[10px] text-blue-800 font-bold uppercase tracking-tight">Active Listings</span>
                                     </div>
-                                    <button
-                                        onClick={handleCommit}
-                                        disabled={importing}
-                                        className="px-6 py-2 bg-purple-600 text-white font-bold rounded-lg hover:bg-purple-700 shadow-lg"
-                                    >
-                                        {importing ? 'Saving...' : 'Commit to Master Catalog'}
-                                    </button>
+                                    <div className="text-right">
+                                        <p className="text-[10px] text-blue-700/60 max-w-[150px]">Propagation speed: Instant (Real-time DB Sync)</p>
+                                    </div>
                                 </div>
-                            )}
+                            </section>
 
                             <div className="h-10"></div>
                         </div>
@@ -685,61 +696,52 @@ const MasterCatalog: React.FC = () => {
 
             {/* PENDING PRODUCTS VIEW */}
             {activeTab === 'pending' && (
-                <div className="animate-fade-in">
-                    <div className="bg-orange-50 p-4 rounded-xl border border-orange-100 mb-6">
-                        <div className="flex items-center gap-2">
-                            <span className="text-2xl">⌛</span>
-                            <div>
-                                <h3 className="font-bold text-orange-900">Pending Merchant Discoveries</h3>
-                                <p className="text-xs text-orange-700">Products scanned by merchants from external databases. Review and commit to make globally available.</p>
-                            </div>
+                <div className="animate-fade-in space-y-4">
+                    <div className="bg-orange-50 p-4 rounded-xl border border-orange-100 mb-6 flex items-center gap-3">
+                        <span className="text-2xl shrink-0">⌛</span>
+                        <div>
+                            <h3 className="font-bold text-orange-900 text-sm">Merchant Discoveries</h3>
+                            <p className="text-[10px] text-orange-700">Review products discovered by merchants before global commitment.</p>
                         </div>
                     </div>
 
-                    <div className="space-y-4">
+                    <div className="space-y-3">
                         {pendingProducts.map(pending => (
-                            <div key={pending.id} className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:border-orange-300 transition-colors">
-                                <div className="flex items-center gap-4">
+                            <div key={pending.id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 hover:border-orange-300 transition-colors flex flex-col md:flex-row gap-4 items-start md:items-center">
+                                <div className="flex items-center gap-4 w-full">
                                     <img
                                         src={pending.primary_image_url || '/placeholder.png'}
-                                        className="w-20 h-20 rounded-lg object-cover border"
+                                        className="w-16 h-16 rounded-lg object-cover border shrink-0"
                                     />
-                                    <div className="flex-1">
-                                        <div className="flex items-center gap-2 mb-1">
-                                            <h3 className="font-bold text-lg">{pending.product_name}</h3>
-                                            <span className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded-full font-bold">PENDING</span>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2 mb-0.5">
+                                            <h3 className="font-bold text-sm truncate">{pending.product_name}</h3>
+                                            <span className="text-[8px] bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded-full font-bold shrink-0">PENDING</span>
                                         </div>
-                                        <p className="text-sm text-gray-600 mb-2">{pending.brand_name}</p>
-                                        <div className="flex items-center gap-4 text-xs text-gray-500">
+                                        <p className="text-xs text-gray-500 mb-1">{pending.brand_name}</p>
+                                        <div className="flex flex-wrap gap-x-4 gap-y-1 text-[9px] text-gray-400 font-medium">
                                             <span>📦 {pending.original_barcode || pending.barcode}</span>
-                                            <span>🏦 Discovered by: {pending.discovered_by_merchant}</span>
+                                            <span>🏦 Merchant: {pending.discovered_by_merchant?.substring(0, 8)}...</span>
                                             <span>🌐 Source: {pending.data_source || 'external'}</span>
                                         </div>
                                     </div>
-                                    <div className="flex gap-2">
-                                        <button
-                                            onClick={() => handleCommitPending(pending)}
-                                            className="px-4 py-2 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 shadow-sm"
-                                        >
-                                            ✅ Commit
-                                        </button>
-                                        <button
-                                            onClick={() => handleRejectPending(pending)}
-                                            className="px-4 py-2 bg-red-500 text-white font-bold rounded-lg hover:bg-red-600 shadow-sm"
-                                        >
-                                            ❌ Reject
-                                        </button>
-                                    </div>
+                                </div>
+                                <div className="flex gap-2 w-full md:w-auto mt-2 md:mt-0 pt-3 md:pt-0 border-t md:border-t-0 border-gray-100">
+                                    <button
+                                        onClick={() => handleCommitPending(pending)}
+                                        className="flex-1 md:w-24 py-2 bg-green-600 text-white font-bold rounded-lg text-xs"
+                                    >
+                                        ✅ Commit
+                                    </button>
+                                    <button
+                                        onClick={() => handleRejectPending(pending)}
+                                        className="flex-1 md:w-24 py-2 bg-red-50 text-red-600 font-bold rounded-lg text-xs"
+                                    >
+                                        ❌ Reject
+                                    </button>
                                 </div>
                             </div>
                         ))}
-                        {pendingProducts.length === 0 && (
-                            <div className="text-center py-12 text-gray-400">
-                                <p className="text-4xl mb-4">✨</p>
-                                <p className="font-bold">No pending products</p>
-                                <p className="text-sm">Merchant-discovered products will appear here for review.</p>
-                            </div>
-                        )}
                     </div>
                 </div>
             )}

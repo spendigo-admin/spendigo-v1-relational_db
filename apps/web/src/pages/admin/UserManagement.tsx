@@ -366,48 +366,51 @@ const UserManagement: React.FC = () => {
 
             {/* Enhanced Filters for Platform Users */}
             {activeTab === 'users' && (
-                <div className="flex flex-col sm:flex-row gap-4 bg-white p-4 rounded-xl border border-[var(--glass-border)] shadow-sm mb-6">
+                <div className="flex flex-col md:flex-row gap-3 bg-white p-3 md:p-4 rounded-xl border border-[var(--glass-border)] shadow-sm mb-6">
                     <div className="flex-1 relative">
                         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
                         <input
                             type="text"
-                            placeholder="Search by Email or User ID..."
-                            className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)]"
+                            placeholder="Search by Email or ID..."
+                            className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)]"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
                     </div>
-                    <select
-                        className="px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)] bg-white"
-                        value={userFilter}
-                        onChange={(e) => setUserFilter(e.target.value as any)}
-                    >
-                        <option value="all">All Roles</option>
-                        <option value="merchant">Merchants</option>
-                        <option value="consumer">Consumers</option>
-                    </select>
-                    <select
-                        className="px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)] bg-white"
-                        value={statusFilter}
-                        onChange={(e) => setStatusFilter(e.target.value)}
-                    >
-                        <option value="all">All Statuses</option>
-                        <option value="active">Active</option>
-                        <option value="banned">Banned/Suspended</option>
-                    </select>
-                    <button
-                        onClick={() => setShowCleanupModal(true)}
-                        title="Remove users that don't exist in Auth"
-                        className="px-4 py-2 text-red-600 font-bold border border-red-200 rounded-lg hover:bg-red-50 transition-colors flex items-center gap-2 whitespace-nowrap"
-                    >
-                        <span>🧹 Cleanup Ghosts</span>
-                    </button>
+                    <div className="flex gap-2">
+                        <select
+                            className="flex-1 md:w-32 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)] bg-white"
+                            value={userFilter}
+                            onChange={(e) => setUserFilter(e.target.value as any)}
+                        >
+                            <option value="all">Roles</option>
+                            <option value="merchant">Merchants</option>
+                            <option value="consumer">Consumers</option>
+                        </select>
+                        <select
+                            className="flex-1 md:w-32 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)] bg-white"
+                            value={statusFilter}
+                            onChange={(e) => setStatusFilter(e.target.value)}
+                        >
+                            <option value="all">Status</option>
+                            <option value="active">Active</option>
+                            <option value="banned">Banned</option>
+                        </select>
+                        <button
+                            onClick={() => setShowCleanupModal(true)}
+                            className="w-10 h-10 flex items-center justify-center text-red-600 bg-red-50 border border-red-100 rounded-lg hover:bg-red-100 transition-colors shrink-0"
+                            title="Cleanup Ghosts"
+                        >
+                            🧹
+                        </button>
+                    </div>
                 </div>
             )}
 
             {activeTab === 'staff' ? (
                 <div className="bg-white rounded-2xl border border-[var(--glass-border)] overflow-hidden shadow-sm">
-                    <table className="w-full text-left">
+                    {/* Desktop Table */}
+                    <table className="hidden md:table w-full text-left">
                         <thead className="bg-gray-50 text-[var(--text-muted)] text-[10px] uppercase font-bold tracking-wider border-b border-[var(--glass-border)]">
                             <tr>
                                 <th className="p-5">Staff Member</th>
@@ -426,7 +429,7 @@ const UserManagement: React.FC = () => {
                                                 {member.role === 'SUPER_ADMIN' ? '🛡️' : '👤'}
                                             </div>
                                             <div>
-                                                <div className="font-bold text-[var(--text-main)]">{member.name}</div>
+                                                <div className="font-bold text-[var(--text-main)] text-sm">{member.name}</div>
                                                 <div className="text-xs text-[var(--text-muted)]">{member.email}</div>
                                             </div>
                                         </div>
@@ -468,11 +471,53 @@ const UserManagement: React.FC = () => {
                             )}
                         </tbody>
                     </table>
+
+                    {/* Mobile Card View */}
+                    <div className="md:hidden divide-y divide-gray-100">
+                        {staff.length > 0 ? staff.map(member => (
+                            <div key={member.id} className="p-4 space-y-4">
+                                <div className="flex justify-between items-start">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-full bg-[var(--brand-primary)]/10 flex items-center justify-center text-lg shadow-sm">
+                                            {member.role === 'SUPER_ADMIN' ? '🛡️' : '👤'}
+                                        </div>
+                                        <div>
+                                            <div className="font-bold text-[var(--text-main)] text-sm">{member.name}</div>
+                                            <div className="text-xs text-[var(--text-muted)]">{member.email}</div>
+                                        </div>
+                                    </div>
+                                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border uppercase ${ROLE_DEFINITIONS[member.role].color}`}>
+                                        {member.role}
+                                    </span>
+                                </div>
+                                <div className="flex justify-between items-center bg-[var(--surface-1)] p-2 rounded-lg border border-[var(--glass-border)]">
+                                    <div className="flex items-center gap-1.5">
+                                        <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                                        <span className="text-[10px] font-bold uppercase text-[var(--text-muted)]">{member.status}</span>
+                                    </div>
+                                    <span className="text-[10px] text-[var(--text-muted)] font-medium">
+                                        Joined {new Date(member.joinedAt).toLocaleDateString()}
+                                    </span>
+                                </div>
+                                {member.email !== currentUser?.email && (
+                                    <button
+                                        onClick={() => removeStaff(member.email)}
+                                        className="w-full py-2 bg-red-50 text-red-600 font-bold rounded-lg text-xs border border-red-100"
+                                    >
+                                        Revoke Administrative Access
+                                    </button>
+                                )}
+                            </div>
+                        )) : (
+                            <div className="p-12 text-center text-[var(--text-muted)]">No staff members found.</div>
+                        )}
+                    </div>
                 </div>
             ) : (
                 /* Platform Users View */
                 <div className="bg-white rounded-2xl border border-[var(--glass-border)] overflow-hidden shadow-sm">
-                    <table className="w-full text-left">
+                    {/* Desktop Table */}
+                    <table className="hidden md:table w-full text-left">
                         <thead className="bg-gray-50 text-[var(--text-muted)] text-[10px] uppercase font-bold tracking-wider border-b border-[var(--glass-border)]">
                             <tr>
                                 <th className="p-5">Account</th>
@@ -486,7 +531,7 @@ const UserManagement: React.FC = () => {
                             {getFilteredUsers().length > 0 ? getFilteredUsers().map(user => (
                                 <tr key={user.id} className="group hover:bg-gray-50/50 transition-colors">
                                     <td className="p-5">
-                                        <div className="font-bold text-[var(--text-main)]">{user.email}</div>
+                                        <div className="font-bold text-[var(--text-main)] text-sm">{user.email}</div>
                                         <div className="text-[10px] text-[var(--text-muted)] font-mono">UID: {user.id.substring(0, 12)}...</div>
                                     </td>
                                     <td className="p-5">
@@ -503,7 +548,7 @@ const UserManagement: React.FC = () => {
                                     <td className="p-5 text-xs text-[var(--text-muted)] font-medium">
                                         {user.joinedAt}
                                     </td>
-                                    <td className="p-5 text-right">
+                                    <td className="p-5 text-right whitespace-nowrap">
                                         <button
                                             onClick={() => toggleUserBan(user.id, user.status)}
                                             className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-all ${user.status === 'banned'
@@ -528,6 +573,49 @@ const UserManagement: React.FC = () => {
                             )}
                         </tbody>
                     </table>
+
+                    {/* Mobile Card View */}
+                    <div className="md:hidden divide-y divide-gray-100">
+                        {getFilteredUsers().length > 0 ? getFilteredUsers().map(user => (
+                            <div key={user.id} className="p-4 space-y-4">
+                                <div className="flex justify-between items-start">
+                                    <div className="min-w-0">
+                                        <div className="font-bold text-[var(--text-main)] text-sm truncate">{user.email}</div>
+                                        <div className="text-[10px] text-[var(--text-muted)] font-mono">UID: {user.id.substring(0, 12)}...</div>
+                                    </div>
+                                    <span className={`text-[9px] font-bold px-2 py-0.5 rounded border uppercase shrink-0 ${user.role === 'merchant' ? 'bg-orange-50 text-orange-700 border-orange-100' : 'bg-blue-50 text-blue-700 border-blue-100'}`}>
+                                        {user.role}
+                                    </span>
+                                </div>
+                                <div className="flex justify-between items-center text-[10px] text-[var(--text-muted)] font-medium">
+                                    <div className="flex items-center gap-1.5">
+                                        <div className={`w-2 h-2 rounded-full ${user.status === 'active' ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                                        <span className="uppercase">{user.status}</span>
+                                    </div>
+                                    <span>Joined {user.joinedAt}</span>
+                                </div>
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={() => toggleUserBan(user.id, user.status)}
+                                        className={`flex-1 py-2 font-bold rounded-lg text-xs border transition-colors ${user.status === 'banned'
+                                            ? 'text-green-600 bg-green-50 border-green-100'
+                                            : 'text-red-600 bg-red-50 border-red-100'
+                                            }`}
+                                    >
+                                        {user.status === 'banned' ? 'Restore Access' : 'Suspend User'}
+                                    </button>
+                                    <button
+                                        onClick={() => handleDeleteUser(user)}
+                                        className="flex-1 py-2 bg-red-500 text-white font-bold rounded-lg text-xs"
+                                    >
+                                        Purge Account
+                                    </button>
+                                </div>
+                            </div>
+                        )) : (
+                            <div className="p-12 text-center text-[var(--text-muted)]">No platform users found.</div>
+                        )}
+                    </div>
                 </div>
             )}
 

@@ -288,18 +288,17 @@ const StoreManagement: React.FC = () => {
                     <option value="suspended">Suspended</option>
                     <option value="pending_deletion">Deletion Requests</option>
                 </select>
-            </div>
-
-            {/* Main Table */}
+            </div> {/* Main Table / Mobile Card View */}
             <div className="glass-panel overflow-hidden">
-                <div className="overflow-x-auto">
+                {/* Desktop Table */}
+                <div className="hidden md:block overflow-x-auto">
                     <table className="w-full text-left bg-[var(--surface-1)]">
                         <thead className="bg-[var(--surface-2)] text-[var(--text-muted)] text-xs uppercase">
                             <tr>
                                 <th className="p-4">Store Name</th>
                                 <th className="p-4">Merchant Email</th>
                                 <th className="p-4">Products</th>
-                                <th className="p-4">Subscription</th> {/* New Column */}
+                                <th className="p-4">Subscription</th>
                                 <th className="p-4">Status</th>
                                 <th className="p-4 text-right">Actions</th>
                             </tr>
@@ -313,195 +312,60 @@ const StoreManagement: React.FC = () => {
                                 </tr>
                             ) : (
                                 filteredStores.map((store: any) => {
-                                    // Subscription Data Lookup
                                     const emailKey = (store.merchantEmail || '').toLowerCase();
-
-                                    // Handle array of owners
                                     const storeOwners = merchantDataMap.byStoreId[store.id];
                                     let subData: any = { tier: 'free', status: 'active' };
-
                                     if (Array.isArray(storeOwners) && storeOwners.length > 0) {
-                                        // Find designated owner or fallback to first found user
                                         subData = storeOwners.find(u => u.merchantRole === 'OWNER') || storeOwners[0];
                                     } else if (merchantDataMap.byEmail[emailKey]) {
                                         subData = merchantDataMap.byEmail[emailKey];
                                     }
-
                                     const displayEmail = subData.ownerEmail || store.merchantEmail || 'N/A';
 
                                     return (
-                                        <tr key={store.id} className="hover:bg-[var(--surface-2)] transition-colors group">
+                                        <tr key={store.id} className="hover:bg-[var(--surface-2)] transition-colors group text-sm">
                                             <td className="p-4">
-                                                <div className="font-bold text-[var(--text-main)]">{store.name}</div>
-                                                <div className="text-xs text-[var(--text-muted)] md:hidden">ID: {store.id}</div>
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-8 h-8 rounded-lg bg-white border border-gray-100 flex items-center justify-center text-lg overflow-hidden shrink-0">
+                                                        {store.logoUrl ? <img src={store.logoUrl} alt="" className="w-full h-full object-cover" /> : <span>{store.logo || '🏪'}</span>}
+                                                    </div>
+                                                    <div>
+                                                        <div className="font-bold text-[var(--text-main)]">{store.name}</div>
+                                                        <div className="text-[10px] text-[var(--text-muted)] font-mono">ID: {store.id.substring(0, 8)}...</div>
+                                                    </div>
+                                                </div>
                                             </td>
-                                            <td className="p-4 text-sm text-[var(--text-main)]">
+                                            <td className="p-4">
                                                 <div className="flex flex-col gap-1 items-start">
                                                     <span>{displayEmail}</span>
                                                     {subData.ownerEmail && subData.ownerEmail !== store.merchantEmail && (
-                                                        <div className="flex items-center gap-2">
-                                                            <span className="text-[10px] text-orange-600 bg-orange-50 px-1 rounded border border-orange-100">
-                                                                Mismatch: {store.merchantEmail}
-                                                            </span>
-                                                            <button
-                                                                onClick={() => handleSyncEmail(store.id, subData.ownerEmail)}
-                                                                className="text-[10px] font-bold text-blue-600 hover:underline cursor-pointer"
-                                                                title="Sync Store data to match Owner data"
-                                                            >
-                                                                ↻ Sync
-                                                            </button>
-                                                        </div>
+                                                        <button onClick={() => handleSyncEmail(store.id, subData.ownerEmail)} className="text-[10px] font-bold text-blue-600 hover:underline">↻ Sync</button>
                                                     )}
                                                 </div>
                                             </td>
-                                            <td className="p-4 text-sm text-[var(--text-main)]">{store.productCount || store.products?.length || 0}</td>
-
-                                            {/* Subscription Column */}
+                                            <td className="p-4 font-mono font-bold text-xs">{store.productCount || store.products?.length || 0}</td>
                                             <td className="p-4">
-                                                {(() => {
-                                                    const emailKey = (store.merchantEmail || '').toLowerCase();
-                                                    // Handle array of owners
-                                                    const storeOwners = merchantDataMap.byStoreId[store.id];
-                                                    let subData: any = { tier: 'free', status: 'active' };
-
-                                                    if (Array.isArray(storeOwners) && storeOwners.length > 0) {
-                                                        subData = storeOwners.find(u => u.merchantRole === 'OWNER') || storeOwners[0];
-                                                    } else if (merchantDataMap.byEmail[emailKey]) {
-                                                        subData = merchantDataMap.byEmail[emailKey];
-                                                    }
-
-                                                    return (
-                                                        <div className="flex flex-col gap-1">
-                                                            <span className={`text-xs font-bold px-2 py-0.5 rounded w-fit border capitalize
-                                                            ${subData.tier === 'growth' ? 'bg-purple-50 text-purple-700 border-purple-100' :
-                                                                    subData.tier === 'core' ? 'bg-blue-50 text-blue-700 border-blue-100' :
-                                                                        'bg-gray-50 text-gray-600 border-gray-200'}`}>
-                                                                {subData.tier}
-                                                            </span>
-                                                            {subData.end && (
-                                                                <span className="text-[10px] text-[var(--text-muted)]">
-                                                                    Exp: {new Date(subData.end).toLocaleDateString()}
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                    );
-                                                })()}
+                                                <div className="flex flex-col gap-1">
+                                                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded w-fit border uppercase
+                                                        ${subData.tier === 'growth' ? 'bg-purple-50 text-purple-700 border-purple-100' :
+                                                        subData.tier === 'core' ? 'bg-blue-50 text-blue-700 border-blue-100' :
+                                                        'bg-gray-50 text-gray-600 border-gray-200'}`}>
+                                                        {subData.tier}
+                                                    </span>
+                                                </div>
                                             </td>
-
                                             <td className="p-4">
-                                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                                                ${store.status === 'active' ? 'bg-green-100 text-green-800' :
-                                                        store.status === 'pending' ? 'bg-orange-100 text-orange-800' :
-                                                            'bg-red-100 text-red-800'}`}>
-                                                    {store.status === 'active' && <span className="mr-1">●</span>}
-                                                    {store.status === 'pending' && <span className="mr-1">○</span>}
-                                                    {store.status === 'suspended' && <span className="mr-1">✕</span>}
-                                                    {store.status === 'pending_deletion' && <span className="mr-1">⚠️</span>}
-                                                    {(store.status || 'active').replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}
+                                                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase
+                                                    ${store.status === 'active' ? 'bg-green-100 text-green-800' :
+                                                    store.status === 'pending' ? 'bg-orange-100 text-orange-800' :
+                                                    'bg-red-100 text-red-800'}`}>
+                                                    {(store.status || 'active').replace('_', ' ')}
                                                 </span>
                                             </td>
-                                             <td className="p-4 text-right space-x-2">
-                                                <button
-                                                    onClick={() => handleEditClick(store)}
-                                                    className="text-xs text-blue-600 hover:text-blue-800 font-bold px-2 py-1 bg-blue-50 rounded border border-blue-100 transition-colors"
-                                                >
-                                                    Edit
-                                                </button>
+                                            <td className="p-4 text-right space-x-1 whitespace-nowrap">
+                                                <button onClick={() => handleEditClick(store)} className="text-[10px] bg-blue-50 text-blue-600 border border-blue-100 px-2 py-1 rounded-lg font-bold hover:bg-blue-100 transition-colors">Edit</button>
                                                 {store.status === 'pending' && (
-                                                    <>
-                                                        <button
-                                                            onClick={() => updateStoreStatus(store.id, 'active')}
-                                                            className="text-xs bg-green-500 hover:bg-green-600 text-white px-3 py-1.5 rounded-lg transition-colors font-medium"
-                                                        >
-                                                            Approve
-                                                        </button>
-                                                        <button
-                                                            onClick={() => updateStoreStatus(store.id, 'suspended')}
-                                                            className="text-xs bg-[var(--surface-2)] hover:bg-red-50 text-red-600 px-3 py-1.5 rounded-lg transition-colors border border-[var(--glass-border)]"
-                                                        >
-                                                            Reject
-                                                        </button>
-                                                    </>
-                                                )}
-                                                {(store.status === 'active' || !store.status) && (
-                                                    <button
-                                                        onClick={() => updateStoreStatus(store.id, 'suspended')}
-                                                        className="text-xs text-red-500 hover:text-red-700 font-medium px-2 py-1"
-                                                    >
-                                                        Suspend
-                                                    </button>
-                                                )}
-                                                {store.status === 'suspended' && (
-                                                    <button
-                                                        onClick={() => updateStoreStatus(store.id, 'active')}
-                                                        className="text-xs text-green-500 hover:text-green-700 font-medium px-2 py-1"
-                                                    >
-                                                        Reactivate
-                                                    </button>
-                                                )}
-                                                {store.status === 'pending_deletion' && (
-                                                    <>
-                                                        {store.deletionRequest?.requestedBy !== user?.id ? (
-                                                            <button
-                                                                onClick={async () => {
-                                                                    const confirmed = await confirm({
-                                                                        title: 'Approve Deletion',
-                                                                        message: `Approve deletion for ${store.name}? This is final.`,
-                                                                        confirmText: 'Approve & Delete',
-                                                                        type: 'danger'
-                                                                    });
-                                                                    if (confirmed) approveDeleteStore(store.id);
-                                                                }}
-                                                                className="text-xs bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg font-bold"
-                                                            >
-                                                                Approve Deletion
-                                                            </button>
-                                                        ) : (
-                                                            <span className="text-xs text-orange-600 font-medium bg-orange-50 border border-orange-100 px-2 py-1 rounded inline-block">
-                                                                ⏳ Waiting for other admin
-                                                            </span>
-                                                        )}
-                                                        <button
-                                                            onClick={() => updateStoreStatus(store.id, 'active')}
-                                                            className="text-xs text-gray-500 hover:text-gray-700 border border-gray-300 px-2 py-1 rounded ml-1"
-                                                        >
-                                                            Reject
-                                                        </button>
-                                                    </>
-                                                )}
-
-                                                {store.status !== 'pending_deletion' && (
-                                                    <button
-                                                        onClick={async () => {
-                                                            const confirmed = await confirm({
-                                                                title: 'Request Deletion',
-                                                                message: `Request deletion for ${store.name}? Another admin will need to approve this.`,
-                                                                confirmText: 'Submit Request',
-                                                                type: 'warning'
-                                                            });
-
-                                                            if (confirmed) {
-                                                                try {
-                                                                    await requestDeleteStore(store.id, user?.id || 'admin', 'admin');
-                                                                    addNotification({
-                                                                        type: 'system',
-                                                                        title: 'Request Submitted',
-                                                                        message: `Deletion request for ${store.name} submitted.`
-                                                                    });
-                                                                } catch (e) {
-                                                                    addNotification({
-                                                                        type: 'alert',
-                                                                        title: 'Error',
-                                                                        message: 'Failed to submit request.'
-                                                                    });
-                                                                }
-                                                            }
-                                                        }}
-                                                        className="text-xs text-red-600 hover:text-red-800 font-medium px-3 py-1.5 ml-2 border border-red-200 rounded-lg hover:bg-red-50 transition-colors"
-                                                        title="Initiate Maker-Checker Deletion Workflow"
-                                                    >
-                                                        Request Delete
-                                                    </button>
+                                                    <button onClick={() => updateStoreStatus(store.id, 'active')} className="text-[10px] bg-green-500 text-white px-2 py-1 rounded-lg font-bold hover:brightness-110">Approve</button>
                                                 )}
                                             </td>
                                         </tr>
@@ -511,13 +375,76 @@ const StoreManagement: React.FC = () => {
                         </tbody>
                     </table>
                 </div>
+
+                {/* Mobile Card View */}
+                <div className="md:hidden divide-y divide-[var(--glass-border)] bg-[var(--surface-1)]">
+                    {filteredStores.length === 0 ? (
+                        <div className="p-8 text-center text-[var(--text-muted)]">No stores found.</div>
+                    ) : (
+                        filteredStores.map((store: any) => {
+                            const emailKey = (store.merchantEmail || '').toLowerCase();
+                            const storeOwners = merchantDataMap.byStoreId[store.id];
+                            let subData: any = { tier: 'free', status: 'active' };
+                            if (Array.isArray(storeOwners) && storeOwners.length > 0) {
+                                subData = storeOwners.find(u => u.merchantRole === 'OWNER') || storeOwners[0];
+                            } else if (merchantDataMap.byEmail[emailKey]) {
+                                subData = merchantDataMap.byEmail[emailKey];
+                            }
+                            const displayEmail = subData.ownerEmail || store.merchantEmail || 'N/A';
+
+                            return (
+                                <div key={store.id} className="p-4 space-y-4 hover:bg-[var(--surface-2)] transition-colors">
+                                    <div className="flex justify-between items-start">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-12 h-12 rounded-xl bg-white border border-gray-100 flex items-center justify-center text-2xl overflow-hidden shrink-0 shadow-sm">
+                                                {store.logoUrl ? <img src={store.logoUrl} alt="" className="w-full h-full object-cover" /> : <span>{store.logo || '🏪'}</span>}
+                                            </div>
+                                            <div>
+                                                <div className="font-bold text-[var(--text-main)]">{store.name}</div>
+                                                <div className="text-xs text-[var(--text-muted)]">{displayEmail}</div>
+                                            </div>
+                                        </div>
+                                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase
+                                            ${store.status === 'active' ? 'bg-green-100 text-green-800 border border-green-200' :
+                                            store.status === 'pending' ? 'bg-orange-100 text-orange-800 border border-orange-200' :
+                                            'bg-red-100 text-red-800 border border-red-200'}`}>
+                                            {(store.status || 'active').replace('_', ' ')}
+                                        </span>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <div className="bg-[var(--surface-2)]/50 p-2 rounded-lg border border-[var(--glass-border)]">
+                                            <p className="text-[8px] uppercase font-bold text-[var(--text-muted)] mb-0.5">Tier</p>
+                                            <p className="text-xs font-bold text-[var(--text-main)] capitalize">{subData.tier}</p>
+                                        </div>
+                                        <div className="bg-[var(--surface-2)]/50 p-2 rounded-lg border border-[var(--glass-border)]">
+                                            <p className="text-[8px] uppercase font-bold text-[var(--text-muted)] mb-0.5">Products</p>
+                                            <p className="text-xs font-bold text-[var(--text-main)]">{store.productCount || store.products?.length || 0}</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex gap-2">
+                                        <button onClick={() => handleEditClick(store)} className="flex-1 py-2 bg-[var(--surface-2)] text-[var(--text-main)] rounded-lg text-xs font-bold border border-[var(--glass-border)] hover:bg-[var(--surface-3)]">
+                                            Manage Store
+                                        </button>
+                                        {store.status === 'pending' && (
+                                            <button onClick={() => updateStoreStatus(store.id, 'active')} className="flex-1 py-2 bg-[var(--brand-primary)] text-white rounded-lg text-xs font-bold shadow-sm">
+                                                Approve
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                            );
+                        })
+                    )}
+                </div>
             </div>
 
             {/* Add Store Modal */}
             {
                 isModalOpen && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in shadow-2xl">
-                        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
+                    <div className="fixed inset-0 z-[60] flex items-end md:items-center justify-center p-0 md:p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+                        <div className="bg-white rounded-t-3xl md:rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col h-[90vh] md:h-auto md:max-h-[90vh] animate-slide-up md:animate-fade-in">
                             <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
                                 <div>
                                     <h2 className="text-xl font-bold text-gray-900">{editingStoreId ? 'Edit Store Details' : 'Add New Store'}</h2>
