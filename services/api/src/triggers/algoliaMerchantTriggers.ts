@@ -128,6 +128,9 @@ export const syncMerchantProductToAlgolia = functions.firestore
         // Geo-Spatial Data
         _geoloc: geoloc,
 
+        // Highlighting
+        is_canadian_local: data?.is_canadian_local ?? masterData?.is_canadian_local ?? false,
+
         // Meta
         updated_at: Date.now()
       };

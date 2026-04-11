@@ -125,6 +125,13 @@ const ProductDetail: React.FC = () => {
                     <div className="space-y-6">
                         <div>
                             <h1 className="text-3xl font-bold text-[var(--text-main)] mb-2">{displayProduct.name}</h1>
+                            {displayProduct.is_canadian_local && (
+                                <div className="mb-4">
+                                    <span className="inline-flex px-3 py-1 bg-red-50 text-red-700 text-xs font-bold rounded-lg shadow-sm border border-red-100 uppercase items-center gap-1.5">
+                                        <span className="text-base">🍁</span> Canadian Local Product
+                                    </span>
+                                </div>
+                            )}
 
                             {/* Price */}
                             <div className="flex items-baseline gap-3 mb-4">

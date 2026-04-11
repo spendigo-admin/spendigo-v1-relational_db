@@ -86,7 +86,8 @@ export const useStoreProducts = (storeId: string) => {
                             ? data.original_price : data.price,
                         originalPrice: (data.price < data.original_price) ? data.original_price : undefined,
                         discount: (data.discount_valid_until && new Date(data.discount_valid_until) < new Date()) 
-                            ? undefined : data.discount_label
+                            ? undefined : data.discount_label,
+                        is_canadian_local: data.is_canadian_local ?? master.is_canadian_local ?? false
                     } as Product);
                 }
             });

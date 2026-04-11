@@ -48,7 +48,7 @@ const algoliaClient = (ALGOLIA_APP_ID && ALGOLIA_API_KEY)
 exports.syncMerchantProductToAlgolia = functions.firestore
     .document('merchant_products/{merchantProductId}')
     .onWrite(async (change, context) => {
-    var _a, _b, _c, _d;
+    var _a, _b, _c, _d, _e, _f;
     if (!algoliaClient) {
         functions.logger.warn('Algolia Sync skipped: ALGOLIA_APP_ID or ALGOLIA_API_KEY is not set.');
         return null;
@@ -149,6 +149,8 @@ exports.syncMerchantProductToAlgolia = functions.firestore
             primary_image_url: (masterData === null || masterData === void 0 ? void 0 : masterData.primary_image_url) || '',
             // Geo-Spatial Data
             _geoloc: geoloc,
+            // Highlighting
+            is_canadian_local: (_f = (_e = data === null || data === void 0 ? void 0 : data.is_canadian_local) !== null && _e !== void 0 ? _e : masterData === null || masterData === void 0 ? void 0 : masterData.is_canadian_local) !== null && _f !== void 0 ? _f : false,
             // Meta
             updated_at: Date.now()
         };

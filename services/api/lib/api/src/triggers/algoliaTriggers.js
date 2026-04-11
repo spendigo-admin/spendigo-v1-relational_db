@@ -79,6 +79,7 @@ exports.syncMasterProductToAlgolia = functions.firestore
         upc_gtin: (data === null || data === void 0 ? void 0 : data.upc_gtin) || '',
         primary_image_url: (data === null || data === void 0 ? void 0 : data.primary_image_url) || '',
         age_restricted: (data === null || data === void 0 ? void 0 : data.age_restricted) || false,
+        is_canadian_local: (data === null || data === void 0 ? void 0 : data.is_canadian_local) || false,
         // Optional: Add a timestamp field for sorting
         updated_at: Date.now()
     };

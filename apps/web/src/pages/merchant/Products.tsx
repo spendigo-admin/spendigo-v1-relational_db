@@ -220,7 +220,12 @@ const MerchantProducts: React.FC = () => {
     const selectMasterItem = (item: any) => {
         setSelectedMasterItem(item);
         setView('add_details');
-        setForm(f => ({ ...f, price: '', stock: '100' }));
+        setForm(f => ({ 
+            ...f, 
+            price: '', 
+            stock: '100',
+            isCanadianLocal: item.is_canadian_local || false
+        }));
     };
 
     const handleAddProduct = async () => {
@@ -476,7 +481,12 @@ const MerchantProducts: React.FC = () => {
                                     <div className="flex items-center gap-3">
                                         <img src={product.image} alt="" className="w-10 h-10 rounded-lg object-cover bg-gray-100" />
                                         <div>
-                                            <span className="font-medium text-[var(--text-main)] block">{product.name}</span>
+                                            <div className="flex items-center gap-2">
+                                                <span className="font-medium text-[var(--text-main)] block">{product.name}</span>
+                                                {product.is_canadian_local && (
+                                                    <span className="text-xs" title="Canadian Local">🍁</span>
+                                                )}
+                                            </div>
                                             <span className="text-xs text-gray-400">{product.brand_name}</span>
                                         </div>
                                     </div>
@@ -516,7 +526,12 @@ const MerchantProducts: React.FC = () => {
                         <div className="flex gap-3 mb-3">
                             <img src={product.image} alt="" className="w-16 h-16 rounded-lg object-cover bg-gray-100" />
                             <div className="flex-1 min-w-0">
-                                <div className="font-medium text-[var(--text-main)] truncate block">{product.name}</div>
+                                <div className="flex items-center gap-1.5">
+                                    <div className="font-medium text-[var(--text-main)] truncate block">{product.name}</div>
+                                    {product.is_canadian_local && (
+                                        <span className="text-xs shrink-0">🍁</span>
+                                    )}
+                                </div>
                                 <div className="text-sm text-gray-500 mb-1 truncate">{product.brand_name}</div>
                                 <div className="text-[10px] text-[var(--text-muted)] capitalize bg-gray-100 inline-block px-2 py-0.5 rounded-full">{product.category.replace(/^cat-/, '').replace(/-/g, ' ')}</div>
                             </div>
