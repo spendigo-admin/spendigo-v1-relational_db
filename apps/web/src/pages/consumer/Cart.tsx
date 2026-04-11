@@ -122,7 +122,12 @@ const Cart: React.FC = () => {
 
                                                 {/* Details */}
                                                 <div className="flex-1 min-w-0">
-                                                    <h4 className="font-medium text-[var(--text-main)] truncate">{item.productName}</h4>
+                                                    <h4 className="font-medium text-[var(--text-main)] truncate flex items-center gap-1.5">
+                                                        <span>{item.productName}</span>
+                                                        {item.is_canadian_local && (
+                                                            <span className="text-xs" title="Canadian Local">🍁</span>
+                                                        )}
+                                                    </h4>
                                                     <p className="text-[var(--brand-primary)] font-bold">${item.price.toFixed(2)}</p>
 
                                                     {/* Quantity Controls */}

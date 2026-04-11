@@ -70,7 +70,8 @@ const ProductDetail: React.FC = () => {
             quantity,
             storeId: displayProduct.storeId,
             storeName: displayProduct.storeName,
-            image: displayProduct.images[0]
+            image: displayProduct.images[0],
+            is_canadian_local: displayProduct.is_canadian_local
         });
         setAdded(true);
         setTimeout(() => setAdded(false), 2000);

@@ -44,8 +44,11 @@ export const WishlistItemCard: React.FC<WishlistItemCardProps> = ({
             >
                 <img src={item.image} alt="" className="w-11 h-11 rounded-lg object-cover shadow-sm flex-shrink-0" />
                 <div className="flex-1 min-w-0">
-                    <h3 className="font-bold text-[var(--text-main)] text-sm truncate">
-                        {selectedOption ? selectedOption.name : item.name}
+                    <h3 className="font-bold text-[var(--text-main)] text-sm truncate flex items-center gap-1.5">
+                        <span>{selectedOption ? selectedOption.name : item.name}</span>
+                        {(selectedOption?.is_canadian_local || item.is_canadian_local) && (
+                            <span className="text-xs" title="Canadian Local">🍁</span>
+                        )}
                     </h3>
                     {/* Collapsed summary: store name + price + reason */}
                     {!isExpanded && selectedOption && (
@@ -142,6 +145,9 @@ export const WishlistItemCard: React.FC<WishlistItemCardProps> = ({
                                                             {showBrand && <span className="font-bold text-gray-900">{option.brand} </span>}
                                                             <span>{option.name}</span>
                                                             {option.unit && <span className="text-gray-400 text-xs"> ({option.unit})</span>}
+                                                            {option.is_canadian_local && (
+                                                                <span className="ml-1.5 text-xs" title="Canadian Local">🍁</span>
+                                                            )}
                                                         </>
                                                     );
                                                 })()}

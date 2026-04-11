@@ -12,6 +12,7 @@ export interface MerchantProduct {
     net_quantity_unit?: string;
     image?: string;
     primary_image_url?: string;
+    is_canadian_local?: boolean;
 }
 
 export interface StoreOption {
@@ -29,6 +30,7 @@ export interface StoreOption {
     comparisonUnit?: string;
     priceTrend?: 'up' | 'down' | 'stable';
     previousPrice?: number;
+    is_canadian_local?: boolean;
     // Set when the shopper's requested quantity can't be met in whole pack units
     // e.g. shopper needs 3, smallest sellable unit is a 6-pack
     quantityWarning?: { needed: number; packSize: number; mustBuy: number };
@@ -43,6 +45,7 @@ export interface OptimizedWishlistItem {
     unit?: string;
     taxable?: boolean;
     brand?: string;
+    is_canadian_local?: boolean;
     options: StoreOption[];
     cheapest: StoreOption | null;
     maxPrice: number;

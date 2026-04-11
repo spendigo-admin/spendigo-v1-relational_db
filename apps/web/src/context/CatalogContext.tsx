@@ -12,6 +12,7 @@ export interface CatalogItem {
     taxable: boolean;
     barcode?: string; // Added barcode support
     brand?: string;
+    is_canadian_local?: boolean;
 }
 
 interface CatalogContextType {
@@ -59,7 +60,8 @@ export const CatalogProvider: React.FC<{ children: ReactNode }> = ({ children })
                     unit: data.unit_size || data.net_quantity_unit || '',
                     taxable: data.tax_category_id !== 'zero_rated_grocery',
                     barcode: data.upc_gtin || data.barcode,
-                    brand: data.brand || ''
+                    brand: data.brand || '',
+                    is_canadian_local: data.is_canadian_local || false
                 });
             });
             setCatalog(items);

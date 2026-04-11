@@ -14,6 +14,7 @@ export interface CartItem {
     storeName: string;
     image?: string;
     originalPrice?: number;
+    is_canadian_local?: boolean;
 }
 
 interface CartContextType {
@@ -153,7 +154,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (existing) {
             updatedItems = baseItems.map(i =>
                 i.productId === newItem.productId
-                    ? { ...i, quantity: i.quantity + newItem.quantity, price: newItem.price, originalPrice: newItem.originalPrice }
+                    ? { ...i, quantity: i.quantity + newItem.quantity, price: newItem.price, originalPrice: newItem.originalPrice, is_canadian_local: newItem.is_canadian_local }
                     : i
             );
         } else {
@@ -216,7 +217,8 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     ...updatedItems[existingIndex],
                     quantity: updatedItems[existingIndex].quantity + newItem.quantity,
                     price: newItem.price,
-                    originalPrice: newItem.originalPrice
+                    originalPrice: newItem.originalPrice,
+                    is_canadian_local: newItem.is_canadian_local
                 };
             } else {
                 updatedItems.push({ ...newItem, id: Math.random().toString(36).substr(2, 9) });

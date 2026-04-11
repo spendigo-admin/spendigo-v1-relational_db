@@ -524,7 +524,12 @@ const Checkout: React.FC = () => {
                                                             className="w-8 h-8 rounded-md object-cover border border-[var(--glass-border)] bg-[var(--surface-1)]"
                                                         />
                                                     )}
-                                                    <span className="text-[var(--text-muted)]">{item.quantity}x {item.productName}</span>
+                                                    <span className="text-[var(--text-muted)] flex items-center gap-1.5">
+                                                        <span>{item.quantity}x {item.productName}</span>
+                                                        {item.is_canadian_local && (
+                                                            <span className="text-xs" title="Canadian Local">🍁</span>
+                                                        )}
+                                                    </span>
                                                 </div>
                                                 <span className="font-mono text-[var(--text-main)]">${(item.price * item.quantity).toFixed(2)}</span>
                                             </div>

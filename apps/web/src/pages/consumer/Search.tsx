@@ -111,7 +111,8 @@ const Search: React.FC = () => {
             quantity: 1,
             storeId: product.storeId,
             storeName: product.storeName,
-            image: product.image
+            image: product.image,
+            is_canadian_local: product.is_canadian_local
         });
     };
 

@@ -364,7 +364,8 @@ const StoreDetail: React.FC = () => {
             quantity: 1,
             storeId: store.id,
             storeName: store.name,
-            image: product.image
+            image: product.image,
+            is_canadian_local: product.is_canadian_local
         });
     };
 

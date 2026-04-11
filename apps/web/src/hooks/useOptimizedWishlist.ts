@@ -405,6 +405,7 @@ export const useOptimizedWishlist = () => {
                 comparisonUnit: normalizedUnitPrice?.comparisonUnit,
                 priceTrend: priceTrends[product.id]?.trend,
                 previousPrice: priceTrends[product.id]?.previousPrice,
+                is_canadian_local: product.is_canadian_local ?? masterProduct?.is_canadian_local ?? false
             });
         });
 
@@ -469,7 +470,8 @@ export const useOptimizedWishlist = () => {
                             description: p.description || 'Instore item',
                             unit: p.unit_size || '',
                             taxable: false,
-                            brand: p.brand || ''
+                            brand: p.brand || '',
+                            is_canadian_local: p.is_canadian_local || false
                         });
                     }
                 }
@@ -606,6 +608,7 @@ export const useOptimizedWishlist = () => {
                                 unit: finalUnit || '',
                                 normalizedUnitPrice: normalizedUnitPrice?.pricePerComparisonUnit,
                                 comparisonUnit: normalizedUnitPrice?.comparisonUnit,
+                                is_canadian_local: m.is_canadian_local ?? catalogMap.get(m.master_product_id)?.is_canadian_local ?? false
                             };
 
                             const existingOption = storesMap.get(m.merchant_id);
@@ -647,6 +650,7 @@ export const useOptimizedWishlist = () => {
                     options: allOptions,
                     cheapest: cheapestOption,
                     maxPrice,
+                    is_canadian_local: cheapestOption?.is_canadian_local ?? catalogMap.get(item.id)?.is_canadian_local ?? false,
                     bulkSavingHint: (() => {
                         if (!cheapestOption || !cheapestOption.normalizedUnitPrice || !cheapestOption.comparisonUnit) return undefined;
                         // Look for another option at the same store (or any store) with a better unit price
@@ -953,7 +957,8 @@ export const useOptimizedWishlist = () => {
                     storeId: selectedOption.storeId,
                     storeName: selectedOption.storeName,
                     image: item.image,
-                    originalPrice: selectedOption.originalPrice
+                    originalPrice: selectedOption.originalPrice,
+                    is_canadian_local: selectedOption.is_canadian_local
                 });
             }
         });
