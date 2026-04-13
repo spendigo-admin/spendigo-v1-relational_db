@@ -5,7 +5,7 @@ import { useNotifications } from '../../context/NotificationContext';
 import { useConfirmation } from '../../context/ConfirmationContext';
 import { useCatalog, Product, generateBarcodeVariants } from '../../hooks/useCatalog';
 import { useStoreProducts } from '../../hooks/useStoreProducts';
-import { Html5QrcodeScanner } from 'html5-qrcode';
+import { Html5Qrcode } from 'html5-qrcode';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage } from '../../lib/firebase';
 import { compressImage } from '../../utils/imageOptimizer';
@@ -14,41 +14,83 @@ import { PRODUCT_CATEGORIES } from '../../data/categories';
 // Scanner Component
 const ScannerModal: React.FC<{ onClose: () => void, onScan: (result: string) => void }> = ({ onClose, onScan }) => {
     const [mountError, setMountError] = useState('');
+    const [isScanning, setIsScanning] = useState(false);
+    const scannerRef = React.useRef<Html5Qrcode | null>(null);
+    const isScanningRef = React.useRef(false);
 
     useEffect(() => {
-        const timeout = setTimeout(() => {
-            try {
-                const scanner = new Html5QrcodeScanner(
-                    "reader",
-                    { fps: 10, qrbox: { width: 280, height: 150 }, aspectRatio: 1.0 },
-                    false
-                );
-                scanner.render((decodedText) => {
-                    onScan(decodedText);
-                    scanner.clear().catch(console.error);
-                }, (error) => {
-                    // console.warn(error); 
-                });
-                return () => { scanner.clear().catch(() => { }); };
-            } catch (err) {
-                console.error("Scanner init error", err);
-                setMountError('Camera permission denied or not available.');
+        scannerRef.current = new Html5Qrcode("reader");
+
+        return () => {
+            if (scannerRef.current) {
+                if (isScanningRef.current) {
+                    scannerRef.current.stop().then(() => {
+                        scannerRef.current?.clear();
+                    }).catch(() => {});
+                } else {
+                    scannerRef.current.clear();
+                }
             }
-        }, 100);
-        return () => clearTimeout(timeout);
-    }, [onScan]);
+        };
+    }, []);
+
+    const startScanner = async () => {
+        if (!scannerRef.current) return;
+        try {
+            setMountError('');
+            await scannerRef.current.start(
+                { facingMode: "environment" },
+                { fps: 10, qrbox: { width: 250, height: 150 }, aspectRatio: 1.0 },
+                (decodedText) => {
+                    if (isScanningRef.current) {
+                        onScan(decodedText);
+                        isScanningRef.current = false;
+                        setIsScanning(false);
+                        scannerRef.current?.stop().catch(console.error);
+                    }
+                },
+                (error) => {
+                    // console.warn(error); 
+                }
+            );
+            isScanningRef.current = true;
+            setIsScanning(true);
+        } catch (err: any) {
+            console.error("Scanner init error", err);
+            setMountError('Camera permission denied or not available. Please check your browser settings.');
+        }
+    };
 
     return (
         <div className="fixed inset-0 z-[60] bg-black/90 flex items-center justify-center p-4">
             <div className="bg-white rounded-xl overflow-hidden w-full max-w-sm relative p-6">
                 <button onClick={onClose} className="absolute top-2 right-2 text-gray-500 hover:text-black z-10 w-8 h-8 flex items-center justify-center bg-gray-100 rounded-full">✕</button>
                 <h3 className="text-center font-bold mb-4">Scan Barcode</h3>
-                {mountError ? (
-                    <div className="text-red-500 text-center py-4">{mountError}</div>
-                ) : (
-                    <div id="reader" className="w-full bg-gray-50 rounded-lg overflow-hidden min-h-[300px]"></div>
+                
+                {mountError && (
+                    <div className="text-red-600 text-sm font-medium text-center py-3 px-4 mb-4 bg-red-50 rounded-lg">{mountError}</div>
                 )}
-                <p className="text-center mt-4 text-xs text-gray-400">Point camera at a barcode to scan</p>
+                
+                <div id="reader" className={`w-full bg-black rounded-lg overflow-hidden ${isScanning ? 'min-h-[300px]' : 'h-0'}`}></div>
+                
+                {!isScanning && (
+                    <div className="flex flex-col items-center justify-center py-8 bg-gray-50 rounded-lg border border-gray-100">
+                        <div className="text-4xl mb-4">📷</div>
+                        <p className="text-center text-sm text-gray-500 mb-6 px-4">
+                            We need access to your camera to scan barcodes.
+                        </p>
+                        <button 
+                            onClick={startScanner}
+                            className="px-6 py-3 bg-[var(--brand-primary)] text-white font-bold rounded-lg hover:brightness-110 shadow-lg w-full"
+                        >
+                            Enable Camera & Scan
+                        </button>
+                    </div>
+                )}
+                
+                {isScanning && (
+                    <p className="text-center mt-4 text-xs text-gray-400">Point camera at a barcode to scan</p>
+                )}
             </div>
         </div>
     );

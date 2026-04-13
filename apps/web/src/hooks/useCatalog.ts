@@ -82,7 +82,7 @@ export interface MasterProduct {
     is_generic?: boolean;
     barcode?: string;
     upc_gtin?: string;
-    status: 'active' | 'deprecated' | 'blocked';
+    status: 'active' | 'deprecated' | 'blocked' | 'pending_review';
     verification_status: 'unverified' | 'verified' | 'manufacturer_verified';
 
     // Classification

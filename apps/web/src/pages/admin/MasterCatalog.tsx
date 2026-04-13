@@ -596,6 +596,22 @@ const MasterCatalog: React.FC = () => {
                                     </>
                                 ) : (
                                     <>
+                                        {selectedProduct.status === 'pending_review' && (
+                                            <button 
+                                                onClick={async () => {
+                                                    try {
+                                                        await updateMasterProduct(selectedProduct.master_product_id, { status: 'active' });
+                                                        addNotification({ type: 'system', title: 'Approved', message: 'Product is now active.' });
+                                                        setSelectedProduct({ ...selectedProduct, status: 'active' } as MasterProduct);
+                                                    } catch (e: any) {
+                                                        addNotification({ type: 'alert', title: 'Error', message: e.message || 'Failed to approve product' });
+                                                    }
+                                                }}
+                                                className="px-4 py-2 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 text-xs flex items-center gap-2"
+                                            >
+                                                <span>✓</span> <span className="hidden md:inline">Approve & Activate</span><span className="md:hidden">Approve</span>
+                                            </button>
+                                        )}
                                         <button onClick={handleDelete} className="p-2 text-red-500 hover:bg-red-50 rounded" title="Delete Product">
                                             <span className="text-base">🗑️</span>
                                         </button>
