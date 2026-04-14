@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { collection, query, where, onSnapshot, doc, updateDoc } from 'firebase/firestore';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { collection, query, where, onSnapshot, doc, updateDoc, addDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import '../../styles/design-system.css';
 import { useAuth } from '../../context/AuthContext';
@@ -15,8 +16,17 @@ const StoreManagement: React.FC = () => {
     const { confirm } = useConfirmation();
     const storeList = Object.values(stores);
 
+    const [searchParams] = useSearchParams();
+    const paramStatus = searchParams.get('status') || 'all';
+    const [statusFilter, setStatusFilter] = useState(paramStatus);
     const [searchTerm, setSearchTerm] = useState('');
-    const [statusFilter, setStatusFilter] = useState('all');
+
+    // Sync filter if URL changes (optional but good for UX)
+    useEffect(() => {
+        if (searchParams.get('status')) {
+            setStatusFilter(searchParams.get('status')!);
+        }
+    }, [searchParams]);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingStoreId, setEditingStoreId] = useState<string | null>(null);
     const [formData, setFormData] = useState({
@@ -68,7 +78,8 @@ const StoreManagement: React.FC = () => {
                     status: data.subscriptionStatus || 'inactive',
                     end: data.subscriptionEnd,
                     ownerEmail: data.email,
-                    merchantRole: data.merchantRole
+                    merchantRole: data.merchantRole,
+                    bn: data.businessRegistrationNumber || data.bn
                 };
 
                 if (data.email) {
@@ -330,8 +341,15 @@ const StoreManagement: React.FC = () => {
                                                         {store.logoUrl ? <img src={store.logoUrl} alt="" className="w-full h-full object-cover" /> : <span>{store.logo || '🏪'}</span>}
                                                     </div>
                                                     <div>
-                                                        <div className="font-bold text-[var(--text-main)]">{store.name}</div>
-                                                        <div className="text-[10px] text-[var(--text-muted)] font-mono">ID: {store.id.substring(0, 8)}...</div>
+                                                        <div className="font-bold text-[var(--text-main)] group-hover:text-[var(--brand-primary)] transition-colors">{store.name}</div>
+                                                        <div className="flex flex-col gap-0.5 mt-0.5">
+                                                            <div className="text-[9px] text-[var(--text-muted)] font-mono">ID: {store.id.substring(0, 8)}...</div>
+                                                            {store.status === 'pending' && subData.bn && (
+                                                                <div className="text-[10px] text-orange-600 font-bold bg-orange-50 px-1.5 py-0.5 rounded border border-orange-100 w-fit">
+                                                                    BN: {subData.bn}
+                                                                </div>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </td>
@@ -365,7 +383,51 @@ const StoreManagement: React.FC = () => {
                                             <td className="p-4 text-right space-x-1 whitespace-nowrap">
                                                 <button onClick={() => handleEditClick(store)} className="text-[10px] bg-blue-50 text-blue-600 border border-blue-100 px-2 py-1 rounded-lg font-bold hover:bg-blue-100 transition-colors">Edit</button>
                                                 {store.status === 'pending' && (
-                                                    <button onClick={() => updateStoreStatus(store.id, 'active')} className="text-[10px] bg-green-500 text-white px-2 py-1 rounded-lg font-bold hover:brightness-110">Approve</button>
+                                                    <button 
+                                                        onClick={async () => {
+                                                            if (await confirm({ 
+                                                                title: 'Approve Merchant?', 
+                                                                message: `Are you sure you want to approve ${store.name}? This will activate their store in the marketplace.`,
+                                                                confirmText: 'Approve & Activate',
+                                                                type: 'success'
+                                                            })) {
+                                                                await updateStoreStatus(store.id, 'active');
+                                                                
+                                                                // Trigger Approval Email
+                                                                if (displayEmail && displayEmail !== 'N/A') {
+                                                                    await addDoc(collection(db, 'mail'), {
+                                                                        to: displayEmail,
+                                                                        message: {
+                                                                            subject: 'Your Spendigo Store is Approved! 🚀',
+                                                                            html: `
+                                                                                <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
+                                                                                    <h2 style="color: #2563eb;">Congratulations!</h2>
+                                                                                    <p>Hi ${store.name},</p>
+                                                                                    <p>We are happy to inform you that your merchant application has been <strong>approved</strong>. Your store is now live in the Spendigo marketplace!</p>
+                                                                                    <p>You can now start managing your products, flyers, and deals to attract nearby shoppers.</p>
+                                                                                    <div style="margin: 30px 0; text-align: center;">
+                                                                                        <a href="${window.location.origin}/merchant/dashboard" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Go to Merchant Dashboard</a>
+                                                                                    </div>
+                                                                                    <p><strong>Pro Tip:</strong> Want to jumpstart your sales? Share your local deals with your current customers and promote your Spendigo presence on social media!</p>
+                                                                                    <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
+                                                                                    <p style="font-size: 12px; color: #666;">If you have any questions, feel free to contact our support team at support@spendigo.ca.</p>
+                                                                                </div>
+                                                                            `
+                                                                        }
+                                                                    });
+                                                                }
+
+                                                                addNotification({ 
+                                                                    type: 'system', 
+                                                                    title: 'Merchant Approved', 
+                                                                    message: `${store.name} is now live and notified.` 
+                                                                });
+                                                            }
+                                                        }} 
+                                                        className="text-[10px] bg-green-600 shadow-md shadow-green-200 text-white px-3 py-1.5 rounded-lg font-bold hover:bg-green-700 transition-all transform active:scale-95"
+                                                    >
+                                                        Approve
+                                                    </button>
                                                 )}
                                             </td>
                                         </tr>
@@ -428,7 +490,24 @@ const StoreManagement: React.FC = () => {
                                             Manage Store
                                         </button>
                                         {store.status === 'pending' && (
-                                            <button onClick={() => updateStoreStatus(store.id, 'active')} className="flex-1 py-2 bg-[var(--brand-primary)] text-white rounded-lg text-xs font-bold shadow-sm">
+                                            <button 
+                                                onClick={async () => {
+                                                    if (await confirm({ 
+                                                        title: 'Approve Merchant?', 
+                                                        message: `Are you sure you want to approve ${store.name}? This will activate their store in the marketplace.`,
+                                                        confirmText: 'Approve & Activate',
+                                                        type: 'success'
+                                                    })) {
+                                                        updateStoreStatus(store.id, 'active');
+                                                        addNotification({ 
+                                                            type: 'system', 
+                                                            title: 'Merchant Approved', 
+                                                            message: `${store.name} is now live.` 
+                                                        });
+                                                    }
+                                                }} 
+                                                className="flex-1 py-2 bg-green-600 text-white rounded-lg text-xs font-bold shadow-sm active:scale-95 transition-transform"
+                                            >
                                                 Approve
                                             </button>
                                         )}

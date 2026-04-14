@@ -9,6 +9,7 @@ import { useConfirmation } from '../../context/ConfirmationContext';
 
 import { useAuth } from '../../context/AuthContext';
 import { useTrafficStats } from '../../hooks/useTrafficStats';
+import { Link } from 'react-router-dom';
 
 const RecentActivityFeed: React.FC = () => {
     const { logs } = useAudit();
@@ -429,9 +430,9 @@ const AdminDashboard: React.FC = () => {
                                         ? `There are ${Object.values(stores).filter((s: any) => s.status === 'pending').length} new merchant applications requiring review.`
                                         : 'No pending merchant applications.'}
                                 </p>
-                                <button className="text-xs bg-blue-600 text-white px-3 py-1.5 rounded-lg font-bold hover:bg-blue-700 transition-colors">
+                                <Link to="/admin/stores?status=pending" className="text-xs bg-blue-600 text-white px-3 py-1.5 rounded-lg font-bold hover:bg-blue-700 transition-colors inline-block">
                                     Review Applications
-                                </button>
+                                </Link>
                             </div>
                         </div>
                     </div>
