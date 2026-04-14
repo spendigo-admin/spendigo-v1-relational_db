@@ -2,12 +2,14 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import '../../styles/design-system.css';
 import { useAuth } from '../../context/AuthContext';
+import { useAudit } from '../../context/AuditContext';
 import { useTranslation } from 'react-i18next';
 import SEO from '../../components/SEO';
 
 const Register: React.FC = () => {
     const navigate = useNavigate();
     const { register, loginWithGoogle, loginWithFacebook } = useAuth();
+    const { logEvent } = useAudit();
     const { t } = useTranslation();
     const [error, setError] = useState<string | null>(null);
     const [formData, setFormData] = useState({
@@ -37,6 +39,11 @@ const Register: React.FC = () => {
             });
 
             if (success) {
+                await logEvent('AUTH_REGISTER_SUCCESS', { 
+                    email: formData.email.toLowerCase(),
+                    name: formData.name,
+                    role: 'consumer'
+                }, 'auth/register');
                 navigate('/'); // Redirect to home
             } else {
                 setError('Registration failed. Please try again.');

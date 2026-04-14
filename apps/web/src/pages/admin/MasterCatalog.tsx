@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useCatalog, MasterProduct } from '../../hooks/useCatalog';
 import { useNotifications } from '../../context/NotificationContext';
+import { useAudit } from '../../context/AuditContext';
 import { useConfirmation } from '../../context/ConfirmationContext';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
@@ -48,6 +49,7 @@ const MasterCatalog: React.FC = () => {
     const { masterProducts, loading } = useMasterCatalog();
     const { requests } = useProductRequests();
     const { pendingProducts } = usePendingMasterProducts();
+    const { logEvent } = useAudit();
     const { addNotification } = useNotifications();
     const { confirm } = useConfirmation();
 
@@ -87,6 +89,11 @@ const MasterCatalog: React.FC = () => {
 
         try {
             await updateMasterProduct(selectedProduct.master_product_id, cleanData);
+            await logEvent('CATALOG_PRODUCT_UPDATE', { 
+                productId: selectedProduct.master_product_id, 
+                productName: selectedProduct.product_name,
+                changes: cleanData 
+            }, `catalog/${selectedProduct.master_product_id}`);
             addNotification({ type: 'system', title: 'Updated', message: 'Product updated successfully.' });
             setIsEditing(false);
             // Merge changes back into selectedProduct to update the view immediately
@@ -107,6 +114,10 @@ const MasterCatalog: React.FC = () => {
 
         try {
             await deleteMasterProduct(selectedProduct.master_product_id);
+            await logEvent('CATALOG_PRODUCT_DELETE', { 
+                productId: selectedProduct.master_product_id, 
+                productName: selectedProduct.product_name 
+            }, `catalog/${selectedProduct.master_product_id}`);
             addNotification({ type: 'system', title: 'Deleted', message: 'Product removed from Master Catalog.' });
             setSelectedProduct(null);
         } catch (e: any) {
@@ -202,6 +213,11 @@ const MasterCatalog: React.FC = () => {
                 };
 
                 await approveProductRequest(request.id, request, masterData);
+                await logEvent('CATALOG_PRODUCT_APPROVE', { 
+                    requestId: request.id, 
+                    productName: request.requested_product_name,
+                    merchantId: request.submitted_by_merchant_id
+                }, `catalog/requests/${request.id}`);
                 addNotification({ type: 'system', title: 'Approved', message: 'Master Product created.' });
             } catch (err) {
                 console.error(err);
@@ -215,6 +231,11 @@ const MasterCatalog: React.FC = () => {
         if (reason) {
             try {
                 await rejectProductRequest(request.id, request, reason);
+                await logEvent('CATALOG_PRODUCT_REJECT', { 
+                    requestId: request.id, 
+                    productName: request.requested_product_name,
+                    reason 
+                }, `catalog/requests/${request.id}`);
                 addNotification({ type: 'system', title: 'Rejected', message: 'Request rejected.' });
             } catch (err) {
                 addNotification({ type: 'alert', title: 'Error', message: 'Action failed.' });
@@ -232,6 +253,11 @@ const MasterCatalog: React.FC = () => {
         if (confirmed) {
             try {
                 await commitPendingProduct(pending.id, pending);
+                await logEvent('CATALOG_PRODUCT_COMMIT', { 
+                    pendingId: pending.id, 
+                    productName: pending.product_name,
+                    merchantId: pending.discovered_by_merchant
+                }, `catalog/${pending.id || 'new'}`);
                 addNotification({ type: 'system', title: '✅ Committed', message: 'Product added to Master Catalog.' });
             } catch (err) {
                 addNotification({ type: 'alert', title: 'Error', message: 'Failed to commit product.' });

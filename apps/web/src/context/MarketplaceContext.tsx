@@ -12,7 +12,7 @@ interface MarketplaceContextType {
     updateStoreDeals: (storeId: string | number, type: 'oneDayOffers' | 'saleItems', deals: any[]) => Promise<void>;
     updateStoreTeam: (storeId: string | number, team: any[]) => Promise<void>;
     updateStoreStatus: (storeId: string | number, status: 'active' | 'pending' | 'suspended') => Promise<void>;
-    addStore: (store: any) => Promise<void>;
+    addStore: (store: any) => Promise<any>;
     deleteStore: (storeId: string) => Promise<void>;
     requestDeleteStore: (storeId: string, requesterId: string, requesterRole: string) => Promise<void>;
     approveDeleteStore: (storeId: string) => Promise<void>;
@@ -104,13 +104,15 @@ export const MarketplaceProvider: React.FC<{ children: ReactNode }> = ({ childre
     const addStore = async (store: any) => {
         const newId = store.id || `store-${Date.now()}`;
         // Audit logging removed
-        await setDoc(doc(db, 'stores', newId), {
+        const storeData = {
             ...store,
             id: newId,
             status: store.status || 'pending',
             products: [],
             joinedAt: new Date().toISOString().split('T')[0]
-        });
+        };
+        await setDoc(doc(db, 'stores', newId), storeData);
+        return storeData;
     };
 
     const deleteStore = async (storeId: string) => {

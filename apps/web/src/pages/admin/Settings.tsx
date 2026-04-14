@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { doc, getDoc, setDoc, onSnapshot, collection, addDoc, getDocs, updateDoc, query, where, getCountFromServer } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { useAuth } from '../../context/AuthContext';
+import { useAudit } from '../../context/AuditContext';
 import { useNotifications } from '../../context/NotificationContext';
 import '../../styles/design-system.css';
 
 const AdminSettings: React.FC = () => {
     const { user } = useAuth();
+    const { logEvent } = useAudit();
     const { addNotification } = useNotifications();
     const [settings, setSettings] = useState<any>({
         maintenanceMode: false,
@@ -60,6 +62,10 @@ const AdminSettings: React.FC = () => {
                     `
                 }
             });
+            await logEvent('MAINTENANCE_REQUEST', { 
+                targetState, 
+                reason: `Requested by ${request.requesterName}` 
+            }, 'system/maintenance');
             addNotification({ type: 'system', title: 'Request Submitted', message: 'Maintenance verification requested. Another admin must approve this change.' });
         } catch (err) {
             console.error(err);
@@ -77,6 +83,10 @@ const AdminSettings: React.FC = () => {
                 maintenanceMode: settings.maintenanceRequest.targetState,
                 maintenanceRequest: null // Clear request
             });
+            await logEvent('MAINTENANCE_APPROVE', { 
+                targetState: settings.maintenanceRequest.targetState, 
+                requesterId: settings.maintenanceRequest.requesterId 
+            }, 'system/maintenance');
             addNotification({ type: 'system', title: 'Maintenance Updated', message: `Maintenance Mode ${settings.maintenanceRequest.targetState ? 'ENABLED' : 'DISABLED'}.` });
         } catch (err) {
             console.error(err);
@@ -91,6 +101,9 @@ const AdminSettings: React.FC = () => {
                 maintenanceRequest: null
             });
 
+            await logEvent('MAINTENANCE_CANCEL', { 
+                cancelledBy: user?.email || 'admin' 
+            }, 'system/maintenance');
             addNotification({ type: 'system', title: 'Cancelled', message: 'Request cancelled.' });
         } catch (err) {
             console.error(err);
@@ -112,6 +125,7 @@ const AdminSettings: React.FC = () => {
             // ensuring we don't overwrite maintenance things improperly if they changed in background, 
             // but onSnapshot handles the state sync, so 'settings' should be fresh.
             await setDoc(doc(db, 'settings', 'platform'), settings);
+            await logEvent('SYSTEM_SETTINGS_UPDATE', { settingsCount: Object.keys(settings).length }, 'system/settings');
             addNotification({ type: 'system', title: 'Saved', message: 'Settings saved successfully!' });
         } catch (err) {
             console.error(err);

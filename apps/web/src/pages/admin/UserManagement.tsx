@@ -3,6 +3,7 @@ import { collection, query, getDocs, doc, setDoc, updateDoc, where, deleteDoc, a
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { db } from '../../lib/firebase';
 import { useAuth } from '../../context/AuthContext';
+import { useAudit } from '../../context/AuditContext';
 import { useNotifications } from '../../context/NotificationContext';
 import { useConfirmation } from '../../context/ConfirmationContext';
 import '../../styles/design-system.css';
@@ -54,6 +55,7 @@ const ROLE_DEFINITIONS: Record<AdminRole, { description: string; permissions: st
 
 const UserManagement: React.FC = () => {
     const { user: currentUser } = useAuth();
+    const { logEvent } = useAudit();
     const { addNotification } = useNotifications();
     const { confirm } = useConfirmation();
     const [activeTab, setActiveTab] = useState<'staff' | 'users'>('staff');
@@ -161,6 +163,11 @@ const UserManagement: React.FC = () => {
                 message: `${newStaff.email} authorized as ${newStaff.role}`,
             });
 
+            await logEvent('STAFF_AUTHORIZE', { 
+                targetEmail: newStaff.email.toLowerCase(), 
+                role: newStaff.role 
+            }, `staff/${newStaff.email.toLowerCase()}`);
+
             // Reload to refresh permissions/UI
             setTimeout(() => window.location.reload(), 1500);
 
@@ -195,6 +202,7 @@ const UserManagement: React.FC = () => {
                 }
 
                 addNotification({ type: 'system', title: 'Staff Removed', message: 'Staff rights revoked.' });
+                await logEvent('STAFF_DEAUTHORIZE', { targetEmail: email.toLowerCase() }, `staff/${email.toLowerCase()}`);
                 setTimeout(() => window.location.reload(), 1500);
             } catch (e) {
                 console.error(e);
@@ -227,6 +235,7 @@ const UserManagement: React.FC = () => {
                 title: 'User Deleted',
                 message: `User ${user.email} deleted successfully.`
             });
+            await logEvent('USER_DELETE', { targetUid: user.id, targetEmail: user.email }, `users/${user.id}`);
         } catch (error: any) {
             console.error("Delete failed:", error);
             addNotification({
@@ -256,6 +265,8 @@ const UserManagement: React.FC = () => {
                 title: 'Cleanup Complete',
                 message: result.data.message || 'Orphaned users removed.'
             });
+
+            await logEvent('SYSTEM_CLEANUP_ORPHANS', { result: result.data }, 'system/maintenance');
 
             setTimeout(() => window.location.reload(), 2000);
         } catch (e: any) {
@@ -297,6 +308,11 @@ const UserManagement: React.FC = () => {
                     title: 'Status Updated',
                     message: `User status set to ${newStatus}`
                 });
+
+                await logEvent(newStatus === 'banned' ? 'USER_SUSPEND' : 'USER_ACTIVATE', { 
+                    targetUid: id,
+                    previousStatus: currentStatus
+                }, `users/${id}`);
             } catch (e) {
                 console.error("Error updating user status:", e);
                 addNotification({ type: 'alert', title: 'Error', message: "Failed to update user status." });

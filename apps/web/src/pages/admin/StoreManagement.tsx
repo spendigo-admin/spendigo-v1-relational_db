@@ -4,6 +4,7 @@ import { collection, query, where, onSnapshot, doc, updateDoc, addDoc } from 'fi
 import { db } from '../../lib/firebase';
 import '../../styles/design-system.css';
 import { useAuth } from '../../context/AuthContext';
+import { useAudit } from '../../context/AuditContext';
 import { useMarketplace } from '../../context/MarketplaceContext';
 import { useNotifications } from '../../context/NotificationContext';
 import { useConfirmation } from '../../context/ConfirmationContext';
@@ -11,6 +12,7 @@ import { BUSINESS_TYPES } from '../merchant/Settings';
 
 const StoreManagement: React.FC = () => {
     const { user } = useAuth();
+    const { logEvent } = useAudit();
     const { stores, updateStore, updateStoreStatus, addStore, requestDeleteStore, approveDeleteStore } = useMarketplace();
     const { addNotification } = useNotifications();
     const { confirm } = useConfirmation();
@@ -154,9 +156,14 @@ const StoreManagement: React.FC = () => {
                 if (finalCoordinates) updateData.coordinates = finalCoordinates;
 
                 await updateStore(editingStoreId, updateData);
+                await logEvent('STORE_UPDATE', { 
+                    storeId: editingStoreId, 
+                    storeName: formData.name,
+                    changes: updateData 
+                }, `stores/${editingStoreId}`);
                 addNotification({ type: 'system', title: 'Store Updated', message: `${formData.name} updated successfully.` });
             } else {
-                await addStore({
+                const newStore = await addStore({
                     ...formData,
                     businessType: formData.type,
                     status: 'pending',
@@ -165,6 +172,10 @@ const StoreManagement: React.FC = () => {
                     coordinates: finalCoordinates,
                     logo: `https://ui-avatars.com/api/?name=${formData.name}&background=random`
                 });
+                await logEvent('STORE_CREATE', { 
+                    storeName: formData.name,
+                    merchantEmail: formData.merchantEmail
+                }, `stores/${newStore?.id || 'new'}`);
                 addNotification({ type: 'system', title: 'Store Created', message: `${formData.name} added to marketplace.` });
             }
 
@@ -183,6 +194,12 @@ const StoreManagement: React.FC = () => {
                         manualOverride: true,
                         lastAdminEdit: new Date().toISOString()
                     });
+                    await logEvent('SUBSCRIPTION_OVERRIDE', {
+                        targetUserId: owner.uid,
+                        storeId: editingStoreId,
+                        newTier: formData.subscriptionTier,
+                        newStatus: formData.subscriptionStatus
+                    }, `users/${owner.uid}`);
                 }
             }
 
@@ -428,6 +445,11 @@ const StoreManagement: React.FC = () => {
                                                                 type: 'success'
                                                             })) {
                                                                 await updateStoreStatus(store.id, 'active');
+                                                                await logEvent('STORE_APPROVE', { 
+                                                                    storeId: store.id, 
+                                                                    storeName: store.name,
+                                                                    merchantEmail: displayEmail
+                                                                }, `stores/${store.id}`);
                                                                 
                                                                 // Trigger Approval Email
                                                                 if (displayEmail && displayEmail !== 'N/A') {

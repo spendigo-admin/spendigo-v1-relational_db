@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import '../../styles/design-system.css';
 import { useAudit, sha256 } from '../../context/AuditContext';
+import { useAuth } from '../../context/AuthContext';
 
 // Security Utilities
 const maskIP = (ip: string) => ip.replace(/\.\d+$/, '.***');
@@ -27,7 +28,8 @@ const getSeverityBadge = (action: string) => {
 };
 
 const AuditLogs: React.FC = () => {
-    const { logs, verifyIntegrity, isVerified } = useAudit();
+    const { user } = useAuth();
+    const { logs, verifyIntegrity, isVerified, testLog } = useAudit();
     const [search, setSearch] = useState('');
     const [expandedLogId, setExpandedLogId] = useState<string | null>(null);
     const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
@@ -141,6 +143,17 @@ const AuditLogs: React.FC = () => {
                                 isVerified === true ? '✓ Chain Valid' :
                                     '⚠ CHAIN BROKEN'}
                         </button>
+                        {user?.adminRole === 'SUPER_ADMIN' && (
+                            <button
+                                onClick={async () => {
+                                    await testLog();
+                                    verifyIntegrity();
+                                }}
+                                className="mt-2 text-[10px] text-blue-600 hover:underline font-bold"
+                            >
+                                + Create Test Event
+                            </button>
+                        )}
                     </div>
                 </div>
             </div>

@@ -3,6 +3,7 @@ import { useNavigate, Link, useLocation } from 'react-router-dom';
 import '../../styles/design-system.css';
 
 import { useAuth } from '../../context/AuthContext';
+import { useAudit } from '../../context/AuditContext';
 import { DEMO_USERS } from '../../data/demoUsers';
 import { useTranslation } from 'react-i18next';
 import SEO from '../../components/SEO';
@@ -11,6 +12,7 @@ const Login = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const { login, user, loginWithGoogle, loginWithFacebook } = useAuth();
+    const { logEvent } = useAudit();
     const { t } = useTranslation();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -48,10 +50,10 @@ const Login = () => {
         try {
             const success = await login(email, password);
             if (success) {
-                // Audit log removed
-                // await logEvent('AUTH_LOGIN_SUCCESS', { email: email }, 'auth/login');
+                await logEvent('AUTH_LOGIN_SUCCESS', { email: email.toLowerCase() }, 'auth/login');
                 // useEffect will handle redirect when user state updates
             } else {
+                await logEvent('AUTH_LOGIN_FAILURE', { email: email.toLowerCase(), reason: 'invalid_credentials' }, 'auth/login');
                 setError(t('loginFailed'));
             }
         } catch (err) {

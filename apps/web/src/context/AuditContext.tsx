@@ -22,6 +22,7 @@ export interface AuditLog {
 interface AuditContextType {
     logs: AuditLog[];
     logEvent: (action: string, metadata?: Record<string, any>, resource?: string) => Promise<void>;
+    testLog: () => Promise<void>;
     verifyIntegrity: () => Promise<boolean>;
     isVerified: boolean | null; // null = checking/unknown, true = valid, false = tampered
 }
@@ -69,23 +70,20 @@ export const AuditProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     useEffect(() => {
         const q = query(collection(db, 'audit_logs'), orderBy('timestamp', 'asc'));
 
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            const fetchedLogs: AuditLog[] = [];
-            snapshot.forEach((doc) => {
-                fetchedLogs.push({ id: doc.id, ...doc.data() } as AuditLog);
-            });
+        const unsubscribe = onSnapshot(q, 
+            (snapshot) => {
+                const fetchedLogs: AuditLog[] = [];
+                snapshot.forEach((doc) => {
+                    fetchedLogs.push({ id: doc.id, ...doc.data() } as AuditLog);
+                });
 
-            // If empty, initialize genesis
-            if (fetchedLogs.length === 0) {
-                // Initial genesis log creation would technically happen on write, 
-                // but for read-only clients, we just wait.
-                // We can auto-create genesis if we have write permission and it's empty.
-                // For simplicity, we handle genesis in logEvent if chain is empty, or just start empty.
-                setLogs([]);
-            } else {
+                console.log(`[AuditContext] Synced ${fetchedLogs.length} logs.`);
                 setLogs(fetchedLogs);
+            },
+            (error) => {
+                console.error("[AuditContext] Snapshot error:", error);
             }
-        });
+        );
 
         return () => unsubscribe();
     }, []);
@@ -177,8 +175,15 @@ export const AuditProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         }
     };
 
+    const testLog = async () => {
+        await logEvent('SYSTEM_TEST_EVENT', { 
+            note: 'This is a manual integrity test event.',
+            environment: window.location.hostname
+        });
+    };
+
     return (
-        <AuditContext.Provider value={{ logs, logEvent, verifyIntegrity, isVerified }}>
+        <AuditContext.Provider value={{ logs, logEvent, testLog, verifyIntegrity, isVerified }}>
             {children}
         </AuditContext.Provider>
     );
