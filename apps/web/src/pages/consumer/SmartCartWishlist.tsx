@@ -59,6 +59,41 @@ const SmartCartWishlist: React.FC = () => {
         if (substituteItem) addItem(substituteItem);
     };
 
+    const dealsSection = (!inventoryLoading && nearbyDeals.length > 0) ? (
+        <div className="mb-6 bg-gradient-to-r from-red-50 to-orange-50 rounded-xl border border-red-100 p-4">
+            <h3 className="text-sm font-bold text-red-700 mb-3 flex items-center gap-2">
+                <span className="text-base">🔥</span> Hot Deals Near You
+            </h3>
+            <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-hide">
+                {nearbyDeals.map(deal => (
+                    <button
+                        key={`${deal.storeId}-${deal.id}`}
+                        onClick={() => {
+                            if (deal.masterProductId) {
+                                const catalogItem = AVAILABLE_ITEMS.find((item: any) => item.id === deal.masterProductId);
+                                if (catalogItem) addItem(catalogItem);
+                            }
+                        }}
+                        className="flex-shrink-0 w-36 bg-white rounded-lg border border-red-100 p-2.5 hover:shadow-md transition-shadow text-left"
+                    >
+                        {deal.image && (
+                            <img src={deal.image} alt="" className="w-full h-16 object-cover rounded mb-2" />
+                        )}
+                        <p className="text-xs font-medium text-gray-800 truncate">{deal.productName}</p>
+                        <p className="text-[10px] text-gray-400 truncate">{deal.storeName}</p>
+                        <div className="flex items-center gap-1.5 mt-1">
+                            <span className="text-xs font-bold text-red-600">${deal.salePrice.toFixed(2)}</span>
+                            <span className="text-[10px] text-gray-400 line-through">${deal.originalPrice.toFixed(2)}</span>
+                        </div>
+                        <span className="inline-block mt-1 text-[9px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded font-bold">
+                            {deal.isFlashSale ? '⚡ ' : ''}{deal.discount}
+                        </span>
+                    </button>
+                ))}
+            </div>
+        </div>
+    ) : null;
+
     return (
         <div className="animate-fade-in pb-12 lg:pb-12">
             <SEO title="SmartCart Optimizer" description="Compare grocery prices across local stores and build the cheapest cart with Spendigo SmartCart." path="/smartcart" />
@@ -123,41 +158,6 @@ const SmartCartWishlist: React.FC = () => {
                 />
 
                 {/* Nearby Deals Discovery */}
-                {!inventoryLoading && nearbyDeals.length > 0 && (
-                    <div className="mb-6 bg-gradient-to-r from-red-50 to-orange-50 rounded-xl border border-red-100 p-4">
-                        <h3 className="text-sm font-bold text-red-700 mb-3 flex items-center gap-2">
-                            <span className="text-base">🔥</span> Hot Deals Near You
-                        </h3>
-                        <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-hide">
-                            {nearbyDeals.map(deal => (
-                                <button
-                                    key={`${deal.storeId}-${deal.id}`}
-                                    onClick={() => {
-                                        if (deal.masterProductId) {
-                                            const catalogItem = AVAILABLE_ITEMS.find((item: any) => item.id === deal.masterProductId);
-                                            if (catalogItem) addItem(catalogItem);
-                                        }
-                                    }}
-                                    className="flex-shrink-0 w-36 bg-white rounded-lg border border-red-100 p-2.5 hover:shadow-md transition-shadow text-left"
-                                >
-                                    {deal.image && (
-                                        <img src={deal.image} alt="" className="w-full h-16 object-cover rounded mb-2" />
-                                    )}
-                                    <p className="text-xs font-medium text-gray-800 truncate">{deal.productName}</p>
-                                    <p className="text-[10px] text-gray-400 truncate">{deal.storeName}</p>
-                                    <div className="flex items-center gap-1.5 mt-1">
-                                        <span className="text-xs font-bold text-red-600">${deal.salePrice.toFixed(2)}</span>
-                                        <span className="text-[10px] text-gray-400 line-through">${deal.originalPrice.toFixed(2)}</span>
-                                    </div>
-                                    <span className="inline-block mt-1 text-[9px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded font-bold">
-                                        {deal.isFlashSale ? '⚡ ' : ''}{deal.discount}
-                                    </span>
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-                )}
-
                 {/* Preferred Store Toggle */}
                 {!inventoryLoading && singleStoreAlternatives.length > 0 && (
                     <div className="mb-4 flex items-center gap-2 text-xs">
@@ -198,21 +198,26 @@ const SmartCartWishlist: React.FC = () => {
                         ))}
                     </div>
                 ) : wishlistItems.length === 0 ? (
-                    <div className="text-center py-24 bg-white rounded-[2.5rem] border-2 border-dashed border-gray-100 shadow-inner max-w-2xl mx-auto animate-fade-in">
-                        <div className="w-24 h-24 bg-gray-50 rounded-3xl flex items-center justify-center text-5xl mx-auto mb-6 shadow-sm grayscale opacity-60">
-                            📋
+                    <div className="space-y-8 animate-fade-in">
+                        <div className="text-center py-24 bg-white rounded-[2.5rem] border-2 border-dashed border-gray-100 shadow-inner max-w-2xl mx-auto">
+                            <div className="w-24 h-24 bg-gray-50 rounded-3xl flex items-center justify-center text-5xl mx-auto mb-6 shadow-sm grayscale opacity-60">
+                                📋
+                            </div>
+                            <h2 className="text-2xl font-black text-[var(--text-main)] mb-3 tracking-tight">Wishlist is empty</h2>
+                            <p className="text-[var(--text-muted)] max-w-sm mx-auto mb-8 font-medium">Add items from the selector above to start comparing prices across all stores and save big!</p>
+                            <button
+                                onClick={() => setShowAddItems(true)}
+                                className="bg-[var(--brand-primary)] text-white px-8 py-3 rounded-full font-bold shadow-lg shadow-[var(--brand-primary)]/20 hover:scale-105 transition-transform"
+                            >
+                                Get Started
+                            </button>
                         </div>
-                        <h2 className="text-2xl font-black text-[var(--text-main)] mb-3 tracking-tight">Wishlist is empty</h2>
-                        <p className="text-[var(--text-muted)] max-w-sm mx-auto mb-8 font-medium">Add items from the selector above to start comparing prices across all stores and save big!</p>
-                        <button
-                            onClick={() => setShowAddItems(true)}
-                            className="bg-[var(--brand-primary)] text-white px-8 py-3 rounded-full font-bold shadow-lg shadow-[var(--brand-primary)]/20 hover:scale-105 transition-transform"
-                        >
-                            Get Started
-                        </button>
+                        {dealsSection}
                     </div>
                 ) : (
-                    <div className="lg:grid lg:grid-cols-12 lg:gap-8 relative">
+                    <div className="space-y-6">
+                        {dealsSection}
+                        <div className="lg:grid lg:grid-cols-12 lg:gap-8 relative">
                         {/* LEFT COLUMN: Main List */}
                         <div className="lg:col-span-8">
                             <div className="space-y-3">
@@ -292,6 +297,7 @@ const SmartCartWishlist: React.FC = () => {
                                 singleStoreAlternatives={singleStoreAlternatives}
                             />
                         </div>
+                    </div>
                     </div>
                 )}
             </div>
