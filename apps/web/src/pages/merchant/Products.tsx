@@ -112,7 +112,8 @@ const MerchantProducts: React.FC = () => {
         bulkAddMerchantProducts,
         fetchExternalUPC,
         addMasterProduct,
-        addPendingMasterProduct
+        addPendingMasterProduct,
+        getAverageMarketPrice
     } = useCatalog();
 
     const storeId = user?.storeId || '';
@@ -139,6 +140,24 @@ const MerchantProducts: React.FC = () => {
 
     const [showScanner, setShowScanner] = useState(false);
     const [scannerContext, setScannerContext] = useState<'search' | 'request_form'>('search');
+
+    const [avgPrice, setAvgPrice] = useState<number | null>(null);
+    const [loadingAvgPrice, setLoadingAvgPrice] = useState(false);
+
+    useEffect(() => {
+        const masterId = editingProduct?.master_product_id || selectedMasterItem?.id || selectedMasterItem?.master_product_id;
+        if (masterId && view === 'add_details') {
+            const fetchAvg = async () => {
+                setLoadingAvgPrice(true);
+                const price = await getAverageMarketPrice(masterId);
+                setAvgPrice(price);
+                setLoadingAvgPrice(false);
+            };
+            fetchAvg();
+        } else {
+            setAvgPrice(null);
+        }
+    }, [editingProduct, selectedMasterItem, view]);
 
     // Form State
     const [form, setForm] = useState({
@@ -778,23 +797,38 @@ const MerchantProducts: React.FC = () => {
                                             <div className="flex justify-between items-center">
                                                 <div>
                                                     <span className="block text-[10px] text-gray-400 font-bold uppercase mb-1">Price Signal</span>
-                                                    <div className="flex items-center gap-2 font-medium">
-                                                        <span className="text-sm">Market SRP:</span>
-                                                        <span className="text-sm text-green-700 font-bold">${(editingProduct?.suggested_retail_price || selectedMasterItem?.suggested_retail_price || 0).toFixed(2)}</span>
+                                                    <div className="flex flex-col gap-1">
+                                                        {(editingProduct?.suggested_retail_price || selectedMasterItem?.suggested_retail_price || 0) > 0 && (
+                                                            <div className="flex items-center gap-2 font-medium">
+                                                                <span className="text-xs text-gray-500">Market SRP:</span>
+                                                                <span className="text-sm text-green-700 font-bold">${(editingProduct?.suggested_retail_price || selectedMasterItem?.suggested_retail_price || 0).toFixed(2)}</span>
+                                                            </div>
+                                                        )}
+                                                        <div className="flex items-center gap-2 font-medium">
+                                                            <span className="text-xs text-gray-500">Market Avg:</span>
+                                                            {loadingAvgPrice ? (
+                                                                <span className="text-[10px] text-blue-600 animate-pulse font-bold">CALCULATING...</span>
+                                                            ) : (
+                                                                <span className="text-sm text-blue-700 font-bold">
+                                                                    {avgPrice && avgPrice > 0 ? `$${avgPrice.toFixed(2)}` : 'N/A'}
+                                                                </span>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 </div>
                                                 {(parseFloat(form.price) > 0) && (
-                                                    <div className={`text-right px-2 py-1 rounded text-xs font-bold ${parseFloat(form.price) <= (editingProduct?.suggested_retail_price || selectedMasterItem?.suggested_retail_price || 0)
+                                                    <div className={`text-right px-2 py-1 rounded text-xs font-bold ${parseFloat(form.price) <= (editingProduct?.suggested_retail_price || selectedMasterItem?.suggested_retail_price || avgPrice || 0)
                                                         ? 'bg-green-100 text-green-700'
                                                         : 'bg-orange-100 text-orange-700'
                                                         }`}>
-                                                        {parseFloat(form.price) <= (editingProduct?.suggested_retail_price || selectedMasterItem?.suggested_retail_price || 0)
+                                                        {parseFloat(form.price) <= (editingProduct?.suggested_retail_price || selectedMasterItem?.suggested_retail_price || avgPrice || 0)
                                                             ? 'Competitive Price'
                                                             : 'Above Market SRP'}
                                                     </div>
                                                 )}
                                             </div>
                                         </div>
+
                                     </div>
                                 </div>
 

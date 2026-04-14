@@ -657,6 +657,32 @@ export const useCatalog = () => {
         }
     };
 
+    const getAverageMarketPrice = async (masterProductId: string): Promise<number> => {
+        try {
+            const q = query(
+                collection(db, 'merchant_products'),
+                where('master_product_id', '==', masterProductId)
+            );
+            const snapshot = await getDocs(q);
+            if (snapshot.empty) return 0;
+
+            let total = 0;
+            let count = 0;
+            snapshot.forEach(doc => {
+                const price = doc.data().price;
+                if (typeof price === 'number' && price > 0) {
+                    total += price;
+                    count++;
+                }
+            });
+
+            return count > 0 ? total / count : 0;
+        } catch (err) {
+            console.error('[getAverageMarketPrice] Error:', err);
+            return 0;
+        }
+    };
+
     // Add Product to Store (Link Merchant -> Master)
     const addMerchantProduct = async (storeId: string, masterId: string, price: number, quantity: number, options?: { is_canadian_local?: boolean }) => {
         const merchantProductId = `${storeId}_${masterId}`; // Deterministic ID
@@ -1410,6 +1436,7 @@ export const useCatalog = () => {
         commitPendingProduct,
         rejectPendingProduct,
         migrateCategories,
+        getAverageMarketPrice,
         loading,
         error
     };

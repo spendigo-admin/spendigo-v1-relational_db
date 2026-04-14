@@ -9,7 +9,6 @@ import { useTranslation } from 'react-i18next';
 import '../styles/design-system.css';
 import { analytics } from '../lib/firebase';
 import { logEvent } from 'firebase/analytics';
-import { LogoIcon } from '../components/LogoIcon';
 
 const ConsumerLayout: React.FC = () => {
     const { itemCount, notification, clearNotification } = useCart();
