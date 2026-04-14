@@ -206,6 +206,39 @@ const StoreList: React.FC = () => {
                 </section>
             )}
 
+            {allStores.filter(s => s.activeDealsCount > 0).length > 0 && (
+                <section className="py-6 px-4 bg-[var(--surface-1)] border-b border-[var(--glass-border)]">
+                    <div className="max-w-5xl mx-auto">
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className="text-xl font-bold flex items-center gap-2">
+                                <span className="text-2xl">🔥</span> {t('activeDeals')}
+                            </h2>
+                            <Link to="/deals" className="text-sm text-[var(--brand-primary)] font-medium hover:underline">{t('viewAll')}</Link>
+                        </div>
+                        <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x">
+                            {allStores.filter(s => s.activeDealsCount > 0).map(store => (
+                                <div
+                                    key={store.id}
+                                    onClick={() => navigate(`/store/${store.id}`, { state: { initialTab: 'offers' } })}
+                                    className="min-w-[280px] md:min-w-[320px] bg-white rounded-xl border border-[var(--glass-border)] shadow-sm hover:shadow-md transition-all cursor-pointer snap-center group overflow-hidden"
+                                >
+                                    <div className="relative h-40">
+                                        <img src={store.image} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-4">
+                                            <div>
+                                                <h3 className="text-white font-bold text-lg drop-shadow-md">{store.name}</h3>
+                                                <p className="text-white/90 text-xs">{store.activeDealsCount} {t('dealsWord')} active</p>
+                                            </div>
+                                        </div>
+                                        <div className="absolute top-3 right-3 bg-green-600 text-white text-[10px] uppercase font-bold px-2 py-1 rounded shadow-sm">{t('activeDeals')}</div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </section>
+            )}
+
             <section className="py-4 px-4 bg-[var(--surface-0)] sticky top-16 z-40 border-b border-[var(--glass-border)]">
                 <div className="max-w-5xl mx-auto overflow-x-auto scrollbar-hide">
                     <div className="flex gap-2 min-w-max">

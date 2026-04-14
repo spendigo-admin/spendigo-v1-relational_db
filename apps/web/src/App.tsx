@@ -65,6 +65,7 @@ const Search = lazyWithRetry(() => import('./pages/consumer/Search'));
 const HowItWorks = lazyWithRetry(() => import('./pages/consumer/HowItWorks'));
 const ConsumerSurveys = lazyWithRetry(() => import('./pages/consumer/Surveys'));
 const Flyers = lazyWithRetry(() => import('./pages/consumer/Flyers'));
+const Deals = lazyWithRetry(() => import('./pages/consumer/Deals'));
 const Legal = lazyWithRetry(() => import('./pages/consumer/Legal'));
 const PartnerWithUs = lazyWithRetry(() => import('./pages/consumer/PartnerWithUs'));
 const MerchantRegister = lazyWithRetry(() => import('./pages/consumer/MerchantRegister'));
@@ -192,6 +193,7 @@ function App() {
                                                                     <Route path="/careers/:id" element={<CareerDetail />} />
                                                                     <Route path="/surveys" element={<ConsumerSurveys />} />
                                                                     <Route path="/flyers" element={<Flyers />} />
+                                                                    <Route path="/deals" element={<Deals />} />
                                                                     <Route path="/consumer" element={<Navigate to="/" replace />} />
                                                                 </Route>
 
