@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import '../../styles/design-system.css';
-import { useAudit } from '../../context/AuditContext';
+import { useAudit, sha256 } from '../../context/AuditContext';
 
 // Security Utilities
 const maskIP = (ip: string) => ip.replace(/\.\d+$/, '.***');
@@ -30,18 +30,87 @@ const AuditLogs: React.FC = () => {
     const { logs, verifyIntegrity, isVerified } = useAudit();
     const [search, setSearch] = useState('');
     const [expandedLogId, setExpandedLogId] = useState<string | null>(null);
+    const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
+    const [actionFilter, setActionFilter] = useState<string>('all');
+    const [startDate, setStartDate] = useState<string>('');
+    const [endDate, setEndDate] = useState<string>('');
 
-    // Reverse logs to show newest first
-    const reversedLogs = useMemo(() => [...logs].reverse(), [logs]);
+    // Dynamically get unique actions for the filter
+    const actionTypes = useMemo(() => {
+        const types = new Set(logs.map(log => log.action));
+        return Array.from(types).sort();
+    }, [logs]);
 
     const filteredLogs = useMemo(() => {
-        return reversedLogs.filter(log => {
-            const matchesSearch = log.action.toLowerCase().includes(search.toLowerCase()) ||
-                log.id.toLowerCase().includes(search.toLowerCase()) ||
-                (log.actor.email && log.actor.email.toLowerCase().includes(search.toLowerCase()));
-            return matchesSearch;
+        const query = search.toLowerCase();
+        
+        let processed = logs.filter(log => {
+            // 1. Text Search
+            const matchesSearch = 
+                log.action.toLowerCase().includes(query) ||
+                log.id.toLowerCase().includes(query) ||
+                (log.actor.email && log.actor.email.toLowerCase().includes(query)) ||
+                (log.resource && log.resource.toLowerCase().includes(query)) ||
+                Object.values(log.metadata || {}).some(val => 
+                    String(val).toLowerCase().includes(query)
+                );
+
+            // 2. Action Filter
+            const matchesAction = actionFilter === 'all' || log.action === actionFilter;
+
+            // 3. Date Filter
+            let matchesDate = true;
+            if (startDate) {
+                matchesDate = matchesDate && log.timestamp >= startDate;
+            }
+            if (endDate) {
+                // Add time to end date to include the full day
+                matchesDate = matchesDate && log.timestamp <= `${endDate}T23:59:59`;
+            }
+
+            return matchesSearch && matchesAction && matchesDate;
         });
-    }, [reversedLogs, search]);
+
+        // 4. Sorting
+        return processed.sort((a, b) => {
+            const dateA = new Date(a.timestamp).getTime();
+            const dateB = new Date(b.timestamp).getTime();
+            return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
+        });
+    }, [logs, search, actionFilter, startDate, endDate, sortOrder]);
+
+    const resetFilters = () => {
+        setSearch('');
+        setActionFilter('all');
+        setStartDate('');
+        setEndDate('');
+        setSortOrder('desc');
+    };
+
+    const handleExport = async () => {
+        const dataStr = JSON.stringify(logs, null, 2);
+        const timestamp = new Date().toISOString();
+        
+        // 1. Export Data File
+        const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
+        const dataFileName = `spendigo_audit_ledger_${timestamp}.json`;
+
+        const dataLink = document.createElement('a');
+        dataLink.setAttribute('href', dataUri);
+        dataLink.setAttribute('download', dataFileName);
+        dataLink.click();
+
+        // 2. Export Checksum File (SHA-256)
+        const hash = await sha256(dataStr);
+        const hashFileName = `${dataFileName}.sha256`;
+        const hashUri = 'data:text/plain;charset=utf-8,' + encodeURIComponent(hash);
+
+        const hashLink = document.createElement('a');
+        hashLink.setAttribute('href', hashUri);
+        hashLink.setAttribute('download', hashFileName);
+        // Delay slightly for browser download sequentiality
+        setTimeout(() => hashLink.click(), 500);
+    };
 
     return (
         <div className="p-6 animate-fade-in pb-20">
@@ -66,7 +135,7 @@ const AuditLogs: React.FC = () => {
                             className={`px-3 py-1.5 rounded-lg text-xs font-bold border flex items-center gap-2 transition-all ${isVerified === true ? 'bg-green-50 text-green-700 border-green-200' :
                                     isVerified === false ? 'bg-red-50 text-red-700 border-red-200' :
                                         'bg-gray-50 text-gray-700 border-gray-200'
-                                }`}
+                                 }`}
                         >
                             {isVerified === null ? '↻ Verify Integrity' :
                                 isVerified === true ? '✓ Chain Valid' :
@@ -77,20 +146,78 @@ const AuditLogs: React.FC = () => {
             </div>
 
             {/* Controls */}
-            <div className="bg-white p-4 rounded-xl border border-[var(--glass-border)] shadow-sm mb-6 flex flex-col md:flex-row gap-4">
-                <div className="flex-1 relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]">🔍</span>
-                    <input
-                        type="text"
-                        placeholder="Search logs by Trace ID, Action, or Actor..."
-                        value={search}
-                        onChange={e => setSearch(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 border border-[var(--glass-border)] rounded-lg outline-none focus:border-[var(--brand-primary)] text-sm"
-                    />
+            <div className="bg-white p-6 rounded-xl border border-[var(--glass-border)] shadow-sm mb-6 space-y-4">
+                <div className="flex flex-col md:flex-row gap-4">
+                    <div className="flex-1 relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]">🔍</span>
+                        <input
+                            type="text"
+                            placeholder="Search logs by Trace ID, Action, or Actor..."
+                            value={search}
+                            onChange={e => setSearch(e.target.value)}
+                            className="w-full pl-10 pr-4 py-2 border border-[var(--glass-border)] rounded-lg outline-none focus:border-[var(--brand-primary)] text-sm"
+                        />
+                    </div>
+                    <div className="flex gap-2">
+                        <button 
+                            onClick={handleExport}
+                            className="px-4 py-2 border border-[var(--glass-border)] rounded-lg text-sm hover:bg-[var(--surface-1)] flex items-center gap-2 font-medium"
+                        >
+                            📥 Export JSON
+                        </button>
+                        <button 
+                            onClick={resetFilters}
+                            className="px-4 py-2 text-xs text-[var(--text-muted)] hover:text-[var(--text-main)] underline font-medium"
+                        >
+                            Reset Filters
+                        </button>
+                    </div>
                 </div>
-                <button className="px-4 py-2 border border-[var(--glass-border)] rounded-lg text-sm hover:bg-[var(--surface-1)]">
-                    📥 Export Encrypted
-                </button>
+
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-4 border-t border-[var(--glass-border)]">
+                    <div>
+                        <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase mb-1">Action Type</label>
+                        <select 
+                            value={actionFilter}
+                            onChange={e => setActionFilter(e.target.value)}
+                            className="w-full p-2 border border-[var(--glass-border)] rounded-lg text-xs outline-none bg-white font-medium"
+                        >
+                            <option value="all">All Actions</option>
+                            {actionTypes.map(type => (
+                                <option key={type} value={type}>{type}</option>
+                            ))}
+                        </select>
+                    </div>
+                    <div>
+                        <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase mb-1">Sort Order</label>
+                        <select 
+                            value={sortOrder}
+                            onChange={e => setSortOrder(e.target.value as 'asc' | 'desc')}
+                            className="w-full p-2 border border-[var(--glass-border)] rounded-lg text-xs outline-none bg-white font-medium"
+                        >
+                            <option value="desc">Newest First</option>
+                            <option value="asc">Oldest First</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase mb-1">Start Date</label>
+                        <input 
+                            type="date"
+                            value={startDate}
+                            onChange={e => setStartDate(e.target.value)}
+                            className="w-full p-2 border border-[var(--glass-border)] rounded-lg text-xs outline-none bg-white font-medium"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase mb-1">End Date</label>
+                        <input 
+                            type="date"
+                            value={endDate}
+                            onChange={e => setEndDate(e.target.value)}
+                            className="w-full p-2 border border-[var(--glass-border)] rounded-lg text-xs outline-none bg-white font-medium"
+                        />
+                    </div>
+                </div>
             </div>
 
             {/* Secure Log Table */}

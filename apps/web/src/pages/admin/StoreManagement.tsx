@@ -29,6 +29,8 @@ const StoreManagement: React.FC = () => {
     }, [searchParams]);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingStoreId, setEditingStoreId] = useState<string | null>(null);
+    const [selectedStoreLegal, setSelectedStoreLegal] = useState<any>(null);
+    const [showFullAgreement, setShowFullAgreement] = useState(false);
     const [formData, setFormData] = useState({
         name: '',
         legalName: '',
@@ -58,6 +60,8 @@ const StoreManagement: React.FC = () => {
             subscriptionEnd: ''
         });
         setEditingStoreId(null);
+        setSelectedStoreLegal(null);
+        setShowFullAgreement(false);
     };
 
     // --- Subscription Data Logic ---
@@ -222,7 +226,36 @@ const StoreManagement: React.FC = () => {
             subscriptionEnd: subData.end || ''
         });
         setEditingStoreId(store.id);
+        setSelectedStoreLegal(store.legal || null);
         setIsModalOpen(true);
+    };
+
+    const handleExportStores = () => {
+        const headers = ['ID', 'Name', 'Legal Name', 'Email', 'Type', 'Status', 'Address', 'City', 'Province', 'Agreement Version', 'Accepted At'];
+        const rows = filteredStores.map((s: any) => [
+            s.id,
+            s.name,
+            s.legalName || '',
+            s.merchantEmail || '',
+            s.businessType || '',
+            s.status,
+            s.address || '',
+            s.city || '',
+            s.province || '',
+            s.legal?.agreementVersion || 'N/A',
+            s.legal?.acceptedAt || 'N/A'
+        ]);
+
+        const csvContent = [headers, ...rows].map(e => e.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(",")).join("\n");
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", `spendigo_stores_${new Date().toISOString().split('T')[0]}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     };
     const handleSyncEmail = async (storeId: string, ownerEmail: string) => {
         try {
@@ -242,8 +275,11 @@ const StoreManagement: React.FC = () => {
                     <p className="text-[var(--text-muted)] text-sm">Review merchant applications and manage existing stores</p>
                 </div>
                 <div className="flex gap-2">
-                    <button className="px-4 py-2 bg-[var(--surface-1)] border border-[var(--glass-border)] rounded-lg text-sm font-medium hover:bg-[var(--surface-2)]">
-                        Export List
+                    <button 
+                        onClick={handleExportStores}
+                        className="px-4 py-2 bg-[var(--surface-1)] border border-[var(--glass-border)] rounded-lg text-sm font-medium hover:bg-[var(--surface-2)] flex items-center gap-2"
+                    >
+                        📥 Export List
                     </button>
                     <button
                         onClick={() => {
@@ -631,6 +667,41 @@ const StoreManagement: React.FC = () => {
                                         </div>
                                     </div>
                                 </div>
+
+                                {/* Section: Legal & Compliance */}
+                                {selectedStoreLegal && (
+                                    <div className="space-y-4">
+                                        <h3 className="text-xs font-bold uppercase tracking-wider text-green-600 border-b border-green-50 pb-2 flex items-center gap-2">
+                                            <span className="text-sm">⚖️</span> Legal & Compliance Evidence
+                                        </h3>
+                                        <div className="bg-green-50/30 p-4 rounded-xl border border-green-100/50 space-y-3">
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div>
+                                                    <p className="text-[10px] uppercase font-bold text-gray-400">Agreement Version</p>
+                                                    <p className="text-sm font-bold text-gray-700">{selectedStoreLegal.agreementVersion || '1.0'}</p>
+                                                </div>
+                                                <div>
+                                                    <p className="text-[10px] uppercase font-bold text-gray-400">Accepted At</p>
+                                                    <p className="text-sm font-bold text-gray-700">{selectedStoreLegal.acceptedAt?.replace('T', ' ').slice(0, 19)} UTC</p>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <button 
+                                                    type="button"
+                                                    onClick={() => setShowFullAgreement(!showFullAgreement)}
+                                                    className="text-xs font-bold text-green-700 hover:underline flex items-center gap-1"
+                                                >
+                                                    {showFullAgreement ? 'Hide Agreement Text' : 'View Accepted Agreement Snapshot ↓'}
+                                                </button>
+                                                {showFullAgreement && (
+                                                    <div className="mt-2 p-3 bg-white border border-green-100 rounded-lg text-[10px] text-gray-600 font-mono whitespace-pre-wrap max-h-40 overflow-y-auto leading-relaxed shadow-inner">
+                                                        {selectedStoreLegal.agreementTextSnapshot || 'Snapshot not available.'}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
 
                                 {/* Section: Subscription Override */}
                                 <div className="space-y-4">

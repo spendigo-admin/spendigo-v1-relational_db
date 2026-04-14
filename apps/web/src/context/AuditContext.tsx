@@ -37,7 +37,7 @@ const canonicalize = (value: unknown): string => {
 };
 
 
-const sha256 = async (message: string): Promise<string> => {
+export const sha256 = async (message: string): Promise<string> => {
     try {
         if (window.crypto && window.crypto.subtle) {
             const msgBuffer = new TextEncoder().encode(message);

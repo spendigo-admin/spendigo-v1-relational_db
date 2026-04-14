@@ -8,12 +8,21 @@ import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 
 import { BUSINESS_TYPES } from './Settings';
+import { useAudit } from '../../context/AuditContext';
+
+const MARKETPLACE_AGREEMENT_V1 = `
+1. Relationship. You acknowledge that Spendigo is a Marketplace Facilitator platform.
+2. Fees. Spendigo operates on a Subscription Model. We do not charge a percentage commission on your sales. You receive 100% of your revenue (minus standard payment processing fees).
+3. Compliance & Privacy. You agree to comply with all applicable Canadian laws, including PIPEDA and Anti-Spam Legislation (CASL). You acknowledge and agree to handle personal data in accordance with our Privacy Policy.
+4. Limitation of Liability. You agree that Spendigo provides the platform "as-is" and "as-available". To the maximum extent permitted by law, Spendigo shall not be liable for any indirect, incidental, or consequential damages, including loss of profits or data. You agree to indemnify and hold Spendigo harmless from any claims arising out of your merchant activities or breach of this agreement.
+`.trim();
 
 const MerchantOnboarding: React.FC = () => {
     const navigate = useNavigate();
     const { user } = useAuth();
     const { addNotification } = useNotifications();
     const { addStore } = useMarketplace();
+    const { logEvent } = useAudit();
     const [step, setStep] = useState(1);
     const [loading, setLoading] = useState(false);
     // Pre-fill form with data from User Profile (collected during registration)
@@ -78,10 +87,26 @@ const MerchantOnboarding: React.FC = () => {
                 products: [], // Empty inventory
                 image: defaultAssets.cover,
                 logoUrl: defaultAssets.logo,
-                tagline: defaultAssets.tagline
+                tagline: defaultAssets.tagline,
+                // Legal metadata for law enforcement/audit compliance
+                legal: {
+                    agreementAccepted: true,
+                    acceptedAt: new Date().toISOString(),
+                    acceptedBy: user.id,
+                    agreementVersion: '1.0',
+                    agreementTextSnapshot: MARKETPLACE_AGREEMENT_V1
+                }
             };
 
             await addStore(newStore);
+
+            // 2. Log Legal Acceptance to the Immutable Audit Trail
+            await logEvent('MERCHANT_AGREEMENT_ACCEPTANCE', {
+                agreementVersion: '1.0',
+                agreementText: MARKETPLACE_AGREEMENT_V1,
+                legalName: formData.legalName,
+                businessType: formData.businessType
+            }, newStoreId);
 
             // 2. Link Store to User Profile
             const userRef = doc(db, 'users', user.id);
@@ -205,12 +230,9 @@ const MerchantOnboarding: React.FC = () => {
 
                 {step === 2 && (
                     <div className="space-y-6">
-                        <div className="p-4 rounded-[var(--radius-sm)] bg-[var(--surface-0)] border border-[var(--glass-border)] text-sm text-[var(--text-muted)] h-48 overflow-y-auto">
+                        <div className="p-4 rounded-[var(--radius-sm)] bg-[var(--surface-0)] border border-[var(--glass-border)] text-sm text-[var(--text-muted)] h-48 overflow-y-auto whitespace-pre-wrap">
                             <h3 className="font-bold text-[var(--text-main)] mb-2">Marketplace Facilitator Agreement</h3>
-                            <p>1. Relationship. You acknowledge that Spendigo is a Marketplace Facilitator platform.</p>
-                            <p className="mt-2">2. Fees. Spendigo operates on a **Subscription Model**. We do not charge a percentage commission on your sales. You receive 100% of your revenue (minus standard payment processing fees).</p>
-                            <p className="mt-2">3. Compliance & Privacy. You agree to comply with all applicable Canadian laws, including PIPEDA and Anti-Spam Legislation (CASL). You acknowledge and agree to handle personal data in accordance with our Privacy Policy.</p>
-                            {/* Truncated for brevity */}
+                            {MARKETPLACE_AGREEMENT_V1}
                         </div>
 
                         <label className="flex items-center gap-3 cursor-pointer">

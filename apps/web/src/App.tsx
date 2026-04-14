@@ -147,9 +147,10 @@ function App() {
         <ErrorBoundary FallbackComponent={ErrorFallback} onReset={() => window.location.href = '/'}>
             <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
                 <AuthProvider>
-                    <MaintenanceGuard>
-                        <NotificationProvider>
-                            <MarketplaceProvider>
+                    <AuditProvider>
+                        <MaintenanceGuard>
+                            <NotificationProvider>
+                                <MarketplaceProvider>
                                 <CatalogProvider>
                                     <ReviewProvider>
                                         <CartProvider>
@@ -213,9 +214,7 @@ function App() {
                                                                 {/* ADMIN ROUTES with Layout */}
                                                                 <Route element={
                                                                     <RequireVerification>
-                                                                        <AuditProvider>
-                                                                            <AdminLayout />
-                                                                        </AuditProvider>
+                                                                        <AdminLayout />
                                                                     </RequireVerification>
                                                                 }>
                                                                     <Route path="/admin/dashboard" element={<AdminDashboard />} />
@@ -244,6 +243,7 @@ function App() {
                             </MarketplaceProvider>
                         </NotificationProvider>
                     </MaintenanceGuard>
+                    </AuditProvider>
                 </AuthProvider>
                 <ThemeSwitcher />
             </Router>
