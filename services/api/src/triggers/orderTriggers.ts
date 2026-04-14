@@ -21,9 +21,9 @@ export const onOrderStatusUpdated = functions.firestore
       return null;
     }
 
-    const userId = afterData.userId;
+    const userId = afterData.customerId;
     if (!userId) {
-      functions.logger.warn(`Order ${orderId} has no userId associated.`);
+      functions.logger.warn(`Order ${orderId} has no customerId associated.`);
       return null;
     }
 

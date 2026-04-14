@@ -73,7 +73,7 @@ interface NotificationContextType {
     clearAll: () => void;
     addNotification: (n: Omit<AppNotification, 'id' | 'timestamp' | 'read'>) => void;
     deleteNotification: (id: string) => void;
-    togglePreference: (key: keyof NotificationPreferences) => void;
+    togglePreference: (key: keyof NotificationPreferences) => Promise<void>;
     toast: AppNotification | null;
     setToast: (toast: AppNotification | null) => void;
 }
@@ -107,11 +107,22 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
         let unsubscribe: () => void;
 
         const initialize = async () => {
-            // Load Prefs (Local for now, could be DB)
-            const savedPrefs = localStorage.getItem(LOCAL_PREF_KEY);
-            if (savedPrefs) setPreferences(JSON.parse(savedPrefs));
-
             if (isAuth && contextId) {
+                // Load prefs from Firestore; fall back to localStorage
+                try {
+                    const prefDoc = await getDoc(doc(db, 'users', contextId));
+                    const saved = prefDoc.data()?.notificationPreferences;
+                    if (saved) {
+                        setPreferences({ ...DEFAULT_PREFERENCES, ...saved });
+                    } else {
+                        const local = localStorage.getItem(LOCAL_PREF_KEY);
+                        if (local) setPreferences(JSON.parse(local));
+                    }
+                } catch {
+                    const local = localStorage.getItem(LOCAL_PREF_KEY);
+                    if (local) setPreferences(JSON.parse(local));
+                }
+
                 // FIRESTORE SYNC (Subcollection)
                 const notifRef = collection(db, 'users', contextId, 'notifications');
                 const q = query(notifRef, orderBy('timestamp', 'desc'));
@@ -126,6 +137,9 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
                 });
             } else {
                 // LOCAL STORAGE SYNC (Guest)
+                const savedPrefs = localStorage.getItem(LOCAL_PREF_KEY);
+                if (savedPrefs) setPreferences(JSON.parse(savedPrefs));
+
                 const savedNotifs = localStorage.getItem(LOCAL_NOTIF_KEY);
                 if (savedNotifs) {
                     try { setNotifications(JSON.parse(savedNotifs)); } catch (e) { console.error(e); }
@@ -164,10 +178,20 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     }, [contextId, isAuth, LOCAL_NOTIF_KEY, LOCAL_PREF_KEY]);
 
     // Save Prefs
-    const togglePreference = (key: keyof NotificationPreferences) => {
+    const togglePreference = async (key: keyof NotificationPreferences) => {
         const newPrefs = { ...preferences, [key]: !preferences[key] };
         setPreferences(newPrefs);
         localStorage.setItem(LOCAL_PREF_KEY, JSON.stringify(newPrefs));
+
+        if (isAuth && contextId) {
+            try {
+                await updateDoc(doc(db, 'users', contextId), {
+                    notificationPreferences: newPrefs
+                });
+            } catch (e) {
+                console.error('Failed to persist notification preferences:', e);
+            }
+        }
     };
 
     // Actions

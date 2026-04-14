@@ -19,6 +19,10 @@ self.addEventListener('install', (event) => {
     self.skipWaiting();
 });
 
+self.addEventListener('activate', (event) => {
+    event.waitUntil(self.clients.claim());
+});
+
 self.addEventListener('message', (event) => {
     // We can receive config dynamically via postMessage from the main thread
     if (event.data && event.data.type === 'FIREBASE_CONFIG') {

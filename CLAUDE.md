@@ -196,6 +196,7 @@ VITE_FIREBASE_APP_ID=
 VITE_ALGOLIA_APP_ID=
 VITE_ALGOLIA_SEARCH_KEY=
 VITE_ALGOLIA_INDEX_NAME=   # optional, defaults to 'master_products'
+VITE_FIREBASE_VAPID_KEY=   # FCM VAPID key for push notifications (Web Push Certificates in Firebase Console)
 VITE_GEMINI_API_KEY=       # Gemini API key for SmartInsights feature
 VITE_SENTRY_DSN=           # Sentry DSN for error tracking (optional, no-ops if missing)
 ```
