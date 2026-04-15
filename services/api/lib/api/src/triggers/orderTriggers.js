@@ -52,9 +52,9 @@ exports.onOrderStatusUpdated = functions.firestore
     if (oldStatus === newStatus) {
         return null;
     }
-    const userId = afterData.userId;
+    const userId = afterData.customerId;
     if (!userId) {
-        functions.logger.warn(`Order ${orderId} has no userId associated.`);
+        functions.logger.warn(`Order ${orderId} has no customerId associated.`);
         return null;
     }
     // Determine notification title and body based on the new status
