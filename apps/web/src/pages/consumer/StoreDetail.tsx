@@ -61,83 +61,180 @@ const FlyerTab: React.FC<{ storeId: string; storeName: string; summary: any; vie
         </div>
     );
 
+    // Sort items by savings to feature the biggest deals
+    const sortedItems = [...(flyer.items || [])].sort((a, b) => {
+        const savingsA = (a.originalPrice - a.salePrice) / a.originalPrice;
+        const savingsB = (b.originalPrice - b.salePrice) / b.originalPrice;
+        return savingsB - savingsA;
+    });
+
+    const calculateDaysLeft = (date: string) => {
+        const end = new Date(date);
+        const now = new Date();
+        const diff = end.getTime() - now.getTime();
+        return Math.ceil(diff / (1000 * 60 * 60 * 24));
+    };
+
+    const flyerDaysLeft = calculateDaysLeft(flyer.validUntil);
+
     return (
-        <div className="p-4 space-y-6">
-            <div className="relative rounded-xl overflow-hidden shadow-sm h-48">
-                <img src={flyer.coverImage} className="w-full h-full object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex items-end p-6">
+        <div className="animate-fade-in bg-white min-h-screen">
+            {/* RETAIL FLYER HEADER */}
+            <div className="bg-emerald-600 text-white px-4 py-3 md:py-4 flex flex-col md:flex-row md:items-center justify-between gap-2 shadow-inner border-b-4 border-emerald-700">
+                <div className="flex items-center gap-3">
+                    <div className="bg-white p-1 rounded-lg">
+                        <span className="text-2xl">🍁</span>
+                    </div>
                     <div>
-                        <h2 className="text-2xl font-bold text-white mb-1">{flyer.title}</h2>
-                        <p className="text-white/80 text-sm">Valid {new Date(flyer.validFrom).toLocaleDateString()} - {new Date(flyer.validUntil).toLocaleDateString()}</p>
+                        <h2 className="text-xl md:text-2xl font-black italic tracking-tighter uppercase mb-0 text-white drop-shadow-sm leading-none">
+                            {storeName}'s Great Deals
+                        </h2>
+                        <div className="flex items-center gap-2 mt-0.5">
+                            <span className="text-[10px] bg-emerald-800 px-1.5 py-0.5 rounded font-bold uppercase tracking-widest">PROUDLY CANADIAN</span>
+                            <span className="text-[10px] font-bold opacity-90 uppercase tracking-widest">SINCE 1922</span>
+                        </div>
+                    </div>
+                </div>
+                <div className="text-right flex flex-col items-end">
+                    <div className="text-xs font-bold bg-white text-emerald-600 px-2 py-0.5 rounded-full mb-1">
+                        {flyer.title || "WEEKLY SAVINGS"}
+                    </div>
+                    <div className="flex flex-col items-end leading-tight">
+                        <p className="text-[10px] md:text-xs font-black uppercase tracking-widest text-yellow-300 drop-shadow-sm">
+                            VALID: {new Date(flyer.validFrom).toLocaleDateString()} - {new Date(flyer.validUntil).toLocaleDateString()}
+                        </p>
+                        <p className="text-[9px] md:text-[10px] font-black uppercase tracking-tighter bg-emerald-800 px-1.5 py-0.5 rounded mt-0.5 animate-pulse text-white">
+                            ⏰ {flyerDaysLeft} {flyerDaysLeft === 1 ? 'DAY' : 'DAYS'} LEFT
+                        </p>
                     </div>
                 </div>
             </div>
 
-            {viewMode === 'grid' ? (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    {flyer.items?.map((item: any, idx: number) => (
-                        <div key={idx} className="bg-white rounded-xl border border-[var(--glass-border)] shadow-sm overflow-hidden group">
-                            <div className="relative h-32 bg-gray-100">
-                                <img src={item.image} className="w-full h-full object-cover" />
-                                {item.salePrice < item.originalPrice && (
-                                    <span className="absolute top-2 right-2 bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
-                                        SAVE {Math.round(((item.originalPrice - item.salePrice) / item.originalPrice) * 100)}%
-                                    </span>
-                                )}
-                            </div>
-                            <div className="p-3">
-                                <p className="font-bold text-sm text-[var(--text-main)] truncate">{item.name}</p>
-                                <div className="flex items-baseline gap-2 mt-1 mb-3">
-                                    <span className="text-lg font-bold text-[var(--brand-primary)]">${item.salePrice.toFixed(2)}</span>
-                                    <span className="text-xs text-[var(--text-muted)] line-through">${item.originalPrice.toFixed(2)}</span>
+            <div className="p-4 space-y-6">
+                {viewMode === 'list' ? (
+                    <div className="space-y-3">
+                        {sortedItems.map((item: any, idx: number) => (
+                            <div key={idx} className="bg-white rounded-xl border border-[var(--glass-border)] p-3 flex gap-4 items-center shadow-sm hover:shadow-md transition-all">
+                                <div className="w-16 h-16 rounded-lg bg-gray-100 flex-shrink-0 relative overflow-hidden">
+                                    <img src={item.image} className="w-full h-full object-cover" loading="lazy" />
+                                    {item.salePrice < item.originalPrice && (
+                                        <div className="absolute top-0 left-0 bg-emerald-600 text-white text-[8px] font-black px-1.5 py-0.5 rounded-br uppercase tracking-tighter font-serif shadow-sm">
+                                            SAVE {Math.round(((item.originalPrice - item.salePrice) / item.originalPrice) * 100)}%
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <p className="font-bold text-sm text-[var(--text-main)] truncate">{item.name}</p>
+                                    <div className="flex items-baseline gap-2">
+                                        <span className="text-sm font-black text-emerald-600">${item.salePrice.toFixed(2)}</span>
+                                        <span className="text-[10px] text-[var(--text-muted)] line-through">Reg ${item.originalPrice.toFixed(2)}</span>
+                                    </div>
                                 </div>
                                 <button
                                     onClick={() => handleAdd(item)}
-                                    className="w-full py-2 bg-[var(--brand-primary)] text-white text-xs font-bold rounded-lg hover:brightness-110 active:scale-95 transition-all"
+                                    className="px-4 py-2 bg-emerald-600 text-white text-xs font-black rounded uppercase tracking-widest hover:bg-emerald-700 active:scale-95 transition-all shadow-md"
                                 >
-                                    + Add to Cart
+                                    + ADD
                                 </button>
                             </div>
-                        </div>
-                    ))}
-                </div>
-            ) : (
-                /* List View */
-                <div className="space-y-3">
-                    {flyer.items?.map((item: any, idx: number) => (
-                        <div key={idx} className="bg-white rounded-xl border border-[var(--glass-border)] p-3 flex gap-4 items-center shadow-sm">
-                            <div className="w-16 h-16 rounded-lg bg-gray-100 flex-shrink-0 relative overflow-hidden">
-                                <img src={item.image} className="w-full h-full object-cover" />
-                                {item.salePrice < item.originalPrice && (
-                                    <span className="absolute top-0 left-0 bg-red-500 text-white text-[8px] font-bold px-1 rounded-br">-{Math.round(((item.originalPrice - item.salePrice) / item.originalPrice) * 100)}%</span>
-                                )}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                                <p className="font-bold text-sm text-[var(--text-main)] truncate">{item.name}</p>
-                                <div className="flex items-baseline gap-2">
-                                    <span className="text-sm font-bold text-[var(--brand-primary)]">${item.salePrice.toFixed(2)}</span>
-                                    <span className="text-[10px] text-[var(--text-muted)] line-through">${item.originalPrice.toFixed(2)}</span>
-                                </div>
-                            </div>
-                            <button
-                                onClick={() => handleAdd(item)}
-                                className="px-4 py-2 bg-[var(--brand-primary)] text-white text-xs font-bold rounded-lg hover:brightness-110 active:scale-95 transition-all"
-                            >
-                                + Add
-                            </button>
-                        </div>
-                    ))}
-                </div>
-            )}
+                        ))}
+                    </div>
+                ) : (
+                    /* GRAPHICAL GRID VIEW */
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+                        {sortedItems.map((item: any, idx: number) => {
+                            const isFeatured = idx < 2; // Feature top 2 deals
+                            const savingsPercent = Math.round(((item.originalPrice - item.salePrice) / item.originalPrice) * 100);
+                            const savingsAmount = (item.originalPrice - item.salePrice).toFixed(2);
 
-            {(!flyer.items || flyer.items.length === 0) && (
-                <div className="text-center py-8 text-gray-500 italic">
-                    This flyer has no items listed yet. Check the image above for details.
+                            return (
+                                <div 
+                                    key={idx} 
+                                    className={`relative group bg-white border-2 ${isFeatured ? 'col-span-2 md:col-span-2 border-red-200' : 'border-gray-100'} p-3 flex flex-col shadow-sm transition-all hover:shadow-xl hover:z-10`}
+                                >
+                                    {/* Big Savings Circle Badge */}
+                                    {savingsPercent >= 20 && (
+                                        <div className={`absolute ${isFeatured ? '-top-3 -right-3 w-16 h-16 md:w-20 md:h-20' : '-top-2 -right-2 w-12 h-12 md:w-14 md:h-14'} z-20 bg-yellow-400 rounded-full flex flex-col items-center justify-center border-4 border-white shadow-lg rotate-12 group-hover:rotate-0 transition-transform duration-300`}>
+                                            <span className="text-[8px] md:text-[10px] font-black uppercase text-emerald-700 -mb-1">SAVE</span>
+                                            <span className={`${isFeatured ? 'text-lg md:text-2xl' : 'text-xs md:text-lg'} font-black text-emerald-700 leading-none`}>${Math.floor(Number(savingsAmount))}</span>
+                                            {isFeatured && <span className="text-[8px] font-bold text-emerald-700">LTD TIME</span>}
+                                        </div>
+                                    )}
+
+                                    {/* Product Image Section */}
+                                    <div className={`relative ${isFeatured ? 'h-48 md:h-64' : 'h-32 md:h-40'} mb-3 bg-white overflow-hidden`}>
+                                        <img 
+                                            src={item.image} 
+                                            className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500" 
+                                            loading={isFeatured ? "eager" : "lazy"}
+                                        />
+                                        {isFeatured && (
+                                            <div className="absolute top-2 left-2 bg-emerald-600 text-white text-[10px] font-black px-2 py-1 rounded skew-x-[-12deg] shadow-lg">
+                                                HOT DEAL
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Pricing Section - Retail Style */}
+                                    <div className="flex-1 flex flex-col">
+                                        <div className="flex items-start gap-2 mb-1">
+                                            <div className="flex flex-col">
+                                                <span className="text-[8px] md:text-[10px] font-black bg-emerald-600 text-white px-1 w-max rounded-sm uppercase tracking-tighter">Sale</span>
+                                                <span className={`${isFeatured ? 'text-2xl md:text-4xl' : 'text-xl md:text-2xl'} font-black text-emerald-700 tracking-tighter leading-none`}>
+                                                    {item.salePrice.toFixed(2)}
+                                                </span>
+                                            </div>
+                                            <div className="flex flex-col mt-4">
+                                                <span className="text-[8px] md:text-[10px] font-bold text-gray-500 line-through">Reg {item.originalPrice.toFixed(2)}</span>
+                                                <span className="text-[8px] md:text-[10px] font-black text-emerald-600 uppercase tracking-tighter">Limit 4</span>
+                                            </div>
+                                        </div>
+
+                                        <p className={`${isFeatured ? 'text-sm md:text-lg' : 'text-xs md:text-sm'} font-black text-gray-800 uppercase leading-snug grow`}>
+                                            {item.name}
+                                        </p>
+
+                                        {isFeatured && (
+                                            <p className="text-[10px] text-gray-500 mb-2 font-medium italic">
+                                                Compare at store prices. While quantities last. 
+                                            </p>
+                                        )}
+
+                                        <button
+                                            onClick={() => handleAdd(item)}
+                                            className="w-full mt-2 py-2 md:py-3 bg-emerald-600 text-white text-[10px] md:text-xs font-black rounded uppercase tracking-widest hover:bg-black transition-colors shadow-md active:translate-y-0.5"
+                                        >
+                                            + Add To Cart
+                                        </button>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
+
+                {(!flyer.items || flyer.items.length === 0) && (
+                    <div className="text-center py-12 bg-white rounded-xl border-4 border-dashed border-gray-100 mt-6 box-content h-40 flex flex-col items-center justify-center">
+                        <span className="text-4xl mb-4 grayscale opacity-30">📰</span>
+                        <p className="text-gray-400 font-bold uppercase tracking-widest italic">Flyer Specials Coming Soon!</p>
+                    </div>
+                )}
+            </div>
+            
+            {/* FLYER FOOTER */}
+            <div className="bg-gray-100 p-8 text-center text-[10px] text-gray-500 space-y-2 border-t border-gray-200">
+                <p className="font-bold uppercase">PROUDLY SERVING OUR COMMUNITY</p>
+                <p>Prices effective for the duration of this flyer. We reserve the right to limit quantities. Typography or photography errors are subject to correction.</p>
+                <div className="flex justify-center gap-4 py-2 grayscale opacity-50">
+                    <span className="text-xl">💳</span>
+                    <span className="text-xl">📦</span>
+                    <span className="text-xl">♻️</span>
                 </div>
-            )}
+            </div>
         </div>
     );
 };
+
 
 
 
@@ -188,170 +285,228 @@ const OffersTab: React.FC<{ storeId: string, storeName: string; viewMode: 'grid'
         );
     }
 
+    // Sort items by savings for better impact
+    const sortedFlashSales = [...oneDayOffers].sort((a, b) => {
+        const saveA = ((a.originalPrice || a.price) - (a.salePrice || a.price));
+        const saveB = ((b.originalPrice || b.price) - (b.salePrice || b.price));
+        return saveB - saveA;
+    });
+
+    const sortedSaleItems = [...saleItems].sort((a, b) => {
+        const saveA = ((a.originalPrice || a.price) - (a.salePrice || a.price));
+        const saveB = ((b.originalPrice || b.price) - (b.salePrice || b.price));
+        return saveB - saveA;
+    });
+
+    const calculateDaysLeft = (date: string) => {
+        if (!date) return null;
+        const end = new Date(date);
+        const now = new Date();
+        const diff = end.getTime() - now.getTime();
+        return Math.ceil(diff / (1000 * 60 * 60 * 24));
+    };
+
     return (
-        <div className="p-4 space-y-6">
-            {/* One Day Offers */}
-            {oneDayOffers.length > 0 && (
-                <div>
-                    <div className="flex items-center gap-2 mb-3">
-                        <span className="text-xl">⏰</span>
-                        <h3 className="text-lg font-bold text-[var(--text-main)]">Flash Sales</h3>
-                        <span className="ml-auto text-xs bg-red-100 text-red-600 px-2 py-1 rounded-full font-medium">Limited Time</span>
+        <div className="animate-fade-in bg-white min-h-screen">
+            {/* FLASH SALES SECTION */}
+            {sortedFlashSales.length > 0 && (
+                <div className="mb-8">
+                    <div className="bg-orange-500 text-white px-4 py-3 md:py-4 flex items-center justify-between border-b-4 border-orange-600 shadow-inner">
+                        <div className="flex items-center gap-3">
+                            <span className="text-2xl md:text-3xl animate-pulse">⏰</span>
+                            <div>
+                                <h3 className="text-lg md:text-xl font-black italic uppercase tracking-tighter leading-none m-0">
+                                    Hurry! Flash Sales
+                                </h3>
+                                <p className="text-[10px] font-bold uppercase tracking-widest opacity-90 mt-1">LIMITED TIME ONLY • WHILE SUPPLIES LAST</p>
+                            </div>
+                        </div>
+                        <div className="text-right">
+                            <span className="text-xs font-black bg-white text-orange-600 px-3 py-1 rounded-full uppercase tracking-widest inline-block mb-1 shadow-sm">
+                                HOT DEALS
+                            </span>
+                            {sortedFlashSales[0]?.endDate && (
+                                <p className="text-[9px] md:text-[10px] font-black bg-orange-700 px-2 py-0.5 rounded text-white animate-pulse">
+                                    {calculateDaysLeft(sortedFlashSales[0].endDate)} DAYS LEFT
+                                </p>
+                            )}
+                        </div>
                     </div>
 
-                    {viewMode === 'grid' ? (
-                        <div className="grid grid-cols-2 gap-3">
-                            {oneDayOffers.map((offer: any) => {
-                                const pName = offer.productName || offer.name || 'Product';
-                                const pImage = offer.productImage || offer.image;
-                                const sPrice = offer.salePrice ?? offer.price;
-                                const oPrice = offer.originalPrice;
-
-                                return (
-                                    <div key={offer.id} className="bg-gradient-to-br from-red-50 to-orange-50 rounded-xl border border-red-100 p-3">
-                                        <div className="relative h-24 mb-2">
-                                            {pImage ? (
-                                                <img src={pImage} alt={pName} className="w-full h-full object-cover rounded-lg bg-white" />
-                                            ) : (
-                                                <div className="w-full h-full flex items-center justify-center text-3xl bg-white border border-red-50 rounded-lg">🏷️</div>
-                                            )}
+                    <div className="p-4">
+                        {viewMode === 'list' ? (
+                            <div className="space-y-2">
+                                {sortedFlashSales.map((offer) => (
+                                    <div key={offer.id} className="bg-orange-50 rounded-xl border-2 border-orange-200 p-3 flex gap-4 items-center shadow-sm">
+                                        <div className="w-16 h-16 rounded-lg bg-white p-1 flex-shrink-0 relative overflow-hidden border border-orange-100">
+                                            <img src={offer.productImage || offer.image} className="w-full h-full object-contain" loading="lazy" />
+                                            <div className="absolute top-0 left-0 bg-orange-600 text-white text-[8px] font-black px-1 rounded-br">HOT</div>
                                         </div>
-                                        <p className="font-medium text-sm text-[var(--text-main)] truncate">{pName}</p>
-                                        <div className="flex items-baseline gap-2 mt-1">
-                                            <span className="font-bold text-red-600">${sPrice?.toFixed(2)}</span>
-                                            {oPrice && (
-                                                <span className="text-xs text-[var(--text-muted)] line-through">${oPrice.toFixed(2)}</span>
-                                            )}
-                                        </div>
-                                        <p className="text-xs text-red-500 mt-1">Ends {new Date(offer.endDate || offer.validUntil).toLocaleDateString()}</p>
-                                        <button onClick={() => handleQuickAdd(offer)} className="w-full mt-2 py-2 bg-red-500 text-white text-xs font-medium rounded-lg hover:brightness-110">
-                                            + Add
-                                        </button>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    ) : (
-                        /* List View for Flash Sales */
-                        <div className="space-y-2">
-                            {oneDayOffers.map((offer: any) => {
-                                const pName = offer.productName || offer.name || 'Product';
-                                const pImage = offer.productImage || offer.image;
-                                const sPrice = offer.salePrice ?? offer.price;
-
-                                return (
-                                    <div key={offer.id} className="bg-gradient-to-l from-red-50 to-orange-50 rounded-xl border border-red-100 p-2 flex gap-3 items-center">
-                                        {pImage ? (
-                                            <img src={pImage} alt={pName} className="w-12 h-12 object-cover rounded bg-white shadow-sm" />
-                                        ) : (
-                                            <div className="w-12 h-12 flex items-center justify-center text-xl bg-white rounded shadow-sm">🏷️</div>
-                                        )}
                                         <div className="flex-1 min-w-0">
-                                            <p className="font-medium text-sm text-[var(--text-main)] truncate">{pName}</p>
+                                            <p className="font-bold text-sm text-[var(--text-main)] truncate">{offer.productName || offer.name}</p>
                                             <div className="flex items-baseline gap-2">
-                                                <span className="font-bold text-red-600">${sPrice?.toFixed(2)}</span>
-                                                <p className="text-[10px] text-red-500 uppercase font-bold">Flash</p>
+                                                <span className="text-sm font-black text-orange-600">${(offer.salePrice ?? offer.price).toFixed(2)}</span>
+                                                {offer.originalPrice && <span className="text-[10px] text-gray-500 line-through">Reg ${offer.originalPrice.toFixed(2)}</span>}
                                             </div>
                                         </div>
-                                        <button onClick={() => handleQuickAdd(offer)} className="px-3 py-1.5 bg-red-500 text-white text-xs font-bold rounded-lg shadow-sm">
-                                            + Add
+                                        <button onClick={() => handleQuickAdd(offer)} className="px-4 py-2 bg-orange-600 text-white text-xs font-black rounded uppercase tracking-widest shadow-md">
+                                            + ADD
                                         </button>
                                     </div>
-                                );
-                            })}
-                        </div>
-                    )}
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+                                {sortedFlashSales.map((offer, idx) => {
+                                    const isFeatured = idx < 2;
+                                    const sPrice = offer.salePrice ?? offer.price;
+                                    const oPrice = offer.originalPrice || sPrice * 1.25;
+                                    const savingsAmount = (oPrice - sPrice).toFixed(2);
+
+                                    return (
+                                        <div key={offer.id} className={`relative group bg-orange-50 border-2 ${isFeatured ? 'col-span-2 md:col-span-2 border-orange-300' : 'border-orange-200'} p-3 flex flex-col shadow-sm transition-all hover:shadow-xl`}>
+                                            <div className="absolute top-2 left-2 z-20 bg-orange-600 text-white text-[10px] font-black px-2 py-1 rounded skew-x-[-12deg] shadow-lg">
+                                                FLASH
+                                            </div>
+                                            
+                                            {/* Savings Badge */}
+                                            <div className={`absolute -top-3 -right-3 ${isFeatured ? 'w-16 h-16 md:w-20 md:h-20' : 'w-12 h-12 md:w-14 md:h-14'} z-20 bg-yellow-400 rounded-full flex flex-col items-center justify-center border-4 border-white shadow-lg rotate-12`}>
+                                                <span className="text-[8px] md:text-[10px] font-black uppercase text-orange-800 -mb-1">SAVE</span>
+                                                <span className={`${isFeatured ? 'text-lg md:text-2xl' : 'text-xs md:text-lg'} font-black text-orange-800 leading-none`}>${Math.floor(Number(savingsAmount))}</span>
+                                            </div>
+
+                                            <div className={`${isFeatured ? 'h-40 md:h-56' : 'h-32'} mb-3 bg-white rounded-lg p-2 overflow-hidden`}>
+                                                <img src={offer.productImage || offer.image} className="w-full h-full object-contain group-hover:scale-105 transition-all duration-500" />
+                                            </div>
+
+                                            <div className="flex-1 flex flex-col px-1">
+                                                <div className="flex items-start gap-2 mb-1">
+                                                    <div className="flex flex-col">
+                                                        <span className="text-[8px] md:text-[10px] font-black bg-orange-600 text-white px-1 w-max rounded-sm uppercase tracking-tighter">Sale</span>
+                                                        <span className={`${isFeatured ? 'text-2xl md:text-3xl' : 'text-xl'} font-black text-orange-700 tracking-tighter leading-none`}>
+                                                            {sPrice.toFixed(2)}
+                                                        </span>
+                                                    </div>
+                                                    <div className="mt-4">
+                                                        <span className="text-[10px] font-bold text-gray-400 line-through">Reg {oPrice.toFixed(2)}</span>
+                                                    </div>
+                                                </div>
+                                                <p className={`${isFeatured ? 'text-sm md:text-base' : 'text-xs'} font-black text-gray-800 uppercase leading-snug grow`}>
+                                                    {offer.productName || offer.name}
+                                                </p>
+                                                <button onClick={() => handleQuickAdd(offer)} className="w-full mt-2 py-2 bg-orange-600 text-white text-[10px] font-black rounded uppercase tracking-widest hover:bg-black transition-all shadow-md">
+                                                    + QUICK ADD
+                                                </button>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </div>
                 </div>
             )}
 
-            {/* Sale Items */}
-            {saleItems.length > 0 && (
+            {/* SALE ITEMS SECTION */}
+            {sortedSaleItems.length > 0 && (
                 <div>
-                    <div className="flex items-center gap-2 mb-3">
-                        <span className="text-xl">🏷️</span>
-                        <h3 className="text-lg font-bold text-[var(--text-main)]">Items on Sale</h3>
-                    </div>
-                    {viewMode === 'grid' ? (
-                        <div className="grid grid-cols-2 gap-3">
-                            {saleItems.map((item: any) => {
-                                const pName = item.productName || item.name || 'Product';
-                                const pImage = item.productImage || item.image;
-                                const sPrice = item.salePrice ?? item.price;
-                                const oPrice = item.originalPrice;
-
-                                return (
-                                    <div key={item.id} className="bg-white rounded-xl border border-[var(--glass-border)] p-3 shadow-sm">
-                                        <div className="relative">
-                                            {pImage ? (
-                                                <img src={pImage} alt={pName} className="w-full h-24 object-cover rounded-lg mb-2" />
-                                            ) : (
-                                                <div className="w-full h-24 flex items-center justify-center text-3xl bg-gray-50 rounded-lg mb-2">🏷️</div>
-                                            )}
-                                            {item.value && (
-                                                <span className="absolute top-1 left-1 bg-green-500 text-white text-[10px] font-bold px-2 py-0.5 rounded">
-                                                    {item.type === 'percentage' ? `${item.value}% OFF` : 'SALE'}
-                                                </span>
-                                            )}
-                                        </div>
-                                        <p className="font-medium text-sm text-[var(--text-main)] truncate">{pName}</p>
-                                        <div className="flex items-baseline gap-2 mt-1">
-                                            <span className="font-bold text-green-600">${sPrice?.toFixed(2)}</span>
-                                            {oPrice && (
-                                                <span className="text-xs text-[var(--text-muted)] line-through">${oPrice.toFixed(2)}</span>
-                                            )}
-                                        </div>
-                                        <button onClick={() => handleQuickAdd(item)} className="w-full mt-2 py-2 bg-[var(--brand-primary)] text-white text-xs font-medium rounded-lg hover:brightness-110">
-                                            + Add
-                                        </button>
-                                    </div>
-                                );
-                            })}
+                    <div className="bg-emerald-600 text-white px-4 py-3 md:py-4 flex items-center justify-between border-b-4 border-emerald-700 shadow-inner">
+                        <div className="flex items-center gap-3">
+                            <span className="text-2xl md:text-3xl">🏷️</span>
+                            <div>
+                                <h3 className="text-lg md:text-xl font-black italic uppercase tracking-tighter leading-none m-0">
+                                    Great Deals & Savings
+                                </h3>
+                                <p className="text-[10px] font-bold uppercase tracking-widest opacity-90 mt-1">THE PRICES YOU LOVE • EVERY DAY</p>
+                            </div>
                         </div>
-                    ) : (
-                        /* List View for Sale Items */
-                        <div className="space-y-2">
-                            {saleItems.map((item: any) => {
-                                const pName = item.productName || item.name || 'Product';
-                                const pImage = item.productImage || item.image;
-                                const sPrice = item.salePrice ?? item.price;
-                                const oPrice = item.originalPrice;
+                    </div>
 
-                                return (
-                                    <div key={item.id} className="bg-white rounded-xl border border-[var(--glass-border)] p-2 flex gap-3 items-center shadow-sm">
-                                        <div className="relative">
-                                            {pImage ? (
-                                                <img src={pImage} alt={pName} className="w-12 h-12 object-cover rounded shadow-sm" />
-                                            ) : (
-                                                <div className="w-12 h-12 flex items-center justify-center text-xl bg-gray-50 rounded shadow-sm">🏷️</div>
-                                            )}
-                                            {item.value && (
-                                                <span className="absolute -top-1 -left-1 bg-green-500 text-white text-[8px] font-bold px-1 rounded">
-                                                    {item.type === 'percentage' ? `${item.value}%` : 'SALE'}
-                                                </span>
-                                            )}
+                    <div className="p-4">
+                        {viewMode === 'list' ? (
+                            <div className="space-y-2">
+                                {sortedSaleItems.map((item) => (
+                                    <div key={item.id} className="bg-white rounded-xl border border-[var(--glass-border)] p-3 flex gap-4 items-center shadow-sm hover:shadow-md transition-all">
+                                        <div className="w-16 h-16 rounded-lg bg-gray-50 flex-shrink-0 relative overflow-hidden">
+                                            <img src={item.productImage || item.image} className="w-full h-full object-contain" loading="lazy" />
+                                            <div className="absolute top-0 left-0 bg-emerald-600 text-white text-[8px] font-black px-1 rounded-br">SALE</div>
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <p className="font-medium text-sm text-[var(--text-main)] truncate">{pName}</p>
+                                            <p className="font-bold text-sm text-[var(--text-main)] truncate">{item.productName || item.name}</p>
                                             <div className="flex items-baseline gap-2">
-                                                <span className="font-bold text-green-600 text-sm">${sPrice?.toFixed(2)}</span>
-                                                {oPrice && (
-                                                    <span className="text-[10px] text-[var(--text-muted)] line-through">${oPrice.toFixed(2)}</span>
-                                                )}
+                                                <span className="text-sm font-black text-emerald-600">${(item.salePrice ?? item.price).toFixed(2)}</span>
+                                                {item.originalPrice && <span className="text-[10px] text-gray-500 line-through">Reg ${item.originalPrice.toFixed(2)}</span>}
                                             </div>
                                         </div>
-                                        <button onClick={() => handleQuickAdd(item)} className="px-3 py-1.5 bg-[var(--brand-primary)] text-white text-xs font-bold rounded-lg hover:brightness-110 active:scale-95 transition-all">
-                                            + Add
+                                        <button onClick={() => handleQuickAdd(item)} className="px-4 py-2 bg-emerald-600 text-white text-xs font-black rounded uppercase tracking-widest shadow-md">
+                                            + ADD
                                         </button>
                                     </div>
-                                );
-                            })}
-                        </div>
-                    )}
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+                                {sortedSaleItems.map((item, idx) => {
+                                    const isFeatured = idx < 2;
+                                    const sPrice = item.salePrice ?? item.price;
+                                    const oPrice = item.originalPrice || sPrice * 1.15;
+                                    const savingsAmount = (oPrice - sPrice).toFixed(2);
+
+                                    return (
+                                        <div key={item.id} className={`relative group bg-white border-2 ${isFeatured ? 'col-span-2 md:col-span-2 border-red-200' : 'border-gray-100'} p-3 flex flex-col shadow-sm transition-all hover:shadow-xl`}>
+                                            {/* Savings Badge */}
+                                            <div className={`absolute -top-3 -right-3 ${isFeatured ? 'w-16 h-16 md:w-20 md:h-20' : 'w-12 h-12 md:w-14 md:h-14'} z-20 bg-yellow-400 rounded-full flex flex-col items-center justify-center border-4 border-white shadow-lg rotate-12`}>
+                                                <span className="text-[8px] md:text-[10px] font-black uppercase text-emerald-700 -mb-1">SAVE</span>
+                                                <span className={`${isFeatured ? 'text-lg md:text-2xl' : 'text-xs md:text-lg'} font-black text-emerald-700 leading-none`}>${Math.floor(Number(savingsAmount))}</span>
+                                            </div>
+
+                                            <div className={`${isFeatured ? 'h-40 md:h-56' : 'h-32 md:h-40'} mb-3 bg-white overflow-hidden`}>
+                                                <img src={item.productImage || item.image} className="w-full h-full object-contain group-hover:scale-105 transition-all duration-500" />
+                                            </div>
+
+                                            <div className="flex-1 flex flex-col px-1">
+                                                <div className="flex items-start gap-2 mb-1">
+                                                    <div className="flex flex-col">
+                                                        <span className="text-[8px] md:text-[10px] font-black bg-emerald-600 text-white px-1 w-max rounded-sm uppercase tracking-tighter">Sale</span>
+                                                        <span className={`${isFeatured ? 'text-2xl md:text-3xl' : 'text-xl md:text-2xl'} font-black text-emerald-700 tracking-tighter leading-none`}>
+                                                            {sPrice.toFixed(2)}
+                                                        </span>
+                                                    </div>
+                                                    <div className="mt-4">
+                                                        <span className="text-[10px] font-bold text-gray-400 line-through">Reg {oPrice.toFixed(2)}</span>
+                                                    </div>
+                                                </div>
+                                                <p className={`${isFeatured ? 'text-sm md:text-lg' : 'text-xs md:text-sm'} font-black text-gray-800 uppercase leading-snug grow`}>
+                                                    {item.productName || item.name}
+                                                </p>
+                                                <button onClick={() => handleQuickAdd(item)} className="w-full mt-2 py-2 md:py-3 bg-emerald-600 text-white text-[10px] md:text-xs font-black rounded uppercase tracking-widest hover:bg-black transition-all shadow-md">
+                                                    + ADD TO CART
+                                                </button>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </div>
                 </div>
             )}
+            
+            {/* DEALS FOOTER */}
+            <div className="bg-gray-100 p-8 text-center text-xs text-gray-500 border-t border-gray-200 mt-8">
+                <p className="font-bold uppercase tracking-widest mb-2">Exclusive Deals for Our Customers</p>
+                <p className="max-w-2xl mx-auto">Flash sales are available for a limited time only. Prices and availability are subject to change. We reserve the right to limit quantities per customer.</p>
+                <div className="flex justify-center gap-6 py-4 opacity-40 grayscale">
+                    <span className="text-2xl">🔥</span>
+                    <span className="text-2xl">⚡</span>
+                    <span className="text-2xl">🏷️</span>
+                </div>
+                <p className="mt-4 text-[10px] opacity-70">© {new Date().getFullYear()} {storeName} • Powering Local Savings</p>
+            </div>
         </div>
     );
 };
+
 
 const StoreDetail: React.FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -419,231 +574,315 @@ const StoreDetail: React.FC = () => {
     };
 
     return (
-        <div className="animate-fade-in pb-20">
+        <div className="animate-fade-in pb-20 bg-gray-50/30 min-h-screen">
             <SEO title={store.name} description={`Shop at ${store.name} on Spendigo. Browse products, weekly flyers, and deals from this local store.`} path={`/store/${store.id}`} />
-            {/* STORE HEADER */}
-            <div className="relative h-48 md:h-64 bg-[var(--surface-2)]">
-                <img src={store.image} alt={store.name} className="w-full h-full object-cover opacity-80" decoding="async" />
-                <div className="absolute inset-0 bg-gradient-to-t from-[var(--surface-0)] via-transparent to-transparent"></div>
+            
+            {/* IMMERSIVE RETAIL HEADER */}
+            <div className="relative h-64 md:h-80 bg-gray-900 group">
+                <img 
+                    src={store.image} 
+                    alt={store.name} 
+                    className="w-full h-full object-cover opacity-60 group-hover:opacity-70 transition-opacity duration-700" 
+                    decoding="async" 
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/40 to-transparent"></div>
 
-                {/* Back Button */}
+                {/* Premium Back Button */}
                 <button
                     onClick={() => navigate('/')}
-                    className="absolute top-4 left-4 w-10 h-10 rounded-full bg-white/90 shadow-lg text-[var(--text-main)] flex items-center justify-center hover:bg-white transition-colors"
+                    className="absolute top-6 left-6 px-4 py-2 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white flex items-center gap-2 hover:bg-white/20 transition-all shadow-2xl z-50 group/back"
                 >
-                    ←
+                    <span className="group-hover:-translate-x-1 transition-transform">←</span>
+                    <span className="text-[10px] font-black uppercase tracking-widest">Marketplace</span>
                 </button>
 
-                {/* Store Info Overlay */}
-                <div className="absolute bottom-0 left-0 right-0 p-4 md:p-6">
-                    <div className="flex items-end gap-4">
-                        <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-white border-2 border-[var(--glass-border)] flex items-center justify-center text-3xl md:text-4xl shadow-lg overflow-hidden">
-                            {(store.logoUrl || store.logo || '').startsWith('http') ? (
-                                <img src={store.logoUrl || store.logo} alt="Logo" className="w-full h-full object-cover" decoding="async" />
-                            ) : (
-                                <span>{store.logo || store.logoUrl || '🏪'}</span>
-                            )}
+                {/* Floating Store Identity */}
+                <div className="absolute bottom-0 left-0 right-0 p-6 md:p-10 pb-16">
+                    <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-end gap-6 md:gap-8">
+                        {/* THE STORE SIGN */}
+                        <div className="relative group/logo">
+                            <div className="absolute -inset-1 bg-gradient-to-r from-emerald-600 to-emerald-400 rounded-3xl blur opacity-25 group-hover/logo:opacity-50 transition duration-1000 group-hover/logo:duration-200"></div>
+                            <div className="w-24 h-24 md:w-32 md:h-32 relative rounded-3xl bg-white flex items-center justify-center text-4xl md:text-5xl shadow-2xl overflow-hidden border-4 border-white ring-4 ring-black/5">
+                                {(store.logoUrl || store.logo || '').startsWith('http') ? (
+                                    <img src={store.logoUrl || store.logo} alt="Logo" className="w-full h-full object-cover p-2" decoding="async" />
+                                ) : (
+                                    <span className="font-black text-gray-900">{store.logo || store.logoUrl || '🏪'}</span>
+                                )}
+                            </div>
                         </div>
-                        <div className="flex-1">
-                            <h1 className="text-2xl md:text-3xl font-bold text-[var(--text-main)]">
+
+                        <div className="flex-1 pb-2">
+                            <div className="flex flex-wrap items-center gap-3 mb-2">
+                                <span className="text-[9px] font-black bg-emerald-600 text-white px-2 py-0.5 rounded skew-x-[-12deg] shadow-lg uppercase tracking-widest">Verified Store</span>
+                                <span className="text-[9px] font-black bg-white/10 backdrop-blur-md text-white px-2 py-0.5 rounded border border-white/20 uppercase tracking-widest">Open Now</span>
+                            </div>
+                            <h1 className="text-4xl md:text-6xl font-black text-white tracking-tighter leading-none mb-2 drop-shadow-2xl italic">
                                 {store.name}
                             </h1>
-                            <p className="text-sm text-[var(--text-muted)]">{store.tagline}</p>
+                            <p className="text-sm md:text-lg text-white/70 font-bold italic tracking-tight uppercase max-w-xl">{store.tagline}</p>
                         </div>
                     </div>
                 </div>
             </div>
 
-            {/* STORE STATS */}
-            <div className="px-4 py-4 flex items-center gap-4 text-sm border-b border-[var(--glass-border)] overflow-x-auto">
-                <div className="flex items-center gap-1 whitespace-nowrap">
-                    <span className="text-yellow-500">★</span>
-                    <span className="font-medium text-[var(--text-main)]">
-                        {reviews.length > 0 
-                            ? (reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length).toFixed(1) 
-                            : store.rating}
-                    </span>
-                </div>
-                <div className="w-px h-4 bg-[var(--glass-border)]"></div>
-                <div className="flex items-center gap-1 whitespace-nowrap">
-                    <span>🚚</span>
-                    <span className="text-[var(--text-muted)]">{store.deliveryTime}</span>
-                </div>
-                <div className="w-px h-4 bg-[var(--glass-border)]"></div>
-                <div className="flex items-center gap-1 whitespace-nowrap">
-                    <span>💰</span>
-                    <span className="text-[var(--text-muted)]">{store.deliveryFee}</span>
+            {/* PREMIUM RETAIL INFO BOARD */}
+            <div className="max-w-7xl mx-auto px-4 -mt-10 relative z-30">
+                <div className="bg-white rounded-3xl shadow-2xl border border-gray-100 p-2 md:p-3 flex flex-wrap md:flex-nowrap items-stretch gap-1">
+                    <div className="flex-1 min-w-[120px] bg-gray-50/50 p-4 rounded-2xl border border-gray-50 flex flex-col items-center justify-center text-center group hover:bg-white hover:shadow-lg transition-all">
+                        <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Store Rating</span>
+                        <div className="flex items-center gap-2">
+                            <span className="text-xl font-black text-gray-900">
+                                {reviews.length > 0 
+                                    ? (reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length).toFixed(1) 
+                                    : store.rating}
+                            </span>
+                            <span className="text-yellow-400 text-lg group-hover:scale-125 transition-transform">★</span>
+                        </div>
+                    </div>
+                    <div className="w-px bg-gray-100 hidden md:block my-2"></div>
+                    <div className="flex-1 min-w-[120px] bg-gray-50/50 p-4 rounded-2xl border border-gray-50 flex flex-col items-center justify-center text-center group hover:bg-white hover:shadow-lg transition-all">
+                        <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Delivery Time</span>
+                        <div className="flex items-center gap-2">
+                            <span className="text-xl font-black text-gray-900">{store.deliveryTime || '25-45 MIN'}</span>
+                            <span className="text-orange-500 text-lg group-hover:animate-pulse">⚡</span>
+                        </div>
+                    </div>
+                    <div className="w-px bg-gray-100 hidden md:block my-2"></div>
+                    <div className="flex-1 min-w-[120px] bg-gray-50/50 p-4 rounded-2xl border border-gray-50 flex flex-col items-center justify-center text-center group hover:bg-white hover:shadow-lg transition-all">
+                        <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Service Fee</span>
+                        <div className="flex items-center gap-2">
+                            <span className="text-xl font-black text-gray-900">{store.deliveryFee || 'FREE'}</span>
+                            <span className="text-green-500 text-lg group-hover:rotate-12 transition-transform">💰</span>
+                        </div>
+                    </div>
+                    <div className="w-px bg-gray-100 hidden md:block my-2"></div>
+                    <div className="flex-1 min-w-[120px] bg-emerald-600 p-4 rounded-2xl flex flex-col items-center justify-center text-center shadow-lg group hover:bg-black transition-all cursor-help" title="Quality Guaranteed by Spendigo">
+                        <span className="text-[9px] font-black text-white/70 uppercase tracking-widest mb-1">Certified By</span>
+                        <span className="text-lg font-black text-white italic tracking-tighter uppercase whitespace-nowrap">Spendigo 🍁</span>
+                    </div>
                 </div>
             </div>
 
-            <div className="px-4 py-3 sticky top-14 z-40 bg-[var(--surface-0)] border-b border-[var(--glass-border)] flex items-center justify-between">
-                <div className="flex gap-2">
-                    <button
-                        onClick={() => setActiveTab('products')}
-                        className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${activeTab === 'products' ? 'bg-[var(--brand-primary)] text-white' : 'bg-[var(--surface-2)] text-[var(--text-muted)]'}`}
-                    >
-                        🛒 Products
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('flyer')}
-                        className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${activeTab === 'flyer' ? 'bg-[var(--brand-primary)] text-white' : 'bg-[var(--surface-2)] text-[var(--text-muted)]'}`}
-                    >
-                        📰 Weekly Flyer {isFlyerActive(store.flyer) && '🔴'}
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('offers')}
-                        className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${activeTab === 'offers' ? 'bg-[var(--brand-primary)] text-white' : 'bg-[var(--surface-2)] text-[var(--text-muted)]'}`}
-                    >
-                        🔥 Deals {(filterActiveDeals([...(store.oneDayOffers || []), ...(store.saleItems || [])]).length > 0) && '🔴'}
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('reviews')}
-                        className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${activeTab === 'reviews' ? 'bg-[var(--brand-primary)] text-white' : 'bg-[var(--surface-2)] text-[var(--text-muted)]'}`}
-                    >
-                        ⭐ Reviews
-                    </button>
-                </div>
-
-                {/* Shared View Toggle UI */}
-                {(activeTab === 'products' || activeTab === 'flyer' || activeTab === 'offers') && (
-                    <div className="flex items-center gap-1 bg-[var(--surface-2)] p-1 rounded-lg">
-                        <button
-                            onClick={() => setViewMode('grid')}
-                            className={`p-1.5 rounded-md transition-all ${viewMode === 'grid' ? 'bg-white shadow-sm text-[var(--brand-primary)]' : 'text-[var(--text-muted)]'}`}
-                            title="Grid View"
-                        >
-                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-                            </svg>
-                        </button>
-                        <button
-                            onClick={() => setViewMode('list')}
-                            className={`p-1.5 rounded-md transition-all ${viewMode === 'list' ? 'bg-white shadow-sm text-[var(--brand-primary)]' : 'text-[var(--text-muted)]'}`}
-                            title="List View"
-                        >
-                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                            </svg>
-                        </button>
+            {/* HIGH-IMPACT STICKY NAVIGATION */}
+            <div className="sticky top-14 z-40 bg-white/80 backdrop-blur-xl border-b border-gray-100 px-4 py-4 mt-6">
+                <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className="flex gap-2 overflow-x-auto scrollbar-hide">
+                        {[
+                            { id: 'products', label: 'Store Items', icon: '🛒' },
+                            { id: 'flyer', label: 'Weekly Flyer', icon: '📰', badge: isFlyerActive(store.flyer) },
+                            { id: 'offers', label: 'Flash Deals', icon: '🔥', badge: filterActiveDeals([...(store.oneDayOffers || []), ...(store.saleItems || [])]).length > 0 },
+                            { id: 'reviews', label: 'Shopper Voice', icon: '⭐' }
+                        ].map(tab => (
+                            <button
+                                key={tab.id}
+                                onClick={() => setActiveTab(tab.id as any)}
+                                className={`px-5 py-2.5 rounded-2xl text-[10px] md:text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-2 relative border-2 ${activeTab === tab.id 
+                                    ? 'bg-gray-900 text-white border-gray-900 shadow-xl -translate-y-0.5' 
+                                    : 'bg-white text-gray-400 border-gray-50 hover:border-gray-200'}`}
+                            >
+                                <span className={activeTab === tab.id ? 'scale-110' : 'grayscale opacity-70'}>{tab.icon}</span>
+                                {tab.label}
+                                {tab.badge && (
+                                    <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-emerald-600 rounded-full border-2 border-white animate-pulse"></span>
+                                )}
+                            </button>
+                        ))}
                     </div>
-                )}
+
+                    {/* Shared View Toggle UI - Redesigned */}
+                    {(activeTab === 'products' || activeTab === 'flyer' || activeTab === 'offers') && (
+                        <div className="flex items-center gap-2 bg-gray-50 p-1.5 rounded-2xl border border-gray-100 w-fit">
+                            <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest px-2 hidden lg:block">Layout:</span>
+                            <div className="flex gap-1">
+                                <button
+                                    onClick={() => setViewMode('grid')}
+                                    className={`p-2 rounded-xl transition-all ${viewMode === 'grid' ? 'bg-white shadow-md text-emerald-600 shadow-emerald-600/5' : 'text-gray-400'}`}
+                                    title="Grid View"
+                                >
+                                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                                    </svg>
+                                </button>
+                                <button
+                                    onClick={() => setViewMode('list')}
+                                    className={`p-2 rounded-xl transition-all ${viewMode === 'list' ? 'bg-white shadow-md text-emerald-600 shadow-emerald-600/5' : 'text-gray-400'}`}
+                                    title="List View"
+                                >
+                                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 6h16M4 12h16M4 18h16" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
             </div>
 
             {/* TAB CONTENT */}
             {activeTab === 'products' && (
-                <>
-                    {/* Category Filters */}
-                    <div className="px-4 py-3 bg-[var(--surface-1)] border-b border-[var(--glass-border)]">
-                        <div className="overflow-x-auto scrollbar-hide">
-                            <div className="flex gap-2 min-w-max">
-                                {store.categories.map((cat: string) => (
-                                    <button
-                                        key={cat}
-                                        onClick={() => setActiveCategory(cat)}
-                                        className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all capitalize ${activeCategory === cat ? 'bg-[var(--text-main)] text-white' : 'bg-white text-[var(--text-muted)] border border-[var(--glass-border)]'}`}
-                                    >
-                                        {cat.replace(/^cat-/, '').replace(/-/g, ' ')}
-                                    </button>
-                                ))}
-                            </div>
+                <div className="animate-fade-in">
+                    {/* Premium Category Filters */}
+                    <div className="px-4 py-4 bg-white border-b border-gray-100 flex items-center gap-4">
+                        <span className="text-[10px] font-black uppercase text-gray-400 tracking-widest whitespace-nowrap">Filter By:</span>
+                        <div className="overflow-x-auto scrollbar-hide flex gap-2 pb-1">
+                            {store.categories.map((cat: string) => (
+                                <button
+                                    key={cat}
+                                    onClick={() => setActiveCategory(cat)}
+                                    className={`px-4 py-2 rounded-full text-[10px] md:text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap border-2 ${activeCategory === cat 
+                                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-md transform scale-105' 
+                                        : 'bg-gray-50 text-gray-500 border-gray-100 hover:border-gray-300'}`}
+                                >
+                                    {cat.replace(/^cat-/, '').replace(/-/g, ' ')}
+                                </button>
+                            ))}
                         </div>
                     </div>
 
                     {/* Product Grid/List View */}
-                    <div className="p-4">
+                    <div className="p-4 bg-gray-50/50 min-h-screen">
                         {filteredProducts.length === 0 ? (
-                            <div className="text-center py-10 text-[var(--text-muted)]">No products found in this category.</div>
-                        ) : viewMode === 'grid' ? (
-                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                                {filteredProducts.map((product: any) => (
-                                    <div key={product.id} className="bg-white rounded-xl border border-[var(--glass-border)] overflow-hidden group shadow-sm hover:shadow-md transition-shadow">
-                                        <div onClick={() => navigate(`/product/${product.id}`)} className="h-32 md:h-40 bg-[var(--surface-1)] relative cursor-pointer overflow-hidden">
-                                            <img
-                                                src={product.image}
-                                                alt={product.name}
-                                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                                                loading="lazy"
-                                                decoding="async"
-                                            />
-                                            {product.originalPrice && (
-                                                <div className="absolute top-2 left-2 bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded">SALE</div>
-                                            )}
-                                        </div>
-                                        <div className="p-3">
-                                            <p onClick={() => navigate(`/product/${product.id}`)} className="font-medium text-sm text-[var(--text-main)] truncate cursor-pointer hover:text-[var(--brand-primary)]">{product.name}</p>
-                                            {product.is_canadian_local && (
-                                                <span className="inline-flex mt-1 px-1.5 py-0.5 bg-red-50 text-red-700 text-[10px] font-bold rounded shadow-sm border border-red-100 uppercase items-center gap-1 w-max">
-                                                    <span className="text-xs">🍁</span> Canadian Local
-                                                </span>
-                                            )}
-                                            <div className="flex items-baseline gap-2 mt-1">
-                                                <span className="font-bold text-[var(--brand-primary)]">${product.price.toFixed(2)}</span>
-                                                {product.originalPrice && (
-                                                    <span className="text-xs text-[var(--text-muted)] line-through">${product.originalPrice.toFixed(2)}</span>
-                                                )}
-                                            </div>
-                                            {(() => {
-                                                const isOutOfStock = product.available_quantity !== undefined && product.available_quantity <= 0;
-                                                return (
-                                                    <button
-                                                        onClick={() => !isOutOfStock && handleQuickAdd(product)}
-                                                        disabled={isOutOfStock}
-                                                        className={`w-full mt-3 py-2 text-white text-sm font-medium rounded-lg transition-all ${isOutOfStock
-                                                            ? 'bg-gray-400 cursor-not-allowed'
-                                                            : 'bg-[var(--brand-primary)] hover:brightness-110'
-                                                            }`}
-                                                    >
-                                                        {isOutOfStock ? 'Out of Stock' : '+ Add to Cart'}
-                                                    </button>
-                                                );
-                                            })()}
-                                        </div>
-                                    </div>
-                                ))}
+                            <div className="text-center py-20 flex flex-col items-center justify-center bg-white rounded-3xl border-4 border-dashed border-gray-100">
+                                <span className="text-6xl mb-4 grayscale opacity-20">🛒</span>
+                                <p className="text-gray-400 font-bold uppercase tracking-widest italic">No Items Found In This Aisle!</p>
                             </div>
-                        ) : (
-                            /* List View */
-                            <div className="space-y-3">
-                                {filteredProducts.map((product: any) => (
-                                    <div key={product.id} className="bg-white rounded-xl border border-[var(--glass-border)] p-3 flex gap-4 items-center shadow-sm hover:shadow-md transition-shadow">
-                                        <div onClick={() => navigate(`/product/${product.id}`)} className="w-16 h-16 rounded-lg bg-[var(--surface-1)] flex-shrink-0 cursor-pointer overflow-hidden">
-                                            <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <p onClick={() => navigate(`/product/${product.id}`)} className="font-medium text-[var(--text-main)] truncate cursor-pointer">{product.name}</p>
-                                            {product.is_canadian_local && (
-                                                <span className="inline-flex mt-0.5 px-1.5 py-0.5 bg-red-50 text-red-700 text-[10px] font-bold rounded shadow-sm border border-red-100 uppercase items-center gap-1 w-max">
-                                                    <span className="text-xs">🍁</span> Canadian Local
-                                                </span>
+                        ) : viewMode === 'grid' ? (
+                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
+                                {filteredProducts.map((product: any) => {
+                                    const savingsAmount = product.originalPrice ? (product.originalPrice - product.price).toFixed(2) : null;
+                                    const savingsPercent = product.originalPrice ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100) : 0;
+                                    const isOutOfStock = product.available_quantity !== undefined && product.available_quantity <= 0;
+
+                                    return (
+                                        <div 
+                                            key={product.id} 
+                                            className={`relative group bg-white border-2 border-gray-100 p-3 flex flex-col shadow-sm transition-all hover:shadow-xl hover:z-10 ${isOutOfStock ? 'opacity-75 grayscale-[0.5]' : ''}`}
+                                        >
+                                            {/* Retail Savings Sticker */}
+                                            {savingsPercent >= 10 && !isOutOfStock && (
+                                                <div className="absolute -top-2 -right-2 w-12 h-12 z-20 bg-yellow-400 rounded-full flex flex-col items-center justify-center border-4 border-white shadow-lg rotate-12 group-hover:rotate-0 transition-transform">
+                                                    <span className="text-[10px] font-black text-emerald-700 leading-none">-{savingsPercent}%</span>
+                                                </div>
                                             )}
-                                            <div className="flex items-baseline gap-2">
-                                                <span className="font-bold text-[var(--brand-primary)] text-sm">${product.price.toFixed(2)}</span>
-                                                {product.originalPrice && (
-                                                    <span className="text-[10px] text-[var(--text-muted)] line-through">${product.originalPrice.toFixed(2)}</span>
+
+                                            {/* Product Image Section */}
+                                            <div 
+                                                onClick={() => navigate(`/product/${product.id}`)} 
+                                                className="h-32 md:h-44 bg-white relative cursor-pointer overflow-hidden p-2 flex items-center justify-center bg-gradient-to-b from-gray-50/30 to-white"
+                                            >
+                                                <img
+                                                    src={product.image}
+                                                    alt={product.name}
+                                                    className="max-w-full max-h-full object-contain group-hover:scale-110 transition-transform duration-500"
+                                                    loading="lazy"
+                                                />
+                                                {product.originalPrice && !isOutOfStock && (
+                                                    <div className="absolute top-2 left-2 bg-emerald-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded skew-x-[-10deg] shadow-lg">
+                                                        HOT DEAL
+                                                    </div>
+                                                )}
+                                                {isOutOfStock && (
+                                                    <div className="absolute inset-0 bg-white/60 flex items-center justify-center z-10 backdrop-blur-[1px]">
+                                                        <span className="bg-gray-800 text-white text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest shadow-xl">
+                                                            Restocking
+                                                        </span>
+                                                    </div>
                                                 )}
                                             </div>
-                                        </div>
-                                        {(() => {
-                                            const isOutOfStock = product.available_quantity !== undefined && product.available_quantity <= 0;
-                                            return (
+
+                                            <div className="p-1 mt-2 flex-1 flex flex-col">
+                                                {/* Meta Info */}
+                                                <div className="flex items-center gap-1 mb-1 min-h-[14px]">
+                                                    {product.is_canadian_local && (
+                                                        <span className="text-[9px] font-black text-emerald-600 bg-emerald-50 px-1 rounded border border-emerald-100 flex items-center gap-0.5 shadow-sm">
+                                                            🍁 CANADIAN
+                                                        </span>
+                                                    )}
+                                                </div>
+
+                                                <p 
+                                                    onClick={() => navigate(`/product/${product.id}`)} 
+                                                    className="font-black text-xs md:text-sm text-gray-800 uppercase tracking-tight leading-snug grow cursor-pointer hover:text-emerald-600 transition-colors line-clamp-2"
+                                                >
+                                                    {product.name}
+                                                </p>
+
+                                                {/* Pricing Block */}
+                                                <div className="mt-3 bg-gray-50 p-2 rounded-lg border border-gray-100">
+                                                    <div className="flex items-baseline gap-2">
+                                                        <span className="text-xl md:text-2xl font-black text-emerald-600 tracking-tighter">${product.price.toFixed(2)}</span>
+                                                        {product.originalPrice && (
+                                                            <span className="text-[10px] text-gray-400 line-through decoration-emerald-600/30 font-bold">Reg {product.originalPrice.toFixed(2)}</span>
+                                                        )}
+                                                    </div>
+                                                    {savingsAmount && Number(savingsAmount) > 0 && !isOutOfStock && (
+                                                        <p className="text-[9px] font-black text-green-600 uppercase tracking-tighter">You Save ${savingsAmount}</p>
+                                                    )}
+                                                </div>
+
                                                 <button
                                                     onClick={() => !isOutOfStock && handleQuickAdd(product)}
                                                     disabled={isOutOfStock}
-                                                    className={`px-4 py-2 text-white text-xs font-bold rounded-lg transition-all ${isOutOfStock
-                                                        ? 'bg-gray-400 cursor-not-allowed'
-                                                        : 'bg-[var(--brand-primary)] hover:brightness-110 active:scale-95'
+                                                    className={`w-full mt-3 py-2 md:py-3 text-[10px] font-black rounded uppercase tracking-widest shadow-md transition-all active:scale-95 ${isOutOfStock
+                                                        ? 'bg-gray-200 text-gray-400 cursor-not-allowed border border-gray-300'
+                                                        : 'bg-emerald-600 text-white hover:bg-black'
                                                         }`}
                                                 >
-                                                    {isOutOfStock ? 'Out' : '+ Add'}
+                                                    {isOutOfStock ? 'Sold Out' : '+ Add to Trolley'}
                                                 </button>
-                                            );
-                                        })()}
-                                    </div>
-                                ))}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        ) : (
+                            /* List View Redesign */
+                            <div className="space-y-3">
+                                {filteredProducts.map((product: any) => {
+                                    const isOutOfStock = product.available_quantity !== undefined && product.available_quantity <= 0;
+                                    return (
+                                        <div key={product.id} className={`bg-white rounded-xl border-2 border-gray-100 p-3 flex gap-4 items-center shadow-sm hover:shadow-lg transition-all ${isOutOfStock ? 'opacity-70' : ''}`}>
+                                            <div 
+                                                onClick={() => navigate(`/product/${product.id}`)} 
+                                                className="w-16 h-16 md:w-20 md:h-20 rounded-lg bg-gray-50 flex-shrink-0 cursor-pointer overflow-hidden p-1 flex items-center justify-center border border-gray-100 relative"
+                                            >
+                                                <img src={product.image} alt={product.name} className="max-w-full max-h-full object-contain" />
+                                                {isOutOfStock && <div className="absolute inset-0 bg-white/40 z-10"></div>}
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p onClick={() => navigate(`/product/${product.id}`)} className="font-black text-xs md:text-sm text-gray-800 uppercase truncate cursor-pointer hover:text-emerald-600">{product.name}</p>
+                                                <div className="flex items-center gap-2 mt-1">
+                                                    {product.is_canadian_local && (
+                                                        <span className="text-[8px] font-black text-emerald-600 bg-emerald-50 px-1 rounded border border-emerald-100">🍁 LOCAL</span>
+                                                    )}
+                                                    {product.originalPrice && (
+                                                        <span className="text-[8px] font-black bg-emerald-600 text-white px-1.5 py-0.5 rounded-sm uppercase skew-x-[-12deg]">Sale</span>
+                                                    )}
+                                                </div>
+                                                <div className="flex items-baseline gap-2 mt-0.5">
+                                                    <span className="text-lg font-black text-emerald-600 tracking-tighter">${product.price.toFixed(2)}</span>
+                                                    {product.originalPrice && (
+                                                        <span className="text-[10px] text-gray-400 line-through font-bold">Reg ${product.originalPrice.toFixed(2)}</span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <button
+                                                onClick={() => !isOutOfStock && handleQuickAdd(product)}
+                                                disabled={isOutOfStock}
+                                                className={`px-4 md:px-6 py-2.5 rounded text-[10px] font-black uppercase tracking-widest shadow-md transition-all active:scale-95 ${isOutOfStock
+                                                    ? 'bg-gray-100 text-gray-400 border border-gray-200'
+                                                    : 'bg-emerald-600 text-white hover:bg-black'
+                                                    }`}
+                                            >
+                                                {isOutOfStock ? 'Out' : '+ Add'}
+                                            </button>
+                                        </div>
+                                    );
+                                })}
                             </div>
                         )}
                     </div>
-                </>
+                </div>
             )}
 
             {activeTab === 'flyer' && (
@@ -655,42 +894,49 @@ const StoreDetail: React.FC = () => {
             )}
 
             {activeTab === 'reviews' && (
-                <div className="p-4 max-w-2xl mx-auto space-y-8">
-                    {/* Rating Distribution Summary */}
-                    <div className="bg-white p-6 rounded-2xl border border-[var(--glass-border)] shadow-sm">
-                        <div className="flex flex-col md:flex-row gap-8 items-center">
-                            <div className="text-center">
-                                <h4 className="text-5xl font-black text-[var(--text-main)] mb-1">
+                <div className="p-4 max-w-2xl mx-auto space-y-10 animate-fade-in">
+                    {/* Premium Rating Distribution Summary */}
+                    <div className="bg-white p-8 rounded-3xl border-2 border-gray-100 shadow-xl relative overflow-hidden">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-yellow-50 rounded-full -mr-16 -mt-16 opacity-50"></div>
+                        
+                        <div className="flex flex-col md:flex-row gap-10 items-center relative z-10">
+                            <div className="text-center md:border-r-2 md:border-gray-50 md:pr-10">
+                                <h4 className="text-7xl font-black text-gray-900 tracking-tighter mb-1">
                                     {reviews.length > 0 
                                         ? (reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length).toFixed(1) 
                                         : store.rating}
                                 </h4>
-                                <StarRating 
-                                    rating={reviews.length > 0 
-                                        ? reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length 
-                                        : store.rating} 
-                                    size="md" 
-                                />
-                                <p className="text-xs text-[var(--text-muted)] mt-2 font-medium uppercase tracking-wider">
-                                    {reviews.length || store.reviewCount || 0} REVIEWS
+                                <div className="flex justify-center mb-2">
+                                    <StarRating 
+                                        rating={reviews.length > 0 
+                                            ? reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length 
+                                            : store.rating} 
+                                        size="lg" 
+                                    />
+                                </div>
+                                <p className="text-[10px] text-gray-400 font-black uppercase tracking-[0.2em]">
+                                    {reviews.length || store.reviewCount || 0} TOTAL REVIEWS
                                 </p>
                             </div>
 
-                            <div className="flex-1 w-full space-y-2">
+                            <div className="flex-1 w-full space-y-3">
                                 {[5, 4, 3, 2, 1].map(stars => {
                                     const count = reviews.filter(r => Math.round(r.rating) === stars).length;
                                     const pct = reviews.length > 0 ? Math.round((count / reviews.length) * 100) : 0;
 
                                     return (
-                                        <div key={stars} className="flex items-center gap-3">
-                                            <span className="text-xs font-bold text-[var(--text-muted)] w-3">{stars}</span>
-                                            <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+                                        <div key={stars} className="flex items-center gap-4">
+                                            <div className="flex items-center gap-1 w-8">
+                                                <span className="text-xs font-black text-gray-700">{stars}</span>
+                                                <span className="text-yellow-400 text-xs">★</span>
+                                            </div>
+                                            <div className="flex-1 h-3 bg-gray-50 rounded-full overflow-hidden border border-gray-100 shadow-inner">
                                                 <div
-                                                    className="h-full bg-yellow-400 rounded-full"
+                                                    className="h-full bg-emerald-600 rounded-full transition-all duration-1000 ease-out shadow-sm"
                                                     style={{ width: `${pct}%` }}
                                                 />
                                             </div>
-                                            <span className="text-[10px] font-medium text-gray-400 w-8">{pct}%</span>
+                                            <span className="text-[10px] font-black text-gray-400 w-8 text-right font-mono">{pct}%</span>
                                         </div>
                                     );
                                 })}
@@ -698,18 +944,26 @@ const StoreDetail: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* Review Form */}
-                    <ReviewForm targetId={store.id} targetType="store" />
+                    {/* Review Form Wrapper */}
+                    <div className="bg-gray-50 p-1 rounded-3xl border border-gray-100">
+                        <ReviewForm targetId={store.id} targetType="store" />
+                    </div>
 
-                    {/* Review List */}
-                    <div>
-                        <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-lg font-bold text-[var(--text-main)]">Customer Reviews</h3>
-                            <select className="text-xs font-bold bg-[var(--surface-2)] px-2 py-1 rounded-lg border-none outline-none text-[var(--text-muted)]">
-                                <option>Most Recent</option>
-                                <option>Highest Rated</option>
-                                <option>Most Helpful</option>
-                            </select>
+                    {/* Review List Section */}
+                    <div className="pt-4">
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 border-b-2 border-gray-100 pb-4">
+                            <div>
+                                <h3 className="text-xl font-black text-gray-900 uppercase tracking-tight m-0">Customer Voice</h3>
+                                <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-1">Real Feedback from Your Community</p>
+                            </div>
+                            <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-full border border-gray-100 shadow-sm">
+                                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Sort:</span>
+                                <select className="text-xs font-black bg-transparent border-none outline-none text-gray-900 cursor-pointer">
+                                    <option>Most Recent</option>
+                                    <option>Highest Rated</option>
+                                    <option>Most Helpful</option>
+                                </select>
+                            </div>
                         </div>
                         <ReviewList targetId={store.id} targetType="store" />
                     </div>

@@ -150,54 +150,72 @@ const StoreList: React.FC = () => {
                 handleLocateMe={handleLocateMe}
             />
 
-            <section className="py-8 px-4 bg-[var(--surface-1)] border-b border-[var(--glass-border)]">
-                <div className="max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-                    <div>
-                        <p className="text-3xl font-bold text-[var(--brand-primary)]">{stats.totalStores}</p>
-                        <p className="text-sm text-[var(--text-muted)]">{t('localGrocers')}</p>
+            {/* PREMIUM MARKETPLACE INFO BOARD */}
+            <section className="relative z-30 max-w-7xl mx-auto px-4 -mt-8">
+                <div className="bg-white rounded-[2rem] shadow-2xl border border-gray-100 p-2 md:p-3 flex flex-wrap lg:flex-nowrap items-stretch gap-1">
+                    <div className="flex-1 min-w-[150px] bg-gray-50/50 p-6 rounded-2xl border border-gray-50 flex flex-col items-center justify-center text-center group hover:bg-white hover:shadow-xl transition-all">
+                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Local Grocers</span>
+                        <p className="text-3xl font-black text-gray-900 tracking-tighter">{stats.totalStores}</p>
+                        <p className="text-[9px] text-gray-400 font-bold uppercase mt-1">Verified Partners</p>
                     </div>
-                    <div>
-                        <p className="text-3xl font-bold text-[var(--brand-primary)]">{stats.totalFlyers}</p>
-                        <p className="text-sm text-[var(--text-muted)]">{t('activeFlyers')}</p>
+                    <div className="w-px bg-gray-100 hidden lg:block my-4"></div>
+                    <div className="flex-1 min-w-[150px] bg-gray-50/50 p-6 rounded-2xl border border-gray-50 flex flex-col items-center justify-center text-center group hover:bg-white hover:shadow-xl transition-all">
+                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Active Flyers</span>
+                        <p className="text-3xl font-black text-emerald-600 tracking-tighter">{stats.totalFlyers}</p>
+                        <p className="text-[9px] text-gray-400 font-bold uppercase mt-1">Live Circulars</p>
                     </div>
-                    <div>
-                        <p className="text-3xl font-bold text-[var(--brand-primary)]">{stats.totalDeals}</p>
-                        <p className="text-sm text-[var(--text-muted)]">{t('activeDeals')}</p>
+                    <div className="w-px bg-gray-100 hidden lg:block my-4"></div>
+                    <div className="flex-1 min-w-[150px] bg-gray-50/50 p-6 rounded-2xl border border-gray-50 flex flex-col items-center justify-center text-center group hover:bg-white hover:shadow-xl transition-all">
+                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Flash Deals</span>
+                        <p className="text-3xl font-black text-gray-900 tracking-tighter">{stats.totalDeals}</p>
+                        <p className="text-[9px] text-gray-400 font-bold uppercase mt-1">Limited Offers</p>
                     </div>
-                    <div>
-                        <p className="text-3xl font-bold text-[var(--brand-primary)]">
+                    <div className="w-px bg-gray-100 hidden lg:block my-4"></div>
+                    <div className="flex-1 min-w-[150px] bg-emerald-600 p-6 rounded-2xl flex flex-col items-center justify-center text-center shadow-lg group hover:bg-black transition-all">
+                        <span className="text-[10px] font-black text-white/70 uppercase tracking-widest mb-1">Marketplace Span</span>
+                        <p className="text-3xl font-black text-white tracking-tighter font-mono">
                             {stats.totalProducts >= 1000 ? `${(stats.totalProducts / 1000).toFixed(1)}k+` : stats.totalProducts}
                         </p>
-                        <p className="text-sm text-[var(--text-muted)]">{t('productsAvailable')}</p>
+                        <p className="text-[9px] text-white/70 font-bold uppercase mt-1">Products Available</p>
                     </div>
                 </div>
             </section>
 
+            {/* WEEKLY FLYERS RACK */}
             {allStores.filter(s => s.hasFlyer).length > 0 && (
-                <section className="py-6 px-4 bg-[var(--surface-0)] border-b border-[var(--glass-border)]">
-                    <div className="max-w-5xl mx-auto">
-                        <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-xl font-bold flex items-center gap-2">
-                                <span className="text-2xl">📰</span> {t('weeklyFlyers')}
-                            </h2>
-                            <Link to="/flyers" className="text-sm text-[var(--brand-primary)] font-medium hover:underline">{t('viewAll')}</Link>
+                <section className="py-16 px-4 bg-white overflow-hidden">
+                    <div className="max-w-7xl mx-auto">
+                        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12 border-b-2 border-gray-100 pb-8">
+                            <div>
+                                <h2 className="text-3xl md:text-5xl font-black text-gray-900 uppercase tracking-tighter leading-none italic">
+                                    Weekly Rack <span className="text-emerald-600 font-serif">/ Flyers</span>
+                                </h2>
+                                <p className="text-sm text-gray-400 font-bold uppercase tracking-widest mt-3">Browse standard pricing and fresh arrivals</p>
+                            </div>
+                            <Link to="/flyers" className="px-8 py-3 bg-gray-900 text-white text-[10px] font-black uppercase tracking-widest rounded-full hover:bg-emerald-600 transition-all shadow-xl active:scale-95">
+                                {t('viewAll')} Circulars
+                            </Link>
                         </div>
-                        <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x">
+                        <div className="flex gap-8 overflow-x-auto pb-8 scrollbar-hide snap-x perspective-1000">
                             {allStores.filter(s => s.hasFlyer).map(store => (
                                 <div
                                     key={store.id}
                                     onClick={() => navigate(`/store/${store.id}`, { state: { initialTab: 'flyer' } })}
-                                    className="min-w-[280px] md:min-w-[320px] bg-white rounded-xl border border-[var(--glass-border)] shadow-sm hover:shadow-md transition-all cursor-pointer snap-center group overflow-hidden"
+                                    className="min-w-[320px] md:min-w-[400px] h-64 bg-gray-100 rounded-[2.5rem] relative group cursor-pointer overflow-hidden shadow-2xl snap-center transition-all duration-500 hover:-translate-y-4 hover:rotate-1"
                                 >
-                                    <div className="relative h-40">
-                                        <img src={store.flyerImage || store.image} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-4">
-                                            <div>
-                                                <h3 className="text-white font-bold text-lg drop-shadow-md">{store.name}</h3>
-                                                <p className="text-white/90 text-xs">{t('expiresSoon')}</p>
-                                            </div>
+                                    <img 
+                                        src={store.flyerImage || store.image} 
+                                        className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 opacity-80 group-hover:opacity-100" 
+                                    />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/20 to-transparent"></div>
+                                    <div className="absolute bottom-0 left-0 right-0 p-8 flex items-end justify-between">
+                                        <div>
+                                            <span className="text-[10px] font-black bg-emerald-600 text-white px-2 py-1 rounded-sm uppercase skew-x-[-12deg] mb-2 inline-block">LIVE NOW</span>
+                                            <h3 className="text-2xl font-black text-white uppercase tracking-tighter italic">{store.name}</h3>
                                         </div>
-                                        <div className="absolute top-3 right-3 bg-red-600 text-white text-[10px] uppercase font-bold px-2 py-1 rounded shadow-sm animate-pulse">{t('liveFlyer')}</div>
+                                        <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md border border-white/20 flex items-center justify-center text-white font-black text-xl hover:bg-white hover:text-emerald-600 transition-all shadow-xl">
+                                            →
+                                        </div>
                                     </div>
                                 </div>
                             ))}
@@ -206,6 +224,7 @@ const StoreList: React.FC = () => {
                 </section>
             )}
 
+            {/* HOT DEALS CAROUSEL */}
             {(() => {
                 const storesWithDeals = allStores.map(store => {
                     const deals = filterActiveDeals([...(stores[store.id]?.oneDayOffers || []), ...(stores[store.id]?.saleItems || [])])
@@ -216,83 +235,84 @@ const StoreList: React.FC = () => {
                 if (storesWithDeals.length === 0) return null;
 
                 return (
-                    <section className="py-8 px-4 bg-[var(--surface-1)] border-b border-[var(--glass-border)] overflow-hidden">
-                        <div className="max-w-5xl mx-auto">
-                            <div className="flex items-center justify-between mb-6">
-                                <h2 className="text-xl font-bold flex items-center gap-2">
-                                    <span className="text-2xl">🔥</span> {t('activeDeals')}
-                                </h2>
-                                <Link to="/deals" className="text-sm text-[var(--brand-primary)] font-medium hover:underline">{t('viewAll')}</Link>
+                    <section className="py-20 px-4 bg-gray-50 overflow-hidden border-t border-gray-200">
+                        <div className="max-w-7xl mx-auto">
+                            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12 border-b border-gray-200 pb-8">
+                                <div>
+                                    <h2 className="text-3xl md:text-5xl font-black text-gray-900 uppercase tracking-tighter leading-none italic">
+                                        Flash <span className="text-emerald-600">Inventory</span>
+                                    </h2>
+                                    <p className="text-sm text-gray-500 font-bold uppercase tracking-widest mt-3">High-Impact savings across the marketplace</p>
+                                </div>
+                                <Link to="/deals" className="px-8 py-3 bg-gray-900 text-white text-[10px] font-black uppercase tracking-widest rounded-full hover:bg-emerald-600 hover:text-white transition-all shadow-xl active:scale-95">
+                                    {t('viewAll')} Bargains
+                                </Link>
                             </div>
                             
-                            <div className="flex gap-6 overflow-x-auto pb-6 scrollbar-hide snap-x transition-all">
+                            <div className="flex gap-8 overflow-x-auto pb-10 scrollbar-hide snap-x">
                                 {storesWithDeals.map(store => (
-                                    <div key={store.id} className="flex gap-4 snap-start">
-                                        {/* Store Identity Badge */}
-                                        <div className="flex flex-col items-center justify-center bg-white rounded-2xl border border-[var(--glass-border)] p-4 min-w-[140px] shadow-sm hover:shadow-md transition-shadow">
-                                            <div className="w-14 h-14 rounded-xl bg-[var(--surface-2)] border border-[var(--glass-border)] flex items-center justify-center text-3xl overflow-hidden mb-2 shadow-inner">
+                                    <div key={store.id} className="flex gap-6 snap-start items-center">
+                                        {/* Store Brand Pillar */}
+                                        <div 
+                                            onClick={() => navigate(`/store/${store.id}`)}
+                                            className="flex flex-col items-center justify-center bg-white rounded-[2rem] border border-gray-200 p-6 min-w-[160px] cursor-pointer hover:bg-gray-50 hover:shadow-lg transition-all group shadow-sm"
+                                        >
+                                            <div className="w-16 h-16 rounded-2xl bg-white flex items-center justify-center text-4xl overflow-hidden mb-4 shadow-lg ring-4 ring-gray-100 group-hover:scale-110 transition-transform border border-gray-50">
                                                 {store.logoUrl && store.logoUrl.startsWith('http') ? (
-                                                    <img src={store.logoUrl} alt="" className="w-full h-full object-cover" />
+                                                    <img src={store.logoUrl} alt="" className="w-full h-full object-cover p-2" />
                                                 ) : (
-                                                    <span>{store.logoUrl || '🏪'}</span>
+                                                    <span className="font-black text-gray-900">{store.logoUrl || '🏪'}</span>
                                                 )}
                                             </div>
-                                            <span className="text-[11px] font-black text-[var(--text-main)] text-center line-clamp-2 uppercase tracking-tight">{store.name}</span>
-                                            <div className="mt-2 px-2 py-0.5 bg-[var(--brand-primary)]/10 text-[var(--brand-primary)] text-[9px] font-black uppercase rounded shadow-sm">
-                                                {store.deals.length} {t('dealsWord')}
+                                            <span className="text-xs font-black text-gray-900 text-center uppercase tracking-tight mb-2">{store.name}</span>
+                                            <div className="px-3 py-1 bg-emerald-600 text-white text-[9px] font-black uppercase rounded shadow-lg animate-pulse">
+                                                {store.deals.length} Active
                                             </div>
                                         </div>
 
-                                        {/* Deals for this store */}
-                                        {store.deals.map((deal: any) => {
-                                            const discount = deal.type === 'percentage'
-                                                ? `${deal.value}% OFF`
-                                                : deal.type === 'fixed'
-                                                ? `$${deal.value} OFF`
-                                                : 'BOGO';
-                                            
-                                            // Robust data mapping
-                                            const productName = deal.productName || deal.name || 'Product';
-                                            const productImage = deal.productImage || deal.image;
-                                            const salePrice = deal.salePrice ?? deal.price;
-                                            const originalPrice = deal.originalPrice;
+                                        {/* Deal Items */}
+                                        <div className="flex gap-4">
+                                            {store.deals.map((deal: any) => {
+                                                const discount = deal.type === 'percentage'
+                                                    ? `${deal.value}% OFF`
+                                                    : deal.type === 'fixed'
+                                                    ? `$${deal.value} OFF`
+                                                    : 'BOGO';
+                                                
+                                                const productName = deal.productName || deal.name || 'Product';
+                                                const productImage = deal.productImage || deal.image;
+                                                const salePrice = deal.salePrice ?? deal.price;
+                                                const originalPrice = deal.originalPrice;
 
-                                            return (
-                                                <div
-                                                    key={`${deal.storeId}-${deal.id}`}
-                                                    onClick={() => navigate(`/store/${deal.storeId}`, { state: { initialTab: 'offers' } })}
-                                                    className="min-w-[180px] max-w-[180px] bg-white rounded-2xl border border-[var(--glass-border)] shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer overflow-hidden flex-shrink-0 group"
-                                                >
-                                                    <div className="relative h-32 bg-[var(--surface-2)]">
-                                                        {productImage ? (
-                                                            <img src={productImage} alt={productName} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                                                        ) : (
-                                                            <div className="w-full h-full flex items-center justify-center text-5xl opacity-40">🏷️</div>
-                                                        )}
-                                                        <div className="absolute top-2 left-2 bg-green-600 text-white text-[10px] font-black px-2 py-1 rounded shadow-lg uppercase tracking-wider">
-                                                            {discount}
-                                                        </div>
-                                                        {deal.isFlashSale && (
-                                                            <div className="absolute top-2 right-2 bg-red-500 text-white text-[9px] font-black px-2 py-1 rounded shadow animate-pulse uppercase tracking-wider">
-                                                                ⚡ Flash
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                    <div className="p-3">
-                                                        <p className="text-xs font-bold text-[var(--text-main)] leading-tight line-clamp-2 h-8 group-hover:text-[var(--brand-primary)] transition-colors">{productName}</p>
-                                                        <div className="flex items-center gap-1.5 mt-2">
-                                                            <span className="text-lg font-black text-green-600">${salePrice?.toFixed(2)}</span>
-                                                            {originalPrice && (
-                                                                <span className="text-xs text-[var(--text-muted)] line-through">${originalPrice.toFixed(2)}</span>
+                                                return (
+                                                    <div
+                                                        key={`${deal.storeId}-${deal.id}`}
+                                                        onClick={() => navigate(`/store/${deal.storeId}`, { state: { initialTab: 'offers' } })}
+                                                        className="min-w-[200px] max-w-[200px] bg-white rounded-3xl shadow-xl hover:-translate-y-2 transition-all duration-500 cursor-pointer overflow-hidden group/deal"
+                                                    >
+                                                        <div className="relative h-36 bg-gray-50 p-2">
+                                                            {productImage ? (
+                                                                <img src={productImage} alt={productName} className="w-full h-full object-contain group-hover/deal:scale-110 transition-transform duration-500" />
+                                                            ) : (
+                                                                <div className="w-full h-full flex items-center justify-center text-5xl opacity-40">🏷️</div>
                                                             )}
+                                                            <div className="absolute top-3 left-3 bg-emerald-600 text-white text-[9px] font-black px-2 py-1 rounded shadow-lg uppercase tracking-wider skew-x-[-12deg]">
+                                                                {discount}
+                                                            </div>
+                                                        </div>
+                                                        <div className="p-4">
+                                                            <p className="text-xs font-black text-gray-900 uppercase tracking-tight line-clamp-2 h-8 group-hover/deal:text-emerald-600 transition-colors leading-tight">{productName}</p>
+                                                            <div className="flex items-baseline gap-2 mt-3">
+                                                                <span className="text-2xl font-black text-gray-900 tracking-tighter">${salePrice?.toFixed(2)}</span>
+                                                                {originalPrice && (
+                                                                    <span className="text-[10px] text-gray-400 font-bold line-through">${originalPrice.toFixed(2)}</span>
+                                                                )}
+                                                            </div>
                                                         </div>
                                                     </div>
-                                                </div>
-                                            );
-                                        })}
-                                        
-                                        {/* Visual spacer between stores */}
-                                        <div className="w-2 flex-shrink-0 border-r border-[var(--glass-border)] my-4 mr-2 opacity-50" />
+                                                );
+                                            })}
+                                        </div>
                                     </div>
                                 ))}
                             </div>
@@ -301,103 +321,110 @@ const StoreList: React.FC = () => {
                 );
             })()}
 
-            <section className="py-4 px-4 bg-[var(--surface-0)] sticky top-16 z-40 border-b border-[var(--glass-border)]">
-                <div className="max-w-5xl mx-auto overflow-x-auto scrollbar-hide">
-                    <div className="flex gap-2 min-w-max">
-                        {CATEGORIES.map(cat => (
-                            <button
-                                key={cat}
-                                onClick={() => setActiveCategory(cat)}
-                                className={`px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap ${activeCategory === cat ? 'bg-[var(--brand-primary)] text-white' : 'bg-[var(--surface-2)] text-[var(--text-muted)] hover:bg-[var(--surface-1)] hover:text-[var(--text-main)]'}`}
-                            >
-                                {cat}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-            </section>
-
-            <section className="py-8 px-4">
-                <div className="max-w-5xl mx-auto">
-                    <div className="flex items-center justify-between mb-6">
-                        <h2 className="text-2xl font-bold text-[var(--text-main)]">{activeCategory === 'All' ? t('storesNearYou') : `${activeCategory} ${t('storesWord')}`}</h2>
-                        <div className="flex items-center gap-4">
-                            <select 
-                                value={searchDistance} 
-                                onChange={(e) => setSearchDistance(Number(e.target.value))}
-                                className="text-sm bg-[var(--surface-2)] border border-[var(--glass-border)] rounded-md px-2 py-1 text-[var(--text-main)] outline-none cursor-pointer"
-                            >
-                                <option value={5}>{t('within5km')}</option>
-                                <option value={10}>{t('within10km')}</option>
-                                <option value={25}>{t('within25km')}</option>
-                                <option value={50}>{t('within50km')}</option>
-                            </select>
-                            <span className="text-sm text-[var(--text-muted)] hidden sm:inline">{filteredStores.length} {t('storesCount')}</span>
-                            <div className="flex bg-[var(--surface-2)] rounded-lg p-1 border border-[var(--glass-border)]">
-                                <button onClick={() => setViewMode('grid')} className={`p-1.5 rounded-md transition-colors ${viewMode === 'grid' ? 'bg-white shadow-sm text-[var(--brand-primary)]' : 'text-gray-400 hover:text-gray-600'}`}>
-                                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
+            {/* CATEGORY NAV & STORE GRID */}
+            <div className="bg-white pt-16">
+                <div className="max-w-7xl mx-auto px-4">
+                    <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-12">
+                        <div>
+                            <h2 className="text-4xl md:text-6xl font-black text-gray-900 uppercase tracking-tighter italic m-0">
+                                Local <span className="text-emerald-600">Grocers</span>
+                            </h2>
+                            <p className="text-sm text-gray-400 font-bold uppercase tracking-[0.2em] mt-2">Verified quality near your location</p>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-4">
+                            <div className="bg-gray-50 px-4 py-2 rounded-2xl border border-gray-100 flex items-center gap-3">
+                                <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Radius:</span>
+                                <select 
+                                    value={searchDistance} 
+                                    onChange={(e) => setSearchDistance(Number(e.target.value))}
+                                    className="text-xs font-black bg-transparent border-none outline-none text-gray-900 cursor-pointer"
+                                >
+                                    <option value={5}>Within 5 KM</option>
+                                    <option value={10}>Within 10 KM</option>
+                                    <option value={25}>Within 25 KM</option>
+                                    <option value={50}>Within 50 KM</option>
+                                </select>
+                            </div>
+                            <div className="flex bg-gray-50 rounded-2xl p-1.5 border border-gray-100">
+                                <button onClick={() => setViewMode('grid')} className={`p-2 rounded-xl transition-all ${viewMode === 'grid' ? 'bg-white shadow-md text-emerald-600' : 'text-gray-400 hover:text-gray-600'}`}>
+                                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
                                 </button>
-                                <button onClick={() => setViewMode('list')} className={`p-1.5 rounded-md transition-colors ${viewMode === 'list' ? 'bg-white shadow-sm text-[var(--brand-primary)]' : 'text-gray-400 hover:text-gray-600'}`}>
-                                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" /></svg>
+                                <button onClick={() => setViewMode('list')} className={`p-2 rounded-xl transition-all ${viewMode === 'list' ? 'bg-white shadow-md text-emerald-600' : 'text-gray-400 hover:text-gray-600'}`}>
+                                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" /></svg>
                                 </button>
                             </div>
                         </div>
                     </div>
 
-                    {loading ? (
-                        <div className={viewMode === 'grid' ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" : "flex flex-col gap-4"}>
-                            {[1, 2, 3, 4, 5, 6].map((n) => (
-                                <div key={n} className={`bg-gray-100 rounded-xl animate-pulse border border-gray-200 ${viewMode === 'grid' ? 'h-80' : 'h-36 flex'}`}>
-                                    <div className={`bg-gray-200 ${viewMode === 'grid' ? 'h-40 w-full mb-4' : 'w-32 h-full'}`}></div>
-                                    <div className={`px-4 ${viewMode === 'grid' ? '' : 'flex flex-col justify-center flex-1'}`}>
-                                        <div className="h-6 bg-gray-200 rounded w-3/4 mb-2"></div>
-                                        <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-                                    </div>
-                                </div>
+                    <div className="mb-12 overflow-x-auto scrollbar-hide">
+                        <div className="flex gap-3 pb-2">
+                            {CATEGORIES.map(cat => (
+                                <button
+                                    key={cat}
+                                    onClick={() => setActiveCategory(cat)}
+                                    className={`px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap border-2 ${activeCategory === cat 
+                                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-xl -translate-y-1' 
+                                        : 'bg-white text-gray-400 border-gray-50 hover:border-gray-200'}`}
+                                >
+                                    {cat}
+                                </button>
                             ))}
                         </div>
-                    ) : filteredStores.length === 0 ? (
-                        <div className="text-center py-12">
-                            <p className="text-5xl mb-4">🔍</p>
-                            <p className="text-[var(--text-muted)]">{t('noStoresMatch')}</p>
+                    </div>
+
+                    {loading ? (
+                        <div className={viewMode === 'grid' ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8" : "flex flex-col gap-6"}>
+                            {[1, 2, 3, 4, 5, 6].map((n) => (
+                                <div key={n} className="bg-gray-50 h-80 rounded-[2rem] animate-pulse"></div>
+                            ))}
                         </div>
                     ) : (
-                        <div className={viewMode === 'grid' ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" : "flex flex-col gap-4"}>
+                        <div className={viewMode === 'grid' ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8" : "flex flex-col gap-6"}>
                             {filteredStores.map(store => (
                                 <div
                                     key={store.id}
                                     onClick={() => navigate(`/store/${store.id}`)}
-                                    className={`glass-panel overflow-hidden cursor-pointer group hover:border-[var(--brand-primary)] hover:shadow-lg hover:shadow-[var(--brand-primary)]/10 transition-all duration-300 relative ${viewMode === 'list' ? 'flex flex-row items-stretch' : ''}`}
+                                    className={`group bg-white rounded-[2.5rem] border-2 border-gray-50 shadow-sm hover:shadow-2xl hover:-translate-y-2 lg:hover:w-[102%] lg:hover:-ml-[1%] transition-all duration-500 cursor-pointer overflow-hidden relative ${viewMode === 'list' ? 'flex flex-row h-48' : 'min-h-[380px]'}`}
                                 >
-                                    <div className="absolute top-3 right-3 z-10 flex flex-col gap-1 items-end">
-                                        {store.hasFlyer && <span className="bg-red-500 text-white text-[10px] uppercase font-bold px-2 py-0.5 rounded shadow-sm">{t('newFlyer')}</span>}
-                                        {store.activeDealsCount > 0 && <span className="bg-green-500 text-white text-[10px] uppercase font-bold px-2 py-0.5 rounded shadow-sm">{store.activeDealsCount} {t('dealsWord')}</span>}
+                                    {/* Store Graphics */}
+                                    <div className={`relative bg-gray-100 overflow-hidden ${viewMode === 'list' ? 'w-48 md:w-80 shrink-0' : 'h-48'}`}>
+                                        <img src={store.image} alt={store.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 opacity-90 group-hover:opacity-100" />
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
+                                        <div className="absolute top-4 left-4 bg-black/70 backdrop-blur-md px-3 py-1.5 rounded-xl text-[10px] text-white font-black uppercase tracking-widest border border-white/20">
+                                            {store.deliveryTime}
+                                        </div>
+                                        {(store.hasFlyer || store.activeDealsCount > 0) && (
+                                            <div className="absolute top-4 right-4 flex flex-col gap-2 scale-75 md:scale-100">
+                                                {store.hasFlyer && <span className="bg-emerald-600 text-white text-[8px] font-black px-2 py-1 rounded shadow-lg uppercase tracking-widest skew-x-[-12deg]">Flyer Live</span>}
+                                                {store.activeDealsCount > 0 && <span className="bg-gray-900 text-white text-[8px] font-black px-2 py-1 rounded shadow-lg uppercase tracking-widest skew-x-[-12deg]">{store.activeDealsCount} Hot Deals</span>}
+                                            </div>
+                                        )}
                                     </div>
 
-                                    <div className={`bg-[var(--surface-2)] relative overflow-hidden ${viewMode === 'list' ? 'w-32 md:w-48 shrink-0' : 'h-36'}`}>
-                                        <img src={store.image} alt={store.name} loading="lazy" decoding="async" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 will-change-transform" />
-                                        <div className="absolute top-3 left-3 bg-black/70 backdrop-blur-sm px-2 py-1 rounded-md text-xs text-white font-medium">{store.deliveryTime}</div>
-                                    </div>
-
-                                    <div className={`p-4 relative flex-1 ${viewMode === 'list' ? 'flex flex-col justify-center' : ''}`}>
-                                        <div className={`w-12 h-12 rounded-xl bg-[var(--surface-0)] border-2 border-[var(--glass-border)] flex items-center justify-center text-2xl shadow-lg overflow-hidden ${viewMode === 'list' ? 'hidden' : 'absolute -top-6 left-4'}`}>
-                                            {store.logoUrl && store.logoUrl.startsWith('http') ? <img src={store.logoUrl} alt="Logo" loading="lazy" decoding="async" className="w-full h-full object-cover" /> : <span>{store.logoUrl || '🏪'}</span>}
+                                    {/* Store Details */}
+                                    <div className="p-8 flex flex-col flex-1 relative">
+                                        <div className={`w-16 h-16 rounded-[1.5rem] bg-white border-2 border-gray-100 flex items-center justify-center text-4xl shadow-xl overflow-hidden transition-transform duration-500 group-hover:rotate-6 ${viewMode === 'list' ? 'mb-4' : 'absolute -top-8 left-8'}`}>
+                                            {store.logoUrl && store.logoUrl.startsWith('http') ? <img src={store.logoUrl} alt="Logo" className="w-full h-full object-cover p-2" /> : <span className="font-black text-gray-900">{store.logoUrl || '🏪'}</span>}
                                         </div>
 
-                                        <div className={`${viewMode === 'list' ? '' : 'ml-14'}`}>
-                                            <h3 className="font-bold text-lg text-[var(--text-main)] group-hover:text-[var(--brand-primary)] transition-colors">{store.name}</h3>
-                                            <div className="flex items-center gap-2">
-                                                <p className="text-sm text-[var(--text-muted)]">{store.distance} {t('away')}</p>
-                                                <span className="text-xs font-semibold flex items-center gap-0.5 bg-yellow-100 text-yellow-800 px-1.5 py-0.5 rounded">
-                                                    ★ {store.rating > 0 ? store.rating.toFixed(1) : '0.0'} <span className="opacity-70 font-normal">({store.reviewCount || 0})</span>
+                                        <div className={viewMode === 'list' ? '' : 'mt-8'}>
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <h3 className="font-black text-2xl text-gray-900 uppercase tracking-tighter italic m-0 group-hover:text-emerald-600 transition-colors leading-none">{store.name}</h3>
+                                            </div>
+                                            <div className="flex items-center gap-3">
+                                                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest m-0">{store.distance} Away</p>
+                                                <div className="w-1 h-1 bg-gray-200 rounded-full"></div>
+                                                <span className="text-[10px] font-black flex items-center gap-1 bg-yellow-50 text-yellow-700 px-2 py-0.5 rounded-full uppercase">
+                                                    ★ {store.rating > 0 ? store.rating.toFixed(1) : 'NEW'}
                                                 </span>
                                             </div>
                                         </div>
 
-                                        <div className="flex gap-2 mt-3 flex-wrap">
-                                            {store.tags.map((tag: string) => (
-                                                <span key={tag} className="text-xs bg-[var(--surface-2)] px-2 py-1 rounded-full text-[var(--text-muted)]">{tag}</span>
+                                        <div className="flex flex-wrap gap-2 mt-auto pt-6">
+                                            {store.tags.slice(0, 3).map((tag: string) => (
+                                                <span key={tag} className="text-[8px] font-black text-white bg-gray-900 px-2 py-1 rounded-sm uppercase tracking-widest skew-x-[-12deg]">{tag}</span>
                                             ))}
+                                            <span className="text-[8px] font-black text-gray-400 bg-gray-50 border border-gray-100 px-2 py-1 rounded-sm uppercase tracking-widest ml-auto shadow-inner">{store.deliveryFee} FEE</span>
                                         </div>
                                     </div>
                                 </div>
@@ -405,23 +432,34 @@ const StoreList: React.FC = () => {
                         </div>
                     )}
                 </div>
-            </section>
+            </div>
 
-            <section className="py-8 px-4">
-                <div className="max-w-5xl mx-auto">
-                    <div className="glass-panel p-6 md:p-8 bg-gradient-to-r from-[var(--brand-primary)]/20 to-[var(--brand-secondary)]/20 border-[var(--brand-primary)]/30">
-                        <div className="flex flex-col md:flex-row items-center gap-6">
-                            <div className="text-5xl">🛒✨</div>
+            {/* HIGH-IMPACT MARKETPLACE PROMO */}
+            <section className="py-32 px-4 bg-white overflow-hidden">
+                <div className="max-w-7xl mx-auto">
+                    <div className="relative bg-gray-50 rounded-[4rem] p-12 md:p-24 overflow-hidden group shadow-xl border border-gray-200">
+                        <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-emerald-600/5 rounded-full blur-[120px] -mr-96 -mt-96 group-hover:bg-emerald-600/10 transition-all duration-700"></div>
+                        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-blue-600/5 rounded-full blur-[100px] -ml-48 -mb-48"></div>
+                        
+                        <div className="relative z-10 flex flex-col md:flex-row items-center gap-16">
+                            <div className="text-8xl md:text-9xl animate-bounce-slow drop-shadow-xl">🛍️✨</div>
                             <div className="flex-1 text-center md:text-left">
-                                <h3 className="text-xl font-bold text-[var(--text-main)] mb-2">{t('optimizerTitle')}</h3>
-                                <p className="text-[var(--text-muted)]">
-                                    {t('optimizerDesc')}<br/>
-                                    {t('optimizerSave1')} <span className="text-[var(--brand-secondary)] font-bold">15%</span> {t('optimizerSave2')}
+                                <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 px-3 py-1 rounded shadow-sm uppercase tracking-[0.3em] mb-6 inline-block border border-emerald-100">Spendigo Optimizer</span>
+                                <h3 className="text-4xl md:text-7xl font-black text-gray-900 uppercase tracking-tighter italic leading-[0.9] mb-8">
+                                    Why Pay <span className="text-emerald-600 underline decoration-gray-200 underline-offset-8">Retail?</span>
+                                </h3>
+                                <p className="text-lg md:text-2xl text-gray-500 font-bold uppercase tracking-tight max-w-2xl leading-tight">
+                                    Our SmartCart engine analyzes {stats.totalProducts}+ products across the marketplace to save you <span className="text-gray-900 font-black">15% or more</span> on every shop.
                                 </p>
+                                <div className="mt-12 flex flex-wrap gap-6 justify-center md:justify-start">
+                                    <Link to="/how-it-works" className="px-12 py-5 bg-gray-900 text-white font-black text-xs uppercase tracking-[0.2em] rounded-full hover:bg-emerald-600 transition-all shadow-xl active:scale-95 border-b-4 border-gray-800 hover:border-emerald-800">
+                                        Activate Optimizer
+                                    </Link>
+                                    <Link to="/register" className="px-12 py-5 bg-white border border-gray-300 text-gray-900 font-black text-xs uppercase tracking-[0.2em] rounded-full hover:bg-gray-100 transition-all shadow-sm">
+                                        Join Marketplace
+                                    </Link>
+                                </div>
                             </div>
-                            <Link to="/how-it-works" className="px-6 py-3 bg-[var(--brand-primary)] text-white font-bold rounded-full hover:brightness-110 transition-all whitespace-nowrap">
-                                {t('learnMore')}
-                            </Link>
                         </div>
                     </div>
                 </div>

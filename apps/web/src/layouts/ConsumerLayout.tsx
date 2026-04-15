@@ -54,63 +54,67 @@ const ConsumerLayout: React.FC = () => {
     }, [user, navigate]);
 
     return (
-        <div className="min-h-screen bg-[var(--surface-0)] relative">
+        <div className="min-h-screen bg-gray-50/30 relative flex flex-col">
             {/* TOP NAVIGATION BAR */}
-            <header className="fixed top-0 left-0 right-0 h-[calc(3.5rem+var(--safe-area-top))] pt-safe bg-white border-b border-[var(--glass-border)] z-50 px-4 flex items-center justify-between gap-4">
+            <header className="fixed top-0 left-0 right-0 h-[calc(4rem+var(--safe-area-top))] pt-safe bg-white border-b-2 border-gray-200 z-50 px-4 flex items-center justify-between gap-4 shadow-sm">
                 {/* LEFT: Logo + Search */}
-                <div className="flex items-center gap-6 flex-1 max-w-3xl">
-                    {/* Logo (Home) */}
-                    <Link to="/" className="flex items-center gap-2 group shrink-0">
-                        <img src="/app-icon.png" alt="Spendigo Logo" className="w-8 h-8 rounded-[8px] shadow-sm group-hover:scale-105 transition-transform" />
-                        <div className="flex flex-col leading-tight">
-                            <span className="text-xl font-bold bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)] bg-clip-text text-transparent group-hover:brightness-110 transition-all">Spendigo</span>
-                            <span className="text-[9px] sm:text-[10px] font-semibold text-[var(--text-muted)] tracking-wider uppercase">Powered by SmartCart AI</span>
+                <div className="flex items-center gap-8 flex-1 max-w-4xl">
+                    {/* PREMIUM RETAIL LOGO */}
+                    <Link to="/" className="flex items-center gap-3 group shrink-0">
+                        <div className="w-10 h-10 bg-emerald-600 flex items-center justify-center skew-x-[-12deg] shadow-lg group-hover:scale-105 transition-transform group-hover:bg-emerald-500">
+                            <span className="text-white text-2xl font-black italic">S</span>
+                        </div>
+                        <div className="flex flex-col leading-none">
+                            <span className="text-2xl font-black text-gray-900 italic tracking-tighter uppercase group-hover:text-emerald-600 transition-colors">Spendigo</span>
+                            <span className="text-[8px] font-black text-gray-500 tracking-[0.4em] uppercase mt-1">SmartCart AI</span>
                         </div>
                     </Link>
 
-                    {/* Expanded Search Bar */}
+                    {/* Expanded Retail Search Bar */}
                     <form onSubmit={handleSearch} className="hidden md:flex flex-1 relative group max-w-lg">
                         <input
                             type="text"
-                            placeholder={t('searchProducts')}
+                            placeholder="SEARCH MARKETPLACE..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full h-10 pl-10 pr-4 bg-[var(--surface-1)] border border-transparent rounded-full text-sm focus:bg-white focus:border-[var(--brand-primary)] focus:ring-4 focus:ring-[var(--brand-primary)]/10 transition-all outline-none group-hover:bg-[var(--surface-2)]"
+                            className="w-full h-10 pl-12 pr-4 bg-gray-100 border-2 border-transparent text-xs text-gray-900 font-black uppercase tracking-widest placeholder-gray-400 focus:bg-white focus:border-emerald-600 transition-all outline-none"
                         />
-                        <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
+                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-hover:text-emerald-600 transition-colors text-sm">🔍</span>
                     </form>
                 </div>
 
                 {/* RIGHT: Actions (Optimizer, Cart, Notifications, Profile) */}
-                <div className="flex items-center gap-2 shrink-0">
-                    {/* SmartCart Optimizer */}
-                    <NavLink to="/smartcart" className={({ isActive }) => `hidden lg:flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium shrink-0 transition-colors ${isActive ? 'bg-[var(--brand-primary)]/10 text-[var(--brand-primary)]' : 'text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--surface-2)]'}`}>
-                        <span className="text-base">✨</span>
-                        <span>SmartCart Optimizer</span>
+                <div className="flex items-center gap-3 shrink-0">
+                    {/* SmartCart Optimizer Tool */}
+                    <NavLink to="/smartcart" className={({ isActive }) => `hidden lg:flex items-center gap-2 px-4 py-2 text-[10px] font-black uppercase tracking-widest transition-all skew-x-[-12deg] border-2 ${isActive ? 'bg-gray-100 text-black border-black shadow-sm' : 'text-gray-500 border-gray-200 hover:text-black hover:border-gray-400'}`}>
+                        <span className="skew-x-[12deg] text-xs">✨</span>
+                        <span className="skew-x-[12deg]">Optimizer</span>
                     </NavLink>
 
-                    <div className="hidden md:block w-px h-6 bg-[var(--glass-border)] mx-1"></div>
+                    <div className="hidden md:block w-px h-8 bg-gray-200 mx-2"></div>
 
                     {/* Desktop Cart */}
-                    <NavLink to="/cart" className={({ isActive }) => `hidden md:flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${isActive ? 'bg-[var(--brand-primary)]/10 text-[var(--brand-primary)]' : 'text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--surface-2)]'}`}>
-                        <span className="text-lg">🛒</span>
-                        <span>{t('cart')}</span>
-                        {itemCount > 0 && (
-                            <span className="bg-[var(--brand-primary)] text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold">
-                                {itemCount}
-                            </span>
-                        )}
+                    <NavLink to="/cart" className={({ isActive }) => `hidden md:flex items-center gap-2 px-5 py-2 text-[10px] font-black uppercase tracking-widest transition-all border-2 skew-x-[-12deg] ${isActive ? 'bg-emerald-600 text-white border-emerald-600 shadow-md' : 'bg-white text-gray-900 border-gray-200 hover:border-emerald-600'}`}>
+                        <div className="skew-x-[12deg] flex items-center gap-2 relative">
+                            <span className="text-sm">🛒</span>
+                            <span>{t('cart')}</span>
+                            {itemCount > 0 && (
+                                <span className="absolute -top-3 -right-6 bg-emerald-600 text-white border-2 border-white text-[9px] px-1.5 py-0.5 rounded-full font-black animate-pulse">
+                                    {itemCount}
+                                </span>
+                            )}
+                        </div>
                     </NavLink>
 
                     {/* Context Links (Authorized Only) */}
                     {user?.role === 'merchant' && (
-                        <Link to="/merchant/dashboard" className="hidden lg:flex items-center gap-1 text-xs font-bold text-[var(--brand-primary)] bg-[var(--brand-primary)]/10 px-3 py-1.5 rounded-full hover:bg-[var(--brand-primary)] hover:text-white transition-colors">
-                            <span className="text-lg">💼</span> Dashboard
+                        <Link to="/merchant/dashboard" className="hidden lg:flex items-center gap-1 text-[10px] font-black text-black bg-gray-100 border border-gray-200 px-4 py-2 uppercase tracking-widest hover:bg-gray-200 transition-colors skew-x-[-12deg]">
+                            <span className="skew-x-[12deg]">💼 Merchant</span>
                         </Link>
                     )}
                     {user?.role === 'admin' && (
-                        <Link to="/admin/dashboard" className="hidden lg:flex items-center gap-1 text-xs font-bold text-purple-600 bg-purple-100 px-3 py-1.5 rounded-full hover:bg-purple-600 hover:text-white transition-colors">
-                            <span className="text-lg">🛡️</span> System
+                        <Link to="/admin/dashboard" className="hidden lg:flex items-center gap-1 text-[10px] font-black text-white bg-purple-600 px-4 py-2 uppercase tracking-widest hover:bg-purple-700 transition-colors skew-x-[-12deg] shadow-md">
+                            <span className="skew-x-[12deg]">🛡️ System</span>
                         </Link>
                     )}
 
@@ -120,10 +124,10 @@ const ConsumerLayout: React.FC = () => {
                     </div>
 
                     {/* Mobile Inbox Link */}
-                    <Link to="/notifications" className="sm:hidden relative w-10 h-10 rounded-full hover:bg-[var(--surface-2)] flex items-center justify-center transition-colors">
-                        <span className="text-lg">🔔</span>
+                    <Link to="/notifications" className="sm:hidden relative w-10 h-10 border-2 border-gray-200 bg-white flex items-center justify-center transition-colors skew-x-[-12deg]">
+                        <span className="text-sm skew-x-[12deg]">🔔</span>
                         {unreadCount > 0 && (
-                            <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full"></span>
+                            <span className="absolute -top-2 -right-2 w-3 h-3 border-2 border-white bg-emerald-600 skew-x-[12deg] shadow-sm"></span>
                         )}
                     </Link>
 
@@ -133,59 +137,60 @@ const ConsumerLayout: React.FC = () => {
 
                     {/* Profile / Auth */}
                     {user ? (
-                        <div className="relative group">
+                        <div className="relative group ml-2">
                             <Link
                                 to="/profile"
-                                className="flex items-center gap-2 px-2 py-2 rounded-lg hover:bg-[var(--surface-2)] transition-colors"
+                                className="flex items-center gap-3 px-3 py-1.5 hover:bg-gray-50 transition-colors border border-transparent hover:border-gray-200"
                                 title={user.name}
                             >
-                                <div className="w-8 h-8 rounded-full bg-[var(--brand-primary)] text-white flex items-center justify-center text-sm font-bold ring-2 ring-white shadow-md">
-                                    {user.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
-                                </div>
-                                {/* Show name only on larger screens */}
-                                <span className="hidden lg:block text-sm font-medium text-[var(--text-main)] max-w-[120px] truncate">
-                                    {user.name.split(' ')[0]}
+                                <span className="hidden lg:block text-[10px] font-black text-gray-900 uppercase tracking-widest text-right">
+                                    {user.name.split(' ')[0]}<br/><span className="text-gray-500 text-[8px]">Shopper</span>
                                 </span>
+                                <div className="w-8 h-8 bg-gray-900 text-white flex items-center justify-center text-xs font-black shadow-sm">
+                                    <span>{user.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}</span>
+                                </div>
                             </Link>
 
                             {/* Dropdown Menu (hidden on mobile, accessible on desktop) */}
-                            <div className="hidden sm:block absolute right-0 top-12 w-48 glass-panel opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 shadow-xl">
-                                <div className="p-3 border-b border-[var(--glass-border)]">
-                                    <p className="text-sm font-bold text-[var(--text-main)] truncate">{user.name}</p>
-                                    <p className="text-xs text-[var(--text-muted)] truncate">{user.email}</p>
+                            <div className="hidden sm:block absolute right-0 top-12 w-56 bg-white border-2 border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 shadow-xl">
+                                <div className="p-4 border-b border-gray-100 bg-gray-50">
+                                    <p className="text-xs font-black text-gray-900 uppercase tracking-widest truncate">{user.name}</p>
+                                    <p className="text-[10px] text-gray-500 font-bold tracking-wide truncate mt-1">{user.email}</p>
                                 </div>
-                                <Link
-                                    to="/profile"
-                                    className="block px-4 py-2 text-sm text-[var(--text-main)] hover:bg-[var(--surface-2)] transition-colors"
-                                >
-                                    {t('myProfile')}
-                                </Link>
-                                <Link
-                                    to="/profile"
-                                    state={{ activeTab: 'orders' }}
-                                    className="block px-4 py-2 text-sm text-[var(--text-main)] hover:bg-[var(--surface-2)] transition-colors"
-                                >
-                                    {t('orderHistory')}
-                                </Link>
-                                <button
-                                    onClick={logout}
-                                    className="w-full text-left px-4 py-2 text-sm text-red-500 hover:bg-red-50 transition-colors border-t border-[var(--glass-border)]"
-                                >
-                                    {t('signOut')}
-                                </button>
+                                <div>
+                                    <Link
+                                        to="/profile"
+                                        className="block px-5 py-3 text-[10px] font-black text-gray-700 uppercase tracking-widest hover:bg-emerald-50 hover:text-emerald-700 transition-colors"
+                                    >
+                                        → {t('myProfile')}
+                                    </Link>
+                                    <Link
+                                        to="/profile"
+                                        state={{ activeTab: 'orders' }}
+                                        className="block px-5 py-3 text-[10px] font-black text-gray-700 uppercase tracking-widest hover:bg-emerald-50 hover:text-emerald-700 transition-colors"
+                                    >
+                                        → {t('orderHistory')}
+                                    </Link>
+                                    <button
+                                        onClick={logout}
+                                        className="w-full text-left px-5 py-3 text-[10px] font-black text-emerald-600 uppercase tracking-widest hover:bg-emerald-50 transition-colors border-t border-gray-100"
+                                    >
+                                        × {t('signOut')}
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     ) : (
-                        <Link to="/login" className="hidden sm:inline-flex items-center justify-center px-4 py-2 rounded-full bg-[var(--brand-primary)] text-white text-sm font-bold shadow-lg shadow-[var(--brand-primary)]/20 hover:brightness-110 transition-all">
-                            {t('signIn')}
+                        <Link to="/login" className="hidden sm:inline-flex items-center justify-center px-6 py-2.5 bg-emerald-600 text-white text-[10px] font-black uppercase tracking-widest shadow-md hover:bg-emerald-700 transition-all ml-2">
+                            <span>{t('signIn')}</span>
                         </Link>
                     )}
 
                     {/* Mobile Cart Icon */}
-                    <Link to="/cart" className="md:hidden relative w-10 h-10 rounded-full bg-[var(--surface-2)] flex items-center justify-center">
-                        <span className="text-lg">🛒</span>
+                    <Link to="/cart" className="md:hidden relative w-10 h-10 bg-emerald-600 border-2 border-white flex items-center justify-center shadow-md ml-2">
+                        <span className="text-sm">🛒</span>
                         {itemCount > 0 && (
-                            <span className="absolute -top-1 -right-1 w-5 h-5 bg-[var(--brand-secondary)] text-white text-[10px] font-bold flex items-center justify-center rounded-full">
+                            <span className="absolute -top-3 -right-2 w-5 h-5 bg-white text-gray-900 text-[10px] font-black border-2 border-gray-200 flex items-center justify-center shadow-sm animate-pulse">
                                 {itemCount}
                             </span>
                         )}
@@ -194,96 +199,130 @@ const ConsumerLayout: React.FC = () => {
             </header>
 
             {/* MAIN CONTENT AREA */}
-            <main className="pt-[calc(3.5rem+var(--safe-area-top))] min-h-[calc(100vh-12rem)] pb-8">
+            <main className="pt-[calc(4rem+var(--safe-area-top))] min-h-[calc(100vh-16rem)] pb-8 flex-1">
                 <Outlet />
             </main>
 
-            {/* GLOBAL FOOTER */}
-            <footer className="pb-[calc(4rem+var(--safe-area-bottom)+2rem)] md:pb-8 pt-8 px-4 text-center text-[var(--text-muted)] text-sm border-t border-[var(--glass-border)]">
-                <div className="flex flex-wrap justify-center gap-x-6 gap-y-3 mb-4 font-medium">
-                    <Link to="/how-it-works" className="hover:text-[var(--brand-primary)] transition-colors">{t('howItWorks', 'How it Works')}</Link>
-                    <Link to="/privacy" className="hover:text-[var(--brand-primary)] transition-colors">Privacy Policy</Link>
-                    <Link to="/terms" className="hover:text-[var(--brand-primary)] transition-colors">Terms of Service</Link>
-                    <Link to="/partner" className="hover:text-[var(--brand-primary)] transition-colors">Partner with Us</Link>
-                    <Link to="/careers" className="hover:text-[var(--brand-primary)] transition-colors">Careers</Link>
+            {/* GLOBAL RETAIL FOOTER */}
+            <footer className="bg-white border-t-2 border-gray-200 pb-[calc(4rem+var(--safe-area-bottom)+2rem)] md:pb-12 pt-16 px-4">
+                <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center md:items-start justify-between gap-12 text-center md:text-left">
+                    <div className="max-w-xs">
+                        <div className="flex items-center gap-2 justify-center md:justify-start mb-6">
+                            <span className="text-3xl font-black text-gray-900 italic tracking-tighter uppercase">Spendigo</span>
+                            <span className="w-2 h-2 bg-emerald-600 skew-x-[-12deg]"></span>
+                        </div>
+                        <p className="text-gray-500 text-[10px] font-bold uppercase tracking-widest leading-relaxed">
+                            The high-performance local marketplace. Powered by SmartCart AI.
+                        </p>
+                    </div>
+
+                    <div className="flex flex-wrap justify-center md:justify-end gap-x-12 gap-y-6">
+                        <div className="flex flex-col gap-3">
+                            <span className="text-[10px] font-black text-gray-900 uppercase tracking-widest mb-2 border-b border-gray-200 pb-2 inline-block">Platform</span>
+                            <Link to="/how-it-works" className="text-xs text-gray-500 font-bold hover:text-gray-900 uppercase tracking-wide transition-colors">How it Works</Link>
+                            <Link to="/careers" className="text-xs text-gray-500 font-bold hover:text-gray-900 uppercase tracking-wide transition-colors">Careers</Link>
+                            <Link to="/partner" className="text-xs text-gray-500 font-bold hover:text-emerald-600 uppercase tracking-wide transition-colors">Partner with Us →</Link>
+                        </div>
+                        <div className="flex flex-col gap-3">
+                            <span className="text-[10px] font-black text-gray-900 uppercase tracking-widest mb-2 border-b border-gray-200 pb-2 inline-block">Legal</span>
+                            <Link to="/privacy" className="text-xs text-gray-500 font-bold hover:text-gray-900 uppercase tracking-wide transition-colors">Privacy Policy</Link>
+                            <Link to="/terms" className="text-xs text-gray-500 font-bold hover:text-gray-900 uppercase tracking-wide transition-colors">Terms of Service</Link>
+                        </div>
+                    </div>
                 </div>
-                <p>&copy; {new Date().getFullYear()} Spendigo Inc. All rights reserved.</p>
+                
+                <div className="max-w-7xl mx-auto mt-16 pt-8 border-t border-gray-100 text-center md:text-left flex flex-col md:flex-row items-center justify-between gap-4">
+                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">&copy; {new Date().getFullYear()} Spendigo Inc. All rights reserved.</p>
+                    <div className="flex items-center gap-4 text-2xl grayscale opacity-30">
+                        🍁
+                    </div>
+                </div>
             </footer>
 
-            {/* MOBILE BOTTOM TAB BAR */}
-            <nav className="md:hidden fixed bottom-0 left-0 right-0 h-[calc(4rem+var(--safe-area-bottom))] pb-safe bg-white border-t border-[var(--glass-border)] z-50 flex items-center justify-around">
-                <NavLink to="/" end className={({ isActive }) => `flex flex-col items-center justify-center flex-1 h-full gap-0.5 transition-colors ${isActive ? 'text-[var(--brand-primary)]' : 'text-[var(--text-muted)]'}`}>
-                    <span className="text-xl">🏠</span>
-                    <span className="text-[10px] font-medium">{t('homeNav')}</span>
+            {/* HIGH-IMPACT MOBILE BOTTOM TAB BAR */}
+            <nav className="md:hidden fixed bottom-0 left-0 right-0 h-[calc(4.5rem+var(--safe-area-bottom))] pb-safe bg-white border-t border-gray-200 z-50 flex items-stretch shadow-[0_-5px_20px_rgba(0,0,0,0.05)]">
+                <NavLink to="/" end className={({ isActive }) => `flex flex-col items-center justify-center flex-1 transition-all ${isActive ? 'bg-gray-50 text-emerald-600 border-t-2 border-emerald-600' : 'text-gray-400 hover:text-gray-600'}`}>
+                    {({ isActive }: any) => (
+                        <React.Fragment>
+                            <span className={`text-xl mb-1 ${isActive ? 'animate-bounce-slow' : ''}`}>🏠</span>
+                            <span className="text-[8px] font-black uppercase tracking-widest">{t('homeNav')}</span>
+                        </React.Fragment>
+                    )}
                 </NavLink>
 
-                <NavLink to="/search" className={({ isActive }) => `flex flex-col items-center justify-center flex-1 h-full gap-0.5 transition-colors ${isActive ? 'text-[var(--brand-primary)]' : 'text-[var(--text-muted)]'}`}>
-                    <span className="text-xl">🔍</span>
-                    <span className="text-[10px] font-medium">{t('searchNav')}</span>
+                <NavLink to="/search" className={({ isActive }) => `flex flex-col items-center justify-center flex-1 transition-all ${isActive ? 'bg-gray-50 text-gray-900 border-t-2 border-gray-900' : 'text-gray-400 hover:text-gray-600'}`}>
+                    <span className="text-xl mb-1">🔍</span>
+                    <span className="text-[8px] font-black uppercase tracking-widest">{t('searchNav')}</span>
                 </NavLink>
 
-                <NavLink to="/smartcart" className={({ isActive }) => `flex flex-col items-center justify-center flex-1 h-full gap-0.5 transition-colors ${isActive ? 'text-[var(--brand-primary)]' : 'text-[var(--text-muted)]'}`}>
-                    <span className="text-xl">✨</span>
-                    <span className="text-[10px] font-medium">{t('smartCartNav')}</span>
+                <NavLink to="/smartcart" className={({ isActive }) => `flex flex-col items-center justify-center flex-1 transition-all relative ${isActive ? 'bg-gray-50 text-gray-900 border-t-2 border-gray-900' : 'text-gray-400 hover:text-gray-600'}`}>
+                    {({ isActive }: any) => (
+                        <React.Fragment>
+                            <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 to-transparent ${isActive ? 'opacity-100 animate-pulse' : 'opacity-0'}`}></div>
+                            <span className="text-xl mb-1">✨</span>
+                            <span className="text-[8px] font-black uppercase tracking-widest">{t('smartCartNav')}</span>
+                        </React.Fragment>
+                    )}
                 </NavLink>
 
-                <NavLink to="/cart" className={({ isActive }) => `flex flex-col items-center justify-center flex-1 h-full gap-0.5 transition-colors ${isActive ? 'text-[var(--brand-primary)]' : 'text-[var(--text-muted)]'}`}>
-                    <div className="relative">
+                <NavLink to="/cart" className={({ isActive }) => `flex flex-col items-center justify-center flex-1 transition-all ${isActive ? 'bg-emerald-600 text-white border-t-2 border-emerald-500' : 'text-gray-400 hover:text-gray-600'}`}>
+                    <div className="relative mb-1">
                         <span className="text-xl">🛒</span>
                         {itemCount > 0 && (
-                            <span className="absolute -top-1 -right-2 w-4 h-4 bg-red-500 text-white text-[8px] font-bold flex items-center justify-center rounded-full">
+                            <span className="absolute -top-2 -right-3 w-4 h-4 border border-white bg-gray-900 text-white text-[9px] font-black flex items-center justify-center shadow-md animate-pulse">
                                 {itemCount}
                             </span>
                         )}
                     </div>
-                    <span className="text-[10px] font-medium">{t('cart')}</span>
+                    <span className="text-[8px] font-black uppercase tracking-widest">{t('cart')}</span>
                 </NavLink>
 
-                <NavLink to="/profile" className={({ isActive }) => `flex flex-col items-center justify-center flex-1 h-full gap-0.5 transition-colors ${isActive ? 'text-[var(--brand-primary)]' : 'text-[var(--text-muted)]'}`}>
-                    <span className="text-xl">👤</span>
-                    <span className="text-[10px] font-medium">{t('profileNav')}</span>
+                <NavLink to="/profile" className={({ isActive }) => `flex flex-col items-center justify-center flex-1 transition-all ${isActive ? 'bg-gray-50 text-gray-900 border-t-2 border-gray-900' : 'text-gray-400 hover:text-gray-600'}`}>
+                    <span className="text-xl mb-1">👤</span>
+                    <span className="text-[8px] font-black uppercase tracking-widest">{t('profileNav')}</span>
                 </NavLink>
             </nav>
 
             {/* Bottom padding for mobile nav */}
-            <div className="md:hidden h-[calc(4rem+var(--safe-area-bottom))]"></div>
+            <div className="md:hidden h-[calc(4.5rem+var(--safe-area-bottom))]"></div>
 
             {/* GLOBAL NOTIFICATION TOAST (Cart) */}
             {notification && (
-                <div className="fixed bottom-24 left-4 right-4 z-[100] animate-slide-up pointer-events-none">
-                    <div className={`max-w-md mx-auto glass-panel p-4 text-white shadow-2xl flex items-center justify-between border-none pointer-events-auto ${notification.type === 'success' ? 'bg-[var(--status-success)]/95 backdrop-blur-md' : 'bg-orange-500/95 backdrop-blur-md'
+                <div className="fixed bottom-24 left-4 right-4 md:bottom-8 md:left-auto md:right-8 z-[100] animate-slide-up pointer-events-none md:max-w-md w-full">
+                    <div className={`p-5 text-white shadow-2xl flex items-center justify-between border-b-4 pointer-events-auto skew-x-[-2deg] ${notification.type === 'success' ? 'bg-gray-900 border-green-500' : 'bg-red-600 border-black'
                         }`}>
-                        <div className="flex-1 mr-4">
-                            <div className="flex items-center gap-2 mb-1">
-                                <span className="text-xl">
-                                    {notification.type === 'success' ? '✅' : '🗑️'}
+                        <div className="flex-1 mr-4 skew-x-[2deg]">
+                            <div className="flex items-start gap-4 mb-1">
+                                <span className="text-2xl mt-1">
+                                    {notification.type === 'success' ? '✅' : '🚨'}
                                 </span>
-                                <p className="font-bold text-sm">{notification.message}</p>
+                                <div>
+                                    <p className="font-black text-sm uppercase tracking-widest">{notification.message}</p>
+                                    
+                                    {/* Savings Info */}
+                                    {notification.savings && notification.savings > 0 && (
+                                        <div className="text-[10px] bg-green-500 text-black px-2 py-1 mt-2 inline-flex items-center gap-2 font-black uppercase tracking-widest shadow-inner">
+                                            <span className="animate-pulse">🔥</span>
+                                            <span>Saved ${notification.savings}</span>
+                                            <span className="opacity-70 truncate max-w-[120px]">vs {notification.competitor?.name}</span>
+                                        </div>
+                                    )}
+
+                                    {/* Competitor Warning */}
+                                    {!notification.savings && notification.competitor && notification.type === 'success' && (
+                                        <div className="text-[10px] text-white/70 mt-2 flex justify-start items-center gap-2 uppercase tracking-widest font-bold">
+                                            <span>💡 Available for ${notification.competitor.price} at {notification.competitor.name}</span>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
-
-                            {/* Savings Info */}
-                            {notification.savings && notification.savings > 0 && (
-                                <div className="text-xs bg-white/20 rounded px-2 py-1 mt-1 inline-flex items-center gap-1 animate-pulse">
-                                    <span>🔥</span>
-                                    <span className="font-bold">You saved ${notification.savings}</span>
-                                    <span className="opacity-80">vs {notification.competitor?.name}</span>
-                                </div>
-                            )}
-
-                            {/* Competitor Warning (if item was more expensive) */}
-                            {!notification.savings && notification.competitor && notification.type === 'success' && (
-                                <div className="text-xs text-white/90 mt-1 flex items-center gap-1">
-                                    <span>💡</span>
-                                    <span>Available for ${notification.competitor.price} at {notification.competitor.name}</span>
-                                </div>
-                            )}
                         </div>
                         <button
                             onClick={clearNotification}
-                            className="bg-white/20 hover:bg-white/30 p-1.5 rounded-full transition-colors shrink-0"
+                            className="bg-white/10 hover:bg-emerald-600 p-2 text-white transition-all shrink-0 skew-x-[2deg] hover:scale-110 active:scale-95"
                         >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
                             </svg>
                         </button>
                     </div>
@@ -292,26 +331,26 @@ const ConsumerLayout: React.FC = () => {
 
             {/* SYSTEM TOAST (Notification Context) */}
             {toast && (
-                <div className="fixed bottom-24 left-4 right-4 z-[110] animate-slide-up pointer-events-none">
-                    <div className={`max-w-md mx-auto glass-panel p-4 text-white shadow-2xl flex items-center justify-between border-none pointer-events-auto ${toast.type === 'alert' ? 'bg-red-500/95 backdrop-blur-md' : 'bg-[var(--brand-primary)]/95 backdrop-blur-md'
+                <div className="fixed bottom-24 left-4 right-4 md:bottom-8 md:left-auto md:right-8 z-[110] animate-slide-up pointer-events-none md:max-w-md w-full">
+                    <div className={`p-4 text-white shadow-2xl flex items-center justify-between border-l-4 pointer-events-auto ${toast.type === 'alert' ? 'bg-gray-900 border-red-600' : 'bg-gray-900 border-white'
                         }`}>
                         <div className="flex-1 mr-4">
-                            <div className="flex items-center gap-2">
-                                <span className="text-xl">
-                                    {toast.type === 'alert' ? '⚠️' : '🔔'}
+                            <div className="flex items-center gap-3">
+                                <span className={toast.type === 'alert' ? 'text-red-500 text-2xl animate-pulse' : 'text-white text-2xl'}>
+                                    {toast.type === 'alert' ? '🚨' : '🔔'}
                                 </span>
                                 <div>
-                                    <p className="font-bold text-sm">{toast.title}</p>
-                                    <p className="text-xs opacity-90">{toast.message}</p>
+                                    <p className="font-black text-xs uppercase tracking-widest text-white">{toast.title}</p>
+                                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wide mt-1">{toast.message}</p>
                                 </div>
                             </div>
                         </div>
                         <button
                             onClick={() => setToast(null)}
-                            className="bg-white/20 hover:bg-white/30 p-1.5 rounded-full transition-colors shrink-0"
+                            className="bg-gray-800 hover:bg-black p-2 text-gray-400 hover:text-white transition-all shrink-0 active:scale-95 border border-gray-700"
                         >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
                             </svg>
                         </button>
                     </div>

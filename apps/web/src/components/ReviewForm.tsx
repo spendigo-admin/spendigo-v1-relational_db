@@ -66,68 +66,84 @@ const ReviewForm: React.FC<ReviewFormProps> = ({ targetId, targetType, onSubmitt
 
     if (!user) {
         return (
-            <div className="bg-blue-50 p-4 rounded-xl border border-blue-100 text-center">
-                <p className="text-sm text-blue-800 mb-2">Please log in to write a review.</p>
+            <div className="bg-gray-100 p-8 rounded-3xl border-2 border-dashed border-gray-200 text-center">
+                <p className="text-4xl mb-4 grayscale opacity-30">🔐</p>
+                <p className="text-sm font-black text-gray-900 uppercase tracking-widest mb-3">Community Access Restricted</p>
+                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter mb-4">Please log in to share your voice with the community.</p>
                 <button
                     onClick={() => navigate('/login')}
-                    className="text-xs font-bold text-blue-600 hover:underline"
+                    className="px-8 py-2.5 bg-gray-900 text-white text-[10px] font-black rounded-full uppercase tracking-widest hover:bg-black transition-all shadow-md active:scale-95"
                 >
-                    Log In
+                    Log In To Post
                 </button>
             </div>
         );
     }
 
     return (
-        <form onSubmit={handleSubmit} className="bg-gray-50 p-4 rounded-xl border border-gray-200">
-            <h3 className="font-bold text-gray-900 mb-3">Write a Review</h3>
-
-            {error && <div className="mb-3 text-xs text-red-600 bg-red-50 p-2 rounded">{error}</div>}
-
-            <div className="mb-4">
-                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Rating</label>
-                <StarRating rating={rating} editable onChange={setRating} size="lg" />
+        <form onSubmit={handleSubmit} className="bg-white p-8 rounded-3xl border-2 border-gray-50 shadow-xl relative overflow-hidden group">
+            <div className="absolute top-0 left-0 w-2 h-full bg-red-600 opacity-0 group-focus-within:opacity-100 transition-opacity"></div>
+            
+            <div className="flex items-center justify-between mb-6">
+                <h3 className="font-black text-gray-900 uppercase tracking-tight text-lg m-0">Leave Your Mark</h3>
+                <span className="text-[9px] font-black text-gray-400 bg-gray-50 px-2 py-1 rounded border border-gray-100 uppercase tracking-widest">Share Your Voice</span>
             </div>
 
-            {relevantOrders.length > 0 && (
-                <div className="mb-4">
-                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1 flex items-center gap-1">
-                        🛒 Verified Purchase
-                        <span className="text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full">Earn Badge</span>
-                    </label>
-                    <select
-                        value={orderId}
-                        onChange={(e) => setOrderId(e.target.value)}
-                        className="w-full p-2.5 rounded-lg border border-gray-200 text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white"
-                    >
-                        <option value="">Select an order to verify (optional)</option>
-                        {relevantOrders.map(order => (
-                            <option key={order.id} value={order.id}>
-                                Order #{order.id.slice(-6).toUpperCase()} ({new Date(order.date).toLocaleDateString()}) - ${order.total.toFixed(2)}
-                            </option>
-                        ))}
-                    </select>
-                </div>
-            )}
+            {error && <div className="mb-6 text-[10px] font-black uppercase tracking-widest text-red-600 bg-red-50 p-3 rounded-lg border border-red-100 animate-shake">{error}</div>}
 
-            <div className="mb-4">
-                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Comment</label>
+            <div className="grid md:grid-cols-2 gap-6 mb-8">
+                <div>
+                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Rate Your Visit</label>
+                    <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100 inline-block">
+                        <StarRating rating={rating} editable onChange={setRating} size="lg" />
+                    </div>
+                </div>
+
+                {relevantOrders.length > 0 && (
+                    <div>
+                        <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                            🛒 Verify Purchase
+                            <span className="text-[8px] bg-red-600 text-white font-black px-1.5 py-0.5 rounded-sm uppercase skew-x-[-12deg]">PRO STATUS</span>
+                        </label>
+                        <div className="relative">
+                            <select
+                                value={orderId}
+                                onChange={(e) => setOrderId(e.target.value)}
+                                className="w-full pl-4 pr-10 py-3.5 rounded-2xl border-2 border-gray-100 text-xs font-bold uppercase tracking-tight focus:ring-0 focus:border-red-600 outline-none bg-gray-50 appearance-none cursor-pointer transition-all"
+                            >
+                                <option value="">Optional Verification</option>
+                                {relevantOrders.map(order => (
+                                    <option key={order.id} value={order.id}>
+                                        Order #{order.id.slice(-6).toUpperCase()}
+                                    </option>
+                                ))}
+                            </select>
+                            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 font-black text-sm">↓</div>
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            <div className="mb-8">
+                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Your Feedback</label>
                 <textarea
                     value={comment}
                     onChange={(e) => setComment(e.target.value)}
-                    className="w-full p-3 rounded-lg border border-gray-200 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                    rows={3}
-                    placeholder="Share your experience..."
+                    className="w-full p-6 rounded-3xl border-2 border-gray-100 text-sm font-medium focus:ring-0 focus:border-red-600 outline-none bg-gray-50 transition-all placeholder:text-gray-300 placeholder:italic"
+                    rows={4}
+                    placeholder="Tell the community how we did..."
                 />
             </div>
 
             <button
                 type="submit"
                 disabled={submitting}
-                className={`w-full py-2 rounded-lg font-bold text-white text-sm transition-all ${submitting ? 'bg-gray-400 cursor-not-allowed' : 'bg-[var(--brand-primary)] hover:brightness-110'
+                className={`w-full py-4 rounded-2xl font-black text-white text-xs uppercase tracking-[0.2em] shadow-lg transition-all active:scale-[0.98] ${submitting 
+                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed' 
+                    : 'bg-red-600 hover:bg-black hover:shadow-2xl'
                     }`}
             >
-                {submitting ? 'Submitting...' : 'Post Review'}
+                {submitting ? 'Transmitting Data...' : 'Broadcast Review'}
             </button>
         </form>
     );
