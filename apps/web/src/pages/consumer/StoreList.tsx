@@ -207,61 +207,94 @@ const StoreList: React.FC = () => {
             )}
 
             {(() => {
-                const dealProducts = allStores.flatMap(store =>
-                    filterActiveDeals([...(stores[store.id]?.oneDayOffers || []), ...(stores[store.id]?.saleItems || [])])
-                        .map((deal: any) => ({ ...deal, storeName: store.name, storeId: store.id }))
-                );
-                if (dealProducts.length === 0) return null;
+                const storesWithDeals = allStores.map(store => {
+                    const deals = filterActiveDeals([...(stores[store.id]?.oneDayOffers || []), ...(stores[store.id]?.saleItems || [])])
+                        .map((deal: any) => ({ ...deal, storeName: store.name, storeId: store.id }));
+                    return { ...store, deals };
+                }).filter(s => s.deals.length > 0);
+
+                if (storesWithDeals.length === 0) return null;
+
                 return (
-                    <section className="py-6 px-4 bg-[var(--surface-1)] border-b border-[var(--glass-border)]">
+                    <section className="py-8 px-4 bg-[var(--surface-1)] border-b border-[var(--glass-border)] overflow-hidden">
                         <div className="max-w-5xl mx-auto">
-                            <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center justify-between mb-6">
                                 <h2 className="text-xl font-bold flex items-center gap-2">
                                     <span className="text-2xl">🔥</span> {t('activeDeals')}
                                 </h2>
                                 <Link to="/deals" className="text-sm text-[var(--brand-primary)] font-medium hover:underline">{t('viewAll')}</Link>
                             </div>
-                            <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x">
-                                {dealProducts.map((deal: any) => {
-                                    const discount = deal.type === 'percentage'
-                                        ? `${deal.value}% off`
-                                        : deal.type === 'fixed'
-                                        ? `$${deal.value} off`
-                                        : 'BOGO';
-                                    return (
-                                        <div
-                                            key={`${deal.storeId}-${deal.id}`}
-                                            onClick={() => navigate(`/store/${deal.storeId}`, { state: { initialTab: 'offers' } })}
-                                            className="min-w-[160px] max-w-[160px] bg-white rounded-xl border border-[var(--glass-border)] shadow-sm hover:shadow-md transition-all cursor-pointer snap-center group overflow-hidden flex-shrink-0"
-                                        >
-                                            <div className="relative h-28 bg-[var(--surface-2)]">
-                                                {deal.productImage ? (
-                                                    <img src={deal.productImage} alt={deal.productName} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                            
+                            <div className="flex gap-6 overflow-x-auto pb-6 scrollbar-hide snap-x transition-all">
+                                {storesWithDeals.map(store => (
+                                    <div key={store.id} className="flex gap-4 snap-start">
+                                        {/* Store Identity Badge */}
+                                        <div className="flex flex-col items-center justify-center bg-white rounded-2xl border border-[var(--glass-border)] p-4 min-w-[140px] shadow-sm hover:shadow-md transition-shadow">
+                                            <div className="w-14 h-14 rounded-xl bg-[var(--surface-2)] border border-[var(--glass-border)] flex items-center justify-center text-3xl overflow-hidden mb-2 shadow-inner">
+                                                {store.logoUrl && store.logoUrl.startsWith('http') ? (
+                                                    <img src={store.logoUrl} alt="" className="w-full h-full object-cover" />
                                                 ) : (
-                                                    <div className="w-full h-full flex items-center justify-center text-4xl">🏷️</div>
-                                                )}
-                                                <div className="absolute top-2 left-2 bg-green-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded shadow">
-                                                    {discount}
-                                                </div>
-                                                {deal.isFlashSale && (
-                                                    <div className="absolute top-2 right-2 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded shadow animate-pulse">
-                                                        Flash
-                                                    </div>
+                                                    <span>{store.logoUrl || '🏪'}</span>
                                                 )}
                                             </div>
-                                            <div className="p-2.5">
-                                                <p className="text-xs font-bold text-[var(--text-main)] leading-tight line-clamp-2">{deal.productName}</p>
-                                                <div className="flex items-center gap-1.5 mt-1.5">
-                                                    <span className="text-sm font-black text-green-600">${deal.salePrice?.toFixed(2)}</span>
-                                                    {deal.originalPrice && (
-                                                        <span className="text-[10px] text-[var(--text-muted)] line-through">${deal.originalPrice.toFixed(2)}</span>
-                                                    )}
-                                                </div>
-                                                <p className="text-[10px] text-[var(--text-muted)] mt-0.5 truncate">{deal.storeName}</p>
+                                            <span className="text-[11px] font-black text-[var(--text-main)] text-center line-clamp-2 uppercase tracking-tight">{store.name}</span>
+                                            <div className="mt-2 px-2 py-0.5 bg-[var(--brand-primary)]/10 text-[var(--brand-primary)] text-[9px] font-black uppercase rounded shadow-sm">
+                                                {store.deals.length} {t('dealsWord')}
                                             </div>
                                         </div>
-                                    );
-                                })}
+
+                                        {/* Deals for this store */}
+                                        {store.deals.map((deal: any) => {
+                                            const discount = deal.type === 'percentage'
+                                                ? `${deal.value}% OFF`
+                                                : deal.type === 'fixed'
+                                                ? `$${deal.value} OFF`
+                                                : 'BOGO';
+                                            
+                                            // Robust data mapping
+                                            const productName = deal.productName || deal.name || 'Product';
+                                            const productImage = deal.productImage || deal.image;
+                                            const salePrice = deal.salePrice ?? deal.price;
+                                            const originalPrice = deal.originalPrice;
+
+                                            return (
+                                                <div
+                                                    key={`${deal.storeId}-${deal.id}`}
+                                                    onClick={() => navigate(`/store/${deal.storeId}`, { state: { initialTab: 'offers' } })}
+                                                    className="min-w-[180px] max-w-[180px] bg-white rounded-2xl border border-[var(--glass-border)] shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer overflow-hidden flex-shrink-0 group"
+                                                >
+                                                    <div className="relative h-32 bg-[var(--surface-2)]">
+                                                        {productImage ? (
+                                                            <img src={productImage} alt={productName} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                                        ) : (
+                                                            <div className="w-full h-full flex items-center justify-center text-5xl opacity-40">🏷️</div>
+                                                        )}
+                                                        <div className="absolute top-2 left-2 bg-green-600 text-white text-[10px] font-black px-2 py-1 rounded shadow-lg uppercase tracking-wider">
+                                                            {discount}
+                                                        </div>
+                                                        {deal.isFlashSale && (
+                                                            <div className="absolute top-2 right-2 bg-red-500 text-white text-[9px] font-black px-2 py-1 rounded shadow animate-pulse uppercase tracking-wider">
+                                                                ⚡ Flash
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <div className="p-3">
+                                                        <p className="text-xs font-bold text-[var(--text-main)] leading-tight line-clamp-2 h-8 group-hover:text-[var(--brand-primary)] transition-colors">{productName}</p>
+                                                        <div className="flex items-center gap-1.5 mt-2">
+                                                            <span className="text-lg font-black text-green-600">${salePrice?.toFixed(2)}</span>
+                                                            {originalPrice && (
+                                                                <span className="text-xs text-[var(--text-muted)] line-through">${originalPrice.toFixed(2)}</span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                        
+                                        {/* Visual spacer between stores */}
+                                        <div className="w-2 flex-shrink-0 border-r border-[var(--glass-border)] my-4 mr-2 opacity-50" />
+                                    </div>
+                                ))}
                             </div>
                         </div>
                     </section>

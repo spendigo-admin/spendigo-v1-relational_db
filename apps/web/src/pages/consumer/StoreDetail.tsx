@@ -165,8 +165,8 @@ const OffersTab: React.FC<{ storeId: string, storeName: string; viewMode: 'grid'
     const handleQuickAdd = (item: any) => {
         addToCart({
             productId: item.productId,
-            productName: item.productName || item.name,
-            price: item.salePrice,
+            productName: item.productName || item.name || 'Product',
+            price: item.salePrice ?? item.price,
             quantity: 1,
             storeId,
             storeName,
@@ -201,41 +201,64 @@ const OffersTab: React.FC<{ storeId: string, storeName: string; viewMode: 'grid'
 
                     {viewMode === 'grid' ? (
                         <div className="grid grid-cols-2 gap-3">
-                            {oneDayOffers.map((offer: any) => (
-                                <div key={offer.id} className="bg-gradient-to-br from-red-50 to-orange-50 rounded-xl border border-red-100 p-3">
-                                    <img src={offer.productImage} alt={offer.productName} className="w-full h-24 object-cover rounded-lg mb-2 bg-white" />
-                                    <p className="font-medium text-sm text-[var(--text-main)] truncate">{offer.productName}</p>
-                                    <div className="flex items-baseline gap-2 mt-1">
-                                        <span className="font-bold text-red-600">${offer.salePrice.toFixed(2)}</span>
-                                        {offer.originalPrice && (
-                                            <span className="text-xs text-[var(--text-muted)] line-through">${offer.originalPrice.toFixed(2)}</span>
-                                        )}
+                            {oneDayOffers.map((offer: any) => {
+                                const pName = offer.productName || offer.name || 'Product';
+                                const pImage = offer.productImage || offer.image;
+                                const sPrice = offer.salePrice ?? offer.price;
+                                const oPrice = offer.originalPrice;
+
+                                return (
+                                    <div key={offer.id} className="bg-gradient-to-br from-red-50 to-orange-50 rounded-xl border border-red-100 p-3">
+                                        <div className="relative h-24 mb-2">
+                                            {pImage ? (
+                                                <img src={pImage} alt={pName} className="w-full h-full object-cover rounded-lg bg-white" />
+                                            ) : (
+                                                <div className="w-full h-full flex items-center justify-center text-3xl bg-white border border-red-50 rounded-lg">🏷️</div>
+                                            )}
+                                        </div>
+                                        <p className="font-medium text-sm text-[var(--text-main)] truncate">{pName}</p>
+                                        <div className="flex items-baseline gap-2 mt-1">
+                                            <span className="font-bold text-red-600">${sPrice?.toFixed(2)}</span>
+                                            {oPrice && (
+                                                <span className="text-xs text-[var(--text-muted)] line-through">${oPrice.toFixed(2)}</span>
+                                            )}
+                                        </div>
+                                        <p className="text-xs text-red-500 mt-1">Ends {new Date(offer.endDate || offer.validUntil).toLocaleDateString()}</p>
+                                        <button onClick={() => handleQuickAdd(offer)} className="w-full mt-2 py-2 bg-red-500 text-white text-xs font-medium rounded-lg hover:brightness-110">
+                                            + Add
+                                        </button>
                                     </div>
-                                    <p className="text-xs text-red-500 mt-1">Ends {new Date(offer.endDate).toLocaleDateString()}</p>
-                                    <button onClick={() => handleQuickAdd(offer)} className="w-full mt-2 py-2 bg-red-500 text-white text-xs font-medium rounded-lg hover:brightness-110">
-                                        + Add
-                                    </button>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     ) : (
                         /* List View for Flash Sales */
                         <div className="space-y-2">
-                            {oneDayOffers.map((offer: any) => (
-                                <div key={offer.id} className="bg-gradient-to-l from-red-50 to-orange-50 rounded-xl border border-red-100 p-2 flex gap-3 items-center">
-                                    <img src={offer.productImage} alt={offer.productName} className="w-12 h-12 object-cover rounded bg-white shadow-sm" />
-                                    <div className="flex-1 min-w-0">
-                                        <p className="font-medium text-sm text-[var(--text-main)] truncate">{offer.productName}</p>
-                                        <div className="flex items-baseline gap-2">
-                                            <span className="font-bold text-red-600">${offer.salePrice.toFixed(2)}</span>
-                                            <p className="text-[10px] text-red-500 uppercase font-bold">Flash</p>
+                            {oneDayOffers.map((offer: any) => {
+                                const pName = offer.productName || offer.name || 'Product';
+                                const pImage = offer.productImage || offer.image;
+                                const sPrice = offer.salePrice ?? offer.price;
+
+                                return (
+                                    <div key={offer.id} className="bg-gradient-to-l from-red-50 to-orange-50 rounded-xl border border-red-100 p-2 flex gap-3 items-center">
+                                        {pImage ? (
+                                            <img src={pImage} alt={pName} className="w-12 h-12 object-cover rounded bg-white shadow-sm" />
+                                        ) : (
+                                            <div className="w-12 h-12 flex items-center justify-center text-xl bg-white rounded shadow-sm">🏷️</div>
+                                        )}
+                                        <div className="flex-1 min-w-0">
+                                            <p className="font-medium text-sm text-[var(--text-main)] truncate">{pName}</p>
+                                            <div className="flex items-baseline gap-2">
+                                                <span className="font-bold text-red-600">${sPrice?.toFixed(2)}</span>
+                                                <p className="text-[10px] text-red-500 uppercase font-bold">Flash</p>
+                                            </div>
                                         </div>
+                                        <button onClick={() => handleQuickAdd(offer)} className="px-3 py-1.5 bg-red-500 text-white text-xs font-bold rounded-lg shadow-sm">
+                                            + Add
+                                        </button>
                                     </div>
-                                    <button onClick={() => handleQuickAdd(offer)} className="px-3 py-1.5 bg-red-500 text-white text-xs font-bold rounded-lg shadow-sm">
-                                        + Add
-                                    </button>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     )}
                 </div>
@@ -250,52 +273,78 @@ const OffersTab: React.FC<{ storeId: string, storeName: string; viewMode: 'grid'
                     </div>
                     {viewMode === 'grid' ? (
                         <div className="grid grid-cols-2 gap-3">
-                            {saleItems.map((item: any) => (
-                                <div key={item.id} className="bg-white rounded-xl border border-[var(--glass-border)] p-3 shadow-sm">
-                                    <div className="relative">
-                                        <img src={item.productImage} alt={item.productName} className="w-full h-24 object-cover rounded-lg mb-2" />
-                                        {item.value && (
-                                            <span className="absolute top-1 left-1 bg-green-500 text-white text-[10px] font-bold px-2 py-0.5 rounded">
-                                                {item.type === 'percentage' ? `${item.value}% OFF` : 'SALE'}
-                                            </span>
-                                        )}
+                            {saleItems.map((item: any) => {
+                                const pName = item.productName || item.name || 'Product';
+                                const pImage = item.productImage || item.image;
+                                const sPrice = item.salePrice ?? item.price;
+                                const oPrice = item.originalPrice;
+
+                                return (
+                                    <div key={item.id} className="bg-white rounded-xl border border-[var(--glass-border)] p-3 shadow-sm">
+                                        <div className="relative">
+                                            {pImage ? (
+                                                <img src={pImage} alt={pName} className="w-full h-24 object-cover rounded-lg mb-2" />
+                                            ) : (
+                                                <div className="w-full h-24 flex items-center justify-center text-3xl bg-gray-50 rounded-lg mb-2">🏷️</div>
+                                            )}
+                                            {item.value && (
+                                                <span className="absolute top-1 left-1 bg-green-500 text-white text-[10px] font-bold px-2 py-0.5 rounded">
+                                                    {item.type === 'percentage' ? `${item.value}% OFF` : 'SALE'}
+                                                </span>
+                                            )}
+                                        </div>
+                                        <p className="font-medium text-sm text-[var(--text-main)] truncate">{pName}</p>
+                                        <div className="flex items-baseline gap-2 mt-1">
+                                            <span className="font-bold text-green-600">${sPrice?.toFixed(2)}</span>
+                                            {oPrice && (
+                                                <span className="text-xs text-[var(--text-muted)] line-through">${oPrice.toFixed(2)}</span>
+                                            )}
+                                        </div>
+                                        <button onClick={() => handleQuickAdd(item)} className="w-full mt-2 py-2 bg-[var(--brand-primary)] text-white text-xs font-medium rounded-lg hover:brightness-110">
+                                            + Add
+                                        </button>
                                     </div>
-                                    <p className="font-medium text-sm text-[var(--text-main)] truncate">{item.productName}</p>
-                                    <div className="flex items-baseline gap-2 mt-1">
-                                        <span className="font-bold text-green-600">${item.salePrice.toFixed(2)}</span>
-                                        <span className="text-xs text-[var(--text-muted)] line-through">${item.originalPrice.toFixed(2)}</span>
-                                    </div>
-                                    <button onClick={() => handleQuickAdd(item)} className="w-full mt-2 py-2 bg-[var(--brand-primary)] text-white text-xs font-medium rounded-lg hover:brightness-110">
-                                        + Add
-                                    </button>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     ) : (
                         /* List View for Sale Items */
                         <div className="space-y-2">
-                            {saleItems.map((item: any) => (
-                                <div key={item.id} className="bg-white rounded-xl border border-[var(--glass-border)] p-2 flex gap-3 items-center shadow-sm">
-                                    <div className="relative">
-                                        <img src={item.productImage} alt={item.productName} className="w-12 h-12 object-cover rounded shadow-sm" />
-                                        {item.value && (
-                                            <span className="absolute -top-1 -left-1 bg-green-500 text-white text-[8px] font-bold px-1 rounded">
-                                                {item.type === 'percentage' ? `${item.value}%` : 'SALE'}
-                                            </span>
-                                        )}
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <p className="font-medium text-sm text-[var(--text-main)] truncate">{item.productName}</p>
-                                        <div className="flex items-baseline gap-2">
-                                            <span className="font-bold text-green-600 text-sm">${item.salePrice.toFixed(2)}</span>
-                                            <span className="text-[10px] text-[var(--text-muted)] line-through">${item.originalPrice.toFixed(2)}</span>
+                            {saleItems.map((item: any) => {
+                                const pName = item.productName || item.name || 'Product';
+                                const pImage = item.productImage || item.image;
+                                const sPrice = item.salePrice ?? item.price;
+                                const oPrice = item.originalPrice;
+
+                                return (
+                                    <div key={item.id} className="bg-white rounded-xl border border-[var(--glass-border)] p-2 flex gap-3 items-center shadow-sm">
+                                        <div className="relative">
+                                            {pImage ? (
+                                                <img src={pImage} alt={pName} className="w-12 h-12 object-cover rounded shadow-sm" />
+                                            ) : (
+                                                <div className="w-12 h-12 flex items-center justify-center text-xl bg-gray-50 rounded shadow-sm">🏷️</div>
+                                            )}
+                                            {item.value && (
+                                                <span className="absolute -top-1 -left-1 bg-green-500 text-white text-[8px] font-bold px-1 rounded">
+                                                    {item.type === 'percentage' ? `${item.value}%` : 'SALE'}
+                                                </span>
+                                            )}
                                         </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="font-medium text-sm text-[var(--text-main)] truncate">{pName}</p>
+                                            <div className="flex items-baseline gap-2">
+                                                <span className="font-bold text-green-600 text-sm">${sPrice?.toFixed(2)}</span>
+                                                {oPrice && (
+                                                    <span className="text-[10px] text-[var(--text-muted)] line-through">${oPrice.toFixed(2)}</span>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <button onClick={() => handleQuickAdd(item)} className="px-3 py-1.5 bg-[var(--brand-primary)] text-white text-xs font-bold rounded-lg hover:brightness-110 active:scale-95 transition-all">
+                                            + Add
+                                        </button>
                                     </div>
-                                    <button onClick={() => handleQuickAdd(item)} className="px-3 py-1.5 bg-[var(--brand-primary)] text-white text-xs font-bold rounded-lg hover:brightness-110 active:scale-95 transition-all">
-                                        + Add
-                                    </button>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     )}
                 </div>
