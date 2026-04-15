@@ -206,38 +206,67 @@ const StoreList: React.FC = () => {
                 </section>
             )}
 
-            {allStores.filter(s => s.activeDealsCount > 0).length > 0 && (
-                <section className="py-6 px-4 bg-[var(--surface-1)] border-b border-[var(--glass-border)]">
-                    <div className="max-w-5xl mx-auto">
-                        <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-xl font-bold flex items-center gap-2">
-                                <span className="text-2xl">🔥</span> {t('activeDeals')}
-                            </h2>
-                            <Link to="/deals" className="text-sm text-[var(--brand-primary)] font-medium hover:underline">{t('viewAll')}</Link>
-                        </div>
-                        <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x">
-                            {allStores.filter(s => s.activeDealsCount > 0).map(store => (
-                                <div
-                                    key={store.id}
-                                    onClick={() => navigate(`/store/${store.id}`, { state: { initialTab: 'offers' } })}
-                                    className="min-w-[280px] md:min-w-[320px] bg-white rounded-xl border border-[var(--glass-border)] shadow-sm hover:shadow-md transition-all cursor-pointer snap-center group overflow-hidden"
-                                >
-                                    <div className="relative h-40">
-                                        <img src={store.image} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-4">
-                                            <div>
-                                                <h3 className="text-white font-bold text-lg drop-shadow-md">{store.name}</h3>
-                                                <p className="text-white/90 text-xs">{store.activeDealsCount} {t('dealsWord')} active</p>
+            {(() => {
+                const dealProducts = allStores.flatMap(store =>
+                    filterActiveDeals([...(stores[store.id]?.oneDayOffers || []), ...(stores[store.id]?.saleItems || [])])
+                        .map((deal: any) => ({ ...deal, storeName: store.name, storeId: store.id }))
+                );
+                if (dealProducts.length === 0) return null;
+                return (
+                    <section className="py-6 px-4 bg-[var(--surface-1)] border-b border-[var(--glass-border)]">
+                        <div className="max-w-5xl mx-auto">
+                            <div className="flex items-center justify-between mb-4">
+                                <h2 className="text-xl font-bold flex items-center gap-2">
+                                    <span className="text-2xl">🔥</span> {t('activeDeals')}
+                                </h2>
+                                <Link to="/deals" className="text-sm text-[var(--brand-primary)] font-medium hover:underline">{t('viewAll')}</Link>
+                            </div>
+                            <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x">
+                                {dealProducts.map((deal: any) => {
+                                    const discount = deal.type === 'percentage'
+                                        ? `${deal.value}% off`
+                                        : deal.type === 'fixed'
+                                        ? `$${deal.value} off`
+                                        : 'BOGO';
+                                    return (
+                                        <div
+                                            key={`${deal.storeId}-${deal.id}`}
+                                            onClick={() => navigate(`/store/${deal.storeId}`, { state: { initialTab: 'offers' } })}
+                                            className="min-w-[160px] max-w-[160px] bg-white rounded-xl border border-[var(--glass-border)] shadow-sm hover:shadow-md transition-all cursor-pointer snap-center group overflow-hidden flex-shrink-0"
+                                        >
+                                            <div className="relative h-28 bg-[var(--surface-2)]">
+                                                {deal.productImage ? (
+                                                    <img src={deal.productImage} alt={deal.productName} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                                ) : (
+                                                    <div className="w-full h-full flex items-center justify-center text-4xl">🏷️</div>
+                                                )}
+                                                <div className="absolute top-2 left-2 bg-green-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded shadow">
+                                                    {discount}
+                                                </div>
+                                                {deal.isFlashSale && (
+                                                    <div className="absolute top-2 right-2 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded shadow animate-pulse">
+                                                        Flash
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div className="p-2.5">
+                                                <p className="text-xs font-bold text-[var(--text-main)] leading-tight line-clamp-2">{deal.productName}</p>
+                                                <div className="flex items-center gap-1.5 mt-1.5">
+                                                    <span className="text-sm font-black text-green-600">${deal.salePrice?.toFixed(2)}</span>
+                                                    {deal.originalPrice && (
+                                                        <span className="text-[10px] text-[var(--text-muted)] line-through">${deal.originalPrice.toFixed(2)}</span>
+                                                    )}
+                                                </div>
+                                                <p className="text-[10px] text-[var(--text-muted)] mt-0.5 truncate">{deal.storeName}</p>
                                             </div>
                                         </div>
-                                        <div className="absolute top-3 right-3 bg-green-600 text-white text-[10px] uppercase font-bold px-2 py-1 rounded shadow-sm">{t('activeDeals')}</div>
-                                    </div>
-                                </div>
-                            ))}
+                                    );
+                                })}
+                            </div>
                         </div>
-                    </div>
-                </section>
-            )}
+                    </section>
+                );
+            })()}
 
             <section className="py-4 px-4 bg-[var(--surface-0)] sticky top-16 z-40 border-b border-[var(--glass-border)]">
                 <div className="max-w-5xl mx-auto overflow-x-auto scrollbar-hide">
