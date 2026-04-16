@@ -80,30 +80,30 @@ const FlyerTab: React.FC<{ storeId: string; storeName: string; summary: any; vie
     return (
         <div className="animate-fade-in bg-white min-h-screen">
             {/* RETAIL FLYER HEADER */}
-            <div className="bg-emerald-600 text-white px-4 py-3 md:py-4 flex flex-col md:flex-row md:items-center justify-between gap-2 shadow-inner border-b-4 border-emerald-700">
+            <div className="bg-teal-600 text-white px-4 py-3 md:py-4 flex flex-col md:flex-row md:items-center justify-between gap-2 shadow-inner border-b-4 border-teal-700">
                 <div className="flex items-center gap-3">
                     <div className="bg-white p-1 rounded-lg">
                         <span className="text-2xl">🍁</span>
                     </div>
                     <div>
-                        <h2 className="text-xl md:text-2xl font-black italic tracking-tighter uppercase mb-0 text-white drop-shadow-sm leading-none">
+                        <h2 className="text-xl md:text-2xl font-black italic tracking-tighter mb-0 text-white drop-shadow-sm leading-none">
                             {storeName}'s Great Deals
                         </h2>
                         <div className="flex items-center gap-2 mt-0.5">
-                            <span className="text-[10px] bg-emerald-800 px-1.5 py-0.5 rounded font-bold uppercase tracking-widest">PROUDLY CANADIAN</span>
-                            <span className="text-[10px] font-bold opacity-90 uppercase tracking-widest">SINCE 1922</span>
+                            <span className="text-[10px] bg-teal-800 px-1.5 py-0.5 rounded font-bold tracking-widest">Proudly canadian</span>
+                            <span className="text-[10px] font-bold opacity-90 tracking-widest">SINCE 1922</span>
                         </div>
                     </div>
                 </div>
                 <div className="text-right flex flex-col items-end">
-                    <div className="text-xs font-bold bg-white text-emerald-600 px-2 py-0.5 rounded-full mb-1">
+                    <div className="text-xs font-bold bg-white text-teal-600 px-2 py-0.5 rounded-full mb-1">
                         {flyer.title || "WEEKLY SAVINGS"}
                     </div>
                     <div className="flex flex-col items-end leading-tight">
-                        <p className="text-[10px] md:text-xs font-black uppercase tracking-widest text-yellow-300 drop-shadow-sm">
+                        <p className="text-[10px] md:text-xs font-black tracking-widest text-yellow-300 drop-shadow-sm">
                             VALID: {new Date(flyer.validFrom).toLocaleDateString()} - {new Date(flyer.validUntil).toLocaleDateString()}
                         </p>
-                        <p className="text-[9px] md:text-[10px] font-black uppercase tracking-tighter bg-emerald-800 px-1.5 py-0.5 rounded mt-0.5 animate-pulse text-white">
+                        <p className="text-[9px] md:text-[10px] font-black tracking-tighter bg-teal-800 px-1.5 py-0.5 rounded mt-0.5 animate-pulse text-white">
                             ⏰ {flyerDaysLeft} {flyerDaysLeft === 1 ? 'DAY' : 'DAYS'} LEFT
                         </p>
                     </div>
@@ -118,7 +118,7 @@ const FlyerTab: React.FC<{ storeId: string; storeName: string; summary: any; vie
                                 <div className="w-16 h-16 rounded-lg bg-gray-100 flex-shrink-0 relative overflow-hidden">
                                     <img src={item.image} className="w-full h-full object-cover" loading="lazy" />
                                     {item.salePrice < item.originalPrice && (
-                                        <div className="absolute top-0 left-0 bg-emerald-600 text-white text-[8px] font-black px-1.5 py-0.5 rounded-br uppercase tracking-tighter font-serif shadow-sm">
+                                        <div className="absolute top-0 left-0 bg-teal-600 text-white text-[8px] font-black px-1.5 py-0.5 rounded-br tracking-tighter font-serif shadow-sm">
                                             SAVE {Math.round(((item.originalPrice - item.salePrice) / item.originalPrice) * 100)}%
                                         </div>
                                     )}
@@ -126,13 +126,13 @@ const FlyerTab: React.FC<{ storeId: string; storeName: string; summary: any; vie
                                 <div className="flex-1 min-w-0">
                                     <p className="font-bold text-sm text-[var(--text-main)] truncate">{item.name}</p>
                                     <div className="flex items-baseline gap-2">
-                                        <span className="text-sm font-black text-emerald-600">${item.salePrice.toFixed(2)}</span>
+                                        <span className="text-sm font-black text-teal-600">${item.salePrice.toFixed(2)}</span>
                                         <span className="text-[10px] text-[var(--text-muted)] line-through">Reg ${item.originalPrice.toFixed(2)}</span>
                                     </div>
                                 </div>
                                 <button
                                     onClick={() => handleAdd(item)}
-                                    className="px-4 py-2 bg-emerald-600 text-white text-xs font-black rounded uppercase tracking-widest hover:bg-emerald-700 active:scale-95 transition-all shadow-md"
+                                    className="px-4 py-2 bg-teal-600 text-white text-xs font-black rounded tracking-widest hover:bg-teal-700 active:scale-95 transition-all shadow-md"
                                 >
                                     + ADD
                                 </button>
@@ -155,9 +155,9 @@ const FlyerTab: React.FC<{ storeId: string; storeName: string; summary: any; vie
                                     {/* Big Savings Circle Badge */}
                                     {savingsPercent >= 20 && (
                                         <div className={`absolute ${isFeatured ? '-top-3 -right-3 w-16 h-16 md:w-20 md:h-20' : '-top-2 -right-2 w-12 h-12 md:w-14 md:h-14'} z-20 bg-yellow-400 rounded-full flex flex-col items-center justify-center border-4 border-white shadow-lg rotate-12 group-hover:rotate-0 transition-transform duration-300`}>
-                                            <span className="text-[8px] md:text-[10px] font-black uppercase text-emerald-700 -mb-1">SAVE</span>
-                                            <span className={`${isFeatured ? 'text-lg md:text-2xl' : 'text-xs md:text-lg'} font-black text-emerald-700 leading-none`}>${Math.floor(Number(savingsAmount))}</span>
-                                            {isFeatured && <span className="text-[8px] font-bold text-emerald-700">LTD TIME</span>}
+                                            <span className="text-[8px] md:text-[10px] font-black text-teal-700 -mb-1">Save</span>
+                                            <span className={`${isFeatured ? 'text-lg md:text-2xl' : 'text-xs md:text-lg'} font-black text-teal-700 leading-none`}>${Math.floor(Number(savingsAmount))}</span>
+                                            {isFeatured && <span className="text-[8px] font-bold text-teal-700">Ltd time</span>}
                                         </div>
                                     )}
 
@@ -169,7 +169,7 @@ const FlyerTab: React.FC<{ storeId: string; storeName: string; summary: any; vie
                                             loading={isFeatured ? "eager" : "lazy"}
                                         />
                                         {isFeatured && (
-                                            <div className="absolute top-2 left-2 bg-emerald-600 text-white text-[10px] font-black px-2 py-1 rounded skew-x-[-12deg] shadow-lg">
+                                            <div className="absolute top-2 left-2 bg-teal-600 text-white text-[10px] font-black px-2 py-1 rounded skew-x-[-12deg] shadow-lg">
                                                 HOT DEAL
                                             </div>
                                         )}
@@ -179,18 +179,18 @@ const FlyerTab: React.FC<{ storeId: string; storeName: string; summary: any; vie
                                     <div className="flex-1 flex flex-col">
                                         <div className="flex items-start gap-2 mb-1">
                                             <div className="flex flex-col">
-                                                <span className="text-[8px] md:text-[10px] font-black bg-emerald-600 text-white px-1 w-max rounded-sm uppercase tracking-tighter">Sale</span>
-                                                <span className={`${isFeatured ? 'text-2xl md:text-4xl' : 'text-xl md:text-2xl'} font-black text-emerald-700 tracking-tighter leading-none`}>
+                                                <span className="text-[8px] md:text-[10px] font-black bg-teal-600 text-white px-1 w-max rounded-sm tracking-tighter">Sale</span>
+                                                <span className={`${isFeatured ? 'text-2xl md:text-4xl' : 'text-xl md:text-2xl'} font-black text-teal-700 tracking-tighter leading-none`}>
                                                     {item.salePrice.toFixed(2)}
                                                 </span>
                                             </div>
                                             <div className="flex flex-col mt-4">
                                                 <span className="text-[8px] md:text-[10px] font-bold text-gray-500 line-through">Reg {item.originalPrice.toFixed(2)}</span>
-                                                <span className="text-[8px] md:text-[10px] font-black text-emerald-600 uppercase tracking-tighter">Limit 4</span>
+                                                <span className="text-[8px] md:text-[10px] font-black text-teal-600 tracking-tighter">Limit 4</span>
                                             </div>
                                         </div>
 
-                                        <p className={`${isFeatured ? 'text-sm md:text-lg' : 'text-xs md:text-sm'} font-black text-gray-800 uppercase leading-snug grow`}>
+                                        <p className={`${isFeatured ? 'text-sm md:text-lg' : 'text-xs md:text-sm'} font-black text-gray-800 leading-snug grow`}>
                                             {item.name}
                                         </p>
 
@@ -202,7 +202,7 @@ const FlyerTab: React.FC<{ storeId: string; storeName: string; summary: any; vie
 
                                         <button
                                             onClick={() => handleAdd(item)}
-                                            className="w-full mt-2 py-2 md:py-3 bg-emerald-600 text-white text-[10px] md:text-xs font-black rounded uppercase tracking-widest hover:bg-black transition-colors shadow-md active:translate-y-0.5"
+                                            className="w-full mt-2 py-2 md:py-3 bg-teal-600 text-white text-[10px] md:text-xs font-black rounded tracking-widest hover:bg-black transition-colors shadow-md active:translate-y-0.5"
                                         >
                                             + Add To Cart
                                         </button>
@@ -216,14 +216,14 @@ const FlyerTab: React.FC<{ storeId: string; storeName: string; summary: any; vie
                 {(!flyer.items || flyer.items.length === 0) && (
                     <div className="text-center py-12 bg-white rounded-xl border-4 border-dashed border-gray-100 mt-6 box-content h-40 flex flex-col items-center justify-center">
                         <span className="text-4xl mb-4 grayscale opacity-30">📰</span>
-                        <p className="text-gray-400 font-bold uppercase tracking-widest italic">Flyer Specials Coming Soon!</p>
+                        <p className="text-gray-400 font-bold tracking-widest italic">Flyer Specials Coming Soon!</p>
                     </div>
                 )}
             </div>
             
             {/* FLYER FOOTER */}
             <div className="bg-gray-100 p-8 text-center text-[10px] text-gray-500 space-y-2 border-t border-gray-200">
-                <p className="font-bold uppercase">PROUDLY SERVING OUR COMMUNITY</p>
+                <p className="font-bold">Proudly serving our community</p>
                 <p>Prices effective for the duration of this flyer. We reserve the right to limit quantities. Typography or photography errors are subject to correction.</p>
                 <div className="flex justify-center gap-4 py-2 grayscale opacity-50">
                     <span className="text-xl">💳</span>
@@ -315,14 +315,14 @@ const OffersTab: React.FC<{ storeId: string, storeName: string; viewMode: 'grid'
                         <div className="flex items-center gap-3">
                             <span className="text-2xl md:text-3xl animate-pulse">⏰</span>
                             <div>
-                                <h3 className="text-lg md:text-xl font-black italic uppercase tracking-tighter leading-none m-0">
+                                <h3 className="text-lg md:text-xl font-black italic tracking-tighter leading-none m-0">
                                     Hurry! Flash Sales
                                 </h3>
-                                <p className="text-[10px] font-bold uppercase tracking-widest opacity-90 mt-1">LIMITED TIME ONLY • WHILE SUPPLIES LAST</p>
+                                <p className="text-[10px] font-bold tracking-widest opacity-90 mt-1">LIMITED TIME ONLY • WHILE SUPPLIES LAST</p>
                             </div>
                         </div>
                         <div className="text-right">
-                            <span className="text-xs font-black bg-white text-orange-600 px-3 py-1 rounded-full uppercase tracking-widest inline-block mb-1 shadow-sm">
+                            <span className="text-xs font-black bg-white text-orange-600 px-3 py-1 rounded-full tracking-widest inline-block mb-1 shadow-sm">
                                 HOT DEALS
                             </span>
                             {sortedFlashSales[0]?.endDate && (
@@ -349,7 +349,7 @@ const OffersTab: React.FC<{ storeId: string, storeName: string; viewMode: 'grid'
                                                 {offer.originalPrice && <span className="text-[10px] text-gray-500 line-through">Reg ${offer.originalPrice.toFixed(2)}</span>}
                                             </div>
                                         </div>
-                                        <button onClick={() => handleQuickAdd(offer)} className="px-4 py-2 bg-orange-600 text-white text-xs font-black rounded uppercase tracking-widest shadow-md">
+                                        <button onClick={() => handleQuickAdd(offer)} className="px-4 py-2 bg-orange-600 text-white text-xs font-black rounded tracking-widest shadow-md">
                                             + ADD
                                         </button>
                                     </div>
@@ -371,7 +371,7 @@ const OffersTab: React.FC<{ storeId: string, storeName: string; viewMode: 'grid'
                                             
                                             {/* Savings Badge */}
                                             <div className={`absolute -top-3 -right-3 ${isFeatured ? 'w-16 h-16 md:w-20 md:h-20' : 'w-12 h-12 md:w-14 md:h-14'} z-20 bg-yellow-400 rounded-full flex flex-col items-center justify-center border-4 border-white shadow-lg rotate-12`}>
-                                                <span className="text-[8px] md:text-[10px] font-black uppercase text-orange-800 -mb-1">SAVE</span>
+                                                <span className="text-[8px] md:text-[10px] font-black text-orange-800 -mb-1">Save</span>
                                                 <span className={`${isFeatured ? 'text-lg md:text-2xl' : 'text-xs md:text-lg'} font-black text-orange-800 leading-none`}>${Math.floor(Number(savingsAmount))}</span>
                                             </div>
 
@@ -382,7 +382,7 @@ const OffersTab: React.FC<{ storeId: string, storeName: string; viewMode: 'grid'
                                             <div className="flex-1 flex flex-col px-1">
                                                 <div className="flex items-start gap-2 mb-1">
                                                     <div className="flex flex-col">
-                                                        <span className="text-[8px] md:text-[10px] font-black bg-orange-600 text-white px-1 w-max rounded-sm uppercase tracking-tighter">Sale</span>
+                                                        <span className="text-[8px] md:text-[10px] font-black bg-orange-600 text-white px-1 w-max rounded-sm tracking-tighter">Sale</span>
                                                         <span className={`${isFeatured ? 'text-2xl md:text-3xl' : 'text-xl'} font-black text-orange-700 tracking-tighter leading-none`}>
                                                             {sPrice.toFixed(2)}
                                                         </span>
@@ -391,10 +391,10 @@ const OffersTab: React.FC<{ storeId: string, storeName: string; viewMode: 'grid'
                                                         <span className="text-[10px] font-bold text-gray-400 line-through">Reg {oPrice.toFixed(2)}</span>
                                                     </div>
                                                 </div>
-                                                <p className={`${isFeatured ? 'text-sm md:text-base' : 'text-xs'} font-black text-gray-800 uppercase leading-snug grow`}>
+                                                <p className={`${isFeatured ? 'text-sm md:text-base' : 'text-xs'} font-black text-gray-800 leading-snug grow`}>
                                                     {offer.productName || offer.name}
                                                 </p>
-                                                <button onClick={() => handleQuickAdd(offer)} className="w-full mt-2 py-2 bg-orange-600 text-white text-[10px] font-black rounded uppercase tracking-widest hover:bg-black transition-all shadow-md">
+                                                <button onClick={() => handleQuickAdd(offer)} className="w-full mt-2 py-2 bg-orange-600 text-white text-[10px] font-black rounded tracking-widest hover:bg-black transition-all shadow-md">
                                                     + QUICK ADD
                                                 </button>
                                             </div>
@@ -410,14 +410,14 @@ const OffersTab: React.FC<{ storeId: string, storeName: string; viewMode: 'grid'
             {/* SALE ITEMS SECTION */}
             {sortedSaleItems.length > 0 && (
                 <div>
-                    <div className="bg-emerald-600 text-white px-4 py-3 md:py-4 flex items-center justify-between border-b-4 border-emerald-700 shadow-inner">
+                    <div className="bg-teal-600 text-white px-4 py-3 md:py-4 flex items-center justify-between border-b-4 border-teal-700 shadow-inner">
                         <div className="flex items-center gap-3">
                             <span className="text-2xl md:text-3xl">🏷️</span>
                             <div>
-                                <h3 className="text-lg md:text-xl font-black italic uppercase tracking-tighter leading-none m-0">
+                                <h3 className="text-lg md:text-xl font-black italic tracking-tighter leading-none m-0">
                                     Great Deals & Savings
                                 </h3>
-                                <p className="text-[10px] font-bold uppercase tracking-widest opacity-90 mt-1">THE PRICES YOU LOVE • EVERY DAY</p>
+                                <p className="text-[10px] font-bold tracking-widest opacity-90 mt-1">THE PRICES YOU LOVE • EVERY DAY</p>
                             </div>
                         </div>
                     </div>
@@ -429,16 +429,16 @@ const OffersTab: React.FC<{ storeId: string, storeName: string; viewMode: 'grid'
                                     <div key={item.id} className="bg-white rounded-xl border border-[var(--glass-border)] p-3 flex gap-4 items-center shadow-sm hover:shadow-md transition-all">
                                         <div className="w-16 h-16 rounded-lg bg-gray-50 flex-shrink-0 relative overflow-hidden">
                                             <img src={item.productImage || item.image} className="w-full h-full object-contain" loading="lazy" />
-                                            <div className="absolute top-0 left-0 bg-emerald-600 text-white text-[8px] font-black px-1 rounded-br">SALE</div>
+                                            <div className="absolute top-0 left-0 bg-teal-600 text-white text-[8px] font-black px-1 rounded-br">Sale</div>
                                         </div>
                                         <div className="flex-1 min-w-0">
                                             <p className="font-bold text-sm text-[var(--text-main)] truncate">{item.productName || item.name}</p>
                                             <div className="flex items-baseline gap-2">
-                                                <span className="text-sm font-black text-emerald-600">${(item.salePrice ?? item.price).toFixed(2)}</span>
+                                                <span className="text-sm font-black text-teal-600">${(item.salePrice ?? item.price).toFixed(2)}</span>
                                                 {item.originalPrice && <span className="text-[10px] text-gray-500 line-through">Reg ${item.originalPrice.toFixed(2)}</span>}
                                             </div>
                                         </div>
-                                        <button onClick={() => handleQuickAdd(item)} className="px-4 py-2 bg-emerald-600 text-white text-xs font-black rounded uppercase tracking-widest shadow-md">
+                                        <button onClick={() => handleQuickAdd(item)} className="px-4 py-2 bg-teal-600 text-white text-xs font-black rounded tracking-widest shadow-md">
                                             + ADD
                                         </button>
                                     </div>
@@ -456,8 +456,8 @@ const OffersTab: React.FC<{ storeId: string, storeName: string; viewMode: 'grid'
                                         <div key={item.id} className={`relative group bg-white border-2 ${isFeatured ? 'col-span-2 md:col-span-2 border-red-200' : 'border-gray-100'} p-3 flex flex-col shadow-sm transition-all hover:shadow-xl`}>
                                             {/* Savings Badge */}
                                             <div className={`absolute -top-3 -right-3 ${isFeatured ? 'w-16 h-16 md:w-20 md:h-20' : 'w-12 h-12 md:w-14 md:h-14'} z-20 bg-yellow-400 rounded-full flex flex-col items-center justify-center border-4 border-white shadow-lg rotate-12`}>
-                                                <span className="text-[8px] md:text-[10px] font-black uppercase text-emerald-700 -mb-1">SAVE</span>
-                                                <span className={`${isFeatured ? 'text-lg md:text-2xl' : 'text-xs md:text-lg'} font-black text-emerald-700 leading-none`}>${Math.floor(Number(savingsAmount))}</span>
+                                                <span className="text-[8px] md:text-[10px] font-black text-teal-700 -mb-1">Save</span>
+                                                <span className={`${isFeatured ? 'text-lg md:text-2xl' : 'text-xs md:text-lg'} font-black text-teal-700 leading-none`}>${Math.floor(Number(savingsAmount))}</span>
                                             </div>
 
                                             <div className={`${isFeatured ? 'h-40 md:h-56' : 'h-32 md:h-40'} mb-3 bg-white overflow-hidden`}>
@@ -467,8 +467,8 @@ const OffersTab: React.FC<{ storeId: string, storeName: string; viewMode: 'grid'
                                             <div className="flex-1 flex flex-col px-1">
                                                 <div className="flex items-start gap-2 mb-1">
                                                     <div className="flex flex-col">
-                                                        <span className="text-[8px] md:text-[10px] font-black bg-emerald-600 text-white px-1 w-max rounded-sm uppercase tracking-tighter">Sale</span>
-                                                        <span className={`${isFeatured ? 'text-2xl md:text-3xl' : 'text-xl md:text-2xl'} font-black text-emerald-700 tracking-tighter leading-none`}>
+                                                        <span className="text-[8px] md:text-[10px] font-black bg-teal-600 text-white px-1 w-max rounded-sm tracking-tighter">Sale</span>
+                                                        <span className={`${isFeatured ? 'text-2xl md:text-3xl' : 'text-xl md:text-2xl'} font-black text-teal-700 tracking-tighter leading-none`}>
                                                             {sPrice.toFixed(2)}
                                                         </span>
                                                     </div>
@@ -476,10 +476,10 @@ const OffersTab: React.FC<{ storeId: string, storeName: string; viewMode: 'grid'
                                                         <span className="text-[10px] font-bold text-gray-400 line-through">Reg {oPrice.toFixed(2)}</span>
                                                     </div>
                                                 </div>
-                                                <p className={`${isFeatured ? 'text-sm md:text-lg' : 'text-xs md:text-sm'} font-black text-gray-800 uppercase leading-snug grow`}>
+                                                <p className={`${isFeatured ? 'text-sm md:text-lg' : 'text-xs md:text-sm'} font-black text-gray-800 leading-snug grow`}>
                                                     {item.productName || item.name}
                                                 </p>
-                                                <button onClick={() => handleQuickAdd(item)} className="w-full mt-2 py-2 md:py-3 bg-emerald-600 text-white text-[10px] md:text-xs font-black rounded uppercase tracking-widest hover:bg-black transition-all shadow-md">
+                                                <button onClick={() => handleQuickAdd(item)} className="w-full mt-2 py-2 md:py-3 bg-teal-600 text-white text-[10px] md:text-xs font-black rounded tracking-widest hover:bg-black transition-all shadow-md">
                                                     + ADD TO CART
                                                 </button>
                                             </div>
@@ -494,7 +494,7 @@ const OffersTab: React.FC<{ storeId: string, storeName: string; viewMode: 'grid'
             
             {/* DEALS FOOTER */}
             <div className="bg-gray-100 p-8 text-center text-xs text-gray-500 border-t border-gray-200 mt-8">
-                <p className="font-bold uppercase tracking-widest mb-2">Exclusive Deals for Our Customers</p>
+                <p className="font-bold tracking-widest mb-2">Exclusive Deals for Our Customers</p>
                 <p className="max-w-2xl mx-auto">Flash sales are available for a limited time only. Prices and availability are subject to change. We reserve the right to limit quantities per customer.</p>
                 <div className="flex justify-center gap-6 py-4 opacity-40 grayscale">
                     <span className="text-2xl">🔥</span>
@@ -593,7 +593,7 @@ const StoreDetail: React.FC = () => {
                     className="absolute top-6 left-6 px-4 py-2 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white flex items-center gap-2 hover:bg-white/20 transition-all shadow-2xl z-50 group/back"
                 >
                     <span className="group-hover:-translate-x-1 transition-transform">←</span>
-                    <span className="text-[10px] font-black uppercase tracking-widest">Marketplace</span>
+                    <span className="text-[10px] font-black tracking-widest">Marketplace</span>
                 </button>
 
                 {/* Floating Store Identity */}
@@ -601,7 +601,7 @@ const StoreDetail: React.FC = () => {
                     <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-end gap-6 md:gap-8">
                         {/* THE STORE SIGN */}
                         <div className="relative group/logo">
-                            <div className="absolute -inset-1 bg-gradient-to-r from-emerald-600 to-emerald-400 rounded-3xl blur opacity-25 group-hover/logo:opacity-50 transition duration-1000 group-hover/logo:duration-200"></div>
+                            <div className="absolute -inset-1 bg-gradient-to-r from-teal-600 to-teal-400 rounded-3xl blur opacity-25 group-hover/logo:opacity-50 transition duration-1000 group-hover/logo:duration-200"></div>
                             <div className="w-24 h-24 md:w-32 md:h-32 relative rounded-3xl bg-white flex items-center justify-center text-4xl md:text-5xl shadow-2xl overflow-hidden border-4 border-white ring-4 ring-black/5">
                                 {(store.logoUrl || store.logo || '').startsWith('http') ? (
                                     <img src={store.logoUrl || store.logo} alt="Logo" className="w-full h-full object-cover p-2" decoding="async" />
@@ -613,13 +613,13 @@ const StoreDetail: React.FC = () => {
 
                         <div className="flex-1 pb-2">
                             <div className="flex flex-wrap items-center gap-3 mb-2">
-                                <span className="text-[9px] font-black bg-emerald-600 text-white px-2 py-0.5 rounded skew-x-[-12deg] shadow-lg uppercase tracking-widest">Verified Store</span>
-                                <span className="text-[9px] font-black bg-white/10 backdrop-blur-md text-white px-2 py-0.5 rounded border border-white/20 uppercase tracking-widest">Open Now</span>
+                                <span className="text-[9px] font-black bg-teal-600 text-white px-2 py-0.5 rounded skew-x-[-12deg] shadow-lg tracking-widest">Verified Store</span>
+                                <span className="text-[9px] font-black bg-white/10 backdrop-blur-md text-white px-2 py-0.5 rounded border border-white/20 tracking-widest">Open Now</span>
                             </div>
                             <h1 className="text-4xl md:text-6xl font-black text-white tracking-tighter leading-none mb-2 drop-shadow-2xl italic">
                                 {store.name}
                             </h1>
-                            <p className="text-sm md:text-lg text-white/70 font-bold italic tracking-tight uppercase max-w-xl">{store.tagline}</p>
+                            <p className="text-sm md:text-lg text-white/70 font-bold italic tracking-tight max-w-xl">{store.tagline}</p>
                         </div>
                     </div>
                 </div>
@@ -629,7 +629,7 @@ const StoreDetail: React.FC = () => {
             <div className="max-w-7xl mx-auto px-4 -mt-10 relative z-30">
                 <div className="bg-white rounded-3xl shadow-2xl border border-gray-100 p-2 md:p-3 flex flex-wrap md:flex-nowrap items-stretch gap-1">
                     <div className="flex-1 min-w-[120px] bg-gray-50/50 p-4 rounded-2xl border border-gray-50 flex flex-col items-center justify-center text-center group hover:bg-white hover:shadow-lg transition-all">
-                        <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Store Rating</span>
+                        <span className="text-[9px] font-black text-gray-400 tracking-widest mb-1">Store Rating</span>
                         <div className="flex items-center gap-2">
                             <span className="text-xl font-black text-gray-900">
                                 {reviews.length > 0 
@@ -641,7 +641,7 @@ const StoreDetail: React.FC = () => {
                     </div>
                     <div className="w-px bg-gray-100 hidden md:block my-2"></div>
                     <div className="flex-1 min-w-[120px] bg-gray-50/50 p-4 rounded-2xl border border-gray-50 flex flex-col items-center justify-center text-center group hover:bg-white hover:shadow-lg transition-all">
-                        <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Delivery Time</span>
+                        <span className="text-[9px] font-black text-gray-400 tracking-widest mb-1">Delivery Time</span>
                         <div className="flex items-center gap-2">
                             <span className="text-xl font-black text-gray-900">{store.deliveryTime || '25-45 MIN'}</span>
                             <span className="text-orange-500 text-lg group-hover:animate-pulse">⚡</span>
@@ -649,16 +649,16 @@ const StoreDetail: React.FC = () => {
                     </div>
                     <div className="w-px bg-gray-100 hidden md:block my-2"></div>
                     <div className="flex-1 min-w-[120px] bg-gray-50/50 p-4 rounded-2xl border border-gray-50 flex flex-col items-center justify-center text-center group hover:bg-white hover:shadow-lg transition-all">
-                        <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Service Fee</span>
+                        <span className="text-[9px] font-black text-gray-400 tracking-widest mb-1">Service Fee</span>
                         <div className="flex items-center gap-2">
                             <span className="text-xl font-black text-gray-900">{store.deliveryFee || 'FREE'}</span>
                             <span className="text-green-500 text-lg group-hover:rotate-12 transition-transform">💰</span>
                         </div>
                     </div>
                     <div className="w-px bg-gray-100 hidden md:block my-2"></div>
-                    <div className="flex-1 min-w-[120px] bg-emerald-600 p-4 rounded-2xl flex flex-col items-center justify-center text-center shadow-lg group hover:bg-black transition-all cursor-help" title="Quality Guaranteed by Spendigo">
-                        <span className="text-[9px] font-black text-white/70 uppercase tracking-widest mb-1">Certified By</span>
-                        <span className="text-lg font-black text-white italic tracking-tighter uppercase whitespace-nowrap">Spendigo 🍁</span>
+                    <div className="flex-1 min-w-[120px] bg-teal-600 p-4 rounded-2xl flex flex-col items-center justify-center text-center shadow-lg group hover:bg-black transition-all cursor-help" title="Quality Guaranteed by Spendigo">
+                        <span className="text-[9px] font-black text-white/70 tracking-widest mb-1">Certified By</span>
+                        <span className="text-lg font-black text-white italic tracking-tighter whitespace-nowrap">Spendigo 🍁</span>
                     </div>
                 </div>
             </div>
@@ -676,14 +676,14 @@ const StoreDetail: React.FC = () => {
                             <button
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id as any)}
-                                className={`px-5 py-2.5 rounded-2xl text-[10px] md:text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-2 relative border-2 ${activeTab === tab.id 
+                                className={`px-5 py-2.5 rounded-2xl text-[10px] md:text-xs font-black tracking-widest transition-all whitespace-nowrap flex items-center gap-2 relative border-2 ${activeTab === tab.id 
                                     ? 'bg-gray-900 text-white border-gray-900 shadow-xl -translate-y-0.5' 
                                     : 'bg-white text-gray-400 border-gray-50 hover:border-gray-200'}`}
                             >
                                 <span className={activeTab === tab.id ? 'scale-110' : 'grayscale opacity-70'}>{tab.icon}</span>
                                 {tab.label}
                                 {tab.badge && (
-                                    <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-emerald-600 rounded-full border-2 border-white animate-pulse"></span>
+                                    <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-teal-600 rounded-full border-2 border-white animate-pulse"></span>
                                 )}
                             </button>
                         ))}
@@ -692,11 +692,11 @@ const StoreDetail: React.FC = () => {
                     {/* Shared View Toggle UI - Redesigned */}
                     {(activeTab === 'products' || activeTab === 'flyer' || activeTab === 'offers') && (
                         <div className="flex items-center gap-2 bg-gray-50 p-1.5 rounded-2xl border border-gray-100 w-fit">
-                            <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest px-2 hidden lg:block">Layout:</span>
+                            <span className="text-[9px] font-black text-gray-400 tracking-widest px-2 hidden lg:block">Layout:</span>
                             <div className="flex gap-1">
                                 <button
                                     onClick={() => setViewMode('grid')}
-                                    className={`p-2 rounded-xl transition-all ${viewMode === 'grid' ? 'bg-white shadow-md text-emerald-600 shadow-emerald-600/5' : 'text-gray-400'}`}
+                                    className={`p-2 rounded-xl transition-all ${viewMode === 'grid' ? 'bg-white shadow-md text-teal-600 shadow-teal-600/5' : 'text-gray-400'}`}
                                     title="Grid View"
                                 >
                                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -705,7 +705,7 @@ const StoreDetail: React.FC = () => {
                                 </button>
                                 <button
                                     onClick={() => setViewMode('list')}
-                                    className={`p-2 rounded-xl transition-all ${viewMode === 'list' ? 'bg-white shadow-md text-emerald-600 shadow-emerald-600/5' : 'text-gray-400'}`}
+                                    className={`p-2 rounded-xl transition-all ${viewMode === 'list' ? 'bg-white shadow-md text-teal-600 shadow-teal-600/5' : 'text-gray-400'}`}
                                     title="List View"
                                 >
                                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -723,14 +723,14 @@ const StoreDetail: React.FC = () => {
                 <div className="animate-fade-in">
                     {/* Premium Category Filters */}
                     <div className="px-4 py-4 bg-white border-b border-gray-100 flex items-center gap-4">
-                        <span className="text-[10px] font-black uppercase text-gray-400 tracking-widest whitespace-nowrap">Filter By:</span>
+                        <span className="text-[10px] font-black text-gray-400 tracking-widest whitespace-nowrap">Filter By:</span>
                         <div className="overflow-x-auto scrollbar-hide flex gap-2 pb-1">
                             {store.categories.map((cat: string) => (
                                 <button
                                     key={cat}
                                     onClick={() => setActiveCategory(cat)}
-                                    className={`px-4 py-2 rounded-full text-[10px] md:text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap border-2 ${activeCategory === cat 
-                                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-md transform scale-105' 
+                                    className={`px-4 py-2 rounded-full text-[10px] md:text-xs font-black tracking-widest transition-all whitespace-nowrap border-2 ${activeCategory === cat 
+                                        ? 'bg-teal-600 text-white border-teal-600 shadow-md transform scale-105' 
                                         : 'bg-gray-50 text-gray-500 border-gray-100 hover:border-gray-300'}`}
                                 >
                                     {cat.replace(/^cat-/, '').replace(/-/g, ' ')}
@@ -744,7 +744,7 @@ const StoreDetail: React.FC = () => {
                         {filteredProducts.length === 0 ? (
                             <div className="text-center py-20 flex flex-col items-center justify-center bg-white rounded-3xl border-4 border-dashed border-gray-100">
                                 <span className="text-6xl mb-4 grayscale opacity-20">🛒</span>
-                                <p className="text-gray-400 font-bold uppercase tracking-widest italic">No Items Found In This Aisle!</p>
+                                <p className="text-gray-400 font-bold tracking-widest italic">No Items Found In This Aisle!</p>
                             </div>
                         ) : viewMode === 'grid' ? (
                             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
@@ -761,7 +761,7 @@ const StoreDetail: React.FC = () => {
                                             {/* Retail Savings Sticker */}
                                             {savingsPercent >= 10 && !isOutOfStock && (
                                                 <div className="absolute -top-2 -right-2 w-12 h-12 z-20 bg-yellow-400 rounded-full flex flex-col items-center justify-center border-4 border-white shadow-lg rotate-12 group-hover:rotate-0 transition-transform">
-                                                    <span className="text-[10px] font-black text-emerald-700 leading-none">-{savingsPercent}%</span>
+                                                    <span className="text-[10px] font-black text-teal-700 leading-none">-{savingsPercent}%</span>
                                                 </div>
                                             )}
 
@@ -777,13 +777,13 @@ const StoreDetail: React.FC = () => {
                                                     loading="lazy"
                                                 />
                                                 {product.originalPrice && !isOutOfStock && (
-                                                    <div className="absolute top-2 left-2 bg-emerald-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded skew-x-[-10deg] shadow-lg">
+                                                    <div className="absolute top-2 left-2 bg-teal-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded skew-x-[-10deg] shadow-lg">
                                                         HOT DEAL
                                                     </div>
                                                 )}
                                                 {isOutOfStock && (
                                                     <div className="absolute inset-0 bg-white/60 flex items-center justify-center z-10 backdrop-blur-[1px]">
-                                                        <span className="bg-gray-800 text-white text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest shadow-xl">
+                                                        <span className="bg-gray-800 text-white text-[10px] font-black px-3 py-1 rounded-full tracking-widest shadow-xl">
                                                             Restocking
                                                         </span>
                                                     </div>
@@ -794,7 +794,7 @@ const StoreDetail: React.FC = () => {
                                                 {/* Meta Info */}
                                                 <div className="flex items-center gap-1 mb-1 min-h-[14px]">
                                                     {product.is_canadian_local && (
-                                                        <span className="text-[9px] font-black text-emerald-600 bg-emerald-50 px-1 rounded border border-emerald-100 flex items-center gap-0.5 shadow-sm">
+                                                        <span className="text-[9px] font-black text-teal-600 bg-teal-50 px-1 rounded border border-teal-100 flex items-center gap-0.5 shadow-sm">
                                                             🍁 CANADIAN
                                                         </span>
                                                     )}
@@ -802,7 +802,7 @@ const StoreDetail: React.FC = () => {
 
                                                 <p 
                                                     onClick={() => navigate(`/product/${product.id}`)} 
-                                                    className="font-black text-xs md:text-sm text-gray-800 uppercase tracking-tight leading-snug grow cursor-pointer hover:text-emerald-600 transition-colors line-clamp-2"
+                                                    className="font-black text-xs md:text-sm text-gray-800 tracking-tight leading-snug grow cursor-pointer hover:text-teal-600 transition-colors line-clamp-2"
                                                 >
                                                     {product.name}
                                                 </p>
@@ -810,22 +810,22 @@ const StoreDetail: React.FC = () => {
                                                 {/* Pricing Block */}
                                                 <div className="mt-3 bg-gray-50 p-2 rounded-lg border border-gray-100">
                                                     <div className="flex items-baseline gap-2">
-                                                        <span className="text-xl md:text-2xl font-black text-emerald-600 tracking-tighter">${product.price.toFixed(2)}</span>
+                                                        <span className="text-xl md:text-2xl font-black text-teal-600 tracking-tighter">${product.price.toFixed(2)}</span>
                                                         {product.originalPrice && (
-                                                            <span className="text-[10px] text-gray-400 line-through decoration-emerald-600/30 font-bold">Reg {product.originalPrice.toFixed(2)}</span>
+                                                            <span className="text-[10px] text-gray-400 line-through decoration-teal-600/30 font-bold">Reg {product.originalPrice.toFixed(2)}</span>
                                                         )}
                                                     </div>
                                                     {savingsAmount && Number(savingsAmount) > 0 && !isOutOfStock && (
-                                                        <p className="text-[9px] font-black text-green-600 uppercase tracking-tighter">You Save ${savingsAmount}</p>
+                                                        <p className="text-[9px] font-black text-green-600 tracking-tighter">You Save ${savingsAmount}</p>
                                                     )}
                                                 </div>
 
                                                 <button
                                                     onClick={() => !isOutOfStock && handleQuickAdd(product)}
                                                     disabled={isOutOfStock}
-                                                    className={`w-full mt-3 py-2 md:py-3 text-[10px] font-black rounded uppercase tracking-widest shadow-md transition-all active:scale-95 ${isOutOfStock
+                                                    className={`w-full mt-3 py-2 md:py-3 text-[10px] font-black rounded tracking-widest shadow-md transition-all active:scale-95 ${isOutOfStock
                                                         ? 'bg-gray-200 text-gray-400 cursor-not-allowed border border-gray-300'
-                                                        : 'bg-emerald-600 text-white hover:bg-black'
+                                                        : 'bg-teal-600 text-white hover:bg-black'
                                                         }`}
                                                 >
                                                     {isOutOfStock ? 'Sold Out' : '+ Add to Trolley'}
@@ -850,17 +850,17 @@ const StoreDetail: React.FC = () => {
                                                 {isOutOfStock && <div className="absolute inset-0 bg-white/40 z-10"></div>}
                                             </div>
                                             <div className="flex-1 min-w-0">
-                                                <p onClick={() => navigate(`/product/${product.id}`)} className="font-black text-xs md:text-sm text-gray-800 uppercase truncate cursor-pointer hover:text-emerald-600">{product.name}</p>
+                                                <p onClick={() => navigate(`/product/${product.id}`)} className="font-black text-xs md:text-sm text-gray-800 truncate cursor-pointer hover:text-teal-600">{product.name}</p>
                                                 <div className="flex items-center gap-2 mt-1">
                                                     {product.is_canadian_local && (
-                                                        <span className="text-[8px] font-black text-emerald-600 bg-emerald-50 px-1 rounded border border-emerald-100">🍁 LOCAL</span>
+                                                        <span className="text-[8px] font-black text-teal-600 bg-teal-50 px-1 rounded border border-teal-100">🍁 LOCAL</span>
                                                     )}
                                                     {product.originalPrice && (
-                                                        <span className="text-[8px] font-black bg-emerald-600 text-white px-1.5 py-0.5 rounded-sm uppercase skew-x-[-12deg]">Sale</span>
+                                                        <span className="text-[8px] font-black bg-teal-600 text-white px-1.5 py-0.5 rounded-sm skew-x-[-12deg]">Sale</span>
                                                     )}
                                                 </div>
                                                 <div className="flex items-baseline gap-2 mt-0.5">
-                                                    <span className="text-lg font-black text-emerald-600 tracking-tighter">${product.price.toFixed(2)}</span>
+                                                    <span className="text-lg font-black text-teal-600 tracking-tighter">${product.price.toFixed(2)}</span>
                                                     {product.originalPrice && (
                                                         <span className="text-[10px] text-gray-400 line-through font-bold">Reg ${product.originalPrice.toFixed(2)}</span>
                                                     )}
@@ -869,9 +869,9 @@ const StoreDetail: React.FC = () => {
                                             <button
                                                 onClick={() => !isOutOfStock && handleQuickAdd(product)}
                                                 disabled={isOutOfStock}
-                                                className={`px-4 md:px-6 py-2.5 rounded text-[10px] font-black uppercase tracking-widest shadow-md transition-all active:scale-95 ${isOutOfStock
+                                                className={`px-4 md:px-6 py-2.5 rounded text-[10px] font-black tracking-widest shadow-md transition-all active:scale-95 ${isOutOfStock
                                                     ? 'bg-gray-100 text-gray-400 border border-gray-200'
-                                                    : 'bg-emerald-600 text-white hover:bg-black'
+                                                    : 'bg-teal-600 text-white hover:bg-black'
                                                     }`}
                                             >
                                                 {isOutOfStock ? 'Out' : '+ Add'}
@@ -914,7 +914,7 @@ const StoreDetail: React.FC = () => {
                                         size="lg" 
                                     />
                                 </div>
-                                <p className="text-[10px] text-gray-400 font-black uppercase tracking-[0.2em]">
+                                <p className="text-[10px] text-gray-400 font-black tracking-[0.2em]">
                                     {reviews.length || store.reviewCount || 0} TOTAL REVIEWS
                                 </p>
                             </div>
@@ -932,7 +932,7 @@ const StoreDetail: React.FC = () => {
                                             </div>
                                             <div className="flex-1 h-3 bg-gray-50 rounded-full overflow-hidden border border-gray-100 shadow-inner">
                                                 <div
-                                                    className="h-full bg-emerald-600 rounded-full transition-all duration-1000 ease-out shadow-sm"
+                                                    className="h-full bg-teal-600 rounded-full transition-all duration-1000 ease-out shadow-sm"
                                                     style={{ width: `${pct}%` }}
                                                 />
                                             </div>
@@ -953,11 +953,11 @@ const StoreDetail: React.FC = () => {
                     <div className="pt-4">
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 border-b-2 border-gray-100 pb-4">
                             <div>
-                                <h3 className="text-xl font-black text-gray-900 uppercase tracking-tight m-0">Customer Voice</h3>
-                                <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-1">Real Feedback from Your Community</p>
+                                <h3 className="text-xl font-black text-gray-900 tracking-tight m-0">Customer Voice</h3>
+                                <p className="text-xs text-gray-400 font-bold tracking-widest mt-1">Real Feedback from Your Community</p>
                             </div>
                             <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-full border border-gray-100 shadow-sm">
-                                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Sort:</span>
+                                <span className="text-[10px] font-black text-gray-400 tracking-widest whitespace-nowrap">Sort:</span>
                                 <select className="text-xs font-black bg-transparent border-none outline-none text-gray-900 cursor-pointer">
                                     <option>Most Recent</option>
                                     <option>Highest Rated</option>

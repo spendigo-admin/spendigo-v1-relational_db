@@ -154,29 +154,29 @@ const StoreList: React.FC = () => {
             <section className="relative z-30 max-w-7xl mx-auto px-4 -mt-8">
                 <div className="bg-white rounded-[2rem] shadow-2xl border border-gray-100 p-2 md:p-3 flex flex-wrap lg:flex-nowrap items-stretch gap-1">
                     <div className="flex-1 min-w-[150px] bg-gray-50/50 p-6 rounded-2xl border border-gray-50 flex flex-col items-center justify-center text-center group hover:bg-white hover:shadow-xl transition-all">
-                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Local Grocers</span>
+                        <span className="text-[10px] font-black text-gray-400 tracking-widest mb-1">Local Grocers</span>
                         <p className="text-3xl font-black text-gray-900 tracking-tighter">{stats.totalStores}</p>
-                        <p className="text-[9px] text-gray-400 font-bold uppercase mt-1">Verified Partners</p>
+                        <p className="text-[9px] text-gray-400 font-bold mt-1">Verified Partners</p>
                     </div>
                     <div className="w-px bg-gray-100 hidden lg:block my-4"></div>
                     <div className="flex-1 min-w-[150px] bg-gray-50/50 p-6 rounded-2xl border border-gray-50 flex flex-col items-center justify-center text-center group hover:bg-white hover:shadow-xl transition-all">
-                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Active Flyers</span>
-                        <p className="text-3xl font-black text-emerald-600 tracking-tighter">{stats.totalFlyers}</p>
-                        <p className="text-[9px] text-gray-400 font-bold uppercase mt-1">Live Circulars</p>
+                        <span className="text-[10px] font-black text-gray-400 tracking-widest mb-1">Active Flyers</span>
+                        <p className="text-3xl font-black text-teal-600 tracking-tighter">{stats.totalFlyers}</p>
+                        <p className="text-[9px] text-gray-400 font-bold mt-1">Live Circulars</p>
                     </div>
                     <div className="w-px bg-gray-100 hidden lg:block my-4"></div>
                     <div className="flex-1 min-w-[150px] bg-gray-50/50 p-6 rounded-2xl border border-gray-50 flex flex-col items-center justify-center text-center group hover:bg-white hover:shadow-xl transition-all">
-                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Flash Deals</span>
+                        <span className="text-[10px] font-black text-gray-400 tracking-widest mb-1">Flash Deals</span>
                         <p className="text-3xl font-black text-gray-900 tracking-tighter">{stats.totalDeals}</p>
-                        <p className="text-[9px] text-gray-400 font-bold uppercase mt-1">Limited Offers</p>
+                        <p className="text-[9px] text-gray-400 font-bold mt-1">Limited Offers</p>
                     </div>
                     <div className="w-px bg-gray-100 hidden lg:block my-4"></div>
-                    <div className="flex-1 min-w-[150px] bg-emerald-600 p-6 rounded-2xl flex flex-col items-center justify-center text-center shadow-lg group hover:bg-black transition-all">
-                        <span className="text-[10px] font-black text-white/70 uppercase tracking-widest mb-1">Marketplace Span</span>
+                    <div className="flex-1 min-w-[150px] bg-teal-600 p-6 rounded-2xl flex flex-col items-center justify-center text-center shadow-lg group hover:bg-black transition-all">
+                        <span className="text-[10px] font-black text-white/70 tracking-widest mb-1">Marketplace Span</span>
                         <p className="text-3xl font-black text-white tracking-tighter font-mono">
                             {stats.totalProducts >= 1000 ? `${(stats.totalProducts / 1000).toFixed(1)}k+` : stats.totalProducts}
                         </p>
-                        <p className="text-[9px] text-white/70 font-bold uppercase mt-1">Products Available</p>
+                        <p className="text-[9px] text-white/70 font-bold mt-1">Products Available</p>
                     </div>
                 </div>
             </section>
@@ -187,12 +187,12 @@ const StoreList: React.FC = () => {
                     <div className="max-w-7xl mx-auto">
                         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12 border-b-2 border-gray-100 pb-8">
                             <div>
-                                <h2 className="text-3xl md:text-5xl font-black text-gray-900 uppercase tracking-tighter leading-none italic">
-                                    Weekly Rack <span className="text-emerald-600 font-serif">/ Flyers</span>
+                                <h2 className="text-3xl md:text-5xl font-black text-gray-900 tracking-tighter leading-none italic">
+                                    Weekly Rack <span className="text-teal-600 font-serif">/ Flyers</span>
                                 </h2>
-                                <p className="text-sm text-gray-400 font-bold uppercase tracking-widest mt-3">Browse standard pricing and fresh arrivals</p>
+                                <p className="text-sm text-gray-400 font-bold tracking-widest mt-3">Browse standard pricing and fresh arrivals</p>
                             </div>
-                            <Link to="/flyers" className="px-8 py-3 bg-gray-900 text-white text-[10px] font-black uppercase tracking-widest rounded-full hover:bg-emerald-600 transition-all shadow-xl active:scale-95">
+                            <Link to="/flyers" className="px-8 py-3 bg-gray-900 text-white text-[10px] font-black tracking-widest rounded-full hover:bg-teal-600 transition-all shadow-xl active:scale-95">
                                 {t('viewAll')} Circulars
                             </Link>
                         </div>
@@ -210,10 +210,10 @@ const StoreList: React.FC = () => {
                                     <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/20 to-transparent"></div>
                                     <div className="absolute bottom-0 left-0 right-0 p-8 flex items-end justify-between">
                                         <div>
-                                            <span className="text-[10px] font-black bg-emerald-600 text-white px-2 py-1 rounded-sm uppercase skew-x-[-12deg] mb-2 inline-block">LIVE NOW</span>
-                                            <h3 className="text-2xl font-black text-white uppercase tracking-tighter italic">{store.name}</h3>
+                                            <span className="text-[10px] font-black bg-teal-600 text-white px-2 py-1 rounded-sm skew-x-[-12deg] mb-2 inline-block">Live now</span>
+                                            <h3 className="text-2xl font-black text-white tracking-tighter italic">{store.name}</h3>
                                         </div>
-                                        <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md border border-white/20 flex items-center justify-center text-white font-black text-xl hover:bg-white hover:text-emerald-600 transition-all shadow-xl">
+                                        <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md border border-white/20 flex items-center justify-center text-white font-black text-xl hover:bg-white hover:text-teal-600 transition-all shadow-xl">
                                             →
                                         </div>
                                     </div>
@@ -239,12 +239,12 @@ const StoreList: React.FC = () => {
                         <div className="max-w-7xl mx-auto">
                             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12 border-b border-gray-200 pb-8">
                                 <div>
-                                    <h2 className="text-3xl md:text-5xl font-black text-gray-900 uppercase tracking-tighter leading-none italic">
-                                        Flash <span className="text-emerald-600">Inventory</span>
+                                    <h2 className="text-3xl md:text-5xl font-black text-gray-900 tracking-tighter leading-none italic">
+                                        Flash <span className="text-teal-600">Inventory</span>
                                     </h2>
-                                    <p className="text-sm text-gray-500 font-bold uppercase tracking-widest mt-3">High-Impact savings across the marketplace</p>
+                                    <p className="text-sm text-gray-500 font-bold tracking-widest mt-3">High-Impact savings across the marketplace</p>
                                 </div>
-                                <Link to="/deals" className="px-8 py-3 bg-gray-900 text-white text-[10px] font-black uppercase tracking-widest rounded-full hover:bg-emerald-600 hover:text-white transition-all shadow-xl active:scale-95">
+                                <Link to="/deals" className="px-8 py-3 bg-gray-900 text-white text-[10px] font-black tracking-widest rounded-full hover:bg-teal-600 hover:text-white transition-all shadow-xl active:scale-95">
                                     {t('viewAll')} Bargains
                                 </Link>
                             </div>
@@ -264,8 +264,8 @@ const StoreList: React.FC = () => {
                                                     <span className="font-black text-gray-900">{store.logoUrl || '🏪'}</span>
                                                 )}
                                             </div>
-                                            <span className="text-xs font-black text-gray-900 text-center uppercase tracking-tight mb-2">{store.name}</span>
-                                            <div className="px-3 py-1 bg-emerald-600 text-white text-[9px] font-black uppercase rounded shadow-lg animate-pulse">
+                                            <span className="text-xs font-black text-gray-900 text-center tracking-tight mb-2">{store.name}</span>
+                                            <div className="px-3 py-1 bg-teal-600 text-white text-[9px] font-black rounded shadow-lg animate-pulse">
                                                 {store.deals.length} Active
                                             </div>
                                         </div>
@@ -296,12 +296,12 @@ const StoreList: React.FC = () => {
                                                             ) : (
                                                                 <div className="w-full h-full flex items-center justify-center text-5xl opacity-40">🏷️</div>
                                                             )}
-                                                            <div className="absolute top-3 left-3 bg-emerald-600 text-white text-[9px] font-black px-2 py-1 rounded shadow-lg uppercase tracking-wider skew-x-[-12deg]">
+                                                            <div className="absolute top-3 left-3 bg-teal-600 text-white text-[9px] font-black px-2 py-1 rounded shadow-lg tracking-wider skew-x-[-12deg]">
                                                                 {discount}
                                                             </div>
                                                         </div>
                                                         <div className="p-4">
-                                                            <p className="text-xs font-black text-gray-900 uppercase tracking-tight line-clamp-2 h-8 group-hover/deal:text-emerald-600 transition-colors leading-tight">{productName}</p>
+                                                            <p className="text-xs font-black text-gray-900 tracking-tight line-clamp-2 h-8 group-hover/deal:text-teal-600 transition-colors leading-tight">{productName}</p>
                                                             <div className="flex items-baseline gap-2 mt-3">
                                                                 <span className="text-2xl font-black text-gray-900 tracking-tighter">${salePrice?.toFixed(2)}</span>
                                                                 {originalPrice && (
@@ -326,14 +326,14 @@ const StoreList: React.FC = () => {
                 <div className="max-w-7xl mx-auto px-4">
                     <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-12">
                         <div>
-                            <h2 className="text-4xl md:text-6xl font-black text-gray-900 uppercase tracking-tighter italic m-0">
-                                Local <span className="text-emerald-600">Grocers</span>
+                            <h2 className="text-4xl md:text-6xl font-black text-gray-900 tracking-tighter italic m-0">
+                                Local <span className="text-teal-600">Grocers</span>
                             </h2>
-                            <p className="text-sm text-gray-400 font-bold uppercase tracking-[0.2em] mt-2">Verified quality near your location</p>
+                            <p className="text-sm text-gray-400 font-bold tracking-[0.2em] mt-2">Verified quality near your location</p>
                         </div>
                         <div className="flex flex-wrap items-center gap-4">
                             <div className="bg-gray-50 px-4 py-2 rounded-2xl border border-gray-100 flex items-center gap-3">
-                                <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Radius:</span>
+                                <span className="text-[9px] font-black text-gray-400 tracking-widest">Radius:</span>
                                 <select 
                                     value={searchDistance} 
                                     onChange={(e) => setSearchDistance(Number(e.target.value))}
@@ -346,10 +346,10 @@ const StoreList: React.FC = () => {
                                 </select>
                             </div>
                             <div className="flex bg-gray-50 rounded-2xl p-1.5 border border-gray-100">
-                                <button onClick={() => setViewMode('grid')} className={`p-2 rounded-xl transition-all ${viewMode === 'grid' ? 'bg-white shadow-md text-emerald-600' : 'text-gray-400 hover:text-gray-600'}`}>
+                                <button onClick={() => setViewMode('grid')} className={`p-2 rounded-xl transition-all ${viewMode === 'grid' ? 'bg-white shadow-md text-teal-600' : 'text-gray-400 hover:text-gray-600'}`}>
                                     <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
                                 </button>
-                                <button onClick={() => setViewMode('list')} className={`p-2 rounded-xl transition-all ${viewMode === 'list' ? 'bg-white shadow-md text-emerald-600' : 'text-gray-400 hover:text-gray-600'}`}>
+                                <button onClick={() => setViewMode('list')} className={`p-2 rounded-xl transition-all ${viewMode === 'list' ? 'bg-white shadow-md text-teal-600' : 'text-gray-400 hover:text-gray-600'}`}>
                                     <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" /></svg>
                                 </button>
                             </div>
@@ -362,8 +362,8 @@ const StoreList: React.FC = () => {
                                 <button
                                     key={cat}
                                     onClick={() => setActiveCategory(cat)}
-                                    className={`px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap border-2 ${activeCategory === cat 
-                                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-xl -translate-y-1' 
+                                    className={`px-6 py-3 rounded-2xl text-[10px] font-black tracking-widest transition-all whitespace-nowrap border-2 ${activeCategory === cat 
+                                        ? 'bg-teal-600 text-white border-teal-600 shadow-xl -translate-y-1' 
                                         : 'bg-white text-gray-400 border-gray-50 hover:border-gray-200'}`}
                                 >
                                     {cat}
@@ -390,13 +390,13 @@ const StoreList: React.FC = () => {
                                     <div className={`relative bg-gray-100 overflow-hidden ${viewMode === 'list' ? 'w-48 md:w-80 shrink-0' : 'h-48'}`}>
                                         <img src={store.image} alt={store.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 opacity-90 group-hover:opacity-100" />
                                         <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
-                                        <div className="absolute top-4 left-4 bg-black/70 backdrop-blur-md px-3 py-1.5 rounded-xl text-[10px] text-white font-black uppercase tracking-widest border border-white/20">
+                                        <div className="absolute top-4 left-4 bg-black/70 backdrop-blur-md px-3 py-1.5 rounded-xl text-[10px] text-white font-black tracking-widest border border-white/20">
                                             {store.deliveryTime}
                                         </div>
                                         {(store.hasFlyer || store.activeDealsCount > 0) && (
                                             <div className="absolute top-4 right-4 flex flex-col gap-2 scale-75 md:scale-100">
-                                                {store.hasFlyer && <span className="bg-emerald-600 text-white text-[8px] font-black px-2 py-1 rounded shadow-lg uppercase tracking-widest skew-x-[-12deg]">Flyer Live</span>}
-                                                {store.activeDealsCount > 0 && <span className="bg-gray-900 text-white text-[8px] font-black px-2 py-1 rounded shadow-lg uppercase tracking-widest skew-x-[-12deg]">{store.activeDealsCount} Hot Deals</span>}
+                                                {store.hasFlyer && <span className="bg-teal-600 text-white text-[8px] font-black px-2 py-1 rounded shadow-lg tracking-widest skew-x-[-12deg]">Flyer Live</span>}
+                                                {store.activeDealsCount > 0 && <span className="bg-gray-900 text-white text-[8px] font-black px-2 py-1 rounded shadow-lg tracking-widest skew-x-[-12deg]">{store.activeDealsCount} Hot Deals</span>}
                                             </div>
                                         )}
                                     </div>
@@ -409,12 +409,12 @@ const StoreList: React.FC = () => {
 
                                         <div className={viewMode === 'list' ? '' : 'mt-8'}>
                                             <div className="flex items-center gap-2 mb-1">
-                                                <h3 className="font-black text-2xl text-gray-900 uppercase tracking-tighter italic m-0 group-hover:text-emerald-600 transition-colors leading-none">{store.name}</h3>
+                                                <h3 className="font-black text-2xl text-gray-900 tracking-tighter italic m-0 group-hover:text-teal-600 transition-colors leading-none">{store.name}</h3>
                                             </div>
                                             <div className="flex items-center gap-3">
-                                                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest m-0">{store.distance} Away</p>
+                                                <p className="text-xs font-bold text-gray-400 tracking-widest m-0">{store.distance} Away</p>
                                                 <div className="w-1 h-1 bg-gray-200 rounded-full"></div>
-                                                <span className="text-[10px] font-black flex items-center gap-1 bg-yellow-50 text-yellow-700 px-2 py-0.5 rounded-full uppercase">
+                                                <span className="text-[10px] font-black flex items-center gap-1 bg-yellow-50 text-yellow-700 px-2 py-0.5 rounded-full">
                                                     ★ {store.rating > 0 ? store.rating.toFixed(1) : 'NEW'}
                                                 </span>
                                             </div>
@@ -422,9 +422,9 @@ const StoreList: React.FC = () => {
 
                                         <div className="flex flex-wrap gap-2 mt-auto pt-6">
                                             {store.tags.slice(0, 3).map((tag: string) => (
-                                                <span key={tag} className="text-[8px] font-black text-white bg-gray-900 px-2 py-1 rounded-sm uppercase tracking-widest skew-x-[-12deg]">{tag}</span>
+                                                <span key={tag} className="text-[8px] font-black text-white bg-gray-900 px-2 py-1 rounded-sm tracking-widest skew-x-[-12deg]">{tag}</span>
                                             ))}
-                                            <span className="text-[8px] font-black text-gray-400 bg-gray-50 border border-gray-100 px-2 py-1 rounded-sm uppercase tracking-widest ml-auto shadow-inner">{store.deliveryFee} FEE</span>
+                                            <span className="text-[8px] font-black text-gray-400 bg-gray-50 border border-gray-100 px-2 py-1 rounded-sm tracking-widest ml-auto shadow-inner">{store.deliveryFee} FEE</span>
                                         </div>
                                     </div>
                                 </div>
@@ -438,24 +438,24 @@ const StoreList: React.FC = () => {
             <section className="py-32 px-4 bg-white overflow-hidden">
                 <div className="max-w-7xl mx-auto">
                     <div className="relative bg-gray-50 rounded-[4rem] p-12 md:p-24 overflow-hidden group shadow-xl border border-gray-200">
-                        <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-emerald-600/5 rounded-full blur-[120px] -mr-96 -mt-96 group-hover:bg-emerald-600/10 transition-all duration-700"></div>
+                        <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-teal-600/5 rounded-full blur-[120px] -mr-96 -mt-96 group-hover:bg-teal-600/10 transition-all duration-700"></div>
                         <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-blue-600/5 rounded-full blur-[100px] -ml-48 -mb-48"></div>
                         
                         <div className="relative z-10 flex flex-col md:flex-row items-center gap-16">
                             <div className="text-8xl md:text-9xl animate-bounce-slow drop-shadow-xl">🛍️✨</div>
                             <div className="flex-1 text-center md:text-left">
-                                <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 px-3 py-1 rounded shadow-sm uppercase tracking-[0.3em] mb-6 inline-block border border-emerald-100">Spendigo Optimizer</span>
-                                <h3 className="text-4xl md:text-7xl font-black text-gray-900 uppercase tracking-tighter italic leading-[0.9] mb-8">
-                                    Why Pay <span className="text-emerald-600 underline decoration-gray-200 underline-offset-8">Retail?</span>
+                                <span className="text-[10px] font-black text-teal-600 bg-teal-50 px-3 py-1 rounded shadow-sm tracking-[0.3em] mb-6 inline-block border border-teal-100">Spendigo Optimizer</span>
+                                <h3 className="text-4xl md:text-7xl font-black text-gray-900 tracking-tighter italic leading-[0.9] mb-8">
+                                    Why Pay <span className="text-teal-600 underline decoration-gray-200 underline-offset-8">Retail?</span>
                                 </h3>
-                                <p className="text-lg md:text-2xl text-gray-500 font-bold uppercase tracking-tight max-w-2xl leading-tight">
+                                <p className="text-lg md:text-2xl text-gray-500 font-bold tracking-tight max-w-2xl leading-tight">
                                     Our SmartCart engine analyzes {stats.totalProducts}+ products across the marketplace to save you <span className="text-gray-900 font-black">15% or more</span> on every shop.
                                 </p>
                                 <div className="mt-12 flex flex-wrap gap-6 justify-center md:justify-start">
-                                    <Link to="/how-it-works" className="px-12 py-5 bg-gray-900 text-white font-black text-xs uppercase tracking-[0.2em] rounded-full hover:bg-emerald-600 transition-all shadow-xl active:scale-95 border-b-4 border-gray-800 hover:border-emerald-800">
+                                    <Link to="/how-it-works" className="px-12 py-5 bg-gray-900 text-white font-black text-xs tracking-[0.2em] rounded-full hover:bg-teal-600 transition-all shadow-xl active:scale-95 border-b-4 border-gray-800 hover:border-teal-800">
                                         Activate Optimizer
                                     </Link>
-                                    <Link to="/register" className="px-12 py-5 bg-white border border-gray-300 text-gray-900 font-black text-xs uppercase tracking-[0.2em] rounded-full hover:bg-gray-100 transition-all shadow-sm">
+                                    <Link to="/register" className="px-12 py-5 bg-white border border-gray-300 text-gray-900 font-black text-xs tracking-[0.2em] rounded-full hover:bg-gray-100 transition-all shadow-sm">
                                         Join Marketplace
                                     </Link>
                                 </div>
