@@ -29,7 +29,7 @@ const DefaultHero = ({ handleSearch, address, setAddress, isLocating, handleLoca
 
         <div className="relative z-10 max-w-5xl mx-auto text-center w-full">
             <div className="inline-block py-1 px-4 rounded-full bg-white/5 backdrop-blur-md border border-white/10 text-white/60 text-[10px] font-black tracking-[0.3em] mb-8 animate-fade-in">
-                Spendigo Marketplace
+                Spendigo Powered by Smartcart AI
             </div>
             
             <h1 className="text-4xl md:text-6xl font-black text-white mb-8 leading-[0.9] tracking-tighter drop-shadow-2xl italic">
@@ -228,7 +228,7 @@ const AdCarousel: React.FC<AdCarouselProps> = (props) => {
             {/* Tagline Watermark: Moved to Section Root for correct positioning */}
             <div className="absolute bottom-12 left-0 right-0 text-center pointer-events-none z-20">
                 <p className="text-white/70 text-[10px] tracking-[0.2em] font-medium drop-shadow-md">
-                    Spendigo • {t('shopLocal')} <span className="text-white">{t('everyoneWinsNoDot')}</span>
+                    Spendigo • Powered by Smartcart AI
                 </p>
             </div>
 

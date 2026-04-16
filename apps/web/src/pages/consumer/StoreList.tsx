@@ -444,7 +444,7 @@ const StoreList: React.FC = () => {
                         <div className="relative z-10 flex flex-col md:flex-row items-center gap-16">
                             <div className="text-8xl md:text-9xl animate-bounce-slow drop-shadow-xl">🛍️✨</div>
                             <div className="flex-1 text-center md:text-left">
-                                <span className="text-[10px] font-black text-teal-600 bg-teal-50 px-3 py-1 rounded shadow-sm tracking-[0.3em] mb-6 inline-block border border-teal-100">Spendigo Optimizer</span>
+                                <span className="text-[10px] font-black text-teal-600 bg-teal-50 px-3 py-1 rounded shadow-sm tracking-[0.3em] mb-6 inline-block border border-teal-100">Spendigo Smartcart AI</span>
                                 <h3 className="text-4xl md:text-7xl font-black text-gray-900 tracking-tighter italic leading-[0.9] mb-8">
                                     Why Pay <span className="text-teal-600 underline decoration-gray-200 underline-offset-8">Retail?</span>
                                 </h3>
