@@ -33,7 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.onStoreDelete = void 0;
+exports.onStoreUpdate = exports.onStoreCreate = exports.onStoreDelete = void 0;
 const functions = __importStar(require("firebase-functions"));
 const admin = __importStar(require("firebase-admin"));
 const stripe_1 = require("../config/stripe");
@@ -98,66 +98,68 @@ exports.onStoreDelete = functions.firestore
         });
         await Promise.all(userUpdates);
         functions.logger.info(`Successfully deactivated ${usersSnapshot.size} users linked to store ${storeId}.`);
-        /**
-         * Automatically geocodes a store's address when it is created or the address changes.
-         */
-        export const onStoreCreate = functions.firestore
-            .document('stores/{storeId}')
-            .onCreate(async (snap, context) => {
-            const data = snap.data();
-            if (!data.address)
-                return;
-            const fullAddress = `${data.address}, ${data.city || ''}, ${data.province || ''}, ${data.postalCode || ''}, Canada`.replace(/,,/g, ',');
-            try {
-                const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(fullAddress)}`);
-                const results = await response.json();
-                if (results && results.length > 0) {
-                    const { lat, lon } = results[0];
-                    await snap.ref.update({
-                        coordinates: {
-                            lat: parseFloat(lat),
-                            lng: parseFloat(lon)
-                        }
-                    });
-                    functions.logger.info(`Automatically geocoded new store ${context.params.storeId}`);
-                }
-            }
-            catch (err) {
-                functions.logger.error(`Failed to geocode new store ${context.params.storeId}:`, err);
-            }
-        });
-        export const onStoreUpdate = functions.firestore
-            .document('stores/{storeId}')
-            .onUpdate(async (change, context) => {
-            const before = change.before.data();
-            const after = change.after.data();
-            // Only re-geocode if the address parts changed
-            const addressChanged = before.address !== after.address ||
-                before.city !== after.city ||
-                before.postalCode !== after.postalCode;
-            if (addressChanged && after.address) {
-                const fullAddress = `${after.address}, ${after.city || ''}, ${after.province || ''}, ${after.postalCode || ''}, Canada`.replace(/,,/g, ',');
-                try {
-                    const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(fullAddress)}`);
-                    const results = await response.json();
-                    if (results && results.length > 0) {
-                        const { lat, lon } = results[0];
-                        await change.after.ref.update({
-                            coordinates: {
-                                lat: parseFloat(lat),
-                                lng: parseFloat(lon)
-                            }
-                        });
-                        functions.logger.info(`Re-geocoded updated store ${context.params.storeId}`);
-                    }
-                }
-                catch (err) {
-                    functions.logger.error(`Failed to re-geocode store ${context.params.storeId}:`, err);
-                }
-            }
-        });
     }
-    finally {
+    catch (error) {
+        functions.logger.error(`Error during cascade delete for store ${storeId}:`, error);
+        // We don't re-throw because the store is already deleted. We just log the failure.
+    }
+});
+/**
+ * Automatically geocodes a store's address when it is created or the address changes.
+ */
+exports.onStoreCreate = functions.firestore
+    .document('stores/{storeId}')
+    .onCreate(async (snap, context) => {
+    const data = snap.data();
+    if (!data.address)
+        return;
+    const fullAddress = `${data.address}, ${data.city || ''}, ${data.province || ''}, ${data.postalCode || ''}, Canada`.replace(/,,/g, ',');
+    try {
+        const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(fullAddress)}`);
+        const results = await response.json();
+        if (results && results.length > 0) {
+            const { lat, lon } = results[0];
+            await snap.ref.update({
+                coordinates: {
+                    lat: parseFloat(lat),
+                    lng: parseFloat(lon)
+                }
+            });
+            functions.logger.info(`Automatically geocoded new store ${context.params.storeId}`);
+        }
+    }
+    catch (err) {
+        functions.logger.error(`Failed to geocode new store ${context.params.storeId}:`, err);
+    }
+});
+exports.onStoreUpdate = functions.firestore
+    .document('stores/{storeId}')
+    .onUpdate(async (change, context) => {
+    const before = change.before.data();
+    const after = change.after.data();
+    // Only re-geocode if the address parts changed
+    const addressChanged = before.address !== after.address ||
+        before.city !== after.city ||
+        before.postalCode !== after.postalCode;
+    if (addressChanged && after.address) {
+        const fullAddress = `${after.address}, ${after.city || ''}, ${after.province || ''}, ${after.postalCode || ''}, Canada`.replace(/,,/g, ',');
+        try {
+            const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(fullAddress)}`);
+            const results = await response.json();
+            if (results && results.length > 0) {
+                const { lat, lon } = results[0];
+                await change.after.ref.update({
+                    coordinates: {
+                        lat: parseFloat(lat),
+                        lng: parseFloat(lon)
+                    }
+                });
+                functions.logger.info(`Re-geocoded updated store ${context.params.storeId}`);
+            }
+        }
+        catch (err) {
+            functions.logger.error(`Failed to re-geocode store ${context.params.storeId}:`, err);
+        }
     }
 });
 //# sourceMappingURL=storeTriggers.js.map
