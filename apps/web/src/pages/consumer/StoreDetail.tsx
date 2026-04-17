@@ -80,7 +80,7 @@ const FlyerTab: React.FC<{ storeId: string; storeName: string; summary: any; vie
     return (
         <div className="animate-fade-in bg-white min-h-screen">
             {/* RETAIL FLYER HEADER */}
-            <div className="bg-teal-600 text-white px-4 py-3 md:py-4 flex flex-col md:flex-row md:items-center justify-between gap-2 shadow-inner border-b-4 border-teal-700">
+            <div className="bg-blue-600 text-white px-4 py-3 md:py-4 flex flex-col md:flex-row md:items-center justify-between gap-2 shadow-inner border-b-4 border-blue-700">
                 <div className="flex items-center gap-3">
                     <div className="bg-white p-1 rounded-lg">
                         <span className="text-2xl">🍁</span>
@@ -90,20 +90,20 @@ const FlyerTab: React.FC<{ storeId: string; storeName: string; summary: any; vie
                             {storeName}'s Great Deals
                         </h2>
                         <div className="flex items-center gap-2 mt-0.5">
-                            <span className="text-[10px] bg-teal-800 px-1.5 py-0.5 rounded font-bold tracking-widest">Proudly canadian</span>
+                            <span className="text-[10px] bg-blue-800 px-1.5 py-0.5 rounded font-bold tracking-widest">Proudly canadian</span>
                             <span className="text-[10px] font-bold opacity-90 tracking-widest">SINCE 1922</span>
                         </div>
                     </div>
                 </div>
                 <div className="text-right flex flex-col items-end">
-                    <div className="text-xs font-bold bg-white text-teal-600 px-2 py-0.5 rounded-full mb-1">
+                    <div className="text-xs font-bold bg-white text-blue-600 px-2 py-0.5 rounded-full mb-1">
                         {flyer.title || "WEEKLY SAVINGS"}
                     </div>
                     <div className="flex flex-col items-end leading-tight">
                         <p className="text-[10px] md:text-xs font-black tracking-widest text-yellow-300 drop-shadow-sm">
                             VALID: {new Date(flyer.validFrom).toLocaleDateString()} - {new Date(flyer.validUntil).toLocaleDateString()}
                         </p>
-                        <p className="text-[9px] md:text-[10px] font-black tracking-tighter bg-teal-800 px-1.5 py-0.5 rounded mt-0.5 animate-pulse text-white">
+                        <p className="text-[9px] md:text-[10px] font-black tracking-tighter bg-blue-800 px-1.5 py-0.5 rounded mt-0.5 animate-pulse text-white">
                             ⏰ {flyerDaysLeft} {flyerDaysLeft === 1 ? 'DAY' : 'DAYS'} LEFT
                         </p>
                     </div>
@@ -126,13 +126,13 @@ const FlyerTab: React.FC<{ storeId: string; storeName: string; summary: any; vie
                                 <div className="flex-1 min-w-0">
                                     <p className="font-bold text-sm text-[var(--text-main)] truncate">{item.name}</p>
                                     <div className="flex items-baseline gap-2">
-                                        <span className="text-sm font-black text-teal-600">${item.salePrice.toFixed(2)}</span>
+                                        <span className="text-sm font-black text-blue-600">${item.salePrice.toFixed(2)}</span>
                                         <span className="text-[10px] text-[var(--text-muted)] line-through">Reg ${item.originalPrice.toFixed(2)}</span>
                                     </div>
                                 </div>
                                 <button
                                     onClick={() => handleAdd(item)}
-                                    className="px-4 py-2 bg-teal-600 text-white text-xs font-black rounded tracking-widest hover:bg-teal-700 active:scale-95 transition-all shadow-md"
+                                    className="px-4 py-2 bg-blue-600 text-white text-xs font-black rounded tracking-widest hover:bg-blue-700 active:scale-95 transition-all shadow-md"
                                 >
                                     + ADD
                                 </button>
@@ -176,37 +176,37 @@ const FlyerTab: React.FC<{ storeId: string; storeName: string; summary: any; vie
                                     </div>
 
                                     {/* Pricing Section - Retail Style */}
-                                    <div className="flex-1 flex flex-col">
-                                        <div className="flex items-start gap-2 mb-1">
-                                            <div className="flex flex-col">
-                                                <span className="text-[8px] md:text-[10px] font-black bg-teal-600 text-white px-1 w-max rounded-sm tracking-tighter">Sale</span>
-                                                <span className={`${isFeatured ? 'text-2xl md:text-4xl' : 'text-xl md:text-2xl'} font-black text-teal-700 tracking-tighter leading-none`}>
-                                                    {item.salePrice.toFixed(2)}
-                                                </span>
+                                        <div className="flex flex-col">
+                                            <div className="flex items-start gap-2 mb-1">
+                                                <div className="flex flex-col">
+                                                    <span className="text-[8px] md:text-[10px] font-black bg-blue-600 text-white px-1 w-max rounded-sm tracking-tighter">Sale</span>
+                                                    <span className={`${isFeatured ? 'text-2xl md:text-4xl' : 'text-xl md:text-2xl'} font-black text-blue-700 tracking-tighter leading-none`}>
+                                                        {item.salePrice.toFixed(2)}
+                                                    </span>
+                                                </div>
+                                                <div className="flex flex-col mt-4">
+                                                    <span className="text-[8px] md:text-[10px] font-bold text-gray-500 line-through">Reg {item.originalPrice.toFixed(2)}</span>
+                                                    <span className="text-[8px] md:text-[10px] font-black text-blue-600 tracking-tighter">Limit 4</span>
+                                                </div>
                                             </div>
-                                            <div className="flex flex-col mt-4">
-                                                <span className="text-[8px] md:text-[10px] font-bold text-gray-500 line-through">Reg {item.originalPrice.toFixed(2)}</span>
-                                                <span className="text-[8px] md:text-[10px] font-black text-teal-600 tracking-tighter">Limit 4</span>
-                                            </div>
-                                        </div>
 
-                                        <p className={`${isFeatured ? 'text-sm md:text-lg' : 'text-xs md:text-sm'} font-black text-gray-800 leading-snug grow`}>
-                                            {item.name}
-                                        </p>
-
-                                        {isFeatured && (
-                                            <p className="text-[10px] text-gray-500 mb-2 font-medium italic">
-                                                Compare at store prices. While quantities last. 
+                                            <p className={`${isFeatured ? 'text-sm md:text-lg' : 'text-xs md:text-sm'} font-black text-gray-800 leading-snug grow`}>
+                                                {item.name}
                                             </p>
-                                        )}
 
-                                        <button
-                                            onClick={() => handleAdd(item)}
-                                            className="w-full mt-2 py-2 md:py-3 bg-teal-600 text-white text-[10px] md:text-xs font-black rounded tracking-widest hover:bg-black transition-colors shadow-md active:translate-y-0.5"
-                                        >
-                                            + Add To Cart
-                                        </button>
-                                    </div>
+                                            {isFeatured && (
+                                                <p className="text-[10px] text-gray-500 mb-2 font-medium italic">
+                                                    Compare at store prices. While quantities last. 
+                                                </p>
+                                            )}
+
+                                            <button
+                                                onClick={() => handleAdd(item)}
+                                                className="w-full mt-2 py-2 md:py-3 bg-blue-600 text-white text-[10px] md:text-xs font-black rounded tracking-widest hover:bg-black transition-colors shadow-md active:translate-y-0.5"
+                                            >
+                                                + Add To Cart
+                                            </button>
+                                        </div>
                                 </div>
                             );
                         })}
@@ -410,7 +410,7 @@ const OffersTab: React.FC<{ storeId: string, storeName: string; viewMode: 'grid'
             {/* SALE ITEMS SECTION */}
             {sortedSaleItems.length > 0 && (
                 <div>
-                    <div className="bg-teal-600 text-white px-4 py-3 md:py-4 flex items-center justify-between border-b-4 border-teal-700 shadow-inner">
+                    <div className="bg-blue-600 text-white px-4 py-3 md:py-4 flex items-center justify-between border-b-4 border-blue-700 shadow-inner">
                         <div className="flex items-center gap-3">
                             <span className="text-2xl md:text-3xl">🏷️</span>
                             <div>
@@ -467,8 +467,8 @@ const OffersTab: React.FC<{ storeId: string, storeName: string; viewMode: 'grid'
                                             <div className="flex-1 flex flex-col px-1">
                                                 <div className="flex items-start gap-2 mb-1">
                                                     <div className="flex flex-col">
-                                                        <span className="text-[8px] md:text-[10px] font-black bg-teal-600 text-white px-1 w-max rounded-sm tracking-tighter">Sale</span>
-                                                        <span className={`${isFeatured ? 'text-2xl md:text-3xl' : 'text-xl md:text-2xl'} font-black text-teal-700 tracking-tighter leading-none`}>
+                                                        <span className="text-[8px] md:text-[10px] font-black bg-blue-600 text-white px-1 w-max rounded-sm tracking-tighter">Sale</span>
+                                                        <span className={`${isFeatured ? 'text-2xl md:text-3xl' : 'text-xl md:text-2xl'} font-black text-blue-700 tracking-tighter leading-none`}>
                                                             {sPrice.toFixed(2)}
                                                         </span>
                                                     </div>
@@ -479,7 +479,7 @@ const OffersTab: React.FC<{ storeId: string, storeName: string; viewMode: 'grid'
                                                 <p className={`${isFeatured ? 'text-sm md:text-lg' : 'text-xs md:text-sm'} font-black text-gray-800 leading-snug grow`}>
                                                     {item.productName || item.name}
                                                 </p>
-                                                <button onClick={() => handleQuickAdd(item)} className="w-full mt-2 py-2 md:py-3 bg-teal-600 text-white text-[10px] md:text-xs font-black rounded tracking-widest hover:bg-black transition-all shadow-md">
+                                                <button onClick={() => handleQuickAdd(item)} className="w-full mt-2 py-2 md:py-3 bg-blue-600 text-white text-[10px] md:text-xs font-black rounded tracking-widest hover:bg-black transition-all shadow-md">
                                                     + ADD TO CART
                                                 </button>
                                             </div>
@@ -613,7 +613,7 @@ const StoreDetail: React.FC = () => {
 
                         <div className="flex-1 pb-2">
                             <div className="flex flex-wrap items-center gap-3 mb-2">
-                                <span className="text-[9px] font-black bg-teal-600 text-white px-2 py-0.5 rounded skew-x-[-12deg] shadow-lg tracking-widest">Verified Store</span>
+                                <span className="text-[9px] font-black bg-blue-600 text-white px-2 py-0.5 rounded skew-x-[-12deg] shadow-lg tracking-widest">Verified Store</span>
                                 <span className="text-[9px] font-black bg-white/10 backdrop-blur-md text-white px-2 py-0.5 rounded border border-white/20 tracking-widest">Open Now</span>
                             </div>
                             <h1 className="text-4xl md:text-6xl font-black text-white tracking-tighter leading-none mb-2 drop-shadow-2xl italic">

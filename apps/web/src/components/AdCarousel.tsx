@@ -19,43 +19,37 @@ interface AdCampaign {
 const DefaultHero = ({ handleSearch, address, setAddress, isLocating, handleLocateMe }: any) => {
     const { t } = useTranslation();
     return (
-    <section className="relative overflow-hidden bg-gray-900 py-2 md:py-4 px-4 min-h-[100px] flex items-center justify-center">
-        {/* Immersive Background */}
+    <section className="relative overflow-hidden bg-gradient-to-r from-blue-600 to-teal-500 py-12 md:py-20 px-4 flex items-center justify-center">
+        {/* Background Decorative Elements */}
         <div className="absolute inset-0 z-0">
-            <div className="absolute inset-0 bg-gradient-to-br from-teal-600/20 via-gray-900 to-gray-900"></div>
-            <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-teal-600/10 rounded-full blur-[120px] -mr-64 -mt-64 animate-pulse"></div>
-            <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-blue-600/5 rounded-full blur-[100px] -ml-48 -mb-48 animate-pulse" style={{ animationDelay: '2s' }}></div>
+            <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-white/5 rounded-full blur-[100px] -mr-32 -mt-32"></div>
+            <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-black/5 rounded-full blur-[80px] -ml-24 -mb-24"></div>
         </div>
 
         <div className="relative z-10 max-w-5xl mx-auto text-center w-full">
-            <div className="inline-block py-1 px-4 rounded-full bg-white/5 backdrop-blur-md border border-white/10 text-white/60 text-[10px] font-black tracking-[0.3em] mb-8 animate-fade-in">
-                Spendigo Powered by Smartcart AI
-            </div>
-            
-            <h1 className="text-4xl md:text-6xl font-black text-white mb-8 leading-[0.9] tracking-tighter drop-shadow-2xl italic">
+            <h1 className="text-3xl md:text-5xl lg:text-6xl font-black text-white mb-4 leading-tight tracking-tighter drop-shadow-lg">
                 {t('shopLocal')}<br />
-                <span className="text-teal-600 drop-shadow-[0_0_15px_rgba(220,38,38,0.5)]">{t('everyoneWins')}</span>
+                <span className="text-yellow-400 drop-shadow-md">{t('everyoneWins')}</span>
             </h1>
             
-            <p className="text-white/60 text-base md:text-xl mb-12 max-w-2xl mx-auto font-bold tracking-wide">
-                Experience the highest quality local commerce. <span className="text-white font-black">Compare. Shop. Save.</span>
+            <p className="text-white/90 text-sm md:text-lg mb-8 max-w-2xl mx-auto font-medium">
+                {t('supportLocal')}
             </p>
 
             {/* Premium Search Interaction */}
             <div className="group relative max-w-2xl mx-auto">
-                <div className="absolute -inset-1 bg-gradient-to-r from-teal-600 to-teal-400 rounded-full blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
-                <div className="relative flex items-center bg-white rounded-full p-2.5 shadow-2xl transition-all duration-300 group-hover:scale-[1.01]">
-                    <button
+                <div className="relative flex items-center bg-white rounded-full p-1.5 shadow-2xl transition-all duration-300 group-hover:scale-[1.01]">
+                    <div 
                         onClick={handleLocateMe}
-                        className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${address === "Current Location" ? 'bg-teal-600 text-white shadow-lg' : 'bg-gray-50 text-gray-400 hover:bg-gray-100 hover:text-gray-600'}`}
-                        title="Use my current location"
+                        className={`pl-4 pr-2 flex items-center text-red-500 cursor-pointer hover:scale-125 transition-all active:scale-95 group/loc ${isLocating ? 'animate-bounce' : ''}`}
+                        title="Locate Me"
                     >
-                        {isLocating && address === "Current Location" ? <span className="animate-spin text-lg">⏳</span> : <span className="text-lg">📍</span>}
-                    </button>
+                        <span className="text-lg">📍</span>
+                    </div>
                     <input
                         type="text"
-                        placeholder="Enter your postal code or address..."
-                        className="flex-1 py-3 px-4 bg-transparent outline-none text-gray-900 font-bold placeholder-gray-300 text-sm md:text-base"
+                        placeholder="Laval, Quebec"
+                        className="flex-1 py-3 px-2 bg-transparent outline-none text-gray-900 font-medium placeholder-gray-400 text-sm md:text-base"
                         value={address}
                         onChange={(e) => setAddress(e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
@@ -63,9 +57,9 @@ const DefaultHero = ({ handleSearch, address, setAddress, isLocating, handleLoca
                     <button
                         onClick={() => handleSearch()}
                         disabled={isLocating}
-                        className="bg-gray-900 text-white px-8 md:px-10 py-3.5 rounded-full font-black text-xs tracking-widest hover:bg-black transition-all shadow-xl disabled:bg-gray-200 active:scale-95"
+                        className="bg-blue-600 text-white px-6 md:px-10 py-3 rounded-full font-bold text-sm hover:bg-blue-700 transition-all shadow-lg active:scale-95"
                     >
-                        {isLocating && address !== "Current Location" ? 'Searching...' : 'Find Grocers'}
+                        {isLocating ? '...' : 'Search'}
                     </button>
                 </div>
             </div>
@@ -94,18 +88,7 @@ const AdCarousel: React.FC<AdCarouselProps> = (props) => {
     useEffect(() => {
         const fetchAds = async () => {
             const today = new Date().toISOString().split('T')[0];
-            const q = query(
-                collection(db, 'ads'),
-                where('status', '==', 'active'),
-                where('endDate', '>=', today),
-                orderBy('endDate', 'desc'), // Firestore restriction: first orderBy must match inequality filter
-                orderBy('priority', 'desc')
-            );
-
-            // Note: If you get a "Missing Index" error, removing `orderBy('priority')` is the quick fix until index is built.
-            // For now, let's just fetch active ones and sort in JS to avoid index errors immediately.
             try {
-                // Simplified query to avoid complex index requirements initially
                 const simpleQ = query(collection(db, 'ads'), where('status', '==', 'active'));
                 const snapshot = await getDocs(simpleQ);
 
@@ -140,7 +123,6 @@ const AdCarousel: React.FC<AdCarouselProps> = (props) => {
     useEffect(() => {
         if (ads.length > 0) {
             const ad = ads[currentIndex];
-            // Fire and forget update
             updateDoc(doc(db, 'ads', ad.id), {
                 views: increment(1)
             }).catch(console.error);
@@ -148,7 +130,6 @@ const AdCarousel: React.FC<AdCarouselProps> = (props) => {
     }, [currentIndex, ads]);
 
     const handleAdClick = async (ad: AdCampaign) => {
-        // Track Click
         await updateDoc(doc(db, 'ads', ad.id), {
             clicks: increment(1)
         });
@@ -165,52 +146,47 @@ const AdCarousel: React.FC<AdCarouselProps> = (props) => {
     const currentAd = ads[currentIndex];
 
     return (
-        <section className="relative overflow-hidden min-h-[110px] md:h-[125px] flex items-center justify-center bg-gray-900 group">
+        <section className="relative overflow-hidden bg-gradient-to-r from-blue-600 to-teal-500 py-10 md:py-16 px-4 flex items-center justify-center group">
             {/* Background Image with Blur/Gradient */}
             <div className="absolute inset-0 z-0">
                 <img
                     src={currentAd.imageUrl}
                     alt={currentAd.title}
-                    className="w-full h-full object-cover opacity-60 transition-all duration-1000 transform scale-105"
-                    key={currentAd.id} // Force re-render for animation
+                    className="w-full h-full object-cover opacity-20 transition-all duration-1000 transform scale-105"
+                    key={currentAd.id}
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/40 to-transparent"></div>
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-600/40 to-teal-500/40"></div>
             </div>
 
-            <div className="relative z-10 max-w-5xl mx-auto text-center w-full px-4 pt-16">
-                <div className="inline-block py-1 px-4 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white/80 text-[10px] font-black tracking-[0.3em] mb-6">
-                    Featured Spotlight
-                </div>
-
-                <h1 className="text-3xl md:text-5xl font-black text-white mb-8 leading-[0.9] tracking-tighter italic animate-fade-in-up drop-shadow-[0_10px_30px_rgba(0,0,0,0.5)]">
+            <div className="relative z-10 max-w-5xl mx-auto text-center w-full">
+                <h1 className="text-3xl md:text-5xl font-black text-white mb-6 leading-tight tracking-tighter drop-shadow-lg">
                     {currentAd.title}
                 </h1>
 
                 {/* Search Bar pass-through overlay */}
                 <div className="group relative max-w-2xl mx-auto">
-                    <div className="absolute -inset-1 bg-gradient-to-r from-teal-600 to-teal-400 rounded-full blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
-                    <div className="relative flex items-center bg-white/95 backdrop-blur-md rounded-full p-2.5 shadow-2xl transition-all duration-300 group-hover:scale-[1.01]">
-                        <button
+                    <div className="relative flex items-center bg-white rounded-full p-1.5 shadow-2xl transition-all duration-300 group-hover:scale-[1.01]">
+                        <div 
                             onClick={props.handleLocateMe}
-                            className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${props.address === "Current Location" ? 'bg-teal-600 text-white shadow-lg' : 'bg-gray-50 text-gray-400 hover:bg-gray-100 hover:text-gray-600'}`}
-                            title="Use my current location"
+                            className={`pl-4 pr-2 flex items-center text-red-500 cursor-pointer hover:scale-125 transition-all active:scale-95 group/loc ${props.isLocating ? 'animate-bounce' : ''}`}
+                            title="Locate Me"
                         >
-                            {props.isLocating && props.address === "Current Location" ? <span className="animate-spin text-lg">⏳</span> : <span className="text-lg">📍</span>}
-                        </button>
+                            <span className="text-lg">📍</span>
+                        </div>
                         <input
                             type="text"
                             placeholder="Type postal code or address..."
-                            className="flex-1 py-3 px-4 bg-transparent outline-none text-gray-900 font-bold placeholder-gray-300 text-sm md:text-base"
+                            className="flex-1 py-3 px-2 bg-transparent outline-none text-gray-900 font-medium placeholder-gray-400 text-sm md:text-base"
                             value={props.address}
                             onChange={(e) => props.setAddress(e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && props.handleSearch()}
                         />
                         <button
                             onClick={() => props.handleSearch()}
-                            disabled={props.isLocating}
-                            className="bg-gray-900 text-white px-8 md:px-10 py-3.5 rounded-full font-black text-xs tracking-widest hover:bg-black transition-all shadow-xl active:scale-95"
+                            disabled={isLocating}
+                            className="bg-blue-600 text-white px-6 md:px-10 py-3 rounded-full font-bold text-sm tracking-wide hover:bg-blue-700 transition-all shadow-xl active:scale-95"
                         >
-                            {props.isLocating && props.address !== "Current Location" ? '...' : 'Re-Search'}
+                            {isLocating ? '...' : 'Search'}
                         </button>
                     </div>
                 </div>
@@ -218,18 +194,11 @@ const AdCarousel: React.FC<AdCarouselProps> = (props) => {
                 {currentAd.linkUrl && (
                     <button
                         onClick={() => handleAdClick(currentAd)}
-                        className="mt-10 px-8 py-3 bg-white text-gray-900 rounded-full font-black text-[10px] tracking-widest hover:bg-teal-600 hover:text-white transition-all shadow-xl active:scale-95 border-b-4 border-gray-200 hover:border-teal-800"
+                        className="mt-6 px-8 py-2.5 bg-white/10 hover:bg-white/20 backdrop-blur-md text-white border border-white/30 rounded-full font-bold text-xs tracking-widest transition-all shadow-xl active:scale-95"
                     >
-                        Explore Exclusive Offer &rarr;
+                        View Offer &rarr;
                     </button>
                 )}
-            </div>
-
-            {/* Tagline Watermark: Moved to Section Root for correct positioning */}
-            <div className="absolute bottom-12 left-0 right-0 text-center pointer-events-none z-20">
-                <p className="text-white/70 text-[10px] tracking-[0.2em] font-medium drop-shadow-md">
-                    Spendigo • Powered by Smartcart AI
-                </p>
             </div>
 
             {/* Dots */}
@@ -239,7 +208,7 @@ const AdCarousel: React.FC<AdCarouselProps> = (props) => {
                         <button
                             key={idx}
                             onClick={() => setCurrentIndex(idx)}
-                            className={`w-2 h-2 rounded-full transition-all ${idx === currentIndex ? 'bg-white w-6' : 'bg-white/40 hover:bg-white/60'}`}
+                            className={`w-1.5 h-1.5 rounded-full transition-all ${idx === currentIndex ? 'bg-white w-4' : 'bg-white/40 hover:bg-white/60'}`}
                         />
                     ))}
                 </div>

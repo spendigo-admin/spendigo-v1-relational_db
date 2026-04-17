@@ -61,11 +61,11 @@ const ConsumerLayout: React.FC = () => {
                 <div className="flex items-center gap-8 flex-1 max-w-4xl">
                     {/* PREMIUM RETAIL LOGO */}
                     <Link to="/" className="flex items-center gap-3 group shrink-0">
-                        <div className="w-10 h-10 bg-teal-600 flex items-center justify-center skew-x-[-12deg] shadow-lg group-hover:scale-105 transition-transform group-hover:bg-teal-500">
+                        <div className="w-10 h-10 bg-blue-600 flex items-center justify-center skew-x-[-12deg] shadow-lg group-hover:scale-105 transition-transform group-hover:bg-blue-500">
                             <span className="text-white text-2xl font-black italic">S</span>
                         </div>
                         <div className="flex flex-col leading-none">
-                            <span className="text-2xl font-black text-gray-900 italic tracking-tighter group-hover:text-teal-600 transition-colors">Spendigo</span>
+                            <span className="text-2xl font-black text-gray-900 italic tracking-tighter group-hover:text-blue-600 transition-colors">Spendigo</span>
                             <span className="text-[8px] font-black text-gray-500 tracking-[0.4em] mt-1">SmartCart AI</span>
                         </div>
                     </Link>
@@ -77,9 +77,9 @@ const ConsumerLayout: React.FC = () => {
                             placeholder="Search marketplace..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full h-10 pl-12 pr-4 bg-gray-100 border-2 border-transparent text-xs text-gray-900 font-black tracking-widest placeholder-gray-400 focus:bg-white focus:border-teal-600 transition-all outline-none"
+                            className="w-full h-10 pl-12 pr-4 bg-gray-100 border-2 border-transparent text-xs text-gray-900 font-black tracking-widest placeholder-gray-400 focus:bg-white focus:border-blue-600 transition-all outline-none"
                         />
-                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-hover:text-teal-600 transition-colors text-sm">🔍</span>
+                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-hover:text-blue-600 transition-colors text-sm">🔍</span>
                     </form>
                 </div>
 
@@ -94,12 +94,12 @@ const ConsumerLayout: React.FC = () => {
                     <div className="hidden md:block w-px h-8 bg-gray-200 mx-2"></div>
 
                     {/* Desktop Cart */}
-                    <NavLink to="/cart" className={({ isActive }) => `hidden md:flex items-center gap-2 px-5 py-2 text-[10px] font-black tracking-widest transition-all border-2 skew-x-[-12deg] ${isActive ? 'bg-teal-600 text-white border-teal-600 shadow-md' : 'bg-white text-gray-900 border-gray-200 hover:border-teal-600'}`}>
+                    <NavLink to="/cart" className={({ isActive }) => `hidden md:flex items-center gap-2 px-5 py-2 text-[10px] font-black tracking-widest transition-all border-2 skew-x-[-12deg] ${isActive ? 'bg-blue-600 text-white border-blue-600 shadow-md' : 'bg-white text-gray-900 border-gray-200 hover:border-blue-600'}`}>
                         <div className="skew-x-[12deg] flex items-center gap-2 relative">
                             <span className="text-sm">🛒</span>
                             <span>{t('cart')}</span>
                             {itemCount > 0 && (
-                                <span className="absolute -top-3 -right-6 bg-teal-600 text-white border-2 border-white text-[9px] px-1.5 py-0.5 rounded-full font-black animate-pulse">
+                                <span className="absolute -top-3 -right-6 bg-blue-600 text-white border-2 border-white text-[9px] px-1.5 py-0.5 rounded-full font-black animate-pulse">
                                     {itemCount}
                                 </span>
                             )}
@@ -127,7 +127,7 @@ const ConsumerLayout: React.FC = () => {
                     <Link to="/notifications" className="sm:hidden relative w-10 h-10 border-2 border-gray-200 bg-white flex items-center justify-center transition-colors skew-x-[-12deg]">
                         <span className="text-sm skew-x-[12deg]">🔔</span>
                         {unreadCount > 0 && (
-                            <span className="absolute -top-2 -right-2 w-3 h-3 border-2 border-white bg-teal-600 skew-x-[12deg] shadow-sm"></span>
+                            <span className="absolute -top-2 -right-2 w-3 h-3 border-2 border-white bg-blue-600 skew-x-[12deg] shadow-sm"></span>
                         )}
                     </Link>
 
@@ -160,20 +160,20 @@ const ConsumerLayout: React.FC = () => {
                                 <div>
                                     <Link
                                         to="/profile"
-                                        className="block px-5 py-3 text-[10px] font-black text-gray-700 tracking-widest hover:bg-teal-50 hover:text-teal-700 transition-colors"
+                                        className="block px-5 py-3 text-[10px] font-black text-gray-700 tracking-widest hover:bg-blue-50 hover:text-blue-700 transition-colors"
                                     >
                                         → {t('myProfile')}
                                     </Link>
                                     <Link
                                         to="/profile"
                                         state={{ activeTab: 'orders' }}
-                                        className="block px-5 py-3 text-[10px] font-black text-gray-700 tracking-widest hover:bg-teal-50 hover:text-teal-700 transition-colors"
+                                        className="block px-5 py-3 text-[10px] font-black text-gray-700 tracking-widest hover:bg-blue-50 hover:text-blue-700 transition-colors"
                                     >
                                         → {t('orderHistory')}
                                     </Link>
                                     <button
                                         onClick={logout}
-                                        className="w-full text-left px-5 py-3 text-[10px] font-black text-teal-600 tracking-widest hover:bg-teal-50 transition-colors border-t border-gray-100"
+                                        className="w-full text-left px-5 py-3 text-[10px] font-black text-blue-600 tracking-widest hover:bg-blue-50 transition-colors border-t border-gray-100"
                                     >
                                         × {t('signOut')}
                                     </button>
@@ -181,13 +181,13 @@ const ConsumerLayout: React.FC = () => {
                             </div>
                         </div>
                     ) : (
-                        <Link to="/login" className="hidden sm:inline-flex items-center justify-center px-6 py-2.5 bg-teal-600 text-white text-[10px] font-black tracking-widest shadow-md hover:bg-teal-700 transition-all ml-2">
+                        <Link to="/login" className="hidden sm:inline-flex items-center justify-center px-6 py-2.5 bg-blue-600 text-white text-[10px] font-black tracking-widest shadow-md hover:bg-blue-700 transition-all ml-2">
                             <span>{t('signIn')}</span>
                         </Link>
                     )}
 
                     {/* Mobile Cart Icon */}
-                    <Link to="/cart" className="md:hidden relative w-10 h-10 bg-teal-600 border-2 border-white flex items-center justify-center shadow-md ml-2">
+                    <Link to="/cart" className="md:hidden relative w-10 h-10 bg-blue-600 border-2 border-white flex items-center justify-center shadow-md ml-2">
                         <span className="text-sm">🛒</span>
                         {itemCount > 0 && (
                             <span className="absolute -top-3 -right-2 w-5 h-5 bg-white text-gray-900 text-[10px] font-black border-2 border-gray-200 flex items-center justify-center shadow-sm animate-pulse">
@@ -209,7 +209,7 @@ const ConsumerLayout: React.FC = () => {
                     <div className="max-w-xs">
                         <div className="flex items-center gap-2 justify-center md:justify-start mb-6">
                             <span className="text-3xl font-black text-gray-900 italic tracking-tighter">Spendigo</span>
-                            <span className="w-2 h-2 bg-teal-600 skew-x-[-12deg]"></span>
+                            <span className="w-2 h-2 bg-blue-600 skew-x-[-12deg]"></span>
                         </div>
                         <p className="text-gray-500 text-[10px] font-bold tracking-widest leading-relaxed">
                             The high-performance local marketplace. Powered by SmartCart AI.
@@ -221,7 +221,7 @@ const ConsumerLayout: React.FC = () => {
                             <span className="text-[10px] font-black text-gray-900 tracking-widest mb-2 border-b border-gray-200 pb-2 inline-block">Platform</span>
                             <Link to="/how-it-works" className="text-xs text-gray-500 font-bold hover:text-gray-900 tracking-wide transition-colors">How it Works</Link>
                             <Link to="/careers" className="text-xs text-gray-500 font-bold hover:text-gray-900 tracking-wide transition-colors">Careers</Link>
-                            <Link to="/partner" className="text-xs text-gray-500 font-bold hover:text-teal-600 tracking-wide transition-colors">Partner with Us →</Link>
+                            <Link to="/partner" className="text-xs text-gray-500 font-bold hover:text-blue-600 tracking-wide transition-colors">Partner with Us →</Link>
                         </div>
                         <div className="flex flex-col gap-3">
                             <span className="text-[10px] font-black text-gray-900 tracking-widest mb-2 border-b border-gray-200 pb-2 inline-block">Legal</span>
@@ -241,7 +241,7 @@ const ConsumerLayout: React.FC = () => {
 
             {/* HIGH-IMPACT MOBILE BOTTOM TAB BAR */}
             <nav className="md:hidden fixed bottom-0 left-0 right-0 h-[calc(4.5rem+var(--safe-area-bottom))] pb-safe bg-white border-t border-gray-200 z-50 flex items-stretch shadow-[0_-5px_20px_rgba(0,0,0,0.05)]">
-                <NavLink to="/" end className={({ isActive }) => `flex flex-col items-center justify-center flex-1 transition-all ${isActive ? 'bg-gray-50 text-teal-600 border-t-2 border-teal-600' : 'text-gray-400 hover:text-gray-600'}`}>
+                <NavLink to="/" end className={({ isActive }) => `flex flex-col items-center justify-center flex-1 transition-all ${isActive ? 'bg-gray-50 text-blue-600 border-t-2 border-blue-600' : 'text-gray-400 hover:text-gray-600'}`}>
                     {({ isActive }: any) => (
                         <React.Fragment>
                             <span className={`text-xl mb-1 ${isActive ? 'animate-bounce-slow' : ''}`}>🏠</span>
@@ -258,14 +258,14 @@ const ConsumerLayout: React.FC = () => {
                 <NavLink to="/smartcart" className={({ isActive }) => `flex flex-col items-center justify-center flex-1 transition-all relative ${isActive ? 'bg-gray-50 text-gray-900 border-t-2 border-gray-900' : 'text-gray-400 hover:text-gray-600'}`}>
                     {({ isActive }: any) => (
                         <React.Fragment>
-                            <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-teal-500 to-transparent ${isActive ? 'opacity-100 animate-pulse' : 'opacity-0'}`}></div>
+                            <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-transparent ${isActive ? 'opacity-100 animate-pulse' : 'opacity-0'}`}></div>
                             <span className="text-xl mb-1">✨</span>
                             <span className="text-[8px] font-black tracking-widest">{t('smartCartNav')}</span>
                         </React.Fragment>
                     )}
                 </NavLink>
 
-                <NavLink to="/cart" className={({ isActive }) => `flex flex-col items-center justify-center flex-1 transition-all ${isActive ? 'bg-teal-600 text-white border-t-2 border-teal-500' : 'text-gray-400 hover:text-gray-600'}`}>
+                <NavLink to="/cart" className={({ isActive }) => `flex flex-col items-center justify-center flex-1 transition-all ${isActive ? 'bg-blue-600 text-white border-t-2 border-blue-500' : 'text-gray-400 hover:text-gray-600'}`}>
                     <div className="relative mb-1">
                         <span className="text-xl">🛒</span>
                         {itemCount > 0 && (
