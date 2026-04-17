@@ -74,6 +74,12 @@ export const onStoreDelete = functions.firestore
       await Promise.all(userUpdates);
       functions.logger.info(`Successfully deactivated ${usersSnapshot.size} users linked to store ${storeId}.`);
 
+    } catch (error) {
+      functions.logger.error(`Error during cascade delete for store ${storeId}:`, error);
+      // We don't re-throw because the store is already deleted. We just log the failure.
+    }
+  });
+
 
 /**
  * Automatically geocodes a store's address when it is created or the address changes.

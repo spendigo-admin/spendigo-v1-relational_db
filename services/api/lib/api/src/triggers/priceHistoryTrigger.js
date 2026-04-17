@@ -84,8 +84,10 @@ exports.onMerchantProductPriceChange = functions.firestore
     }
     // 2. Check for "Deal" (Price drop or new sale item)
     const isPriceDrop = !isNew && newPrice < oldPrice;
-    const isSale = after.on_sale || (after.sale_price && after.sale_price < after.price);
-    console.log(`[NotificationTrigger] Item: ${after.name}, isNew: ${isNew}, Price: ${newPrice}, Old: ${oldPrice}, isSale: ${isSale}`);
+    const isSale = after.on_sale === true ||
+        (after.sale_price && after.sale_price < after.price) ||
+        (after.original_price && after.original_price > after.price);
+    console.log(`[NotificationTrigger] Item: ${after.name}, isNew: ${isNew}, Price: ${newPrice}, Old: ${oldPrice}, isSale: ${isSale}, isPriceDrop: ${isPriceDrop}`);
     if (isPriceDrop || (isNew && isSale)) {
         console.log(`[NotificationTrigger] Deal detected for ${after.name}. ID: ${productId}`);
         // Get Merchant Data
