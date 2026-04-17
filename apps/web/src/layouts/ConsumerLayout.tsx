@@ -233,7 +233,7 @@ const ConsumerLayout: React.FC = () => {
                 
                 <div className="max-w-7xl mx-auto mt-16 pt-8 border-t border-gray-100 text-center md:text-left flex flex-col md:flex-row items-center justify-between gap-4">
                     <p className="text-[9px] font-black text-gray-400 tracking-widest">&copy; {new Date().getFullYear()} Spendigo Inc. All rights reserved.</p>
-                    <div className="flex items-center gap-4 text-2xl grayscale opacity-30">
+                    <div className="flex items-center gap-4 text-2xl hover:scale-110 transition-transform cursor-default">
                         🍁
                     </div>
                 </div>

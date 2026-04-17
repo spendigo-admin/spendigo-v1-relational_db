@@ -253,21 +253,14 @@ const StoreList: React.FC = () => {
                             
                             <div className="flex gap-8 overflow-x-auto pb-10 scrollbar-hide snap-x">
                                 {storesWithDeals.map(store => (
-                                    <div key={store.id} className="flex gap-6 snap-start items-center">
-                                        {/* Store Brand Pillar */}
+                                    <div key={store.id} className="flex gap-6 snap-start items-stretch">
+                                        {/* Store Brand Pillar - Prominent Header */}
                                         <div 
                                             onClick={() => navigate(`/store/${store.id}`)}
-                                            className="flex flex-col items-center justify-center bg-white rounded-[2rem] border border-gray-200 p-4 min-w-[130px] cursor-pointer hover:bg-gray-50 hover:shadow-lg transition-all group shadow-sm"
+                                            className="flex flex-col items-center justify-center bg-white rounded-[2.5rem] border-2 border-gray-100 p-6 min-w-[160px] cursor-pointer hover:bg-gray-50 hover:shadow-2xl transition-all group shadow-md py-10"
                                         >
-                                            <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center text-3xl overflow-hidden mb-3 shadow-lg ring-4 ring-gray-100 group-hover:scale-110 transition-transform border border-gray-50">
-                                                {store.logoUrl && store.logoUrl.startsWith('http') ? (
-                                                    <img src={store.logoUrl} alt="" className="w-full h-full object-cover p-2" />
-                                                ) : (
-                                                    <span className="font-black text-gray-900">{store.logoUrl || '🏪'}</span>
-                                                )}
-                                            </div>
-                                            <span className="text-xs font-black text-gray-900 text-center tracking-tight mb-2">{store.name}</span>
-                                            <div className="px-3 py-1 bg-blue-600 text-white text-[9px] font-black rounded shadow-lg animate-pulse">
+                                            <span className="text-sm md:text-base font-black text-gray-900 text-center tracking-tighter italic uppercase mb-3 line-clamp-2 h-12 flex items-center">{store.name}</span>
+                                            <div className="px-4 py-1.5 bg-gray-900 group-hover:bg-blue-600 text-white text-[10px] font-black rounded-full shadow-lg transition-colors">
                                                 {store.deals.length} Active
                                             </div>
                                         </div>
@@ -424,27 +417,27 @@ const StoreList: React.FC = () => {
             </div>
 
             {/* HIGH-IMPACT MARKETPLACE PROMO */}
-            <section className="py-32 px-4 bg-white overflow-hidden">
+            <section className="py-12 md:py-20 px-4 bg-white overflow-hidden">
                 <div className="max-w-7xl mx-auto">
-                    <div className="relative bg-gray-50 rounded-[4rem] p-12 md:p-24 overflow-hidden group shadow-xl border border-gray-200">
+                    <div className="relative bg-gray-50 rounded-[2rem] md:rounded-[4rem] p-8 md:p-12 overflow-hidden group shadow-xl border border-gray-200">
                         <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-teal-600/5 rounded-full blur-[120px] -mr-96 -mt-96 group-hover:bg-teal-600/10 transition-all duration-700"></div>
                         <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-blue-600/5 rounded-full blur-[100px] -ml-48 -mb-48"></div>
                         
-                        <div className="relative z-10 flex flex-col md:flex-row items-center gap-16">
-                            <div className="text-8xl md:text-9xl animate-bounce-slow drop-shadow-xl">🛍️✨</div>
+                        <div className="relative z-10 flex flex-col md:flex-row items-center gap-8 md:gap-16">
+                            <div className="text-5xl md:text-8xl animate-bounce-slow drop-shadow-xl">🛍️✨</div>
                             <div className="flex-1 text-center md:text-left">
-                                <span className="text-[10px] font-black text-blue-600 bg-blue-50 px-3 py-1 rounded shadow-sm tracking-[0.3em] mb-6 inline-block border border-blue-100">Spendigo Smartcart AI</span>
-                                <h3 className="text-4xl md:text-7xl font-black text-gray-900 tracking-tighter italic leading-[0.9] mb-8">
+                                <span className="text-[10px] font-black text-blue-600 bg-blue-50 px-3 py-1 rounded shadow-sm tracking-[0.3em] mb-4 inline-block border border-blue-100">Spendigo Smartcart AI</span>
+                                <h3 className="text-3xl md:text-5xl font-black text-gray-900 tracking-tighter italic leading-[0.9] mb-4">
                                     Why Pay <span className="text-blue-600 underline decoration-gray-200 underline-offset-8">Retail?</span>
                                 </h3>
-                                <p className="text-lg md:text-2xl text-gray-500 font-bold tracking-tight max-w-2xl leading-tight">
+                                <p className="text-sm md:text-lg text-gray-500 font-bold tracking-tight max-w-2xl leading-tight">
                                     Our SmartCart engine analyzes {stats.totalProducts}+ products across the marketplace to save you <span className="text-gray-900 font-black">15% or more</span> on every shop.
                                 </p>
-                                <div className="mt-12 flex flex-wrap gap-6 justify-center md:justify-start">
-                                    <Link to="/how-it-works" className="px-12 py-5 bg-gray-900 text-white font-black text-xs tracking-[0.2em] rounded-full hover:bg-blue-600 transition-all shadow-xl active:scale-95 border-b-4 border-gray-800 hover:border-blue-800">
+                                <div className="mt-6 flex flex-wrap gap-4 justify-center md:justify-start">
+                                    <Link to="/how-it-works" className="px-8 py-4 bg-gray-900 text-white font-black text-[10px] tracking-[0.2em] rounded-full hover:bg-blue-600 transition-all shadow-xl active:scale-95 border-b-4 border-gray-800 hover:border-blue-800">
                                         Activate Optimizer
                                     </Link>
-                                    <Link to="/register" className="px-12 py-5 bg-white border border-gray-300 text-gray-900 font-black text-xs tracking-[0.2em] rounded-full hover:bg-gray-100 transition-all shadow-sm">
+                                    <Link to="/register" className="px-8 py-4 bg-white border border-gray-300 text-gray-900 font-black text-[10px] tracking-[0.2em] rounded-full hover:bg-gray-100 transition-all shadow-sm">
                                         Join Marketplace
                                     </Link>
                                 </div>
