@@ -10,7 +10,7 @@ import '../../styles/design-system.css';
 import SEO from '../../components/SEO';
 
 const Profile: React.FC = () => {
-    const { profile, orders, updateProfile, addAddress, deleteAddress, setDefaultAddress, reorder, downloadOrderReceipt } = useOrders();
+    const { profile, orders, updateProfile, addAddress, updateAddress, deleteAddress, setDefaultAddress, reorder, downloadOrderReceipt } = useOrders();
     const { user, logout } = useAuth();
     const location = useLocation();
     const navigate = useNavigate();
