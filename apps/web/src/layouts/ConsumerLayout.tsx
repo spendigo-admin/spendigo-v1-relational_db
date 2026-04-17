@@ -289,15 +289,15 @@ const ConsumerLayout: React.FC = () => {
             {/* GLOBAL NOTIFICATION TOAST (Cart) */}
             {notification && (
                 <div className="fixed bottom-24 left-4 right-4 md:bottom-8 md:left-auto md:right-8 z-[100] animate-slide-up pointer-events-none md:max-w-md w-full">
-                    <div className={`p-5 text-white shadow-2xl flex items-center justify-between border-b-4 pointer-events-auto skew-x-[-2deg] ${notification.type === 'success' ? 'bg-gray-900 border-green-500' : 'bg-red-600 border-black'
+                    <div className={`p-5 shadow-2xl flex items-center justify-between border-b-4 pointer-events-auto skew-x-[-2deg] ${notification.type === 'success' ? 'bg-gray-900 border-green-500 text-white' : 'bg-gray-900 border-red-600 text-white'
                         }`}>
                         <div className="flex-1 mr-4 skew-x-[2deg]">
                             <div className="flex items-start gap-4 mb-1">
                                 <span className="text-2xl mt-1">
-                                    {notification.type === 'success' ? '✅' : '🚨'}
+                                    {notification.type === 'success' ? '✅' : '🗑️'}
                                 </span>
                                 <div>
-                                    <p className="font-black text-sm tracking-widest">{notification.message}</p>
+                                    <p className={`font-black text-sm tracking-widest ${notification.type === 'success' ? 'text-white' : 'text-red-400'}`}>{notification.message}</p>
                                     
                                     {/* Savings Info */}
                                     {notification.savings && notification.savings > 0 && (
@@ -319,7 +319,7 @@ const ConsumerLayout: React.FC = () => {
                         </div>
                         <button
                             onClick={clearNotification}
-                            className="bg-white/10 hover:bg-teal-600 p-2 text-white transition-all shrink-0 skew-x-[2deg] hover:scale-110 active:scale-95"
+                            className={`p-2 text-white transition-all shrink-0 skew-x-[2deg] hover:scale-110 active:scale-95 ${notification.type === 'success' ? 'bg-white/10 hover:bg-green-600' : 'bg-white/10 hover:bg-red-600'}`}
                         >
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />

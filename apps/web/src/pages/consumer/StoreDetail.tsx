@@ -627,38 +627,38 @@ const StoreDetail: React.FC = () => {
 
             {/* PREMIUM RETAIL INFO BOARD */}
             <div className="max-w-7xl mx-auto px-4 -mt-10 relative z-30">
-                <div className="bg-white rounded-3xl shadow-2xl border border-gray-100 p-2 md:p-3 flex flex-wrap md:flex-nowrap items-stretch gap-1">
-                    <div className="flex-1 min-w-[120px] bg-gray-50/50 p-4 rounded-2xl border border-gray-50 flex flex-col items-center justify-center text-center group hover:bg-white hover:shadow-lg transition-all">
-                        <span className="text-[9px] font-black text-gray-400 tracking-widest mb-1">Store Rating</span>
-                        <div className="flex items-center gap-2">
-                            <span className="text-xl font-black text-gray-900">
+                <div className="bg-white rounded-3xl shadow-2xl border border-gray-100 p-1 md:p-3 flex flex-nowrap items-stretch gap-1">
+                    <div className="flex-1 min-w-0 bg-gray-50/50 p-2 md:p-4 rounded-xl border border-gray-50 flex flex-col items-center justify-center text-center group hover:bg-black hover:shadow-lg transition-all">
+                        <span className="text-[7px] md:text-[9px] font-black text-gray-400 tracking-widest mb-0.5 md:mb-1 group-hover:text-white/70 transition-colors">Store</span>
+                        <div className="flex items-center gap-0.5 md:gap-2">
+                            <span className="text-xs md:text-xl font-black text-gray-900 group-hover:text-white transition-colors">
                                 {reviews.length > 0 
                                     ? (reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length).toFixed(1) 
                                     : store.rating}
                             </span>
-                            <span className="text-yellow-400 text-lg group-hover:scale-125 transition-transform">★</span>
+                            <span className="text-yellow-400 text-[10px] md:text-lg group-hover:scale-125 transition-transform">★</span>
                         </div>
                     </div>
                     <div className="w-px bg-gray-100 hidden md:block my-2"></div>
-                    <div className="flex-1 min-w-[120px] bg-gray-50/50 p-4 rounded-2xl border border-gray-50 flex flex-col items-center justify-center text-center group hover:bg-white hover:shadow-lg transition-all">
-                        <span className="text-[9px] font-black text-gray-400 tracking-widest mb-1">Delivery Time</span>
-                        <div className="flex items-center gap-2">
-                            <span className="text-xl font-black text-gray-900">{store.deliveryTime || '25-45 MIN'}</span>
-                            <span className="text-orange-500 text-lg group-hover:animate-pulse">⚡</span>
+                    <div className="flex-1 min-w-0 bg-gray-50/50 p-2 md:p-4 rounded-xl border border-gray-50 flex flex-col items-center justify-center text-center group hover:bg-black hover:shadow-lg transition-all">
+                        <span className="text-[7px] md:text-[9px] font-black text-gray-400 tracking-widest mb-0.5 md:mb-1 group-hover:text-white/70 transition-colors truncate w-full px-1">Delivery</span>
+                        <div className="flex items-center gap-0.5 md:gap-2">
+                            <span className="text-xs md:text-xl font-black text-gray-900 group-hover:text-white transition-colors line-clamp-1 truncate px-1 max-w-full">{store.deliveryTime?.replace('MIN', '') || '25-45'}</span>
+                            <span className="text-orange-500 text-[10px] md:text-lg group-hover:animate-pulse">⚡</span>
                         </div>
                     </div>
                     <div className="w-px bg-gray-100 hidden md:block my-2"></div>
-                    <div className="flex-1 min-w-[120px] bg-gray-50/50 p-4 rounded-2xl border border-gray-50 flex flex-col items-center justify-center text-center group hover:bg-white hover:shadow-lg transition-all">
-                        <span className="text-[9px] font-black text-gray-400 tracking-widest mb-1">Service Fee</span>
-                        <div className="flex items-center gap-2">
-                            <span className="text-xl font-black text-gray-900">{store.deliveryFee || 'FREE'}</span>
-                            <span className="text-green-500 text-lg group-hover:rotate-12 transition-transform">💰</span>
+                    <div className="flex-1 min-w-0 bg-gray-50/50 p-2 md:p-4 rounded-xl border border-gray-50 flex flex-col items-center justify-center text-center group hover:bg-black hover:shadow-lg transition-all">
+                        <span className="text-[7px] md:text-[9px] font-black text-gray-400 tracking-widest mb-0.5 md:mb-1 group-hover:text-white/70 transition-colors">Fee</span>
+                        <div className="flex items-center gap-0.5 md:gap-2">
+                            <span className="text-xs md:text-xl font-black text-gray-900 group-hover:text-white transition-colors">{store.deliveryFee || 'FREE'}</span>
+                            <span className="text-green-500 text-[10px] md:text-lg group-hover:rotate-12 transition-transform">💰</span>
                         </div>
                     </div>
                     <div className="w-px bg-gray-100 hidden md:block my-2"></div>
-                    <div className="flex-1 min-w-[120px] bg-teal-600 p-4 rounded-2xl flex flex-col items-center justify-center text-center shadow-lg group hover:bg-black transition-all cursor-help" title="Quality Guaranteed by Spendigo">
-                        <span className="text-[9px] font-black text-white/70 tracking-widest mb-1">Certified By</span>
-                        <span className="text-lg font-black text-white italic tracking-tighter whitespace-nowrap">Spendigo 🍁</span>
+                    <div className="flex-1 min-w-0 bg-blue-600 p-2 md:p-4 rounded-xl flex flex-col items-center justify-center text-center shadow-lg group hover:bg-black transition-all cursor-help" title="Quality Guaranteed by Spendigo">
+                        <span className="text-[7px] md:text-[9px] font-black text-white/70 tracking-widest mb-0.5 md:mb-1 leading-tight">Certified By</span>
+                        <span className="text-[10px] md:text-lg font-black text-white italic tracking-tighter truncate max-w-[90%]">Spendigo🍁</span>
                     </div>
                 </div>
             </div>
