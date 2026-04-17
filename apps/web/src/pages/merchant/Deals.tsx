@@ -238,6 +238,8 @@ const MerchantDeals: React.FC = () => {
                 const pRef = doc(db, 'merchant_products', newDeal.productId);
                 await updateDoc(pRef, {
                     price: newDeal.salePrice,
+                    sale_price: newDeal.salePrice, // Explicitly set for trigger robustness
+                    on_sale: true,                 // Explicitly set for trigger robustness
                     original_price: newDeal.originalPrice,
                     discount_label: newDeal.type === 'percentage' ? `${newDeal.value}% OFF` : 'Special Offer',
                     discount_valid_until: newDeal.endDate,
@@ -351,6 +353,8 @@ const MerchantDeals: React.FC = () => {
                                         const pRef = doc(db, 'merchant_products', d.productId);
                                         batch.update(pRef, {
                                             price: d.salePrice,
+                                            sale_price: d.salePrice,
+                                            on_sale: true,
                                             original_price: d.originalPrice,
                                             discount_label: d.type === 'percentage' ? `${d.value}% OFF` : 'Special Offer',
                                             discount_valid_until: d.endDate,
