@@ -30,7 +30,7 @@ const Profile: React.FC = () => {
     const [showAddAddress, setShowAddAddress] = useState(false);
 
     // Push Notifications
-    const { permissionStatus, requestPermission } = usePushNotifications(user?.id);
+    const { permissionStatus, requestPermission, disableNotifications } = usePushNotifications(user?.id);
     const [isRequestingNotifications, setIsRequestingNotifications] = useState(false);
     
     const handleRequestNotifications = async () => {
@@ -252,7 +252,7 @@ const Profile: React.FC = () => {
                             </div>
                         )}
 
-                        {/* NOTIFICATIONS */}
+                    {/* NOTIFICATIONS */}
                         <div className="mt-10 pt-6 border-t border-[var(--glass-border)]">
                             <h3 className="text-lg font-bold text-[var(--text-main)] mb-2 flex items-center gap-2">
                                 <span>🔔</span> Push Notifications
@@ -260,21 +260,44 @@ const Profile: React.FC = () => {
                             <p className="text-sm text-[var(--text-muted)] mb-4">
                                 Receive alerts for order updates and price drops on your devices.
                             </p>
-                            {permissionStatus === 'granted' ? (
-                                <div className="inline-flex items-center gap-2 px-4 py-2 bg-green-50 text-green-700 rounded-lg text-sm font-bold border border-green-200">
-                                    <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-                                    Enabled
-                                </div>
-                            ) : (
-                                <button
-                                    onClick={handleRequestNotifications}
-                                    disabled={isRequestingNotifications}
-                                    className="px-6 py-2.5 bg-blue-50 text-[var(--brand-primary)] font-bold text-sm rounded-xl border border-blue-200 hover:bg-blue-100 hover:border-blue-300 transition-all disabled:opacity-50"
-                                >
-                                    {isRequestingNotifications ? 'Enabling...' : 'Enable Push Notifications'}
-                                </button>
+                            
+                            <div className="flex flex-wrap gap-3">
+                                {permissionStatus === 'granted' ? (
+                                    <>
+                                        <div className="inline-flex items-center gap-2 px-4 py-2 bg-green-50 text-green-700 rounded-lg text-sm font-bold border border-green-200">
+                                            <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                                            Active on this device
+                                        </div>
+                                        <button
+                                            onClick={async () => {
+                                                setIsRequestingNotifications(true);
+                                                await disableNotifications();
+                                                setIsRequestingNotifications(false);
+                                            }}
+                                            disabled={isRequestingNotifications}
+                                            className="px-6 py-2.5 bg-white text-red-600 font-bold text-sm rounded-xl border border-red-100 hover:bg-red-50 hover:border-red-200 transition-all disabled:opacity-50"
+                                        >
+                                            {isRequestingNotifications ? 'Working...' : 'Disable Notifications'}
+                                        </button>
+                                    </>
+                                ) : (
+                                    <button
+                                        onClick={handleRequestNotifications}
+                                        disabled={isRequestingNotifications}
+                                        className="px-6 py-2.5 bg-blue-50 text-[var(--brand-primary)] font-bold text-sm rounded-xl border border-blue-200 hover:bg-blue-100 hover:border-blue-300 transition-all disabled:opacity-50"
+                                    >
+                                        {isRequestingNotifications ? 'Enabling...' : 'Enable Push Notifications'}
+                                    </button>
+                                )}
+                            </div>
+                            
+                            {permissionStatus === 'denied' && (
+                                <p className="mt-3 text-xs text-red-500 font-medium bg-red-50 p-2 rounded-lg border border-red-100">
+                                    ⚠️ Notifications are blocked by your browser. Please enable them in your browser settings to receive updates.
+                                </p>
                             )}
                         </div>
+
 
                         {/* DANGER ZONE */}
                         <div className="mt-10 pt-6 border-t-2 border-red-200">

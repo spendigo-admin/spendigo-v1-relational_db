@@ -40,7 +40,7 @@ export function usePushNotifications(userId?: string) {
 
         try {
             const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
-            console.log('Service worker registered.');
+            // console.log('Service worker registered.');
 
             const sendConfig = (sw: ServiceWorker) => {
                 sw.postMessage({
@@ -59,7 +59,6 @@ export function usePushNotifications(userId?: string) {
             if (registration.active) {
                 sendConfig(registration.active);
             } else {
-                // Cover installing → waiting → activated transitions
                 const sw = registration.installing ?? registration.waiting;
                 sw?.addEventListener('statechange', (e: Event) => {
                     const target = e.target as ServiceWorker;
@@ -82,10 +81,7 @@ export function usePushNotifications(userId?: string) {
 
             if (permission === 'granted') {
                 const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY;
-                if (!vapidKey) {
-                    console.error("VAPID Key is missing in environment variables.");
-                    return false;
-                }
+                if (!vapidKey) return false;
 
                 const registration = await registerServiceWorker();
                 if (!registration) return false;
@@ -97,26 +93,41 @@ export function usePushNotifications(userId?: string) {
 
                 if (currentToken) {
                     setToken(currentToken);
-
-                    if (userId) {
-                        await persistToken(userId, currentToken);
-                    }
+                    if (userId) await persistToken(userId, currentToken);
                     return true;
                 }
             }
         } catch (error) {
-            console.error('An error occurred while retrieving token. ', error);
+            console.error('Error requesting notifications:', error);
         }
         return false;
     };
 
-    // Refresh token whenever FCM rotates it
+    const disableNotifications = async () => {
+        if (!userId) return;
+        try {
+            // 1. Get current token if possible to remove it specifically
+            const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY;
+            const registration = await navigator.serviceWorker.ready;
+            const currentToken = await getToken(messaging!, { vapidKey, serviceWorkerRegistration: registration });
+
+            if (currentToken) {
+                const userRef = doc(db, 'users', userId);
+                await updateDoc(userRef, {
+                    fcmTokens: arrayRemove(currentToken)
+                });
+                setToken(null);
+            }
+            return true;
+        } catch (error) {
+            console.error('Error disabling notifications:', error);
+            return false;
+        }
+    };
+
+    // Refresh token
     useEffect(() => {
         if (!messaging || !userId) return;
-
-        // FCM does not expose a direct onTokenRefresh in the modular SDK.
-        // Re-calling getToken returns the current (possibly refreshed) token.
-        // Run once on mount when userId becomes available.
         const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY;
         if (!vapidKey) return;
 
@@ -128,9 +139,10 @@ export function usePushNotifications(userId?: string) {
                         persistToken(userId, refreshedToken).catch(console.error);
                     }
                 })
-                .catch(() => {/* permission not yet granted — ignore */});
+                .catch(() => {});
         });
     }, [userId]);
 
-    return { token, permissionStatus, requestPermission };
+    return { token, permissionStatus, requestPermission, disableNotifications };
 }
+
