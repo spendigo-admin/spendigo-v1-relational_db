@@ -29,6 +29,8 @@ export interface Address {
     province: string;
     postalCode: string;
     isDefault: boolean;
+    lat?: number;
+    lng?: number;
 }
 
 export interface OrderItem {

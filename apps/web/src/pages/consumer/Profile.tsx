@@ -142,6 +142,8 @@ const Profile: React.FC = () => {
                     ...newAddress,
                     city: addr.city || addr.town || addr.village || newAddress.city,
                     postalCode: addr.postcode ? addr.postcode.toUpperCase() : newAddress.postalCode.toUpperCase(),
+                    lat: parseFloat(result.lat),
+                    lng: parseFloat(result.lon)
                 };
 
                 await addAddress(validatedAddress);
