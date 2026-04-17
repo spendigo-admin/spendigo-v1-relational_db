@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useOrders } from '../../context/OrderContext';
 import { useAuth } from '../../context/AuthContext';
 import { usePushNotifications } from '../../hooks/usePushNotifications';
+import { useNotifications, NotificationPreferences } from '../../context/NotificationContext';
 import { httpsCallable } from 'firebase/functions';
 import { functions } from '../../lib/firebase';
 import '../../styles/design-system.css';
@@ -31,6 +32,7 @@ const Profile: React.FC = () => {
 
     // Push Notifications
     const { permissionStatus, requestPermission, disableNotifications } = usePushNotifications(user?.id);
+    const { preferences, togglePreference } = useNotifications();
     const [isRequestingNotifications, setIsRequestingNotifications] = useState(false);
     
     const handleRequestNotifications = async () => {
@@ -297,6 +299,55 @@ const Profile: React.FC = () => {
                                 </p>
                             )}
                         </div>
+
+                        {/* COMMUNICATION PREFERENCES */}
+                        <div className="mt-10 pt-6 border-t border-[var(--glass-border)]">
+                            <div className="flex items-center justify-between mb-6">
+                                <div>
+                                    <h3 className="text-lg font-bold text-[var(--text-main)] mb-1">Alert Preferences</h3>
+                                    <p className="text-sm text-[var(--text-muted)]">Configure which real-time alerts you receive.</p>
+                                </div>
+                                <div className={`px-3 py-1.5 rounded-full text-[10px] font-black tracking-widest uppercase border-2 flex items-center gap-1.5 ${permissionStatus === 'granted' ? 'bg-blue-50 text-blue-600 border-blue-100' : 'bg-gray-50 text-gray-400 border-gray-100'}`}>
+                                    <span className={`w-2 h-2 rounded-full ${permissionStatus === 'granted' ? 'bg-blue-600 animate-ping' : 'bg-gray-300'}`}></span>
+                                    {permissionStatus === 'granted' ? 'Real-time Linked' : 'Offline Mode'}
+                                </div>
+                            </div>
+
+                            <div className="space-y-3">
+                                {[
+                                    { id: 'priceDrop', icon: '📉', label: 'Price Alerts', desc: 'When items in your wishlist or cart drop in price.' },
+                                    { id: 'orderUpdates', icon: '📦', label: 'Order Tracking', desc: 'Real-time updates on status, cooking, and delivery.' },
+                                    { id: 'promotions', icon: '✨', label: 'Exclusives', desc: 'Personalized marketplace deals and local offers.' },
+                                    { id: 'newArrivals', icon: '🚚', label: 'Merchant Drops', desc: 'Notify me when my favorite shops add new inventory.' }
+                                ].map(item => (
+                                    <div 
+                                        key={item.id} 
+                                        className="flex items-center justify-between p-4 bg-gray-50/50 border border-gray-100 rounded-2xl group hover:border-blue-200 hover:bg-white transition-all cursor-pointer"
+                                        onClick={() => togglePreference(item.id as any)}
+                                    >
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center text-xl group-hover:scale-110 transition-transform">
+                                                {item.icon}
+                                            </div>
+                                            <div>
+                                                <p className="font-bold text-[var(--text-main)] text-sm">{item.label}</p>
+                                                <p className="text-[10px] text-[var(--text-muted)] tracking-tight">{item.desc}</p>
+                                            </div>
+                                        </div>
+                                        <div className={`w-12 h-6 rounded-full transition-colors relative ${preferences[item.id as keyof NotificationPreferences] ? 'bg-blue-600' : 'bg-gray-200'}`}>
+                                            <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${preferences[item.id as keyof NotificationPreferences] ? 'left-7 shadow-[-2px_0_4px_rgba(0,0,0,0.1)]' : 'left-1'}`}></div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div className="mt-6 p-4 bg-blue-50/30 rounded-2xl border border-blue-100/50">
+                                <p className="text-[10px] text-blue-700 font-medium leading-relaxed italic text-center">
+                                    "Spendigo Real-time Alerts use high-performance FCM streams for millisecond-latency order tracking."
+                                </p>
+                            </div>
+                        </div>
+
 
 
                         {/* DANGER ZONE */}
