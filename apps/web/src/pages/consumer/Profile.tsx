@@ -118,6 +118,30 @@ const Profile: React.FC = () => {
         setEditingProfile(false);
     };
 
+    const handleVerifyAddress = async (addrId: string) => {
+        const addr = profile.addresses.find(a => a.id === addrId);
+        if (!addr) return;
+
+        setIsValidating(true);
+        try {
+            const query = `${addr.street}, ${addr.city}, ${addr.province}, ${addr.postalCode}, Canada`;
+            const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&addressdetails=1`);
+            const data = await response.json();
+
+            if (data && data.length > 0) {
+                const result = data[0];
+                await updateAddress(addrId, {
+                    lat: parseFloat(result.lat),
+                    lng: parseFloat(result.lon)
+                });
+            }
+        } catch (e) {
+            console.error("Verification error:", e);
+        } finally {
+            setIsValidating(false);
+        }
+    };
+
     const handleAddAddress = async () => {
         setValidationError('');
         if (!newAddress.street || !newAddress.city || !newAddress.postalCode) {
@@ -465,7 +489,21 @@ const Profile: React.FC = () => {
                                     <div>
                                         <div className="flex items-center gap-2 mb-1">
                                             <span className="font-bold text-[var(--text-main)]">{addr.label}</span>
-                                            {addr.isDefault && <span className="text-xs bg-[var(--brand-primary)] text-white px-2 py-0.5 rounded">Default</span>}
+                                            {addr.isDefault && <span className="text-xs bg-[var(--brand-primary)] text-white px-2 py-0.5 rounded shadow-sm">Default</span>}
+                                            {addr.lat && addr.lng ? (
+                                                <span className="text-[8px] bg-green-50 text-green-600 px-1.5 py-0.5 rounded-full border border-green-100 font-black uppercase tracking-tighter decoration-dotted flex items-center gap-1">
+                                                    <span className="w-1 h-1 bg-green-500 rounded-full"></span>
+                                                    Proximity Ready
+                                                </span>
+                                            ) : (
+                                                <button 
+                                                    onClick={() => handleVerifyAddress(addr.id)}
+                                                    className="text-[8px] bg-yellow-50 text-yellow-700 px-1.5 py-0.5 rounded-full border border-yellow-200 font-black uppercase tracking-tighter hover:bg-yellow-100 transition-colors flex items-center gap-1"
+                                                >
+                                                    <span className="w-1 h-1 bg-yellow-500 rounded-full animate-pulse"></span>
+                                                    Sync Location
+                                                </button>
+                                            )}
                                         </div>
                                         <p className="text-sm text-[var(--text-muted)]">{addr.street}</p>
                                         <p className="text-sm text-[var(--text-muted)]">{addr.city}, {addr.province} {addr.postalCode}</p>
