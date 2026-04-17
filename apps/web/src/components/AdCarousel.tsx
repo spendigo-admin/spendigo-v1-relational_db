@@ -183,10 +183,10 @@ const AdCarousel: React.FC<AdCarouselProps> = (props) => {
                         />
                         <button
                             onClick={() => props.handleSearch()}
-                            disabled={isLocating}
+                            disabled={props.isLocating}
                             className="bg-blue-600 text-white px-6 md:px-10 py-3 rounded-full font-bold text-sm tracking-wide hover:bg-blue-700 transition-all shadow-xl active:scale-95"
                         >
-                            {isLocating ? '...' : 'Search'}
+                            {props.isLocating ? '...' : 'Search'}
                         </button>
                     </div>
                 </div>
