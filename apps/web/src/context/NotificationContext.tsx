@@ -54,6 +54,7 @@ export interface NotificationPreferences {
     orderUpdates: boolean;
     promotions: boolean;
     newArrivals: boolean;
+    maxDistance: number; // in kilometers
 }
 
 const DEFAULT_PREFERENCES: NotificationPreferences = {
@@ -61,6 +62,7 @@ const DEFAULT_PREFERENCES: NotificationPreferences = {
     orderUpdates: true,
     promotions: true,
     newArrivals: false,
+    maxDistance: 10,
 };
 
 interface NotificationContextType {
@@ -74,6 +76,7 @@ interface NotificationContextType {
     addNotification: (n: Omit<AppNotification, 'id' | 'timestamp' | 'read'>) => void;
     deleteNotification: (id: string) => void;
     togglePreference: (key: keyof NotificationPreferences) => Promise<void>;
+    setPreference: (key: keyof NotificationPreferences, value: any) => Promise<void>;
     toast: AppNotification | null;
     setToast: (toast: AppNotification | null) => void;
 }
@@ -177,9 +180,8 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
         };
     }, [contextId, isAuth, LOCAL_NOTIF_KEY, LOCAL_PREF_KEY]);
 
-    // Save Prefs
-    const togglePreference = async (key: keyof NotificationPreferences) => {
-        const newPrefs = { ...preferences, [key]: !preferences[key] };
+    const setPreference = async (key: keyof NotificationPreferences, value: any) => {
+        const newPrefs = { ...preferences, [key]: value };
         setPreferences(newPrefs);
         localStorage.setItem(LOCAL_PREF_KEY, JSON.stringify(newPrefs));
 
@@ -192,6 +194,11 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
                 console.error('Failed to persist notification preferences:', e);
             }
         }
+    };
+
+    const togglePreference = async (key: keyof NotificationPreferences) => {
+        if (typeof preferences[key] !== 'boolean') return;
+        await setPreference(key, !preferences[key]);
     };
 
     // Actions
@@ -291,6 +298,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
             addNotification,
             deleteNotification,
             togglePreference,
+            setPreference,
             toast,
             setToast
         }}>

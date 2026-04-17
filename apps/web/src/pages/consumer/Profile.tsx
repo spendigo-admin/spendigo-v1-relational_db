@@ -32,7 +32,7 @@ const Profile: React.FC = () => {
 
     // Push Notifications
     const { permissionStatus, requestPermission, disableNotifications } = usePushNotifications(user?.id);
-    const { preferences, togglePreference } = useNotifications();
+    const { preferences, togglePreference, setPreference } = useNotifications();
     const [isRequestingNotifications, setIsRequestingNotifications] = useState(false);
     
     const handleRequestNotifications = async () => {
@@ -339,6 +339,33 @@ const Profile: React.FC = () => {
                                         </div>
                                     </div>
                                 ))}
+                            </div>
+
+                            {/* Alert Radius Selector */}
+                            <div className="mt-8 p-5 bg-white border-2 border-dashed border-gray-100 rounded-[2rem]">
+                                <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center text-2xl shadow-sm">
+                                            📍
+                                        </div>
+                                        <div>
+                                            <p className="font-black text-gray-900 text-sm tracking-tight">Proximity Alerts</p>
+                                            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Radius from default address</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="flex items-center bg-gray-50 rounded-full p-1.5 border border-gray-100 shadow-inner">
+                                        {[5, 10, 20, 50].map(dist => (
+                                            <button
+                                                key={dist}
+                                                onClick={() => setPreference('maxDistance', dist)}
+                                                className={`px-4 py-1.5 rounded-full text-[10px] font-black transition-all ${preferences.maxDistance === dist ? 'bg-white shadow-md text-blue-600 scale-105' : 'text-gray-400 hover:text-gray-600'}`}
+                                            >
+                                                {dist}KM
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
                             </div>
 
                             <div className="mt-6 p-4 bg-blue-50/30 rounded-2xl border border-blue-100/50">
