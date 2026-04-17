@@ -250,34 +250,38 @@ const ConsumerLayout: React.FC = () => {
                     )}
                 </NavLink>
 
-                <NavLink to="/search" className={({ isActive }) => `flex flex-col items-center justify-center flex-1 transition-all ${isActive ? 'bg-gray-50 text-gray-900 border-t-2 border-gray-900' : 'text-gray-400 hover:text-gray-600'}`}>
+                <NavLink to="/search" className={({ isActive }) => `flex flex-col items-center justify-center flex-1 transition-all ${isActive ? 'bg-gray-50 text-blue-600 border-t-2 border-blue-600' : 'text-gray-400 hover:text-gray-600'}`}>
                     <span className="text-xl mb-1">🔍</span>
                     <span className="text-[8px] font-black tracking-widest">{t('searchNav')}</span>
                 </NavLink>
 
-                <NavLink to="/smartcart" className={({ isActive }) => `flex flex-col items-center justify-center flex-1 transition-all relative ${isActive ? 'bg-gray-50 text-gray-900 border-t-2 border-gray-900' : 'text-gray-400 hover:text-gray-600'}`}>
+                <NavLink to="/smartcart" className={({ isActive }) => `flex flex-col items-center justify-center flex-1 transition-all relative ${isActive ? 'bg-gray-50 text-blue-600 border-t-2 border-blue-600' : 'text-gray-400 hover:text-gray-600'}`}>
                     {({ isActive }: any) => (
                         <React.Fragment>
                             <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-transparent ${isActive ? 'opacity-100 animate-pulse' : 'opacity-0'}`}></div>
-                            <span className="text-xl mb-1">✨</span>
+                            <span className={`text-xl mb-1 ${isActive ? 'animate-bounce-slow' : ''}`}>✨</span>
                             <span className="text-[8px] font-black tracking-widest">{t('smartCartNav')}</span>
                         </React.Fragment>
                     )}
                 </NavLink>
 
-                <NavLink to="/cart" className={({ isActive }) => `flex flex-col items-center justify-center flex-1 transition-all ${isActive ? 'bg-blue-600 text-white border-t-2 border-blue-500' : 'text-gray-400 hover:text-gray-600'}`}>
-                    <div className="relative mb-1">
-                        <span className="text-xl">🛒</span>
-                        {itemCount > 0 && (
-                            <span className="absolute -top-2 -right-3 w-4 h-4 border border-white bg-gray-900 text-white text-[9px] font-black flex items-center justify-center shadow-md animate-pulse">
-                                {itemCount}
-                            </span>
-                        )}
-                    </div>
-                    <span className="text-[8px] font-black tracking-widest">{t('cart')}</span>
+                <NavLink to="/cart" className={({ isActive }) => `flex flex-col items-center justify-center flex-1 transition-all ${isActive ? 'bg-gray-50 text-blue-600 border-t-2 border-blue-600' : 'text-gray-400 hover:text-gray-600'}`}>
+                    {({ isActive }: any) => (
+                        <React.Fragment>
+                            <div className="relative mb-1">
+                                <span className={`text-xl ${isActive ? 'scale-110 transition-transform' : ''}`}>🛒</span>
+                                {itemCount > 0 && (
+                                    <span className="absolute -top-2 -right-3 w-4 h-4 border border-white bg-blue-600 text-white text-[9px] font-black flex items-center justify-center shadow-md animate-pulse">
+                                        {itemCount}
+                                    </span>
+                                )}
+                            </div>
+                            <span className="text-[8px] font-black tracking-widest">{t('cart')}</span>
+                        </React.Fragment>
+                    )}
                 </NavLink>
 
-                <NavLink to="/profile" className={({ isActive }) => `flex flex-col items-center justify-center flex-1 transition-all ${isActive ? 'bg-gray-50 text-gray-900 border-t-2 border-gray-900' : 'text-gray-400 hover:text-gray-600'}`}>
+                <NavLink to="/profile" className={({ isActive }) => `flex flex-col items-center justify-center flex-1 transition-all ${isActive ? 'bg-gray-50 text-blue-600 border-t-2 border-blue-600' : 'text-gray-400 hover:text-gray-600'}`}>
                     <span className="text-xl mb-1">👤</span>
                     <span className="text-[8px] font-black tracking-widest">{t('profileNav')}</span>
                 </NavLink>

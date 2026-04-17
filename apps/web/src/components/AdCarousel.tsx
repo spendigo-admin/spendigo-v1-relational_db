@@ -16,7 +16,7 @@ interface AdCampaign {
     priority: number;
 }
 
-const DefaultHero = ({ handleSearch, address, setAddress, isLocating, handleLocateMe }: any) => {
+const DefaultHero = ({ handleSearch, address, setAddress, isLocating, handleLocateMe, searchDistance, setSearchDistance }: any) => {
     const { t } = useTranslation();
     return (
     <section className="relative overflow-hidden bg-gradient-to-r from-blue-600 to-teal-500 py-12 md:py-20 px-4 flex items-center justify-center">
@@ -37,11 +37,11 @@ const DefaultHero = ({ handleSearch, address, setAddress, isLocating, handleLoca
             </p>
 
             {/* Premium Search Interaction */}
-            <div className="group relative max-w-2xl mx-auto">
-                <div className="relative flex items-center bg-white rounded-full p-1.5 shadow-2xl transition-all duration-300 group-hover:scale-[1.01]">
+            <div className="group relative max-w-3xl mx-auto">
+                <div className="relative flex items-center bg-white rounded-full p-1 md:p-1.5 shadow-2xl transition-all duration-300 group-hover:scale-[1.01]">
                     <div 
                         onClick={handleLocateMe}
-                        className={`pl-4 pr-2 flex items-center text-red-500 cursor-pointer hover:scale-125 transition-all active:scale-95 group/loc ${isLocating ? 'animate-bounce' : ''}`}
+                        className={`pl-4 pr-1 md:pr-2 flex items-center text-red-500 cursor-pointer hover:scale-125 transition-all active:scale-95 group/loc ${isLocating ? 'animate-bounce' : ''}`}
                         title="Locate Me"
                     >
                         <span className="text-lg">📍</span>
@@ -49,15 +49,31 @@ const DefaultHero = ({ handleSearch, address, setAddress, isLocating, handleLoca
                     <input
                         type="text"
                         placeholder="Laval, Quebec"
-                        className="flex-1 py-3 px-2 bg-transparent outline-none text-gray-900 font-medium placeholder-gray-400 text-sm md:text-base"
+                        className="flex-1 py-2 md:py-3 px-1 md:px-2 bg-transparent outline-none text-gray-900 font-medium placeholder-gray-400 text-xs md:text-base min-w-0"
                         value={address}
                         onChange={(e) => setAddress(e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                     />
+                    
+                    {/* Radius Selector Integrated */}
+                    <div className="flex items-center gap-1 md:gap-2 px-2 md:px-4 border-l border-gray-100 h-8 md:h-10">
+                        <span className="hidden md:inline text-[9px] font-black text-gray-400 tracking-widest uppercase">Radius</span>
+                        <select 
+                            value={searchDistance} 
+                            onChange={(e) => setSearchDistance(Number(e.target.value))}
+                            className="text-[10px] md:text-xs font-black bg-transparent border-none outline-none text-blue-600 cursor-pointer focus:ring-0 text-center"
+                        >
+                            <option value={5}>5km</option>
+                            <option value={10}>10km</option>
+                            <option value={20}>20km</option>
+                            <option value={50}>50km</option>
+                        </select>
+                    </div>
+
                     <button
                         onClick={() => handleSearch()}
                         disabled={isLocating}
-                        className="bg-blue-600 text-white px-6 md:px-10 py-3 rounded-full font-bold text-sm hover:bg-blue-700 transition-all shadow-lg active:scale-95"
+                        className="bg-blue-600 text-white px-4 md:px-10 py-2.5 md:py-3 rounded-full font-bold text-[10px] md:text-sm hover:bg-blue-700 transition-all shadow-lg active:scale-95 shrink-0"
                     >
                         {isLocating ? '...' : 'Search'}
                     </button>
@@ -75,6 +91,8 @@ interface AdCarouselProps {
     setAddress: (val: string) => void;
     isLocating: boolean;
     handleLocateMe: () => void;
+    searchDistance: number;
+    setSearchDistance: (val: number) => void;
 }
 
 const AdCarousel: React.FC<AdCarouselProps> = (props) => {
@@ -164,11 +182,11 @@ const AdCarousel: React.FC<AdCarouselProps> = (props) => {
                 </h1>
 
                 {/* Search Bar pass-through overlay */}
-                <div className="group relative max-w-2xl mx-auto">
-                    <div className="relative flex items-center bg-white rounded-full p-1.5 shadow-2xl transition-all duration-300 group-hover:scale-[1.01]">
+                <div className="group relative max-w-3xl mx-auto">
+                    <div className="relative flex items-center bg-white rounded-full p-1 md:p-1.5 shadow-2xl transition-all duration-300 group-hover:scale-[1.01]">
                         <div 
                             onClick={props.handleLocateMe}
-                            className={`pl-4 pr-2 flex items-center text-red-500 cursor-pointer hover:scale-125 transition-all active:scale-95 group/loc ${props.isLocating ? 'animate-bounce' : ''}`}
+                            className={`pl-4 pr-1 md:pr-2 flex items-center text-red-500 cursor-pointer hover:scale-125 transition-all active:scale-95 group/loc ${props.isLocating ? 'animate-bounce' : ''}`}
                             title="Locate Me"
                         >
                             <span className="text-lg">📍</span>
@@ -176,15 +194,31 @@ const AdCarousel: React.FC<AdCarouselProps> = (props) => {
                         <input
                             type="text"
                             placeholder="Type postal code or address..."
-                            className="flex-1 py-3 px-2 bg-transparent outline-none text-gray-900 font-medium placeholder-gray-400 text-sm md:text-base"
+                            className="flex-1 py-2 md:py-3 px-1 md:px-2 bg-transparent outline-none text-gray-900 font-medium placeholder-gray-400 text-xs md:text-base min-w-0"
                             value={props.address}
                             onChange={(e) => props.setAddress(e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && props.handleSearch()}
                         />
+
+                        {/* Radius Selector Integrated */}
+                        <div className="flex items-center gap-1 md:gap-2 px-2 md:px-4 border-l border-gray-100 h-8 md:h-10">
+                            <span className="hidden md:inline text-[9px] font-black text-gray-400 tracking-widest uppercase">Radius</span>
+                            <select 
+                                value={props.searchDistance} 
+                                onChange={(e) => props.setSearchDistance(Number(e.target.value))}
+                                className="text-[10px] md:text-xs font-black bg-transparent border-none outline-none text-blue-600 cursor-pointer focus:ring-0 text-center"
+                            >
+                                <option value={5}>5km</option>
+                                <option value={10}>10km</option>
+                                <option value={20}>20km</option>
+                                <option value={50}>50km</option>
+                            </select>
+                        </div>
+
                         <button
                             onClick={() => props.handleSearch()}
                             disabled={props.isLocating}
-                            className="bg-blue-600 text-white px-6 md:px-10 py-3 rounded-full font-bold text-sm tracking-wide hover:bg-blue-700 transition-all shadow-xl active:scale-95"
+                            className="bg-blue-600 text-white px-4 md:px-10 py-2.5 md:py-3 rounded-full font-bold text-[10px] md:text-sm tracking-wide hover:bg-blue-700 transition-all shadow-xl active:scale-95 shrink-0"
                         >
                             {props.isLocating ? '...' : 'Search'}
                         </button>

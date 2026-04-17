@@ -148,6 +148,8 @@ const StoreList: React.FC = () => {
                 setAddress={setAddress}
                 isLocating={isLocating}
                 handleLocateMe={handleLocateMe}
+                searchDistance={searchDistance}
+                setSearchDistance={setSearchDistance}
             />
 
             {/* PREMIUM MARKETPLACE INFO BOARD */}
@@ -332,19 +334,6 @@ const StoreList: React.FC = () => {
                             <p className="text-sm text-gray-400 font-bold tracking-[0.2em] mt-2">Verified quality near your location</p>
                         </div>
                         <div className="flex flex-wrap items-center gap-4">
-                            <div className="bg-gray-50 px-4 py-2 rounded-2xl border border-gray-100 flex items-center gap-3">
-                                <span className="text-[9px] font-black text-gray-400 tracking-widest">Radius:</span>
-                                <select 
-                                    value={searchDistance} 
-                                    onChange={(e) => setSearchDistance(Number(e.target.value))}
-                                    className="text-xs font-black bg-transparent border-none outline-none text-gray-900 cursor-pointer"
-                                >
-                                    <option value={5}>Within 5 KM</option>
-                                    <option value={10}>Within 10 KM</option>
-                                    <option value={25}>Within 25 KM</option>
-                                    <option value={50}>Within 50 KM</option>
-                                </select>
-                            </div>
                             <div className="flex bg-gray-50 rounded-2xl p-1.5 border border-gray-100">
                                 <button onClick={() => setViewMode('grid')} className={`p-2 rounded-xl transition-all ${viewMode === 'grid' ? 'bg-white shadow-md text-blue-600' : 'text-gray-400 hover:text-gray-600'}`}>
                                     <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>

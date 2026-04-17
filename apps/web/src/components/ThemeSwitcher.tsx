@@ -20,7 +20,7 @@ const ThemeSwitcher: React.FC = () => {
     }, [activeTheme]);
 
     return (
-        <div className="fixed bottom-4 right-4 z-50">
+        <div className="fixed bottom-24 md:bottom-4 right-4 z-50">
             {isOpen && (
                 <div className="absolute bottom-full mb-2 right-0 bg-white border border-gray-200 rounded-lg shadow-xl p-2 w-48 text-sm">
                     <div className="font-bold mb-2 pb-1 border-b px-2 text-gray-800">Select Theme</div>
