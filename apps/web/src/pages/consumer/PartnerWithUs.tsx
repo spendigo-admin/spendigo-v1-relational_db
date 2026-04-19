@@ -6,49 +6,53 @@ import SEO from '../../components/SEO';
 const steps = [
     {
         icon: '📝',
-        title: 'Create Your Account',
-        description: 'Sign up for free as a merchant. It only takes 2 minutes — just your name, email, and a password.'
+        title: 'Instant Business Signup',
+        description: 'Register in seconds. Our automated geocoding instantly verifies your store location so you are discoverable immediately.'
     },
     {
         icon: '🏪',
-        title: 'Set Up Your Store',
-        description: 'Add your store name, address, business hours, and upload your logo. Tell shoppers what makes your store special.'
+        title: 'Branded Digital Storefront',
+        description: 'Upload your logo and hours. Our premium retail layout makes your local shop look like a first-class digital destination.'
     },
     {
         icon: '📦',
-        title: 'Add Your Products',
-        description: 'Search our master catalog of thousands of products by name or barcode. Set your own prices and stock levels — no manual data entry.'
+        title: 'Smart Inventory Sync',
+        description: 'Link your items to our 10,000+ item Master Catalog. Update prices and stock levels instantly via our integrated barcode scanner.'
     },
     {
         icon: '📣',
-        title: 'Create Flyers & Deals',
-        description: 'Promote weekly specials, bundle deals, and digital flyers to attract nearby shoppers directly through the app.'
+        title: 'Proximity Promotions',
+        description: 'Create deals and flyers. We automatically notify shoppers walking within your configurable radius using geo-fencing alerts.'
     },
     {
         icon: '🛒',
-        title: 'Receive Orders',
-        description: 'Shoppers reserve items from your store. You get instant notifications and can manage orders from your merchant dashboard.'
+        title: 'Seamless Order Flow',
+        description: 'Manage reservations and orders via your dashboard with real-time push notifications and audible order alerts.'
     },
     {
-        icon: '💰',
-        title: 'Grow Your Revenue',
-        description: 'Reach new customers who are actively looking for local deals. No commission on pickup orders — you keep 100% of the sale.'
+        icon: '📈',
+        title: 'Insightful Growth',
+        description: 'Access market price benchmarks and traffic analytics to optimize your pricing and outperform the competition.'
     }
 ];
 
 const benefits = [
-    { icon: '🆓', label: 'Free to Start', detail: 'No upfront costs. Our free tier gets you listed instantly.' },
-    { icon: '📊', label: 'Real-Time Dashboard', detail: 'Track orders, inventory, and customer traffic in one place.' },
-    { icon: '🔍', label: 'Be Discoverable', detail: 'Shoppers find you by location, product search, and AI-powered SmartCart.' },
-    { icon: '🚚', label: 'Delivery Ready', detail: 'Upgrade to offer delivery with configurable fees and minimums.' },
-    { icon: '💳', label: 'Stripe Integration', detail: 'Accept online payments seamlessly — funds go directly to your account.' },
-    { icon: '🇨🇦', label: 'Built for Canada', detail: 'Provincial tax handling, bilingual support, and local-first design.' },
+    { icon: '📍', label: 'Proximity Marketing', detail: 'Our platform notifies local shoppers when they are near your store with active offers.' },
+    { icon: '🆓', label: 'Zero Startup Fees', detail: 'First 100 stores get a 90-day free trial. No credit card required to list.' },
+    { icon: '📊', label: 'Smart Insights', detail: 'See how your prices compare to regional averages with our Market Price benchmarks.' },
+    { icon: '📱', label: 'Mobile-First', detail: 'Manage your entire inventory and fulfill orders directly from your smartphone.' },
+    { icon: '💳', label: 'Stripe Connect', detail: 'Secure, instant payouts directly to your business account with Standard Connect.' },
+    { icon: '⚖️', label: 'Audit Ready', detail: 'Full forensic logging and compliance tools for marketplace and local evidence.' },
 ];
 
 const PartnerWithUs: React.FC = () => {
     return (
         <div className="animate-fade-in pb-20">
-            <SEO title="Partner with Us" description="Join Spendigo as a local merchant. Get discovered by nearby shoppers, manage orders, and grow your business — for free." path="/partner" />
+            <SEO 
+                title="Partner with Us" 
+                description="Join Spendigo as a local merchant. Reach nearby shoppers with proximity alerts, manage inventory with barcode scanning, and grow your business with AI insights — for free." 
+                path="/partner" 
+            />
             {/* HERO */}
             <div className="bg-gradient-to-br from-[var(--brand-primary)] via-[var(--brand-secondary)] to-purple-600 text-white py-16 px-4 text-center">
                 <div className="max-w-3xl mx-auto">

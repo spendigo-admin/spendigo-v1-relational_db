@@ -128,9 +128,15 @@ const Careers: React.FC = () => {
                             We're a team of dreamers, builders, and AI enthusiasts on a mission to make smart shopping accessible to everyone.
                         </p>
                         <div className="flex flex-wrap justify-center gap-4">
-                            <a href="#open-roles" className="px-8 py-4 bg-[var(--brand-primary)] text-white font-bold rounded-xl shadow-xl shadow-[var(--brand-primary)]/20 hover:scale-[1.02] active:scale-[0.98] transition-all">
-                                View Open Roles
-                            </a>
+                            <button 
+                                onClick={() => document.getElementById('open-roles')?.scrollIntoView({ behavior: 'smooth' })} 
+                                className="px-8 py-4 bg-[var(--brand-primary)] text-white font-black rounded-2xl shadow-xl shadow-[var(--brand-primary)]/20 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
+                            >
+                                🔍 Explore Open Roles
+                            </button>
+                            <Link to="/register" className="px-8 py-4 bg-white text-[var(--text-main)] font-bold rounded-2xl border border-[var(--glass-border)] hover:bg-[var(--surface-1)] transition-all">
+                                Try the App First
+                            </Link>
                         </div>
                     </div>
                 </div>
@@ -210,10 +216,10 @@ const Careers: React.FC = () => {
             </section>
 
             {/* OPEN ROLES */}
-            <section id="open-roles" className="py-20 bg-[var(--surface-1)] border-t border-[var(--glass-border)]">
+            <section id="open-roles" className="py-24 bg-[var(--surface-1)] border-t border-[var(--glass-border)] scroll-mt-20">
                 <div className="container mx-auto max-w-4xl px-4">
-                    <div className="text-center mb-12">
-                        <h2 className="text-3xl font-bold text-[var(--text-main)] mb-4">Open Positions</h2>
+                    <div className="text-center mb-16">
+                        <h2 className="text-4xl font-black text-[var(--text-main)] mb-4 tracking-tight">Open Opportunities</h2>
                         <p className="text-[var(--text-muted)]">
                             {careersEnabled 
                                 ? 'Join us in reshaping the digital shopping experience.' 
@@ -254,9 +260,9 @@ const Careers: React.FC = () => {
                                                 </div>
                                                 <button 
                                                     onClick={(e) => handleApply(job, e)}
-                                                    className="px-5 py-2 rounded-lg border border-[var(--brand-primary)] text-[var(--brand-primary)] font-bold text-sm hover:bg-[var(--brand-primary)] hover:text-white transition-colors self-start md:self-center"
+                                                    className="px-6 py-3 rounded-xl bg-[var(--brand-primary)] text-white font-black text-sm hover:brightness-110 shadow-lg shadow-[var(--brand-primary)]/10 transition-all self-start md:self-center"
                                                 >
-                                                    Apply Now
+                                                    Fast Apply →
                                                 </button>
                                             </div>
                                             
@@ -280,14 +286,20 @@ const Careers: React.FC = () => {
                     )}
 
                     {/* TALENT POOL CTA */}
-                    <div className="mt-16 text-center glass-panel p-8">
-                        <h3 className="text-xl font-bold text-[var(--text-main)] mb-2">Don't see a fit?</h3>
-                        <p className="text-[var(--text-muted)] text-sm mb-6">
-                            We're always looking for talented individuals. Join our talent pool to stay updated on future opportunities.
+                    <div className="mt-16 text-center glass-panel p-10 border-2 border-dashed border-[var(--brand-primary)]/20">
+                        <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-6">🤝</div>
+                        <h3 className="text-2xl font-black text-[var(--text-main)] mb-2">Don't see your fit?</h3>
+                        <p className="text-[var(--text-muted)] text-sm mb-8 max-w-md mx-auto">
+                            We're always growing! If you're a designer, engineer, or marketer who believes in our mission, join our talent pool or refer a friend.
                         </p>
-                        <button className="px-8 py-3 bg-[var(--surface-2)] text-[var(--text-main)] font-bold rounded-xl hover:bg-[var(--surface-3)] transition-colors">
-                            Join Talent Pool
-                        </button>
+                        <div className="flex flex-wrap justify-center gap-4">
+                            <button className="px-10 py-4 bg-[var(--brand-primary)] text-white font-black rounded-2xl shadow-xl shadow-[var(--brand-primary)]/20 hover:scale-[1.05] transition-all">
+                                Join Talent Pool
+                            </button>
+                            <button className="px-10 py-4 bg-white text-[var(--text-main)] font-bold rounded-2xl border border-[var(--glass-border)] hover:bg-gray-50 transition-colors">
+                                Refer a Friend
+                            </button>
+                        </div>
                     </div>
                 </div>
             </section>
@@ -297,8 +309,8 @@ const Careers: React.FC = () => {
                 <div className="container mx-auto max-w-4xl">
                     <div className="bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-secondary)] rounded-[2rem] p-12 text-center text-white shadow-2xl relative overflow-hidden">
                         <div className="relative z-10">
-                            <h2 className="text-3xl md:text-4xl font-black mb-6">Ready to make an impact?</h2>
-                            <p className="text-lg opacity-90 mb-10 max-w-xl mx-auto">
+                            <h2 className="text-3xl md:text-4xl font-black mb-6 text-white">Ready to make an impact?</h2>
+                            <p className="text-lg mb-10 max-w-xl mx-auto text-white/90">
                                 The future of shopping is being built right here at Spendigo. We'd love for you to be a part of it.
                             </p>
                             <Link to="/register" className="inline-block px-10 py-5 bg-white text-[var(--brand-primary)] font-black rounded-2xl shadow-xl hover:scale-105 transition-transform">

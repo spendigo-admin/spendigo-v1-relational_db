@@ -24,7 +24,8 @@ const MerchantRegister: React.FC = () => {
         street: '',
         city: '',
         province: 'ON',
-        postalCode: ''
+        postalCode: '',
+        agreedToTerms: false
     });
 
     const nextStep = () => {
@@ -92,6 +93,16 @@ const MerchantRegister: React.FC = () => {
                 <Link to="/" className="inline-block mb-6">
                     <span className="text-3xl font-black bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)] bg-clip-text text-transparent">Spendigo</span>
                 </Link>
+                
+                {/* PROMO BADGE */}
+                <div className="mb-6 inline-flex items-center gap-2 bg-blue-50 border border-blue-100 px-4 py-2 rounded-2xl animate-bounce-slow">
+                    <span className="text-xl">🎁</span>
+                    <div className="text-left">
+                        <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest leading-none">Founder Promo</p>
+                        <p className="text-xs font-bold text-blue-800">First 100 Stores: 90-Day Free Trial</p>
+                    </div>
+                </div>
+
                 <h1 className="text-3xl font-extrabold text-[var(--text-main)] mb-2">Partner Registration</h1>
                 <p className="text-[var(--text-muted)] max-w-lg mx-auto">Join the Spendigo marketplace and start reaching thousands of nearby shoppers.</p>
             </div>
@@ -276,9 +287,23 @@ const MerchantRegister: React.FC = () => {
                                         placeholder="M5V 1J2"
                                         className="w-full p-3.5 rounded-xl bg-[var(--surface-1)] border border-[var(--glass-border)] focus:border-[var(--brand-primary)] outline-none transition-all focus:ring-4 focus:ring-[var(--brand-primary)]/5"
                                         value={formData.postalCode}
-                                        onChange={e => setFormData({ ...formData, postalCode: e.target.value })}
+                                        onChange={e => setFormData({ ...formData, postalCode: e.target.value.toUpperCase() })}
                                         disabled={isLoading}
                                     />
+                                </div>
+
+                                <div className="pt-4 border-t border-[var(--glass-border)]">
+                                    <label className="flex items-start gap-3 cursor-pointer group">
+                                        <input
+                                            type="checkbox"
+                                            className="mt-1 w-5 h-5 rounded border-[var(--glass-border)] text-[var(--brand-primary)] focus:ring-[var(--brand-primary)]"
+                                            checked={formData.agreedToTerms}
+                                            onChange={e => setFormData({ ...formData, agreedToTerms: e.target.checked })}
+                                        />
+                                        <span className="text-xs text-[var(--text-muted)] leading-relaxed group-hover:text-[var(--text-main)] transition-colors">
+                                            I agree to the <Link to="/terms" className="text-[var(--brand-primary)] font-bold">Terms of Service</Link>, <Link to="/privacy" className="text-[var(--brand-primary)] font-bold">Privacy Policy</Link>, and the <Link to="/legal" className="text-[var(--brand-primary)] font-bold">Marketplace Facilitator Agreement</Link>.
+                                        </span>
+                                    </label>
                                 </div>
                             </div>
                         )}
@@ -307,8 +332,8 @@ const MerchantRegister: React.FC = () => {
                             ) : (
                                 <button
                                     type="submit"
-                                    disabled={isLoading}
-                                    className="flex-[2] py-4 px-6 rounded-2xl bg-[var(--brand-primary)] text-white font-bold hover:brightness-110 shadow-xl shadow-[var(--brand-primary)]/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                                    disabled={isLoading || !formData.agreedToTerms}
+                                    className="flex-[2] py-4 px-6 rounded-2xl bg-[var(--brand-primary)] text-white font-bold hover:brightness-110 shadow-xl shadow-[var(--brand-primary)]/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:grayscale transition-all"
                                 >
                                     {isLoading ? (
                                         <>

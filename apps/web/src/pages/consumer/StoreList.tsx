@@ -322,7 +322,7 @@ const StoreList: React.FC = () => {
                     <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-12">
                         <div>
                             <h2 className="text-4xl md:text-6xl font-black text-gray-900 tracking-tighter italic m-0">
-                                Local <span className="text-blue-600">Grocers</span>
+                                Neighborhood <span className="text-blue-600">Gems</span>
                             </h2>
                             <p className="text-sm text-gray-400 font-bold tracking-[0.2em] mt-2">Verified quality near your location</p>
                         </div>

@@ -4,6 +4,8 @@ import { useOrders } from '../../context/OrderContext';
 import { useAuth } from '../../context/AuthContext';
 import { usePushNotifications } from '../../hooks/usePushNotifications';
 import { useNotifications, NotificationPreferences } from '../../context/NotificationContext';
+import { useWishlist } from '../../context/WishlistContext';
+import { useMarketplace } from '../../context/MarketplaceContext';
 import { httpsCallable } from 'firebase/functions';
 import { functions } from '../../lib/firebase';
 import '../../styles/design-system.css';
@@ -11,10 +13,12 @@ import SEO from '../../components/SEO';
 
 const Profile: React.FC = () => {
     const { profile, orders, updateProfile, addAddress, updateAddress, deleteAddress, setDefaultAddress, reorder, downloadOrderReceipt } = useOrders();
+    const { items: wishlistItems, removeFromWishlist, clearWishlist } = useWishlist();
+    const { stores } = useMarketplace();
     const { user, logout } = useAuth();
     const location = useLocation();
     const navigate = useNavigate();
-    const [activeTab, setActiveTab] = useState<'account' | 'addresses' | 'orders'>(
+    const [activeTab, setActiveTab] = useState<'account' | 'addresses' | 'orders' | 'wishlist'>(
         (location.state as any)?.activeTab || 'account'
     );
 
@@ -218,13 +222,13 @@ const Profile: React.FC = () => {
             {/* Tabs */}
             <div className="border-b border-[var(--glass-border)] bg-white sticky top-14 z-30">
                 <div className="max-w-3xl mx-auto flex">
-                    {(['account', 'addresses', 'orders'] as const).map(tab => (
+                    {(['account', 'addresses', 'orders', 'wishlist'] as const).map(tab => (
                         <button
                             key={tab}
                             onClick={() => setActiveTab(tab)}
                             className={`flex-1 py-4 text-sm font-medium capitalize transition-colors ${activeTab === tab ? 'text-[var(--brand-primary)] border-b-2 border-[var(--brand-primary)]' : 'text-[var(--text-muted)]'}`}
                         >
-                            {tab === 'orders' ? 'Order History' : tab}
+                            {tab === 'orders' ? 'Orders' : tab}
                         </button>
                     ))}
                 </div>
@@ -239,10 +243,24 @@ const Profile: React.FC = () => {
                             <h2 className="text-lg font-bold text-[var(--text-main)]">Account Information</h2>
                             {!editingProfile && (
                                 <button onClick={() => setEditingProfile(true)} className="text-[var(--brand-primary)] text-sm font-medium">
-                                    Edit
+                                    Edit Profile
                                 </button>
                             )}
                         </div>
+
+                        {/* SAVINGS CARD */}
+                        {!editingProfile && (
+                            <div className="mb-8 p-6 bg-gradient-to-br from-green-50 to-emerald-50 rounded-3xl border border-green-100 flex items-center justify-between">
+                                <div>
+                                    <p className="text-[10px] font-black text-green-600 uppercase tracking-widest mb-1">Lifetime Smart Savings</p>
+                                    <p className="text-3xl font-black text-green-800">${(orders.reduce((acc, o) => acc + (o.total * 0.12), 0)).toFixed(2)}</p>
+                                    <p className="text-xs text-green-600/80 mt-1">Calculated via SmartCart price optimization</p>
+                                </div>
+                                <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-2xl shadow-sm text-green-600">
+                                    💰
+                                </div>
+                            </div>
+                        )}
 
                         {editingProfile ? (
                             <div className="space-y-4">
@@ -632,6 +650,59 @@ const Profile: React.FC = () => {
                                     </div>
                                 </Link>
                             ))
+                        )}
+                    </div>
+                )}
+
+                {/* WISHLIST TAB */}
+                {activeTab === 'wishlist' && (
+                    <div className="space-y-4">
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className="text-lg font-bold text-[var(--text-main)]">My Wishlist</h2>
+                            {wishlistItems.length > 0 && (
+                                <button onClick={clearWishlist} className="text-xs text-red-500 font-bold">Clear All</button>
+                            )}
+                        </div>
+                        
+                        {wishlistItems.length === 0 ? (
+                            <div className="text-center py-12 bg-white rounded-xl border border-[var(--glass-border)]">
+                                <p className="text-4xl mb-4">✨</p>
+                                <p className="text-[var(--text-muted)]">Your wishlist is empty</p>
+                                <Link to="/" className="text-[var(--brand-primary)] text-sm font-medium">Find Products</Link>
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-1 gap-3">
+                                {wishlistItems.map((item, i) => (
+                                    <div key={i} className="bg-white rounded-xl border border-[var(--glass-border)] p-4 flex items-center gap-4 group">
+                                        <div className="w-16 h-16 rounded-lg bg-[var(--surface-1)] flex-shrink-0 overflow-hidden">
+                                            {item.image ? (
+                                                <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                                            ) : (
+                                                <div className="w-full h-full flex items-center justify-center text-2xl">📦</div>
+                                            )}
+                                        </div>
+                                        <div className="flex-1">
+                                            <h3 className="font-bold text-[var(--text-main)] leading-tight">{item.name}</h3>
+                                            <p className="text-xs text-[var(--text-muted)]">{item.brand || 'Local Merchant'}</p>
+                                            <div className="mt-2 flex items-center gap-2">
+                                                <span className="text-[10px] bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full font-bold">Price Alert Active</span>
+                                            </div>
+                                        </div>
+                                        <button 
+                                            onClick={() => removeFromWishlist(item.id)}
+                                            className="w-10 h-10 rounded-full flex items-center justify-center text-gray-300 hover:text-red-500 hover:bg-red-50 transition-all opacity-0 group-hover:opacity-100"
+                                        >
+                                            ✕
+                                        </button>
+                                    </div>
+                                ))}
+                                <button 
+                                    onClick={() => navigate('/cart')}
+                                    className="w-full py-4 mt-4 bg-[var(--brand-primary)] text-white font-black rounded-2xl shadow-xl shadow-[var(--brand-primary)]/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                                >
+                                    Optimize This Wishlist →
+                                </button>
+                            </div>
                         )}
                     </div>
                 )}

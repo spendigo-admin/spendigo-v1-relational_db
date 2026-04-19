@@ -32,6 +32,7 @@ const HowItWorks: React.FC = () => {
                 { '@type': 'HowToStep', position: 2, name: 'AI-Powered Optimization', text: 'Our SmartCart algorithm analyzes prices across every partner store and calculates the cheapest combination.' },
                 { '@type': 'HowToStep', position: 3, name: 'Review Your Savings', text: 'See a clear breakdown of where each item is cheapest and how much you are saving.' },
                 { '@type': 'HowToStep', position: 4, name: 'Add to Cart & Checkout', text: 'One tap adds your optimized selection to the cart. Confirm your order and we handle the rest.' },
+                { '@type': 'HowToStep', position: 5, name: 'Automated Tracking & Alerts', text: 'Receive real-time push notifications for order status and proximity-based deals.' },
             ]
         };
 
@@ -93,6 +94,9 @@ const HowItWorks: React.FC = () => {
         { icon: '📱', title: t('hiwFeat4'), desc: t('hiwFeat4Desc') },
         { icon: '🏷️', title: t('hiwFeat5'), desc: t('hiwFeat5Desc') },
         { icon: '⚡', title: t('hiwFeat6'), desc: t('hiwFeat6Desc') },
+        { icon: '📍', title: t('hiwFeat7'), desc: t('hiwFeat7Desc') },
+        { icon: '📈', title: t('hiwFeat8'), desc: t('hiwFeat8Desc') },
+        { icon: '✨', title: t('hiwFeat9'), desc: t('hiwFeat9Desc') },
     ];
 
     const faqs = [
@@ -102,13 +106,14 @@ const HowItWorks: React.FC = () => {
         { q: t('hiwQ4'), a: t('hiwA4') },
         { q: t('hiwQ5'), a: t('hiwA5') },
         { q: t('hiwQ6'), a: t('hiwA6') },
+        { q: t('hiwQ7'), a: t('hiwA7') },
     ];
 
     return (
         <div className="animate-fade-in pb-24">
             <SEO
                 title="How It Works"
-                description="Learn how Spendigo helps Canadian shoppers save money on groceries. Compare real-time prices across local stores, browse weekly flyers, and save up to 15% automatically."
+                description="Learn how Spendigo uses AI and proximity alerts to help Canadian shoppers save money. Compare real-time prices across local stores, get market insights, and save up to 15% automatically."
                 path="/how-it-works"
             />
             {/* Hero */}
