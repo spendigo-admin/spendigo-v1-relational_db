@@ -30,6 +30,8 @@ cd apps/web && tsc && vite build   # Build web app
 ```bash
 cd services/api && npm run build   # Compile TypeScript → lib/
 cd services/api && npm run serve   # Build + start Firebase emulator (functions only)
+cd services/api && npm run shell   # Firebase functions REPL for local testing
+cd services/api && npm run logs    # Fetch live function logs
 firebase deploy --only functions   # Deploy functions to production
 firebase deploy                    # Deploy hosting + functions + Firestore rules
 ```
@@ -101,6 +103,8 @@ Admin sub-roles: SUPER_ADMIN (admin:all), MODERATOR (admin:users, admin:stores),
 - [apps/web/src/utils/IntegrityUtils.ts](apps/web/src/utils/IntegrityUtils.ts) — Server-side price validation to detect order tampering.
 - [apps/web/src/utils/fuzzy-search.ts](apps/web/src/utils/fuzzy-search.ts) — Levenshtein + token overlap + brand boost, 4 match tiers (exact/partial/fuzzy/typo), 1-min cache. Used in SmartCart wishlist matching (score ≥ 65 threshold).
 - [apps/web/src/hooks/useSmartInsights.ts](apps/web/src/hooks/useSmartInsights.ts) — Gemini `gemini-2.5-flash` integration via `@google/generative-ai`. Debounces 1.5 s, generates 2–3 shopping insight strings from basket summary. Requires `VITE_GEMINI_API_KEY`.
+- [apps/web/src/hooks/useStoreProducts.ts](apps/web/src/hooks/useStoreProducts.ts) — Fetches a store's merchant products, falling back to `pending_master_products` when the master product isn't published yet. Used in both consumer (StoreDetail) and merchant (Products, Deals, Flyers) pages.
+- [apps/web/src/hooks/useInventorySync.ts](apps/web/src/hooks/useInventorySync.ts) — Detects out-of-sync merchant products vs. the master catalog and exposes sync stats for the merchant dashboard.
 - [apps/web/src/lib/analytics.ts](apps/web/src/lib/analytics.ts) — `trackVisit()` called once on App mount.
 - [apps/web/src/lib/sentry.ts](apps/web/src/lib/sentry.ts) — Sentry error tracking. Performance sampling: 20% in prod, 100% in dev. Session replay: 10% of sessions, 100% of error sessions. Gracefully no-ops if `VITE_SENTRY_DSN` not set.
 
@@ -125,8 +129,15 @@ Firebase Cloud Functions v4 (v1 API). Organized by domain:
 - `orders/` — `placeOrder` (transactional: reads stock → verifies quantity → decrements → validates payment → creates order), `cancelOrder` (restores stock), `downloadReceipt` (PDF via PDFKit, stored with Firebase download token)
 - `auth/` — Team member invite/delete/remove. Role-based rank: OWNER (3) > MANAGER (2) > STAFF/MARKETING (1) — prevents privilege escalation.
 - `email/` — `sendOrderConfirmation` (Firestore onCreate trigger), `sendOrderStatusUpdate` (onUpdate trigger). Emails are **not sent directly** — they write styled HTML to the `/mail` Firestore collection; a Firebase Extension handles SMTP delivery.
-- `triggers/` — Firestore-triggered functions: `onUserUpdate` (syncs subscriptionTier to store doc), `onMasterProductWrite` (downloads external images to Storage with 1-year cache), `onOrderStatusUpdated` (sends FCM push notifications with emoji-prefixed titles, auto-removes stale tokens), `syncMasterProductToAlgolia`, `syncMerchantProductToAlgolia` (includes `_geoloc` for location-based search)
-- `admin/` — Cleanup utilities (`cleanupOrphanedUsers`, `syncTrafficStats`)
+- `triggers/` — Firestore-triggered functions:
+  - `onUserUpdate` — syncs subscriptionTier to store doc
+  - `onMasterProductWrite` — downloads external images to Storage with 1-year cache
+  - `onOrderStatusUpdated` — sends FCM push notifications with emoji-prefixed titles, auto-removes stale tokens
+  - `onStoreCreate` / `onStoreUpdate` — auto-geocodes store address via Nominatim; re-geocodes on address field changes
+  - `onStoreDelete` — cascade cleanup: deletes merchant products, deals, flyers, de-links users, cancels Stripe subscriptions
+  - `onMerchantProductPriceChange` (`priceHistoryTrigger.ts`) — records daily price history snapshot; detects price drops and new sales, then queries users with active FCM tokens within their configured proximity radius (Haversine) and sends geo-targeted multicast FCM notifications respecting `notificationPreferences.promotions` / `priceDrop` / `maxDistance` user fields
+  - `syncMasterProductToAlgolia`, `syncMerchantProductToAlgolia` (includes `_geoloc` for location-based search)
+- `admin/` — Cleanup utilities (`cleanupOrphanedUsers`, `cleanupOrphanedStoreData`, `syncTrafficStats`)
 - `smartcart/` — Cart optimization HTTP endpoint (`/smartcartOptimize`) mirroring frontend logic
 - `cart/` — Additional `/cartOptimize` HTTP endpoint (delegates to smartcart service layer)
 - `models/` — Shared TypeScript interfaces: `MasterProductRecord`, `StoreRecord`, `MerchantProductRecord`
