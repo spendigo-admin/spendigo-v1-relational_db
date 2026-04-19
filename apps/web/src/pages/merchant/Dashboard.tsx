@@ -4,19 +4,22 @@ import '../../styles/design-system.css';
 import { useMarketplace } from '../../context/MarketplaceContext';
 import { useAuth } from '../../context/AuthContext';
 import { Order, useOrders } from '../../context/OrderContext';
+import { useNotifications } from '../../context/NotificationContext';
 import NotificationPopover from '../../components/NotificationPopover';
 
 type TimePeriod = 'daily' | 'weekly' | 'monthly';
 
 const MerchantDashboard: React.FC = () => {
     const navigate = useNavigate();
-    const { getStore } = useMarketplace();
+    const { getStore, updateStore } = useMarketplace();
     const { can, user } = useAuth();
+    const { addNotification } = useNotifications();
     const storeId = user?.storeId || '1';
     const store = getStore(storeId);
 
     const { orders } = useOrders();
     const [timePeriod, setTimePeriod] = useState<TimePeriod>('daily');
+    const [isLocating, setIsLocating] = useState(false);
     const [activeChartMetric, setActiveChartMetric] = useState<'revenue' | 'orders' | 'avgOrder' | 'inventory'>('revenue');
     const [stats, setStats] = useState({
         revenue: 0,
@@ -141,6 +144,45 @@ const MerchantDashboard: React.FC = () => {
         setChartData(chartBuckets);
 
     }, [orders, timePeriod, productCount]);
+
+    const handleVerifyAddress = async () => {
+        const address = (document.getElementById('store-address-input') as HTMLInputElement)?.value;
+        const city = (document.getElementById('store-city-input') as HTMLInputElement)?.value;
+        const postalCode = (document.getElementById('store-postal-input') as HTMLInputElement)?.value;
+
+        if (!address || !city || !postalCode) {
+            addNotification({ type: 'alert', title: 'Missing Information', message: 'Please fill in all address fields.' });
+            return;
+        }
+
+        setIsLocating(true);
+        const fullAddress = `${address}, ${city}, ON, ${postalCode}, Canada`;
+
+        try {
+            const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(fullAddress)}`);
+            const data = await response.json();
+
+            if (data && data.length > 0) {
+                const { lat, lon } = data[0];
+                
+                await updateStore(storeId, {
+                    address,
+                    city,
+                    postalCode,
+                    coordinates: { lat: parseFloat(lat), lng: parseFloat(lon) }
+                });
+
+                addNotification({ type: 'system', title: 'Location Verified!', message: 'Your store coordinates have been updated.' });
+            } else {
+                addNotification({ type: 'alert', title: 'Location Not Found', message: 'We could not pinpoint that address. Please check and try again.' });
+            }
+        } catch (error) {
+            console.error('Verification error:', error);
+            addNotification({ type: 'alert', title: 'Service Error', message: 'Address verification service is currently unavailable.' });
+        } finally {
+            setIsLocating(false);
+        }
+    };
 
 
     const displayStats = [
@@ -355,6 +397,84 @@ const MerchantDashboard: React.FC = () => {
                                 No quick actions available for your role.
                             </div>
                         )}
+                    </section>
+
+                    {/* Store Location & Proximity */}
+                    <section className="bg-white p-6 md:p-8 rounded-3xl border border-[var(--glass-border)] shadow-sm overflow-hidden relative group">
+                        <div className="flex justify-between items-center mb-6">
+                            <div>
+                                <h2 className="text-xl font-bold text-[var(--text-main)] mb-1">📍 Store Location & Proximity</h2>
+                                <p className="text-sm text-[var(--text-muted)]">Set your physical presence for delivery and deal alerts.</p>
+                            </div>
+                            <span className={`text-[10px] font-black px-3 py-1.5 rounded-full uppercase tracking-widest ${store?.coordinates ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                {store?.coordinates ? 'Located' : 'Unmapped'}
+                            </span>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-5 gap-8">
+                            <div className="md:col-span-3 space-y-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="md:col-span-2">
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] mb-2 block">Physical Address</label>
+                                        <input 
+                                            type="text" 
+                                            placeholder="Enter street address" 
+                                            className="w-full p-4 bg-[var(--surface-1)] border border-[var(--glass-border)] rounded-2xl text-base font-medium focus:ring-2 ring-[var(--brand-primary)] outline-none transition-all"
+                                            defaultValue={store?.address}
+                                            id="store-address-input"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] mb-2 block">City</label>
+                                        <input 
+                                            type="text" 
+                                            placeholder="Toronto" 
+                                            className="w-full p-4 bg-[var(--surface-1)] border border-[var(--glass-border)] rounded-2xl text-base font-medium focus:ring-2 ring-[var(--brand-primary)] outline-none transition-all"
+                                            defaultValue={store?.city}
+                                            id="store-city-input"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] mb-2 block">Postal Code</label>
+                                        <input 
+                                            type="text" 
+                                            placeholder="M5V 2H1" 
+                                            className="w-full p-4 bg-[var(--surface-1)] border border-[var(--glass-border)] rounded-2xl text-base font-medium focus:ring-2 ring-[var(--brand-primary)] outline-none transition-all"
+                                            defaultValue={store?.postalCode}
+                                            id="store-postal-input"
+                                        />
+                                    </div>
+                                </div>
+                                <button 
+                                    onClick={handleVerifyAddress}
+                                    disabled={isLocating}
+                                    className="w-full py-4 bg-[var(--brand-primary)] hover:bg-black text-white font-black rounded-2xl transition-all flex items-center justify-center gap-3 shadow-lg shadow-[var(--brand-primary)]/10 disabled:opacity-50"
+                                >
+                                    {isLocating ? (
+                                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                    ) : '📍 Verify Address & Locate'}
+                                </button>
+                            </div>
+                            
+                            <div className="md:col-span-2 bg-[var(--surface-1)] rounded-3xl border border-[var(--glass-border)] p-6 flex flex-col justify-center items-center text-center relative overflow-hidden group-hover:bg-white transition-colors">
+                                <div className="relative z-10 w-16 h-16 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center text-3xl mb-4 group-hover:scale-110 transition-transform">
+                                    📡
+                                </div>
+                                <h3 className="font-black text-[var(--text-main)] mb-1 text-lg">Proximity Reach</h3>
+                                <p className="text-xs text-[var(--text-muted)] mb-4 font-medium">Deals are shared with shoppers within:</p>
+                                <div className="text-4xl font-black text-[var(--brand-primary)] mb-3 flex items-baseline gap-1">
+                                    {store?.deliveryRadiusKm || 5} <span className="text-xl">km</span>
+                                </div>
+                                <button 
+                                    onClick={() => navigate('/merchant/settings?tab=operations')}
+                                    className="text-[10px] font-black uppercase tracking-widest text-[var(--brand-primary)] hover:underline flex items-center gap-1 group/btn"
+                                >
+                                    Expand Coverage <span className="group-hover/btn:translate-x-1 transition-transform">→</span>
+                                </button>
+                                
+                                <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-blue-500/5 rounded-full blur-3xl"></div>
+                            </div>
+                        </div>
                     </section>
 
                     {/* SVG Trendline Chart with Animation - Only for Analytics */}
