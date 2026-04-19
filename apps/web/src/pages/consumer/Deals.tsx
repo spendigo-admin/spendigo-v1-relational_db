@@ -129,7 +129,7 @@ const Deals: React.FC = () => {
                                 <div className="px-4 flex items-center justify-between mb-4">
                                     <h3 className="text-lg font-bold text-[var(--text-main)] flex items-center gap-3">
                                         <div className="w-8 h-8 rounded-lg bg-white border border-[var(--glass-border)] flex items-center justify-center overflow-hidden shadow-sm">
-                                            {store.logoUrl && store.logoUrl.startsWith('http') ? (
+                                            {store.logoUrl && (store.logoUrl.startsWith('http') || store.logoUrl.startsWith('/') || store.logoUrl.startsWith('data:')) ? (
                                                 <img src={store.logoUrl} alt="" className="w-full h-full object-cover" />
                                             ) : (
                                                 <span className="text-xs">🏪</span>

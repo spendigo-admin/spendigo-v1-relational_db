@@ -103,7 +103,7 @@ const Flyers: React.FC = () => {
                                     <div className="absolute bottom-4 left-4 right-4">
                                         <div className="flex items-center gap-3 mb-2">
                                             <div className="w-10 h-10 rounded-lg bg-white border border-[var(--glass-border)] flex items-center justify-center text-xl shadow-lg overflow-hidden">
-                                                {store.logoUrl && store.logoUrl.startsWith('http') ? (
+                                                {store.logoUrl && (store.logoUrl.startsWith('http') || store.logoUrl.startsWith('/') || store.logoUrl.startsWith('data:')) ? (
                                                     <img src={store.logoUrl} alt="Logo" className="w-full h-full object-cover" />
                                                 ) : (
                                                     <span>{store.logoUrl || '🏪'}</span>

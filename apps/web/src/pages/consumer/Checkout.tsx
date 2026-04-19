@@ -444,7 +444,7 @@ const Checkout: React.FC = () => {
                                             {(() => {
                                                 const store = getStore(storeId) || STORE_DATA[storeId];
                                                 const logo = store?.logoUrl || store?.logo;
-                                                if (logo && logo.startsWith('http')) {
+                                                if (logo && (logo.startsWith('http') || logo.startsWith('/') || logo.startsWith('data:'))) {
                                                     return <img src={logo} alt={storeName} className="w-full h-full object-cover" />;
                                                 }
                                                 return <span>{logo || '🏪'}</span>;

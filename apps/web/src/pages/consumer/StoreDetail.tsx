@@ -603,7 +603,7 @@ const StoreDetail: React.FC = () => {
                         <div className="relative group/logo">
                             <div className="absolute -inset-1 bg-gradient-to-r from-teal-600 to-teal-400 rounded-3xl blur opacity-25 group-hover/logo:opacity-50 transition duration-1000 group-hover/logo:duration-200"></div>
                             <div className="w-24 h-24 md:w-32 md:h-32 relative rounded-3xl bg-white flex items-center justify-center text-4xl md:text-5xl shadow-2xl overflow-hidden border-4 border-white ring-4 ring-black/5">
-                                {(store.logoUrl || store.logo || '').startsWith('http') ? (
+                                {((store.logoUrl || store.logo || '').startsWith('http') || (store.logoUrl || store.logo || '').startsWith('/') || (store.logoUrl || store.logo || '').startsWith('data:')) ? (
                                     <img src={store.logoUrl || store.logo} alt="Logo" className="w-full h-full object-cover p-2" decoding="async" />
                                 ) : (
                                     <span className="font-black text-gray-900">{store.logo || store.logoUrl || '🏪'}</span>

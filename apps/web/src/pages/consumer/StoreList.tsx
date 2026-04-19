@@ -386,7 +386,7 @@ const StoreList: React.FC = () => {
                                     {/* Store Details */}
                                     <div className="p-8 flex flex-col flex-1 relative">
                                         <div className={`w-16 h-16 rounded-[1.5rem] bg-white border-2 border-gray-100 flex items-center justify-center text-4xl shadow-xl overflow-hidden transition-transform duration-500 group-hover:rotate-6 ${viewMode === 'list' ? 'mb-4' : 'absolute -top-8 left-8'}`}>
-                                            {store.logoUrl && store.logoUrl.startsWith('http') ? <img src={store.logoUrl} alt="Logo" className="w-full h-full object-cover p-2" /> : <span className="font-black text-gray-900">{store.logoUrl || '🏪'}</span>}
+                                            {store.logoUrl && (store.logoUrl.startsWith('http') || store.logoUrl.startsWith('/') || store.logoUrl.startsWith('data:')) ? <img src={store.logoUrl} alt="Logo" className="w-full h-full object-cover p-2" /> : <span className="font-black text-gray-900">{store.logoUrl || '🏪'}</span>}
                                         </div>
 
                                         <div className={viewMode === 'list' ? '' : 'mt-8'}>
