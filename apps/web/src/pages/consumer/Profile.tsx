@@ -13,7 +13,7 @@ import SEO from '../../components/SEO';
 
 const Profile: React.FC = () => {
     const { profile, orders, updateProfile, addAddress, updateAddress, deleteAddress, setDefaultAddress, reorder, downloadOrderReceipt } = useOrders();
-    const { items: wishlistItems, removeFromWishlist, clearWishlist } = useWishlist();
+    const { items: wishlistItems, removeItem, clearWishlist } = useWishlist();
     const { stores } = useMarketplace();
     const { user, logout } = useAuth();
     const location = useLocation();
@@ -683,13 +683,13 @@ const Profile: React.FC = () => {
                                         </div>
                                         <div className="flex-1">
                                             <h3 className="font-bold text-[var(--text-main)] leading-tight">{item.name}</h3>
-                                            <p className="text-xs text-[var(--text-muted)]">{item.brand || 'Local Merchant'}</p>
+                                            <p className="text-xs text-[var(--text-muted)]">{item.category || 'Local Merchant'}</p>
                                             <div className="mt-2 flex items-center gap-2">
                                                 <span className="text-[10px] bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full font-bold">Price Alert Active</span>
                                             </div>
                                         </div>
                                         <button 
-                                            onClick={() => removeFromWishlist(item.id)}
+                                            onClick={() => removeItem(item.id)}
                                             className="w-10 h-10 rounded-full flex items-center justify-center text-gray-300 hover:text-red-500 hover:bg-red-50 transition-all opacity-0 group-hover:opacity-100"
                                         >
                                             ✕
