@@ -4,6 +4,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Spendigo SmartCart is a Canada-first Marketplace Facilitator connecting independent convenience stores with local consumers. Status: Beta (Feature Complete). Firebase serverless backend, React 18 SPA frontend, Capacitor mobile wrapper.
 
+## Coding Philosophy
+
+1. **Think Before Coding**: Always output a `Thinking` block first. Analyze the problem, map dependencies, and identify the surgical change needed before touching any file.
+2. **Surgical Precision**: Do not perform drive-by refactoring. Only modify lines strictly necessary for the fix or feature.
+3. **Kill Complexity**: Prefer the simplest, most readable solution over clever abstractions or extra dependencies.
+4. **Measure First**: When optimizing, identify the metric first. Follow the Karpathy Loop — make a change, measure the result, discard if there is no improvement.
+5. **No Vibe Coding**: Rely on documentation and test results, not assumptions. Use `ls`, `grep`, and `cat` (or their tool equivalents) to verify codebase state before editing.
+6. **Explain the Why**: After every non-trivial fix, add a one-paragraph "Why this works" explanation covering the low-level mechanism — which data structure changed, which race condition was closed, which contract was violated and how. Surface-level "this fixes the bug" summaries are not enough.
+
 ## Commands
 
 ### Development
