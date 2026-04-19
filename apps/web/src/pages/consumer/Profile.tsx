@@ -248,16 +248,29 @@ const Profile: React.FC = () => {
                             )}
                         </div>
 
-                        {/* SAVINGS CARD */}
+                        {/* IMPACT STATS */}
                         {!editingProfile && (
-                            <div className="mb-8 p-6 bg-gradient-to-br from-green-50 to-emerald-50 rounded-3xl border border-green-100 flex items-center justify-between">
-                                <div>
-                                    <p className="text-[10px] font-black text-green-600 uppercase tracking-widest mb-1">Lifetime Smart Savings</p>
-                                    <p className="text-3xl font-black text-green-800">${(orders.reduce((acc, o) => acc + (o.total * 0.12), 0)).toFixed(2)}</p>
-                                    <p className="text-xs text-green-600/80 mt-1">Calculated via SmartCart price optimization</p>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                                <div className="p-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-3xl border border-blue-100 flex items-center justify-between">
+                                    <div>
+                                        <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-1">Lifetime Savings</p>
+                                        <p className="text-2xl font-black text-blue-800">${(orders.reduce((acc, o) => acc + (o.total * 0.12), 0)).toFixed(2)}</p>
+                                        <p className="text-[10px] text-blue-600/80 mt-1 font-bold">Via SmartCart optimization</p>
+                                    </div>
+                                    <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-xl shadow-sm text-blue-600">
+                                        💰
+                                    </div>
                                 </div>
-                                <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-2xl shadow-sm text-green-600">
-                                    💰
+
+                                <div className="p-6 bg-gradient-to-br from-purple-50 to-fuchsia-50 rounded-3xl border border-purple-100 flex items-center justify-between">
+                                    <div>
+                                        <p className="text-[10px] font-black text-purple-600 uppercase tracking-widest mb-1">Neighborhood Impact</p>
+                                        <p className="text-2xl font-black text-purple-800">${(orders.reduce((acc, o) => acc + o.total, 0)).toFixed(2)}</p>
+                                        <p className="text-[10px] text-purple-600/80 mt-1 font-bold">Invested in local economy</p>
+                                    </div>
+                                    <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-xl shadow-sm text-purple-600">
+                                        🤝
+                                    </div>
                                 </div>
                             </div>
                         )}
