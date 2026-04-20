@@ -1,53 +1,66 @@
 # Firebase Email Trigger Extension Setup
 
-**Status**: Verified
-**Last Updated**: 2026-01-11
+**Last Updated**: 2026-04-20
+**Status**: Production-Ready (v1.0)
+**Infrastructure**: Cloud Firestore + Trigger Email Extension
 
-This guide walks you through setting up the infrastructure required to send emails from Spendigo.
+---
 
-## 1. Install the Extension
-1. Go to the [Firebase Console](https://console.firebase.google.com/).
-2. Select your project (`spendigo-8540c`).
-3. In the left sidebar, click **Build** -> **Extensions**.
-4. Search for "Trigger Email" (published by Firebase).
-5. Click **Install**.
-   * *Note: This requires the Blaze (Pay as you go) plan.*
+## 1. Extension Configuration
+Spendigo utilizes the **"Trigger Email from Firestore"** extension to decouple application logic from email delivery.
 
-## 2. Configuration (SMTP)
-You will need an SMTP service to send emails.
+### Essential Settings:
+- **Collection**: `mail`
+- **Default FROM**: `Spendigo <noreply@spendigo.ca>`
+- **Default REPLY-TO**: `support@spendigo.ca`
+- **SMTP Gateway**: SendGrid (Production) or SMTP Relay (Enterprise).
 
-### Option A: SendGrid (Recommended)
-1. Create a free account at [SendGrid.com](https://sendgrid.com).
-2. Create an API Key with "Mail Send" permissions.
-3. In the Firebase Extension configuration:
-   * **SMTP Connection URI**: `smtps://apikey:YOUR_API_KEY@smtp.sendgrid.net:465`
-   * Replace `YOUR_API_KEY` with the actual key string.
+---
 
-### Option B: Gmail (For Testing)
-1. Use an App Password (NOT your login password). Go to Google Account -> Security -> 2-Step Verification -> App Passwords.
-2. In Firebase Extension configuration:
-   * **SMTP Connection URI**: `smtps://yourname%40gmail.com:APP_PASSWORD@smtp.gmail.com:465`
-   * *Note: The `%40` replaces the `@` symbol in the username.*
+## 2. Integrated Workflows
+The platform automatically queues emails into the `mail` collection based on the following triggers:
 
-## 3. Extension Settings
-Configure the extension with these specific values to match the Spendigo codebase:
+### 2.1 Order Confirmation (`sendOrderConfirmation`)
+- **Trigger**: `onCreate` on `/orders/{orderId}`.
+- **Content**: Dynamic HTML table with items, prices, and branding.
+- **Action**: Informs the shopper that the store has received their order.
 
-* **Email documents collection**: `mail` (Exact match required)
-* **Default FROM address**: `noreply@spendigo.ca` (or your domain)
-* **Default REPLY-TO**: `support@spendigo.ca`
-* **Users collection**: `users`
+### 2.2 Status Updates (`sendOrderStatusUpdate`)
+- **Trigger**: `onUpdate` on `/orders/{orderId}` when `status` changes.
+- **States**: 
+  - `preparing` (Yellow)
+  - `out_for_delivery` (Blue)
+  - `delivered` (Green)
+  - `cancelled` (Red)
+- **Action**: Provides real-time tracking links to the shopper.
 
-## 4. Deploy & Verify
-1. **Deploy your code**: The new admin features (Test Button) are in the latest web build.
-   ```bash
-   firebase deploy --only hosting
-   ```
-2. **Test**:
-   * Go to **Admin Dashboard -> Settings -> System Tools**.
-   * Click **📨 Send Test Email**.
-   * You should see a toast "Test Email Queued".
-   * Check your inbox.
+### 2.3 Merchant Approval
+- **Trigger**: Admin approval of a `PartnerWithUs` application.
+- **Action**: Sends a "Welcome to Spendigo" kit with dashboard login instructions.
 
-## troubleshooting
-* **Email Queued but not received**: Check the "Functions" logs in Firebase Console. It will show if the SMTP login failed.
-* **Forgot Password Redirect**: Ensure your domain (`https://spendigo.ca` or `http://localhost:5173`) is listed in **Authentication -> Settings -> Authorized Domains** in the Firebase Console.
+---
+
+## 3. Template Management
+While the v1.0 engine uses inline HTML generation within Cloud Functions for high-speed dynamic data (Order Lists), future expansion will utilize the **`email_templates`** Firestore collection for non-transactional marketing.
+
+---
+
+## 4. Verification & Debugging
+
+### Monitoring Deliverability
+1. **Firestore**: Check the `mail` collection.
+   - `delivery.state`: Should be `SUCCESS`.
+   - `delivery.error`: Contains SMTP rejection details if `state` is `ERROR`.
+2. **Logs**: Filter for `sendOrderEmails` in the Firebase Functions log console.
+
+### Local Testing
+To test email triggers locally without incurring SMTP costs (Mailtrap/DevRelay):
+1. Use the **Firebase Emulator Suite** for Firestore and Functions.
+2. Observe the `mail` collection documents being created by the triggers.
+
+---
+
+## 5. Security & Deliverability (SPF/DKIM)
+Ensure the following DNS records are active on `spendigo.ca` to prevent emails from landing in spam:
+- **SPF**: `v=spf1 include:sendgrid.net ~all`
+- **DKIM**: Configure as provided in the SendGrid "Sender Authentication" dashboard.

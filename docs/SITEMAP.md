@@ -1,91 +1,82 @@
 # Spendigo Site Map
 
-**Last Updated**: 2026-04-09
-**Status**: Beta (Routes Implemented)
+**Last Updated**: 2026-04-20
+**Status**: Production-Ready (v1.0)
 **Base URL**: `https://spendigo.ca`
 
 ---
 
 ## 🛍️ Consumer App (Public)
 
-### Core Navigation
-- [Home](https://spendigo.ca/) - Store listings, hero banner, featured stats.
-- [Search](https://spendigo.ca/search) - Global product search filtered by category/store.
-- [SmartCart](https://spendigo.ca/smartcart) - Wishlist optimization engine (Cheapest Price Finder).
-- [SmartCart Prototype](https://spendigo.ca/smartcart/prototype) - **Beta**: Experimental optimizer interface.
-- [How It Works](https://spendigo.ca/how-it-works) - Explainer page for the Optimizer.
-- [Shopping Cart](https://spendigo.ca/cart) - Manage items and quantities.
-- [Checkout](https://spendigo.ca/checkout) - Payment, delivery address, and order placement.
-- [Surveys](https://spendigo.ca/surveys) - Participate in polls and provide feedback.
-- [Flyers Hub](https://spendigo.ca/flyers) - Centralized view of all active store flyers.
+### Core Discovery
+- [Store Rack (Home)](https://spendigo.ca/) - Store grid, hero carousel, and live marketplace stats.
+- [Global Search](https://spendigo.ca/search) - Multi-store product search with category faceting.
+- [Flyers Hub](https://spendigo.ca/flyers) - Centralized circulars for all active marketplace merchants.
+- [Flash Deals](https://spendigo.ca/deals) - Time-limited inventory liquidation offers.
 
-### Store & Product
-- [Store Detail](https://spendigo.ca/store/:id) - Products, flyers, deals, and ratings.
-- [Product Detail](https://spendigo.ca/product/:id) - Product info, images, and add-to-cart.
+### SmartCart Optimization
+- [SmartCart Optimizer](https://spendigo.ca/smartcart) - Wishlist builder with multi-store "Best Split" logic.
+- [Savings Insights](https://spendigo.ca/smartcart/prototype) - **Beta**: Gemini-powered shopping strategy advice.
+- [How It Works](https://spendigo.ca/how-it-works) - Visual guide to distance-based savings.
 
-### User Account
-- [Profile](https://spendigo.ca/profile) - User settings, saved addresses, order history.
-- [Notifications](https://spendigo.ca/notifications) - Price drop alerts and order updates.
-- [Order Tracking](https://spendigo.ca/order/:id) - Visual timeline of active orders.
+### Store & Product Experience
+- [Store Detail](https://spendigo.ca/store/:id) - Tabbed interface:
+  - **Weekly Flyers**: Standard digital circulars.
+  - **Hot Offers**: Exclusive digital deals.
+  - **Store Info**: Hours, geocoded location, and delivery services.
+- [Product Detail](https://spendigo.ca/product/:id) - Cross-store pricing table and substitution suggestions.
 
-### Information & Careers
-- [Careers Portal](https://spendigo.ca/careers) - Latest job openings at Spendigo.
-- [Job Detail](https://spendigo.ca/careers/:id) - Detailed job description and application.
-- [Partner With Us](https://spendigo.ca/partner) - Information for potential merchants.
-- [Privacy Policy](https://spendigo.ca/privacy) - Data handling and legal information.
-- [Terms of Service](https://spendigo.ca/terms) - Platform usage terms.
+### User Account & Checkout
+- [Checkout](https://spendigo.ca/checkout) - Multi-store order fulfillment and payment.
+- [Order Status](https://spendigo.ca/order/:id) - Real-time tracking from store prep to delivery.
+- [User Profile](https://spendigo.ca/profile) - Preferences, saved addresses, and transaction history.
+- [Notifications](https://spendigo.ca/notifications) - Price drop alerts and proximity notifications.
 
 ---
 
-## 👔 Merchant Admin (Secure)
+## 👔 Merchant Operations (Secure)
 
-### Dashboard & Setup
-- [Merchant Dashboard](https://spendigo.ca/merchant/dashboard) - Overview: Sales stats, recent orders, quick actions.
-- [Store Onboarding](https://spendigo.ca/merchant/onboarding) - Step-by-step setup for new merchants.
+### Presence & Compliance
+- [Operations Center](https://spendigo.ca/merchant/dashboard) - **New**: Proximity Dashboard with geocoding and reach visualization.
+- [Onboarding](https://spendigo.ca/merchant/onboarding) - Business verification and store setup.
+- [Operations Settings](https://spendigo.ca/merchant/settings) - Profile management and operating hours.
+- [Subscription](https://spendigo.ca/merchant/subscription) - Core/Growth plan management.
 
-### Management
-- [Product Catalog](https://spendigo.ca/merchant/products) - Add/Edit/Delete products, manage stock.
-- [Order Manager](https://spendigo.ca/merchant/orders) - View incoming orders, update status (Preparing/Ready).
-- [Analytics] - (Note: Linked via Dashboard metrics)
-- [Flyer Manager](https://spendigo.ca/merchant/flyers) - Create and manage weekly digital flyers.
-- [Deals Manager](https://spendigo.ca/merchant/deals) - Create one-day offers and clearance sales.
-- [Store Settings](https://spendigo.ca/merchant/settings) - Store profile and configuration.
-- [Subscription](https://spendigo.ca/merchant/subscription) - Manage platform subscription tier.
-
----
-
-## 🔐 Authentication
-- [Login](https://spendigo.ca/login) - Universal login.
-- [Register (Consumer)](https://spendigo.ca/register) - New consumer account creation.
-- [Register (Merchant)](https://spendigo.ca/register/business) - Business account registration.
-- [Verify Email](https://spendigo.ca/verify-email) - Email ownership verification.
-- [Forgot Password](https://spendigo.ca/forgot-password) - Recovery flow.
-- [Reset Password](https://spendigo.ca/reset-password) - Secure password reset.
+### Inventory & Sales
+- [Inventory Manager](https://spendigo.ca/merchant/products) - Stock control and Master Catalog linking.
+- [Order Ledger](https://spendigo.ca/merchant/orders) - Real-time order fulfillment workflow.
+- [Campaign Manager](https://spendigo.ca/merchant/flyers) - Digital flyer publishing tool.
+- [Flash Deal Editor](https://spendigo.ca/merchant/deals) - One-day offer creation.
 
 ---
 
-## 🛡️ System Admin (Internal)
-
-### Dashboard & Security
-- [System Dashboard](https://spendigo.ca/admin/dashboard) - Overview: Platform health, revenue stats, system alerts.
-- [Audit Logs](https://spendigo.ca/admin/audit-logs) - **Security**: View SHA-256 tamper-evident log ledger.
-
-### Entity Management
-- [User Management](https://spendigo.ca/admin/users) - View/Ban consumers and merchants.
-- [Store Management](https://spendigo.ca/admin/stores) - Approve new merchants, oversee compliance.
-- [Master Catalog](https://spendigo.ca/admin/catalog) - Manage global product definitions.
-- [Career Management](https://spendigo.ca/admin/careers) - **New**: Manage job listings and applications.
-
-### Platform Tools
-- [Ad Manager](https://spendigo.ca/admin/ads) - Manage carousel campaigns and sponsorships.
-- [Survey Manager](https://spendigo.ca/admin/surveys) - Create polls and view responses.
-- [System Tools](https://spendigo.ca/admin/tools) - DevOps: Maintenance mode, data migration tools.
-- [Settings](https://spendigo.ca/admin/settings) - Global platform settings.
+## 🔐 Authentication Ecosystem
+- [Login Portal](https://spendigo.ca/login) - Universal RBAC entry.
+- [Merchant Registration](https://spendigo.ca/register/business) - Corporate KYB onboarding.
+- [Shopper Signup](https://spendigo.ca/register) - Consumer account creation.
+- [Recovery Services](https://spendigo.ca/forgot-password) - Forgot/Reset password and email verification loops.
 
 ---
 
-## 🕸️ Orphan & Internal Files
-These files exist in the `src/pages` directory but are not currently accessible via active routes in `App.tsx`.
+## 🛡️ System Administration (Internal)
 
-- `FlyerModeration.tsx` (Admin) - **Imported but Unrouted**: Planned feature for admin-level flyer vetting.
-- `SeedUsers.tsx` (Admin) - **Unrouted**: Legacy tool for test data initialization.
+### Governance & Security
+- [Control Center](https://spendigo.ca/admin/dashboard) - Platform health and aggregate revenue metrics.
+- [Security Audit Ledger](https://spendigo.ca/admin/audit-logs) - **Forensic**: Tamper-evident SHA-256 chain verification.
+- [Store Overseer](https://spendigo.ca/admin/stores) - Global store moderation and compliance.
+- [User Directory](https://spendigo.ca/admin/users) - RBAC management and access control.
+
+### Content & Tools
+- [Master Catalog](https://spendigo.ca/admin/catalog) - Product definitions with "Pending Review" workflow.
+- [Ad Engine](https://spendigo.ca/admin/ads) - AdCarousel performance tracking (Views/Clicks).
+- [Careers Manager](https://spendigo.ca/admin/careers) - Job board administration.
+- [DevOps Tools](https://spendigo.ca/admin/tools) - Maintenance mode and system health.
+
+---
+
+## 🕸️ Hidden & Development Assets
+These files represent planned or deprecated administrative features not currently routed.
+
+- `FlyerModeration.tsx` (Admin) - **Unrouted**: Planned queue for manual flyer verification.
+- `SeedUsers.tsx` (Admin) - **Unrouted**: Developer tool for local environment bootstrapping.
+- `Maintenance.tsx` - **Global**: Overlay triggered via `platform/settings`.

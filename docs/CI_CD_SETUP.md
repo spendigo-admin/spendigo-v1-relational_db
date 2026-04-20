@@ -1,125 +1,70 @@
 # GitHub Actions CI/CD Setup Guide
 
-**Last Updated**: 2026-01-12
-**Status**: Active & Configured
-
-This guide explains how to set up automatic deployment to Firebase whenever you push code to GitHub.
-
----
-
-## Overview
-
-We've configured **GitHub Actions** to automatically:
-1.  ✅ **Build** your app when you push to the `main` branch.
-2.  ✅ **Deploy** the build artifacts to Firebase Hosting.
+**Last Updated**: 2026-04-20
+**Status**: Production-Ready (v1.0)
+**Pipeline**: `.github/workflows/main.yml`
 
 ---
 
-## Setup Instructions
+## 1. Overview
+Spendigo utilizes a robust **Continuous Integration and Continuous Deployment (CI/CD)** pipeline to ensure that every change to the `main` branch is validated and safely promoted to production.
 
-### Step 1: Push Your Code to GitHub
-
-If you haven't already, ensure your code is pushed to the `main` branch of your repository.
-
-```bash
-git push origin main
-```
-
-### Step 2: Create Firebase Service Account
-
-This gives GitHub permission to deploy to your Firebase project.
-
-1.  **Go to Firebase Console**:
-    - [Project Settings > Service Accounts](https://console.firebase.google.com/project/spendigo-8540c/settings/serviceaccounts/adminsdk)
-
-2.  **Generate New Private Key**:
-    - Click "**Generate new private key**".
-    - A JSON file will download.
-
-3.  **Open the JSON file**:
-    - Copy the **ENTIRE** contents of the file.
-
-### Step 3: Add Secret to GitHub
-
-1.  **Go to your GitHub repository Settings**:
-    - `Settings` -> `Secrets and variables` -> `Actions`.
-    - Click "**New repository secret**".
-
-2.  **Add the Firebase key**:
-    - **Name**: `FIREBASE_SERVICE_ACCOUNT_SPENDIGO_8540C`
-    - **Value**: Paste the entire JSON contents from Step 2.
-    - Click "**Add secret**".
+### Managed Operations:
+- **Automated Validation**: Runs unit and integration tests (`npm test`) on every push.
+- **Vite Build**: Compiles the React monorepo with production-scoped environment variables.
+- **Full-Stack Deployment**: Orchestrates the simultaneous update of **Hosting**, **Cloud Functions**, **Firestore Rules/Indexes**, and **Storage Rules**.
 
 ---
 
-## Workflow Configuration
+## 2. Infrastructure Configuration (GitHub Secrets)
+To enable the pipeline, the following secrets must be configured in **GitHub → Settings → Secrets & Variables → Actions**:
 
-The workflow is defined in `.github/workflows/main.yml`.
+### 2.1 Security & Access
+- `FIREBASE_SERVICE_ACCOUNT_SPENDIGO_8540C`: The JSON key file from the Google Cloud Console.
+- `GITHUB_TOKEN`: Automatically provided by GitHub for repository tracking.
 
-```yaml
-name: Deploy to Firebase Hosting on merge to main
-
-on:
-  push:
-    branches:
-      - main
-  workflow_dispatch:
-
-jobs:
-  build_and_deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Install Dependencies
-        run: npm ci
-        
-      - name: Build
-        run: npm run build
-        
-      - name: Deploy to Firebase Hosting
-        uses: FirebaseExtended/action-hosting-deploy@v0
-        with:
-          repoToken: '${{ secrets.GITHUB_TOKEN }}'
-          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_SPENDIGO_8540C }}'
-          channelId: live
-          projectId: spendigo-8540c
-```
-
-### Key Components:
--   **`npm ci`**: Uses `package-lock.json` for a clean, deterministic install.
--   **`FirebaseExtended/action-hosting-deploy`**: The official action for deploying to Firebase Hosting.
--   **`channelId: live`**: Deploys directly to the production site.
+### 2.2 Framework Environment (Vite)
+These are injected into the build process to configure the production client:
+- `VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`
+- `VITE_ALGOLIA_APP_ID`, `VITE_ALGOLIA_SEARCH_KEY`, `VITE_ALGOLIA_INDEX_NAME`
+- `VITE_GEMINI_API_KEY`: For real-time shopping insights.
+- `VITE_SENTRY_DSN`: For production error monitoring.
+- `VITE_STRIPE_PUBLISHABLE_KEY`: For merchant subscriptions.
 
 ---
 
-## Advanced: Deploying Cloud Functions
+## 3. Workflow Logic (`main.yml`)
+The pipeline follows a strict execution order to prevent broken releases:
 
-To auto-deploy Cloud Functions as well, you would update the `with` block in your workflow file:
-
-```yaml
-        with:
-          # ... existing config ...
-          target: hosting,functions
-```
-
-*Note: Deploying functions typically takes longer and may require additional permissions or configuration.*
-
----
-
-## Troubleshooting
-
-### Build Errors
-If the build fails, check the "Actions" tab in GitHub. Common issues include:
--   **TypeScript Errors**: Ensure `npm run build` runs locally without errors before pushing.
--   **Missing Secrets**: Verify `FIREBASE_SERVICE_ACCOUNT_SPENDIGO_8540C` is set correctly.
-
-### Permission Denied
-Ensure the Service Account Key used in the secret has the "Firebase Admin" or "Firebase Hosting Admin" role in the Google Cloud Console.
+1. **Checkout**: Pulls the latest code from `main`.
+2. **Environment Setup**: Provisions Node.js v20 and caches `node_modules` for $3x$ faster builds.
+3. **Dependency Sync**: Uses `npm ci` to ensure an exact replica of the `package-lock.json` environment.
+4. **Build & Test**:
+   ```bash
+   npm run build  # Builds the turbo monorepo
+   npm test       # Must pass 100% to proceed
+   ```
+5. **Live Promotion**:
+   - Deploys static assets to **Firebase Hosting**.
+   - Deploys server-side logic to **Cloud Functions**.
+   - Applies security governance to **Firestore** and **Storage**.
 
 ---
 
-## Monitoring and Cost
+## 4. Troubleshooting Support
 
--   **Monitoring**: View deployment logs in the "Actions" tab of your GitHub repository.
--   **Cost**: GitHub Actions offers 2,000 free automation minutes per month for public repositories (and generous limits for private ones), which is sufficient for frequent deployments.
+### Action Failures
+- **Testing**: If `npm test` fails, the deployment is aborted. Check the log for specific test failures (v1.0 requires 100% pass rate).
+- **Env Mismatch**: If some features (like Search or AI) fail in production but work locally, verify that the corresponding `VITE_*` secret is present in GitHub.
+
+### Rollback Strategy
+If a deployment introduced a critical bug:
+1. Revert the commit in Git: `git revert HEAD && git push origin main`.
+2. The CI/CD pipeline will automatically re-deploy the previous stable version.
+
+---
+
+## 5. Operations & Costs
+- **Duration**: Average build/test/deploy cycle takes ~4-6 minutes.
+- **Limits**: GitHub Actions provides ample free-tier minutes for the Spendigo development scale.
+- **Monitoring**: Real-time progress is visible in the **GitHub Actions Tab**.

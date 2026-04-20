@@ -1,101 +1,75 @@
 # Spendigo Mobile App Build Guide
 
-**Location**: `apps/web`
-**Last Updated**: 2026-01-12
-**Status**: Beta Verified
+**Last Updated**: 2026-04-20
+**Status**: Production-Ready (v1.0)
 **Framework**: Ionic Capacitor (v7.0)
-
-This guide details how to build and deploy the Spendigo application for Android and iOS.
-
-## Prerequisites
-
-Ensure you have the following installed on your development machine:
-- **Node.js** (v20+)
-- **Android Studio** (for Android builds)
-- **Xcode** (for iOS builds - macOS only)
-- **CocoaPods**: `sudo gem install cocoapods`
+**Target Platforms**: iOS (14+), Android (API 24+)
 
 ---
 
-## 1. Project Navigation
-The mobile configuration lives inside the `web` workspace.
+## 1. Project Architecture
+Spendigo uses a hybrid mobile strategy. The mobile app is a Capacitor-wrapped instance of the `apps/web` React application. This ensures 1:1 parity for the **SmartCart Optimizer** and **Private Ad Network** features across all devices.
 
+### Native Plugin Dependencies
+- **Geolocation**: Required for proximity-based deals and delivery radius validation.
+- **Camera**: Required for barcode scanning in the Master Catalog workflow.
+- **Push Notifications**: Firebase Cloud Messaging (FCM) integration for price drop alerts.
+- **Haptics**: Micro-animations for add-to-cart actions.
+
+---
+
+## 2. Sync & Build Workflow
+
+### Step 1: Web Compilation
+Native builds must always be preceded by a production web build.
 ```bash
-cd /Users/shahbaz/Documents/Spendigo/apps/web
-```
-
-## 2. Build the Web Assets
-Capacitor wraps your compiled web app. You must build the React app first.
-
-```bash
+cd apps/web
 npm run build
 ```
 
-This creates the `dist` folder which is referenced in `capacitor.config.ts`.
-
-## 3. Sync with Capacitor
-Copy the web assets and native plugins to the iOS/Android projects.
-
+### Step 2: Capacitor Sync
+Update the native project code and dependencies.
 ```bash
 npx cap sync
 ```
 
-**Run this command whenever you:**
-- Edit `package.json`
-- Update web code (`dist`)
-- Change `capacitor.config.ts`
+### Step 3: Asset Generation
+Generate icons and splash screens from `src/assets/logo.svg`.
+```bash
+npx @capacitor/assets generate --icon --splash
+```
 
 ---
 
-## 4. Building for Android
+## 3. Platform Specifics
 
-1.  **Open Android Studio**:
-    ```bash
-    npx cap open android
-    ```
-2.  **Run**: Click the Green Play button (select an Emulator or USB Device).
-3.  **Build APK**: Menu -> Build -> Build Bundle(s) / APK(s) -> Build APK.
+### Android (Google Play)
+1. **Open IDE**: `npx cap open android`
+2. **Signing**: Use the `spendigo-production.keystore` (Managed in Vault).
+3. **Internal Testing**: Upload the generated `.aab` (Android App Bundle) to the Google Play Console.
 
-## 5. Building for iOS (macOS)
-
-1.  **Open Xcode**:
-    ```bash
-    npx cap open ios
-    ```
-2.  **Run**: Select a Simulator (iPhone 15) and click Play.
-3.  **Deploy**: Configure Signing & Capabilities with your Apple ID.
+### iOS (Apple App Store)
+1. **Open IDE**: `npx cap open ios`
+2. **Signing**: Ensure the 'Spendigo' Provisioning Profile (Team: `Spendigo Inc`) is active in Xcode.
+3. **Privacy**: Verify `Info.plist` contains the following description strings:
+   - `NSLocationWhenInUseUsageDescription`: "Used to show nearby grocery deals."
+   - `NSCameraUsageDescription`: "Used to scan product barcodes."
+4. **TestFlight**: Build the archive and upload to App Store Connect.
 
 ---
 
-## 6. Live Reload (Development Mode)
+## 4. Deep Linking Configuration
 
-For faster iteration without rebuilding:
+Spendigo supports the `spendigo://` URI scheme for sharing wishlists and orders.
 
-1.  Find your local IP (e.g., `192.168.2.54`).
-2.  Edit `capacitor.config.ts`:
-    ```typescript
-    server: {
-      url: 'https://192.168.2.54:443', // Your IP and SSL Port
-      cleartext: false
-    }
-    ```
-3.  Run the dev server:
-    ```bash
-    npm run dev -- --host
-    ```
-4.  Sync and Run:
-    ```bash
-    npx cap sync
-    npx cap open android
-    ```
-
-**🚨 CRITICAL**: Remove the `server` block from `capacitor.config.ts` before building for Production!
+**Android**: Verified App Links in `AndroidManifest.xml`.
+**iOS**: Universal Links via `apple-app-site-association` file on `spendigo.ca`.
 
 ---
 
-## 7. Troubleshooting
-
--   **Android Keystore**: If signing fails, verify your `key.jks` location.
--   **Gradle Errors**: Ensure **JDK 17** (or 21) is selected in Android Studio Settings > Build, Execution, Deployment > Build Tools > Gradle.
--   **CocoaPods (M1/M2/M3 Macs)**: If `pod install` fails, try running `arch -x86_64 sudo gem install ffi`.
--   **SSL Errors on Localhost**: Since we use `https://spendigo.ca` locally, you must install the self-signed cert on the Android Emulator or disable SSL verification (Dev Only).
+## 5. Deployment Checklist
+- [ ] `capacitor.config.ts` has `server.url` REMOVED for production.
+- [ ] `StatusBar` color is set to `#ffffff` (matches new retail design).
+- [ ] Push notification certificates (p8/FCM Key) are uploaded to Firebase.
+- [ ] Version code in `build.gradle` and `Info.plist` is incremented.
+- [ ] `google-services.json` / `GoogleService-Info.plist` are in place.

@@ -1,134 +1,77 @@
 # Email System Setup Guide (Firebase Extension)
 
-**Last Updated**: 2026-01-12
-**Status**: Configured
+**Last Updated**: 2026-04-20
+**Status**: Production-Ready (v1.0)
+**Collection**: `mail`
 
 ---
 
-## Overview
+## 1. Overview
+Spendigo utilizes the **Trigger Email** Firebase Extension (`firebase/firestore-send-email`) for all transactional communications. This architecture ensures high deliverability, a persistent audit trail of sent messages, and complete decoupling of business logic from the SMTP gateway.
 
-We are using the **Trigger Email** Firebase Extension (`firebase/firestore-send-email`). This allows us to send emails simply by writing to the `mail` collection in Firestore.
-
-**Why this is better:**
--   No API keys in your code
--   Handles email delivery automatically
--   Official Google/Firebase solution
--   **Audit Trail**: All emails are stored in the database.
+### Core Benefits:
+- **Scalability**: Handles thousands of parallel order confirmations.
+- **Security**: SMTP credentials reside exclusively in the Firebase Secrets Manager.
+- **Auditability**: Every email sent exists as a document in Firestore, providing a permanent record of shopper communications.
 
 ---
 
-## ✅ Frontend Changes (Complete)
+## 2. Infrastructure Setup (SendGrid Production)
+While Gmail can be used for testing, Spendigo v1.0 requires a professional SMTP service like **SendGrid** for high inbox placement and SPF/DKIM compliance.
 
-1.  ✅ **Registration Flow**: Sends verification email (Client SDK)
-2.  ✅ **VerifyEmail Page**: Created with auto-refresh
-3.  ✅ **Routes**: Added `/verify-email` route
-
----
-
-## 🔧 Setup Required
-
-### Step 1: Install the Extension
-
-1.  Go to the **Firebase Console**:
-    -   [Extensions Marketplace](https://console.firebase.google.com/project/spendigo-8540c/extensions)
-
-2.  Search for **"Trigger Email"** (published by Firebase).
-    -   Click **Install**.
-
-3.  **Configure the Extension**:
-    -   **Cloud Functions location**: `us-central1` (or match your other functions)
-    -   **SMTP Connection URI**:
-        -   *If using Gmail*: `smtps://your-email@gmail.com:YOUR_APP_PASSWORD@smtp.gmail.com:465` (See Note below about App Passwords)
-        -   *If using other provider*: Get the SMTP string from them.
-    -   **Email documents collection**: `mail` (Default)
-    -   **Default FROM address**: `orders@spendigo.ca` (or your email)
-    -   **Default REPLY-TO address**: `support@spendigo.ca`
-
-    **NOTE about Gmail Credentials:**
-    -   **Username**: Your full email (e.g. `user@gmail.com`). If it fails, try replacing `@` with `%40`.
-    -   **Password**: You **CANNOT** use your regular Google password. You MUST generate an App Password:
-        1.  Go to [Google Account Security](https://myaccount.google.com/security).
-        2.  Ensure **2-Step Verification** is ON.
-        3.  Search for "App Passwords" (or go to [https://myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords)).
-        4.  Create a new one (App: "Mail", Device: "Mac" or "Other").
-        5.  Copy the 16-character code (e.g. `abcd efgh ijkl mnop`).
-        6.  **Remove the spaces** (result: `abcdefghijklmnop`).
-        7.  Use that continuous string as the password in the SMTP string.
-
-### Step 2: Deploy Updated Functions
-
-We updated the cloud functions to write to the `mail` collection.
-
-```bash
-npm run build
-firebase deploy --only functions
-```
+### Step 1: Install & Configure Extension
+1. Install the extension via the [Firebase Marketplace](https://console.firebase.google.com/project/_/extensions).
+2. **SMTP Connection URI**: `smtps://apikey:YOUR_SENDGRID_API_KEY@smtp.sendgrid.net:465`
+3. **Email collection**: `mail`
+4. **Default FROM**: `Spendigo <noreply@spendigo.ca>`
+5. **Default REPLY-TO**: `support@spendigo.ca`
 
 ---
 
-## 🧪 Testing
+## 3. Integrated Production Workflows
 
-### Test Email Verification (Authentication):
+### 3.1 Order Confirmation
+- **Trigger**: New order creation in `/orders`.
+- **Design**: Rich HTML table showing items, pricing, and "Track Order" call-to-action.
+- **Audit**: Every confirmation is linked to a `txnId` in the Forensic Audit ledger.
 
-1.  Register a new account on the frontend.
-2.  Check inbox for verification link (Sent by Firebase Auth directly).
+### 3.2 Status Progress alerts
+- **Trigger**: Merchant updates order from `placed` -> `preparing` -> `out_for_delivery`.
+- **States**: Color-coded badges in the email body match the Spendigo retail design system.
 
-### Test Order Emails (Transactional):
-
-Manually create a test order in Firestore (or place one in the app):
-
-```javascript
-// In Firebase Console -> Firestore -> 'orders' collection -> Add Document
-{
-  customerEmail: "your@email.com",
-  customerName: "Test User",
-  storeName: "Test Store",
-  date: "2026-01-12T10:00:00Z",
-  status: "placed",
-  total: 10.00,
-  items: [
-    { name: "Test Item", quantity: 1, price: 10.00 }
-  ]
-}
-```
-
-Wait a few seconds, look at the **`mail`** collection in Firestore.
--   You should see a new document created by our Cloud Function.
--   The extension will pick it up and upon success, add a `delivery` field (e.g. `state: "SUCCESS"`).
+### 3.3 Merchant Onboarding
+- **Trigger**: Admin approval of a `PartnerWithUs` application.
+- **Action**: Dynamically generates a "Welcome to Spendigo" email with first-time dashboard setup instructions.
 
 ---
 
-## 📧 Email Features Summary
+## 4. Verification & Testing
 
-### Order Confirmation:
--   **Method**: Cloud Function -> `mail` collection
--   **Trigger**: New Order (`onCreate`)
+### Test Email Verification (Authentication)
+Registration via the Client SDK triggers the standard Firebase Auth verification flow. Ensure the **Action URL** in Firebase Authentication settings points to `https://spendigo.ca/__/auth/action`.
 
-### Status Updates:
--   **Method**: Cloud Function -> `mail` collection
--   **Trigger**: Status Change (`onUpdate`)
-
----
-
-## 🔧 Troubleshooting
-
-### Email not sending?
-
-1.  **Check Firestore `mail` collection**:
-    -   Is a document created there?
-        -   **No?** Issue with Cloud Function (check logs).
-        -   **Yes?** Check the `delivery` field on that document.
-            -   If `state: "ERROR"`, read the `error` field to see why (usually SMTP auth fail).
-
-2.  **Check Extension Logs**:
-    -   Go to Extensions tab in Firebase Console -> Trigger Email -> Logs.
-
-### "Auth Error" or "Authentication Required" with Gmail?
--   Ensure you used an **App Password**, not your normal password.
--   **Tip**: If your email has special characters, try URL-encoding it (e.g., replace `@` with `%40`).
-    -   Example: `smtps://my.name%40gmail.com:app-password@smtp.gmail.com:465`
--   Ensure 2-Step Verification is enabled on your Google Account.
+### Transactional Testing (Admin Dashboard)
+1. Navigate to **Admin -> Settings -> System Management**.
+2. Trigger the **📨 Send Test Email** function.
+3. Observe the `mail` collection:
+   - `delivery.state: "PENDING"` -> Extension is picking it up.
+   - `delivery.state: "SUCCESS"` -> Email transmitted to SMTP gateway.
+   - `delivery.state: "ERROR"` -> Check `delivery.error` for credentials or DNS blocks.
 
 ---
 
-**Ready to deploy?** Just install the extension and run `firebase deploy --only functions`! 🚀
+## 5. Deliverability Checklist (DNS)
+To prevent your emails from being flagged as spam by Google/Microsoft, the following records must be active on `spendigo.ca`:
+
+| Record Type | Host | Value |
+| :--- | :--- | :--- |
+| **SPF** | `@` | `v=spf1 include:sendgrid.net ~all` |
+| **DKIM** | `s1._domainkey` | (As provided in SendGrid dashboard) |
+| **DMARC** | `_dmarc` | `v=DMARC1; p=quarantine;` |
+
+---
+
+## 6. Troubleshooting
+- **No document in `mail`?**: Check Cloud Functions logs for trigger failure on `onCreate` / `onUpdate`.
+- **Authentication Error?**: Verify the SendGrid API key hasn't expired and the SMTP URI string is correctly formatted (URL-encode special characters if necessary).
+- **CSS Issues?**: Remember that email clients (especially Outlook) require inline CSS. All Spendigo templates use the `sendOrderEmails.ts` inline-styling engine for maximum compatibility.

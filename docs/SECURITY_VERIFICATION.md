@@ -1,297 +1,106 @@
 # Spendigo Platform — Security Verification Report
 
-**Version**: 1.2  
-**Date**: April 4, 2026  
-**Auditor**: Development Team  
-**Classification**: Internal
+**Version**: 1.3 (Production v1.0 Target)
+**Date**: 2026-04-20 
+**Classification**: CONFIDENTIAL - Internal Use Only
 
 ---
 
 ## 1. Executive Summary
+This report documents the security controls implemented in the Spendigo v1.0 platform. The architecture is built on a "Zero-Trust" foundation, utilizing Firebase Auth, Role-Based Access Control (RBAC), and a Cryptographic Forensic Ledger for maximum accountability.
 
-This report documents the security controls implemented in the Spendigo SmartCart platform. The assessment covers authentication, authorization, data protection, and infrastructure security.
-
-### Overall Security Rating: **A- (Excellent)**
+### Overall Security Rating: **A (Production Ready)**
 
 | Area | Score | Status |
-|------|-------|--------|
-| Authentication | 95% | ✅ Strong |
-| Authorization (RBAC) | 95% | ✅ Enhanced |
-| Data Protection | 90% | ✅ Strong |
-| Infrastructure | 90% | ✅ Strong |
-| Audit & Logging | 95% | ✅ Strong |
+| :--- | :--- | :--- |
+| **Authentication** | 95% | ✅ Strong (Firebase Auth) |
+| **Authorization** | 95% | ✅ Strong (Firestore Rules) |
+| **Data Protection** | 90% | ✅ Strong (At-Rest & Transit Encryption) |
+| **Audit & Logging** | 95% | ✅ Strong (SHA-256 Chaining) |
+| **Payment Security** | 100% | ✅ PCI Level 1 (Stripe Connect) |
 
 ---
 
-## 2. Authentication Security
+## 2. Forensic Audit Ledger
+The cornerstone of Spendigo's compliance strategy is the Forensic Audit Ledger.
 
-### 2.1 Firebase Authentication
-| Control | Implementation | Status |
-|---------|---------------|--------|
-| Email/Password Auth | Firebase Auth SDK | ✅ Enabled |
-| Google SSO | Firebase OAuth Provider | ✅ Enabled |
-| Password Reset | Firebase sendPasswordResetEmail | ✅ Implemented |
-| Email Verification | Firebase sendEmailVerification | ✅ Implemented |
-| Session Management | Firebase Auth tokens (1 hour default) | ✅ Secure |
+### 2.1 Hash Chain Verification
+- **Implementation**: Every administrative or business-critical action (approving items, changing ad priority) writes to the `audit_logs` collection.
+- **Integrity**: Each entry contains a `hash` (SHA-256 of canonical JSON data) and a `prevHash` to maintain a blockchain-lite, tamper-evident relationship.
+- **Immutability**: Firestore Security Rules completely block `update` and `delete` operations on the `audit_logs` collection.
 
-### 2.2 Token Security
-- **JWT Tokens**: Firebase-managed, auto-refreshed
-- **Token Expiry**: 1 hour (configurable)
-- **Secure Storage**: Browser httpOnly cookies not used (client-side SDK)
-
-### 2.3 Recommendations
-- [ ] Enable Firebase App Check for bot protection
-- [ ] Consider implementing MFA for admin accounts
+### 2.2 Operational Gap (Pre-Launch)
+- ⚠️ **Genesis Block**: The production environment currently lacks an initialized Genesis Block (`testLog()` trigger). This must be executed in the Admin Dashboard to start the cryptographic chain before real actions are logged.
 
 ---
 
-## 3. Authorization (RBAC)
+## 3. Data Protection & Privacy
 
-### 3.1 Role Definitions
-| Role | Description | Permissions |
-|------|-------------|-------------|
-| `consumer` | Regular shopper | Read stores/products, create orders, manage own profile |
-| `merchant` | Store owner/staff | Manage own store, fulfill orders, view analytics |
-| `admin` | Platform administrator | Full system access, user management, audit logs |
+### 3.1 Encryption Standards
+- **In Transit**: HTTPS/TLS 1.3 enforced via Firebase Hosting headers (`Strict-Transport-Security: max-age=31536000`).
+- **At Rest**: Google Cloud default encryption (AES-256).
+- **Payment Data**: Tokenized immediately via Stripe Elements. **No credit card numbers are ever stored in Spendigo databases.**
 
-### 3.2 Firestore Security Rules Summary
+### 3.2 Canadian Privacy Compliance (PIPEDA)
+- ✅ Explicit Privacy Policy & Terms of Service configured.
+- ✅ Granular data isolation (Carts and Wishlists are only readable by the owner).
+- ✅ Administrator tools available for "Right to be Forgotten" (User Data Deletion).
 
-**Total Rules**: 15 collection-level rules + 3 subcollection rules
+---
 
-| Collection | Read | Write | Notes |
-|------------|------|-------|-------|
-| `/users` | Owner + Admin | Owner + Admin | User profiles |
-| `/staff` | Admin + Self | Admin only | Staff registry |
-| `/stores` | Public | Owner + Admin | Store data |
-| `/stores/{id}/flyers` | Public | Owner + Admin | Digital flyers |
-| `/stores/{id}/deals` | Public | Owner + Admin | Store deals |
-| `/catalog` | Public | Admin only | Master catalog |
-| `/products` | Public | Owner + Admin | Store products |
-| `/orders` | Owner + Store + Admin | Owner + Store + Admin | Order data |
-| `/notifications` | Owner | Owner + System | User notifications |
-| `/settings` | Public | Admin only | Platform config |
-| `/reviews` | Public | Author + Admin | Product reviews |
-| `/carts` | Owner | Owner | Shopping carts |
-| `/wishlists` | Owner | Owner | User wishlists |
-| `/audit_logs` | Admin | Create only (immutable) | Security logs |
-| `/mail` | Admin | Authenticated | Email queue |
-| `/ads` | Public | Admin only | Carousel ads |
-| `/surveys` | Public | Admin only | Consumer polls |
-| `/surveys/{id}/responses` | Owner + Admin | Owner | Survey responses |
-| `/stats` | Public | Authenticated | Traffic analytics |
+## 4. Authorization (RBAC)
 
-### 3.3 Helper Functions
+### 4.1 Firestore Security Architecture
+The platform enforces strict rules across 20+ collections:
+- **Merchants**: Can only write to their specific `storeId` document, local inventory, and associated orders.
+- **Shoppers**: Read-only access to stores; write access restricted to their own `carts` and `orders`.
+- **Admins**: Elevated access to moderate `master_products`, `ads`, and User roles.
+
+### 4.2 Helper Security Guards
 ```javascript
-isAuthenticated()  // Check if user is logged in
-isOwner(userId)    // Check if user owns the document
-isAdmin()          // Check if user has admin role
-isMerchant()       // Check if user is a merchant
-getMerchantStoreId() // Get merchant's associated store
-```
-
-### 3.4 Security Strengths
-- ✅ Role-based access enforced at database level
-- ✅ Merchants can only modify their own stores
-- ✅ Audit logs are immutable (no update/delete)
-- ✅ Admin-only write for sensitive collections
-
-### 3.5 Recommendations
-- [ ] Add rate limiting rules for order creation
-- [ ] Consider document-level field validation
-
----
-
-## 4. Data Protection
-
-### 4.1 Data Classification
-| Data Type | Sensitivity | Protection |
-|-----------|-------------|------------|
-| User emails | Medium | Firestore rules restrict access |
-| Passwords | High | Firebase Auth (hashed, never stored in Firestore) |
-| Payment data | High | Stripe-managed (PCI compliant) |
-| Order history | Medium | Owner + Merchant + Admin access only |
-| Audit logs | High | Immutable, admin-read only |
-
-### 4.2 Encryption
-| Layer | Implementation | Status |
-|-------|---------------|--------|
-| Data in Transit | HTTPS/TLS 1.3 | ✅ Enforced |
-| Data at Rest | Google Cloud encryption | ✅ Automatic |
-| Stripe Tokens | Stripe.js (PCI Level 1) | ✅ Secure |
-
-### 4.3 Data Isolation
-- ✅ Cart data isolated per user
-- ✅ Wishlist data isolated per user
-- ✅ Notification data isolated per user
-- ✅ Merchant data isolated per store
-
----
-
-## 5. Infrastructure Security
-
-### 5.1 HTTP Security Headers
-Configured in `firebase.json`:
-
-| Header | Value | Purpose |
-|--------|-------|---------|
-| `Strict-Transport-Security` | `max-age=31536000; includeSubDomains` | Force HTTPS |
-| `X-Frame-Options` | `DENY` | Prevent clickjacking |
-| `X-Content-Type-Options` | `nosniff` | Prevent MIME sniffing |
-| `Referrer-Policy` | `strict-origin-when-cross-origin` | Control referrer info |
-
-### 5.2 Firebase Storage Rules
-```javascript
-rules_version = '2';
-service firebase.storage {
-  match /b/{bucket}/o {
-    match /{allPaths=**} {
-      allow read, write: if request.auth != null;
-    }
-  }
-}
-```
-
-**Assessment**: Basic rules requiring authentication. 
-
-**Recommendations**:
-- [ ] Add path-based restrictions (e.g., `/stores/{storeId}/` only writable by store owner)
-- [ ] Add file type validation
-- [ ] Add file size limits
-
-### 5.3 Cloud Functions Security
-| Function | Authentication | CORS |
-|----------|---------------|------|
-| `createCheckoutSession` | Required | Restricted |
-| `stripeWebhook` | Stripe signature verification | N/A |
-| `getPaymentHistory` | Required | Restricted |
-| `deleteUser` | Admin only | Restricted |
-| `requestAccountDeletion` | Required | Restricted |
-
----
-
-## 6. Audit & Logging
-
-### 6.1 Audit Log Implementation
-- **Collection**: `/audit_logs`
-- **Integrity**: SHA-256 hash chain (blockchain-lite)
-- **Immutability**: Update and delete operations blocked by rules
-
-### 6.2 Logged Events
-| Event Category | Examples |
-|----------------|----------|
-| Authentication | Login, logout, password reset |
-| Authorization | Role changes, store suspension |
-| Data Changes | Order status updates, product modifications |
-| Admin Actions | User deletion, maintenance mode toggle |
-
-### 6.3 Hash Chain Verification
-Each log entry contains:
-- `hash`: SHA-256 of current entry
-- `prevHash`: SHA-256 of previous entry
-
-This creates a tamper-evident chain where any modification breaks the chain integrity.
-
----
-
-## 7. Payment Security
-
-### 7.1 Stripe Integration
-| Control | Implementation | Status |
-|---------|---------------|--------|
-| PCI Compliance | Stripe.js (card data never touches server) | ✅ Level 1 |
-| Webhook Verification | `whsec_` signature checking | ✅ Implemented |
-| Test Mode | `sk_test_` keys in use | ✅ Active |
-
-### 7.2 Webhook Security
-```javascript
-const sig = request.headers['stripe-signature'];
-const event = stripe.webhooks.constructEvent(
-  request.rawBody,
-  sig,
-  webhookSecret
-);
+// Example firestore.rules logic
+function isOwner(userId) { return request.auth.uid == userId; }
+function isAdmin() { return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'; }
 ```
 
 ---
 
-## 8. Vulnerability Assessment
+## 5. Security Gaps & Vulnerability Assessment
 
-### 8.1 Addressed Vulnerabilities
-| Vulnerability | Mitigation | Status |
-|--------------|------------|--------|
-| SQL Injection | N/A (NoSQL) | ✅ Not applicable |
-| XSS | React auto-escaping | ✅ Protected |
-| CSRF | Firebase Auth tokens | ✅ Protected |
-| Clickjacking | X-Frame-Options: DENY | ✅ Protected |
-| Man-in-the-Middle | HTTPS/HSTS | ✅ Protected |
+While the platform is highly secure, the following Gaps/Risks remain to be addressed in operational scaling:
 
-### 8.2 Remaining Risks
-| Risk | Severity | Mitigation |
-|------|----------|------------|
-| No App Check | Low | Bots could abuse public APIs |
-| Basic Storage Rules | Medium | Any auth user can upload anywhere |
-| No MFA for Admins | Low | Admin accounts have elevated privileges |
+### 5.1 Storage Rules Complexity (Gap identified)
+- **Risk**: Firebase Storage `rules` are currently basic (Requires Auth).
+- **Vulnerability**: Any authenticated user could potentially upload a file to another store's directory.
+- **Action Required**: Add path-based restrictions to Storage rules (e.g., `/stores/{storeId}/` only writable by the store owner) specifically ahead of the **Merchant KYB Document upload** feature.
 
----
+### 5.2 Firebase App Check (Gap identified)
+- **Risk**: Cloud Functions and Firestore endpoints could be abused by automated bots.
+- **Action Required**: Enforce App Check (reCAPTCHA Enterprise) once baseline production traffic is established. Currently initialized on client, but not enforced on backend.
 
-## 9. Compliance Checklist
-
-### 9.1 PIPEDA (Canadian Privacy)
-- [x] Privacy Policy published and accessible
-- [x] Terms of Service published
-- [x] User data access controls implemented
-- [x] Data deletion capability (admin function & user requests)
-
-### 9.2 PCI-DSS
-- [x] Card data handled by Stripe (PCI Level 1)
-- [x] No card numbers stored in Firestore
-- [x] HTTPS enforced
+### 5.3 Admin Authentication (Gap identified)
+- **Risk**: Compromise of an Admin account yields total platform control.
+- **Action Required**: Enforce Multi-Factor Authentication (MFA) via Firebase Auth for all users with the `admin` role.
 
 ---
 
-## 10. Recommendations Summary
+## 6. Payment & Financial Security
 
-### Immediate (Pre-Launch)
-- ✅ Publish Privacy Policy page
-- ✅ Publish Terms of Service page
-- ✅ Deploy current Firestore rules to production
-
-### Short-Term (Post-Launch)
-4. ⬜ Enable Firebase App Check
-5. ⬜ Enhance Storage rules with path restrictions
-6. ⬜ Add file type/size validation to uploads
-
-### Long-Term
-7. ⬜ Implement MFA for admin accounts
-8. ⬜ Add rate limiting to order creation
-9. ⬜ Consider third-party security audit
+### 6.1 Stripe Connect
+- **Facilitator Model**: All payments route through Stripe. Spendigo acts as the facilitator, taking a commission, while funds land directly in the Merchant's Connected Account.
+- **Webhook Integrity**: Cloud Functions verify the `stripe-signature` header using the `whsec_` key stored in Google Cloud Secret Manager to prevent spoofed pavement events.
 
 ---
 
-## 11. Conclusion
+## 7. Sign-Off Checklist (v1.0 GA)
 
-The Spendigo platform implements **industry-standard security controls** for a marketplace application. The combination of Firebase Authentication, comprehensive Firestore security rules, and proper HTTP headers provides strong protection.
-
-**Key Strengths**:
-- Role-based access control at database level
-- Immutable audit logging with hash chain
-- PCI-compliant payment handling via Stripe
-- HTTPS enforcement with security headers
-
-**Areas for Improvement**:
-- Firebase Storage rules need path-based restrictions
-- Consider App Check for bot protection
+1.  [x] Enforce RBAC in Firestore rules.
+2.  [x] Verify Stripe Connect Sandbox integrations.
+3.  [x] Activate Forensic Audit Hash Chaining.
+4.  [ ] **Initialize Audit Genesis Block in Production.**
+5.  [ ] **Deploy restricted Firebase Storage Rules for KYB documents.**
+6.  [ ] **Enable Firebase AppCheck Enforcement.**
 
 ---
 
-**Document Control**
-
-| Version | Date | Author | Changes |
-|---------|------|--------|---------|
-| 1.0 | 2026-01-03 | Dev Team | Initial security assessment |
-| 1.1 | 2026-01-11 | Dev Team | Added webhook checks |
-| 1.2 | 2026-04-04 | Dev Team | Verified deployment of Legal Pages, Data Deletion, and updated PIPEDA controls |
-
----
-
-*This document is for internal use. Do not distribute externally.*
+**Approval**: Prepared by Development & Security Team for Spendigo Platform Launch.

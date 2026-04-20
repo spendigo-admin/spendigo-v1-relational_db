@@ -1,51 +1,56 @@
-# Search Implementation (Active)
+# Search Implementation (v1.0)
 
-**Last Updated**: 2026-01-12
-**Status**: Active Production
+**Last Updated**: 2026-04-20
+**Status**: Production-Ready
 
-## Executive Summary
-This document outlines the implemented strategy for full-text search using **Algolia**. The integration creates a hybrid search system that prioritizes precise barcode matches (Firestore) but falls back to fuzzy text search (Algolia) for misspelled or broad queries.
+---
 
-## 1. Architecture
+## 1. Hybrid Search Architecture
+Spendigo employs a multi-tier search strategy to balance performance, precision, and proximity.
 
-### Hybrid Search Logic (`useCatalog.ts`)
-1.  **Exact Barcode Match**: Browser checks if input is a barcode (numeric). Queries Firestore `upc_gtin` index directly. (Cost: 1 Read)
-2.  **Algolia Search**: If generic text, query Algolia Index `master_products`. (Cost: 1 Search op)
-3.  **Firestore Fallback**: If Algolia fails or returns 0 results, fall back to basic `name.contains` query in Firestore.
+### Tier 1: Exact Barcode Resolution (`useCatalog.ts`)
+- **Mechanism**: Direct Firestore index lookup.
+- **Handling**: Uses `generateBarcodeVariants()` to normalize inputs across GTIN-8, GTIN-12 (UPC), GTIN-13 (EAN), and GTIN-14 formats.
+- **Trigger**: Activated when the query is purely numeric and fits standard barcode lengths.
 
-### SmartCart Optimization Logic (`SmartCartWishlist.tsx`)
-In addition to global search, the optimization engine uses a client-side fuzzy matcher:
--   **Goal**: Match generic wishlist items (e.g., "Milk") to specific merchant inventory.
--   **Method**: Client downloads store inventory and performs a local fuzzy search using `includes()` and Master Catalog references.
--   **Visuals**: Displays the matched specific product (e.g., "Dairyland 2%") instead of generic text.
+### Tier 2: Proximity-Aware Cloud Search (Algolia v5)
+- **Primary Engine**: Algolia `merchant_products` and `master_products` indices.
+- **Geospatial Constraint**: Queries are filtered using `aroundLatLng` (Shopper GPS) and `aroundRadius` (Search distance in km).
+- **Ranking**: Results are weighted by **Relevance** (exact name match) > **Popularity** > **Distance**.
+- **Sync**: Real-time synchronization via the `algolia.firestore-algolia-search` Firebase extension.
 
-## 2. Configuration Parameters
+### Tier 3: Local Fuzzy Optimization (`fuzzy-search.ts`)
+- **Usage**: Primarily within the **SmartCart Optimizer** and **AddItemsPanel**.
+- **Logic**: Combines Levenshtein Distance (typo tolerance) with Token Overlap (exact word matching).
+- **Threshold**: Standardized 65% confidence floor for generic matching, 70% for substitutions.
 
-| Service | Setting | Value |
-|---------|---------|-------|
-| **Algolia** | Index Name | `master_products` |
-| **Algolia** | Searchable Attributes | `product_name`, `brand_name`, `short_description`, `category_id`, `dietary_tags`, `upc_gtin` |
-| **Algolia** | Retrieved Attributes | `primary_image_url` (Critical for UI), `product_name`, `brand_name` |
-| **Algolia** | Custom Ranking | `desc(popularity_score)` |
-| **Firebase** | Extension | `algolia.firestore-algolia-search` |
+---
 
-## 3. Frontend Integration
+## 2. Contextual Filtering & Faceting
 
-### Environment Variables (.env.local)
-```bash
-VITE_ALGOLIA_APP_ID=...
-VITE_ALGOLIA_SEARCH_KEY=...
-VITE_ALGOLIA_INDEX_NAME=master_products
-```
+### Global Search (`Search.tsx`)
+- **Debounced Input**: 800ms delay to prevent excessive Algolia API operations.
+- **Store Grouping**: Results are clustered by Store Name for easier shopper "trip planning."
+- **FSA Fallback**: If GPS distance calculation fails, the system falls back to matching the **FSA (Forward Sortation Area)** of the postal codes (first 3 characters).
 
-### Dependency (v5)
-Using `algoliasearch/lite` v5 client.
-```typescript
-const { results } = await searchClient.search({
-    requests: [{ indexName: 'master_products', query: '...' }]
-});
-```
+### Category Facets
+- **Master Index**: Categories are derived from the global `master_products` schema.
+- **Dynamic Filtering**: UI components (`StoreList`, `Search`) allow one-tap filtering across "Bakery," "Dairy," "Produce," etc.
 
-## 4. Maintenance / Troubleshooting
--   **Missing Results**: Check if the Firebase Extension is running. Check Algolia dashboard "Logs" for indexing errors.
--   **Stale Data**: The extension listens to `onWrite`. If data is changed manually in console, it syncs. If data is imported via script bypassing triggers, a re-index is needed.
+---
+
+## 3. Data Integrity & Sync
+
+| Component | Responsibility | Status |
+|-----------|----------------|--------|
+| **Algolia Index** | Powering high-speed fuzzy search across the marketplace. | ✅ Active |
+| **GTIN Normalization** | Ensuring "001234..." matches "1234..." across all formats. | ✅ Active |
+| **Merchant Inventory** | Syncing local stock changes to Algolia within < 300ms. | ✅ Active |
+| **Geo-Indexing** | Enabling "Find Milk within 5km" queries. | ✅ Active |
+
+---
+
+## 4. Maintenance & Configuration
+- **Algolia Dashboard**: Manage searchable attributes (`product_name`, `brand_name`, `search_keywords`).
+- **Keyword Synonyms**: Custom mapping for terms like "Soda" -> "Pop" to improve regional matching.
+- **Analytics**: Search queries are captured to identify "Zero Result" gaps, which inform Master Catalog expansion priorities.

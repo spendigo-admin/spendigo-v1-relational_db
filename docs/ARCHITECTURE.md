@@ -1,215 +1,104 @@
 # Spendigo SmartCart — System Architecture
 
-**Last Updated**: 2026-01-12
-**Status**: Beta (Feature Complete & Optimization Phase)
+**Last Updated**: 2026-04-20
+**Status**: Production-Ready (v1.0)
+**Framework**: Turbo Monorepo (React + Node.js + Capacitor)
 
 ---
 
 ## 1. Executive Summary
+Spendigo is a high-performance **Marketplace Facilitator** platform built for the Canadian retail ecosystem. The architecture utilizes a **Serverless-First** approach, leveraging client-focused optimization to minimize operating costs while providing millisecond-scale responsiveness.
 
-Spendigo SmartCart is a Canada-first marketplace facilitator connecting independent convenience stores with consumers. The **current implementation** uses a **Hybrid Architecture**:
--   **Backend**: Firebase (Firestore, Auth, Functions) for core data and logic.
--   **Search**: **Algolia** for high-performance Master Catalog search.
--   **Optimization**: Client-side SmartCart Optimizer with local heuristic algorithms (Store Splitting & Trip Optimization).
+### Core Pillars:
+- **Hybrid Catalog Identity**: Separation of global product data (Master) from local availability (Merchant).
+- **Edge Intelligence**: Real-time cart optimization and AI business insights computed at the user-device boundary.
+- **Forensic Trust**: Tamper-evident cryptographic logging for all administrative and financial actions.
 
 ---
 
-## 2. C4 Model - Context Diagram (As Implemented)
+## 2. Platform Architecture (C4 Diagram)
 
 ```mermaid
 graph TB
-    Consumer[Consumer<br/>Web/Mobile App]
-    StoreMgr[Store Manager<br/>Web Dashboard]
-    Admin[Spendigo Admin<br/>Admin Panel]
-
-    subgraph Firebase Platform
-        Auth[Firebase Auth<br/>User Authentication]
-        Firestore[(Cloud Firestore<br/>Real-time Database)]
-        Storage[(Firebase Storage<br/>Images/Files)]
-        Functions[Cloud Functions<br/>Serverless Logic]
+    subgraph Client Tier
+        Web[React 18 / Vite 7<br/>Shopper, Merchant, Admin]
+        Mobile[Capacitor 7 Native<br/>iOS & Android]
     end
 
-    subgraph External Services
-        Stripe[Stripe Payments<br/>Subscription & Checkout]
-        Algolia[Algolia Search<br/>Master Catalog Index]
-        OSM[OpenStreetMap / Nominatim<br/> Geocoding]
-        Email[Firebase Extensions<br/>Trigger Email / SMTP]
+    subgraph Service Tier
+        API[Firebase Functions<br/>Node.js 20 / TypeScript]
+        Optimizer[SmartCart Optimizer<br/>10-Stage Pipeline]
+        AI[Gemini 2.5 Flash<br/>Shopping Insights]
     end
 
-    Consumer -->|Login| Auth
-    Consumer -->|Real-time Orders| Firestore
-    Consumer -->|Global Product Search| Algolia
-    
-    StoreMgr -->|Manage Inventory| Firestore
-    StoreMgr -->|Sync Catalog| Firestore
-    Firestore -.->|Index Sync| Algolia
-
-    Admin -->|Moderate Catalog| Firestore
-    Admin -->|User Mgmt| Auth
-    
-    Functions --> Stripe
-    Functions --> Email
-    Consumer --> OSM
-```
-
----
-
-## 3. Container Architecture (Actual Implementation)
-
-### 3.1 Frontend Applications
-
-| Application | Technology | Status |
-|------------|------------|--------|
-| **Consumer Web** | React 18 + Vite 7.3 | ✅ Complete |
-| **Merchant Dashboard** | React 18 + Vite 7.3 | ✅ Complete |
-| **Admin Panel** | React 18 + Vite 7.3 | ✅ Complete |
-| **Mobile Apps** | Capacitor 6 (iOS/Android) | ✅ Build Verified |
-
-**Shared Codebase**: Single React app with role-based routing (`ConsumerLayout`, `MerchantLayout`, `AdminLayout`) and shared Design System (`hsl` tokens).
-
-### 3.2 Backend Services (Hybrid)
-
-The architecture uses a **Hybrid approach**:
-1.  **Client-Side**: Firebase SDKs for real-time data sync (Orders, Inventory) and simple CRUD.
-2.  **Server-Side**: Cloud Functions (Node.js) for privileged operations (Order Emails, Stripe Webhooks, Admin Tasks).
-
-| Component | Technology | Responsibilities |
-|-----------|------------|------------------|
-| **React Contexts** | Client SDK | Auth state, realtime order listeners, cart management, *SmartCart Optimizer Logic* |
-| **Cloud Functions** | Node.js 20 | Order emails, complex admin actions, Stripe webhooks, maintenance tasks |
-| **Algolia Extension** | Firebase Extension | Syncs `master_products` to Algolia index for fuzzy search |
-
-### 3.3 Data Store (Firebase Firestore)
-
-**Collection Structure**:
-```
-/users/{userId}              # User profiles + roles
-/stores/{storeId}            # Merchant stores
-/orders/{orderId}            # Order documents
-/master_products/{mpId}      # Global verified catalog (Synced to Algolia)
-/merchant_products/{pId}     # Store-specific inventory & pricing
-/product_creation_requests/  # Merchant requests for new products
-/carts/{userId}              # Shopping carts
-/wishlists/{userId}          # User wishlists
-```
-
-**Key Architectural Decisions**:
-- **Hybrid Catalog**: Separation of `master_products` (Global Data) and `merchant_products` (Store Data). Merchants link to a Master ID, ensuring consistent data quality while allowing flexible pricing.
-- **SmartCart Optimizer**: Runs entirely on the client-side (`useMemo` in `SmartCartWishlist.tsx`). It downloads relevant availability data and performs:
-    1.  **Fuzzy Matching**: Matches generic terms ("Milk") to specific inventory ("Dairyland Milk").
-    2.  **Store Splitting**: Finds the cheapest combination of stores.
-    3.  **Trip Optimization**: Suggests a "Best Single Store" alternative.
-
----
-
-## 4. Key Data Flows
-
-### 4.1 SmartCart Optimization Flow
-
-```mermaid
-sequenceDiagram
-    participant User
-    participant Optimizer(Client)
-    participant Firestore
-    participant Algolia
-
-    User->>Optimizer: Adds "Milk" (Generic Item)
-    
-    par Parallel Fetch
-        Optimizer->>Firestore: Fetch Merchant Inventory (local cache)
-        Optimizer->>Algolia: (Optional) Search Master Catalog
+    subgraph Data Tier
+        DB[(Cloud Firestore<br/>NoSQL)]
+        Search[Algolia v5<br/>Proximity Search Index]
+        Audit[Forensic Ledger<br/>SHA-256 Hash Chain]
     end
-    
-    Optimizer->>Optimizer: Fuzzy Match "Milk" -> "Dairyland 2%"
-    Optimizer->>Optimizer: Algorithm: Cheapest Split vs. Single Store
-    
-    Optimizer-->>User: Display "Best Prices" & "Trip Saver"
-    User->>Firestore: Add to Cart (Batched Write)
-```
 
-### 4.2 Admin Catalog Verification
+    subgraph External
+        Stripe[Stripe Connect<br/>Split Payments]
+        OpenFood[Open Food Facts<br/>Catalog Enrichment]
+        Sentry[Sentry.io<br/>Error Tracking]
+    end
 
-```mermaid
-sequenceDiagram
-    participant Merchant
-    participant Firestore
-    participant Admin
-    participant Algolia
-
-    Merchant->>Firestore: Request New Product
-    Admin->>Firestore: Review & Approve Request
-    Firestore->>Firestore: Create Master Product
-    Firestore->>Algolia: Extension Syncs New Item
-    Firestore-->>Merchant: Notification (Approved)
-    Merchant->>Firestore: Set Price & Quantity
+    Web & Mobile --> API
+    API --> DB & Search
+    API --> Stripe & AI
+    Optimizer --> Search & DB
+    DB -.-> Search
 ```
 
 ---
 
-## 5. Security & Compliance (Implemented)
+## 3. Core System Components
 
-| Feature | Implementation | Status |
-|---------|----------------|--------|
-| **Authentication** | Firebase Auth (Email/Password + Google) | ✅ Complete |
-| **Authorization** | RBAC (Consumer/Merchant/Admin) | ✅ Complete |
-| **Route Guards** | Layout-level checks | ✅ Complete |
-| **Audit Logging** | SHA-256 hash chain | ✅ Complete |
-| **Data Isolation** | Per-user Firestore docs | ✅ Complete |
-| **Maintenance Mode** | Global platform lockdown | ✅ Complete |
+### 3.1 SmartCart Optimization Engine
+A 10-stage deterministic pipeline executing entirely in the user's browser.
+- **Logic**: Filters merchant inventory by proximity (Haversine/FSA), calculates multi-buy/BOGO logic, and analyzes **Dynamic Trip Thresholds** (1.5% basket savings) to decide on store splits.
+- **AI Layer**: Integrates with **Gemini 2.5 Flash** to provide natural language insights on "Trip Efficiency" and "Savings Strategies."
 
----
+### 3.2 Forensic Audit Ledger
+A critical compliance layer for Marketplace Facilitators.
+- **Security**: Every administrative change (approval, ad priority, commission adjustment) is hashed using SHA-256.
+- **Hash Chaining**: Each log entry includes the `prevHash` of the leading block, creating a persistent, immutable chain of custody for legal and compliance export.
 
-## 6. Infrastructure (Current)
+### 3.3 Search Architecture (Algolia v5 Hybrid)
+- **High-Speed Discovery**: Uses Algolia for fuzzy text and geospatial search (30ms avg response).
+- **Precision Resolution**: Falls back to Firestore for exact Barcode/UPC lookups and GTIN normalization (GTIN-8 up to GTIN-14).
 
-| Component | Technology | Configuration |
-|-----------|------------|---------------|
-| **Hosting** | Firebase Hosting | Production CDN |
-| **Database** | Cloud Firestore | Auto-scaling, real-time |
-| **Search Engine** | Algolia | `master_products` index |
-| **Storage** | Firebase Storage | Images/Files |
-| **CI/CD** | GitHub Actions | ✅ Auto-deploy configured |
-| **Domain** | spendigo.ca | Connected |
+### 3.4 Financial Engine (Stripe Connect Standard)
+- **Facilitator Model**: Implements **Split-Payment** logic. The platform collects a tiered commission (2%–10% based on subscription) while the merchant receives funds directly into their connected Stripe account.
 
 ---
 
-## 7. Deployment Architecture
-
-### Development
-```bash
-npm run dev
-# Runs on https://spendigo.ca:443/ (Local proxy)
-```
-
-### Production
-```bash
-npm run build
-# Output: apps/web/dist/ (Typescript -> JS)
-firebase deploy
-# Deploys Hosting + Functions + Firestore Rules
-```
+## 4. Container & Monorepo Structure
+Spendigo utilizes a **Turbo Monorepo** for unified dependency management:
+- `apps/web`: React-based UI for all three roles (Shopper/Merchant/Admin).
+- `apps/mobile`: Capacitor native wrappers for iOS/Android distribution.
+- `services/api`: Firebase Cloud Functions (Node.js 20) for server-side logic.
+- `packages/shared`: (Internal) Common types, utilities, and forensic hashing logic.
 
 ---
 
-## 8. Differences from Original Plan
-
-| Original Plan | Current Implementation | Rationale |
-|---------------|------------------------|-----------|
-| PostgreSQL + Drizzle | Cloud Firestore | Faster development, real-time sync for orders |
-| Custom backend search | Algolia | Better typos tolerance & performance (30ms vs 500ms) |
-| Server-side Optimization | Client-side Logic | Reduced server costs, instant feedback for user |
+## 5. Security & Governance
+| Feature | Implementation | Goal |
+| :--- | :--- | :--- |
+| **RBAC** | Firestore Security Rules | Granular role enforcement for data access. |
+| **Verification** | Firebase Auth + Email Gating | Ensuring valid merchant/shopper identities. |
+| **Integrity** | SHA-256 Hashing | Tamper-evident ledger for business actions. |
+| **Monitoring** | Sentry SDK | Real-time crash and performance bottleneck tracking. |
 
 ---
 
-## 9. Future Enhancements
-
-### Short-Term (Q1 2026)
-- [ ] Native Mobile QA (iOS/Android) - *In Progress*
-- [ ] Sentry Error Monitoring
-
-### Medium-Term (2026+)
-- [ ] Stripe Connect (Marketplace Split Funds)
-- [ ] Native Push Notifications (FCM)
-- [ ] Server-side rendering (Next.js migration) for improved SEO
+## 6. Infrastructure & CI/CD
+| Service | Role | Provider |
+| :--- | :--- | :--- |
+| **Hosting** | CDN Delivery | Firebase Hosting |
+| **Functions** | Event Handlers | Google Cloud Functions v2 |
+| **Database** | Real-time Data | Cloud Firestore |
+| **Pipeline** | Automated Deploy | GitHub Actions (v4) |
 
 ---
 

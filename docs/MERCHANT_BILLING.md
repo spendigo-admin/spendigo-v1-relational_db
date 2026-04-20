@@ -1,97 +1,70 @@
 # Merchant Billing & Subscription Operations
 
-**Last Updated**: 2026-01-12
-**Status**: Beta (Stripe Test Mode Active)
-
-This document outlines the billing procedures, subscription tiers, and development protocols for the Spendigo Merchant platform.
+**Last Updated**: 2026-04-20
+**Status**: Production-Ready (v1.0)
 
 ---
 
 ## 1. Overview
-
-Spendigo utilizes **Stripe** as its payment processor for Merchant Subscriptions. The system uses a **Hybrid approach**:
-- **Frontend**: Stripe Checkout (Hosted Page) for secure card entry.
-- **Backend**: Firebase Cloud Functions + Stripe Webhooks for secure status synchronization.
+Spendigo utilizes **Stripe** as the primary financial engine for merchant subscriptions and marketplace payouts. The platform operates on a **Marketplace Facilitator** model, managing automated commissions and tiered service access.
 
 ---
 
-## 2. Subscription Tiers
+## 2. Subscription Tiers (v1.0)
 
-| Tier | Price (CAD) | Features | Stripe Product ID (Test) |
+| Tier | Price (CAD) | Core Features | Marketplace Logic |
 | :--- | :--- | :--- | :--- |
-| **Free / Starter** | $0/mo | • Up to 50 Products<br>• Basic Analytics<br>• No Flyers | `prod_Ran...` (Auto-assigned) |
-| **Core Store** | $29/mo | • Up to 500 Products<br>• Weekly Flyers<br>• Priority Support | `prod_Qt...` |
-| **Growth** | $79/mo | • Unlimited Products<br>• Daily Deals<br>• Advanced Analytics | `prod_Rt...` |
+| **Starter** | $0/mo | • Up to 50 Products<br>• Pickup Only<br>• Basic Profile | 10% Platform Commission |
+| **Core Store** | $49/mo | • Unlimited Products<br>• Delivery Toggle<br>• Order Management | 5% Platform Commission |
+| **Growth** | $99/mo | • Featured Placement<br>• Flyer Highlighting<br>• Advanced Analytics | 2% Platform Commission |
+
+### Specialized Promotional Rates
+- **Code: `WELCOME2026`**:
+  - **Core Plan**: 100% OFF for 1 Year ($0/mo).
+  - **Growth Plan**: 90% OFF for 1 Year ($9.90/mo).
 
 ---
 
-## 3. Payment History & Invoicing
+## 3. Financial Reconciliation
 
-To ensure financial transparency and compliance with Canadian marketplace regulations:
-- The system maintains a transparent log of the last **12 successful payments**.
-- Merchants can access these records through `Settings > Subscription`.
-- Each entry includes:
-    - **Transaction Date**: The timestamp of the successful charge.
-    - **Amount**: Total paid ($CAD) + HST.
-    - **Status**: Verification of the payment outcome (e.g., "paid").
-    - **Invoice PDF**: Direct link to the official Stripe-generated invoice.
+### 3.1 Payouts (Stripe Connect)
+- Merchants must complete **Standard Connect Onboarding** before receiving payouts.
+- Payouts are triggered automatically upon order delivery confirmation.
+- The platform commission is deducted at the source using Stripe's `transfer_group` and `application_fee_amount`.
 
----
-
-## 4. Technical Architecture
-
-### 4.1 Data Flow
-1.  **Subscription Start**: Merchant clicks "Subscribe" -> Redirects to Stripe Checkout.
-2.  **Payment Success**: Stripe redirects back to `/merchant/subscription?success=true`.
-3.  **Webhook Event**: Stripe sends `checkout.session.completed` to Cloud Function.
-4.  **Database Update**: Cloud Function updates `users/{uid}` with:
-    - `subscriptionStatus: 'active'`
-    - `subscriptionTier: 'core'`
-    - `stripeCustomerId: 'cus_...'`
-
-### 4.2 Webhook Handling
-Real-time updates are handled via the `stripeWebhook` Cloud Function:
-- **`checkout.session.completed`**: Activates new subscriptions.
-- **`invoice.payment_succeeded`**: Logs payment history to `users/{uid}/payments`.
-- **`customer.subscription.deleted`**: Downgrades user to 'Free' tier automatically.
+### 3.2 Payment History
+- The system retains a record of the last **12 successful payments** within `Settings > Subscription`.
+- Each ledger entry includes:
+  - **Transaction Date**: Verification timestamp.
+  - **Amount**: Total CAD (inclusive of regional taxes).
+  - **Plan**: Tier identification at the time of charge.
+  - **Status**: Transaction outcome (e.g., "paid").
 
 ---
 
-## 5. Sponsored Listings (Ad-Hoc Billing)
+## 4. Operational Architecture
 
-*For detailed flow, see [SPONSORED_LISTINGS.md](./SPONSORED_LISTINGS.md)*
+### 4.1 Lifecycle Hooks (`subscriptionTriggers.ts`)
+- **Upgrade/Downgrade**: Handled via `updateSubscriptionPlan` Cloud Function. Upgrades to higher tiers (e.g., Core -> Growth) are processed immediately with proration.
+- **Cancellation**: Downgrades to the "Starter" tier take effect at the end of the current billing cycle to preserve paid access.
 
-In addition to recurring subscriptions, Merchants can purchase one-time "Sponsored Listing" slots.
-- **Billing Model**: Pay-per-performance or Fixed Duration (e.g., $5 to Boost for 7 Days).
-- **Payment Method**: Uses the saved Stripe Customer ID from the main subscription if available, or prompts for one-time payment.
-
----
-
-## 6. Developer Guide (Local Testing)
-
-To test the billing lifecycle in the development environment:
-
-### 6.1 Prerequisites
-- Stripe CLI installed (`brew install stripe/stripe-cli/stripe`)
-- Local Firebase Emulators running (`npm run dev`)
-
-### 6.2 Invoking the Listener
-Forward webhooks to your local function:
-
-```bash
-npm run stripe:listen
-# Output: Ready! Your webhook signing secret is whsec_...
-```
-
-**Important**: You must update the `stripe.webhook_secret` config variable in your local `.runtimeconfig.json` or `.env` file if the secret changes.
-
-### 6.3 Triggering Events
-You can trigger mock events via CLI to test UI responses:
-
-```bash
-stripe trigger invoice.payment_succeeded
-```
+### 4.2 Webhook Governance
+The `stripeWebhook` manages critical state transitions:
+- `checkout.session.completed`: Initializes the initial customer object and first-time subscription.
+- `invoice.payment_succeeded`: Logs the transaction to the Firestore `payments` subcollection.
+- `customer.subscription.deleted`: Gracefully transitions the store to the "Starter" tier.
 
 ---
 
-**For integration details, see**: `services/api/src/stripe/webhook.ts`
+## 5. Developer Validation (Stripe CLI)
+To test billing webhooks in the local environment:
+
+1. **Start Listener**:
+   ```bash
+   npm run stripe:listen
+   ```
+2. **Simulate Event**:
+   ```bash
+   stripe trigger invoice.payment_succeeded
+   ```
+3. **Verify**: Check the `AuditLogs` in the Admin Dashboard for `STRIPE_WEBHOOK_RECEIVED` signals.

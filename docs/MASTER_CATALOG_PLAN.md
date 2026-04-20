@@ -1,40 +1,48 @@
-# Spendigo Master Catalog: Implementation Status
+# Spendigo Master Catalog: Production Status (v1.0)
 
-## 1. Requirement Analysis
-The "Facilitator-Safe Master Catalog" model effectively solves the core business constraint: **Spendigo must strictly control product identity while Merchant's control inventory and pricing.**
+**Last Updated**: 2026-04-20
+**Status**: Production-Ready / Feature-Complete
 
-## 2. Implementation Status
+## 1. Overview
+The **Facilitator-Safe Master Catalog** is the foundation of Spendigo's data integrity. It enforces a "Single Source of Truth" for product attributes while allowing merchants to retain autonomy over local inventory and pricing.
 
-| Phase | Description | Status | Notes |
-| :--- | :--- | :--- | :--- |
-| **Phase 1** | **Foundation (Security & Schema)** | ✅ **COMPLETED** | Rules applied with strict existence checks. |
-| **Phase 2** | **Data Seeding (Migration)** | ✅ **COMPLETED** | 175 Master Products, 249 Merchant Products, 34 Categories migrated. |
-| **Phase 3** | **Frontend Integration (Read)** | ✅ **COMPLETED** | Store Detail, Product Detail, and Search updated to use `useCatalog` hook. |
-| **Phase 4** | **Merchant UI (Write)** | ✅ **COMPLETED** | Merchants can link logic, request products, and bulk scan barcodes. |
-| **Phase 5** | **Admin UI (Approval)** | ✅ **COMPLETED** | Admin dashboard (`AdminMasterCatalog`) processes pending requests. |
-| **Phase 6** | **Search & Optimization** | ✅ **COMPLETED** | **Algolia** integration for high-performance search; **SmartCart Optimizer** logic. |
+## 2. Implementation Milestones
 
-## 3. Completed Features
+| Milestone | Status | Key Deliverables |
+| :--- | :--- | :--- |
+| **Foundation** | ✅ | Strict RBAC rules for `/master_products` and `/merchant_products`. |
+| **Data Migration** | ✅ | Automated migration of legacy assets into the dual-collection schema. |
+| **Merchant Integration** | ✅ | Barcode-first linking workflow with **Open Food Facts** enrichment. |
+| **Admin Moderation** | ✅ | End-to-end "Pending Review" queue with a Forensic-ready approval ledger. |
+| **Search & Discovery** | ✅ | **Algolia v5** proximity search integrated with the Master Catalog index. |
+| **Savings Intelligence** | ✅ | **Substitution Groups** and **SmartCart Optimization** using unified IDs. |
 
-### 3.1 Merchant Workflows
-*   **Inventory Link**: Merchants can search the global `master_products` catalog and link items to their store with a custom price.
-*   **Pending Products**: When a barcode is not found but exists in external APIs (OpenFoodFacts), it is auto-imported to `pending_master_products` for Admin verification.
-*   **Manual Requests**: Merchants can fill out a form to request new products if scanning fails. Request lifecycle (`pending` -> `approved`) is fully automated.
+---
 
-### 3.2 Admin Oversight
-*   **Master Catalog Grid**: Admins can edit, delete, and merge master products.
-*   **Request Inbox**: A dedicated queue for `product_creation_requests` where Admins can Approve (promote to Master) or Reject (with reason).
+## 3. Core Engine Features
 
-### 3.3 SmartCart Integration & Client Intelligence
-*   **Optimization Logic**: Complex store-splitting and trip-optimization algorithms run entirely on the client, minimizing server costs.
-*   **Fuzzy Matching**: The client attempts to match generic wishlist items (e.g., "Milk") to specific merchant products (e.g., "Dairyland 2%") using name analysis and `master_product_id` references.
-*   **Substitution Groups**: Master products are now grouped (e.g., "Milk 2L") to allow logic-based substitutions.
-*   **Tax Standardization**: `tax_category_id` is enforced at the Master level.
+### 3.1 Advanced Merchant Workflows
+*   **Intelligent Linking**: Merchants link their inventory to global SKUs using `master_product_id`.
+*   **Average Market Pricing**: The dashboard provides a real-time "Average Market Price" signal by aggregating all merchant listings for a specific Master SKU, helping stores set competitive prices.
+*   **Proximity-Aware Inventory**: Store reach is managed individually for each merchant, ensuring search results are geofenced to the store's service radius.
 
-### 3.4 Search Infrastructure
-*   **Algolia Integration**: The "Search with Algolia" extension syncs `master_products` to an external index.
-*   **Frontend**: `useCatalog.ts` seamlessly switches between Firestore (Barcode/ID lookup) and Algolia (Fuzzy Text Search).
+### 3.2 Automated Enrichment Lifecycle
+*   **Zero-Day Indexing**: New barcode scans not found in the Master Catalog are auto-imported to the `pending_review` queue using the **Open Food Facts API**.
+*   **Forensic Verification**: Every administrative approval or modification to a Master Product is cryptographically logged in the **Forensic Audit Ledger** for legal defensibility.
 
-## 4. Next Steps (Enhancements)
-*   **Bulk CSV Import**: Allow merchants to upload a CSV of UPCs for faster onboarding.
-*   **Price Intelligence**: Show merchants the "Average Market Price" for a master product when they are setting their price.
+### 3.3 Consumer Optimization (SmartCart)
+*   **ID-Driven Matching**: The optimizer uses unified Master IDs to provide 100% accurate price comparisons across different store names.
+*   **Substitution Engine**: Surfaces cheaper alternatives based on `substitution_group_id` (e.g., matching Store Brand 2L Milk vs Name Brand 2L Milk).
+*   **Bulk Saving Hints**: Analyzes package sizes at the Master level to flag "Better Value" upsell opportunities.
+
+---
+
+## 4. Search & Performance
+- **Hybrid Resolution**: `useCatalog.ts` orchestrates hits across Firestore (for precision Barcode/ID lookups) and Algolia (for high-speed fuzzy text and geo-search).
+- **Proximity Filtering**: Integrated with **Haversine distance** and **FSA (Postal Code)** fallback logic.
+
+---
+
+## 5. Ongoing Maintenance
+- **Catalog Cleansing**: Regular administrative sweeps to merge duplicate master items and verify manufacturer images.
+- **Brand Validation**: Future integration with Direct-to-Manufacturer data feeds to reach "Manufacturer Verified" status on premium SKUs.

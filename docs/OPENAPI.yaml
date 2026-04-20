@@ -1,77 +1,24 @@
 openapi: 3.0.0
 info:
-  title: Spendigo SmartCart API
-  version: 1.1.0 (Beta)
-  description: API for Spendigo Marketplace (Hybrid Catalog Architecture)
+  title: Spendigo Marketplace API
+  version: 1.2.0 (Production)
+  description: |
+    API for Spendigo Marketplace (Hybrid Catalog Architecture).
+    Most endpoints are exposed as Firebase HTTPS/Callable functions.
 servers:
   - url: https://api.spendigo.ca/v1
     description: Production Server
-  - url: http://localhost:3000/v1
-    description: Local Dev
+  - url: http://localhost:5001/spendigo-8540c/us-central1
+    description: Firebase Emulator Suite
+
 paths:
-  /auth/login:
+  # 🚀 SMARTCART OPTIMIZATION
+  /smartcartOptimize:
     post:
-      summary: Authenticate user
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                email:
-                  type: string
-                password:
-                  type: string
-      responses:
-        "200":
-          description: JWT Token returned
-
-  /catalog/master:
-    get:
-      summary: Search Master Catalog
-      parameters:
-        - name: query
-          in: query
-          schema:
-            type: string
-        - name: barcode
-          in: query
-          schema:
-            type: string
-      responses:
-        "200":
-          description: List of master products
-
-  /stores:
-    get:
-      summary: List near stores (with Sponsored priority)
-      parameters:
-        - name: lat
-          in: query
-          schema:
-            type: number
-        - name: lng
-          in: query
-          schema:
-            type: number
-      responses:
-        "200":
-          description: List of stores
-
-  /ads/active:
-    get:
-      summary: Get active Carousel Ads
-      responses:
-        "200":
-          description: List of ad banners
-
-  /cart/checkout:
-    post:
-      summary: Initiate Split Payment Checkout
+      summary: Deterministic multi-store basket optimizer
       description: |
-        Creates a PaymentIntent on Stripe with `transfer_group`.
-        Calculates application fees (commission) per store.
+        Matches a shopping list to valid merchant inventory within proximity.
+        Returns the optimized split-cart and best single-store comparison.
       requestBody:
         required: true
         content:
@@ -79,197 +26,156 @@ paths:
             schema:
               type: object
               properties:
-                items:
+                shoppingList:
                   type: array
                   items:
                     type: object
                     properties:
-                      product_id:
-                        type: string
-                      quantity:
-                        type: integer
-      responses:
-        "200":
-          description: Client Secret for Stripe Elements
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  clientSecret:
-                    type: string
-                  orderIds:
-                    type: array
-                    items:
-                      type: string
-
-  /cart/optimize:
-    post:
-      summary: Optimize a cart across eligible stores using SmartCart
-      description: |
-        Cart price-comparison endpoint. Reuses the SmartCart optimizer and returns
-        the cheapest store combination without affecting existing checkout flows.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                shopping_list:
+                      id: { type: string }
+                      name: { type: string }
+                      quantity: { type: integer }
+                stores:
                   type: array
                   items:
-                    type: string
-                user_location:
+                    type: object
+                    properties:
+                      id: { type: string }
+                      coordinates: { type: object }
+                location:
                   type: object
                   properties:
-                    lat:
-                      type: number
-                    lng:
-                      type: number
-                store_filter:
-                  oneOf:
-                    - type: array
-                      items:
-                        type: string
-                    - type: object
-                      properties:
-                        store_ids:
-                          type: array
-                          items:
-                            type: string
+                    lat: { type: number }
+                    lng: { type: number }
       responses:
         "200":
-          description: Optimized cart result
+          description: Optimization Result
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  optimized_cart:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        product_id:
-                          type: string
-                        chosen_store:
-                          type: string
-                        price:
-                          type: number
-                        unit_price:
-                          type: number
-                  store_breakdown:
-                    type: object
-                    additionalProperties:
-                      type: array
-                      items:
-                        type: string
-                  total_cost:
-                    type: number
-                  best_single_store_option:
-                    type: object
-                    nullable: true
-                    properties:
-                      store_id:
-                        type: string
-                      store_name:
-                        type: string
-                      cart_cost:
-                        type: number
-                        nullable: true
-                      missing_items:
-                        type: array
-                        items:
-                          type: string
-                  savings:
-                    type: number
-                    nullable: true
+                $ref: '#/components/schemas/OptimizationResult'
 
-  /smartcart/optimize:
+  # 💸 PAYMENTS & SUBSCRIPTIONS
+  /onboardStore:
     post:
-      summary: Optimize a SmartCart basket across eligible stores
+      summary: Initiate Merchant Stripe Connect onboarding
+      description: Returns a Stripe Connect account link URL.
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                properties:
+                  url: { type: string }
+
+  /createCheckoutSession:
+    post:
+      summary: Create a Stripe Checkout session for subscription
       requestBody:
-        required: true
         content:
           application/json:
             schema:
-              type: object
               properties:
-                shopping_list:
-                  type: array
-                  items:
-                    type: string
-                user_location:
-                  type: object
-                  properties:
-                    lat:
-                      type: number
-                    lng:
-                      type: number
-                store_filter:
-                  oneOf:
-                    - type: array
-                      items:
-                        type: string
-                    - type: object
-                      properties:
-                        store_ids:
-                          type: array
-                          items:
-                            type: string
+                priceId: { type: string }
       responses:
         "200":
-          description: Optimized SmartCart result
           content:
             application/json:
               schema:
-                type: object
                 properties:
-                  optimized_cart:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        product_id:
-                          type: string
-                        chosen_store:
-                          type: string
-                        price:
-                          type: number
-                        unit_price:
-                          type: number
-                  store_breakdown:
-                    type: object
-                    additionalProperties:
-                      type: array
-                      items:
-                        type: string
-                  total_cost:
-                    type: number
-                  best_single_store_option:
-                    type: object
-                    nullable: true
-                    properties:
-                      store_id:
-                        type: string
-                      store_name:
-                        type: string
-                      cart_cost:
-                        type: number
-                        nullable: true
-                      missing_items:
-                        type: array
-                        items:
-                          type: string
-                  savings:
-                    type: number
-                    nullable: true
+                  sessionId: { type: string }
 
-  /webhooks/stripe:
+  /refundOrder:
     post:
-      summary: Stripe Webhook Endpoint
-      description: Handles `payment_intent.succeeded`, `checkout.session.completed`, etc.
+      summary: Process a refund for a specific order (Admin/Merchant)
+      requestBody:
+        content:
+          application/json:
+            schema:
+              properties:
+                orderId: { type: string }
+                amount: { type: number }
       responses:
         "200":
-          description: Received
+          description: Refund successful
+
+  # 📦 ORDERS
+  /placeOrder:
+    post:
+      summary: Finalize and lock a marketplace transaction
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderInput'
+      responses:
+        "201":
+          description: Order created successfully
+
+  /downloadReceipt:
+    get:
+      summary: Generate and download a PDF receipt for an order
+      parameters:
+        - name: orderId
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          content:
+            application/pdf:
+              schema: { type: string, format: binary }
+
+  # 🛡️ ADMIN TOOLS
+  /syncTrafficStats:
+    post:
+      summary: Aggregate and sync traffic counters to the admin dashboard
+      responses:
+        "200":
+          description: Stats synced
+
+  /cleanupOrphanedUsers:
+    post:
+      summary: Security cleanup of unverified or deleted Auth users
+      responses:
+        "200":
+          description: Cleanup complete
+
+components:
+  schemas:
+    OptimizationResult:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              shoppingListItemId: { type: string }
+              selectedStoreId: { type: string }
+              lineTotal: { type: number }
+        summary:
+          type: object
+          properties:
+            totalCartCost: { type: number }
+            potentialSavings: { type: number }
+        recommendation:
+          type: string
+          enum: [optimized_multi_store, best_single_store]
+
+    OrderInput:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            properties:
+              priceId: { type: string }
+              quantity: { type: integer }
+        deliveryAddress: { type: string }
+
+  securitySchemes:
+    FirebaseIDToken:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: "Format: Bearer <ID_TOKEN>"

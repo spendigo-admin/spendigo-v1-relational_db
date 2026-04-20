@@ -1,82 +1,63 @@
-# Cost Optimization Strategy (Pre-Revenue)
+# Cost Optimization Strategy (Production v1.0)
 
-**Status**: Active / Enforced
-**Last Updated**: 2026-01-12
+**Last Updated**: 2026-04-20
+**Target Operating Budget**: < $50 CAD / month (excluding transaction fees)
+**Status**: Active Production Governance
 
-## 1. Hard Constraint
-**Total Budget: $0 - $25 CAD / month**
+---
 
-## 2. Cost Breakdown & Controls
+## 1. Architectural Efficiency
 
-### 2.1 Compute (Serverless)
-- **Strategy**: Scale-to-zero & Client-Side Logic.
-- **Service**: Google Cloud Functions.
-- **Optimization**:
-  - **SmartCart Optimizer**: The complex algorithms for "Store Splitting" and "Trip Optimization" run entirely in the user's browser (Client-Side). This saves thousands of potential Cloud Function invocations per user session.
-  - **Scale-to-zero**: No running containers or instances when idle.
-- **Free Tier**: 2M invocations/month (GCP Free Tier).
-- **Risk**: Infinite loops or DDOS.
-- **Mitigation**:
-  - Set `max_instances` to 10 for non-critical functions.
-  - Set execution timeouts (e.g., 5s).
+### 1.1 Edge-First Optimization
+Spendigo prioritizes client-side execution to eliminate server overhead.
+- **SmartCart Optimizer**: The complex 10-stage optimization engine runs entirely on the shopper's device. This avoids high-CPU billing on Cloud Functions for millions of potential store-item combinations.
+- **Trip Consolidation**: Decisions on multi-store splits are calculated using client-side logic + proximity data, requiring zero server round-trips.
 
-### 2.2 Database
-- **Strategy**: Firestore (NoSQL) + Client Caching.
-- **Service**: Firebase Firestore.
-- **Free Tier**: 50k reads, 20k writes per day.
-- **Risk**: High read volume from inefficient queries.
-- **Mitigation**:
-  - **Hybrid Catalog**: Generic searches hit Algolia (external index) instead of Firestore reads.
-  - **Aggressive Caching**: `optimizerItems` logic caches Merchant Inventory locally in the React state.
-  - **Denormalization**: "Store Name" and "Product Price" are stored on orders to avoid joins.
+### 1.2 Gemini 2.5 Intelligence
+- **Model Choice**: Utilizing **Gemini 2.5 Flash** instead of Pro to reduce token costs while maintaining high-speed insight generation.
+- **Prompt Batching**: Insights are generated once per "Optimized Cart" payload and cached in `sessionStorage` to prevent redundant API calls during UI navigation.
 
-### 2.3 Search (New)
-- **Strategy**: Service-Managed Free Tier.
-- **Service**: Algolia (Search with Algolia Extension).
-- **Free Tier**: "Build" Plan (1M records, 10k searches/mo).
-- **Risk**: Exceeding search quotas.
-- **Mitigation**:
-  - Only index `master_products`.
-  - Frontend triggers search only after 3 characters typed.
+---
 
-### 2.4 Storage (Assets & Logs)
-- **Strategy**: Hot/Cold lifecycle.
-- **Service**: Firebase Storage.
-- **Risk**: Bandwidth/Egress costs.
-- **Mitigation**:
-  - Cache-Control headers (`public, max-age=31536000`) for immutable assets.
-  - Resize user uploads (avatars/products) on the client before upload.
+## 2. Infrastructure Controls
 
-### 2.5 Monitoring & Logging
-- **Strategy**: Sampling and Retention reduction.
-- **Service**: Google Cloud Logging.
-- **Risk**: High ingestion costs.
-- **Mitigation**:
-  - Log level: `INFO` default, `ERROR` only for high volume.
-  - Retention: Default 30 days is free for reasonable volume.
+### 2.1 Firestore (Database)
+- **Denormalization**: Store metadata (Name, Logo, Commission) is embedded in `order` snapshots. This prevents expensive O(n) joins/reads across collections during historical analytics.
+- **Write Aggregation**: Master Catalog metrics (popularity) are updated via debounced batch operations to stay within the 20k daily free-tier write limit.
 
-### 2.6 Maps & Geolocation
-- **Strategy**: Cache-first, Open Source.
-- **Service**: OpenStreetMap / Nominatim (Free) + Leaflet.
-- **Risk**: API Rate Limits.
-- **Mitigation**:
-  - Do NOT auto-load map on homepage (List view default).
-  - Cache geocoded results for stores in Firestore.
+### 2.2 Algolia v5 (Discovery)
+- **Search Debounce**: Global search is gated by an **800ms debounce** and a **3-character minimum** to prevent accidental API consumption.
+- **Index Scoping**: Only `master_products` and active `merchant_products` are indexed. Expired flyers or draft products are excluded to minimize record counts.
 
-## 3. Kill-Switches
-If projected cost > $20 CAD:
-1. **Alert**: SMS/Email to Admin.
-2. **Action 1**: Disable "Image Upload" feature.
-3. **Action 2**: Switch Maps to "List Only" mode.
-4. **Action 3**: Pause new Sign-ups.
+### 2.3 Forensic Audit Logging
+- **Calculated Integrity**: SHA-256 hashes are computed using a deterministic "Canonical JSON" approach. This ensures that only meaningful data changes trigger a re-hash, preventing log bloat.
+- **Storage Tiering**: While the audit ledger is permanent, older logs (1yr+) are candidates for migration to Cold Storage (Firebase Archive) to minimize monthly storage costs.
 
-## 4. Monthly Estimated Bill
-| Component | Usage | Est. Cost |
+---
+
+## 3. Monitoring & Sentry
+- **Error Sampling**: Sentry error reporting is set to 100% (critical for v1.0), but **Performance Tracing** (Transaction sampling) is limited to 10% to stay within the free-tier event limit.
+- **Log Retention**: Cloud Logging retention is capped at 30 days for generic INFO logs; only CRITICAL/AUDIT logs are retained indefinitely.
+
+---
+
+## 4. Estimated Operating Cost (Monthly)
+
+| Component | Logic | Estimated Cost |
 | :--- | :--- | :--- |
-| Compute | < 1M reqs | $0.00 |
-| DB | < 50k reads/day | $0.00 |
-| Storage | < 5GB | $0.00 |
-| Search (Algolia) | < 10k searches | $0.00 (Build Plan) |
-| Stripe | Transaction Based | Net Positive |
-| Domain/DNS | 1 Domain | $15.00/yr |
-| **Total** | | **~$1.25/mo** |
+| **Compute** | Functions (Scale-to-zero) | ~$2.00 |
+| **Database** | Firestore (Reads/Writes) | ~$5.00 |
+| **AI Insights** | Gemini 2.5 Flash | ~$0.00 (Free Tier) |
+| **Search** | Algolia v5 (Build Plan) | ~$1.00 (Overages) |
+| **Audit/Logs** | Cloud Storage | ~$3.00 |
+| **Monitoring** | Sentry (Developer Plan) | ~$0.00 |
+| **Domains** | `spendigo.ca` (GoDaddy) | ~$1.50 |
+| **TOTAL** | | **~$12.50 / month** |
+
+---
+
+## 5. Cost Containment (Kill-Switches)
+If projected spend exceeds **$45.00 CAD**:
+1. **Gemini**: Throttle insight generation to "Manual Trigger" only.
+2. **Algolia**: Disable real-time sync for non-revenue stores (Starter Tier).
+3. **Audit**: Switch from per-action hashing to per-batch hashing for non-sensitive UI events.

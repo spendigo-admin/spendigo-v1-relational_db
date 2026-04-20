@@ -22,6 +22,7 @@ npm run dev          # Start all apps (Turbo) — web runs at https://spendigo.c
 npm run build        # Production build (all packages via Turbo)
 npm run lint         # ESLint across entire monorepo
 npm test             # Run Vitest unit tests (root)
+npm run test:e2e     # Run Playwright E2E tests (requires dev server running)
 npm run stripe:listen  # Forward Stripe webhooks to local Firebase Functions emulator
 npm run format         # Prettier formatting across monorepo
 npm run benchmark:smartcart  # Benchmark SmartCart optimizer
@@ -75,11 +76,11 @@ This is a **Turbo monorepo** with npm workspaces:
 
 **Context providers** (wrap order in App.tsx matters):
 ```
-AuthProvider → MaintenanceGuard → NotificationProvider → MarketplaceProvider
+AuthProvider → AuditProvider → MaintenanceGuard → NotificationProvider → MarketplaceProvider
   → CatalogProvider → ReviewProvider → CartProvider → WishlistProvider
   → OrderProvider → LocationProvider → ConfirmationProvider
 ```
-`AuditProvider` is scoped only to admin routes (not global) — wraps `AdminLayout` in the route tree.
+`AuditProvider` is global — wraps `MaintenanceGuard` and all inner providers. Audit logging is active for all roles, not just admins.
 - `AuthContext` — Firebase Auth + Firestore user profiles, RBAC permissions via `can(permission)`. User roles: `consumer | merchant | admin`. Merchant sub-roles: `OWNER | MANAGER | STAFF | MARKETING`.
 - `MarketplaceContext` — Real-time `onSnapshot` of all `stores` collection (filters to `status === 'active'`).
 - `CatalogContext` — Master product catalog.

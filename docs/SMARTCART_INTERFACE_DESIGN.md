@@ -1,184 +1,78 @@
-# SmartCart Optimizer Interface Design
+# SmartCart Optimizer Architecture & Design
 
-## Goal
+**Last Updated**: 2026-04-20
+**Status**: Production-Ready (v1.0 Implemented)
 
-Define stable interfaces and module boundaries for a future SmartCart optimizer without choosing or implementing the optimization algorithm yet.
+---
 
-## Design Principles
+## 1. Goal
+The SmartCart Optimizer is the core intelligence of Spendigo. Its goal is to analyze a shopper's wishlist across thousands of real-time merchant offers and determine the "Best Split" (multi-store) and "Best Single Store" fulfillment strategies to maximize savings.
 
-- Keep inputs algorithm-agnostic.
-- Separate candidate resolution from optimization.
-- Make decision transparency a first-class output.
-- Support both split-cart and single-store comparisons.
-- Keep pricing and store metadata explicit so fees and availability can be incorporated later.
+## 2. Core Modules
 
-## Core Data Contracts
+### 🧠 Candidate Resolver (`useOptimizedWishlist.ts`)
+Map user-requested items to live merchant inventory.
+- **ID Resolution**: Preference for Master Product IDs (Direct Link).
+- **Fuzzy Fallback**: Uses `performFuzzySearch` for custom/generic entries with a 65%+ confidence threshold.
+- **Distance Guard**: Filters candidates based on user GPS coordinates or FSA (Postal Code) fallback to ensure physical accessibility.
 
-Source: `apps/web/src/types/smartCart.ts`
+### 📊 Price Matrix Engine (`smartcart_price_matrix.ts`)
+Constructs a N x M grid of shopping list items vs. available stores.
+- **Normalization**: Standardizes "Each", "lb", "kg", "ml" into a unified comparison unit.
+- **Effective Price**: Calculates real-time totals by incorporating:
+  - Base merchant price
+  - Flash Deals / One Day Offers
+  - Standard Sale flyers
+  - Multi-buy logic (e.g., "3 for $5")
+  - BOGO (Buy One Get One) effective unit pricing.
 
-- `SmartCartOptimizationInput`
-  - `shoppingList`: normalized user demand
-  - `stores`: store metadata needed for fulfillment and totals
-  - `prices`: store-product offers with stock and optional promo price context
-- `SmartCartCandidate`
-  - a resolved purchasable option for a shopping-list item
-  - captures match confidence and match reason so the UI can explain substitutions
-- `SmartCartOptimizationResult`
-  - `items`: selected store and product for each requested item
-  - `summary`: total cart cost and savings vs. best single store
-  - `bestSingleStore` and `singleStoreComparisons`: convenience baseline
-  - `explanations`: human-readable decision trace
+### ⚙️ Optimization Engine (`smartcart_optimizer.ts`)
+The decision-making logic for cart selection.
+- **Lowest Price First**: Selects the absolute cheapest fulfilled offer for every item.
+- **Preference Bias**: Optional weighting for a "Preferred Store" if prices are within a small threshold.
+- **Availability Guard**: Ensures the selected store actually has the `available_quantity` to fulfill the request.
 
-## Module Boundaries
+### ⚖️ Comparison Engine (`smartcart_comparison_engine.ts`)
+Computes the baseline "Best Single Store" fulfillment.
+- **Single Store Simulation**: Identifies which single merchant can fulfill the largest % of the list with the lowest aggregate total.
+- **Saving Logic**: Calculates `Total Split Cost` vs `Total Single Store Cost`, including delivery fees for each store in the split.
 
-### 1. Input Normalizer
+### 🧪 Substitution & Upsell Engine
+Surfaces high-impact value opportunities.
+- **Substitutions**: Recommends identical items in a different brand using `substitution_group_id`.
+- **Bulk Saving Hints**: Flags when a larger package size (e.g., 2kg vs 500g) at the same store has a better unit price.
 
-**Responsibility**
+---
 
-Convert UI state into `SmartCartOptimizationInput`.
+## 3. Data Contracts (`types/smartCart.ts`)
 
-**Likely Sources**
+### `SmartCartOptimizationResult`
+The output consumed by the UI components.
+- **items**: Array of `SmartCartItemDecision` (Store + Product ID + Line Total).
+- **summary**: `SmartCartOptimizationSummary` (Total Cost, Best Single Store baseline, Net Savings).
+- **explanations**: array of `SmartCartDecisionExplanation` for transparency.
 
-- wishlist / shopping list items
-- active stores from Firestore
-- live `merchant_products`
+### `SmartCartDecisionExplanation`
+Human-readable rationale for machine choices:
+- `lowest_price`: Selected based on direct price comparison.
+- `only_available_option`: Selected as the sole fulfillment candidate.
+- `matched_by_master_product`: Precision match via global catalog.
 
-**Suggested Boundary**
+---
 
-- `buildOptimizationInput(...) => SmartCartOptimizationInput`
+## 4. UI Integration
+The optimizer is orchestrated via the `useOptimizedWishlist` hook, which provides:
+- **`optimizerItems`**: The enriched wishlist with all fulfillment options.
+- **`tripAnalysis`**: A high-level recommendation (e.g., "Best Split" or "Single Store Only").
+- **`matrix`**: The raw data for the standard comparison grid.
 
-### 2. Candidate Resolver
+### Design Principles in UI:
+- **Transparency**: Every substitution must be explicitly labeled.
+- **Autonomy**: Users can manually "Pin" a specific store result to override the optimizer.
+- **Simplicity**: Complex logic (normalization, multibuy) is abstracted behind a single "Effective Price".
 
-**Responsibility**
+---
 
-Map each requested list item to possible store offers.
-
-**What it owns**
-
-- direct master-product matches
-- exact-name matching
-- fuzzy fallback matching
-- confidence scoring and match labels
-
-**Interface**
-
-- `SmartCartCandidateResolver`
-
-### 3. Optimizer Engine
-
-**Responsibility**
-
-Choose one store-offer per requested item and compute aggregate totals.
-
-**What it should not own**
-
-- Firestore reads
-- UI-specific formatting
-- fuzzy search implementation details
-
-**Interface**
-
-- `SmartCartOptimizer`
-
-### 4. Comparison Builder
-
-**Responsibility**
-
-Compute the single-store baseline used for `savingsVsSingleStore`.
-
-**Output**
-
-- `bestSingleStore`
-- `singleStoreComparisons`
-
-### 5. Decision Explainer
-
-**Responsibility**
-
-Translate machine decisions into user-facing rationale.
-
-**Examples**
-
-- "FreshMart selected because it has the lowest price for milk."
-- "Budget Foods was the only store with this item in stock."
-- "Split cart saves $6.42 vs the best single-store option."
-
-**Interface**
-
-- `SmartCartExplainer`
-
-## Suggested Package Shape
-
-```text
-apps/web/src/smartcart/
-  buildOptimizationInput.ts
-  resolveCandidates.ts
-  optimizeCart.ts
-  buildSingleStoreComparisons.ts
-  explainOptimization.ts
-  types.ts
-```
-
-## UI Integration Boundary
-
-Current hook:
-
-- `apps/web/src/hooks/useOptimizedWishlist.ts`
-
-Suggested future orchestration:
-
-1. Build `SmartCartOptimizationInput`
-2. Resolve candidates
-3. Run optimizer
-4. Generate explanations
-5. Map result to existing cart UI
-
-This keeps the current hook as a coordinator instead of the place where matching, optimization, totals, and explanation logic all live together.
-
-## Minimal Flow
-
-```text
-shopping list
-  -> input normalizer
-  -> candidate resolver
-  -> optimizer engine
-  -> comparison builder
-  -> explainer
-  -> UI result
-```
-
-## Output Shape For UI
-
-The UI should only need:
-
-- selected store for each item
-- total cart cost
-- savings vs single store
-- explanation strings / reason codes
-- candidate counts and unavailable items for confidence messaging
-# SmartCart Optimizer UI Walkthrough: AddItemsPanel Refactor
-
-## 🎯 Objective
-Fix UX/UI flaws in the SmartCart Optimizer (`AddItemsPanel.tsx`) where clicking "Quick Add Essentials" category chips mistakenly added generic items directly to the user's shopping cart instead of functioning as a category filter.
-
-## 🐛 The Problem
-Previously, the `AddItemsPanel` component tightly coupled the **category filtering state** with the **shopping cart (wishlist) state**. 
-- Clicking a category chip (e.g., "Milk") instantly dispatched an action to add a generic "Milk" item to the user's cart.
-- The matching product grid below was only visible if that generic item existed in the cart.
-- If a user wanted to buy a specific brand of milk, they would click the "Milk" category and then select the specific product, ending up with *both* the generic "Milk" and the specific product in their list.
-
-## 🛠️ Implementation Details
-
-We refactored `apps/web/src/pages/consumer/components/AddItemsPanel.tsx` to completely decouple category selection from cart mutation.
-
-**Key Changes:**
-1. **Introduced Local UI State**: Added `const [selectedCategory, setSelectedCategory] = useState<string | null>(null);` to track the currently active category filter explicitly.
-2. **Updated Chip Click Handlers**: The staple category chips now toggle the `selectedCategory` state (`setSelectedCategory(isSelected ? null : staple.name)`) instead of firing `addItem` or `removeItem` to the global wishlist context.
-3. **Refactored Product Grid Filtering**: The matching product grid now reads from the local `selectedCategory` state to filter `AVAILABLE_ITEMS`, rather than extracting active filters from the user's cart shape.
-4. **Preserved Custom Item Capabilities**: Created a dedicated `handleCustomAdd` function attached to the text input and 'Add' button. This ensures users can still type custom freeform items into their SmartCart without conflating it with the category browsing flow.
-5. **UI Polish**: Added a clear active state for the selected chip label and a dedicated "Clear Filter" action above the matching products grid.
-
-## ✅ Results
-- **No Cart Clutter**: Browsing categories no longer pollutes the user's SmartCart wishlist with generic items.
-- **Clearer UX**: The distinction between *filtering* the catalog and *adding* items to the list is explicitly defined.
-- **Deployed**: Built and successfully deployed to Firebase Hosting.
+## 5. Decision Ethics
+1. **No Shadow Ads**: Sponsored listings are treated as normal candidates; the engine will never select a more expensive sponsored item over a cheaper organic match.
+2. **True Cost**: Delivery and service fees are incorporated into the comparison engine to ensure "Savings" are calculated on the final checkout total, not just subtotal.

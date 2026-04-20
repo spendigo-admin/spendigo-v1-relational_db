@@ -1,274 +1,89 @@
 # Spendigo SmartCart — Database Schema
 
-**Last Updated**: 2026-01-12
+**Last Updated**: 2026-04-20
 **Database**: Cloud Firestore (NoSQL)
-**Status**: Beta (SmartCart Optimizer Implemented)
+**Status**: Production-Ready (v1.0)
 
 ---
 
 ## 1. Overview
-
-Spendigo uses **Cloud Firestore** with a **Hybrid Catalog Architecture** to balance global product standardization with merchant-specific inventory control. The schema is designed for the **SmartCart Optimizer**, ensuring robust product matching, tax calculations, and substitution logic.
-
----
-
-## 2. Collection Structure
-
-### 2.1 Core Catalog (SmartCart System)
-
-```
-/master_products            # Global Spendigo-managed product catalog
-/pending_master_products    # Auto-discovered products awaiting admin review
-/merchant_products          # Merchant-specific price & stock (Links to Master)
-/product_creation_requests  # Merchant requests for new master products
-/categories                 # Centralized category taxonomy
-/substitution_groups        # Groups of interchangeable products (e.g. Milk 2L)
-```
-
-### 2.2 User & Commerce
-
-```
-/users                      # User profiles and authentication
-/stores                     # Merchant store data
-/orders                     # Order documents
-/audit_logs                 # Security audit ledger
-/carts                      # Shopping carts
-/wishlists                  # User wishlists
-```
-
-### 2.3 Marketing (New)
-
-```
-/sponsored_listings         # Paid ad slots for top-of-list placement
-```
-
-### 2.4 Subcollections
-
-```
-/users/{userId}/notifications/{notifId} # In-app notifications
-/stores/{storeId}/flyers/{flyerId}      # Digital flyers
-```
-
-### 2.5 Platform Support
-
-```
-/settings                   # Platform-wide settings
-/surveys                    # Consumer surveys & polls
-/stats                      # Traffic analytics & counters
-/mail                       # Outbound emails (Trigger Email Extension)
-```
+Spendigo utilizes a **Hybrid Multi-Tenant Catalog Architecture**. This ensures a "Single Source of Truth" for global consumer products (Master Catalog) while allowing merchants complete autonomy over their local inventory, pricing, and hyper-local deals.
 
 ---
 
-## 3. Document Schemas (TypeScript Interfaces)
+## 2. Global Collections (Platform-Wide)
 
-### 3.1 Master Catalog (`/master_products/{masterId}`)
+### 2.1 `/master_products/{masterProductId}`
+The definitive registry for all consumer goods.
+- **Identification**: `product_name`, `brand_name`, `upc_gtin` (normalized barcode).
+- **Physical**: `is_sold_by_weight`, `net_quantity_value`, `net_quantity_unit`, `package_count`.
+- **Classification**: `category_id`, `product_type`, `storage_type`.
+- **Commerce**: `tax_category_id` (e.g., zero_rated_grocery), `suggested_retail_price`.
+- **SmartCart Logic**: `substitution_group_id` (links interchangeable items).
+- **Compliance**: `age_restricted`, `is_canadian_local`.
 
-**Purpose**: The "Source of Truth" for all products. Shared across all merchants.
+### 2.2 `/ads/{adId}`
+State-of-the-art ad campaign management for the Private Ad Network.
+- **Content**: `title`, `description`, `imageUrl`, `linkUrl`.
+- **Execution**: `startDate`, `endDate`, `status` (active/draft/archived), `priority`.
+- **Analytics**: `views` (Impressions), `clicks` (CTR Tracking), `createdAt`.
 
-```typescript
-interface MasterProduct {
-  master_product_id: string;     // e.g. "mp-coca-cola-355ml-1234"
-  
-  // Identification
-  product_name: string;
-  product_name_fr?: string;      // Bilingual support
-  brand_name: string;
-  brand_family_id?: string;
-  barcode: string;               // GTIN-12/13
-  upc_gtin: string;              // Normalized GTIN-14 (Indexed in Algolia)
-  
-  // Classification
-  category_id: string;           // e.g. "Dairy", "Snacks"
-  subcategory?: string;
-  product_type: 'food' | 'non-food';
-  storage_type: 'ambient' | 'refrigerated' | 'frozen';
-  is_sold_by_weight: boolean;
-  
-  // Tax & Economy
-  tax_category_id: string;       // e.g. "taxable_grocery", "zero_rated_grocery"
-  suggested_retail_price?: number;
-  
-  // Measurements
-  net_quantity_value?: number;
-  net_quantity_unit?: string;    // 'ml', 'g', 'kg', 'l'
-  package_count?: number;        // Multipack quantity (e.g. 12 cans)
-  unit_type?: 'weight' | 'volume' | 'count';
-  
-  // Media
-  primary_image_url: string;
-  secondary_image_urls?: string[];
-  short_description?: string;
-  
-  // SmartCart Logic
-  substitution_group_id?: string; // Links to /substitution_groups
-  nutrition?: Record<string, number>;
-  ingredients?: string;
-  allergens?: string[];
-  dietary_tags?: string[];        // 'gluten-free', 'vegan', etc.
-  
-  // Governance
-  status: 'active' | 'deprecated' | 'blocked';
-  verification_status: 'unverified' | 'verified' | 'manufacturer_verified';
-  created_at: FirebaseTimestamp;
-  updated_at: FirebaseTimestamp;
-}
-```
-
-### 3.2 Merchant Inventory (`/merchant_products/{merchantProductId}`)
-
-**Purpose**: Connects a store to a Master Product with local price/stock.
-
-```typescript
-interface MerchantProduct {
-  merchant_product_id: string;   // Format: "{storeId}_{masterId}"
-  merchant_id: string;           // Reference to /stores
-  master_product_id: string;     // Reference to /master_products
-  
-  // Local Overrides
-  price: number;
-  currency: 'CAD';
-  available_quantity: number;
-  merchant_sku?: string;         // Internal store code
-  
-  // Discounting
-  original_price?: number;
-  discount_label?: string;
-  
-  // Metadata
-  is_active: boolean;
-  created_at: FirebaseTimestamp;
-  updated_at: FirebaseTimestamp;
-}
-```
-
-### 3.3 Sponsored Listings (`/sponsored_listings/{adId}`)
-
-**Purpose**: Paid placement for products within specific categories.
-
-```typescript
-interface SponsoredListing {
-  id: string;
-  merchantId: string;
-  productId: string;        // merchant_product_id
-  categoryIds: string[];    // Where this ad appears
-  
-  // Timing
-  startDate: string;        // ISO Date
-  endDate: string;          // ISO Date
-  status: 'active' | 'scheduled' | 'expired';
-  
-  // Metrics
-  impressions: number;
-  clicks: number;
-  
-  // Billing
-  cost: number;
-  stripePaymentId?: string;
-}
-```
+### 2.3 `/audit_logs/{txnId}`
+**Forensic Security Ledger** with tamper-evident SHA-256 hash chaining.
+- **Context**: `timestamp`, `action` (e.g., AUTH_LOGIN, STORE_APPROVE), `resource`.
+- **Actor**: `id`, `email`, `ip` (masked in frontend).
+- **Integrity**: `prevHash` (Link to prior block), `hash` (SHA-256 of canonicalized payload).
 
 ---
 
-## 4. User & Order Schema
+## 3. Merchant Collections (Store-Specific)
 
-### 4.1 Users (`/users/{userId}`)
+### 3.1 `/stores/{storeId}`
+Root metadata and services for a merchant location.
+- **Identity**: `name`, `logo`, `address`, `phone`.
+- **Distance-Aware**: `coordinates` (lat/lng), `postalCode` (FSA-fallback), `maxDeliveryRadiusKm`.
+- **Policy**: `deliveryFee`, `freeDeliveryThreshold`, `pickupEnabled`, `deliveryEnabled`.
+- **State**: `subscriptionTier` (Core/Growth/Premium), `status` (active/pending/suspended).
 
-```typescript
-interface User {
-  id: string;                    // Firebase Auth UID
-  email: string;
-  name: string;
-  role: 'consumer' | 'merchant' | 'admin';
-  
-  // Merchant Fields
-  storeId?: string;              // Primary store ID
-  
-  // Preferences
-  fcmToken?: string;             // For Push Notifications
-}
-```
+### 3.2 `/stores/{storeId}/flyers/{flyerId}`
+- **Assets**: `imageUrl`, `name`.
+- **Validity**: `startDate`, `endDate`, `isActive`.
 
-### 4.2 Orders (`/orders/{orderId}`)
-
-```typescript
-interface Order {
-  id: string;
-  date: string;                  // ISO timestamp
-  status: 'placed' | 'preparing' | 'out_for_delivery' | 'delivered' | 'cancelled';
-  
-  // Parties
-  customerId: string;
-  storeId: string;
-  
-  // Money
-  subtotal: number;
-  tax: number;
-  deliveryFee: number;
-  serviceFee: number;
-  total: number;
-  paymentStatus: 'paid' | 'pending';
-  
-  // Items (Snapshot of MerchantProduct + MasterProduct at time of purchase)
-  items: Array<{
-    productId: string;           // merchant_product_id
-    masterId: string;
-    name: string;
-    price: number;
-    quantity: number;
-    image: string;
-    taxable: boolean;
-  }>;
-}
-```
+### 3.3 `/merchant_products/{merchantProductId}`
+Lightweight inventory linkage.
+- **Link**: `merchant_id`, `master_product_id`.
+- **Terms**: `price`, `available_quantity`, `merchant_sku`.
+- **Sale State**: `original_price`, `discount_label`, `is_canadian_local`.
 
 ---
 
-## 5. Security Rules (RBAC)
+## 4. Operational Collections
 
-**File**: `firestore.rules`
+### 4.1 `/product_creation_requests/{requestId}`
+Workflow for adding new SKU data to the Master Catalog.
+- **Request**: `requested_product_name`, `requested_barcode`, `requested_image_url`.
+- **Resolution**: `status` (pending/approved/rejected), `approved_master_product_id`.
 
-| Collection | Read Access | Write Access |
-|------------|-------------|--------------|
-| `master_products` | Public (All) | Admin Only (Merchants can create via Requests) |
-| `merchant_products` | Public (All) | Merchant (Own Scope) |
-| `pending_master_products` | Public (All) | Merchant (Create), Admin (Commit/Delete) |
-| `users` | Own Profile | Own Profile |
-| `stores` | Public | Admin (Create), Owner (Update) |
-| `orders` | Involved Parties | Involved Parties |
-| `sponsored_listings` | Public (Active) | System / Admin |
-| `audit_logs` | Admin | System (Append Only) |
+### 4.2 `/orders/{orderId}`
+Frozen snapshots of transaction data for historical accuracy.
+- **Parties**: `customerId`, `storeId`.
+- **Status**: `placed`, `preparing`, `out_for_delivery`, `delivered`.
+- **Financial**: `subtotal`, `tax`, `deliveryFee`, `serviceFee`, `total`.
 
 ---
 
-## 6. Migration Notes
+## 5. Security Rules (RBAC Enforcement)
 
-**Legacy Schema**: The original `catalog` collection is deprecated and replaced by the `master_products` + `merchant_products` split.
-
-**Key Changes**:
-- **Normalized Data**: Product details (name, image, nutrition) live in `master_products`.
-- **Lightweight Inventory**: `merchant_products` only contains price, stock, and ID links.
-- **Tax Accuracy**: Tax calculation now relies on `master_products.tax_category_id` (e.g. 'zero_rated_grocery') rather than a simple boolean.
-- **Substitution**: Supported via `substitution_group_id`.
-
----
-
-**For architecture overview, see**: [ARCHITECTURE.md](./ARCHITECTURE.md)  
-**For tech stack details, see**: [TECH_STACK.md](./TECH_STACK.md)
+| Scope | Read | Write | Logic |
+|-------|------|-------|-------|
+| `master_products` | Public | Admin Only | Global registry protection. |
+| `merchant_products` | Public | Owner Only | Verification of `request.auth.uid`. |
+| `audit_logs` | Admin Only | System | Append-only logic via `logEvent`. |
+| `stores` | Public | Admin/Owner | Subscription checks on ad/flyer features. |
 
 ---
 
-## 6. Migration Notes
-
-**Legacy Schema**: The original `catalog` collection is deprecated and replaced by the `master_products` + `merchant_products` split.
-
-**Key Changes**:
-- **Normalized Data**: Product details (name, image, nutrition) live in `master_products`.
-- **Lightweight Inventory**: `merchant_products` only contains price, stock, and ID links.
-- **Tax Accuracy**: Tax calculation now relies on `master_products.tax_category_id` (e.g. 'zero_rated_grocery') rather than a simple boolean.
-- **Substitution**: Supported via `substitution_group_id`.
-
----
-
-**For architecture overview, see**: [ARCHITECTURE.md](./ARCHITECTURE.md)  
-**For tech stack details, see**: [TECH_STACK.md](./TECH_STACK.md)
+## 6. Schema Integrity Notes
+1. **Normalization**: Master Products are never duplicated across stores; only `merchant_product` links are created.
+2. **Hard Snapshots**: Orders contain embedded product data (name/price) to prevent history distortion if a Master Product is edited or a Store changes its core price later.
+3. **Canonical Hashing**: Audit logs are hashed using sorted-key canonicalization to ensure identical payloads always yield the same cryptographic signature regardless of key order.

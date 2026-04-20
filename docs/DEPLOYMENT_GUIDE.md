@@ -1,115 +1,76 @@
 # Spendigo Production Deployment Guide
 
-**Date**: 2026-01-12
-**Target**: Firebase Hosting + Cloud Functions
-**Domain**: Custom GoDaddy Domain (spendigo.ca)
-**Stripe Mode**: Test (Sandbox)
-**Status**: Active Production Deployment
+**Last Updated**: 2026-04-20
+**Platform**: Firebase Full-Stack (Hosting + Functions + Firestore)
+**CI/CD**: GitHub Actions (main.yml)
+**Status**: Production v1.0
 
 ---
 
-## 🚀 Recommended Deployment (Auto-Deploy)
+## 1. CI/CD Pipeline (Automated)
+The primary deployment method is the automated GitHub Actions pipeline.
 
-We strongly recommend using the **CI/CD Pipeline** for all deployments to ensure consistency.
+### Workflow:
+1. **Trigger**: Any push or merge to the `main` branch.
+2. **Build**: Compiles the `apps/web` React bundle with production environment variables.
+3. **Validate**: Runs unit and integration tests (`npm test`).
+4. **Deploy (Hosting)**: Deploys the static assets to the `live` channel.
+5. **Deploy (Backend)**: Simultaneously deploys Cloud Functions, Firestore Security Rules, Indexes, and Storage Rules.
 
-### Method: Push to `main`
-Any code pushed to the `main` branch is automatically built and deployed to Firebase Hosting.
-
-```bash
-git add .
-git commit -m "feat: new production release"
-git push origin main
-```
-
-*See `docs/CI_CD_SETUP.md` for pipeline details and troubleshooting.*
+**Action**: `git push origin main`
 
 ---
 
-## 🛠️ Manual Deployment (Fallback)
+## 2. Infrastructure Setup (First-Time)
 
-Use this method for initial setup, troubleshooting, or deploying specific backend services (Rules/Functions) that are not fully automated in the basic pipeline.
+### Google Cloud & Firebase
+- **Project ID**: `spendigo-8540c`
+- **Location**: `us-central1`
+- **Service Account**: `FIREBASE_SERVICE_ACCOUNT_SPENDIGO_8540C` must be added to GitHub Secrets.
 
-### Phase 1: Pre-Deployment Checklist ✅
+### Essential Security Secrets
+All frontend and backend keys must be configured in **GitHub → Settings → Secrets & Variables → Actions**:
+- `VITE_GEMINI_API_KEY`: API access for Smart Insights.
+- `VITE_ALGOLIA_SEARCH_KEY`: Public key for proximity search.
+- `VITE_SENTRY_DSN`: Error tracking ingestion.
+- `STRIPE_SECRET_KEY`: (In Cloud Functions Secrets Manager).
 
-1. **Verify Project**:
-   ```bash
-   firebase use spendigo-8540c
-   ```
+---
 
-2. **Check Config**:
-   ```bash
-   firebase functions:config:get
-   ```
-   *Should list Stripe keys and webhook secrets.*
-
-### Phase 2: Deploy Backend Services
-
-Deploy functions and security rules first:
+## 3. Manual Deployment (Break-Glass Only)
+In cases where the CI/CD pipeline fails, use the following commands from the root:
 
 ```bash
-# 1. Deploy Cloud Functions (Stripe Webhooks, etc.)
-firebase deploy --only functions
+# 1. Login & Project Selection
+firebase login
+firebase use spendigo-8540c
 
-# 2. Deploy Firestore Security Rules & Indexes
-firebase deploy --only firestore
-```
-
-### Phase 3: Deploy Frontend (Hosting)
-
-```bash
-# 1. Build the production React bundle
+# 2. Build Web App
 npm run build
 
-# 2. Deploy to Firebase Hosting
-firebase deploy --only hosting
+# 3. Full Deployment
+firebase deploy
 ```
 
-**Hosting URL**: `https://spendigo.ca` (or `https://spendigo-8540c.web.app`)
+*Note: Individual deployments can be targeted using `--only functions`, `--only firestore`, etc.*
 
 ---
 
-## 🔧 Post-Deployment Verification
+## 4. Post-Deployment Verification
 
-### 1. Verify Domain
-Visit `https://spendigo.ca`.
-- ✅ SSL Lock icon is present.
-- ✅ Site loads without console errors.
+### 4.1 System Smoke Tests
+1. **SSL Verification**: Confirm `https://spendigo.ca` is serving over HTTPS with valid certificates.
+2. **Search Connectivity**: Run a search for "Milk" to verify the Algolia v5 connection.
+3. **Auth Flow**: Perform a test login to verify Firestore connection and RBAC rules.
+4. **Audit Logs**: Verify that the deployment action or post-deploy smoke test is visible in the **Forensic Audit Dashboard**.
 
-### 2. Verify Search (Algolia)
-- Go to the **Merchant Dashboard** > **Inventory**.
-- Type "Milk" in the global product search.
-- ✅ Results appear quickly (approx 30ms), confirming the Algolia index is connected.
-
-### 3. Verify Stripe Webhooks
-If you re-deployed functions, ensure the Webhook Secret matches:
-- **Stripe Dashboard**: Developers > Webhooks > `https://.../stripeWebhook` > Signing Secret (`whsec_...`)
-- **Firebase Config**:
-  ```bash
-  firebase functions:config:set stripe.webhook_secret="whsec_..."
-  firebase functions:config:get
-  ```
-
-### 4. Verify Mobile Assets
-If updating the mobile app wrapper:
-- Follow `docs/MOBILE_DEPLOYMENT.md` to sync changes to Android/iOS projects.
+### 4.2 Webhook Reconciliation
+Ensure the **Stripe Webhook Secret** (`whsec_...`) in the Stripe Dashboard matches the Secret stored in Google Cloud Secret Manager for the `stripeWebhook` function.
 
 ---
 
-## 🆘 Troubleshooting
-
-### "Permission Denied"
-- Ensure you are logged in: `firebase login`
-- Check project permissions in Firebase Console.
-
-### "Build Failed"
-- Run `npm run build` locally to see TypeScript errors.
-- Fix errors before attempting deploy.
-
-### Site cached / Old version?
-- Hard refresh (`Cmd+Shift+R`).
-- Check `firebase.json` cache headers.
-
----
-
-**Prepared By**: Shahbaz + AI Development Team
-**Last Updated**: 2026-01-12
+## 5. Rollback Procedure
+If a production issue is detected:
+1. **Hosting**: Use the Firebase Console to "Rollback" to a previous version (instant).
+2. **Backend**: Revert the `main` branch in Git and allow the CI/CD pipeline to re-deploy.
+3. **Database**: Point-in-time recovery is available via Firestore scheduled backups (Growth/Premium plans only).

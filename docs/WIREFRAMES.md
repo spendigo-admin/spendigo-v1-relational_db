@@ -1,95 +1,93 @@
 # Spendigo SmartCart — UI Wireframes
 
-**Last Updated**: 2026-01-12
-**Status**: Implemented (Beta)
-**Design System**: Tailwind CSS (Custom Theme: Bright White & Blue)
+**Last Updated**: 2026-04-20
+**Status**: Production-Ready (v1.0)
+**Design System**: Premium Vanilla CSS / React (Emerald Green & Primary Blue Aesthetic)
+**Brand Assets**: Custom SVG `LogoIcon` (Scalable Shopping Cart)
 
 ## 1. Core User Flows (Mermaid)
 
-### 1.1 SmartCart Optimization Flow
-*How the user optimizes their generic recurring grocery list.*
+### 1.1 SmartCart Optimization & Proximity Flow
+*How the user optimizes their trip and receives geofenced alerts.*
 ```mermaid
 graph TD
     A[User Inputs: "Milk", "Eggs"] --> B[Wishlist State]
-    B -->|Frontend Auto-Match| C{Fuzzy Matcher}
+    B -->|AI Fuzzy Matcher| C{Master Catalog Match}
     C -->|Found| D[Display Specific Products]
     C -->|Not Found| B
-    D -->|Click 'Optimize Trip'| E[Trip Optimizer Engine]
-    E --> F{Compare Scenarios}
-    F --> G[Scenario A: Best Split (Lowest Price)]
-    F --> H[Scenario B: Best Single Store (Convenience)]
-    G --> I[User Selects Preference]
-    H --> I
-    I --> J[Bulk Add to Cart]
+    D -->|User Moves Near Store| E[Geo-fencing Trigger]
+    E --> F[Push Notification: "Milk $2.99 at FreshMart"]
+    F --> G[Audible 'Ding' Alert]
+    G --> H[User Adds to Trolley]
 ```
 
-### 1.2 Merchant Product Management (Hybrid Catalog)
-*How a merchant adds inventory.*
+### 1.2 Merchant Onboarding & Location Verification
+*How a merchant registers and verifies proximity reach.*
 ```mermaid
 graph TD
-    A[Merchant Dashboard] --> B[My Products]
-    B -->|Click Add| C[Global Search Modal (Algolia)]
-    C -->|Type Name/Barcode| D{Found in Master?}
-    D -->|Yes| E[Select & Set Price]
-    D -->|No| F[Click 'Request New']
-    F --> G[Fill Request Form]
-    G --> H[Pending Admin Approval]
-    E --> I[Live in Store]
+    A[Partner With Us] --> B[Multi-Step Registration]
+    B --> C[Store Address Input]
+    C -->|Automated Geocoding| D{Location Verified}
+    D --> E[Proximity Dashboard]
+    E --> F[Set Alert Radius (1-10km)]
+    F --> G[Upload Flyers/Deals]
+    G --> H[Live on Marketplace]
 ```
 
 ## 2. Key Screen Mockups
 
 ### 2.1 Consumer: SmartCart Wishlist (`/smartcart`)
 *   **Header**: "Smart List Optimizer"
-*   **Input Area**: "Add a generic item..." (e.g. "Bread") - *Auto-matches to available inventory*.
+*   **Input Area**: "Add a generic item..." (e.g. "Bread") - *Auto-matches to 10,000+ Master items*.
 *   **Main List**: 
-    *   Displays generic terms ("Milk") with resolved specific products underneath ("Dairyland 2% - $4.99").
-    *   **Edit Control**: Click to swap the specific product match.
-*   **Smart Insights Panel (Right/Bottom)**: 
-    *   **"Trip Optimizer"**: Toggle between:
-        *   **Best Split**: "Save $5.20 by visiting 2 stores."
-        *   **Best Single Store**: "Pay $2.00 more to buy everything at FreshMart."
-*   **CTA**: "Add All to Cart".
+    *   Displays generic terms with resolved specific products.
+    *   **Canadian Badge**: 🍁 markers for local products.
+*   **Insights Panel**: 
+    *   **"Trip Optimizer"**: Toggle between **Best Split (Savings)** and **Best Single Store (Convenience)**.
+*   **CTA**: "Add All to Trolley".
 
-### 2.2 Merchant: Product Editor (`/merchant/products`)
-*   **Layout**: Split view.
-*   **Left (Locked)**: Master Data (Image, Name, Description, Nutrition).
-    *   *Note*: "This data is managed by Spendigo".
-*   **Right (Editable)**: Store Data.
-    *   Price Input (Large).
-    *   Inventory Spinner.
-    *   Status Toggle (Active/Hidden).
-*   **Footer**: "Save Changes" button.
+### 2.2 Consumer: Premium Store Profile (`/store/:id`)
+*   **Hero**: High-impact Store Banner + Glassmorphism Store Identity Card.
+*   **Retail Info Board**: 
+    *   Rating (Shopper Voice) • Delivery Time • Delivery Fee • "Certified by Spendigo🍁".
+*   **Sticky Navigation Tabs**: 
+    *   **🛒 Store Items**: Categorized grid/list view with "Hot Deal" stickers.
+    *   **📰 Weekly Flyer**: Full retail flyer view with "Days Left" countdown.
+    *   **🔥 Flash Deals**: Validated time-limited offers with animated pulse effects.
+    *   **⭐ Shopper Voice**: Advanced rating distribution and customer feedback.
+    *   **ℹ️ Store Info**: Location, Delivery boundaries, and specific Store Hours.
 
-### 2.3 Admin: Master Catalog Grid (`/admin/catalog`)
-*   **Tool**: Data Grid (React Table).
-*   **Columns**: Image (Thumbnail), Name, Brand, Barcode, # Stores, Status.
-*   **Actions (Row)**: Edit, Merge, Block.
-*   **Filter Bar**: "Pending Verification", "Missing Image", "Flagged".
-*   **Bulk Actions**: "Export CSV", "Update Tax Category".
+### 2.3 Merchant: Proximity Dashboard (`/merchant/dashboard`)
+*   **Visualizer**: Map-based view of the store's reach.
+*   **Geocode Status**: 🟢 Verified (Automated lat/long resolution).
+*   **Alert Controller**: Slider to adjust notify-radius (e.g. 2.5km boundary).
+*   **Market Benchmarks**: "Average Market Price" vs. Store Price visualization.
+*   **Inventory Proof**: Camera-based barcode scanner interface for rapid catalog linking.
 
-### 2.4 Consumer: Store Profile (`/store/:id`)
-*   **Hero**: Store Banner Image + Avatar.
-*   **Stats**: "0.5km away" • "Delivery: $3.99" • "Rating: 4.8★".
-*   **Tabs**: "Flyers" (PDF Viewer), "Deals" (Red Grid), "Aisles" (Categories).
-*   **Search**: In-store search bar ("Search FreshMart...").
+### 2.4 Admin: Master Catalog Manager (`/admin/catalog`)
+*   **Tabs**:
+    *   **Master Products**: Searchable grid of global product IDs.
+    *   **Creation Requests**: Workflow for merchant-submitted new products with "Confidence" scores.
+    *   **Pending Review**: Staging area for automated discoveries.
+*   **Action Drawer**: "Approve & Activate" workflow with integrity checks.
+*   **Smart Resolver**: UPC/GTIN Ingester tool for Open Food Facts integration.
 
-### 2.5 Checkout: Split Payment (`/checkout`)
-*   **Header**: "Secure Checkout".
-*   **Order Breakdown**:
-    *   **Store A (FreshMart)**: 3 items - $12.50.
-    *   **Store B (Bakery)**: 1 item - $5.00.
-*   **Payment Method**: Stripe Elements (Card / Google Pay).
-*   **Disclaimer**: "You will see two separate charges on your statement."
-*   **Submit**: "Pay $17.50".
+### 2.5 Admin: Security Audit Ledger (`/admin/audit`)
+*   **Governance**: Tamper-evident, SOC2-ready event logging.
+*   **Forensic View**: 
+    *   Trace IDs • Masked IPs • SHA-256 Hash Chaining.
+    *   "Verify Integrity" tool (Visual validation of the ledger chain).
+*   **Compliance Tools**: 
+    *   JSON Export + Checksum files.
+    *   PII Redaction status indicators.
 
-### 2.6 Global Search (Header)
-*   **Input**: "Algolia Autocomplete"
-*   **Results Dropdown**:
-    *   **Instant Result**: Shows thumbnail, Name, Brand.
-    *   **Highlights**: Matching text is bolded (e.g. "**Coca**-Cola").
-    *   **Speed**: < 50ms response.
+### 2.6 Multi-Step Registration (`/register`)
+*   **Layout**: Progress-tracked interactive flow (Account -> Delivery).
+*   **Social**: Google & Facebook Auth integrations.
+*   **Aesthetics**: Glassmorphism cards with vibrant gradients.
 
-## 3. Responsive Behavior
-*   **Mobile**: Bottom Navigation Bar (Home, Search, Cart, Profile).
-*   **Desktop**: Top Navigation Bar with Mega-Menu for Categories. Sidebar for Filters.
+## 3. Responsive & Interactive Experience
+*   **Mobile Mobile-First**: Bottom Navigation (Home, Search, Trolley, Profile).
+*   **Micro-Animations**: Pulse effects for deals, slide-in panels, and scale-on-hover retail cards.
+*   **Soundscape**: Audible "ding" notifications for order alerts and price drops.
+*   **Performance**: Algolia-powered search results in < 50ms.
