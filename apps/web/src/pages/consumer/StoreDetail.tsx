@@ -679,9 +679,9 @@ const StoreDetail: React.FC = () => {
                                 onClick={() => setActiveTab(tab.id as any)}
                                 className={`px-5 py-2.5 rounded-2xl text-[10px] md:text-xs font-black tracking-widest transition-all whitespace-nowrap flex items-center gap-2 relative border-2 ${activeTab === tab.id 
                                     ? 'bg-gray-900 text-white border-gray-900 shadow-xl -translate-y-0.5' 
-                                    : 'bg-white text-gray-400 border-gray-50 hover:border-gray-200'}`}
+                                    : 'bg-white text-gray-600 border-gray-100 hover:border-gray-300 hover:text-gray-900'}`}
                             >
-                                <span className={activeTab === tab.id ? 'scale-110' : 'grayscale opacity-70'}>{tab.icon}</span>
+                                <span className={activeTab === tab.id ? 'scale-110' : 'opacity-80'}>{tab.icon}</span>
                                 {tab.label}
                                 {tab.badge && (
                                     <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-teal-600 rounded-full border-2 border-white animate-pulse"></span>
