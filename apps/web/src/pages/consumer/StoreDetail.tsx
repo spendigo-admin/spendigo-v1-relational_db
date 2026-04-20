@@ -527,7 +527,7 @@ const StoreDetail: React.FC = () => {
     const { products: catalogProducts, loading: loadingProducts } = useStoreProducts(id || '');
 
     // Check for initial tab in state
-    const [activeTab, setActiveTab] = useState<'products' | 'flyer' | 'offers' | 'reviews'>((location.state as any)?.initialTab || 'products');
+    const [activeTab, setActiveTab] = useState<'products' | 'flyer' | 'offers' | 'reviews' | 'info'>((location.state as any)?.initialTab || 'products');
     const [activeCategory, setActiveCategory] = useState('All');
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
@@ -671,7 +671,8 @@ const StoreDetail: React.FC = () => {
                             { id: 'products', label: 'Store Items', icon: '🛒' },
                             { id: 'flyer', label: 'Weekly Flyer', icon: '📰', badge: isFlyerActive(store.flyer) },
                             { id: 'offers', label: 'Flash Deals', icon: '🔥', badge: filterActiveDeals([...(store.oneDayOffers || []), ...(store.saleItems || [])]).length > 0 },
-                            { id: 'reviews', label: 'Shopper Voice', icon: '⭐' }
+                            { id: 'reviews', label: 'Shopper Voice', icon: '⭐' },
+                            { id: 'info', label: 'Store Info', icon: 'ℹ️' }
                         ].map(tab => (
                             <button
                                 key={tab.id}
@@ -966,6 +967,62 @@ const StoreDetail: React.FC = () => {
                             </div>
                         </div>
                         <ReviewList targetId={store.id} targetType="store" />
+                    </div>
+                </div>
+            )}
+
+            {activeTab === 'info' && (
+                <div className="p-4 max-w-4xl mx-auto animate-fade-in space-y-6">
+                    <div className="bg-white rounded-3xl p-6 md:p-10 shadow-xl border border-gray-100">
+                        <h2 className="text-3xl font-black text-gray-900 mb-8 italic tracking-tight">About {store.name}</h2>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            {/* Location Section */}
+                            <div className="bg-gray-50 rounded-2xl p-6 border border-gray-100 hover:shadow-md transition-shadow">
+                                <h3 className="text-sm font-black tracking-widest text-gray-400 mb-4 flex items-center gap-2">
+                                    <span className="text-xl">📍</span> LOCATION
+                                </h3>
+                                <p className="text-lg font-black text-gray-900 mb-1">{store.address}</p>
+                                <p className="text-sm font-bold text-gray-600">{store.city}, {store.province}</p>
+                                <p className="text-sm font-bold text-gray-600">{store.postalCode}</p>
+                            </div>
+
+                            {/* Delivery & Fees */}
+                            <div className="bg-gray-50 rounded-2xl p-6 border border-gray-100 hover:shadow-md transition-shadow">
+                                <h3 className="text-sm font-black tracking-widest text-gray-400 mb-4 flex items-center gap-2">
+                                    <span className="text-xl">🚚</span> DELIVERY SERVICES
+                                </h3>
+                                <div className="space-y-4">
+                                    <div className="flex justify-between items-center border-b border-gray-200 pb-3">
+                                        <span className="font-bold text-gray-700 text-sm">Delivery Available</span>
+                                        <span className="font-black text-teal-700 bg-teal-100 px-3 py-1 rounded-full text-[10px] tracking-widest shadow-sm">YES</span>
+                                    </div>
+                                    <div className="flex justify-between items-center border-b border-gray-200 pb-3">
+                                        <span className="font-bold text-gray-700 text-sm">Estimated Time</span>
+                                        <span className="font-black text-gray-900">{store.deliveryTime || '30-45 MIN'}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center">
+                                        <span className="font-bold text-gray-700 text-sm">Delivery Fee</span>
+                                        <span className="font-black text-gray-900">{store.deliveryFee || 'Free'}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Opening Hours */}
+                            <div className="bg-gray-50 rounded-2xl p-6 border border-gray-100 md:col-span-2 hover:shadow-md transition-shadow">
+                                <h3 className="text-sm font-black tracking-widest text-gray-400 mb-4 flex items-center gap-2">
+                                    <span className="text-xl">⏰</span> STORE HOURS
+                                </h3>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-4">
+                                    {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map((day, idx) => (
+                                        <div key={day} className="flex justify-between items-center text-sm border-b border-gray-200 pb-2 sm:border-0 sm:pb-0">
+                                            <span className="font-bold text-gray-500 w-12">{day.substring(0, 3)}</span>
+                                            <span className="font-black text-gray-900">{store.hours?.[day] || '8:00 AM - 10:00 PM'}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             )}
