@@ -32,7 +32,7 @@ const MerchantOnboarding: React.FC = () => {
         city: (user as any)?.addresses?.[0]?.city || '',
         province: (user as any)?.addresses?.[0]?.province || 'ON',
         postalCode: (user as any)?.addresses?.[0]?.postalCode || '',
-        businessType: 'Grocery Store',
+        businessType: (user as any)?.businessType || 'Grocery Store',
         agreedToTerms: false
     });
 

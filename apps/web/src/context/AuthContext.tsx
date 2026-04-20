@@ -24,6 +24,7 @@ export interface User {
     storeId?: string;
     storeName?: string;
     businessRegistrationNumber?: string;
+    businessType?: string;
     merchantRole?: 'OWNER' | 'MANAGER' | 'STAFF' | 'MARKETING';
     subscriptionTier?: 'free' | 'core' | 'growth';
     subscriptionStatus?: 'active' | 'past_due' | 'canceled' | 'unpaid';
@@ -219,7 +220,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
     };
 
-    const register = async (userData: Partial<User> & { password: string; street?: string; city?: string; province?: string; postalCode?: string; businessRegistrationNumber?: string }): Promise<boolean> => {
+    const register = async (userData: Partial<User> & { password: string; street?: string; city?: string; province?: string; postalCode?: string; businessRegistrationNumber?: string; businessType?: string }): Promise<boolean> => {
         try {
             const userCredential = await createUserWithEmailAndPassword(auth, userData.email!, userData.password);
             const uid = userCredential.user.uid;
@@ -255,6 +256,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 newUser.subscriptionTier = 'free';
                 if (userData.storeName) newUser.storeName = userData.storeName;
                 if (userData.businessRegistrationNumber) newUser.businessRegistrationNumber = userData.businessRegistrationNumber;
+                if (userData.businessType) newUser.businessType = userData.businessType;
             }
 
             // Common Address Processing (Consumer & Merchant)

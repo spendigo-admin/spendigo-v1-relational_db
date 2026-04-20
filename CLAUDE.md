@@ -98,6 +98,10 @@ Merchant sub-roles grant specific permissions checked via `can(permission)` from
 
 Admin sub-roles: SUPER_ADMIN (admin:all), MODERATOR (admin:users, admin:stores), SUPPORT (admin:users), AUDITOR (admin:audit). All permission gates are client-side; server-side enforcement is in `firestore.rules`.
 
+**Audit log integrity** (`AuditContext.tsx`): Audit entries are chained via SHA-256 — each record hashes its own payload concatenated with the previous record's hash (blockchain-lite). Tampering with any historical entry breaks the chain. Verified by the AUDITOR role in the admin portal.
+
+**Barcode scanning**: `html5-qrcode` is the in-browser QR/barcode scanner used on product lookup flows. Barcode deduplication uses GTIN variant generation (8/12/13/14-digit) in `useCatalog.ts`.
+
 **Key hooks:**
 - [apps/web/src/hooks/useOptimizedWishlist.ts](apps/web/src/hooks/useOptimizedWishlist.ts) — Core SmartCart engine (730+ lines). Real-time deal sync from `stores/{storeId}/deals` subcollection, effective price calculation with deal hierarchy (flash sale → standard sale → flyer → regular price), fuzzy matching fallback, distance filtering via Haversine + FSA, and full optimizer pipeline. Persists store selections to localStorage (`smartcart_selections_v1`).
 - [apps/web/src/hooks/useCatalog.ts](apps/web/src/hooks/useCatalog.ts) — Catalog management (1400+ lines). Master/merchant product CRUD, Algolia search with geo-filtering, barcode deduplication via GTIN variant generation (8/12/13/14-digit), Open Food Facts UPC lookup (tries multiple endpoints for CORS), `bulkAddMerchantProducts` for CSV import, pending product workflow for admin approval.
