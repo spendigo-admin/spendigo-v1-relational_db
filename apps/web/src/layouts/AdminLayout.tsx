@@ -22,8 +22,13 @@ const AdminLayout: React.FC = () => {
 
         if (user.role !== 'admin') {
             window.location.href = '/';
+            return;
         }
-    }, [user, location.pathname]);
+
+        if (!user.mfaEnrolled && location.pathname !== '/admin/mfa-setup') {
+            navigate('/admin/mfa-setup');
+        }
+    }, [user, location.pathname, navigate]);
 
     if (!user || user.role !== 'admin') {
         return null;

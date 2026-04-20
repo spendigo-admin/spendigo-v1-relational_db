@@ -32,6 +32,7 @@ export interface User {
     // Admin specific
     adminRole?: 'SUPER_ADMIN' | 'SUPPORT' | 'MODERATOR' | 'AUDITOR';
     emailVerified?: boolean;
+    mfaEnrolled?: boolean;
     // Consumer specific
     address?: string;
     postalCode?: string;
@@ -124,6 +125,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const processUserData = async (uid: string, data: any, emailVerified: boolean) => {
         try {
             let finalRole = data.role || 'consumer';
+            let mfaEnrolled = false;
             let finalAdminRole = data.adminRole;
 
             // --- ISOLATED STAFF CHECK ---
@@ -134,6 +136,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 if (staffData.status === 'active') {
                     finalRole = 'admin';
                     finalAdminRole = staffData.role;
+                }
+            }
+
+            if (finalRole === 'admin') {
+                const currentUser = auth.currentUser;
+                if (currentUser) {
+                    const { multiFactor } = await import('firebase/auth');
+                    mfaEnrolled = multiFactor(currentUser).enrolledFactors.length > 0;
                 }
             }
 
@@ -188,6 +198,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 merchantRole: merchantRole,
                 adminRole: finalAdminRole,
                 emailVerified: emailVerified,
+                mfaEnrolled: mfaEnrolled
             } as User);
         } catch (error) {
             console.error('Error processing user data:', error);
@@ -198,7 +209,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const login = async (email: string, password: string): Promise<boolean> => {
         try {
-            setLoading(true);
             const userCredential = await signInWithEmailAndPassword(auth, email, password);
             // Explicitly process profile here to ensure 'user' state is populated before login returns true
             const userDoc = await getDoc(doc(db, 'users', userCredential.user.uid));
@@ -212,11 +222,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             }
 
             return true;
-        } catch (error) {
+        } catch (error: any) {
+            if (error.code === 'auth/multi-factor-auth-required') {
+                throw error;
+            }
             console.error('Login failed:', error);
             return false;
-        } finally {
-            setLoading(false);
         }
     };
 

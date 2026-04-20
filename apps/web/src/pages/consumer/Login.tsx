@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import '../../styles/design-system.css';
 
@@ -7,6 +7,7 @@ import { useAudit } from '../../context/AuditContext';
 import { DEMO_USERS } from '../../data/demoUsers';
 import { useTranslation } from 'react-i18next';
 import SEO from '../../components/SEO';
+import { auth } from '../../lib/firebase';
 
 const Login = () => {
     const navigate = useNavigate();
@@ -18,6 +19,19 @@ const Login = () => {
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [mfaResolver, setMfaResolver] = useState<any>(null);
+    const [mfaCode, setMfaCode] = useState('');
+    const [verificationId, setVerificationId] = useState('');
+    const recaptchaVerifier = useRef<any>(null);
+
+    useEffect(() => {
+        return () => {
+            if (recaptchaVerifier.current) {
+                recaptchaVerifier.current.clear();
+                recaptchaVerifier.current = null;
+            }
+        };
+    }, []);
 
     // Redirect immediately when user is authenticated
     useEffect(() => {
@@ -56,15 +70,52 @@ const Login = () => {
                 await logEvent('AUTH_LOGIN_FAILURE', { email: email.toLowerCase(), reason: 'invalid_credentials' }, 'auth/login');
                 setError(t('loginFailed'));
             }
-        } catch (err) {
+        } catch (err: any) {
             console.error(err);
+            if (err?.code === 'auth/multi-factor-auth-required') {
+                setIsLoading(true);
+                import('firebase/auth').then(async ({ getMultiFactorResolver, RecaptchaVerifier }) => {
+                    try {
+                        const resolver = getMultiFactorResolver(auth, err);
+                        setMfaResolver(resolver);
+                        
+                        if (!recaptchaVerifier.current) {
+                            recaptchaVerifier.current = new RecaptchaVerifier(auth, 'mfa-recaptcha-login', { size: 'invisible' });
+                        }
+                    } catch (e) {
+                         console.error("MFA Resolver setup error:", e);
+                         setError('Failed to setup MFA. Please try again.');
+                    } finally {
+                        setIsLoading(false);
+                    }
+                });
+                return;
+            }
             setError(t('invalidCredentials'));
         } finally {
             setIsLoading(false);
         }
     };
 
-    if (isLoading) return <div className="p-10 text-center">{t('loading')}</div>;
+    const handleMfaSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!mfaResolver) return;
+        setError('');
+        setIsLoading(true);
+        try {
+            const { PhoneAuthProvider, PhoneMultiFactorGenerator } = await import('firebase/auth');
+            const credential = PhoneAuthProvider.credential(verificationId, mfaCode);
+            const assertion = PhoneMultiFactorGenerator.assertion(credential);
+            await mfaResolver.resolveSignIn(assertion);
+            // Resolving the sign-in triggers onAuthStateChanged, navigating automatically
+        } catch (err: any) {
+            console.error(err);
+            setError('Invalid SMS code.');
+            setIsLoading(false);
+        }
+    };
+
+    // if (isLoading) return <div className="p-10 text-center">{t('loading')}</div>;
 
     return (
         <div className="min-h-screen flex items-center justify-center p-4 bg-[var(--surface-0)]">
@@ -73,7 +124,65 @@ const Login = () => {
                 <h1 className="text-3xl font-bold mb-2 text-[var(--brand-primary)]">{t('welcomeBack')}</h1>
                 <p className="text-[var(--text-muted)] mb-8">{t('signInToAccess')}</p>
 
-                <div className="space-y-3 mb-6 animate-fade-in">
+                {/* Recaptcha hidden container */}
+                <div id="mfa-recaptcha-login"></div>
+
+                {mfaResolver && !verificationId ? (
+                    <form onSubmit={async (e) => {
+                        e.preventDefault();
+                        if (!mfaResolver || !recaptchaVerifier.current) return;
+                        setError('');
+                        setIsLoading(true);
+                        try {
+                            const { PhoneAuthProvider } = await import('firebase/auth');
+                            const hint = mfaResolver.hints[0];
+                            const phoneProvider = new PhoneAuthProvider(auth);
+                            const vid = await phoneProvider.verifyPhoneNumber({
+                                multiFactorHint: hint,
+                                session: mfaResolver.session
+                            }, recaptchaVerifier.current);
+                            setVerificationId(vid);
+                        } catch (err: any) {
+                            console.error(err);
+                            setError(err.message || 'Failed to dispatch SMS.');
+                        } finally {
+                            setIsLoading(false);
+                        }
+                    }} className="space-y-4">
+                        <p className="text-sm text-[var(--text-main)] mb-4">Your account requires two-factor authentication.</p>
+                        <p className="text-xs text-[var(--text-muted)] mb-4">A text message will be sent to your number ending in {mfaResolver.hints[0]?.phoneNumber?.slice(-4)}</p>
+                        {error && <p className="text-red-500 text-sm text-center bg-red-50 p-2 rounded">{error}</p>}
+                        <button disabled={isLoading} type="submit" className="w-full py-4 rounded-[var(--radius-md)] bg-white border border-[var(--glass-border)] text-[var(--brand-primary)] font-bold shadow-sm transition-all text-sm">
+                            {isLoading ? 'Sending SMS...' : 'Send SMS Code'}
+                        </button>
+                    </form>
+                ) : mfaResolver && verificationId ? (
+                    <form onSubmit={handleMfaSubmit} className="space-y-4">
+                        <div>
+                            <label className="block text-sm font-medium mb-1 text-[var(--text-main)]">SMS Verification Code</label>
+                            <input
+                                type="text"
+                                required
+                                placeholder="000 000"
+                                maxLength={6}
+                                className="w-full text-center text-2xl tracking-widest p-4 rounded-[var(--radius-sm)] bg-[var(--surface-1)] border border-[var(--glass-border)] text-[var(--text-main)] focus:border-[var(--brand-primary)] outline-none font-mono"
+                                value={mfaCode}
+                                onChange={e => setMfaCode(e.target.value)}
+                            />
+                            {mfaResolver.hints.length > 0 && (
+                                <p className="text-xs mt-4 text-[var(--text-muted)] text-center">
+                                    A verification code was sent to your phone ending in {mfaResolver.hints[0].phoneNumber?.slice(-4)}
+                                </p>
+                            )}
+                        </div>
+                        {error && <p className="text-red-500 text-sm text-center bg-red-50 p-2 rounded">{error}</p>}
+                        <button disabled={isLoading || !verificationId} type="submit" className="w-full py-4 rounded-[var(--radius-md)] bg-[var(--brand-primary)] text-white font-bold hover:brightness-110 shadow-lg shadow-[var(--brand-primary)]/20 transition-all uppercase tracking-wide text-sm">
+                            {isLoading || !verificationId ? 'Verifying...' : 'Verify Code'}
+                        </button>
+                    </form>
+                ) : (
+                    <>
+                        <div className="space-y-3 mb-6 animate-fade-in">
                     <button
                         type="button"
                         onClick={async () => {
@@ -143,6 +252,8 @@ const Login = () => {
                         {t('signIn')}
                     </button>
                 </form>
+                    </>
+                )}
 
 
 

@@ -78,9 +78,8 @@ While the platform is highly secure, the following Gaps/Risks remain to be addre
 - **Risk**: Cloud Functions and Firestore endpoints could be abused by automated bots.
 - **Action Required**: Enforce App Check (reCAPTCHA Enterprise) once baseline production traffic is established. Currently initialized on client, but not enforced on backend.
 
-### 5.3 Admin Authentication (Gap identified)
-- **Risk**: Compromise of an Admin account yields total platform control.
-- **Action Required**: Enforce Multi-Factor Authentication (MFA) via Firebase Auth for all users with the `admin` role.
+### 5.3 Admin Authentication (✅ Resolved)
+- **Status**: Multi-Factor Authentication (MFA) via TOTP Authenticator is strictly enforced for all `admin` accounts. Non-enrolled admins are hard-routed to a mandatory setup page before being allowed to access the Dashboard.
 
 ---
 

@@ -94,6 +94,7 @@ const AdminMasterCatalog = lazyWithRetry(() => import('./pages/admin/MasterCatal
 const AdminAdManager = lazyWithRetry(() => import('./pages/admin/AdManager'));
 const AdminSurveyManager = lazyWithRetry(() => import('./pages/admin/SurveyManager'));
 const AdminSystemTools = lazyWithRetry(() => import('./pages/admin/SystemTools'));
+const AdminMFAEnrollment = lazyWithRetry(() => import('./pages/admin/MFAEnrollment'));
 
 import { useState, useEffect } from 'react';
 import { doc, onSnapshot } from 'firebase/firestore';
@@ -229,6 +230,7 @@ function App() {
                                                                     <Route path="/admin/surveys" element={<AdminSurveyManager />} />
                                                                     <Route path="/admin/tools" element={<AdminSystemTools />} />
                                                                     <Route path="/admin/careers" element={<CareerManagement />} />
+                                                                    <Route path="/admin/mfa-setup" element={<AdminMFAEnrollment />} />
                                                                 </Route>
 
                                                                     {/* 404 Catch All */}
