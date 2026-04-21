@@ -220,7 +220,7 @@ const Profile: React.FC = () => {
             </div>
 
             {/* Tabs */}
-            <div className="border-b border-[var(--glass-border)] bg-white sticky top-14 z-30">
+            <div className="border-b border-[var(--glass-border)] bg-white sticky top-[calc(4rem+var(--safe-area-top))] z-30">
                 <div className="max-w-3xl mx-auto flex">
                     {(['account', 'addresses', 'orders', 'wishlist'] as const).map(tab => (
                         <button
@@ -235,10 +235,10 @@ const Profile: React.FC = () => {
             </div>
 
             {/* Content */}
-            <div className="max-w-3xl mx-auto p-4">
+            <div className="max-w-3xl mx-auto p-4 min-h-[60vh]">
                 {/* ACCOUNT TAB */}
                 {activeTab === 'account' && (
-                    <div className="bg-white rounded-xl border border-[var(--glass-border)] p-6">
+                    <div className="bg-white rounded-xl border border-[var(--glass-border)] p-6 animate-fade-in">
                         <div className="flex items-center justify-between mb-6">
                             <h2 className="text-lg font-bold text-[var(--text-main)]">Account Information</h2>
                             {!editingProfile && (
@@ -513,7 +513,7 @@ const Profile: React.FC = () => {
 
                 {/* ADDRESSES TAB */}
                 {activeTab === 'addresses' && (
-                    <div className="space-y-4">
+                    <div className="space-y-4 animate-fade-in">
                         {profile.addresses.map(addr => (
                             <div key={addr.id} className={`bg-white rounded-xl border p-4 ${addr.isDefault ? 'border-[var(--brand-primary)]' : 'border-[var(--glass-border)]'}`}>
                                 <div className="flex items-start justify-between">
@@ -612,7 +612,7 @@ const Profile: React.FC = () => {
 
                 {/* ORDERS TAB */}
                 {activeTab === 'orders' && (
-                    <div className="space-y-4">
+                    <div className="space-y-4 animate-fade-in min-w-0 overflow-hidden">
                         {orders.length === 0 ? (
                             <div className="text-center py-12">
                                 <p className="text-4xl mb-4">📦</p>
@@ -669,7 +669,7 @@ const Profile: React.FC = () => {
 
                 {/* WISHLIST TAB */}
                 {activeTab === 'wishlist' && (
-                    <div className="space-y-4">
+                    <div className="space-y-4 animate-fade-in">
                         <div className="flex items-center justify-between mb-4">
                             <h2 className="text-lg font-bold text-[var(--text-main)]">My Wishlist</h2>
                             {wishlistItems.length > 0 && (

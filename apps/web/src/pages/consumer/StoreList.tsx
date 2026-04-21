@@ -366,10 +366,10 @@ const StoreList: React.FC = () => {
                                 <div
                                     key={store.id}
                                     onClick={() => navigate(`/store/${store.id}`)}
-                                    className={`group bg-white rounded-[2.5rem] border-2 border-gray-50 shadow-sm hover:shadow-2xl hover:-translate-y-2 lg:hover:w-[102%] lg:hover:-ml-[1%] transition-all duration-500 cursor-pointer overflow-hidden relative ${viewMode === 'list' ? 'flex flex-row h-48' : 'min-h-[380px]'}`}
+                                    className={`group bg-white rounded-[2.5rem] border-2 border-gray-200 shadow-xl hover:shadow-2xl hover:-translate-y-2 lg:hover:w-[102%] lg:hover:-ml-[1%] transition-all duration-500 cursor-pointer overflow-hidden relative ${viewMode === 'list' ? 'flex flex-row h-40' : 'min-h-[380px]'}`}
                                 >
                                     {/* Store Graphics */}
-                                    <div className={`relative bg-gray-100 overflow-hidden ${viewMode === 'list' ? 'w-48 md:w-80 shrink-0' : 'h-48'}`}>
+                                    <div className={`relative bg-gray-100 overflow-hidden ${viewMode === 'list' ? 'w-32 md:w-80 shrink-0' : 'h-52'}`}>
                                         <img src={store.image} alt={store.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 opacity-90 group-hover:opacity-100" />
                                         <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
                                         <div className="absolute top-4 left-4 bg-black/70 backdrop-blur-md px-3 py-1.5 rounded-xl text-[10px] text-white font-black tracking-widest border border-white/20">
@@ -384,19 +384,19 @@ const StoreList: React.FC = () => {
                                     </div>
 
                                     {/* Store Details */}
-                                    <div className="p-8 flex flex-col flex-1 relative">
-                                        <div className={`w-16 h-16 rounded-[1.5rem] bg-white border-2 border-gray-100 flex items-center justify-center text-4xl shadow-xl overflow-hidden transition-transform duration-500 group-hover:rotate-6 ${viewMode === 'list' ? 'mb-4' : 'absolute -top-8 left-8'}`}>
+                                    <div className="p-4 md:p-8 flex flex-col flex-1 relative min-w-0">
+                                        <div className={`w-12 h-12 md:w-16 md:h-16 rounded-xl md:rounded-[1.5rem] bg-white border-2 border-gray-200 flex items-center justify-center text-2xl md:text-4xl shadow-xl overflow-hidden transition-transform duration-500 group-hover:rotate-6 ${viewMode === 'list' ? 'mb-2' : 'absolute -top-8 left-8'}`}>
                                             {store.logoUrl && (store.logoUrl.startsWith('http') || store.logoUrl.startsWith('/') || store.logoUrl.startsWith('data:')) ? <img src={store.logoUrl} alt="Logo" className="w-full h-full object-cover p-2" /> : <span className="font-black text-gray-900">{store.logoUrl || '🏪'}</span>}
                                         </div>
 
-                                        <div className={viewMode === 'list' ? '' : 'mt-8'}>
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <h3 className="font-black text-2xl text-gray-900 tracking-tighter italic m-0 group-hover:text-blue-600 transition-colors leading-none">{store.name}</h3>
+                                        <div className={viewMode === 'list' ? '' : 'mt-10'}>
+                                            <div className="flex items-center gap-2 mb-1.5">
+                                                <h3 className="font-black text-2xl md:text-3xl text-gray-900 tracking-tighter italic m-0 group-hover:text-blue-600 transition-colors leading-none">{store.name}</h3>
                                             </div>
                                             <div className="flex items-center gap-3">
-                                                <p className="text-xs font-bold text-gray-600 tracking-widest m-0">{store.distance} Away</p>
-                                                <div className="w-1 h-1 bg-gray-200 rounded-full"></div>
-                                                <span className="text-[10px] font-black flex items-center gap-1 bg-yellow-50 text-yellow-700 px-2 py-0.5 rounded-full">
+                                                <p className="text-[10px] md:text-xs font-black text-gray-500 tracking-[0.15em] uppercase m-0">{store.distance} Away</p>
+                                                <div className="w-1 h-1 bg-gray-300 rounded-full"></div>
+                                                <span className="text-[10px] md:text-xs font-black flex items-center gap-1 bg-yellow-50 text-yellow-700 px-2 py-0.5 rounded-full shadow-sm">
                                                     ★ {store.rating > 0 ? store.rating.toFixed(1) : 'NEW'}
                                                 </span>
                                             </div>

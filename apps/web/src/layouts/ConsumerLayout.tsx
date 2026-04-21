@@ -187,7 +187,7 @@ const ConsumerLayout: React.FC = () => {
                     )}
 
                     {/* Mobile Cart Icon */}
-                    <Link to="/cart" className="md:hidden relative w-10 h-10 bg-blue-600 border-2 border-white flex items-center justify-center shadow-md ml-2">
+                    <Link to="/cart" className={`md:hidden relative w-10 h-10 flex items-center justify-center shadow-md ml-2 transition-all border-2 ${location.pathname === '/cart' ? 'bg-blue-600 border-white text-white' : 'bg-white border-gray-200 text-gray-900 hover:border-blue-600'}`}>
                         <span className="text-sm">🛒</span>
                         {itemCount > 0 && (
                             <span className="absolute -top-3 -right-2 w-5 h-5 bg-white text-gray-900 text-[10px] font-black border-2 border-gray-200 flex items-center justify-center shadow-sm animate-pulse">
@@ -204,7 +204,7 @@ const ConsumerLayout: React.FC = () => {
             </main>
 
             {/* GLOBAL RETAIL FOOTER */}
-            <footer className="bg-white border-t-2 border-gray-200 pb-[calc(4rem+var(--safe-area-bottom)+2rem)] md:pb-12 pt-16 px-4">
+            <footer className="bg-white border-t-2 border-gray-200 pb-[calc(5rem+var(--safe-area-bottom))] md:pb-12 pt-16 px-4">
                 <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center md:items-start justify-between gap-12 text-center md:text-left">
                     <div className="max-w-xs">
                         <div className="flex items-center gap-2 justify-center md:justify-start mb-6">
@@ -240,8 +240,8 @@ const ConsumerLayout: React.FC = () => {
             </footer>
 
             {/* HIGH-IMPACT MOBILE BOTTOM TAB BAR */}
-            <nav className="md:hidden fixed bottom-0 left-0 right-0 h-[calc(4.5rem+var(--safe-area-bottom))] pb-safe bg-white border-t border-gray-200 z-50 flex items-stretch shadow-[0_-5px_20px_rgba(0,0,0,0.05)]">
-                <NavLink to="/" end className={({ isActive }) => `flex flex-col items-center justify-center flex-1 transition-all ${isActive ? 'bg-gray-50 text-blue-600 border-t-2 border-blue-600' : 'text-gray-400 hover:text-gray-600'}`}>
+            <nav className="md:hidden fixed bottom-0 left-0 right-0 h-20 bg-white border-t border-gray-200 z-50 flex items-stretch shadow-[0_-5px_20px_rgba(0,0,0,0.05)]">
+                <NavLink to="/" end className={({ isActive }) => `flex flex-col items-center justify-center flex-1 transition-all ${isActive ? 'bg-gray-50 text-blue-600 border-t-2 border-blue-600' : 'text-gray-400 hover:text-gray-600 border-t-2 border-transparent'}`}>
                     {({ isActive }: any) => (
                         <React.Fragment>
                             <span className={`text-xl mb-1 ${isActive ? 'animate-bounce-slow' : ''}`}>🏠</span>
@@ -250,12 +250,12 @@ const ConsumerLayout: React.FC = () => {
                     )}
                 </NavLink>
 
-                <NavLink to="/search" className={({ isActive }) => `flex flex-col items-center justify-center flex-1 transition-all ${isActive ? 'bg-gray-50 text-blue-600 border-t-2 border-blue-600' : 'text-gray-400 hover:text-gray-600'}`}>
+                <NavLink to="/search" className={({ isActive }) => `flex flex-col items-center justify-center flex-1 transition-all ${isActive ? 'bg-gray-50 text-blue-600 border-t-2 border-blue-600' : 'text-gray-400 hover:text-gray-600 border-t-2 border-transparent'}`}>
                     <span className="text-xl mb-1">🔍</span>
                     <span className="text-[8px] font-black tracking-widest">{t('searchNav')}</span>
                 </NavLink>
 
-                <NavLink to="/smartcart" className={({ isActive }) => `flex flex-col items-center justify-center flex-1 transition-all relative ${isActive ? 'bg-gray-50 text-blue-600 border-t-2 border-blue-600' : 'text-gray-400 hover:text-gray-600'}`}>
+                <NavLink to="/smartcart" className={({ isActive }) => `flex flex-col items-center justify-center flex-1 transition-all relative ${isActive ? 'bg-gray-50 text-blue-600 border-t-2 border-blue-600' : 'text-gray-400 hover:text-gray-600 border-t-2 border-transparent'}`}>
                     {({ isActive }: any) => (
                         <React.Fragment>
                             <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-transparent ${isActive ? 'opacity-100 animate-pulse' : 'opacity-0'}`}></div>
@@ -265,7 +265,7 @@ const ConsumerLayout: React.FC = () => {
                     )}
                 </NavLink>
 
-                <NavLink to="/cart" className={({ isActive }) => `flex flex-col items-center justify-center flex-1 transition-all ${isActive ? 'bg-gray-50 text-blue-600 border-t-2 border-blue-600' : 'text-gray-400 hover:text-gray-600'}`}>
+                <NavLink to="/cart" className={({ isActive }) => `flex flex-col items-center justify-center flex-1 transition-all ${isActive ? 'bg-gray-50 text-blue-600 border-t-2 border-blue-600' : 'text-gray-400 hover:text-gray-600 border-t-2 border-transparent'}`}>
                     {({ isActive }: any) => (
                         <React.Fragment>
                             <div className="relative mb-1">
@@ -281,14 +281,14 @@ const ConsumerLayout: React.FC = () => {
                     )}
                 </NavLink>
 
-                <NavLink to="/profile" className={({ isActive }) => `flex flex-col items-center justify-center flex-1 transition-all ${isActive ? 'bg-gray-50 text-blue-600 border-t-2 border-blue-600' : 'text-gray-400 hover:text-gray-600'}`}>
+                <NavLink to="/profile" className={({ isActive }) => `flex flex-col items-center justify-center flex-1 transition-all ${isActive ? 'bg-gray-50 text-blue-600 border-t-2 border-blue-600' : 'text-gray-400 hover:text-gray-600 border-t-2 border-transparent'}`}>
                     <span className="text-xl mb-1">👤</span>
                     <span className="text-[8px] font-black tracking-widest">{t('profileNav')}</span>
                 </NavLink>
             </nav>
 
             {/* Bottom padding for mobile nav */}
-            <div className="md:hidden h-[calc(4.5rem+var(--safe-area-bottom))]"></div>
+            <div className="md:hidden h-20"></div>
 
             {/* GLOBAL NOTIFICATION TOAST (Cart) */}
             {notification && (
