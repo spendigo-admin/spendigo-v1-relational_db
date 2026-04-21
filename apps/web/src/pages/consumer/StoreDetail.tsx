@@ -629,7 +629,7 @@ const StoreDetail: React.FC = () => {
             <div className="max-w-7xl mx-auto px-4 -mt-10 relative z-30">
                 <div className="bg-white rounded-3xl shadow-2xl border border-gray-100 p-1 md:p-3 flex flex-nowrap items-stretch gap-1">
                     <div className="flex-1 min-w-0 bg-gray-50/50 p-2 md:p-4 rounded-xl border border-gray-50 flex flex-col items-center justify-center text-center group hover:bg-black hover:shadow-lg transition-all">
-                        <span className="text-[7px] md:text-[9px] font-black text-gray-400 tracking-widest mb-0.5 md:mb-1 group-hover:text-white/70 transition-colors">Store</span>
+                        <span className="text-[7px] md:text-[9px] font-black text-gray-600 tracking-widest mb-0.5 md:mb-1 group-hover:text-white/70 transition-colors">Store</span>
                         <div className="flex items-center gap-0.5 md:gap-2">
                             <span className="text-xs md:text-xl font-black text-gray-900 group-hover:text-white transition-colors">
                                 {reviews.length > 0 
@@ -641,7 +641,7 @@ const StoreDetail: React.FC = () => {
                     </div>
                     <div className="w-px bg-gray-100 hidden md:block my-2"></div>
                     <div className="flex-1 min-w-0 bg-gray-50/50 p-2 md:p-4 rounded-xl border border-gray-50 flex flex-col items-center justify-center text-center group hover:bg-black hover:shadow-lg transition-all">
-                        <span className="text-[7px] md:text-[9px] font-black text-gray-400 tracking-widest mb-0.5 md:mb-1 group-hover:text-white/70 transition-colors truncate w-full px-1">Delivery</span>
+                        <span className="text-[7px] md:text-[9px] font-black text-gray-600 tracking-widest mb-0.5 md:mb-1 group-hover:text-white/70 transition-colors truncate w-full px-1">Delivery</span>
                         <div className="flex items-center gap-0.5 md:gap-2">
                             <span className="text-xs md:text-xl font-black text-gray-900 group-hover:text-white transition-colors line-clamp-1 truncate px-1 max-w-full">{store.deliveryTime?.replace('MIN', '') || '25-45'}</span>
                             <span className="text-orange-500 text-[10px] md:text-lg group-hover:animate-pulse">⚡</span>
@@ -649,7 +649,7 @@ const StoreDetail: React.FC = () => {
                     </div>
                     <div className="w-px bg-gray-100 hidden md:block my-2"></div>
                     <div className="flex-1 min-w-0 bg-gray-50/50 p-2 md:p-4 rounded-xl border border-gray-50 flex flex-col items-center justify-center text-center group hover:bg-black hover:shadow-lg transition-all">
-                        <span className="text-[7px] md:text-[9px] font-black text-gray-400 tracking-widest mb-0.5 md:mb-1 group-hover:text-white/70 transition-colors">Fee</span>
+                        <span className="text-[7px] md:text-[9px] font-black text-gray-600 tracking-widest mb-0.5 md:mb-1 group-hover:text-white/70 transition-colors">Fee</span>
                         <div className="flex items-center gap-0.5 md:gap-2">
                             <span className="text-xs md:text-xl font-black text-gray-900 group-hover:text-white transition-colors">{store.deliveryFee || 'FREE'}</span>
                             <span className="text-green-500 text-[10px] md:text-lg group-hover:rotate-12 transition-transform">💰</span>
@@ -724,7 +724,7 @@ const StoreDetail: React.FC = () => {
                 <div className="animate-fade-in">
                     {/* Premium Category Filters */}
                     <div className="px-4 py-4 bg-white border-b border-gray-100 flex items-center gap-4">
-                        <span className="text-[10px] font-black text-gray-400 tracking-widest whitespace-nowrap">Filter By:</span>
+                        <span className="text-[10px] font-black text-gray-600 tracking-widest whitespace-nowrap">Filter By:</span>
                         <div className="overflow-x-auto scrollbar-hide flex gap-2 pb-1">
                             {store.categories.map((cat: string) => (
                                 <button
@@ -732,7 +732,7 @@ const StoreDetail: React.FC = () => {
                                     onClick={() => setActiveCategory(cat)}
                                     className={`px-4 py-2 rounded-full text-[10px] md:text-xs font-black tracking-widest transition-all whitespace-nowrap border-2 ${activeCategory === cat 
                                         ? 'bg-teal-600 text-white border-teal-600 shadow-md transform scale-105' 
-                                        : 'bg-gray-50 text-gray-500 border-gray-100 hover:border-gray-300'}`}
+                                        : 'bg-gray-50 text-gray-900 border-gray-100 hover:border-gray-300'}`}
                                 >
                                     {cat.replace(/^cat-/, '').replace(/-/g, ' ')}
                                 </button>
