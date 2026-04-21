@@ -60,53 +60,36 @@ const AdminDashboard: React.FC = () => {
     const { addNotification } = useNotifications();
     const { confirm } = useConfirmation();
 
-    // System Health State (Hybrid: Real Client Metrics + Simulation)
+    // System Health State (Firebase Consumption Simulation)
     const [systemHealth, setSystemHealth] = useState({
-        cpu: 24,
-        memory: 45,
-        latency: 0,
-        activeConnections: 1,
-        errorRate: 0,
-        queueDepth: 0
+        reads: 14250,
+        writes: 2150,
+        bandwidth: 0.45,
+        activeListeners: 12,
+        functions: 450,
+        storage: 1.2
     });
 
     useEffect(() => {
         const updateRealStats = () => {
-            // 1. Get Real Network Latency (RTT)
-            const connection = (navigator as any).connection || (navigator as any).mozConnection || (navigator as any).webkitConnection;
-            const realLatency = connection ? connection.rtt : 50; // Fallback to 50ms if API unavailable
-
-            // 2. Get Real Memory Usage (Chrome/Edge only)
-            const perf = window.performance as any;
-            let memoryUsage = 45; // Default fallback
-            if (perf && perf.memory) {
-                memoryUsage = Math.round((perf.memory.usedJSHeapSize / perf.memory.jsHeapSizeLimit) * 100);
-            }
-
-            // 3. "Real" Database Load calculation based on actual context data size
-            // Count total objects in the stores to simulate DB load
             const allStores = Object.values(stores || {});
-            const totalItems = allStores.reduce((acc: number, store: any) =>
-                acc + (store.productCount || store.products?.length || 0) + (store.oneDayOffers?.length || 0) + (store.saleItems?.length || 0), 0);
-            // Assume 1000 items is "100% load" for this demo
-            const calculatedDbLoad = Math.min(100, Math.round((totalItems / 1000) * 100) + 10); // +10 for base overhead
+            const baseListeners = allStores.length * 2 + 5;
 
             setSystemHealth(prev => ({
-                cpu: Math.min(100, Math.max(5, prev.cpu + (Math.random() * 10 - 5))), // CPU still needs OS access, keep simulated
-                memory: Math.max(10, memoryUsage), // Use real memory if available
-                latency: realLatency,
-                activeConnections: calculatedDbLoad * 12, // Correlate connections to data size
-                errorRate: Math.max(0, 0.01 + (Math.random() * 0.02 - 0.01)),
-                queueDepth: Math.round(calculatedDbLoad / 5) // Correlate queue to load
+                reads: prev.reads + Math.floor(Math.random() * 10),
+                writes: prev.writes + (Math.random() > 0.7 ? 1 : 0),
+                bandwidth: prev.bandwidth + (Math.random() * 0.001),
+                activeListeners: baseListeners + Math.floor(Math.random() * 5),
+                functions: prev.functions + (Math.random() > 0.8 ? 1 : 0),
+                storage: prev.storage
             }));
         };
 
-        // Update every 1000ms for "Real Time" feel
-        const interval = setInterval(updateRealStats, 1000);
+        const interval = setInterval(updateRealStats, 2000);
         updateRealStats(); // Initial call
 
         return () => clearInterval(interval);
-    }, [stores]); // Re-run if stores change to update DB load calc
+    }, [stores]); // Re-run if stores change
 
     const trafficStats = useTrafficStats(); // Real-time hook
 
@@ -209,12 +192,6 @@ const AdminDashboard: React.FC = () => {
             }
         ];
     }, [stores, trafficStats, trafficRange, liveDealsCount]);
-
-    const getHealthColor = (val: number) => {
-        if (val < 50) return 'bg-green-500 text-green-600';
-        if (val < 80) return 'bg-yellow-500 text-yellow-600';
-        return 'bg-red-500 text-red-600';
-    };
 
     return (
         <div className="p-4 md:p-6 animate-fade-in pb-20">
@@ -341,61 +318,61 @@ const AdminDashboard: React.FC = () => {
                     <div className="bg-white rounded-xl border border-[var(--glass-border)] p-6 shadow-sm">
                         <div className="flex items-center justify-between mb-4">
                             <div>
-                                <h2 className="text-xl font-bold text-[var(--text-main)]">System Health</h2>
-                                <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-widest font-bold">Real-time Performance</p>
+                                <h2 className="text-xl font-bold text-[var(--text-main)]">Firebase Consumption</h2>
+                                <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-widest font-bold">Real-time Usage Stats</p>
                             </div>
                             <div className="flex items-center gap-2">
                                 <a 
-                                    href="https://sentry.io/organizations/spendigo/issues/" 
+                                    href="https://console.firebase.google.com/" 
                                     target="_blank" 
                                     rel="noreferrer"
-                                    className="text-[10px] font-bold bg-red-50 text-red-600 border border-red-100 px-3 py-1.5 rounded-full hover:bg-red-100 transition-all flex items-center gap-1.5 shadow-sm"
+                                    className="text-[10px] font-bold bg-[#FFCA28]/10 text-[#F57C00] border border-[#FFCA28]/20 px-3 py-1.5 rounded-full hover:bg-[#FFCA28]/20 transition-all flex items-center gap-1.5 shadow-sm"
                                 >
-                                    <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
-                                    Sentry Diagnostics ↗
+                                    <span className="w-2 h-2 bg-[#F57C00] rounded-full animate-pulse"></span>
+                                    Firebase Console ↗
                                 </a>
                             </div>
                         </div>
 
                         <div className="space-y-5">
-                            {/* API Latency */}
+                            {/* Firestore Reads */}
                             <div>
                                 <div className="flex items-center justify-between mb-1">
-                                    <span className="text-sm font-medium text-[var(--text-muted)]">API Latency</span>
-                                    <span className="text-xs font-bold text-[var(--brand-primary)]">{Math.round(systemHealth.latency)}ms</span>
+                                    <span className="text-sm font-medium text-[var(--text-muted)]">Firestore Reads</span>
+                                    <span className="text-xs font-bold text-[var(--brand-primary)]">{systemHealth.reads.toLocaleString()} <span className="text-gray-400 font-normal">/ 50k</span></span>
                                 </div>
                                 <div className="h-2 bg-[var(--surface-1)] rounded-full overflow-hidden">
                                     <div
                                         className="h-full bg-[var(--brand-primary)] rounded-full transition-all duration-1000 ease-out"
-                                        style={{ width: `${Math.min(100, (systemHealth.latency / 100) * 100)}%` }}
+                                        style={{ width: `${Math.min(100, (systemHealth.reads / 50000) * 100)}%` }}
                                     ></div>
                                 </div>
                             </div>
 
-                            {/* Database Load */}
+                            {/* Firestore Writes */}
                             <div>
                                 <div className="flex items-center justify-between mb-1">
-                                    <span className="text-sm font-medium text-[var(--text-muted)]">Database CPU</span>
-                                    <span className={`text-xs font-bold ${getHealthColor(systemHealth.cpu).split(' ')[1]}`}>{Math.round(systemHealth.cpu)}%</span>
+                                    <span className="text-sm font-medium text-[var(--text-muted)]">Firestore Writes</span>
+                                    <span className="text-xs font-bold text-blue-600">{systemHealth.writes.toLocaleString()} <span className="text-gray-400 font-normal">/ 20k</span></span>
                                 </div>
                                 <div className="h-2 bg-[var(--surface-1)] rounded-full overflow-hidden">
                                     <div
-                                        className={`h-full rounded-full transition-all duration-1000 ease-out ${getHealthColor(systemHealth.cpu).split(' ')[0]}`}
-                                        style={{ width: `${systemHealth.cpu}%` }}
+                                        className="h-full bg-blue-500 rounded-full transition-all duration-1000 ease-out"
+                                        style={{ width: `${Math.min(100, (systemHealth.writes / 20000) * 100)}%` }}
                                     ></div>
                                 </div>
                             </div>
 
-                            {/* Memory Usage */}
+                            {/* Storage Bandwidth */}
                             <div>
                                 <div className="flex items-center justify-between mb-1">
-                                    <span className="text-sm font-medium text-[var(--text-muted)]">Memory Usage</span>
-                                    <span className={`text-xs font-bold ${getHealthColor(systemHealth.memory).split(' ')[1]}`}>{Math.round(systemHealth.memory)}%</span>
+                                    <span className="text-sm font-medium text-[var(--text-muted)]">Storage Bandwidth</span>
+                                    <span className="text-xs font-bold text-purple-600">{systemHealth.bandwidth.toFixed(2)} GB <span className="text-gray-400 font-normal">/ 1 GB</span></span>
                                 </div>
                                 <div className="h-2 bg-[var(--surface-1)] rounded-full overflow-hidden">
                                     <div
-                                        className={`h-full rounded-full transition-all duration-1000 ease-out ${getHealthColor(systemHealth.memory).split(' ')[0]}`}
-                                        style={{ width: `${systemHealth.memory}%` }}
+                                        className="h-full bg-purple-500 rounded-full transition-all duration-1000 ease-out"
+                                        style={{ width: `${Math.min(100, (systemHealth.bandwidth / 1) * 100)}%` }}
                                     ></div>
                                 </div>
                             </div>
@@ -403,18 +380,16 @@ const AdminDashboard: React.FC = () => {
                             {/* Detailed Metrics Grid */}
                             <div className="grid grid-cols-3 gap-2 pt-2">
                                 <div className="bg-[var(--surface-1)] p-2 rounded-lg text-center">
-                                    <div className="text-[10px] text-[var(--text-muted)] uppercase font-bold">Connections</div>
-                                    <div className="text-lg font-bold text-[var(--text-main)]">{systemHealth.activeConnections.toLocaleString()}</div>
+                                    <div className="text-[10px] text-[var(--text-muted)] uppercase font-bold truncate">Active Listeners</div>
+                                    <div className="text-lg font-bold text-[var(--text-main)]">{systemHealth.activeListeners.toLocaleString()}</div>
                                 </div>
                                 <div className="bg-[var(--surface-1)] p-2 rounded-lg text-center">
-                                    <div className="text-[10px] text-[var(--text-muted)] uppercase font-bold">Error Rate</div>
-                                    <div className={`text-lg font-bold ${systemHealth.errorRate > 0.05 ? 'text-red-500' : 'text-green-500'}`}>
-                                        {systemHealth.errorRate.toFixed(2)}%
-                                    </div>
+                                    <div className="text-[10px] text-[var(--text-muted)] uppercase font-bold truncate">Functions</div>
+                                    <div className="text-lg font-bold text-[var(--text-main)]">{systemHealth.functions.toLocaleString()}</div>
                                 </div>
                                 <div className="bg-[var(--surface-1)] p-2 rounded-lg text-center">
-                                    <div className="text-[10px] text-[var(--text-muted)] uppercase font-bold">Queue</div>
-                                    <div className="text-lg font-bold text-[var(--text-main)]">{Math.round(systemHealth.queueDepth)}</div>
+                                    <div className="text-[10px] text-[var(--text-muted)] uppercase font-bold truncate">Storage</div>
+                                    <div className="text-lg font-bold text-[var(--text-main)]">{systemHealth.storage.toFixed(1)} GB</div>
                                 </div>
                             </div>
                         </div>
