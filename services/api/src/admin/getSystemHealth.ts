@@ -93,17 +93,17 @@ export const getSystemHealth = functions.https.onCall(async (data, context) => {
             authSMS, authActiveUsers
         ] = await Promise.all([
             // Firestore (Daily)
-            fetchMetric('firestore.googleapis.com/document/read_ops_count', 'firestore_database'),
-            fetchMetric('firestore.googleapis.com/document/write_ops_count', 'firestore_database'),
-            fetchMetric('firestore.googleapis.com/document/delete_ops_count', 'firestore_database'),
+            fetchMetric('firestore.googleapis.com/document/read_ops_count', 'firestore.googleapis.com/Database'),
+            fetchMetric('firestore.googleapis.com/document/write_ops_count', 'firestore.googleapis.com/Database'),
+            fetchMetric('firestore.googleapis.com/document/delete_ops_count', 'firestore.googleapis.com/Database'),
             // Functions (Monthly)
             fetchMetric('cloudfunctions.googleapis.com/function/execution_count', 'cloud_function', true),
             // Cloud Storage (Daily Bandwidth, Gauge Storage)
             fetchMetric('storage.googleapis.com/network/sent_bytes_count', 'gcs_bucket'),
             fetchMetric('storage.googleapis.com/storage/total_bytes', 'gcs_bucket', false, false),
             // Hosting (Daily Bandwidth, Gauge Storage)
-            fetchMetric('firebasehosting.googleapis.com/network/sent_bytes_count', 'firebase_hosting_site'),
-            fetchMetric('firebasehosting.googleapis.com/storage/total_bytes', 'firebase_hosting_site', false, false),
+            fetchMetric('firebasehosting.googleapis.com/network/sent_bytes_count', 'firebase_domain'),
+            fetchMetric('firebasehosting.googleapis.com/storage/total_bytes', 'firebase_domain', false, false),
             // Auth (SMS - Daily)
             fetchMetric('identitytoolkit.googleapis.com/sms/sent_count', 'identitytoolkit_project'),
             // Auth (Active Users - Monthly proxy if available)

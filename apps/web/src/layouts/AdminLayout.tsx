@@ -47,13 +47,13 @@ const AdminLayout: React.FC = () => {
             items: [
                 { icon: '🏪', label: 'Stores', path: '/admin/stores' },
                 { icon: '📦', label: 'Master Catalog', path: '/admin/catalog' },
-                { icon: '📢', label: 'Carousel Ads', path: '/admin/ads' },
-                { icon: '📋', label: 'Survey Board', path: '/admin/surveys' },
             ]
         },
         {
             title: 'Management',
             items: [
+                { icon: '📢', label: 'Carousel Ads', path: '/admin/ads' },
+                { icon: '📋', label: 'Survey Board', path: '/admin/surveys' },
                 { icon: '👥', label: 'Users', path: '/admin/users' },
                 { icon: '💼', label: 'Careers', path: '/admin/careers' },
             ]
@@ -135,13 +135,18 @@ const AdminLayout: React.FC = () => {
                                         <Link
                                             key={item.path}
                                             to={item.path}
-                                            className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${isActive
-                                                ? 'bg-[var(--brand-primary)] text-white shadow-md shadow-[var(--brand-primary)]/20'
+                                            className={`group flex items-center justify-between px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${isActive
+                                                ? 'bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-primary-dark)] text-white shadow-md shadow-[var(--brand-primary)]/20'
                                                 : 'text-[var(--text-muted)] hover:bg-[var(--surface-1)] hover:text-[var(--text-main)]'
                                                 }`}
                                         >
-                                            <span className="text-lg">{item.icon}</span>
-                                            {item.label}
+                                            <div className="flex items-center gap-3">
+                                                <span className={`text-lg transition-transform duration-200 ${isActive ? 'scale-110' : 'group-hover:scale-110'}`}>{item.icon}</span>
+                                                <span className={`transition-transform duration-200 ${!isActive && 'group-hover:translate-x-1'}`}>{item.label}</span>
+                                            </div>
+                                            {isActive && (
+                                                <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse shadow-[0_0_8px_rgba(255,255,255,0.8)]" />
+                                            )}
                                         </Link>
                                     );
                                 })}
