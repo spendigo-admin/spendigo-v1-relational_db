@@ -19,6 +19,11 @@ interface AdCampaign {
     views: number;
     clicks: number;
     createdAt?: any;
+    scope?: 'global' | 'local';
+    targetAddress?: string;
+    targetLat?: number;
+    targetLng?: number;
+    targetRadius?: number;
 }
 
 const AdManager: React.FC = () => {
@@ -58,8 +63,30 @@ const AdManager: React.FC = () => {
                 priority: currentAd.priority || 5,
                 views: currentAd.views || 0,
                 clicks: currentAd.clicks || 0,
-                updatedAt: serverTimestamp()
+                updatedAt: serverTimestamp(),
+                scope: currentAd.scope || 'global',
+                targetAddress: currentAd.targetAddress || '',
+                targetLat: currentAd.targetLat || null,
+                targetLng: currentAd.targetLng || null,
+                targetRadius: currentAd.targetRadius || 10,
             };
+
+            if (adData.scope === 'local' && adData.targetAddress) {
+                try {
+                    const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(adData.targetAddress)}&countrycodes=ca`);
+                    const data = await response.json();
+                    if (data && data.length > 0) {
+                        adData.targetLat = parseFloat(data[0].lat);
+                        adData.targetLng = parseFloat(data[0].lon);
+                    } else {
+                        addNotification({ type: 'alert', title: 'Location Error', message: `Could not find coordinates for ${adData.targetAddress}` });
+                        return;
+                    }
+                } catch (e) {
+                    addNotification({ type: 'alert', title: 'Geocoding Error', message: 'Failed to verify location.' });
+                    return;
+                }
+            }
 
             if (currentAd.id) {
                 await updateDoc(doc(db, 'ads', currentAd.id), adData);
@@ -138,6 +165,13 @@ const AdManager: React.FC = () => {
                             <div className="flex justify-between text-xs text-[var(--text-muted)] mb-3">
                                 <span>Priority: {ad.priority}</span>
                                 <span>{ad.startDate} → {ad.endDate}</span>
+                            </div>
+                            
+                            <div className="flex gap-2 items-center mb-3">
+                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider ${ad.scope === 'local' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}`}>
+                                    {ad.scope === 'local' ? '📍 LOCAL' : '🌎 GLOBAL'}
+                                </span>
+                                {ad.scope === 'local' && <span className="text-xs text-[var(--text-muted)] truncate">{ad.targetAddress} ({ad.targetRadius}km)</span>}
                             </div>
 
                             <div className="grid grid-cols-2 gap-2 bg-[var(--surface-1)] p-2 rounded-lg mb-4 text-center">
@@ -259,6 +293,47 @@ const AdManager: React.FC = () => {
                                         <option value="archived">Archived</option>
                                     </select>
                                 </div>
+
+                                <div>
+                                    <label className="block text-sm font-bold mb-1">Scope</label>
+                                    <select
+                                        className="w-full p-2 border rounded-lg"
+                                        value={currentAd.scope || 'global'}
+                                        onChange={e => setCurrentAd({ ...currentAd, scope: e.target.value as any })}
+                                    >
+                                        <option value="global">Global (Everywhere)</option>
+                                        <option value="local">Local (Proximity Based)</option>
+                                    </select>
+                                </div>
+
+                                {currentAd.scope === 'local' && (
+                                    <>
+                                        <div>
+                                            <label className="block text-sm font-bold mb-1">Target Location</label>
+                                            <input
+                                                required
+                                                className="w-full p-2 border rounded-lg"
+                                                value={currentAd.targetAddress || ''}
+                                                onChange={e => setCurrentAd({ ...currentAd, targetAddress: e.target.value })}
+                                                placeholder="e.g. Cornwall, ON or Postal Code"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-bold mb-1">Radius (km)</label>
+                                            <select
+                                                className="w-full p-2 border rounded-lg"
+                                                value={currentAd.targetRadius || 10}
+                                                onChange={e => setCurrentAd({ ...currentAd, targetRadius: Number(e.target.value) })}
+                                            >
+                                                <option value={5}>5 km</option>
+                                                <option value={10}>10 km</option>
+                                                <option value={20}>20 km</option>
+                                                <option value={50}>50 km</option>
+                                                <option value={100}>100 km</option>
+                                            </select>
+                                        </div>
+                                    </>
+                                )}
                             </div>
 
                             <div className="flex justify-end gap-3 pt-4 border-t mt-4">

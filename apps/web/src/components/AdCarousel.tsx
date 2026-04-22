@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { collection, query, where, orderBy, getDocs, updateDoc, doc, increment } from 'firebase/firestore';
+import { collection, query, where, getDocs, updateDoc, doc, increment } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useTranslation } from 'react-i18next';
+import { useLocation } from '../context/LocationContext';
 import '../styles/design-system.css';
 
 interface AdCampaign {
@@ -14,6 +15,11 @@ interface AdCampaign {
     startDate: string;
     endDate: string;
     priority: number;
+    scope?: 'global' | 'local';
+    targetAddress?: string;
+    targetLat?: number;
+    targetLng?: number;
+    targetRadius?: number;
 }
 
 const DefaultHero = ({ handleSearch, address, setAddress, isLocating, handleLocateMe, searchDistance, setSearchDistance }: any) => {
@@ -97,6 +103,7 @@ interface AdCarouselProps {
 
 const AdCarousel: React.FC<AdCarouselProps> = (props) => {
     const { t } = useTranslation();
+    const { userCoords, calculateDistance } = useLocation();
     const [ads, setAds] = useState<AdCampaign[]>([]);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [loading, setLoading] = useState(true);
@@ -113,6 +120,16 @@ const AdCarousel: React.FC<AdCarouselProps> = (props) => {
                 const validAds = snapshot.docs
                     .map(doc => ({ id: doc.id, ...doc.data() } as AdCampaign))
                     .filter(ad => ad.endDate >= today && ad.startDate <= today)
+                    .filter(ad => {
+                        if (!ad.scope || ad.scope === 'global') return true;
+                        if (ad.scope === 'local') {
+                            if (!userCoords) return false; // If local ad, and user has no coords, hide it
+                            if (!ad.targetLat || !ad.targetLng || !ad.targetRadius) return false;
+                            const distance = calculateDistance(userCoords.lat, userCoords.lng, ad.targetLat, ad.targetLng);
+                            return distance <= ad.targetRadius;
+                        }
+                        return false;
+                    })
                     .sort((a, b) => b.priority - a.priority);
 
                 setAds(validAds);
@@ -124,7 +141,7 @@ const AdCarousel: React.FC<AdCarouselProps> = (props) => {
         };
 
         fetchAds();
-    }, []);
+    }, [userCoords, calculateDistance]);
 
     // Auto-Rotate
     useEffect(() => {
