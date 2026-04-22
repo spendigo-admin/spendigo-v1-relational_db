@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import '../../styles/design-system.css';
 import { useAuth } from '../../context/AuthContext';
 import { useAudit } from '../../context/AuditContext';
 import { useTranslation } from 'react-i18next';
 import SEO from '../../components/SEO';
+import { doc, onSnapshot } from 'firebase/firestore';
+import { db } from '../../lib/firebase';
 
 const Register: React.FC = () => {
     const navigate = useNavigate();
@@ -25,6 +27,20 @@ const Register: React.FC = () => {
         postalCode: '',
         agreedToTerms: false
     });
+    const [allowRegistrations, setAllowRegistrations] = useState<boolean | null>(null);
+
+    useEffect(() => {
+        const docRef = doc(db, 'settings', 'platform');
+        const unsubscribe = onSnapshot(docRef, (docSnap) => {
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                setAllowRegistrations(data.allowShopperRegistrations !== false);
+            } else {
+                setAllowRegistrations(true);
+            }
+        });
+        return () => unsubscribe();
+    }, []);
 
     const nextStep = () => {
         if (step === 1) {
@@ -130,6 +146,18 @@ const Register: React.FC = () => {
                         ))}
                     </div>
 
+                    {allowRegistrations === false && (
+                        <div className="mb-6 p-6 rounded-2xl bg-amber-50 border border-amber-200 text-amber-800 animate-fade-in shadow-sm">
+                            <div className="flex items-center gap-3 mb-2">
+                                <span className="text-2xl">🛑</span>
+                                <h3 className="font-bold text-lg">Registrations on Hold</h3>
+                            </div>
+                            <p className="text-sm opacity-90">
+                                We are currently not accepting new shopper registrations. Please check back later or contact our support team if you have any questions.
+                            </p>
+                        </div>
+                    )}
+
                     {error && (
                         <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-100 text-red-600 text-sm flex items-center gap-3 animate-fade-in">
                             <span>⚠️</span> {error}
@@ -145,10 +173,12 @@ const Register: React.FC = () => {
                                     <button
                                         type="button"
                                         onClick={async () => {
+                                            if (allowRegistrations === false) return;
                                             const success = await loginWithGoogle('consumer');
                                             if (success) navigate('/');
                                         }}
-                                        className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-white border border-[var(--glass-border)] text-gray-700 font-bold hover:bg-gray-50 transition-all shadow-sm"
+                                        className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-white border border-[var(--glass-border)] text-gray-700 font-bold transition-all shadow-sm ${allowRegistrations === false ? 'opacity-50 cursor-not-allowed grayscale' : 'hover:bg-gray-50'}`}
+                                        disabled={allowRegistrations === false}
                                     >
                                         <svg className="w-5 h-5" viewBox="0 0 24 24">
                                             <path fill="#EA4335" d="M12 24c6.627 0 12-5.373 12-12S18.627 0 12 0 0 5.373 0 12s5.373 12 12 12z" />
@@ -164,10 +194,12 @@ const Register: React.FC = () => {
                                     <button
                                         type="button"
                                         onClick={async () => {
+                                            if (allowRegistrations === false) return;
                                             await loginWithFacebook();
                                             navigate('/');
                                         }}
-                                        className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-[#1877F2] text-white font-bold hover:brightness-110 transition-all shadow-sm"
+                                        className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-[#1877F2] text-white font-bold transition-all shadow-sm ${allowRegistrations === false ? 'opacity-50 cursor-not-allowed grayscale' : 'hover:brightness-110'}`}
+                                        disabled={allowRegistrations === false}
                                     >
                                         <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                                             <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
@@ -319,14 +351,15 @@ const Register: React.FC = () => {
                                 <button
                                     type="button"
                                     onClick={nextStep}
-                                    className="flex-[2] py-4 px-6 rounded-2xl bg-[var(--brand-primary)] text-white font-bold hover:brightness-110 shadow-xl shadow-[var(--brand-primary)]/20 transition-all flex items-center justify-center gap-2"
+                                    disabled={allowRegistrations === false}
+                                    className={`flex-[2] py-4 px-6 rounded-2xl bg-[var(--brand-primary)] text-white font-bold shadow-xl shadow-[var(--brand-primary)]/20 transition-all flex items-center justify-center gap-2 ${allowRegistrations === false ? 'opacity-50 cursor-not-allowed grayscale' : 'hover:brightness-110'}`}
                                 >
                                     Continue →
                                 </button>
                             ) : (
                                 <button
                                     type="submit"
-                                    disabled={isLoading || !formData.agreedToTerms}
+                                    disabled={isLoading || !formData.agreedToTerms || allowRegistrations === false}
                                     className="flex-[2] py-4 px-6 rounded-2xl bg-[var(--brand-primary)] text-white font-bold hover:brightness-110 shadow-xl shadow-[var(--brand-primary)]/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:grayscale"
                                 >
                                     {isLoading ? (

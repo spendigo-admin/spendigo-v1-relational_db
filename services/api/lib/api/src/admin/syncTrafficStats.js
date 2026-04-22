@@ -44,12 +44,16 @@ const analyticsDataClient = new data_1.BetaAnalyticsDataClient();
  * for the Admin Dashboard to display without latency or quota issues.
  */
 exports.syncTrafficStats = functions.https.onCall(async (data, context) => {
-    var _a;
+    var _a, _b;
     // Auth Check: Admin only
     if (!context.app && process.env.FUNCTIONS_EMULATOR !== 'true') {
         throw new functions.https.HttpsError('failed-precondition', 'The function must be called from an App Check verified app.');
     }
-    if (!context.auth || context.auth.token.role !== 'admin') {
+    if (!context.auth || !context.auth.uid) {
+        throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated.');
+    }
+    const userDoc = await admin.firestore().collection('users').doc(context.auth.uid).get();
+    if (!userDoc.exists || ((_a = userDoc.data()) === null || _a === void 0 ? void 0 : _a.role) !== 'admin') {
         throw new functions.https.HttpsError('permission-denied', 'Only admins can sync traffic stats.');
     }
     const propertyId = '526090559'; // Provided by user
@@ -70,7 +74,7 @@ exports.syncTrafficStats = functions.https.onCall(async (data, context) => {
         const dailyVisits = {};
         // 2. Parse the response
         // Note: Response contains rows for each date/metric combo
-        (_a = response.rows) === null || _a === void 0 ? void 0 : _a.forEach(row => {
+        (_b = response.rows) === null || _b === void 0 ? void 0 : _b.forEach(row => {
             var _a, _b;
             const dateStrRaw = (_a = row.dimensionValues) === null || _a === void 0 ? void 0 : _a[0].value; // YYYYMMDD
             if (!dateStrRaw)

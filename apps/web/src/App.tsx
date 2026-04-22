@@ -95,6 +95,8 @@ const AdminAdManager = lazyWithRetry(() => import('./pages/admin/AdManager'));
 const AdminSurveyManager = lazyWithRetry(() => import('./pages/admin/SurveyManager'));
 const AdminSystemTools = lazyWithRetry(() => import('./pages/admin/SystemTools'));
 const AdminMFAEnrollment = lazyWithRetry(() => import('./pages/admin/MFAEnrollment'));
+const AdminInsights = lazyWithRetry(() => import('./pages/admin/StoreInsights'));
+const AdminSystemHealth = lazyWithRetry(() => import('./pages/admin/SystemHealth'));
 
 import { useState, useEffect } from 'react';
 import { doc, onSnapshot } from 'firebase/firestore';
@@ -229,8 +231,10 @@ function App() {
                                                                     <Route path="/admin/ads" element={<AdminAdManager />} />
                                                                     <Route path="/admin/surveys" element={<AdminSurveyManager />} />
                                                                     <Route path="/admin/tools" element={<AdminSystemTools />} />
+                                                                    <Route path="/admin/insights" element={<AdminInsights />} />
                                                                     <Route path="/admin/careers" element={<CareerManagement />} />
                                                                     <Route path="/admin/mfa-setup" element={<AdminMFAEnrollment />} />
+                                                                    <Route path="/admin/health" element={<AdminSystemHealth />} />
                                                                 </Route>
 
                                                                     {/* 404 Catch All */}

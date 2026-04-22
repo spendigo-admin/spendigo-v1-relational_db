@@ -1,7 +1,8 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import '../../styles/design-system.css';
-import { collection, onSnapshot } from 'firebase/firestore';
-import { db } from '../../lib/firebase';
+import { collection, onSnapshot, doc, updateDoc } from 'firebase/firestore';
+import { db, functions } from '../../lib/firebase';
+import { httpsCallable } from 'firebase/functions';
 import { useMarketplace } from '../../context/MarketplaceContext';
 import { useAudit } from '../../context/AuditContext';
 import { useNotifications } from '../../context/NotificationContext';
@@ -60,37 +61,6 @@ const AdminDashboard: React.FC = () => {
     const { addNotification } = useNotifications();
     const { confirm } = useConfirmation();
 
-    // System Health State (Firebase Consumption Simulation)
-    const [systemHealth, setSystemHealth] = useState({
-        reads: 14250,
-        writes: 2150,
-        bandwidth: 0.45,
-        activeListeners: 12,
-        functions: 450,
-        storage: 1.2
-    });
-
-    useEffect(() => {
-        const updateRealStats = () => {
-            const allStores = Object.values(stores || {});
-            const baseListeners = allStores.length * 2 + 5;
-
-            setSystemHealth(prev => ({
-                reads: prev.reads + Math.floor(Math.random() * 10),
-                writes: prev.writes + (Math.random() > 0.7 ? 1 : 0),
-                bandwidth: prev.bandwidth + (Math.random() * 0.001),
-                activeListeners: baseListeners + Math.floor(Math.random() * 5),
-                functions: prev.functions + (Math.random() > 0.8 ? 1 : 0),
-                storage: prev.storage
-            }));
-        };
-
-        const interval = setInterval(updateRealStats, 2000);
-        updateRealStats(); // Initial call
-
-        return () => clearInterval(interval);
-    }, [stores]); // Re-run if stores change
-
     const trafficStats = useTrafficStats(); // Real-time hook
 
     // Real-time active deal count from subcollections
@@ -124,7 +94,6 @@ const AdminDashboard: React.FC = () => {
 
     // specific aggregation logic
     const stats = useMemo(() => {
-        // ... (pre-existing stats)
         const allStores = Object.values(stores || {});
         const totalStores = allStores.length;
         const pendingStores = allStores.filter((s: any) => s.status === 'pending').length;
@@ -255,7 +224,6 @@ const AdminDashboard: React.FC = () => {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* Store Performance Leaderboard */}
                 <div className="space-y-6">
                     <div className="bg-white rounded-xl border border-[var(--glass-border)] p-6 shadow-sm">
                         <div className="flex justify-between items-center mb-6">
@@ -263,7 +231,6 @@ const AdminDashboard: React.FC = () => {
                             <span className="text-xs font-bold bg-[var(--surface-1)] px-2 py-1 rounded text-[var(--text-muted)]">Live Feed</span>
                         </div>
                         <div className="space-y-4">
-                            {/* Dynamically Map top stores, sorted by Rating desc for true 'Live Feed' leadership */}
                             {Object.values(stores)
                                 .sort((a: any, b: any) => (b.rating || 0) - (a.rating || 0))
                                 .slice(0, 5)
@@ -282,7 +249,6 @@ const AdminDashboard: React.FC = () => {
                                                 <div className="font-bold text-sm text-[var(--text-main)]">{store.name}</div>
                                                 <div className="text-xs text-[var(--text-muted)] flex items-center gap-2">
                                                     <span>📦 {store.productCount || (store.products ? store.products.length : 0)} Products</span>
-                                                    {(store.flyer?.title || store.hasFlyer) && <span className="text-green-600 font-medium"> • Has Flyer</span>}
                                                 </div>
                                             </div>
                                         </div>
@@ -296,104 +262,19 @@ const AdminDashboard: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* NEW: Real Event Stream */}
                     <div className="bg-white rounded-xl border border-[var(--glass-border)] p-6 shadow-sm">
                         <div className="flex justify-between items-center mb-4">
                             <h2 className="text-xl font-bold text-[var(--text-main)]">System Events</h2>
                             <span className="text-xs font-bold text-green-600 animate-pulse">● Realtime</span>
                         </div>
                         <div className="space-y-3 max-h-60 overflow-y-auto">
-                            {/* We will fetch this in a separate component or just simulate with real logs if available. 
-                                For now, let's keep it simple and just show the top list is what requested. 
-                                Actually, I'll add a 'RecentLogList' here if I can import useAudit. 
-                                Let's trust the top list is what they wanted 'Platform Activity' to allow 1,2,3,4 ranking. 
-                            */}
                             <RecentActivityFeed />
                         </div>
                     </div>
                 </div>
 
-                {/* System Health / Logs */}
                 <div className="space-y-6">
-                    <div className="bg-white rounded-xl border border-[var(--glass-border)] p-6 shadow-sm">
-                        <div className="flex items-center justify-between mb-4">
-                            <div>
-                                <h2 className="text-xl font-bold text-[var(--text-main)]">Firebase Consumption</h2>
-                                <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-widest font-bold">Real-time Usage Stats</p>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <a 
-                                    href="https://console.firebase.google.com/" 
-                                    target="_blank" 
-                                    rel="noreferrer"
-                                    className="text-[10px] font-bold bg-[#FFCA28]/10 text-[#F57C00] border border-[#FFCA28]/20 px-3 py-1.5 rounded-full hover:bg-[#FFCA28]/20 transition-all flex items-center gap-1.5 shadow-sm"
-                                >
-                                    <span className="w-2 h-2 bg-[#F57C00] rounded-full animate-pulse"></span>
-                                    Firebase Console ↗
-                                </a>
-                            </div>
-                        </div>
 
-                        <div className="space-y-5">
-                            {/* Firestore Reads */}
-                            <div>
-                                <div className="flex items-center justify-between mb-1">
-                                    <span className="text-sm font-medium text-[var(--text-muted)]">Firestore Reads</span>
-                                    <span className="text-xs font-bold text-[var(--brand-primary)]">{systemHealth.reads.toLocaleString()} <span className="text-gray-400 font-normal">/ 50k</span></span>
-                                </div>
-                                <div className="h-2 bg-[var(--surface-1)] rounded-full overflow-hidden">
-                                    <div
-                                        className="h-full bg-[var(--brand-primary)] rounded-full transition-all duration-1000 ease-out"
-                                        style={{ width: `${Math.min(100, (systemHealth.reads / 50000) * 100)}%` }}
-                                    ></div>
-                                </div>
-                            </div>
-
-                            {/* Firestore Writes */}
-                            <div>
-                                <div className="flex items-center justify-between mb-1">
-                                    <span className="text-sm font-medium text-[var(--text-muted)]">Firestore Writes</span>
-                                    <span className="text-xs font-bold text-blue-600">{systemHealth.writes.toLocaleString()} <span className="text-gray-400 font-normal">/ 20k</span></span>
-                                </div>
-                                <div className="h-2 bg-[var(--surface-1)] rounded-full overflow-hidden">
-                                    <div
-                                        className="h-full bg-blue-500 rounded-full transition-all duration-1000 ease-out"
-                                        style={{ width: `${Math.min(100, (systemHealth.writes / 20000) * 100)}%` }}
-                                    ></div>
-                                </div>
-                            </div>
-
-                            {/* Storage Bandwidth */}
-                            <div>
-                                <div className="flex items-center justify-between mb-1">
-                                    <span className="text-sm font-medium text-[var(--text-muted)]">Storage Bandwidth</span>
-                                    <span className="text-xs font-bold text-purple-600">{systemHealth.bandwidth.toFixed(2)} GB <span className="text-gray-400 font-normal">/ 1 GB</span></span>
-                                </div>
-                                <div className="h-2 bg-[var(--surface-1)] rounded-full overflow-hidden">
-                                    <div
-                                        className="h-full bg-purple-500 rounded-full transition-all duration-1000 ease-out"
-                                        style={{ width: `${Math.min(100, (systemHealth.bandwidth / 1) * 100)}%` }}
-                                    ></div>
-                                </div>
-                            </div>
-
-                            {/* Detailed Metrics Grid */}
-                            <div className="grid grid-cols-3 gap-2 pt-2">
-                                <div className="bg-[var(--surface-1)] p-2 rounded-lg text-center">
-                                    <div className="text-[10px] text-[var(--text-muted)] uppercase font-bold truncate">Active Listeners</div>
-                                    <div className="text-lg font-bold text-[var(--text-main)]">{systemHealth.activeListeners.toLocaleString()}</div>
-                                </div>
-                                <div className="bg-[var(--surface-1)] p-2 rounded-lg text-center">
-                                    <div className="text-[10px] text-[var(--text-muted)] uppercase font-bold truncate">Functions</div>
-                                    <div className="text-lg font-bold text-[var(--text-main)]">{systemHealth.functions.toLocaleString()}</div>
-                                </div>
-                                <div className="bg-[var(--surface-1)] p-2 rounded-lg text-center">
-                                    <div className="text-[10px] text-[var(--text-muted)] uppercase font-bold truncate">Storage</div>
-                                    <div className="text-lg font-bold text-[var(--text-main)]">{systemHealth.storage.toFixed(1)} GB</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
 
                     <div className="bg-blue-50 border border-blue-100 p-6 rounded-xl">
                         <div className="flex items-start gap-4">
@@ -412,12 +293,9 @@ const AdminDashboard: React.FC = () => {
                         </div>
                     </div>
                 </div>
-
             </div>
-        </div >
+        </div>
     );
 };
 
 export default AdminDashboard;
-
-

@@ -24,6 +24,8 @@ export { smartcartOptimize } from './smartcart/optimizeEndpoint';
 export { cartOptimize } from './cart/optimizeCart';
 export { syncMasterProductToAlgolia } from './triggers/algoliaTriggers';
 export { syncTrafficStats } from './admin/syncTrafficStats';
+export { getSystemHealth } from './admin/getSystemHealth';
+
 export { syncMerchantProductToAlgolia } from './triggers/algoliaMerchantTriggers';
 export { onboardStore } from './payments/onboardStore';
 export { checkStripeAccountStatus } from './payments/checkStripeStatus';

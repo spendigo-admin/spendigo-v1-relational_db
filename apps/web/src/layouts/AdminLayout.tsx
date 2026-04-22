@@ -38,11 +38,14 @@ const AdminLayout: React.FC = () => {
         { icon: '📊', label: 'Dashboard', path: '/admin/dashboard' },
         { icon: '📦', label: 'Master Catalog', path: '/admin/catalog' },
         { icon: '👥', label: 'Users', path: '/admin/users' },
+        { icon: '📈', label: 'Store Insights', path: '/admin/insights' },
+
 
         { icon: '🏪', label: 'Stores', path: '/admin/stores' },
         { icon: '📢', label: 'Carousel Ads', path: '/admin/ads' },
         { icon: '📋', label: 'Survey Board', path: '/admin/surveys' },
         { icon: '🛡️', label: 'Audit Logs', path: '/admin/audit-logs' },
+        { icon: '🔥', label: 'System Health', path: '/admin/health' },
         { icon: '🛠️', label: 'System Tools', path: '/admin/tools' },
         { icon: '💼', label: 'Careers', path: '/admin/careers' },
         { icon: '⚙️', label: 'Settings', path: '/admin/settings' },

@@ -15,7 +15,12 @@ export const syncTrafficStats = functions.https.onCall(async (data, context) => 
     if (!context.app && process.env.FUNCTIONS_EMULATOR !== 'true') {
         throw new functions.https.HttpsError('failed-precondition', 'The function must be called from an App Check verified app.');
     }
-    if (!context.auth || context.auth.token.role !== 'admin') {
+    if (!context.auth || !context.auth.uid) {
+        throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated.');
+    }
+
+    const userDoc = await admin.firestore().collection('users').doc(context.auth.uid).get();
+    if (!userDoc.exists || userDoc.data()?.role !== 'admin') {
         throw new functions.https.HttpsError('permission-denied', 'Only admins can sync traffic stats.');
     }
 

@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import '../../styles/design-system.css';
 import { useAuth } from '../../context/AuthContext';
 import { useTranslation } from 'react-i18next';
 import SEO from '../../components/SEO';
 import { BUSINESS_TYPES } from '../merchant/Settings';
+import { doc, onSnapshot } from 'firebase/firestore';
+import { db } from '../../lib/firebase';
 
 const MerchantRegister: React.FC = () => {
     const navigate = useNavigate();
@@ -27,6 +29,20 @@ const MerchantRegister: React.FC = () => {
         postalCode: '',
         agreedToTerms: false
     });
+    const [allowRegistrations, setAllowRegistrations] = useState<boolean | null>(null);
+
+    useEffect(() => {
+        const docRef = doc(db, 'settings', 'platform');
+        const unsubscribe = onSnapshot(docRef, (docSnap) => {
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                setAllowRegistrations(data.allowPartnerRegistrations !== false);
+            } else {
+                setAllowRegistrations(true);
+            }
+        });
+        return () => unsubscribe();
+    }, []);
 
     const nextStep = () => {
         // Simple client-side validation per step
@@ -135,6 +151,18 @@ const MerchantRegister: React.FC = () => {
                             </div>
                         ))}
                     </div>
+
+                    {allowRegistrations === false && (
+                        <div className="mb-6 p-6 rounded-2xl bg-amber-50 border border-amber-200 text-amber-800 animate-fade-in shadow-sm">
+                            <div className="flex items-center gap-3 mb-2">
+                                <span className="text-2xl">🤝</span>
+                                <h3 className="font-bold text-lg">Partner Intake on Hold</h3>
+                            </div>
+                            <p className="text-sm opacity-90">
+                                We are currently not accepting new partner registrations as we scale our current merchants. Please contact our business relations team at partners@spendigo.ca to be added to the waitlist.
+                            </p>
+                        </div>
+                    )}
 
                     {error && (
                         <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-100 text-red-600 text-sm flex items-center gap-3 animate-fade-in">
@@ -325,14 +353,15 @@ const MerchantRegister: React.FC = () => {
                                 <button
                                     type="button"
                                     onClick={nextStep}
-                                    className="flex-[2] py-4 px-6 rounded-2xl bg-[var(--brand-primary)] text-white font-bold hover:brightness-110 shadow-xl shadow-[var(--brand-primary)]/20 transition-all flex items-center justify-center gap-2"
+                                    disabled={allowRegistrations === false}
+                                    className={`flex-[2] py-4 px-6 rounded-2xl bg-[var(--brand-primary)] text-white font-bold shadow-xl shadow-[var(--brand-primary)]/20 transition-all flex items-center justify-center gap-2 ${allowRegistrations === false ? 'opacity-50 cursor-not-allowed grayscale' : 'hover:brightness-110'}`}
                                 >
                                     Continue →
                                 </button>
                             ) : (
                                 <button
                                     type="submit"
-                                    disabled={isLoading || !formData.agreedToTerms}
+                                    disabled={isLoading || !formData.agreedToTerms || allowRegistrations === false}
                                     className="flex-[2] py-4 px-6 rounded-2xl bg-[var(--brand-primary)] text-white font-bold hover:brightness-110 shadow-xl shadow-[var(--brand-primary)]/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:grayscale transition-all"
                                 >
                                     {isLoading ? (

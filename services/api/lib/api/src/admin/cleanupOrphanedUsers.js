@@ -44,7 +44,10 @@ const admin = __importStar(require("firebase-admin"));
  *
  * Protected: Requires Admin Authentication.
  */
-exports.cleanupOrphanedUsers = functions.https.onCall(async (data, context) => {
+exports.cleanupOrphanedUsers = functions.runWith({
+    timeoutSeconds: 540,
+    memory: '1GB'
+}).https.onCall(async (data, context) => {
     // 1. Verify Authentication & Role
     if (!context.app && process.env.FUNCTIONS_EMULATOR !== 'true') {
         throw new functions.https.HttpsError('failed-precondition', 'The function must be called from an App Check verified app.');

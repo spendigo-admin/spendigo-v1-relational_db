@@ -13,7 +13,8 @@ const AdminSettings: React.FC = () => {
     const [settings, setSettings] = useState<any>({
         maintenanceMode: false,
         maintenanceRequest: null, // { requesterId, requesterName, targetState, timestamp }
-        allowNewRegistrations: true,
+        allowShopperRegistrations: true,
+        allowPartnerRegistrations: true,
         platformFeePercentage: 5.0,
         supportEmail: 'support@spendigo.ca',
         maxFlyerUploadSizeMB: 10,
@@ -211,14 +212,31 @@ const AdminSettings: React.FC = () => {
 
                             <div className="flex items-center justify-between">
                                 <div>
-                                    <p className="font-medium text-[var(--text-main)]">Allow New Registrations</p>
-                                    <p className="text-xs text-[var(--text-muted)]">Control whether new users can sign up</p>
+                                    <p className="font-medium text-[var(--text-main)]">Allow Shopper Registrations</p>
+                                    <p className="text-xs text-[var(--text-muted)]">Control whether new shoppers can sign up</p>
                                 </div>
                                 <label className="relative inline-flex items-center cursor-pointer">
                                     <input
                                         type="checkbox"
-                                        name="allowNewRegistrations"
-                                        checked={settings.allowNewRegistrations}
+                                        name="allowShopperRegistrations"
+                                        checked={settings.allowShopperRegistrations}
+                                        onChange={handleChange}
+                                        className="sr-only peer"
+                                    />
+                                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--brand-primary)]"></div>
+                                </label>
+                            </div>
+
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="font-medium text-[var(--text-main)]">Allow Partner Registrations</p>
+                                    <p className="text-xs text-[var(--text-muted)]">Control whether new partners/merchants can sign up</p>
+                                </div>
+                                <label className="relative inline-flex items-center cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        name="allowPartnerRegistrations"
+                                        checked={settings.allowPartnerRegistrations}
                                         onChange={handleChange}
                                         className="sr-only peer"
                                     />
