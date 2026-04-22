@@ -34,21 +34,39 @@ const AdminLayout: React.FC = () => {
         return null;
     }
 
-    const menuItems = [
-        { icon: '📊', label: 'Dashboard', path: '/admin/dashboard' },
-        { icon: '📦', label: 'Master Catalog', path: '/admin/catalog' },
-        { icon: '👥', label: 'Users', path: '/admin/users' },
-        { icon: '📈', label: 'Store Insights', path: '/admin/insights' },
-
-
-        { icon: '🏪', label: 'Stores', path: '/admin/stores' },
-        { icon: '📢', label: 'Carousel Ads', path: '/admin/ads' },
-        { icon: '📋', label: 'Survey Board', path: '/admin/surveys' },
-        { icon: '🛡️', label: 'Audit Logs', path: '/admin/audit-logs' },
-        { icon: '🔥', label: 'System Health', path: '/admin/health' },
-        { icon: '🛠️', label: 'System Tools', path: '/admin/tools' },
-        { icon: '💼', label: 'Careers', path: '/admin/careers' },
-        { icon: '⚙️', label: 'Settings', path: '/admin/settings' },
+    const menuGroups = [
+        {
+            title: 'Overview',
+            items: [
+                { icon: '📊', label: 'Dashboard', path: '/admin/dashboard' },
+                { icon: '📈', label: 'Store Insights', path: '/admin/insights' },
+            ]
+        },
+        {
+            title: 'Marketplace',
+            items: [
+                { icon: '🏪', label: 'Stores', path: '/admin/stores' },
+                { icon: '📦', label: 'Master Catalog', path: '/admin/catalog' },
+                { icon: '📢', label: 'Carousel Ads', path: '/admin/ads' },
+                { icon: '📋', label: 'Survey Board', path: '/admin/surveys' },
+            ]
+        },
+        {
+            title: 'Management',
+            items: [
+                { icon: '👥', label: 'Users', path: '/admin/users' },
+                { icon: '💼', label: 'Careers', path: '/admin/careers' },
+            ]
+        },
+        {
+            title: 'System',
+            items: [
+                { icon: '🔥', label: 'System Health', path: '/admin/health' },
+                { icon: '🛡️', label: 'Audit Logs', path: '/admin/audit-logs' },
+                { icon: '🛠️', label: 'System Tools', path: '/admin/tools' },
+                { icon: '⚙️', label: 'Settings', path: '/admin/settings' },
+            ]
+        }
     ];
 
     const handleLogout = () => {
@@ -104,23 +122,32 @@ const AdminLayout: React.FC = () => {
                 <div className="md:hidden h-6"></div>
 
                 {/* Navigation */}
-                <nav className="flex-1 p-4 space-y-1 overflow-y-auto scrollbar-hide">
-                    {menuItems.map((item) => {
-                        const isActive = location.pathname === item.path;
-                        return (
-                            <Link
-                                key={item.path}
-                                to={item.path}
-                                className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${isActive
-                                    ? 'bg-[var(--brand-primary)] text-white shadow-lg shadow-[var(--brand-primary)]/30'
-                                    : 'text-[var(--text-muted)] hover:bg-[var(--surface-1)] hover:text-[var(--text-main)]'
-                                    }`}
-                            >
-                                <span className="text-lg">{item.icon}</span>
-                                {item.label}
-                            </Link>
-                        );
-                    })}
+                <nav className="flex-1 p-4 space-y-6 overflow-y-auto scrollbar-hide pb-24">
+                    {menuGroups.map((group, idx) => (
+                        <div key={idx}>
+                            <h3 className="px-4 text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-2">
+                                {group.title}
+                            </h3>
+                            <div className="space-y-1">
+                                {group.items.map((item) => {
+                                    const isActive = location.pathname === item.path;
+                                    return (
+                                        <Link
+                                            key={item.path}
+                                            to={item.path}
+                                            className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${isActive
+                                                ? 'bg-[var(--brand-primary)] text-white shadow-md shadow-[var(--brand-primary)]/20'
+                                                : 'text-[var(--text-muted)] hover:bg-[var(--surface-1)] hover:text-[var(--text-main)]'
+                                                }`}
+                                        >
+                                            <span className="text-lg">{item.icon}</span>
+                                            {item.label}
+                                        </Link>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    ))}
                 </nav>
 
                 {/* Footer User Profile */}

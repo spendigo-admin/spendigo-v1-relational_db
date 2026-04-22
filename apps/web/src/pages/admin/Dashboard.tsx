@@ -223,9 +223,31 @@ const AdminDashboard: React.FC = () => {
                 ))}
             </div>
 
+            {/* Pending Actions Banner */}
+            <div className="mb-8">
+                <div className="bg-blue-50 border border-blue-100 p-6 rounded-xl">
+                    <div className="flex items-start gap-4">
+                        <span className="text-2xl">⚡</span>
+                        <div>
+                            <h3 className="font-bold text-blue-900 mb-1">Pending Actions</h3>
+                            <p className="text-sm text-blue-800 mb-3">
+                                {Object.values(stores).filter((s: any) => s.status === 'pending').length > 0
+                                    ? `There are ${Object.values(stores).filter((s: any) => s.status === 'pending').length} new merchant applications requiring review.`
+                                    : 'No pending merchant applications.'}
+                            </p>
+                            <Link to="/admin/stores?status=pending" className="text-xs bg-blue-600 text-white px-3 py-1.5 rounded-lg font-bold hover:bg-blue-700 transition-colors inline-block">
+                                Review Applications
+                            </Link>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Main Content Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Left Column */}
                 <div className="space-y-6">
-                    <div className="bg-white rounded-xl border border-[var(--glass-border)] p-6 shadow-sm">
+                    <div className="bg-white rounded-xl border border-[var(--glass-border)] p-6 shadow-sm h-full">
                         <div className="flex justify-between items-center mb-6">
                             <h2 className="text-xl font-bold text-[var(--text-main)]">Platform Activity</h2>
                             <span className="text-xs font-bold bg-[var(--surface-1)] px-2 py-1 rounded text-[var(--text-muted)]">Live Feed</span>
@@ -261,35 +283,17 @@ const AdminDashboard: React.FC = () => {
                                 ))}
                         </div>
                     </div>
+                </div>
 
-                    <div className="bg-white rounded-xl border border-[var(--glass-border)] p-6 shadow-sm">
+                {/* Right Column */}
+                <div className="space-y-6">
+                    <div className="bg-white rounded-xl border border-[var(--glass-border)] p-6 shadow-sm h-full">
                         <div className="flex justify-between items-center mb-4">
                             <h2 className="text-xl font-bold text-[var(--text-main)]">System Events</h2>
                             <span className="text-xs font-bold text-green-600 animate-pulse">● Realtime</span>
                         </div>
-                        <div className="space-y-3 max-h-60 overflow-y-auto">
+                        <div className="space-y-3 max-h-80 overflow-y-auto">
                             <RecentActivityFeed />
-                        </div>
-                    </div>
-                </div>
-
-                <div className="space-y-6">
-
-
-                    <div className="bg-blue-50 border border-blue-100 p-6 rounded-xl">
-                        <div className="flex items-start gap-4">
-                            <span className="text-2xl">⚡</span>
-                            <div>
-                                <h3 className="font-bold text-blue-900 mb-1">Pending Actions</h3>
-                                <p className="text-sm text-blue-800 mb-3">
-                                    {Object.values(stores).filter((s: any) => s.status === 'pending').length > 0
-                                        ? `There are ${Object.values(stores).filter((s: any) => s.status === 'pending').length} new merchant applications requiring review.`
-                                        : 'No pending merchant applications.'}
-                                </p>
-                                <Link to="/admin/stores?status=pending" className="text-xs bg-blue-600 text-white px-3 py-1.5 rounded-lg font-bold hover:bg-blue-700 transition-colors inline-block">
-                                    Review Applications
-                                </Link>
-                            </div>
                         </div>
                     </div>
                 </div>
