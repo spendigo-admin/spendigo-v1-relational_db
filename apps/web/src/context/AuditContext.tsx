@@ -1,7 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { collection, query, orderBy, onSnapshot, setDoc, doc } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, doc, runTransaction, limit, getDocs } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useAuth } from './AuthContext';
+import { auditBridge } from '../utils/auditBridge';
 
 // Standardized Log Entry
 export interface AuditLog {
@@ -23,8 +24,9 @@ interface AuditContextType {
     logs: AuditLog[];
     logEvent: (action: string, metadata?: Record<string, any>, resource?: string) => Promise<void>;
     testLog: () => Promise<void>;
-    verifyIntegrity: () => Promise<boolean>;
-    isVerified: boolean | null; // null = checking/unknown, true = valid, false = tampered
+    verifyIntegrity: () => Promise<{ isValid: boolean; breakAt?: string }>;
+    isVerified: boolean | null;
+    errorLogId: string | null;
 }
 
 const AuditContext = createContext<AuditContextType | undefined>(undefined);
@@ -65,62 +67,66 @@ export const AuditProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     const { user } = useAuth();
     const [logs, setLogs] = useState<AuditLog[]>([]);
     const [isVerified, setIsVerified] = useState<boolean | null>(null);
+    const [errorLogId, setErrorLogId] = useState<string | null>(null);
 
-    // Sync logs from Firestore
+    // Sync logs and Listen to Global Bridge
     useEffect(() => {
         const q = query(collection(db, 'audit_logs'), orderBy('timestamp', 'asc'));
 
-        const unsubscribe = onSnapshot(q, 
+        const unsubscribeLogs = onSnapshot(q, 
             (snapshot) => {
                 const fetchedLogs: AuditLog[] = [];
                 snapshot.forEach((doc) => {
                     fetchedLogs.push({ id: doc.id, ...doc.data() } as AuditLog);
                 });
-
-                console.log(`[AuditContext] Synced ${fetchedLogs.length} logs.`);
                 setLogs(fetchedLogs);
-            },
-            (error) => {
-                console.error("[AuditContext] Snapshot error:", error);
             }
         );
 
-        return () => unsubscribe();
-    }, []);
+        // Listen for system-wide events (e.g. from AuthContext)
+        const unsubscribeBridge = auditBridge.subscribe((params) => {
+            console.log(`[AuditBridge] Received event: ${params.action}`, params.metadata);
+            logEvent(params.action, params.metadata, params.resource);
+        });
+
+        return () => {
+            unsubscribeLogs();
+            unsubscribeBridge();
+        };
+    }, [user?.id]); // Re-subscribe if user changes
 
     // Verify Integrity Chain
-    const verifyIntegrity = async (): Promise<boolean> => {
+    const verifyIntegrity = async (): Promise<{ isValid: boolean; breakAt?: string }> => {
         setIsVerified(null); // validating...
-        if (logs.length === 0) return true;
+        setErrorLogId(null);
 
-        let isValid = true;
-
-        // Find Genesis
-        const genesis = logs.find(l => l.prevHash === GENESIS_HASH);
-        if (!genesis) {
-            // If no explicit genesis block with 000... hash, maybe we just verify the chain we have
-            // But technically the first block MUST have GENESIS_HASH as prevHash
-            // If we migrated and existing logs are there, we check from start.
+        if (logs.length === 0) {
+            setIsVerified(true);
+            return { isValid: true };
         }
 
+        let isValid = true;
+        let breakAtId: string | undefined;
         let previousHash = GENESIS_HASH;
 
+        // Note: logs are ordered by timestamp asc from firestore query
         for (const log of logs) {
             // 1. Check Linkage
             if (log.prevHash !== previousHash) {
                 console.error(`Broken Chain at ${log.id}: prevHash mismatch. Expected ${previousHash}, got ${log.prevHash}`);
                 isValid = false;
+                breakAtId = log.id;
                 break;
             }
 
-            // 2. Check Data Integrity (Re-hash content using canonical key order)
+            // 2. Check Data Integrity (Re-hash content)
             const contentToHash = { ...log, hash: undefined };
-
             const calculated = await sha256(canonicalize(contentToHash));
 
             if (calculated !== log.hash) {
                 console.error(`Tampered Data at ${log.id}: hash mismatch`);
                 isValid = false;
+                breakAtId = log.id;
                 break;
             }
 
@@ -128,7 +134,8 @@ export const AuditProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         }
 
         setIsVerified(isValid);
-        return isValid;
+        if (!isValid) setErrorLogId(breakAtId || 'unknown');
+        return { isValid, breakAt: breakAtId };
     };
 
     // Auto-verify on load if logs exist
@@ -139,37 +146,46 @@ export const AuditProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }, [logs.length]);
 
     const logEvent = async (action: string, metadata: Record<string, any> = {}, resource: string = '') => {
-        // Calculate Prev Hash
-        const lastLog = logs[logs.length - 1];
-        const prevHash = lastLog ? lastLog.hash : GENESIS_HASH;
-
-        // Mock IP
-        const ip = '192.168.1.' + Math.floor(Math.random() * 255);
-
-        const newLogData = {
-            timestamp: new Date().toISOString(),
-            actor: {
-                id: user?.id || 'anonymous', // Rules will reject 'anonymous' for writes
-                email: user?.email || 'unauthenticated',
-                ip: ip
-            },
-            action,
-            resource,
-            metadata,
-            prevHash,
-            hash: ''
-        };
-
         const id = `txn_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
-
-        const logEntry = { id, ...newLogData };
-        const hash = await sha256(canonicalize({ ...logEntry, hash: undefined }));
-        logEntry.hash = hash;
-
-        // Write to Firestore
-        // We use setDoc to preserve our generated ID, ensuring the hash matches the ID
+        
         try {
-            await setDoc(doc(db, 'audit_logs', id), logEntry);
+            // 1. Get the very last log to find the prevHash
+            // Note: Transactions don't support queries in Web SDK. 
+            // For 100% forensic accuracy, this should be a Cloud Function.
+            // For now, we fetch the last log manually.
+            const q = query(collection(db, 'audit_logs'), orderBy('timestamp', 'desc'), limit(1));
+            const lastLogSnapshot = await getDocs(q);
+            
+            let prevHash = GENESIS_HASH;
+            if (!lastLogSnapshot.empty) {
+                prevHash = lastLogSnapshot.docs[0].data().hash;
+            }
+
+            const logEntry: any = {
+                id,
+                timestamp: new Date().toISOString(),
+                actor: {
+                    id: user?.id || 'anonymous',
+                    email: user?.email || 'unauthenticated',
+                    ip: 'redacted' // IP capture usually happens server-side
+                },
+                action,
+                resource,
+                metadata,
+                prevHash,
+                hash: ''
+            };
+
+            const hash = await sha256(canonicalize({ ...logEntry, hash: undefined }));
+            logEntry.hash = hash;
+
+            // Simple set is more reliable for client-side linkage than a failing transaction
+            await runTransaction(db, async (transaction) => {
+                const logRef = doc(db, 'audit_logs', id);
+                transaction.set(logRef, logEntry);
+            });
+            
+            console.log(`[AuditContext] Logged event: ${action} (${id})`);
         } catch (e) {
             console.error("Failed to write audit log", e);
         }
@@ -183,7 +199,7 @@ export const AuditProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     };
 
     return (
-        <AuditContext.Provider value={{ logs, logEvent, testLog, verifyIntegrity, isVerified }}>
+        <AuditContext.Provider value={{ logs, logEvent, testLog, verifyIntegrity, isVerified, errorLogId }}>
             {children}
         </AuditContext.Provider>
     );

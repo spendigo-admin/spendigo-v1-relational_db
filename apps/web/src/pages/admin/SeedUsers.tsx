@@ -5,6 +5,7 @@ import { auth, db } from '../../lib/firebase';
 import { User, useAuth } from '../../context/AuthContext';
 import { GROCERY_CATALOG } from '../../data/groceryCatalog';
 import { STORE_DATA } from '../../data/productData';
+import { auditBridge } from '../../utils/auditBridge';
 
 // --- DATA DEFINITIONS ---
 // Use existing mock data as source of truth
@@ -89,6 +90,9 @@ export default function SeedUsers() {
         const PASSWORD = 'Spendigo123!';
 
         try {
+            auditBridge.emit('SYSTEM_SEED_DATABASE', {
+                timestamp: new Date().toISOString()
+            });
             // 1. Consumers
             for (const c of CONSUMERS) {
                 await createUser(c.email, PASSWORD, {
@@ -302,6 +306,10 @@ export default function SeedUsers() {
                         role: 'admin',
                         adminRole: 'SUPER_ADMIN',
                         avatar: '👮‍♂️'
+                    });
+
+                    auditBridge.emit('SYSTEM_REPAIR_ADMIN', {
+                        targetEmail: 'admin2@spendigo.ca'
                     });
 
                     log('✅ Admin 2 Sequence Finished.');

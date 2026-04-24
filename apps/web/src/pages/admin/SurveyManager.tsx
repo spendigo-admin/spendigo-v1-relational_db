@@ -3,6 +3,7 @@ import { collection, query, orderBy, getDocs, addDoc, updateDoc, deleteDoc, doc,
 import { db } from '../../lib/firebase';
 import { useNotifications } from '../../context/NotificationContext';
 import { useConfirmation } from '../../context/ConfirmationContext';
+import { auditBridge } from '../../utils/auditBridge';
 
 interface SurveyQuestion {
     id: string;
@@ -80,11 +81,21 @@ const AdminSurveyManager: React.FC = () => {
 
             if (editingSurvey.id) {
                 await updateDoc(doc(db, 'surveys', editingSurvey.id), surveyData);
+                auditBridge.emit('SURVEY_UPDATE', {
+                    surveyId: editingSurvey.id,
+                    title: surveyData.title,
+                    status: surveyData.status
+                });
                 addNotification({ type: 'system', title: 'Survey Updated', message: 'Survey saved successfully.' });
             } else {
-                await addDoc(collection(db, 'surveys'), {
+                const docRef = await addDoc(collection(db, 'surveys'), {
                     ...surveyData,
                     createdAt: serverTimestamp()
+                });
+                auditBridge.emit('SURVEY_CREATE', {
+                    surveyId: docRef.id,
+                    title: surveyData.title,
+                    status: surveyData.status
                 });
                 addNotification({ type: 'system', title: 'Survey Created', message: 'New survey created.' });
             }
@@ -107,7 +118,12 @@ const AdminSurveyManager: React.FC = () => {
 
         if (confirmed) {
             try {
+                const survey = surveys.find(s => s.id === id);
                 await deleteDoc(doc(db, 'surveys', id));
+                auditBridge.emit('SURVEY_DELETE', {
+                    surveyId: id,
+                    title: survey?.title || 'Unknown Survey'
+                });
                 addNotification({ type: 'system', title: 'Deleted', message: 'Survey deleted.' });
                 fetchSurveys();
             } catch (error) {

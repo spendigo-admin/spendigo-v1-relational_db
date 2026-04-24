@@ -63,11 +63,7 @@ const Login = () => {
 
         try {
             const success = await login(email, password);
-            if (success) {
-                await logEvent('AUTH_LOGIN_SUCCESS', { email: email.toLowerCase() }, 'auth/login');
-                // useEffect will handle redirect when user state updates
-            } else {
-                await logEvent('AUTH_LOGIN_FAILURE', { email: email.toLowerCase(), reason: 'invalid_credentials' }, 'auth/login');
+            if (!success) {
                 setError(t('loginFailed'));
             }
         } catch (err: any) {

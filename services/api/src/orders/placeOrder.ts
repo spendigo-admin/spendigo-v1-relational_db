@@ -3,6 +3,7 @@ import * as admin from 'firebase-admin';
 import { FieldValue, DocumentReference, DocumentSnapshot } from 'firebase-admin/firestore';
 import { checkRateLimit } from '../utils/rateLimiter';
 import { stripe } from '../config/stripe';
+import { logEvent } from '../utils/audit';
 
 const db = admin.firestore();
 
@@ -112,6 +113,19 @@ export const placeOrder = functions.https.onCall(async (data, context) => {
                 };
 
                 transaction.set(newOrderRef, finalOrder);
+
+                // Audit: Order Placed
+                await logEvent(
+                    'ORDER_PLACED',
+                    { id: context.auth?.uid || 'unknown', email: context.auth?.token.email || 'unknown', ip: context.rawRequest.ip || '0.0.0.0' },
+                    { 
+                        orderId: newOrderRef.id,
+                        total: orderData.total,
+                        storeId: orderData.storeId,
+                        itemCount: orderData.items.length
+                    },
+                    newOrderRef.id
+                );
             }
         });
 

@@ -5,6 +5,7 @@ import { collection, query, orderBy, onSnapshot, addDoc, updateDoc, deleteDoc, d
 import { useNotifications } from '../../context/NotificationContext';
 import { useFileUpload } from '../../hooks/useFileUpload';
 import { useAuth } from '../../context/AuthContext';
+import { auditBridge } from '../../utils/auditBridge';
 
 interface AdCampaign {
     id: string;
@@ -90,11 +91,21 @@ const AdManager: React.FC = () => {
 
             if (currentAd.id) {
                 await updateDoc(doc(db, 'ads', currentAd.id), adData);
+                auditBridge.emit('AD_UPDATE', {
+                    adId: currentAd.id,
+                    title: adData.title,
+                    scope: adData.scope
+                });
                 addNotification({ type: 'system', title: 'Ad Updated', message: 'Campaign settings saved.' });
             } else {
-                await addDoc(collection(db, 'ads'), {
+                const docRef = await addDoc(collection(db, 'ads'), {
                     ...adData,
                     createdAt: serverTimestamp()
+                });
+                auditBridge.emit('AD_CREATE', {
+                    adId: docRef.id,
+                    title: adData.title,
+                    scope: adData.scope
                 });
                 addNotification({ type: 'system', title: 'Ad Created', message: 'New campaign launched.' });
             }
@@ -109,7 +120,12 @@ const AdManager: React.FC = () => {
     const handleDelete = async (id: string) => {
         if (!window.confirm('Are you sure you want to delete this ad?')) return;
         try {
+            const ad = ads.find(a => a.id === id);
             await deleteDoc(doc(db, 'ads', id));
+            auditBridge.emit('AD_DELETE', {
+                adId: id,
+                title: ad?.title || 'Unknown Ad'
+            });
             addNotification({ type: 'system', title: 'Ad Deleted', message: 'Campaign removed.' });
         } catch (error) {
             addNotification({ type: 'alert', title: 'Error', message: 'Delete failed.' });

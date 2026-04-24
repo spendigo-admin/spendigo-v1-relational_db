@@ -4,6 +4,7 @@ import { collection, query, where, onSnapshot, doc, getDoc, getDocs, setDoc, upd
 import { db, storage } from '../lib/firebase';
 import { ref, deleteObject } from 'firebase/storage';
 import { searchClient, ALGOLIA_INDEX_NAME, ALGOLIA_MERCHANT_INDEX_NAME } from '../lib/algolia';
+import { auditBridge } from '../utils/auditBridge';
 
 export interface Product {
     id: string; // Merchant Product ID
@@ -705,6 +706,12 @@ export const useCatalog = () => {
         }
 
         await setDoc(ref, productData);
+        auditBridge.emit('MERCHANT_PRODUCT_ADD', {
+            storeId,
+            masterId,
+            price,
+            merchantProductId
+        });
         await syncStoreProductCount(storeId);
     };
 
@@ -721,12 +728,20 @@ export const useCatalog = () => {
         safeData.updated_at = serverTimestamp();
 
         await updateDoc(ref, safeData);
+        auditBridge.emit('MERCHANT_PRODUCT_UPDATE', {
+            productId,
+            updates: safeData
+        });
     };
 
     // Delete Merchant Product
     const deleteMerchantProduct = async (storeId: string, productId: string) => {
         const ref = doc(db, 'merchant_products', productId);
         await deleteDoc(ref);
+        auditBridge.emit('MERCHANT_PRODUCT_DELETE', {
+            storeId,
+            productId
+        });
         await syncStoreProductCount(storeId);
     };
 
@@ -744,6 +759,11 @@ export const useCatalog = () => {
             requested_image_url: data.image || '',
             requested_barcode_image_url: data.barcodeImage || '',
             created_at: serverTimestamp()
+        });
+        auditBridge.emit('MASTER_PRODUCT_REQUEST', {
+            storeId,
+            productName: data.name,
+            barcode: data.barcode
         });
     };
 

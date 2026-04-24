@@ -38,6 +38,7 @@ const functions = __importStar(require("firebase-functions"));
 const admin = __importStar(require("firebase-admin"));
 const firestore_1 = require("firebase-admin/firestore");
 const rateLimiter_1 = require("../utils/rateLimiter");
+const audit_1 = require("../utils/audit");
 const db = admin.firestore();
 exports.cancelOrder = functions.https.onCall(async (data, context) => {
     if (!context.app && process.env.FUNCTIONS_EMULATOR !== 'true') {
@@ -55,6 +56,7 @@ exports.cancelOrder = functions.https.onCall(async (data, context) => {
     }
     try {
         await db.runTransaction(async (transaction) => {
+            var _a, _b;
             const orderRef = db.collection('orders').doc(orderId);
             const orderSnap = await transaction.get(orderRef);
             if (!orderSnap.exists) {
@@ -94,6 +96,11 @@ exports.cancelOrder = functions.https.onCall(async (data, context) => {
                     available_quantity: firestore_1.FieldValue.increment(quantity)
                 });
             }
+            // Audit: Order Cancelled
+            await (0, audit_1.logEvent)('ORDER_CANCELLED', { id: ((_a = context.auth) === null || _a === void 0 ? void 0 : _a.uid) || 'unknown', email: ((_b = context.auth) === null || _b === void 0 ? void 0 : _b.token.email) || 'unknown', ip: context.rawRequest.ip || '0.0.0.0' }, {
+                orderId,
+                reason: reason || 'Cancelled by user'
+            }, orderId);
         });
         return { success: true };
     }

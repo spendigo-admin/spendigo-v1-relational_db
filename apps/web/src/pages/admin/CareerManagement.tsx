@@ -3,6 +3,7 @@ import { collection, query, orderBy, onSnapshot, doc, setDoc, deleteDoc, serverT
 import { db } from '../../lib/firebase';
 import { useNotifications } from '../../context/NotificationContext';
 import { useConfirmation } from '../../context/ConfirmationContext';
+import { auditBridge } from '../../utils/auditBridge';
 
 import { Job } from '../../data/careers';
 
@@ -43,11 +44,21 @@ const CareerManagement: React.FC = () => {
 
             if (currentJob.id) {
                 await setDoc(doc(db, 'careers', currentJob.id.toString()), jobData);
+                auditBridge.emit('JOB_POST_UPDATE', {
+                    jobId: currentJob.id,
+                    title: jobData.title,
+                    team: jobData.team
+                });
                 addNotification({ type: 'system', title: 'Updated', message: 'Job posting updated successfully.' });
             } else {
-                await addDoc(collection(db, 'careers'), {
+                const docRef = await addDoc(collection(db, 'careers'), {
                     ...jobData,
                     createdAt: serverTimestamp()
+                });
+                auditBridge.emit('JOB_POST_CREATE', {
+                    jobId: docRef.id,
+                    title: jobData.title,
+                    team: jobData.team
                 });
                 addNotification({ type: 'system', title: 'Created', message: 'Job posting created successfully.' });
             }
@@ -67,7 +78,12 @@ const CareerManagement: React.FC = () => {
             type: 'danger'
         })) {
             try {
+                const job = jobs.find(j => j.id === id);
                 await deleteDoc(doc(db, 'careers', id));
+                auditBridge.emit('JOB_POST_DELETE', {
+                    jobId: id,
+                    title: job?.title || 'Unknown Job'
+                });
                 addNotification({ type: 'system', title: 'Deleted', message: 'Job posting removed.' });
             } catch (err) {
                 console.error(err);

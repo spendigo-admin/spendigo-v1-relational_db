@@ -9,8 +9,9 @@ import {
     sendPasswordResetEmail, // Added sendPasswordResetEmail
     User as FirebaseUser
 } from 'firebase/auth';
-import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore'; // Added updateDoc
+import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore'; 
 import { auth, db } from '../lib/firebase';
+import { auditBridge } from '../utils/auditBridge';
 
 // Define User Types
 export interface User {
@@ -218,15 +219,19 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
             // Re-check auth state (processUserData might have forced logout for banned/suspended users)
             if (!auth.currentUser) {
+                auditBridge.emit({ action: 'AUTH_LOGIN_BLOCKED', metadata: { email, reason: 'account_status' } });
                 return false; // Login blocked
             }
 
+            auditBridge.emit({ action: 'AUTH_LOGIN_SUCCESS', metadata: { email } });
             return true;
         } catch (error: any) {
             if (error.code === 'auth/multi-factor-auth-required') {
+                auditBridge.emit({ action: 'AUTH_MFA_REQUIRED', metadata: { email } });
                 throw error;
             }
             console.error('Login failed:', error);
+            auditBridge.emit({ action: 'AUTH_LOGIN_FAILURE', metadata: { email, error: error.code } });
             return false;
         }
     };
@@ -315,9 +320,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
 
     const logout = async () => {
+        const email = user?.email;
         try {
             await signOut(auth);
             setUser(null); // Explicitly set user to null on logout
+            auditBridge.emit({ action: 'AUTH_LOGOUT', metadata: { email } });
             window.location.href = '/login';
         } catch (error) {
             console.error('Logout failed:', error);
@@ -371,13 +378,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             if (finalUserDoc.exists()) {
                 await processUserData(user.uid, finalUserDoc.data(), user.emailVerified);
             }
+            
+            auditBridge.emit({ action: 'AUTH_SOCIAL_LOGIN_SUCCESS', metadata: { email: user.email, provider: 'google' } });
             return true;
         } catch (error: any) {
             console.error('Google Login failed:', error);
+            auditBridge.emit({ action: 'AUTH_SOCIAL_LOGIN_FAILURE', metadata: { provider: 'google', error: error.code } });
             if (error.code === 'auth/popup-closed-by-user') {
                 return false;
             }
-            console.error(`Google Login failed: ${error.message}`);
             return false;
         } finally {
             setLoading(false);

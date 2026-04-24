@@ -2,6 +2,7 @@ import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import { FieldValue, DocumentReference } from 'firebase-admin/firestore';
 import { checkRateLimit } from '../utils/rateLimiter';
+import { logEvent } from '../utils/audit';
 
 const db = admin.firestore();
 
@@ -73,6 +74,17 @@ export const cancelOrder = functions.https.onCall(async (data, context) => {
                     available_quantity: FieldValue.increment(quantity)
                 });
             }
+
+            // Audit: Order Cancelled
+            await logEvent(
+                'ORDER_CANCELLED',
+                { id: context.auth?.uid || 'unknown', email: context.auth?.token.email || 'unknown', ip: context.rawRequest.ip || '0.0.0.0' },
+                { 
+                    orderId,
+                    reason: reason || 'Cancelled by user'
+                },
+                orderId
+            );
         });
 
         return { success: true };

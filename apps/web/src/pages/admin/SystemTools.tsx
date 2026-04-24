@@ -6,6 +6,7 @@ import { collection, getDocs, query, where, writeBatch, doc, getCountFromServer,
 import { httpsCallable } from 'firebase/functions';
 import { db, functions } from '../../lib/firebase';
 import { jobs as staticJobs } from '../../data/careers';
+import { auditBridge } from '../../utils/auditBridge';
 
 const SystemTools = () => {
     const { migrateCategories, loading: catalogLoading } = useCatalog();
@@ -344,6 +345,10 @@ const SystemTools = () => {
         if (runningTool) return;
         setRunningTool(tool.id);
         try {
+            auditBridge.emit('SYSTEM_TOOL_RUN', {
+                toolId: tool.id,
+                title: tool.title
+            });
             await tool.action();
             if (tool.id === 'category-migration') {
                 addNotification({ type: 'system', title: 'Success', message: `${tool.title} completed successfully.` });

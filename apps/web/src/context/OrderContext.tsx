@@ -19,6 +19,7 @@ import { httpsCallable } from 'firebase/functions';
 import { db, functions } from '../lib/firebase';
 import { useAuth } from './AuthContext';
 import { useCart } from './CartContext';
+import { auditBridge } from '../utils/auditBridge';
 
 // Types
 export interface Address {
@@ -249,6 +250,12 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             ...(reason && { rejectionReason: reason })
         });
 
+        auditBridge.emit('ORDER_STATUS_UPDATE', {
+            orderId,
+            newStatus: status,
+            reason: reason || null
+        });
+
         if (order) {
             let title = '';
             let message = '';
@@ -298,6 +305,12 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             paymentCollectedBy: auditData
         });
 
+        auditBridge.emit('ORDER_PAYMENT_UPDATE', {
+            orderId,
+            newStatus: status,
+            collectedBy: auditData?.name || 'System'
+        });
+
         if (order && status === 'paid') {
             sendOrderNotification(order.customerId, 'Payment Confirmed 💳', `Payment for order #${orderId.substr(0, 8)} has been confirmed by ${order.storeName}.`, 'order', order.id);
         }
@@ -310,6 +323,11 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         try {
             const cancelOrderFn = httpsCallable(functions, 'cancelOrder');
             await cancelOrderFn({ orderId, reason });
+
+            auditBridge.emit('ORDER_CANCEL', {
+                orderId,
+                reason: reason || 'Merchant Cancelled'
+            });
 
             const message = reason ? `Cancelled: ${reason}` : `Your order from ${order.storeName} was cancelled.`;
             sendOrderNotification(order.customerId, 'Order Cancelled 🚫', message, 'alert', order.id);
@@ -324,6 +342,11 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         try {
             const refundOrderFn = httpsCallable(functions, 'refundOrder');
             await refundOrderFn({ orderId, reason });
+
+            auditBridge.emit('ORDER_REFUND', {
+                orderId,
+                reason
+            });
         } catch (e: any) {
             console.error('OrderContext: Refund order failed', e);
             throw e;

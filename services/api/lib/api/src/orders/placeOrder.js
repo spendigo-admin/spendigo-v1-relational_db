@@ -39,6 +39,7 @@ const admin = __importStar(require("firebase-admin"));
 const firestore_1 = require("firebase-admin/firestore");
 const rateLimiter_1 = require("../utils/rateLimiter");
 const stripe_1 = require("../config/stripe");
+const audit_1 = require("../utils/audit");
 const db = admin.firestore();
 exports.placeOrder = functions.https.onCall(async (data, context) => {
     // 1. Security Check
@@ -60,7 +61,7 @@ exports.placeOrder = functions.https.onCall(async (data, context) => {
     const orderIds = [];
     try {
         await db.runTransaction(async (transaction) => {
-            var _a;
+            var _a, _b, _c;
             // PHASE 1: READS (Collect all product snapshots)
             const productChecks = [];
             for (const order of orders) {
@@ -130,6 +131,13 @@ exports.placeOrder = functions.https.onCall(async (data, context) => {
                     date: new Date().toISOString()
                 };
                 transaction.set(newOrderRef, finalOrder);
+                // Audit: Order Placed
+                await (0, audit_1.logEvent)('ORDER_PLACED', { id: ((_b = context.auth) === null || _b === void 0 ? void 0 : _b.uid) || 'unknown', email: ((_c = context.auth) === null || _c === void 0 ? void 0 : _c.token.email) || 'unknown', ip: context.rawRequest.ip || '0.0.0.0' }, {
+                    orderId: newOrderRef.id,
+                    total: orderData.total,
+                    storeId: orderData.storeId,
+                    itemCount: orderData.items.length
+                }, newOrderRef.id);
             }
         });
         return { orderIds, success: true };
