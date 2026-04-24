@@ -220,6 +220,9 @@ service cloud.firestore {
     match /wishlists/{wishlistId} {
       allow read, write: if isOwner(wishlistId);
     }
+    match /comparison_wishlists/{wishlistId} {
+      allow read, write: if isOwner(wishlistId);
+    }
 
     // AUDIT LOGS
     match /audit_logs/{logId} {

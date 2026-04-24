@@ -72,7 +72,7 @@ This is a **Turbo monorepo** with npm workspaces:
 
 ### Frontend (`apps/web/src/`)
 
-**Role-based routing** in [App.tsx](apps/web/src/App.tsx): Three layout wrappers (`ConsumerLayout`, `MerchantLayout`, `AdminLayout`) enforce authentication at the layout level. `MerchantLayout` and `AdminLayout` do hard redirects if the user lacks the correct role. `MaintenanceGuard` (inline in App.tsx) blocks all traffic except admins and `/login`/`/admin` paths when `settings/platform.maintenanceMode` is `true` in Firestore.
+**Role-based routing** in [App.tsx](apps/web/src/App.tsx): Three layout wrappers (`ConsumerLayout`, `MerchantLayout`, `AdminLayout`) enforce authentication at the layout level. `MerchantLayout` and `AdminLayout` do hard redirects if the user lacks the correct role. `MaintenanceGuard` (inline in App.tsx) blocks all traffic except admins and `/login`/`/admin` paths when `settings/platform.maintenanceMode` is `true` in Firestore. React Router uses `future={{ v7_startTransition: true, v7_relativeSplatPath: true }}` for concurrent rendering compatibility.
 
 **Context providers** (wrap order in App.tsx matters):
 ```
@@ -98,6 +98,12 @@ Merchant sub-roles grant specific permissions checked via `can(permission)` from
 - **MARKETING**: flyers:write, deals:write, analytics:read
 
 Admin sub-roles: SUPER_ADMIN (admin:all), MODERATOR (admin:users, admin:stores), SUPPORT (admin:users), AUDITOR (admin:audit). All permission gates are client-side; server-side enforcement is in `firestore.rules`.
+
+**Staff gating** (`AuthContext.tsx`): `/staff/{email}` Firestore documents pre-stage admin accounts. If a matching doc has `status: 'active'`, the user's role is promoted to `admin` (using `staffData.role`) before store/subscription checks — allows admins to pre-register users before they sign up.
+
+**Admin MFA**: Phone SMS MFA (Firebase Phone Auth) is required for all admin roles. `AuthContext` checks `multiFactor(currentUser).enrolledFactors.length`; enrollment is at `/admin/mfa-setup` using invisible reCAPTCHA.
+
+**Admin portal pages**: Users (`/admin/users`), Stores (`/admin/stores`), Orders (`/admin/orders`), Products + pending approval (`/admin/products`), Flyer moderation (`/admin/flyers`), Ads (`/admin/ads`), Surveys (`/admin/surveys`), Careers (`/admin/careers`), Audit log (`/admin/audit`), System tools (`/admin/tools`), Analytics (`/admin/analytics`).
 
 **Audit log integrity** (`AuditContext.tsx`): Audit entries are chained via SHA-256 — each record hashes its own payload concatenated with the previous record's hash (blockchain-lite). Tampering with any historical entry breaks the chain. Verified by the AUDITOR role in the admin portal.
 
@@ -130,7 +136,7 @@ Admin sub-roles: SUPER_ADMIN (admin:all), MODERATOR (admin:users, admin:stores),
 
 Cross-store price comparison and basket optimization (12 files). Pipeline: build price matrix → normalize unit prices → compare across stores → simulate single-store costs → analyze trip consolidation → select optimal allocation. Entry points: `optimizeCart.ts` (main) and `smartcart_optimizer.ts` (orchestrator).
 
-The backend mirror lives in `services/api/src/smartcart/` (Cloud Function endpoint `/smartcartOptimize`). A separate `services/api/src/cart/optimizeCart.ts` exposes an additional `/cartOptimize` endpoint using the same service layer.
+The backend mirror lives in `services/api/src/smartcart/` (Cloud Function endpoint `/smartcartOptimize`). A separate `services/api/src/cart/optimizeCart.ts` exposes an additional `/cartOptimize` endpoint using the same service layer. **Backend caching**: optimizer results are stored in Firestore (`smartcart_optimizer_cache` collection) with a 10-minute TTL; cache key is SHA256 of the sorted shopping list + sorted store IDs (`services/api/src/smartcart/cache.ts`).
 
 ### Backend (`services/api/src/`)
 
@@ -154,6 +160,7 @@ Firebase Cloud Functions v4 (v1 API). Organized by domain:
 - `admin/` — Cleanup utilities (`cleanupOrphanedUsers`, `cleanupOrphanedStoreData`, `syncTrafficStats`)
 - `smartcart/` — Cart optimization HTTP endpoint (`/smartcartOptimize`) mirroring frontend logic
 - `cart/` — Additional `/cartOptimize` HTTP endpoint (delegates to smartcart service layer)
+- `utils/rateLimiter.ts` — Firestore sliding-window rate limiter on `_rate_limits` collection. Applied per-user per-action (e.g., max 5 `placeOrder` calls/min) via Firestore transactions. Returns `resource-exhausted` HttpsError on breach.
 - `models/` — Shared TypeScript interfaces: `MasterProductRecord`, `StoreRecord`, `MerchantProductRecord`
 
 **Note:** `services/functions/` and `services/smartcart_optimizer/` are legacy/experimental — all active Cloud Functions are in `services/api/`.
@@ -170,7 +177,7 @@ Stripe webhook secret stored in Firebase Runtime Config: `stripe.webhook_secret`
 
 ### Firestore Collections
 
-`/users`, `/stores`, `/orders`, `/catalog`, `/master_products`, `/pending_master_products`, `/merchant_products`, `/product_creation_requests`, `/categories`, `/substitution_groups`, `/reviews`, `/audit_logs`, `/carts`, `/wishlists`, `/notifications`, `/settings` (platform config), `/staff`, `/mail`, `/ads`, `/surveys`, `/stats`.
+`/users`, `/stores`, `/orders`, `/catalog`, `/master_products`, `/pending_master_products`, `/merchant_products`, `/product_creation_requests`, `/categories`, `/substitution_groups`, `/reviews`, `/audit_logs`, `/carts`, `/wishlists`, `/notifications`, `/settings` (platform config), `/staff` (admin pre-staging), `/mail`, `/ads`, `/surveys`, `/stats`, `/_rate_limits` (rate limiter sliding windows), `/smartcart_optimizer_cache` (10-min TTL optimizer results), `/payments` (webhook reconciliation buffer).
 
 **Key Firestore write restrictions** (enforced in rules):
 - **Orders**: Created server-side only via Admin SDK (Cloud Functions). Clients cannot create orders directly. Updates use `diff().affectedKeys()` for field-level control — merchants can only change `status`, `rejectionReason`, `estimatedTime`, `paymentStatus`; customers can only set status to `cancelled`.

@@ -4,7 +4,7 @@ import { useOrders } from '../../context/OrderContext';
 import { useAuth } from '../../context/AuthContext';
 import { usePushNotifications } from '../../hooks/usePushNotifications';
 import { useNotifications, NotificationPreferences } from '../../context/NotificationContext';
-import { useWishlist } from '../../context/WishlistContext';
+import { useComparison } from '../../context/ComparisonContext';
 import { useMarketplace } from '../../context/MarketplaceContext';
 import { httpsCallable } from 'firebase/functions';
 import { functions } from '../../lib/firebase';
@@ -13,7 +13,7 @@ import SEO from '../../components/SEO';
 
 const Profile: React.FC = () => {
     const { profile, orders, updateProfile, addAddress, updateAddress, deleteAddress, setDefaultAddress, reorder, downloadOrderReceipt } = useOrders();
-    const { items: wishlistItems, removeItem, clearWishlist, addItem } = useWishlist();
+    const { items: wishlistItems, removeItem, clearComparison, addItem } = useComparison();
     const { stores } = useMarketplace();
     const { user, logout } = useAuth();
     const location = useLocation();
@@ -685,15 +685,15 @@ const Profile: React.FC = () => {
                         <div className="flex items-center justify-between mb-4">
                             <h2 className="text-lg font-bold text-[var(--text-main)]">My Wishlist</h2>
                             {wishlistItems.length > 0 && (
-                                <button onClick={clearWishlist} className="text-xs text-red-500 font-bold">Clear All</button>
+                                <button onClick={clearComparison} className="text-xs text-red-500 font-bold">Clear All</button>
                             )}
                         </div>
                         
                         {wishlistItems.length === 0 ? (
-                            <div className="text-center py-12 bg-white rounded-xl border border-[var(--glass-border)] mb-4">
+                            <div className="text-center py-12 bg-white rounded-xl border border-[var(--glass-border)] mb-4 px-4">
                                 <p className="text-4xl mb-4">✨</p>
-                                <p className="text-[var(--text-muted)]">Your wishlist is empty</p>
-                                <Link to="/" className="text-[var(--brand-primary)] text-sm font-medium">Find Products</Link>
+                                <p className="text-[var(--text-main)] font-bold text-lg mb-1">Your wishlist is empty</p>
+                                <p className="text-[var(--text-muted)] text-sm">Type keywords or product names below to start building your list.</p>
                             </div>
                         ) : null}
 
@@ -743,15 +743,9 @@ const Profile: React.FC = () => {
                                 ))}
                                 <button 
                                     onClick={() => navigate('/compare')}
-                                    className="w-full py-4 mt-2 bg-[var(--surface-2)] text-[var(--text-main)] font-black rounded-2xl border border-[var(--glass-border)] hover:bg-white transition-all"
-                                >
-                                    ⚖️ Compare Prices
-                                </button>
-                                <button 
-                                    onClick={() => navigate('/cart')}
                                     className="w-full py-4 mt-2 bg-[var(--brand-primary)] text-white font-black rounded-2xl shadow-xl shadow-[var(--brand-primary)]/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
                                 >
-                                    Optimize This Wishlist →
+                                    ⚖️ Compare Prices
                                 </button>
                             </div>
                         )}

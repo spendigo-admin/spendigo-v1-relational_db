@@ -7,6 +7,7 @@ import NotFound from './pages/NotFound';
 import { CartProvider } from './context/CartContext';
 import { OrderProvider } from './context/OrderContext';
 import { WishlistProvider } from './context/WishlistContext';
+import { ComparisonProvider } from './context/ComparisonContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
 import { CatalogProvider } from './context/CatalogContext';
@@ -161,6 +162,7 @@ function App() {
                                     <ReviewProvider>
                                         <CartProvider>
                                             <WishlistProvider>
+                                            <ComparisonProvider>
                                                 <OrderProvider>
                                                     <LocationProvider>
                                                         <ConfirmationProvider>
@@ -248,6 +250,7 @@ function App() {
                                                     </ConfirmationProvider>
                                                 </LocationProvider>
                                             </OrderProvider>
+                                            </ComparisonProvider>
                                             </WishlistProvider>
                                         </CartProvider>
                                     </ReviewProvider>
