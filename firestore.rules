@@ -154,6 +154,17 @@ service cloud.firestore {
       }
     }
 
+    // PUBLIC FLYERS (Ingested Grocery Deals)
+    match /public_flyers/{flyerId} {
+      allow read: if true;
+      allow write: if isAdmin();
+      
+      match /deals/{dealId} {
+        allow read: if true;
+        allow write: if isAdmin();
+      }
+    }
+
     // ORDERS
     match /orders/{orderId} {
       // Orders are created server-side only (via placeOrder Cloud Function using Admin SDK)

@@ -25,6 +25,8 @@ export { cartOptimize } from './cart/optimizeCart';
 export { syncMasterProductToAlgolia } from './triggers/algoliaTriggers';
 export { syncTrafficStats } from './admin/syncTrafficStats';
 export { getSystemHealth } from './admin/getSystemHealth';
+export { scrapeFlyer } from './admin/scrapeFlyer';
+export { searchPublicDeals } from './admin/searchPublicDeals';
 
 export { syncMerchantProductToAlgolia } from './triggers/algoliaMerchantTriggers';
 export { onboardStore } from './payments/onboardStore';

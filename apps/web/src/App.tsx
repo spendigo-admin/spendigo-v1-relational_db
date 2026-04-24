@@ -66,6 +66,7 @@ const HowItWorks = lazyWithRetry(() => import('./pages/consumer/HowItWorks'));
 const ConsumerSurveys = lazyWithRetry(() => import('./pages/consumer/Surveys'));
 const Flyers = lazyWithRetry(() => import('./pages/consumer/Flyers'));
 const Deals = lazyWithRetry(() => import('./pages/consumer/Deals'));
+const PriceCompare = lazyWithRetry(() => import('./pages/consumer/PriceCompare'));
 const Legal = lazyWithRetry(() => import('./pages/consumer/Legal'));
 const PartnerWithUs = lazyWithRetry(() => import('./pages/consumer/PartnerWithUs'));
 const MerchantRegister = lazyWithRetry(() => import('./pages/consumer/MerchantRegister'));
@@ -97,6 +98,7 @@ const AdminSystemTools = lazyWithRetry(() => import('./pages/admin/SystemTools')
 const AdminMFAEnrollment = lazyWithRetry(() => import('./pages/admin/MFAEnrollment'));
 const AdminInsights = lazyWithRetry(() => import('./pages/admin/StoreInsights'));
 const AdminSystemHealth = lazyWithRetry(() => import('./pages/admin/SystemHealth'));
+const AdminFlyerIngestion = lazyWithRetry(() => import('./pages/admin/FlyerIngestion'));
 
 import { useState, useEffect } from 'react';
 import { doc, onSnapshot } from 'firebase/firestore';
@@ -197,6 +199,7 @@ function App() {
                                                                     <Route path="/surveys" element={<ConsumerSurveys />} />
                                                                     <Route path="/flyers" element={<Flyers />} />
                                                                     <Route path="/deals" element={<Deals />} />
+                                                                    <Route path="/compare" element={<PriceCompare />} />
                                                                     <Route path="/consumer" element={<Navigate to="/" replace />} />
                                                                 </Route>
 
@@ -235,6 +238,7 @@ function App() {
                                                                     <Route path="/admin/careers" element={<CareerManagement />} />
                                                                     <Route path="/admin/mfa-setup" element={<AdminMFAEnrollment />} />
                                                                     <Route path="/admin/health" element={<AdminSystemHealth />} />
+                                                                    <Route path="/admin/flyer-ingestion" element={<AdminFlyerIngestion />} />
                                                                 </Route>
 
                                                                     {/* 404 Catch All */}

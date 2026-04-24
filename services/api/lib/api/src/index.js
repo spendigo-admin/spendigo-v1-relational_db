@@ -33,7 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.onStoreDelete = exports.onMerchantProductPriceChange = exports.onOrderStatusUpdated = exports.refundOrder = exports.createPaymentIntent = exports.checkStripeAccountStatus = exports.onboardStore = exports.syncMerchantProductToAlgolia = exports.getSystemHealth = exports.syncTrafficStats = exports.syncMasterProductToAlgolia = exports.cartOptimize = exports.smartcartOptimize = exports.onMasterProductWrite = exports.onUserUpdate = exports.downloadReceipt = exports.cancelOrder = exports.placeOrder = exports.updateSubscriptionPlan = exports.sendOrderStatusUpdate = exports.sendOrderConfirmation = exports.getPaymentHistory = exports.stripeWebhook = exports.createCheckoutSession = exports.removeTeamMember = exports.requestAccountDeletion = exports.deleteUser = exports.inviteTeamMember = exports.cleanupOrphanedStoreData = exports.cleanupOrphanedUsers = void 0;
+exports.onStoreDelete = exports.onMerchantProductPriceChange = exports.onOrderStatusUpdated = exports.refundOrder = exports.createPaymentIntent = exports.checkStripeAccountStatus = exports.onboardStore = exports.syncMerchantProductToAlgolia = exports.searchPublicDeals = exports.scrapeFlyer = exports.getSystemHealth = exports.syncTrafficStats = exports.syncMasterProductToAlgolia = exports.cartOptimize = exports.smartcartOptimize = exports.onMasterProductWrite = exports.onUserUpdate = exports.downloadReceipt = exports.cancelOrder = exports.placeOrder = exports.updateSubscriptionPlan = exports.sendOrderStatusUpdate = exports.sendOrderConfirmation = exports.getPaymentHistory = exports.stripeWebhook = exports.createCheckoutSession = exports.removeTeamMember = exports.requestAccountDeletion = exports.deleteUser = exports.inviteTeamMember = exports.cleanupOrphanedStoreData = exports.cleanupOrphanedUsers = void 0;
 const admin = __importStar(require("firebase-admin"));
 // Initialize Firebase Admin
 admin.initializeApp();
@@ -81,6 +81,10 @@ var syncTrafficStats_1 = require("./admin/syncTrafficStats");
 Object.defineProperty(exports, "syncTrafficStats", { enumerable: true, get: function () { return syncTrafficStats_1.syncTrafficStats; } });
 var getSystemHealth_1 = require("./admin/getSystemHealth");
 Object.defineProperty(exports, "getSystemHealth", { enumerable: true, get: function () { return getSystemHealth_1.getSystemHealth; } });
+var scrapeFlyer_1 = require("./admin/scrapeFlyer");
+Object.defineProperty(exports, "scrapeFlyer", { enumerable: true, get: function () { return scrapeFlyer_1.scrapeFlyer; } });
+var searchPublicDeals_1 = require("./admin/searchPublicDeals");
+Object.defineProperty(exports, "searchPublicDeals", { enumerable: true, get: function () { return searchPublicDeals_1.searchPublicDeals; } });
 var algoliaMerchantTriggers_1 = require("./triggers/algoliaMerchantTriggers");
 Object.defineProperty(exports, "syncMerchantProductToAlgolia", { enumerable: true, get: function () { return algoliaMerchantTriggers_1.syncMerchantProductToAlgolia; } });
 var onboardStore_1 = require("./payments/onboardStore");

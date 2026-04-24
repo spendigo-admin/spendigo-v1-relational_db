@@ -13,7 +13,7 @@ import SEO from '../../components/SEO';
 
 const Profile: React.FC = () => {
     const { profile, orders, updateProfile, addAddress, updateAddress, deleteAddress, setDefaultAddress, reorder, downloadOrderReceipt } = useOrders();
-    const { items: wishlistItems, removeItem, clearWishlist } = useWishlist();
+    const { items: wishlistItems, removeItem, clearWishlist, addItem } = useWishlist();
     const { stores } = useMarketplace();
     const { user, logout } = useAuth();
     const location = useLocation();
@@ -33,6 +33,18 @@ const Profile: React.FC = () => {
     }, [location.state]);
     const [editingProfile, setEditingProfile] = useState(false);
     const [showAddAddress, setShowAddAddress] = useState(false);
+    const [newItemName, setNewItemName] = useState('');
+
+    const handleAddWishlistItem = () => {
+        if (!newItemName.trim()) return;
+        addItem({
+            id: `generic-${Date.now()}`,
+            name: newItemName.trim(),
+            image: `https://ui-avatars.com/api/?name=${newItemName.trim().charAt(0)}&background=random&length=1&size=128`,
+            category: 'General'
+        } as any);
+        setNewItemName('');
+    };
 
     // Push Notifications
     const { permissionStatus, requestPermission, disableNotifications } = usePushNotifications(user?.id);
@@ -678,12 +690,32 @@ const Profile: React.FC = () => {
                         </div>
                         
                         {wishlistItems.length === 0 ? (
-                            <div className="text-center py-12 bg-white rounded-xl border border-[var(--glass-border)]">
+                            <div className="text-center py-12 bg-white rounded-xl border border-[var(--glass-border)] mb-4">
                                 <p className="text-4xl mb-4">✨</p>
                                 <p className="text-[var(--text-muted)]">Your wishlist is empty</p>
                                 <Link to="/" className="text-[var(--brand-primary)] text-sm font-medium">Find Products</Link>
                             </div>
-                        ) : (
+                        ) : null}
+
+                        <div className="flex flex-col sm:flex-row items-center gap-3 mb-6">
+                            <input 
+                                type="text"
+                                placeholder="Add an item (e.g. 'Milk')"
+                                value={newItemName}
+                                onChange={e => setNewItemName(e.target.value)}
+                                onKeyDown={e => e.key === 'Enter' && handleAddWishlistItem()}
+                                className="w-full sm:flex-1 px-4 py-3 border border-[var(--glass-border)] rounded-xl outline-none focus:border-[var(--brand-primary)] focus:ring-2 focus:ring-[var(--brand-primary)]/20 text-sm font-medium"
+                            />
+                            <button 
+                                onClick={handleAddWishlistItem}
+                                disabled={!newItemName.trim()}
+                                className="w-full sm:w-auto px-6 py-3 bg-[var(--brand-primary)] text-white font-bold rounded-xl disabled:opacity-50 transition-all hover:bg-[var(--brand-primary)]/90"
+                            >
+                                Add Item
+                            </button>
+                        </div>
+                        
+                        {wishlistItems.length > 0 && (
                             <div className="grid grid-cols-1 gap-3">
                                 {wishlistItems.map((item, i) => (
                                     <div key={i} className="bg-white rounded-xl border border-[var(--glass-border)] p-4 flex items-center gap-4 group">
@@ -710,8 +742,14 @@ const Profile: React.FC = () => {
                                     </div>
                                 ))}
                                 <button 
+                                    onClick={() => navigate('/compare')}
+                                    className="w-full py-4 mt-2 bg-[var(--surface-2)] text-[var(--text-main)] font-black rounded-2xl border border-[var(--glass-border)] hover:bg-white transition-all"
+                                >
+                                    ⚖️ Compare Prices
+                                </button>
+                                <button 
                                     onClick={() => navigate('/cart')}
-                                    className="w-full py-4 mt-4 bg-[var(--brand-primary)] text-white font-black rounded-2xl shadow-xl shadow-[var(--brand-primary)]/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                                    className="w-full py-4 mt-2 bg-[var(--brand-primary)] text-white font-black rounded-2xl shadow-xl shadow-[var(--brand-primary)]/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
                                 >
                                     Optimize This Wishlist →
                                 </button>
