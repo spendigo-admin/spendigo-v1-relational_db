@@ -7,8 +7,9 @@ import NotificationPopover from '../components/NotificationPopover';
 import { LanguageSwitcher } from '../components/LanguageSwitcher';
 import { useTranslation } from 'react-i18next';
 import '../styles/design-system.css';
-import { analytics } from '../lib/firebase';
+import { analytics, db } from '../lib/firebase';
 import { logEvent } from 'firebase/analytics';
+import { doc, onSnapshot } from 'firebase/firestore';
 
 const ConsumerLayout: React.FC = () => {
     const { itemCount, notification, clearNotification } = useCart();
@@ -18,6 +19,7 @@ const ConsumerLayout: React.FC = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const location = useLocation();
     const { t } = useTranslation();
+    const [flyerIngestionEnabled, setFlyerIngestionEnabled] = useState(true);
 
     // Track Page Views
     React.useEffect(() => {
@@ -33,6 +35,14 @@ const ConsumerLayout: React.FC = () => {
         import('../utils/traffic').then(({ incrementDailyVisitors }) => {
             incrementDailyVisitors();
         });
+
+        const unsubSettings = onSnapshot(doc(db, 'settings', 'platform'), (snap) => {
+            if (snap.exists()) {
+                setFlyerIngestionEnabled(snap.data().flyerIngestionEnabled !== false);
+            }
+        });
+
+        return () => unsubSettings();
     }, [location]);
 
     const handleSearch = (e: React.FormEvent) => {
@@ -86,10 +96,12 @@ const ConsumerLayout: React.FC = () => {
                 {/* RIGHT: Actions (Optimizer, Cart, Notifications, Profile) */}
                 <div className="flex items-center gap-3 shrink-0">
                     {/* Compare Tool */}
-                    <NavLink to="/compare" className={({ isActive }) => `hidden lg:flex items-center gap-2 px-4 py-2 text-[10px] font-black tracking-widest transition-all skew-x-[-12deg] border-2 ${isActive ? 'bg-gray-100 text-black border-black shadow-sm' : 'text-gray-500 border-gray-200 hover:text-black hover:border-gray-400'}`}>
-                        <span className="skew-x-[12deg] text-xs">⚖️</span>
-                        <span className="skew-x-[12deg]">Compare</span>
-                    </NavLink>
+                    {flyerIngestionEnabled && (
+                        <NavLink to="/compare" className={({ isActive }) => `hidden lg:flex items-center gap-2 px-4 py-2 text-[10px] font-black tracking-widest transition-all skew-x-[-12deg] border-2 ${isActive ? 'bg-gray-100 text-black border-black shadow-sm' : 'text-gray-500 border-gray-200 hover:text-black hover:border-gray-400'}`}>
+                            <span className="skew-x-[12deg] text-xs">⚖️</span>
+                            <span className="skew-x-[12deg]">Compare</span>
+                        </NavLink>
+                    )}
 
                     {/* SmartCart Optimizer Tool */}
                     <NavLink to="/smartcart" className={({ isActive }) => `hidden lg:flex items-center gap-2 px-4 py-2 text-[10px] font-black tracking-widest transition-all skew-x-[-12deg] border-2 ${isActive ? 'bg-gray-100 text-black border-black shadow-sm' : 'text-gray-500 border-gray-200 hover:text-black hover:border-gray-400'}`}>
@@ -271,10 +283,12 @@ const ConsumerLayout: React.FC = () => {
                     )}
                 </NavLink>
 
-                <NavLink to="/compare" className={({ isActive }) => `flex flex-col items-center justify-center flex-1 transition-all ${isActive ? 'bg-gray-50 text-blue-600 border-t-2 border-blue-600' : 'text-gray-400 hover:text-gray-600 border-t-2 border-transparent'}`}>
-                    <span className="text-xl mb-1">⚖️</span>
-                    <span className="text-[8px] font-black tracking-widest">Compare</span>
-                </NavLink>
+                {flyerIngestionEnabled && (
+                    <NavLink to="/compare" className={({ isActive }) => `flex flex-col items-center justify-center flex-1 transition-all ${isActive ? 'bg-gray-50 text-blue-600 border-t-2 border-blue-600' : 'text-gray-400 hover:text-gray-600 border-t-2 border-transparent'}`}>
+                        <span className="text-xl mb-1">⚖️</span>
+                        <span className="text-[8px] font-black tracking-widest">Compare</span>
+                    </NavLink>
+                )}
 
                 <NavLink to="/cart" className={({ isActive }) => `flex flex-col items-center justify-center flex-1 transition-all ${isActive ? 'bg-gray-50 text-blue-600 border-t-2 border-blue-600' : 'text-gray-400 hover:text-gray-600 border-t-2 border-transparent'}`}>
                     {({ isActive }: any) => (

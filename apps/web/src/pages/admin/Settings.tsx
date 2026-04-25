@@ -18,7 +18,8 @@ const AdminSettings: React.FC = () => {
         platformFeePercentage: 5.0,
         supportEmail: 'support@spendigo.ca',
         maxFlyerUploadSizeMB: 10,
-        careersEnabled: true
+        careersEnabled: true,
+        flyerIngestionEnabled: true
     });
 
     // Load Settings
@@ -254,6 +255,23 @@ const AdminSettings: React.FC = () => {
                                         type="checkbox"
                                         name="careersEnabled"
                                         checked={settings.careersEnabled}
+                                        onChange={handleChange}
+                                        className="sr-only peer"
+                                    />
+                                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--brand-primary)]"></div>
+                                </label>
+                            </div>
+
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="font-medium text-[var(--text-main)]">Enable Flyer Ingestion 📑</p>
+                                    <p className="text-xs text-[var(--text-muted)]">Show Compare tab on Shopper UI and allow batch ingestion.</p>
+                                </div>
+                                <label className="relative inline-flex items-center cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        name="flyerIngestionEnabled"
+                                        checked={settings.flyerIngestionEnabled}
                                         onChange={handleChange}
                                         className="sr-only peer"
                                     />

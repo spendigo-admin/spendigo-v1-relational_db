@@ -33,7 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.onStoreDelete = exports.onMerchantProductPriceChange = exports.onOrderCreated = exports.onOrderStatusUpdated = exports.refundOrder = exports.createPaymentIntent = exports.checkStripeAccountStatus = exports.onboardStore = exports.syncMerchantProductToAlgolia = exports.recordAuditEvent = exports.searchPublicDeals = exports.scrapeFlyer = exports.getSystemHealth = exports.syncTrafficStats = exports.syncMasterProductToAlgolia = exports.cartOptimize = exports.smartcartOptimize = exports.onMasterProductWrite = exports.onUserUpdate = exports.downloadReceipt = exports.cancelOrder = exports.placeOrder = exports.updateSubscriptionPlan = exports.sendOrderStatusUpdate = exports.sendOrderConfirmation = exports.getPaymentHistory = exports.stripeWebhook = exports.createCheckoutSession = exports.removeTeamMember = exports.requestAccountDeletion = exports.deleteUser = exports.inviteTeamMember = exports.cleanupOrphanedStoreData = void 0;
+exports.onStoreDelete = exports.onMerchantProductPriceChange = exports.onOrderCreated = exports.onOrderStatusUpdated = exports.refundOrder = exports.createPaymentIntent = exports.checkStripeAccountStatus = exports.onboardStore = exports.syncMerchantProductToAlgolia = exports.recordAuditEvent = exports.searchPublicDeals = exports.processScheduledJobs = exports.scrapeFlyer = exports.getSystemHealth = exports.syncTrafficStats = exports.syncMasterProductToAlgolia = exports.cartOptimize = exports.smartcartOptimize = exports.onMasterProductWrite = exports.onUserUpdate = exports.downloadReceipt = exports.cancelOrder = exports.placeOrder = exports.updateSubscriptionPlan = exports.sendOrderStatusUpdate = exports.sendOrderConfirmation = exports.getPaymentHistory = exports.stripeWebhook = exports.createCheckoutSession = exports.removeTeamMember = exports.requestAccountDeletion = exports.deleteUser = exports.inviteTeamMember = exports.cleanupOrphanedStoreData = void 0;
 const admin = __importStar(require("firebase-admin"));
 // Initialize Firebase Admin
 admin.initializeApp();
@@ -81,6 +81,8 @@ var getSystemHealth_1 = require("./admin/getSystemHealth");
 Object.defineProperty(exports, "getSystemHealth", { enumerable: true, get: function () { return getSystemHealth_1.getSystemHealth; } });
 var scrapeFlyer_1 = require("./admin/scrapeFlyer");
 Object.defineProperty(exports, "scrapeFlyer", { enumerable: true, get: function () { return scrapeFlyer_1.scrapeFlyer; } });
+var processScheduledJobs_1 = require("./admin/processScheduledJobs");
+Object.defineProperty(exports, "processScheduledJobs", { enumerable: true, get: function () { return processScheduledJobs_1.processScheduledJobs; } });
 var searchPublicDeals_1 = require("./admin/searchPublicDeals");
 Object.defineProperty(exports, "searchPublicDeals", { enumerable: true, get: function () { return searchPublicDeals_1.searchPublicDeals; } });
 var recordAuditEvent_1 = require("./audit/recordAuditEvent");

@@ -1,7 +1,8 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { httpsCallable } from 'firebase/functions';
-import { functions } from '../../lib/firebase';
+import { functions, db } from '../../lib/firebase';
 import { useComparison } from '../../context/ComparisonContext';
+import { doc, onSnapshot } from 'firebase/firestore';
 import SEO from '../../components/SEO';
 import { calculateUnitPrice } from '../../smartcart/priceNormalization';
 import { Link } from 'react-router-dom';
@@ -25,8 +26,17 @@ const PriceCompare = () => {
     const [deals, setDeals] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const { items: wishlistItems } = useComparison();
+    const [flyerIngestionEnabled, setFlyerIngestionEnabled] = useState(true);
+    const [settingsLoading, setSettingsLoading] = useState(true);
 
     useEffect(() => {
+        const unsubSettings = onSnapshot(doc(db, 'settings', 'platform'), (snap) => {
+            if (snap.exists()) {
+                setFlyerIngestionEnabled(snap.data().flyerIngestionEnabled !== false);
+            }
+            setSettingsLoading(false);
+        });
+
         const fetchDeals = async () => {
             if (wishlistItems.length === 0) {
                 setDeals([]);
@@ -53,8 +63,11 @@ const PriceCompare = () => {
             fetchDeals();
         }, 100);
 
-        return () => clearTimeout(timeoutId);
-    }, [wishlistItems]);
+        return () => {
+            clearTimeout(timeoutId);
+            unsubSettings();
+        };
+    }, [wishlistItems, flyerIngestionEnabled]);
 
     // Group flyer deals by wishlist item
     const groupedDeals = useMemo(() => {
@@ -95,6 +108,23 @@ const PriceCompare = () => {
             return a.wishlistItem.name.localeCompare(b.wishlistItem.name);
         });
     }, [deals, wishlistItems]);
+
+    if (!settingsLoading && !flyerIngestionEnabled) {
+        return (
+            <div className="min-h-screen bg-[var(--surface-1)] flex items-center justify-center p-4">
+                <div className="max-w-md w-full bg-white rounded-3xl border border-[var(--glass-border)] shadow-sm p-8 text-center animate-fade-in">
+                    <span className="text-6xl mb-6 block">🚧</span>
+                    <h1 className="text-2xl font-black text-[var(--text-main)] mb-2 tracking-tighter">Feature Temporarily Unavailable</h1>
+                    <p className="text-[var(--text-muted)] font-medium mb-8">
+                        The price comparison tool is currently disabled for maintenance. Please check back later.
+                    </p>
+                    <Link to="/" className="inline-flex items-center justify-center px-8 py-3 bg-[var(--brand-primary)] text-white font-bold rounded-xl hover:shadow-lg transition-all active:scale-95">
+                        Return to Marketplace
+                    </Link>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="animate-fade-in pb-20 bg-[var(--surface-1)] min-h-screen">

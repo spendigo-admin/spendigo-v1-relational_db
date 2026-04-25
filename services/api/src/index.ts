@@ -25,6 +25,7 @@ export { syncMasterProductToAlgolia } from './triggers/algoliaTriggers';
 export { syncTrafficStats } from './admin/syncTrafficStats';
 export { getSystemHealth } from './admin/getSystemHealth';
 export { scrapeFlyer } from './admin/scrapeFlyer';
+export { processScheduledJobs } from './admin/processScheduledJobs';
 export { searchPublicDeals } from './admin/searchPublicDeals';
 export { recordAuditEvent } from './audit/recordAuditEvent';
 
