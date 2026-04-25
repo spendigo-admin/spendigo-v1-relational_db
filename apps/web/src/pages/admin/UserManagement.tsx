@@ -624,7 +624,7 @@ const UserManagement: React.FC = () => {
                                         onClick={() => handleDeleteUser(user)}
                                         className="flex-1 py-2 bg-red-500 text-white font-bold rounded-lg text-xs"
                                     >
-                                        Purge Account
+                                        Delete Account
                                     </button>
                                 </div>
                             </div>

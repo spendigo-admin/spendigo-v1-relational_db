@@ -2,6 +2,8 @@ import React from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useOrders } from '../../context/OrderContext';
 import { useMarketplace } from '../../context/MarketplaceContext';
+import { useNotifications } from '../../context/NotificationContext';
+import { useConfirmation } from '../../context/ConfirmationContext';
 import '../../styles/design-system.css';
 import SEO from '../../components/SEO';
 
@@ -12,6 +14,8 @@ const OrderTracking: React.FC = () => {
     const navigate = useNavigate();
     const { orders, cancelOrder, reorder } = useOrders();
     const { getStore } = useMarketplace();
+    const { addNotification } = useNotifications();
+    const { confirm } = useConfirmation();
     const [showHelpModal, setShowHelpModal] = React.useState(false);
     const [reorderingId, setReorderingId] = React.useState<string | null>(null);
 
@@ -31,11 +35,15 @@ const OrderTracking: React.FC = () => {
         try {
             const messages = await reorder(order.id);
             if (messages.length > 0) {
-                alert("Some items could not be perfectly reordered:\n\n" + messages.join("\n"));
+                addNotification({
+                    type: 'alert',
+                    title: 'Partial Reorder',
+                    message: "Some items could not be perfectly reordered:\n\n" + messages.join("\n")
+                });
             }
             navigate('/cart');
         } catch (error: any) {
-             alert(error.message);
+             addNotification({ type: 'alert', title: 'Reorder Failed', message: error.message });
         } finally {
             setReorderingId(null);
         }
@@ -242,8 +250,14 @@ const OrderTracking: React.FC = () => {
                     </button>
                     {order.status === 'placed' && (
                         <button
-                            onClick={() => {
-                                if (window.confirm('Are you sure you want to cancel this order?')) {
+                            onClick={async () => {
+                                const confirmed = await confirm({
+                                    title: 'Cancel Order?',
+                                    message: 'Are you sure you want to cancel this order? This action will halt preparation and process a refund if applicable.',
+                                    confirmText: 'Yes, Cancel',
+                                    type: 'danger'
+                                });
+                                if (confirmed) {
                                     cancelOrder(order.id);
                                 }
                             }}

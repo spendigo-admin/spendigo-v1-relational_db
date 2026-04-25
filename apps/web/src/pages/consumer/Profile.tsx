@@ -48,7 +48,7 @@ const Profile: React.FC = () => {
 
     // Push Notifications
     const { permissionStatus, requestPermission, disableNotifications } = usePushNotifications(user?.id);
-    const { preferences, togglePreference, setPreference } = useNotifications();
+    const { preferences, togglePreference, setPreference, addNotification } = useNotifications();
     const [isRequestingNotifications, setIsRequestingNotifications] = useState(false);
     
     const handleRequestNotifications = async () => {
@@ -66,11 +66,15 @@ const Profile: React.FC = () => {
         try {
             const messages = await reorder(orderId);
             if (messages.length > 0) {
-                alert("Some items could not be perfectly reordered:\n\n" + messages.join("\n"));
+                addNotification({
+                    type: 'alert',
+                    title: 'Partial Reorder',
+                    message: "Some items could not be perfectly reordered:\n\n" + messages.join("\n")
+                });
             }
             navigate('/cart');
         } catch (error: any) {
-             alert(error.message);
+             addNotification({ type: 'alert', title: 'Reorder Failed', message: error.message });
         } finally {
             setReorderingId(null);
         }
@@ -83,7 +87,7 @@ const Profile: React.FC = () => {
         try {
             await downloadOrderReceipt(orderId);
         } catch (error: any) {
-            alert("Failed to generate receipt: " + error.message);
+            addNotification({ type: 'alert', title: 'Receipt Error', message: "Failed to generate receipt: " + error.message });
         } finally {
             setDownloadingReceiptId(null);
         }

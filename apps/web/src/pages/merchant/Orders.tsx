@@ -592,8 +592,11 @@ const MerchantOrders: React.FC = () => {
                                             <h3 className="text-xs font-bold uppercase tracking-widest opacity-60">Merchant Controls</h3>
                                             
                                             <div className="grid grid-cols-2 gap-3">
-                                                <button onClick={() => handleUpdateStatus(selectedOrder.id, 'on_hold')} className="bg-white/10 p-3 rounded-2xl text-xs font-bold hover:bg-white/20 transition-all border border-white/5">
-                                                    ⏳ Put on Hold
+                                                <button 
+                                                    onClick={() => handleUpdateStatus(selectedOrder.id, selectedOrder.status === 'on_hold' ? 'preparing' : 'on_hold')} 
+                                                    className={`p-3 rounded-2xl text-xs font-bold transition-all border ${selectedOrder.status === 'on_hold' ? 'bg-orange-500 text-white border-orange-400' : 'bg-white/10 text-white border-white/5 hover:bg-white/20'}`}
+                                                >
+                                                    {selectedOrder.status === 'on_hold' ? '▶️ Resume Order' : '⏳ Put on Hold'}
                                                 </button>
                                                 <button onClick={() => handleDownloadReceipt(selectedOrder.id)} className="bg-white/10 p-3 rounded-2xl text-xs font-bold hover:bg-white/20 transition-all border border-white/5">
                                                     📄 Receipt
@@ -640,6 +643,14 @@ const MerchantOrders: React.FC = () => {
                             <div className="p-6 border-t border-[var(--glass-border)] bg-white/90 backdrop-blur-md flex gap-3 sticky bottom-0 z-20 pb-safe">
                                 {hasWriteAccess && (
                                     <>
+                                        {selectedOrder.status === 'on_hold' && (
+                                            <button 
+                                                onClick={() => { handleUpdateStatus(selectedOrder.id, 'preparing'); setSelectedOrder(null); }} 
+                                                className="flex-1 py-4 bg-[var(--brand-primary)] text-white font-bold rounded-2xl hover:brightness-110 shadow-xl shadow-[var(--brand-primary)]/30 active:scale-[0.98] transition-all"
+                                            >
+                                                Resume & Accept
+                                            </button>
+                                        )}
                                         {selectedOrder.status === 'placed' && (
                                             <button 
                                                 onClick={() => { handleUpdateStatus(selectedOrder.id, 'preparing'); setSelectedOrder(null); }} 
@@ -716,21 +727,22 @@ const OrderCard = ({ order, onClick, onUpdateStatus, onComplete, onMarkPaid, tim
                 </div>
             </div>
 
-            {/* Quick action helper (only shown on hover or specific states) */}
-            <div className="flex items-center gap-2 mb-4 pl-1">
-                <div className="flex -space-x-2">
-                    {order.items.slice(0, 3).map((item, i) => (
-                        <div key={i} className="w-6 h-6 rounded-full bg-white border border-gray-200 flex items-center justify-center text-[8px] font-bold shadow-sm">
-                            {item.quantity}
-                        </div>
-                    ))}
-                    {order.items.length > 3 && (
-                        <div className="w-6 h-6 rounded-full bg-gray-50 border border-gray-200 flex items-center justify-center text-[7px] font-bold text-gray-400">
-                            +{order.items.length - 3}
-                        </div>
-                    )}
+            {/* Order Items Preview */}
+            <div className="mb-4 pl-1 space-y-1">
+                {order.items.slice(0, 3).map((item, i) => (
+                    <div key={i} className="flex items-center gap-2 text-[10px] text-[var(--text-main)] font-medium">
+                        <span className="w-4 h-4 bg-gray-100 rounded flex items-center justify-center font-bold text-[8px] text-gray-500 shrink-0">{item.quantity}x</span>
+                        <span className="truncate">{item.productName}</span>
+                    </div>
+                ))}
+                {order.items.length > 3 && (
+                    <div className="text-[9px] text-gray-400 font-bold pl-6 italic">
+                        + {order.items.length - 3} more items...
+                    </div>
+                )}
+                <div className="pt-1 text-[10px] text-gray-400 font-bold border-t border-dashed border-gray-100 mt-2">
+                    {order.items.length} items • ${order.total.toFixed(2)}
                 </div>
-                <span className="text-[10px] text-gray-400 font-medium">{order.items.length} items • ${order.total.toFixed(2)}</span>
             </div>
 
             <div className="pt-3 border-t border-[var(--glass-border)] flex justify-between items-center">
@@ -745,6 +757,14 @@ const OrderCard = ({ order, onClick, onUpdateStatus, onComplete, onMarkPaid, tim
                 <div className="flex gap-2">
                     {hasWriteAccess ? (
                         <>
+                            {order.status === 'on_hold' && (
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); onUpdateStatus(order.id, 'preparing'); }}
+                                    className="px-3 py-1.5 bg-[var(--brand-primary)] text-white text-[10px] font-black rounded-lg active:scale-90 transition-transform shadow-md shadow-[var(--brand-primary)]/20"
+                                >
+                                    RESUME
+                                </button>
+                            )}
                             {order.status === 'placed' && (
                                 <button
                                     onClick={(e) => { e.stopPropagation(); onUpdateStatus(order.id, 'preparing'); }}

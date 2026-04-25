@@ -3,6 +3,7 @@ import '../../styles/design-system.css';
 import { db } from '../../lib/firebase';
 import { collection, query, orderBy, onSnapshot, addDoc, updateDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore';
 import { useNotifications } from '../../context/NotificationContext';
+import { useConfirmation } from '../../context/ConfirmationContext';
 import { useFileUpload } from '../../hooks/useFileUpload';
 import { useAuth } from '../../context/AuthContext';
 import { auditBridge } from '../../utils/auditBridge';
@@ -29,6 +30,7 @@ interface AdCampaign {
 
 const AdManager: React.FC = () => {
     const { addNotification } = useNotifications();
+    const { confirm } = useConfirmation();
     const { uploadFile, uploading } = useFileUpload();
     const { user } = useAuth(); // for logging if needed
 
@@ -118,7 +120,15 @@ const AdManager: React.FC = () => {
     };
 
     const handleDelete = async (id: string) => {
-        if (!window.confirm('Are you sure you want to delete this ad?')) return;
+        const confirmed = await confirm({
+            title: 'Delete Ad Campaign?',
+            message: 'Are you sure you want to delete this ad? This will permanently remove it from the consumer homepage.',
+            confirmText: 'Delete',
+            type: 'danger'
+        });
+
+        if (!confirmed) return;
+
         try {
             const ad = ads.find(a => a.id === id);
             await deleteDoc(doc(db, 'ads', id));

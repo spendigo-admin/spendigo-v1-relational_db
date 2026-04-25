@@ -63,18 +63,24 @@ const AuditLogs: React.FC = () => {
 
             // 3. Time Filter
             let matchesTime = true;
+            const logDate = new Date(log.timestamp).getTime();
+
             if (isLiveView) {
-                // Default view: Last 5 minutes
-                matchesTime = isWithinMinutes(log.timestamp, 5);
+                // Default view: Last 60 minutes for better visibility
+                matchesTime = isWithinMinutes(log.timestamp, 60);
             } else {
                 // Custom view: Date ranges
                 if (startDate) {
-                    matchesTime = matchesTime && log.timestamp >= startDate;
+                    const start = new Date(startDate).getTime();
+                    if (!isNaN(start)) {
+                        matchesTime = matchesTime && logDate >= start;
+                    }
                 }
                 if (endDate) {
-                    // Handle both simple date (YYYY-MM-DD) and datetime-local (YYYY-MM-DDTHH:MM)
-                    const end = endDate.includes('T') ? endDate : `${endDate}T23:59:59`;
-                    matchesTime = matchesTime && log.timestamp <= end;
+                    const end = new Date(endDate).getTime();
+                    if (!isNaN(end)) {
+                        matchesTime = matchesTime && logDate <= end;
+                    }
                 }
             }
 
@@ -254,22 +260,48 @@ const AuditLogs: React.FC = () => {
                         </select>
                     </div>
                     <div>
-                        <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase mb-1">Start Date & Time</label>
-                        <input 
-                            type="datetime-local"
-                            value={startDate}
-                            onChange={e => setStartDate(e.target.value)}
-                            className="w-full p-2 border border-[var(--glass-border)] rounded-lg text-xs outline-none bg-white font-medium hover:border-[var(--brand-primary)] transition-colors"
-                        />
+                        <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase mb-1">Start Date & Time (EST)</label>
+                        <div className="relative">
+                            <input 
+                                type="datetime-local"
+                                value={startDate}
+                                onChange={e => {
+                                    setStartDate(e.target.value);
+                                    setIsLiveView(false);
+                                }}
+                                className="w-full p-2 border border-[var(--glass-border)] rounded-lg text-xs outline-none bg-white font-medium hover:border-[var(--brand-primary)] transition-colors pr-8"
+                            />
+                            {startDate && (
+                                <button 
+                                    onClick={() => setStartDate('')}
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                >
+                                    ✕
+                                </button>
+                            )}
+                        </div>
                     </div>
                     <div>
-                        <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase mb-1">End Date & Time</label>
-                        <input 
-                            type="datetime-local"
-                            value={endDate}
-                            onChange={e => setEndDate(e.target.value)}
-                            className="w-full p-2 border border-[var(--glass-border)] rounded-lg text-xs outline-none bg-white font-medium hover:border-[var(--brand-primary)] transition-colors"
-                        />
+                        <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase mb-1">End Date & Time (EST)</label>
+                        <div className="relative">
+                            <input 
+                                type="datetime-local"
+                                value={endDate}
+                                onChange={e => {
+                                    setEndDate(e.target.value);
+                                    setIsLiveView(false);
+                                }}
+                                className="w-full p-2 border border-[var(--glass-border)] rounded-lg text-xs outline-none bg-white font-medium hover:border-[var(--brand-primary)] transition-colors pr-8"
+                            />
+                            {endDate && (
+                                <button 
+                                    onClick={() => setEndDate('')}
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                >
+                                    ✕
+                                </button>
+                            )}
+                        </div>
                     </div>
                     <div>
                         <button 

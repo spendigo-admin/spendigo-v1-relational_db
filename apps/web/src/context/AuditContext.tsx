@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { collection, query, orderBy, onSnapshot, doc, runTransaction, limit, getDocs } from 'firebase/firestore';
-import { db } from '../lib/firebase';
+import { db, functions } from '../lib/firebase';
+import { httpsCallable } from 'firebase/functions';
 import { useAuth } from './AuthContext';
 import { auditBridge } from '../utils/auditBridge';
 
@@ -31,12 +32,18 @@ interface AuditContextType {
 
 const AuditContext = createContext<AuditContextType | undefined>(undefined);
 
-// Canonicalize an object to a deterministic JSON string (sorted keys, recursive)
-const canonicalize = (value: unknown): string => {
-    if (value === null || typeof value !== 'object') return JSON.stringify(value);
-    if (Array.isArray(value)) return '[' + value.map(canonicalize).join(',') + ']';
-    const sorted = Object.keys(value as Record<string, unknown>).sort();
-    return '{' + sorted.map(k => JSON.stringify(k) + ':' + canonicalize((value as Record<string, unknown>)[k])).join(',') + '}';
+// Canonicalize an object to a deterministic JSON string (sorted keys, recursive, excludes 'hash')
+const canonicalize = (val: any): string => {
+    if (val === null || val === undefined) return 'null';
+    if (typeof val !== 'object') return JSON.stringify(val);
+    if (Array.isArray(val)) return '[' + val.map(canonicalize).join(',') + ']';
+    
+    // Sort keys and explicitly exclude the 'hash' field which is being calculated
+    const sortedKeys = Object.keys(val)
+        .filter(k => k !== 'hash' && val[k] !== undefined)
+        .sort();
+        
+    return '{' + sortedKeys.map(k => `${JSON.stringify(k)}:${canonicalize(val[k])}`).join(',') + '}';
 };
 
 
@@ -86,14 +93,14 @@ export const AuditProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         // Listen for system-wide events (e.g. from AuthContext)
         const unsubscribeBridge = auditBridge.subscribe((params) => {
             console.log(`[AuditBridge] Received event: ${params.action}`, params.metadata);
-            logEvent(params.action, params.metadata, params.resource);
+            return logEvent(params.action, params.metadata, params.resource);
         });
 
         return () => {
             unsubscribeLogs();
             unsubscribeBridge();
         };
-    }, [user?.id]); // Re-subscribe if user changes
+    }, []); // Stable listener ensures no events are missed during auth state changes
 
     // Verify Integrity Chain
     const verifyIntegrity = async (): Promise<{ isValid: boolean; breakAt?: string }> => {
@@ -120,8 +127,7 @@ export const AuditProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             }
 
             // 2. Check Data Integrity (Re-hash content)
-            const contentToHash = { ...log, hash: undefined };
-            const calculated = await sha256(canonicalize(contentToHash));
+            const calculated = await sha256(canonicalize(log));
 
             if (calculated !== log.hash) {
                 console.error(`Tampered Data at ${log.id}: hash mismatch`);
@@ -144,50 +150,20 @@ export const AuditProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             verifyIntegrity();
         }
     }, [logs.length]);
-
     const logEvent = async (action: string, metadata: Record<string, any> = {}, resource: string = '') => {
-        const id = `txn_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
-        
         try {
-            // 1. Get the very last log to find the prevHash
-            // Note: Transactions don't support queries in Web SDK. 
-            // For 100% forensic accuracy, this should be a Cloud Function.
-            // For now, we fetch the last log manually.
-            const q = query(collection(db, 'audit_logs'), orderBy('timestamp', 'desc'), limit(1));
-            const lastLogSnapshot = await getDocs(q);
+            console.log(`[AuditContext] Requesting server-side log for: ${action}`);
             
-            let prevHash = GENESIS_HASH;
-            if (!lastLogSnapshot.empty) {
-                prevHash = lastLogSnapshot.docs[0].data().hash;
-            }
-
-            const logEntry: any = {
-                id,
-                timestamp: new Date().toISOString(),
-                actor: {
-                    id: user?.id || 'anonymous',
-                    email: user?.email || 'unauthenticated',
-                    ip: 'redacted' // IP capture usually happens server-side
-                },
+            const recordAuditEvent = httpsCallable(functions, 'recordAuditEvent');
+            await recordAuditEvent({
                 action,
-                resource,
                 metadata,
-                prevHash,
-                hash: ''
-            };
-
-            const hash = await sha256(canonicalize({ ...logEntry, hash: undefined }));
-            logEntry.hash = hash;
-
-            // Simple set is more reliable for client-side linkage than a failing transaction
-            await runTransaction(db, async (transaction) => {
-                const logRef = doc(db, 'audit_logs', id);
-                transaction.set(logRef, logEntry);
+                resource
             });
             
-            console.log(`[AuditContext] Logged event: ${action} (${id})`);
+            console.log(`[AuditContext] Server-side log successful: ${action}`);
         } catch (e) {
-            console.error("Failed to write audit log", e);
+            console.error("Failed to record audit event via Cloud Function:", e);
         }
     };
 

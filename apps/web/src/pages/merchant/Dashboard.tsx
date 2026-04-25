@@ -273,7 +273,7 @@ const MerchantDashboard: React.FC = () => {
     const recentOrdersDisplay = orders.slice(0, 3).map(o => ({
         id: o.id,
         customer: o.customerName,
-        items: `${o.items.length} items`,
+        items: o.items.slice(0, 2).map(i => `${i.quantity}x ${i.productName}`).join(', ') + (o.items.length > 2 ? '...' : ''),
         total: `$${o.total.toFixed(2)}`,
         status: o.status,
         time: new Date(o.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
@@ -649,7 +649,7 @@ const MerchantDashboard: React.FC = () => {
                                             </div>
                                             <div className="min-w-0">
                                                 <div className="font-bold text-sm text-[var(--text-main)] truncate">{order.customer}</div>
-                                                <div className="text-[10px] text-[var(--text-muted)] font-medium uppercase tracking-wider">{order.items}</div>
+                                                <div className="text-[10px] text-[var(--text-muted)] font-medium italic truncate w-40">{order.items}</div>
                                             </div>
                                         </div>
                                         <div className="text-right shrink-0">

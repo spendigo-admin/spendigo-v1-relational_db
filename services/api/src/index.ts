@@ -27,6 +27,7 @@ export { syncTrafficStats } from './admin/syncTrafficStats';
 export { getSystemHealth } from './admin/getSystemHealth';
 export { scrapeFlyer } from './admin/scrapeFlyer';
 export { searchPublicDeals } from './admin/searchPublicDeals';
+export { recordAuditEvent } from './audit/recordAuditEvent';
 
 export { syncMerchantProductToAlgolia } from './triggers/algoliaMerchantTriggers';
 export { onboardStore } from './payments/onboardStore';

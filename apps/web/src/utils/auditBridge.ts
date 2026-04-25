@@ -14,7 +14,7 @@ type AuditParams = {
     };
 };
 
-type AuditListener = (params: AuditParams) => void;
+type AuditListener = (params: AuditParams) => void | Promise<void>;
 
 class AuditBridge {
     private listeners: AuditListener[] = [];
@@ -26,12 +26,21 @@ class AuditBridge {
         };
     }
 
-    emit(actionOrParams: string | AuditParams, metadata?: Record<string, any>, resource?: string, actor?: any) {
-        if (typeof actionOrParams === 'string') {
-            this.listeners.forEach(l => l({ action: actionOrParams, metadata, resource, actor }));
-        } else {
-            this.listeners.forEach(l => l(actionOrParams));
-        }
+    async emit(actionOrParams: string | AuditParams, metadata?: Record<string, any>, resource?: string, actor?: any) {
+        const params = typeof actionOrParams === 'string' 
+            ? { action: actionOrParams, metadata, resource, actor } 
+            : actionOrParams;
+            
+        // Execute all listeners and wait for them to complete (forensic guarantee)
+        await Promise.all(this.listeners.map(l => {
+            try {
+                const result = l(params);
+                return result instanceof Promise ? result : Promise.resolve();
+            } catch (e) {
+                console.error('Audit listener failed:', e);
+                return Promise.resolve();
+            }
+        }));
     }
 }
 
