@@ -76,7 +76,7 @@ export const AuditProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     const [isVerified, setIsVerified] = useState<boolean | null>(null);
     const [errorLogId, setErrorLogId] = useState<string | null>(null);
 
-    // Sync logs and Listen to Global Bridge
+    // 1. Snapshot Listener: Sync logs (Admin Only)
     useEffect(() => {
         if (!user || user.role !== 'admin') {
             setLogs([]);
@@ -99,17 +99,19 @@ export const AuditProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             }
         );
 
-        // Listen for system-wide events (e.g. from AuthContext)
+        return () => unsubscribeLogs();
+    }, [user?.id, user?.role]);
+
+    // 2. Bridge Listener: Record system-wide events (Active from app load)
+    useEffect(() => {
+        console.log('[AuditContext] Initializing forensic event capture bridge...');
         const unsubscribeBridge = auditBridge.subscribe((params) => {
-            console.log(`[AuditBridge] Received event: ${params.action}`, params.metadata);
+            console.log(`[AuditBridge] Capture: ${params.action}`, params.metadata);
             return logEvent(params.action, params.metadata, params.resource);
         });
 
-        return () => {
-            unsubscribeLogs();
-            unsubscribeBridge();
-        };
-    }, [user?.id, user?.role]); // Re-subscribe on auth change
+        return () => unsubscribeBridge();
+    }, []); // Run once on mount to ensure early events (like login) are caught
 
     // Verify Integrity Chain
     const verifyIntegrity = async (): Promise<{ isValid: boolean; breakAt?: string }> => {

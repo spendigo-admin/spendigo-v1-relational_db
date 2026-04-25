@@ -35,7 +35,9 @@ const Login = () => {
 
     // Redirect immediately when user is authenticated
     useEffect(() => {
-        if (user) {
+        if (user && !isLoading) {
+            console.log('[Login] User detected, initiating redirect...', user.role);
+            
             // Check for returnUrl to preserve navigation flow
             const searchParams = new URLSearchParams(location.search);
             const returnUrl = searchParams.get('returnUrl');
@@ -54,7 +56,7 @@ const Login = () => {
                 navigate('/', { replace: true });
             }
         }
-    }, [user, navigate, location]);
+    }, [user, navigate, location, isLoading]);
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -181,10 +183,19 @@ const Login = () => {
                         <div className="space-y-3 mb-6 animate-fade-in">
                     <button
                         type="button"
+                        disabled={isLoading}
                         onClick={async () => {
-                            await loginWithGoogle(); // Defaults to 'consumer' if new, but mostly just logs in existing
+                            setIsLoading(true);
+                            try {
+                                const success = await loginWithGoogle();
+                                if (!success) setIsLoading(false);
+                                // Navigation handled by useEffect
+                            } catch (e) {
+                                console.error(e);
+                                setIsLoading(false);
+                            }
                         }}
-                        className="w-full flex items-center justify-center gap-2 py-2.5 rounded-[var(--radius-sm)] bg-white border border-[var(--glass-border)] text-gray-700 font-medium hover:bg-gray-50 transition-all shadow-sm"
+                        className="w-full flex items-center justify-center gap-2 py-2.5 rounded-[var(--radius-sm)] bg-white border border-[var(--glass-border)] text-gray-700 font-medium hover:bg-gray-50 disabled:opacity-50 transition-all shadow-sm"
                     >
                         <svg className="w-5 h-5" viewBox="0 0 24 24">
                             <path fill="#EA4335" d="M12 24c6.627 0 12-5.373 12-12S18.627 0 12 0 0 5.373 0 12s5.373 12 12 12z" />
@@ -194,20 +205,27 @@ const Login = () => {
                             <path fill="#FFF" d="M6.9 13.8c-.4-1.2-.4-2.4 0-3.6l-2.9-2.3C2.8 9.6 2.8 14.4 4 16.1l2.9-2.3z" />
                             <path fill="none" d="M3 3h18v18H3z" />
                         </svg>
-                        <span className="text-sm">{t('signInGoogle')}</span>
+                        <span className="text-sm">{isLoading ? t('loading') : t('signInGoogle')}</span>
                     </button>
 
                     <button
                         type="button"
+                        disabled={isLoading}
                         onClick={async () => {
-                            await loginWithFacebook();
+                            setIsLoading(true);
+                            try {
+                                await loginWithFacebook();
+                            } catch (e) {
+                                console.error(e);
+                                setIsLoading(false);
+                            }
                         }}
-                        className="w-full flex items-center justify-center gap-2 py-2.5 rounded-[var(--radius-sm)] bg-[#1877F2] text-white font-medium hover:brightness-110 transition-all shadow-sm"
+                        className="w-full flex items-center justify-center gap-2 py-2.5 rounded-[var(--radius-sm)] bg-[#1877F2] text-white font-medium hover:brightness-110 disabled:opacity-50 transition-all shadow-sm"
                     >
                         <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
                         </svg>
-                        <span className="text-sm">{t('signInFacebook')}</span>
+                        <span className="text-sm">{isLoading ? t('loading') : t('signInFacebook')}</span>
                     </button>
 
                     <div className="relative flex items-center py-2">

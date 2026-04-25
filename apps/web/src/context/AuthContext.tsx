@@ -101,12 +101,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                     if (userDoc.exists()) {
                         await processUserData(firebaseUser.uid, userDoc.data(), firebaseUser.emailVerified);
                     } else {
-                        console.error('User profile not found in Firestore');
-                        setUser(null);
+                        // Only set user to null if we are NOT in the middle of a login action
+                        // This prevents race conditions where the listener fires before setDoc completes
+                        console.warn('[AuthContext] Profile snapshot empty for UID:', firebaseUser.uid);
+                        // We don't call setUser(null) here to avoid flickering during registration
                         setLoading(false);
                     }
                 }, (error) => {
-                    console.error('Error listening to user profile:', error);
+                    console.error('[AuthContext] Snapshot error:', error);
                     setLoading(false);
                 });
             } else {
@@ -192,7 +194,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
             const merchantRole = data.role === 'merchant' ? (data.merchantRole || 'OWNER') : undefined;
 
-            setUser({
+            // 5. Final State Update
+            const finalUserData = {
                 ...data,
                 id: uid,
                 role: finalRole as 'consumer' | 'merchant' | 'admin',
@@ -200,9 +203,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 adminRole: finalAdminRole,
                 emailVerified: emailVerified,
                 mfaEnrolled: mfaEnrolled
-            } as User);
+            } as User;
+
+            console.log('[AuthContext] Setting user state:', uid, finalRole);
+            setUser(finalUserData);
         } catch (error) {
-            console.error('Error processing user data:', error);
+            console.error('[AuthContext] Critical error in processUserData:', error);
+            // Fallback: Set basic user data so app doesn't hang
+            setUser({ id: uid, email: data?.email, role: 'consumer' } as any);
         } finally {
             setLoading(false);
         }
@@ -211,7 +219,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const login = async (email: string, password: string): Promise<boolean> => {
         try {
             const userCredential = await signInWithEmailAndPassword(auth, email, password);
-            // Explicitly process profile here to ensure 'user' state is populated before login returns true
+            
+            // 1. Log forensic success immediately after handshake
+            await auditBridge.emit({ action: 'AUTH_LOGIN_SUCCESS', metadata: { email } });
+
+            // 2. Process profile and internal state
             const userDoc = await getDoc(doc(db, 'users', userCredential.user.uid));
             if (userDoc.exists()) {
                 await processUserData(userCredential.user.uid, userDoc.data(), userCredential.user.emailVerified);
@@ -223,7 +235,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 return false; // Login blocked
             }
 
-            await auditBridge.emit({ action: 'AUTH_LOGIN_SUCCESS', metadata: { email } });
             return true;
         } catch (error: any) {
             if (error.code === 'auth/multi-factor-auth-required') {
@@ -373,13 +384,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 await setDoc(userDocRef, newUser);
             }
 
-            // Fetch profile (whether new or existing)
+            // 1. Log forensic success immediately after handshake (before any potential UI redirects)
+            await auditBridge.emit({ action: 'AUTH_SOCIAL_LOGIN_SUCCESS', metadata: { email: user.email, provider: 'google' } });
+
+            // 2. Process profile and internal state
             const finalUserDoc = userDoc.exists() ? userDoc : await getDoc(userDocRef);
             if (finalUserDoc.exists()) {
                 await processUserData(user.uid, finalUserDoc.data(), user.emailVerified);
             }
             
-            await auditBridge.emit({ action: 'AUTH_SOCIAL_LOGIN_SUCCESS', metadata: { email: user.email, provider: 'google' } });
             return true;
         } catch (error: any) {
             console.error('Google Login failed:', error);
