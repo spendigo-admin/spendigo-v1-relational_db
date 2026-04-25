@@ -4,7 +4,6 @@ import * as admin from 'firebase-admin';
 admin.initializeApp();
 
 // Export all functions
-export { cleanupOrphanedUsers } from './admin/cleanupOrphanedUsers';
 export { cleanupOrphanedStoreData } from './admin/cleanupOrphanedStoreData';
 export { inviteTeamMember } from './auth/inviteTeamMember';
 export { deleteUser } from './auth/deleteUser';
@@ -35,5 +34,6 @@ export { checkStripeAccountStatus } from './payments/checkStripeStatus';
 export { createPaymentIntent } from './payments/createPaymentIntent';
 export { refundOrder } from './payments/refundOrder';
 export { onOrderStatusUpdated } from './triggers/orderTriggers';
+export { onOrderCreated } from './triggers/orderCreationTrigger';
 export { onMerchantProductPriceChange } from './triggers/priceHistoryTrigger';
 export { onStoreDelete } from './triggers/storeTriggers';

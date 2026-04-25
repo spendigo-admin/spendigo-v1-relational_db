@@ -77,7 +77,7 @@ This is a **Turbo monorepo** with npm workspaces:
 **Context providers** (wrap order in App.tsx matters):
 ```
 AuthProvider → AuditProvider → MaintenanceGuard → NotificationProvider → MarketplaceProvider
-  → CatalogProvider → ReviewProvider → CartProvider → WishlistProvider
+  → CatalogProvider → ReviewProvider → CartProvider → WishlistProvider → ComparisonProvider
   → OrderProvider → LocationProvider → ConfirmationProvider
 ```
 `AuditProvider` is global — wraps `MaintenanceGuard` and all inner providers. Audit logging is active for all roles, not just admins.
@@ -85,6 +85,7 @@ AuthProvider → AuditProvider → MaintenanceGuard → NotificationProvider →
 - `MarketplaceContext` — Real-time `onSnapshot` of all `stores` collection (filters to `status === 'active'`).
 - `CatalogContext` — Master product catalog.
 - `CartContext` — Hybrid: localStorage for guests, Firestore `carts/{userId}` for authenticated users; merges guest cart on login.
+- `ComparisonContext` — Product comparison list for the PriceCompare page. Hybrid: `spendigo_comparison_guest` localStorage for guests, `comparison_wishlists/{userId}` Firestore for auth users.
 - `LocationContext` — Geolocation with Haversine distance, Nominatim geocoding (OpenStreetMap), FSA (Forward Sortation Area / postal prefix) fallback. Default search radius: 10 km.
 - `OrderContext`, `WishlistContext`, `NotificationContext`, `AuditContext`, `ReviewContext`, `ConfirmationContext`.
 
@@ -103,7 +104,7 @@ Admin sub-roles: SUPER_ADMIN (admin:all), MODERATOR (admin:users, admin:stores),
 
 **Admin MFA**: Phone SMS MFA (Firebase Phone Auth) is required for all admin roles. `AuthContext` checks `multiFactor(currentUser).enrolledFactors.length`; enrollment is at `/admin/mfa-setup` using invisible reCAPTCHA.
 
-**Admin portal pages**: Users (`/admin/users`), Stores (`/admin/stores`), Orders (`/admin/orders`), Products + pending approval (`/admin/products`), Flyer moderation (`/admin/flyers`), Ads (`/admin/ads`), Surveys (`/admin/surveys`), Careers (`/admin/careers`), Audit log (`/admin/audit`), System tools (`/admin/tools`), Analytics (`/admin/analytics`).
+**Admin portal pages**: Dashboard (`/admin/dashboard`), Users (`/admin/users`), Stores (`/admin/stores`), Master catalog + pending approval (`/admin/catalog`), Ads (`/admin/ads`), Surveys (`/admin/surveys`), Careers (`/admin/careers`), Audit log (`/admin/audit-logs`), System tools (`/admin/tools`), Store insights analytics (`/admin/insights`), System health (`/admin/health`), Flyer ingestion (`/admin/flyer-ingestion`), Settings (`/admin/settings`). Note: `FlyerModeration.tsx` and `SeedUsers.tsx` exist under `pages/admin/` but have no routes wired in App.tsx.
 
 **Audit log integrity** (`AuditContext.tsx`): Audit entries are chained via SHA-256 — each record hashes its own payload concatenated with the previous record's hash (blockchain-lite). Tampering with any historical entry breaks the chain. Verified by the AUDITOR role in the admin portal.
 
@@ -127,6 +128,7 @@ Admin sub-roles: SUPER_ADMIN (admin:all), MODERATOR (admin:users, admin:stores),
 - [apps/web/src/hooks/useInventorySync.ts](apps/web/src/hooks/useInventorySync.ts) — Detects out-of-sync merchant products vs. the master catalog and exposes sync stats for the merchant dashboard.
 - [apps/web/src/lib/analytics.ts](apps/web/src/lib/analytics.ts) — `trackVisit()` called once on App mount.
 - [apps/web/src/lib/sentry.ts](apps/web/src/lib/sentry.ts) — Sentry error tracking. Performance sampling: 20% in prod, 100% in dev. Session replay: 10% of sessions, 100% of error sessions. Gracefully no-ops if `VITE_SENTRY_DSN` not set.
+- [apps/web/src/utils/auditBridge.ts](apps/web/src/utils/auditBridge.ts) — Global pub/sub singleton allowing code outside `AuditProvider` (e.g. utility functions, non-React modules) to emit audit events. `AuditProvider` subscribes to it; events are forwarded to the `recordAuditEvent` Cloud Function.
 
 **`lazyWithRetry` pattern** (App.tsx): All non-auth page routes use this wrapper instead of bare `lazy()`. On a dynamic import failure (stale chunks after deploy), it forces a single page reload via `sessionStorage` guard before re-throwing. `ErrorFallback` component detects stale chunk errors specifically and prompts the user to reload.
 
@@ -147,17 +149,18 @@ Firebase Cloud Functions v4 (v1 API). Organized by domain:
   - **Subscription proration**: Upgrades use `always_invoice` (immediate charge); downgrades use `none` (effective next cycle). Tier order: `{free:0, core:1, growth:2}`.
   - **Webhook race condition**: Payment webhook can arrive before `placeOrder` finishes; temporary `payments` collection stores webhook data for later reconciliation.
 - `orders/` — `placeOrder` (transactional: reads stock → verifies quantity → decrements → validates payment → creates order), `cancelOrder` (restores stock), `downloadReceipt` (PDF via PDFKit, stored with Firebase download token)
-- `auth/` — Team member invite/delete/remove. Role-based rank: OWNER (3) > MANAGER (2) > STAFF/MARKETING (1) — prevents privilege escalation.
+- `auth/` — Team member invite/delete/remove, `requestAccountDeletion`. Role-based rank: OWNER (3) > MANAGER (2) > STAFF/MARKETING (1) — prevents privilege escalation.
 - `email/` — `sendOrderConfirmation` (Firestore onCreate trigger), `sendOrderStatusUpdate` (onUpdate trigger). Emails are **not sent directly** — they write styled HTML to the `/mail` Firestore collection; a Firebase Extension handles SMTP delivery.
 - `triggers/` — Firestore-triggered functions:
   - `onUserUpdate` — syncs subscriptionTier to store doc
   - `onMasterProductWrite` — downloads external images to Storage with 1-year cache
   - `onOrderStatusUpdated` — sends FCM push notifications with emoji-prefixed titles, auto-removes stale tokens
-  - `onStoreCreate` / `onStoreUpdate` — auto-geocodes store address via Nominatim; re-geocodes on address field changes
+  - `onStoreCreate` / `onStoreUpdate` — auto-geocodes store address via Nominatim; re-geocodes on address field changes. **Note**: defined in `storeTriggers.ts` but not currently exported from `index.ts` (not deployed).
   - `onStoreDelete` — cascade cleanup: deletes merchant products, deals, flyers, de-links users, cancels Stripe subscriptions
   - `onMerchantProductPriceChange` (`priceHistoryTrigger.ts`) — records daily price history snapshot; detects price drops and new sales, then queries users with active FCM tokens within their configured proximity radius (Haversine) and sends geo-targeted multicast FCM notifications respecting `notificationPreferences.promotions` / `priceDrop` / `maxDistance` user fields
   - `syncMasterProductToAlgolia`, `syncMerchantProductToAlgolia` (includes `_geoloc` for location-based search)
-- `admin/` — Cleanup utilities (`cleanupOrphanedUsers`, `cleanupOrphanedStoreData`, `syncTrafficStats`)
+- `admin/` — Cleanup utilities (`cleanupOrphanedUsers`, `cleanupOrphanedStoreData`, `syncTrafficStats`), `getSystemHealth` (powers `/admin/health` dashboard), `scrapeFlyer` (flyer content extraction for `/admin/flyer-ingestion`), `searchPublicDeals`
+- `audit/` — `recordAuditEvent` (callable function; receives events from the client-side `auditBridge` and writes append-only entries to `audit_logs`)
 - `smartcart/` — Cart optimization HTTP endpoint (`/smartcartOptimize`) mirroring frontend logic
 - `cart/` — Additional `/cartOptimize` HTTP endpoint (delegates to smartcart service layer)
 - `utils/rateLimiter.ts` — Firestore sliding-window rate limiter on `_rate_limits` collection. Applied per-user per-action (e.g., max 5 `placeOrder` calls/min) via Firestore transactions. Returns `resource-exhausted` HttpsError on breach.
@@ -177,7 +180,7 @@ Stripe webhook secret stored in Firebase Runtime Config: `stripe.webhook_secret`
 
 ### Firestore Collections
 
-`/users`, `/stores`, `/orders`, `/catalog`, `/master_products`, `/pending_master_products`, `/merchant_products`, `/product_creation_requests`, `/categories`, `/substitution_groups`, `/reviews`, `/audit_logs`, `/carts`, `/wishlists`, `/notifications`, `/settings` (platform config), `/staff` (admin pre-staging), `/mail`, `/ads`, `/surveys`, `/stats`, `/_rate_limits` (rate limiter sliding windows), `/smartcart_optimizer_cache` (10-min TTL optimizer results), `/payments` (webhook reconciliation buffer).
+`/users`, `/stores`, `/orders`, `/master_products`, `/pending_master_products`, `/merchant_products`, `/product_creation_requests`, `/categories`, `/substitution_groups`, `/reviews`, `/audit_logs`, `/carts`, `/wishlists`, `/comparison_wishlists` (ComparisonContext, mirrors wishlists pattern), `/notifications`, `/settings` (platform config), `/staff` (admin pre-staging), `/mail`, `/ads`, `/surveys`, `/stats`, `/_rate_limits` (rate limiter sliding windows), `/smartcart_optimizer_cache` (10-min TTL optimizer results), `/payments` (webhook reconciliation buffer). Subcollection: `merchant_products/{id}/price_history/{date}` (daily price snapshots written by `onMerchantProductPriceChange`). Legacy/seed-only: `/catalog` (populated by `scripts/seedCatalog.ts`, not used by app or API code).
 
 **Key Firestore write restrictions** (enforced in rules):
 - **Orders**: Created server-side only via Admin SDK (Cloud Functions). Clients cannot create orders directly. Updates use `diff().affectedKeys()` for field-level control — merchants can only change `status`, `rejectionReason`, `estimatedTime`, `paymentStatus`; customers can only set status to `cancelled`.

@@ -227,13 +227,9 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             const result = await placeOrderFn({ orders: ordersData });
             const { orderIds } = result.data as { orderIds: string[] };
 
-            // Send Notifications (Client-side for immediate feedback, though ideally server-side)
-            ordersData.forEach(async (orderData, index) => {
-                const newOrderId = orderIds[index];
-                await sendOrderNotification(user.id, 'Order Placed! 📋', `Your order from ${orderData.storeName} has been received.`, 'order', newOrderId);
-                await sendOrderNotification(orderData.storeId, 'New Order! 🔔', `New order from ${user.name} for $${orderData.total.toFixed(2)}`, 'order', newOrderId);
-            });
-
+            // Notifications are now handled by the onOrderCreated server-side trigger
+            // for better security and to avoid permission-denied errors.
+            
             return orderIds;
 
         } catch (e: any) {
@@ -256,33 +252,7 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             reason: reason || null
         });
 
-        if (order) {
-            let title = '';
-            let message = '';
-
-            switch (status) {
-                case 'preparing':
-                    title = 'Preparing Order 👨‍🍳';
-                    message = `${order.storeName} has started preparing your order.`;
-                    break;
-                case 'on_hold':
-                    title = 'Order on Hold ⏳';
-                    message = `${order.storeName} has briefly paused your order. Check tracking for details.`;
-                    break;
-                case 'out_for_delivery':
-                    title = order.deliveryAddress ? 'Out for Delivery! 🚚' : 'Ready for Pickup! 🛍️';
-                    message = order.deliveryAddress ? 'Your order is on the way.' : 'Your order is ready to be picked up.';
-                    break;
-                case 'delivered':
-                    title = 'Order Completed! ✅';
-                    message = `Your order from ${order.storeName} is complete. Thank you!`;
-                    break;
-            }
-
-            if (title) {
-                sendOrderNotification(order.customerId, title, message, 'order', order.id);
-            }
-        }
+        // Notifications are now handled by server-side triggers
     };
 
     const updateEstimatedTime = async (orderId: string, time: string) => {
@@ -311,9 +281,7 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             collectedBy: auditData?.name || 'System'
         });
 
-        if (order && status === 'paid') {
-            sendOrderNotification(order.customerId, 'Payment Confirmed 💳', `Payment for order #${orderId.substr(0, 8)} has been confirmed by ${order.storeName}.`, 'order', order.id);
-        }
+        // Notifications are now handled by server-side triggers
     };
 
     const cancelOrder = async (orderId: string, reason?: string) => {
@@ -329,8 +297,7 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
                 reason: reason || 'Merchant Cancelled'
             });
 
-            const message = reason ? `Cancelled: ${reason}` : `Your order from ${order.storeName} was cancelled.`;
-            sendOrderNotification(order.customerId, 'Order Cancelled 🚫', message, 'alert', order.id);
+            // Notifications are now handled by server-side triggers
 
         } catch (e: any) {
             console.error("Failed to cancel order", e);

@@ -16,8 +16,8 @@ export const placeOrder = functions.https.onCall(async (data, context) => {
         throw new functions.https.HttpsError('unauthenticated', 'User must be logged in.');
     }
 
-    // Rate Limit Check: Max 3 requests per minute per user
-    await checkRateLimit(context.auth.uid, 'placeOrder', 3, 60 * 1000);
+    // Rate Limit Check: Max 10 requests per minute per user (Increased for testing and better UX)
+    await checkRateLimit(context.auth.uid, 'placeOrder', 10, 60 * 1000);
 
     const { orders } = data; // Array of Order objects
     const userId = context.auth.uid;
@@ -32,6 +32,11 @@ export const placeOrder = functions.https.onCall(async (data, context) => {
 
     try {
         await db.runTransaction(async (transaction) => {
+            // PHASE 0: FORENSIC AUDIT PRE-FETCH (Must be done before any writes)
+            const auditQ = db.collection('audit_logs').orderBy('timestamp', 'desc').orderBy('id', 'desc').limit(1);
+            const lastLogSnap = await transaction.get(auditQ);
+            const prevHash = !lastLogSnap.empty ? lastLogSnap.docs[0].data().hash : '0000000000000000000000000000000000000000000000000000000000000000';
+
             // PHASE 1: READS (Collect all product snapshots)
             const productChecks: {
                 ref: DocumentReference,
@@ -125,7 +130,8 @@ export const placeOrder = functions.https.onCall(async (data, context) => {
                         itemCount: orderData.items.length
                     },
                     newOrderRef.id,
-                    transaction
+                    transaction,
+                    prevHash
                 );
             }
         });

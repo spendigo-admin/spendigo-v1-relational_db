@@ -33,13 +33,11 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.onStoreDelete = exports.onMerchantProductPriceChange = exports.onOrderStatusUpdated = exports.refundOrder = exports.createPaymentIntent = exports.checkStripeAccountStatus = exports.onboardStore = exports.syncMerchantProductToAlgolia = exports.recordAuditEvent = exports.searchPublicDeals = exports.scrapeFlyer = exports.getSystemHealth = exports.syncTrafficStats = exports.syncMasterProductToAlgolia = exports.cartOptimize = exports.smartcartOptimize = exports.onMasterProductWrite = exports.onUserUpdate = exports.downloadReceipt = exports.cancelOrder = exports.placeOrder = exports.updateSubscriptionPlan = exports.sendOrderStatusUpdate = exports.sendOrderConfirmation = exports.getPaymentHistory = exports.stripeWebhook = exports.createCheckoutSession = exports.removeTeamMember = exports.requestAccountDeletion = exports.deleteUser = exports.inviteTeamMember = exports.cleanupOrphanedStoreData = exports.cleanupOrphanedUsers = void 0;
+exports.onStoreDelete = exports.onMerchantProductPriceChange = exports.onOrderCreated = exports.onOrderStatusUpdated = exports.refundOrder = exports.createPaymentIntent = exports.checkStripeAccountStatus = exports.onboardStore = exports.syncMerchantProductToAlgolia = exports.recordAuditEvent = exports.searchPublicDeals = exports.scrapeFlyer = exports.getSystemHealth = exports.syncTrafficStats = exports.syncMasterProductToAlgolia = exports.cartOptimize = exports.smartcartOptimize = exports.onMasterProductWrite = exports.onUserUpdate = exports.downloadReceipt = exports.cancelOrder = exports.placeOrder = exports.updateSubscriptionPlan = exports.sendOrderStatusUpdate = exports.sendOrderConfirmation = exports.getPaymentHistory = exports.stripeWebhook = exports.createCheckoutSession = exports.removeTeamMember = exports.requestAccountDeletion = exports.deleteUser = exports.inviteTeamMember = exports.cleanupOrphanedStoreData = void 0;
 const admin = __importStar(require("firebase-admin"));
 // Initialize Firebase Admin
 admin.initializeApp();
 // Export all functions
-var cleanupOrphanedUsers_1 = require("./admin/cleanupOrphanedUsers");
-Object.defineProperty(exports, "cleanupOrphanedUsers", { enumerable: true, get: function () { return cleanupOrphanedUsers_1.cleanupOrphanedUsers; } });
 var cleanupOrphanedStoreData_1 = require("./admin/cleanupOrphanedStoreData");
 Object.defineProperty(exports, "cleanupOrphanedStoreData", { enumerable: true, get: function () { return cleanupOrphanedStoreData_1.cleanupOrphanedStoreData; } });
 var inviteTeamMember_1 = require("./auth/inviteTeamMember");
@@ -99,6 +97,8 @@ var refundOrder_1 = require("./payments/refundOrder");
 Object.defineProperty(exports, "refundOrder", { enumerable: true, get: function () { return refundOrder_1.refundOrder; } });
 var orderTriggers_1 = require("./triggers/orderTriggers");
 Object.defineProperty(exports, "onOrderStatusUpdated", { enumerable: true, get: function () { return orderTriggers_1.onOrderStatusUpdated; } });
+var orderCreationTrigger_1 = require("./triggers/orderCreationTrigger");
+Object.defineProperty(exports, "onOrderCreated", { enumerable: true, get: function () { return orderCreationTrigger_1.onOrderCreated; } });
 var priceHistoryTrigger_1 = require("./triggers/priceHistoryTrigger");
 Object.defineProperty(exports, "onMerchantProductPriceChange", { enumerable: true, get: function () { return priceHistoryTrigger_1.onMerchantProductPriceChange; } });
 var storeTriggers_1 = require("./triggers/storeTriggers");

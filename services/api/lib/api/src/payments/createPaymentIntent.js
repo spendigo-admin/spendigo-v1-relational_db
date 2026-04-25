@@ -51,8 +51,8 @@ exports.createPaymentIntent = functions.https.onCall(async (data, context) => {
     if (!context.auth) {
         throw new functions.https.HttpsError('unauthenticated', 'User must be logged in.');
     }
-    // Rate Limit: Max 5 intents per minute per user
-    await (0, rateLimiter_1.checkRateLimit)(context.auth.uid, 'createPaymentIntent', 5, 60 * 1000);
+    // Rate Limit: Max 10 intents per minute per user (Increased for testing)
+    await (0, rateLimiter_1.checkRateLimit)(context.auth.uid, 'createPaymentIntent', 10, 60 * 1000);
     const { amount, currency = 'cad', storeId, metadata } = data;
     if (!amount || amount <= 0) {
         throw new functions.https.HttpsError('invalid-argument', 'Valid amount is required.');

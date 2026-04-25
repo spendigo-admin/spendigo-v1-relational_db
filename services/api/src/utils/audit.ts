@@ -47,25 +47,31 @@ const sha256 = (message: string): string => {
 /**
  * Logs a system event with tamper-evident chaining.
  * Supports optional transaction to prevent nested transaction errors.
+ * Also supports preFetchedPrevHash to satisfy the 'Reads before Writes' rule in complex transactions.
  */
 export const logEvent = async (
     action: string, 
     actor: { id: string; email: string; ip: string },
     metadata: Record<string, any> = {}, 
     resource: string = '',
-    providedTransaction?: admin.firestore.Transaction
+    providedTransaction?: admin.firestore.Transaction,
+    preFetchedPrevHash?: string
 ) => {
     const auditRef = db.collection('audit_logs');
     const executeLogging = async (transaction: admin.firestore.Transaction) => {
-        // 1. Get the last log to find the previous hash
-        // Use ID tie-breaker to handle concurrent events in the same millisecond
-        const lastLogSnapshot = await transaction.get(
-            auditRef.orderBy('timestamp', 'desc').orderBy('id', 'desc').limit(1)
-        );
+        let prevHash = preFetchedPrevHash;
 
-        let prevHash = GENESIS_HASH;
-        if (!lastLogSnapshot.empty) {
-            prevHash = lastLogSnapshot.docs[0].data().hash;
+        // 1. Get the last log to find the previous hash (ONLY if not pre-fetched)
+        if (!prevHash) {
+            // Use ID tie-breaker to handle concurrent events in the same millisecond
+            const lastLogSnapshot = await transaction.get(
+                auditRef.orderBy('timestamp', 'desc').orderBy('id', 'desc').limit(1)
+            );
+
+            prevHash = GENESIS_HASH;
+            if (!lastLogSnapshot.empty) {
+                prevHash = lastLogSnapshot.docs[0].data().hash;
+            }
         }
 
         // 2. Prepare the new log
@@ -98,5 +104,6 @@ export const logEvent = async (
         }
     } catch (e) {
         console.error('[AuditLogger] Failed to log event:', e);
+        throw e;
     }
 };

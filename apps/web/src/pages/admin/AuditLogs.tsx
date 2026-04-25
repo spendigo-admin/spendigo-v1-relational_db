@@ -334,7 +334,7 @@ const AuditLogs: React.FC = () => {
                 {isLiveView && (
                     <div className="text-[10px] font-bold text-blue-500 uppercase flex items-center gap-2">
                         <span className="h-1.5 w-1.5 bg-blue-500 rounded-full animate-pulse"></span>
-                        Viewing last 5 minutes
+                        Viewing last 60 minutes
                     </div>
                 )}
             </div>

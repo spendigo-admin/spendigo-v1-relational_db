@@ -248,38 +248,7 @@ const UserManagement: React.FC = () => {
         }
     };
 
-    const [showCleanupModal, setShowCleanupModal] = useState(false);
 
-    const handleCleanup = async () => {
-        // Confirmation is now handled by the UI Modal
-        setShowCleanupModal(false);
-
-        try {
-            setLoading(true);
-            const functions = getFunctions();
-            const cleanupFunction = httpsCallable(functions, 'cleanupOrphanedUsers');
-            const result: any = await cleanupFunction();
-
-            addNotification({
-                type: 'system',
-                title: 'Cleanup Complete',
-                message: result.data.message || 'Orphaned users removed.'
-            });
-
-            await logEvent('SYSTEM_CLEANUP_ORPHANS', { result: result.data }, 'system/maintenance');
-
-            setTimeout(() => window.location.reload(), 2000);
-        } catch (e: any) {
-            console.error(e);
-            addNotification({
-                type: 'alert',
-                title: 'Cleanup Failed',
-                message: e.message || 'An error occurred during cleanup.'
-            });
-        } finally {
-            setLoading(false);
-        }
-    };
 
     const toggleUserBan = async (id: string, currentStatus: 'active' | 'banned') => {
         const newStatus = currentStatus === 'active' ? 'banned' : 'active';
@@ -412,13 +381,7 @@ const UserManagement: React.FC = () => {
                             <option value="active">Active</option>
                             <option value="banned">Banned</option>
                         </select>
-                        <button
-                            onClick={() => setShowCleanupModal(true)}
-                            className="w-10 h-10 flex items-center justify-center text-red-600 bg-red-50 border border-red-100 rounded-lg hover:bg-red-100 transition-colors shrink-0"
-                            title="Cleanup Ghosts"
-                        >
-                            🧹
-                        </button>
+
                     </div>
                 </div>
             )}
@@ -710,36 +673,6 @@ const UserManagement: React.FC = () => {
                 </div>
             )}
 
-            {/* Cleanup Confirmation Modal */}
-            {showCleanupModal && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-fade-in">
-                    <div className="bg-white p-6 rounded-3xl w-full max-w-sm shadow-2xl border border-[var(--glass-border)] text-center">
-                        <div className="w-16 h-16 bg-red-100 text-red-500 rounded-full flex items-center justify-center text-3xl mx-auto mb-4">
-                            🧹
-                        </div>
-                        <h2 className="text-xl font-bold text-[var(--text-main)] mb-2">Clean Up Orphaned Users?</h2>
-                        <p className="text-sm text-[var(--text-muted)] mb-6 leading-relaxed">
-                            This will scan all users and permanently delete any Firestore profiles that do not have a matching Firebase Auth account.
-                            <br /><br />
-                            <strong>This action cannot be undone.</strong>
-                        </p>
-                        <div className="flex gap-3">
-                            <button
-                                onClick={() => setShowCleanupModal(false)}
-                                className="flex-1 py-2.5 font-bold text-gray-600 hover:bg-gray-100 rounded-xl transition-colors"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={handleCleanup}
-                                className="flex-1 py-2.5 bg-red-500 text-white font-bold rounded-xl shadow-lg shadow-red-500/30 hover:bg-red-600 transition-all"
-                            >
-                                Confirm Cleanup
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
     );
 };

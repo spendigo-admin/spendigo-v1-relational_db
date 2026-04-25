@@ -78,6 +78,12 @@ export const AuditProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
     // Sync logs and Listen to Global Bridge
     useEffect(() => {
+        if (!user || user.role !== 'admin') {
+            setLogs([]);
+            return;
+        }
+
+        console.log('[AuditContext] Starting admin audit log sync...');
         const q = query(collection(db, 'audit_logs'), orderBy('timestamp', 'asc'));
 
         const unsubscribeLogs = onSnapshot(q, 
@@ -87,6 +93,9 @@ export const AuditProvider: React.FC<{ children: ReactNode }> = ({ children }) =
                     fetchedLogs.push({ id: doc.id, ...doc.data() } as AuditLog);
                 });
                 setLogs(fetchedLogs);
+            },
+            (error) => {
+                console.error('[AuditContext] Snapshot error:', error);
             }
         );
 
@@ -100,7 +109,7 @@ export const AuditProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             unsubscribeLogs();
             unsubscribeBridge();
         };
-    }, []); // Stable listener ensures no events are missed during auth state changes
+    }, [user?.id, user?.role]); // Re-subscribe on auth change
 
     // Verify Integrity Chain
     const verifyIntegrity = async (): Promise<{ isValid: boolean; breakAt?: string }> => {

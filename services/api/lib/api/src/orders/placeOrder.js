@@ -49,8 +49,8 @@ exports.placeOrder = functions.https.onCall(async (data, context) => {
     if (!context.auth) {
         throw new functions.https.HttpsError('unauthenticated', 'User must be logged in.');
     }
-    // Rate Limit Check: Max 3 requests per minute per user
-    await (0, rateLimiter_1.checkRateLimit)(context.auth.uid, 'placeOrder', 3, 60 * 1000);
+    // Rate Limit Check: Max 10 requests per minute per user (Increased for testing and better UX)
+    await (0, rateLimiter_1.checkRateLimit)(context.auth.uid, 'placeOrder', 10, 60 * 1000);
     const { orders } = data; // Array of Order objects
     const userId = context.auth.uid;
     const userEmail = context.auth.token.email;
@@ -62,6 +62,10 @@ exports.placeOrder = functions.https.onCall(async (data, context) => {
     try {
         await db.runTransaction(async (transaction) => {
             var _a, _b, _c;
+            // PHASE 0: FORENSIC AUDIT PRE-FETCH (Must be done before any writes)
+            const auditQ = db.collection('audit_logs').orderBy('timestamp', 'desc').orderBy('id', 'desc').limit(1);
+            const lastLogSnap = await transaction.get(auditQ);
+            const prevHash = !lastLogSnap.empty ? lastLogSnap.docs[0].data().hash : '0000000000000000000000000000000000000000000000000000000000000000';
             // PHASE 1: READS (Collect all product snapshots)
             const productChecks = [];
             for (const order of orders) {
@@ -137,7 +141,7 @@ exports.placeOrder = functions.https.onCall(async (data, context) => {
                     total: orderData.total,
                     storeId: orderData.storeId,
                     itemCount: orderData.items.length
-                }, newOrderRef.id, transaction);
+                }, newOrderRef.id, transaction, prevHash);
             }
         });
         return { orderIds, success: true };
