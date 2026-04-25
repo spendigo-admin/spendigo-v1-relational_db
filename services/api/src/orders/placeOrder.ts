@@ -124,7 +124,8 @@ export const placeOrder = functions.https.onCall(async (data, context) => {
                         storeId: orderData.storeId,
                         itemCount: orderData.items.length
                     },
-                    newOrderRef.id
+                    newOrderRef.id,
+                    transaction
                 );
             }
         });

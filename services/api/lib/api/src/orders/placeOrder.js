@@ -137,7 +137,7 @@ exports.placeOrder = functions.https.onCall(async (data, context) => {
                     total: orderData.total,
                     storeId: orderData.storeId,
                     itemCount: orderData.items.length
-                }, newOrderRef.id);
+                }, newOrderRef.id, transaction);
             }
         });
         return { orderIds, success: true };
