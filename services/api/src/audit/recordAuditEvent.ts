@@ -7,6 +7,8 @@ import { logEvent } from '../utils/audit';
  * to the forensic ledger securely.
  */
 export const recordAuditEvent = functions.https.onCall(async (data, context) => {
+    const { action, resource, metadata } = data;
+
     // 1. Security Check (App Check & Auth)
     if (!context.app && process.env.FUNCTIONS_EMULATOR !== 'true') {
         throw new functions.https.HttpsError(
@@ -15,14 +17,21 @@ export const recordAuditEvent = functions.https.onCall(async (data, context) => 
         );
     }
 
-    if (!context.auth) {
+    // Allow unauthenticated logs ONLY for critical security events (login/reg failures)
+    // or if the user is already authenticated.
+    const allowUnauthenticatedActions = [
+        'AUTH_LOGIN_FAILURE', 
+        'AUTH_REGISTER_FAILURE', 
+        'AUTH_MFA_REQUIRED',
+        'AUTH_SOCIAL_LOGIN_FAILURE'
+    ];
+
+    if (!context.auth && !allowUnauthenticatedActions.includes(action)) {
         throw new functions.https.HttpsError(
             'unauthenticated', 
-            'Audit events can only be recorded for authenticated sessions.'
+            'Audit events generally require authenticated sessions.'
         );
     }
-
-    const { action, resource, metadata } = data;
 
     if (!action) {
         throw new functions.https.HttpsError(
@@ -32,13 +41,21 @@ export const recordAuditEvent = functions.https.onCall(async (data, context) => 
     }
 
     try {
-        await logEvent(
-            action,
-            {
+        const actor = context.auth 
+            ? {
                 id: context.auth.uid,
                 email: context.auth.token.email || 'unauthenticated',
                 ip: context.rawRequest.ip || 'unknown'
-            },
+              }
+            : {
+                id: 'unauthenticated',
+                email: metadata?.email || 'unauthenticated',
+                ip: context.rawRequest.ip || 'unknown'
+              };
+
+        await logEvent(
+            action,
+            actor,
             metadata || {},
             resource || ''
         );
