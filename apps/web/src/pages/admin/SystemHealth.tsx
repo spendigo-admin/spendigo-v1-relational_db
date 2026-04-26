@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import '../../styles/design-system.css';
-import { doc, onSnapshot, updateDoc } from 'firebase/firestore';
-import { db, functions } from '../../lib/firebase';
+import { functions } from '../../lib/firebase';
 import { httpsCallable } from 'firebase/functions';
 import { useNotifications } from '../../context/NotificationContext';
 
@@ -36,79 +35,15 @@ const SystemHealth: React.FC = () => {
         return () => clearInterval(interval);
     }, []);
 
-    const [settings, setSettings] = useState<any>(null);
-    useEffect(() => {
-        const docRef = doc(db, 'settings', 'platform');
-        const unsubscribe = onSnapshot(docRef, (docSnap) => {
-            if (docSnap.exists()) {
-                setSettings(docSnap.data());
-            }
-        });
-        return () => unsubscribe();
-    }, []);
-
-    const toggleRegistration = async (type: 'shopper' | 'partner') => {
-        if (!settings) return;
-        const field = type === 'shopper' ? 'allowShopperRegistrations' : 'allowPartnerRegistrations';
-        const newValue = !settings[field];
-
-        try {
-            await updateDoc(doc(db, 'settings', 'platform'), {
-                [field]: newValue
-            });
-            addNotification({
-                type: 'system',
-                title: 'Updated',
-                message: `${type.charAt(0).toUpperCase() + type.slice(1)} registrations ${newValue ? 'ENABLED' : 'DISABLED'}`
-            });
-        } catch (err) {
-            console.error(err);
-            addNotification({ type: 'alert', title: 'Error', message: 'Failed to update settings.' });
-        }
-    };
-
     return (
         <div className="p-4 md:p-6 animate-fade-in pb-20">
             <div className="mb-6">
-                <h1 className="text-2xl font-bold text-[var(--text-main)]">System Health & Controls</h1>
-                <p className="text-sm text-[var(--text-muted)]">Monitor infrastructure consumption and manage global platform states.</p>
+                <h1 className="text-2xl font-bold text-[var(--text-main)]">System Health</h1>
+                <p className="text-sm text-[var(--text-muted)]">Monitor infrastructure consumption and system observability metrics.</p>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <div className="space-y-6">
-                    {/* System Controls */}
-                    <div className="bg-white rounded-xl border border-[var(--glass-border)] p-6 shadow-sm">
-                        <h2 className="text-xl font-bold text-[var(--text-main)] mb-4">System Controls</h2>
-                        <div className="grid grid-cols-1 gap-4">
-                            <div className="p-4 bg-[var(--surface-1)] rounded-xl border border-[var(--glass-border)] flex items-center justify-between">
-                                <div>
-                                    <p className="text-xs font-bold text-[var(--text-main)]">Shopper Signup</p>
-                                    <p className="text-[10px] text-[var(--text-muted)]">Allow new registrations</p>
-                                </div>
-                                <button
-                                    onClick={() => toggleRegistration('shopper')}
-                                    className={`px-4 py-2 rounded-lg text-xs font-bold transition-all shadow-sm ${settings?.allowShopperRegistrations ? 'bg-green-100 text-green-700 border border-green-200 hover:bg-green-200' : 'bg-red-100 text-red-700 border border-red-200 hover:bg-red-200'}`}
-                                >
-                                    {settings?.allowShopperRegistrations ? 'ENABLED' : 'DISABLED'}
-                                </button>
-                            </div>
-                            <div className="p-4 bg-[var(--surface-1)] rounded-xl border border-[var(--glass-border)] flex items-center justify-between">
-                                <div>
-                                    <p className="text-xs font-bold text-[var(--text-main)]">Partner Signup</p>
-                                    <p className="text-[10px] text-[var(--text-muted)]">Allow new merchant signups</p>
-                                </div>
-                                <button
-                                    onClick={() => toggleRegistration('partner')}
-                                    className={`px-4 py-2 rounded-lg text-xs font-bold transition-all shadow-sm ${settings?.allowPartnerRegistrations ? 'bg-green-100 text-green-700 border border-green-200 hover:bg-green-200' : 'bg-red-100 text-red-700 border border-red-200 hover:bg-red-200'}`}
-                                >
-                                    {settings?.allowPartnerRegistrations ? 'ENABLED' : 'DISABLED'}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+            <div className="max-w-4xl">
 
-                <div className="space-y-6">
                     <div className="bg-white rounded-xl border border-[var(--glass-border)] p-6 shadow-sm">
                         <div className="flex items-center justify-between mb-6">
                             <div>
@@ -194,7 +129,6 @@ const SystemHealth: React.FC = () => {
                                 ))}
                             </div>
                         )}
-                    </div>
                 </div>
             </div>
         </div>

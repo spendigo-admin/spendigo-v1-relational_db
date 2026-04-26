@@ -144,176 +144,184 @@ const AdminSettings: React.FC = () => {
             <div className="glass-panel p-6 max-w-2xl">
                 <div className="space-y-6">
                     {/* General Configuration */}
+                <div className="space-y-8">
+                    {/* System Controls */}
                     <div>
-                        <h2 className="text-lg font-bold text-[var(--text-main)] mb-4 border-b border-[var(--glass-border)] pb-2">General Configuration</h2>
-                        <div className="space-y-4">
+                        <div className="flex items-center gap-2 mb-4 border-b border-[var(--glass-border)] pb-2">
+                            <span className="text-xl">🔒</span>
+                            <h2 className="text-lg font-bold text-[var(--text-main)]">System Controls</h2>
+                        </div>
+                        <div className="space-y-6">
 
                             {/* Maintenance Mode: Maker-Checker UI */}
-                            <div className="flex items-start justify-between bg-gray-50 p-4 rounded-lg border border-gray-200">
-                                <div>
-                                    <p className="font-medium text-[var(--text-main)]">Maintenance Mode 🛡️</p>
-                                    <p className="text-xs text-[var(--text-muted)] mb-2">Disable access for all users except admins.</p>
-
-                                    {/* Status Indicator */}
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <span className={`w-2 h-2 rounded-full ${settings.maintenanceMode ? 'bg-red-500' : 'bg-green-500'}`}></span>
-                                        <span className="text-xs font-bold uppercase">{settings.maintenanceMode ? 'System Offline' : 'System Online'}</span>
+                            <div className="bg-[var(--surface-1)] p-4 rounded-xl border border-[var(--glass-border)] shadow-sm">
+                                <div className="flex items-start justify-between">
+                                    <div>
+                                        <p className="font-bold text-sm text-[var(--text-main)] flex items-center gap-2">
+                                            Maintenance Mode
+                                            <span className={`w-2 h-2 rounded-full ${settings.maintenanceMode ? 'bg-red-500 animate-pulse' : 'bg-green-500'}`}></span>
+                                        </p>
+                                        <p className="text-[10px] text-[var(--text-muted)] font-medium mb-3">Global lockout for non-admin sessions.</p>
+                                        
+                                        {/* Request Message */}
+                                        {settings.maintenanceRequest && (
+                                            <div className="mt-2 text-[10px] font-bold bg-amber-50 text-amber-700 p-2 rounded-lg border border-amber-100 flex items-center gap-2">
+                                                <span className="animate-bounce">⚠️</span>
+                                                <span>
+                                                    {settings.maintenanceRequest.requesterName} requested to
+                                                    {settings.maintenanceRequest.targetState ? ' ENABLE ' : ' DISABLE '} 
+                                                    Maintenance.
+                                                </span>
+                                            </div>
+                                        )}
                                     </div>
 
-                                    {/* Request Message */}
-                                    {settings.maintenanceRequest && (
-                                        <div className="mt-2 text-xs bg-yellow-100 text-yellow-800 p-2 rounded border border-yellow-200">
-                                            <strong>Action Required:</strong> {settings.maintenanceRequest.requesterName} requested to
-                                            <strong> {settings.maintenanceRequest.targetState ? 'ENABLE' : 'DISABLE'} </strong>
-                                            Maintenance Mode.
-                                        </div>
-                                    )}
-                                </div>
-
-                                <div className="flex flex-col items-end gap-2">
-                                    {/* No Pending Request */}
-                                    {!settings.maintenanceRequest && (
-                                        <button
-                                            onClick={() => handleMaintenanceRequest(!settings.maintenanceMode)}
-                                            className={`px-4 py-2 text-sm font-bold rounded-lg transition-colors border ${settings.maintenanceMode
-                                                ? 'bg-green-100 text-green-700 border-green-200 hover:bg-green-200' // Button to Disable
-                                                : 'bg-red-100 text-red-700 border-red-200 hover:bg-red-200' // Button to Enable
-                                                }`}
-                                        >
-                                            {settings.maintenanceMode ? 'Request to Go Online' : 'Request Maintenance'}
-                                        </button>
-                                    )}
-
-                                    {/* Request Exists */}
-                                    {settings.maintenanceRequest && (
-                                        <>
-                                            {/* Approver (Different User) */}
-                                            {user?.id !== settings.maintenanceRequest.requesterId ? (
-                                                <button
-                                                    onClick={handleApproveRequest}
-                                                    className="px-4 py-2 text-sm font-bold bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-md animate-pulse"
-                                                >
-                                                    Approve Change
-                                                </button>
-                                            ) : (
-                                                <span className="text-xs text-gray-500 italic">Waiting for approval...</span>
-                                            )}
-
-                                            {/* Cancel (Any Admin can cancel, usually requester or super admin) */}
+                                    <div className="flex flex-col items-end gap-2">
+                                        {!settings.maintenanceRequest && (
                                             <button
-                                                onClick={handleCancelRequest}
-                                                className="text-xs text-gray-500 hover:text-red-600 underline"
+                                                onClick={() => handleMaintenanceRequest(!settings.maintenanceMode)}
+                                                className={`px-3 py-1.5 text-[10px] font-bold rounded-lg transition-all border uppercase tracking-wider ${settings.maintenanceMode
+                                                    ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100'
+                                                    : 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100'
+                                                    }`}
                                             >
-                                                Cancel Request
+                                                {settings.maintenanceMode ? 'Go Online' : 'Go Offline'}
                                             </button>
-                                        </>
-                                    )}
+                                        )}
+
+                                        {settings.maintenanceRequest && (
+                                            <div className="flex items-center gap-2">
+                                                {user?.id !== settings.maintenanceRequest.requesterId ? (
+                                                    <button
+                                                        onClick={handleApproveRequest}
+                                                        className="px-3 py-1.5 text-[10px] font-bold bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-sm transition-all"
+                                                    >
+                                                        APPROVE
+                                                    </button>
+                                                ) : (
+                                                    <span className="text-[9px] text-[var(--text-muted)] font-bold italic uppercase">Pending Approval</span>
+                                                )}
+                                                <button
+                                                    onClick={handleCancelRequest}
+                                                    className="text-[9px] font-bold text-gray-400 hover:text-red-500 uppercase tracking-tighter"
+                                                >
+                                                    Cancel
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
 
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="font-medium text-[var(--text-main)]">Allow Shopper Registrations</p>
-                                    <p className="text-xs text-[var(--text-muted)]">Control whether new shoppers can sign up</p>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="p-4 bg-[var(--surface-1)] rounded-xl border border-[var(--glass-border)] flex items-center justify-between">
+                                    <div>
+                                        <p className="text-xs font-bold text-[var(--text-main)]">Shopper Signup</p>
+                                        <p className="text-[10px] text-[var(--text-muted)]">Allow new registrations</p>
+                                    </div>
+                                    <label className="relative inline-flex items-center cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            name="allowShopperRegistrations"
+                                            checked={settings.allowShopperRegistrations}
+                                            onChange={handleChange}
+                                            className="sr-only peer"
+                                        />
+                                        <div className="w-9 h-5 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-green-500"></div>
+                                    </label>
                                 </div>
-                                <label className="relative inline-flex items-center cursor-pointer">
-                                    <input
-                                        type="checkbox"
-                                        name="allowShopperRegistrations"
-                                        checked={settings.allowShopperRegistrations}
-                                        onChange={handleChange}
-                                        className="sr-only peer"
-                                    />
-                                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--brand-primary)]"></div>
-                                </label>
-                            </div>
 
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="font-medium text-[var(--text-main)]">Allow Partner Registrations</p>
-                                    <p className="text-xs text-[var(--text-muted)]">Control whether new partners/merchants can sign up</p>
+                                <div className="p-4 bg-[var(--surface-1)] rounded-xl border border-[var(--glass-border)] flex items-center justify-between">
+                                    <div>
+                                        <p className="text-xs font-bold text-[var(--text-main)]">Partner Signup</p>
+                                        <p className="text-[10px] text-[var(--text-muted)]">Allow merchant signups</p>
+                                    </div>
+                                    <label className="relative inline-flex items-center cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            name="allowPartnerRegistrations"
+                                            checked={settings.allowPartnerRegistrations}
+                                            onChange={handleChange}
+                                            className="sr-only peer"
+                                        />
+                                        <div className="w-9 h-5 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-green-500"></div>
+                                    </label>
                                 </div>
-                                <label className="relative inline-flex items-center cursor-pointer">
-                                    <input
-                                        type="checkbox"
-                                        name="allowPartnerRegistrations"
-                                        checked={settings.allowPartnerRegistrations}
-                                        onChange={handleChange}
-                                        className="sr-only peer"
-                                    />
-                                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--brand-primary)]"></div>
-                                </label>
-                            </div>
 
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="font-medium text-[var(--text-main)]">Enable Careers Section</p>
-                                    <p className="text-xs text-[var(--text-muted)]">Show or hide open vacancies on the Careers page</p>
+                                <div className="p-4 bg-[var(--surface-1)] rounded-xl border border-[var(--glass-border)] flex items-center justify-between">
+                                    <div>
+                                        <p className="text-xs font-bold text-[var(--text-main)]">Careers Section</p>
+                                        <p className="text-[10px] text-[var(--text-muted)]">Public job board visibility</p>
+                                    </div>
+                                    <label className="relative inline-flex items-center cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            name="careersEnabled"
+                                            checked={settings.careersEnabled}
+                                            onChange={handleChange}
+                                            className="sr-only peer"
+                                        />
+                                        <div className="w-9 h-5 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-green-500"></div>
+                                    </label>
                                 </div>
-                                <label className="relative inline-flex items-center cursor-pointer">
-                                    <input
-                                        type="checkbox"
-                                        name="careersEnabled"
-                                        checked={settings.careersEnabled}
-                                        onChange={handleChange}
-                                        className="sr-only peer"
-                                    />
-                                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--brand-primary)]"></div>
-                                </label>
-                            </div>
 
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="font-medium text-[var(--text-main)]">Enable Flyer Ingestion 📑</p>
-                                    <p className="text-xs text-[var(--text-muted)]">Show Compare tab on Shopper UI and allow batch ingestion.</p>
+                                <div className="p-4 bg-[var(--surface-1)] rounded-xl border border-[var(--glass-border)] flex items-center justify-between">
+                                    <div>
+                                        <p className="text-xs font-bold text-[var(--text-main)]">Flyer Ingestion</p>
+                                        <p className="text-[10px] text-[var(--text-muted)]">Shopper comparison engine</p>
+                                    </div>
+                                    <label className="relative inline-flex items-center cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            name="flyerIngestionEnabled"
+                                            checked={settings.flyerIngestionEnabled}
+                                            onChange={handleChange}
+                                            className="sr-only peer"
+                                        />
+                                        <div className="w-9 h-5 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-green-500"></div>
+                                    </label>
                                 </div>
-                                <label className="relative inline-flex items-center cursor-pointer">
-                                    <input
-                                        type="checkbox"
-                                        name="flyerIngestionEnabled"
-                                        checked={settings.flyerIngestionEnabled}
-                                        onChange={handleChange}
-                                        className="sr-only peer"
-                                    />
-                                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--brand-primary)]"></div>
-                                </label>
                             </div>
                         </div>
                     </div>
 
-                    {/* Financial & Limits */}
+                    {/* Platform Configuration */}
                     <div>
-                        <h2 className="text-lg font-bold text-[var(--text-main)] mb-4 border-b border-[var(--glass-border)] pb-2 pt-4">Financial & Limits</h2>
+                        <div className="flex items-center gap-2 mb-4 border-b border-[var(--glass-border)] pb-2">
+                            <span className="text-xl">⚙️</span>
+                            <h2 className="text-lg font-bold text-[var(--text-main)]">Platform Configuration</h2>
+                        </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-sm font-medium text-[var(--text-main)] mb-1">Platform Fee (%)</label>
+                            <div className="p-4 bg-[var(--surface-1)] rounded-xl border border-[var(--glass-border)]">
+                                <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1.5">Platform Fee (%)</label>
                                 <input
                                     type="number"
                                     name="platformFeePercentage"
                                     value={settings.platformFeePercentage}
                                     onChange={handleChange}
                                     step="0.1"
-                                    className="w-full p-2 bg-[var(--surface-1)] border border-[var(--glass-border)] rounded-lg focus:border-[var(--brand-primary)] outline-none"
+                                    className="w-full bg-white p-2 rounded border border-[var(--glass-border)] text-sm font-bold text-[var(--text-main)] focus:ring-2 focus:ring-[var(--brand-primary)]/20 outline-none transition-all"
                                 />
                             </div>
-                            <div>
-                                <label className="block text-sm font-medium text-[var(--text-main)] mb-1">Max Flyer Size (MB)</label>
+                            <div className="p-4 bg-[var(--surface-1)] rounded-xl border border-[var(--glass-border)]">
+                                <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1.5">Max Flyer Size (MB)</label>
                                 <input
                                     type="number"
                                     name="maxFlyerUploadSizeMB"
                                     value={settings.maxFlyerUploadSizeMB}
                                     onChange={handleChange}
-                                    className="w-full p-2 bg-[var(--surface-1)] border border-[var(--glass-border)] rounded-lg focus:border-[var(--brand-primary)] outline-none"
+                                    className="w-full bg-white p-2 rounded border border-[var(--glass-border)] text-sm font-bold text-[var(--text-main)] focus:ring-2 focus:ring-[var(--brand-primary)]/20 outline-none transition-all"
                                 />
                             </div>
-                            <div className="md:col-span-2">
-                                <label className="block text-sm font-medium text-[var(--text-main)] mb-1">Support Email</label>
+                            <div className="md:col-span-2 p-4 bg-[var(--surface-1)] rounded-xl border border-[var(--glass-border)]">
+                                <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1.5">Global Support Email</label>
                                 <input
                                     type="email"
                                     name="supportEmail"
                                     value={settings.supportEmail}
                                     onChange={handleChange}
-                                    className="w-full p-2 bg-[var(--surface-1)] border border-[var(--glass-border)] rounded-lg focus:border-[var(--brand-primary)] outline-none"
+                                    placeholder="e.g. support@spendigo.ca"
+                                    className="w-full bg-white p-2 rounded border border-[var(--glass-border)] text-sm font-bold text-[var(--text-main)] focus:ring-2 focus:ring-[var(--brand-primary)]/20 outline-none transition-all"
                                 />
                             </div>
                         </div>
@@ -334,6 +342,7 @@ const AdminSettings: React.FC = () => {
                 </div>
             </div>
         </div>
+    </div>
     );
 };
 
