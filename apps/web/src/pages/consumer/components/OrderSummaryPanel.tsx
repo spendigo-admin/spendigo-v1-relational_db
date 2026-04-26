@@ -45,6 +45,18 @@ export const OrderSummaryPanel: React.FC<OrderSummaryPanelProps> = ({
     const storeCount = new Set(validCartItems.map(i => i.storeId)).size;
     const missingCount = optimizerItems.filter(i => i && i.options.length === 0).length;
 
+    const { insights, loading: insightsLoading } = useSmartInsights({
+        items: (optimizerItems.filter(i => i !== undefined) as OptimizedWishlistItem[]).map(i => ({
+            name: i.name,
+            category: i.category || 'Grocery',
+            options: i.options.map(o => ({ storeName: o.storeName, price: o.price }))
+        })),
+        totalCost,
+        storeCount,
+        potentialSavings: potentialSavings + dealSavings,
+        missingCount
+    });
+
     const handleAddAllToCart = async () => {
         if (validCartItems.length > 0) {
             await addItemsToCart(validCartItems, potentialSavings > 0 ? parseFloat(potentialSavings.toFixed(2)) : undefined);
@@ -121,6 +133,35 @@ export const OrderSummaryPanel: React.FC<OrderSummaryPanelProps> = ({
                     <span className="font-bold">-${potentialSavings.toFixed(2)}</span>
                 </div>
             )}
+
+            <div className="border-t border-[var(--glass-border)] my-5 pt-5">
+                <div className="flex items-center gap-2 mb-3">
+                    <span className="text-lg animate-pulse">✨</span>
+                    <h3 className="text-sm font-black text-[var(--text-main)] uppercase tracking-widest">Smart Insights</h3>
+                </div>
+                
+                {insightsLoading ? (
+                    <div className="space-y-2">
+                        <div className="h-3 bg-gray-100 rounded-full w-full animate-pulse"></div>
+                        <div className="h-3 bg-gray-100 rounded-full w-4/5 animate-pulse"></div>
+                    </div>
+                ) : insights.length > 0 ? (
+                    <div className="space-y-2">
+                        {insights.map((insight, idx) => (
+                            <div key={idx} className="flex gap-2 items-start group">
+                                <span className="text-[var(--brand-primary)] text-xs mt-1">✦</span>
+                                <p className="text-xs text-[var(--text-main)] leading-relaxed group-hover:text-[var(--brand-primary)] transition-colors">
+                                    {insight}
+                                </p>
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <p className="text-[10px] text-[var(--text-muted)] italic">
+                        Select more items to unlock AI-powered shopping insights.
+                    </p>
+                )}
+            </div>
 
             <div className="mb-4 rounded-xl border border-[var(--glass-border)] bg-[var(--surface-2)]/70 p-4">
                 <h3 className="text-sm font-bold text-[var(--text-main)] mb-2">Trip Recommendation</h3>
