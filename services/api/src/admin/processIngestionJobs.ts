@@ -4,55 +4,101 @@ import { runIngestion } from '../utils/flippScraper';
 
 export const processIngestionJobs = functions.pubsub.schedule('every 10 minutes').onRun(async (context) => {
     const db = admin.firestore();
-    const now = Date.now();
+    const now = new Date();
+    const currentDay = now.getDay(); // 0-6
+    const currentTimeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
 
-    const pendingJobsSnap = await db.collection('scheduled_ingestion')
+    // 1. Process One-time jobs (status == 'pending')
+    const pendingOneTimeSnap = await db.collection('scheduled_ingestion')
+        .where('type', '==', 'one-time')
         .where('status', '==', 'pending')
-        .where('scheduledAt', '<=', now)
+        .where('scheduledAt', '<=', now.getTime())
         .get();
 
-    if (pendingJobsSnap.empty) {
-        console.log("No pending ingestion jobs found.");
+    // 2. Process Recurring jobs (status == 'active')
+    const activeRecurringSnap = await db.collection('scheduled_ingestion')
+        .where('type', '==', 'recurring')
+        .where('status', '==', 'active')
+        .get();
+
+    const jobsToRun: admin.firestore.QueryDocumentSnapshot[] = [...pendingOneTimeSnap.docs];
+
+    // Filter recurring jobs that are due today and at/after the scheduled time
+    activeRecurringSnap.forEach(doc => {
+        const data = doc.data();
+        if (data.days.includes(currentDay)) {
+            // Check if time is reached
+            if (currentTimeStr >= data.time) {
+                // Check if already run today
+                const lastRun = data.lastRunAt ? data.lastRunAt.toDate() : null;
+                const isAlreadyRunToday = lastRun && lastRun.toDateString() === now.toDateString();
+                
+                if (!isAlreadyRunToday) {
+                    jobsToRun.push(doc);
+                }
+            }
+        }
+    });
+
+    if (jobsToRun.length === 0) {
+        console.log("No ingestion jobs due at this time.");
         return null;
     }
 
-    console.log(`Processing ${pendingJobsSnap.size} scheduled ingestion jobs...`);
+    console.log(`Processing ${jobsToRun.length} due ingestion jobs...`);
 
-    for (const jobDoc of pendingJobsSnap.docs) {
+    for (const jobDoc of jobsToRun) {
         const jobData = jobDoc.data();
+        const isRecurring = jobData.type === 'recurring';
         
         try {
-            // Update status to processing
-            await jobDoc.ref.update({
-                status: 'processing',
-                startedAt: admin.firestore.FieldValue.serverTimestamp()
-            });
+            // For one-time, update status to processing
+            // For recurring, we just mark startedAt and lastRunAt
+            const updateData: any = {
+                startedAt: admin.firestore.FieldValue.serverTimestamp(),
+                lastRunAt: admin.firestore.FieldValue.serverTimestamp()
+            };
+            
+            if (!isRecurring) {
+                updateData.status = 'processing';
+            }
 
-            console.log(`Running scheduled job for ${jobData.postalCode} (reset=${jobData.shouldReset})...`);
+            await jobDoc.ref.update(updateData);
+
+            console.log(`Running ${jobData.type} job for ${jobData.postalCode} (reset=${jobData.shouldReset})...`);
             
             const result = await runIngestion(jobData.postalCode, !!jobData.shouldReset);
 
-            // Update status to completed
-            await jobDoc.ref.update({
-                status: 'completed',
+            // Final Update
+            const finalUpdate: any = {
                 completedAt: admin.firestore.FieldValue.serverTimestamp(),
                 result: {
                     processedFlyers: result.processedFlyers,
                     totalDealsSaved: result.totalDealsSaved,
                     summaryData: result.summaryData
                 }
-            });
+            };
 
-            console.log(`Job for ${jobData.postalCode} completed successfully.`);
+            if (!isRecurring) {
+                finalUpdate.status = 'completed';
+            }
+
+            await jobDoc.ref.update(finalUpdate);
+            console.log(`Job for ${jobData.postalCode} finished successfully.`);
 
         } catch (error: any) {
-            console.error(`Error processing scheduled job ${jobDoc.id}:`, error);
+            console.error(`Error processing job ${jobDoc.id}:`, error);
             
-            await jobDoc.ref.update({
-                status: 'failed',
+            const errorUpdate: any = {
                 error: error.message || 'Unknown error',
                 failedAt: admin.firestore.FieldValue.serverTimestamp()
-            });
+            };
+
+            if (!isRecurring) {
+                errorUpdate.status = 'failed';
+            }
+
+            await jobDoc.ref.update(errorUpdate);
         }
     }
 

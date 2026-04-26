@@ -16,8 +16,12 @@ const FlyerIngestion = () => {
     // Scheduling State
     const [scheduledDate, setScheduledDate] = useState('');
     const [scheduledTime, setScheduledTime] = useState('');
+    const [recurringDays, setRecurringDays] = useState<number[]>([]);
+    const [isRecurring, setIsRecurring] = useState(false);
     const [upcomingJobs, setUpcomingJobs] = useState<any[]>([]);
     const [isScheduling, setIsScheduling] = useState(false);
+    
+    const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
     useEffect(() => {
         const fetchExistingData = async () => {
@@ -61,7 +65,7 @@ const FlyerIngestion = () => {
         });
 
         const unsubJobs = onSnapshot(
-            query(collection(db, 'scheduled_ingestion'), orderBy('scheduledAt', 'desc'), limit(5)),
+            query(collection(db, 'scheduled_ingestion'), orderBy('createdAt', 'desc'), limit(10)),
             (snap) => {
                 setUpcomingJobs(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
             }
@@ -121,31 +125,48 @@ const FlyerIngestion = () => {
     };
 
     const handleScheduleJob = async () => {
-        if (!postalCode || !scheduledDate || !scheduledTime) return;
+        if (!postalCode || !scheduledTime) return;
+        if (!isRecurring && !scheduledDate) return;
+        if (isRecurring && recurringDays.length === 0) return;
 
-        const scheduledDateTime = new Date(`${scheduledDate}T${scheduledTime}`);
-        if (scheduledDateTime.getTime() <= Date.now()) {
-            setErrorMessage('Scheduled time must be in the future.');
-            return;
+        let scheduledAt = 0;
+        if (!isRecurring) {
+            const scheduledDateTime = new Date(`${scheduledDate}T${scheduledTime}`);
+            if (scheduledDateTime.getTime() <= Date.now()) {
+                setErrorMessage('Scheduled time must be in the future.');
+                return;
+            }
+            scheduledAt = scheduledDateTime.getTime();
         }
 
         setIsScheduling(true);
         try {
             await addDoc(collection(db, 'scheduled_ingestion'), {
                 postalCode: postalCode.replace(/\s+/g, '').toUpperCase(),
-                scheduledAt: scheduledDateTime.getTime(),
+                type: isRecurring ? 'recurring' : 'one-time',
+                days: isRecurring ? recurringDays : null,
+                time: scheduledTime,
+                scheduledAt: isRecurring ? 0 : scheduledAt,
                 shouldReset,
-                status: 'pending',
-                createdAt: Date.now()
+                status: isRecurring ? 'active' : 'pending',
+                createdAt: Date.now(),
+                lastRunAt: null
             });
             setScheduledDate('');
             setScheduledTime('');
+            setRecurringDays([]);
             setErrorMessage('');
         } catch (e: any) {
             setErrorMessage('Failed to schedule job: ' + e.message);
         } finally {
             setIsScheduling(false);
         }
+    };
+
+    const toggleDay = (idx: number) => {
+        setRecurringDays(prev => 
+            prev.includes(idx) ? prev.filter(d => d !== idx) : [...prev, idx]
+        );
     };
 
     const cancelJob = async (jobId: string) => {
@@ -221,17 +242,55 @@ const FlyerIngestion = () => {
                 </div>
 
                 <div className="border-t border-gray-100 pt-6 mt-2">
-                    <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest mb-4">Schedule Future Job 🕒</h3>
-                    <div className="flex flex-wrap gap-4 items-end">
-                        <div className="flex-1 min-w-[200px]">
-                            <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1 ml-1">Run Date</label>
-                            <input 
-                                type="date" 
-                                value={scheduledDate}
-                                onChange={(e) => setScheduledDate(e.target.value)}
-                                className="w-full bg-[var(--surface-1)] border-none rounded-xl px-4 py-3 text-[var(--text-main)] font-bold focus:ring-2 focus:ring-[var(--brand-primary)] outline-none"
-                            />
+                    <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest">Schedule Future Job 🕒</h3>
+                        <div className="flex bg-gray-100 p-1 rounded-lg">
+                            <button 
+                                onClick={() => setIsRecurring(false)}
+                                className={`px-3 py-1 text-[10px] font-bold rounded-md transition-all ${!isRecurring ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500'}`}
+                            >
+                                ONE-TIME
+                            </button>
+                            <button 
+                                onClick={() => setIsRecurring(true)}
+                                className={`px-3 py-1 text-[10px] font-bold rounded-md transition-all ${isRecurring ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500'}`}
+                            >
+                                RECURRING
+                            </button>
                         </div>
+                    </div>
+
+                    <div className="flex flex-wrap gap-4 items-end">
+                        {!isRecurring ? (
+                            <div className="flex-1 min-w-[200px]">
+                                <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1 ml-1">Run Date</label>
+                                <input 
+                                    type="date" 
+                                    value={scheduledDate}
+                                    onChange={(e) => setScheduledDate(e.target.value)}
+                                    className="w-full bg-[var(--surface-1)] border-none rounded-xl px-4 py-3 text-[var(--text-main)] font-bold focus:ring-2 focus:ring-[var(--brand-primary)] outline-none"
+                                />
+                            </div>
+                        ) : (
+                            <div className="flex-1 min-w-[300px]">
+                                <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1 ml-1">Run on Days</label>
+                                <div className="flex gap-2">
+                                    {DAYS.map((day, idx) => (
+                                        <button
+                                            key={day}
+                                            onClick={() => toggleDay(idx)}
+                                            className={`w-10 h-10 rounded-xl text-xs font-black transition-all ${
+                                                recurringDays.includes(idx) 
+                                                ? 'bg-[var(--brand-primary)] text-white shadow-lg shadow-[var(--brand-primary)]/30' 
+                                                : 'bg-[var(--surface-1)] text-gray-400 hover:bg-gray-200'
+                                            }`}
+                                        >
+                                            {day[0]}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                         <div className="flex-1 min-w-[150px]">
                             <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1 ml-1">Run Time</label>
                             <input 
@@ -243,7 +302,7 @@ const FlyerIngestion = () => {
                         </div>
                         <button 
                             onClick={handleScheduleJob}
-                            disabled={!postalCode || !scheduledDate || !scheduledTime || !flyerIngestionEnabled || isScheduling}
+                            disabled={!postalCode || (!isRecurring && !scheduledDate) || (isRecurring && recurringDays.length === 0) || !scheduledTime || !flyerIngestionEnabled || isScheduling}
                             className="bg-white border-2 border-gray-200 text-gray-900 font-bold py-3 px-8 rounded-xl hover:bg-gray-50 active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                         >
                             {isScheduling ? 'Scheduling...' : 'Schedule Job'}
@@ -371,21 +430,25 @@ const FlyerIngestion = () => {
                                         <div className="flex items-center gap-2">
                                             <p className="font-black text-gray-900 text-sm tracking-tight">{job.postalCode}</p>
                                             <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded-sm ${
-                                                job.status === 'completed' ? 'bg-emerald-100 text-emerald-700' :
+                                                job.status === 'completed' || job.status === 'active' ? 'bg-emerald-100 text-emerald-700' :
                                                 job.status === 'failed' ? 'bg-red-100 text-red-700' :
                                                 'bg-gray-100 text-gray-600'
                                             }`}>
                                                 {job.status}
                                             </span>
+                                            {job.type === 'recurring' && <span className="text-[8px] font-black bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-sm uppercase">Recurring</span>}
                                             {job.shouldReset && <span className="text-[8px] font-black bg-red-100 text-red-600 px-1.5 py-0.5 rounded-sm uppercase">Full Reset</span>}
                                         </div>
                                         <p className="text-[10px] text-gray-500 font-bold tracking-widest">
-                                            {new Date(job.scheduledAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}
+                                            {job.type === 'recurring' 
+                                                ? `${job.days.map((d: number) => DAYS[d]).join(', ')} @ ${job.time}`
+                                                : new Date(job.scheduledAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })
+                                            }
                                         </p>
                                     </div>
                                 </div>
                                 
-                                {job.status === 'pending' ? (
+                                {job.status === 'pending' || job.status === 'active' ? (
                                     <button 
                                         onClick={() => cancelJob(job.id)}
                                         className="text-[10px] font-black text-red-500 hover:text-red-700 uppercase tracking-widest px-3 py-1.5 hover:bg-red-50 rounded-lg transition-all"
