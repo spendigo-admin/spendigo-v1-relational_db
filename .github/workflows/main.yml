@@ -1,5 +1,5 @@
 name: Deploy to Firebase Hosting on merge to main
-# Triggering new build with updated GCP permissions
+# Triggering new build with updated GCP permissions and Node 22 runtime
 
 on:
   push:
