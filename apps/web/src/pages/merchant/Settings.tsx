@@ -1464,7 +1464,7 @@ const MerchantSettings: React.FC = () => {
             <div className="sticky top-[64px] md:top-0 z-30 -mx-6 px-6 pt-6 pb-2 bg-[var(--surface-1)]/95 backdrop-blur-xl border-b border-[var(--glass-border)] mb-8">
                 <div className="flex items-center justify-between mb-6">
                     <div>
-                        <h1 className="text-xl md:text-2xl font-bold text-[var(--text-main)]">Store Settings</h1>
+                        <h1 className="page-headline">Store Settings</h1>
                         <p className="text-xs text-[var(--text-muted)] hidden md:block">Configure your marketplace presence and logistics.</p>
                     </div>
                     <div className="flex gap-2 md:gap-3">

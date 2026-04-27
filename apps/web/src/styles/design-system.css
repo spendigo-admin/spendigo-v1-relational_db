@@ -115,6 +115,19 @@ h3 {
     color: var(--text-main);
 }
 
+.page-headline {
+    font-size: 1rem; /* text-base */
+    font-weight: 900; /* font-black */
+    letter-spacing: -0.025em; /* tracking-tight */
+    color: var(--text-main);
+}
+
+@media (min-width: 768px) {
+    .page-headline {
+        font-size: 1.125rem; /* text-lg */
+    }
+}
+
 p {
     font-size: 1rem;
     line-height: 1.6;

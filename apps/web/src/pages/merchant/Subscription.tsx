@@ -210,7 +210,7 @@ const Subscription: React.FC = () => {
 
             <div className="max-w-6xl mx-auto">
                 <div className="text-center mb-10">
-                    <h1 className="text-3xl font-bold text-[var(--text-main)] mb-2">Store Subscription</h1>
+                    <h1 className="page-headline mb-2">Store Subscription</h1>
                     <p className="text-[var(--text-muted)]">Choose the plan that fits your business needs. Upgrade or downgrade anytime.</p>
                 </div>
 

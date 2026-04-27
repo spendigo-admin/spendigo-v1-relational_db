@@ -25,6 +25,12 @@ export const cancelOrder = functions.https.onCall(async (data, context) => {
     }
 
     try {
+        // Fetch caller's user data for role-based permission check
+        const callerSnap = await db.collection('users').doc(userId).get();
+        const callerData = callerSnap.data();
+        const callerRole = callerData?.role || 'consumer';
+        const callerStoreId = callerData?.storeId;
+
         await db.runTransaction(async (transaction) => {
             const orderRef = db.collection('orders').doc(orderId);
             const orderSnap = await transaction.get(orderRef);
@@ -35,9 +41,13 @@ export const cancelOrder = functions.https.onCall(async (data, context) => {
 
             const order = orderSnap.data();
 
-            // Security: Only Owner can cancel via this endpoint
-            if (order?.customerId !== userId) {
-                throw new functions.https.HttpsError('permission-denied', 'You can only cancel your own orders.');
+            // Security: Allowed if Shopper (Owner), Merchant of this store, or Admin
+            const isOwner = order?.customerId === userId;
+            const isStoreMerchant = callerRole === 'merchant' && order?.storeId === callerStoreId;
+            const isAdmin = callerRole === 'admin';
+
+            if (!isOwner && !isStoreMerchant && !isAdmin) {
+                throw new functions.https.HttpsError('permission-denied', 'You do not have permission to cancel this order.');
             }
 
             if (order?.status === 'cancelled') {

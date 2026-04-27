@@ -84,6 +84,7 @@ const MerchantFlyers = lazyWithRetry(() => import('./pages/merchant/Flyers'));
 const MerchantDeals = lazyWithRetry(() => import('./pages/merchant/Deals'));
 const MerchantSettings = lazyWithRetry(() => import('./pages/merchant/Settings'));
 const MerchantSubscription = lazyWithRetry(() => import('./pages/merchant/Subscription'));
+const MerchantAnalytics = lazyWithRetry(() => import('./pages/merchant/Analytics'));
 
 // Admin Pages — lazy loaded
 const AdminDashboard = lazyWithRetry(() => import('./pages/admin/Dashboard'));
@@ -217,6 +218,7 @@ function App() {
                                                                     <Route path="/merchant/orders" element={<MerchantOrders />} />
                                                                     <Route path="/merchant/flyers" element={<MerchantFlyers />} />
                                                                     <Route path="/merchant/deals" element={<MerchantDeals />} />
+                                                                    <Route path="/merchant/analytics" element={<MerchantAnalytics />} />
                                                                     <Route path="/merchant/settings" element={<MerchantSettings />} />
                                                                     <Route path="/merchant/subscription" element={<MerchantSubscription />} />
                                                                 </Route>

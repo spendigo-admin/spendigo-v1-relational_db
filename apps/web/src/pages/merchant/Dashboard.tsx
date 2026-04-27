@@ -281,28 +281,46 @@ const MerchantDashboard: React.FC = () => {
 
     return (
         <div className="p-4 md:p-6 animate-fade-in pb-20 space-y-6">
-            {/* Hero Section */}
-            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[var(--brand-primary)] to-purple-600 p-6 md:p-10 text-white shadow-xl">
-                <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-                    <div className="max-w-xl">
-                        <h1 className="text-2xl md:text-4xl font-black mb-2 tracking-tight">👋 Welcome back, {store?.name || 'Partner'}!</h1>
-                        <p className="text-blue-100 text-base md:text-xl font-medium opacity-90">Your store is live and accepting orders.</p>
-                    </div>
-                    <div className="flex items-center gap-4 w-full md:w-auto">
-                        <div className="bg-white/10 backdrop-blur-md px-4 py-2 rounded-2xl border border-white/20 flex-1 md:flex-none flex items-center justify-between md:justify-start gap-4">
-                            <div className="text-right md:text-left">
-                                <div className="text-[10px] opacity-70 uppercase tracking-widest font-black">Status</div>
-                                <div className="text-sm font-bold flex items-center gap-2">
-                                    <span className="w-2.5 h-2.5 bg-green-400 rounded-full animate-pulse shadow-[0_0_8px_rgba(74,222,128,0.5)]"></span>
-                                    ONLINE
-                                </div>
-                            </div>
+            {/* Hero Section - Ultra Slim Redesign */}
+            <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-[var(--brand-primary)] to-blue-500 p-3 md:p-4 text-white shadow-md group transition-all duration-300 hover:shadow-lg">
+                {/* Subtle Decorative Blobs - Scaled Down */}
+                <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full blur-2xl -mr-12 -mt-12"></div>
+                
+                <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+                    <div className="flex items-center gap-3">
+                        <div>
+                            <h1 className="page-headline text-white flex items-center gap-2">
+                                Welcome back, 
+                                <span className="text-white font-black italic">
+                                    {store?.name || 'Asian Grocers'}
+                                </span>
+                            </h1>
+                            <p className="text-white/70 text-[9px] md:text-[10px] font-bold uppercase tracking-widest flex items-center gap-2">
+                                <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></span>
+                                Live & Accepting Orders
+                            </p>
                         </div>
                     </div>
+
+                    <div className="flex items-center gap-2 w-full md:w-auto">
+                        {/* Ultra Compact Stats */}
+                        <div className="flex-1 md:flex-none bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/10 flex items-center gap-2">
+                            <span className="text-[9px] font-black opacity-60 uppercase">Status</span>
+                            <span className="text-[10px] font-black">ONLINE</span>
+                        </div>
+                        <div className="flex-1 md:flex-none bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/10 flex items-center gap-2">
+                            <span className="text-[9px] font-black opacity-60 uppercase">Deals</span>
+                            <span className="text-[10px] font-black">{activeDealsCount}</span>
+                        </div>
+                        <button 
+                            onClick={() => navigate('/merchant/settings')}
+                            className="p-1.5 bg-white/20 hover:bg-white/30 rounded-lg transition-colors text-base"
+                            title="Quick Settings"
+                        >
+                            ⚙️
+                        </button>
+                    </div>
                 </div>
-                {/* Decorative elements */}
-                <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-3xl"></div>
-                <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-purple-400/20 rounded-full blur-3xl"></div>
             </div>
 
             {/* Time Period Selector - Only for Analytics */}

@@ -27,10 +27,20 @@ export const refundOrder = functions.https.onCall(async (data, context) => {
         }
 
         const orderData = orderSnap.data();
-        const { paymentIntentId, paymentStatus } = orderData || {};
+        const { paymentIntentId, paymentStatus, storeId: orderStoreId } = orderData || {};
 
-        // Security check: Ideally verify that context.auth.uid has permissions for storeId
-        
+        // Security check: Verify that context.auth.uid has permissions for storeId
+        const callerSnap = await db.collection('users').doc(context.auth.uid).get();
+        const callerData = callerSnap.data();
+        const callerRole = callerData?.role || 'consumer';
+        const callerStoreId = callerData?.storeId;
+
+        const isStoreMerchant = callerRole === 'merchant' && orderStoreId === callerStoreId;
+        const isAdmin = callerRole === 'admin';
+
+        if (!isStoreMerchant && !isAdmin) {
+            throw new functions.https.HttpsError('permission-denied', 'You do not have permission to refund this order.');
+        }
         if (paymentStatus !== 'paid' || !paymentIntentId) {
             throw new functions.https.HttpsError('failed-precondition', 'Only paid orders can be refunded.');
         }

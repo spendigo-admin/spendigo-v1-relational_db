@@ -273,7 +273,7 @@ const MerchantOrders: React.FC = () => {
             <div className="p-4 md:p-6 pb-2 shrink-0">
                 <div className="flex items-center justify-between mb-4 md:mb-6">
                     <div>
-                        <h1 className="text-xl md:text-2xl font-bold text-[var(--text-main)]">Live Orders Dashboard</h1>
+                        <h1 className="page-headline">Live Orders Dashboard</h1>
                         <div className="flex gap-4 mt-1 text-[10px] md:text-sm text-[var(--text-muted)]">
                             <span className="flex items-center gap-1">⏱️ Avg Prep: <strong>12m</strong></span>
                             <span className="flex items-center gap-1">⭐ On-Time: <strong>98%</strong></span>
@@ -585,52 +585,62 @@ const MerchantOrders: React.FC = () => {
                                     </div>
                                 </div>
 
-                                {/* Actions Panel */}
+                                {/* Actions Panel - Mobile Optimized */}
                                 {hasWriteAccess && (
-                                    <div className="bg-gray-900 rounded-3xl p-6 text-white space-y-6">
-                                        <div className="space-y-4">
-                                            <h3 className="text-xs font-bold uppercase tracking-widest opacity-60">Merchant Controls</h3>
+                                    <div className="bg-gray-900 rounded-3xl p-5 md:p-6 text-white space-y-6">
+                                        <div className="space-y-5">
+                                            <h3 className="text-[10px] font-black uppercase tracking-widest opacity-50 ml-1">Merchant Controls</h3>
                                             
                                             <div className="grid grid-cols-2 gap-3">
                                                 <button 
                                                     onClick={() => handleUpdateStatus(selectedOrder.id, selectedOrder.status === 'on_hold' ? 'preparing' : 'on_hold')} 
-                                                    className={`p-3 rounded-2xl text-xs font-bold transition-all border ${selectedOrder.status === 'on_hold' ? 'bg-orange-500 text-white border-orange-400' : 'bg-white/10 text-white border-white/5 hover:bg-white/20'}`}
+                                                    className={`p-3 rounded-2xl text-[11px] font-black transition-all border flex items-center justify-center gap-2 ${selectedOrder.status === 'on_hold' ? 'bg-orange-500 text-white border-orange-400' : 'bg-white/10 text-white border-white/5 hover:bg-white/20'}`}
                                                 >
-                                                    {selectedOrder.status === 'on_hold' ? '▶️ Resume Order' : '⏳ Put on Hold'}
+                                                    {selectedOrder.status === 'on_hold' ? '▶️ Resume' : '⏳ Hold'}
                                                 </button>
-                                                <button onClick={() => handleDownloadReceipt(selectedOrder.id)} className="bg-white/10 p-3 rounded-2xl text-xs font-bold hover:bg-white/20 transition-all border border-white/5">
-                                                    📄 Receipt
+                                                <button 
+                                                    onClick={() => handleDownloadReceipt(selectedOrder.id)} 
+                                                    disabled={downloadingReceiptId === selectedOrder.id}
+                                                    className="bg-white/10 p-3 rounded-2xl text-[11px] font-black hover:bg-white/20 transition-all border border-white/5 flex items-center justify-center gap-2 disabled:opacity-50"
+                                                >
+                                                    {downloadingReceiptId === selectedOrder.id ? '⌛...' : '📄 Receipt'}
                                                 </button>
                                             </div>
 
                                             <div className="space-y-2">
-                                                <label className="text-[10px] font-bold opacity-60 ml-1">Estimated Preparation Time</label>
-                                                <div className="flex gap-2">
+                                                <label className="text-[9px] font-black uppercase tracking-widest opacity-50 ml-1">Est. Prep Time</label>
+                                                <div className="flex gap-2 h-11">
                                                     <input
                                                         type="text"
                                                         value={estTimeInput}
                                                         onChange={(e) => setEstTimeInput(e.target.value)}
                                                         placeholder="e.g. 15 min"
-                                                        className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 text-sm focus:ring-2 focus:ring-[var(--brand-primary)]"
+                                                        className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 text-sm focus:ring-1 focus:ring-[var(--brand-primary)] outline-none"
                                                     />
-                                                    <button onClick={() => handleSaveET(selectedOrder.id)} className="px-6 py-2 bg-white text-black text-xs font-bold rounded-xl active:scale-95 transition-all">
+                                                    <button 
+                                                        onClick={() => handleSaveET(selectedOrder.id)} 
+                                                        className="px-5 bg-white text-black text-[11px] font-black rounded-xl active:scale-95 transition-all shrink-0"
+                                                    >
                                                         Save
                                                     </button>
                                                 </div>
                                             </div>
 
                                             <div className="pt-4 border-t border-white/10">
-                                                <label className="text-[10px] font-bold opacity-60 ml-1">Cancellation / Rejection</label>
-                                                <div className="flex gap-2 mt-2">
+                                                <label className="text-[9px] font-black uppercase tracking-widest opacity-50 ml-1">Cancel / Reject</label>
+                                                <div className="flex gap-2 mt-2 h-11">
                                                     <input
                                                         type="text"
                                                         value={rejectionReason}
                                                         onChange={(e) => setRejectionReason(e.target.value)}
-                                                        placeholder="Reason for cancellation..."
-                                                        className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 text-sm"
+                                                        placeholder="Reason..."
+                                                        className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 text-sm outline-none"
                                                     />
-                                                    <button onClick={() => handleCancelOrder(selectedOrder.id)} className="px-6 py-2 bg-red-500/20 text-red-400 border border-red-500/30 text-xs font-bold rounded-xl active:scale-95 transition-all">
-                                                        Rej.
+                                                    <button 
+                                                        onClick={() => handleCancelOrder(selectedOrder.id)} 
+                                                        className="px-5 bg-red-500/20 text-red-400 border border-red-500/30 text-[11px] font-black rounded-xl active:scale-95 transition-all shrink-0"
+                                                    >
+                                                        REJ.
                                                     </button>
                                                 </div>
                                             </div>
@@ -639,22 +649,22 @@ const MerchantOrders: React.FC = () => {
                                 )}
                             </div>
 
-                            {/* Floating Action Bar at Bottom */}
-                            <div className="p-6 border-t border-[var(--glass-border)] bg-white/90 backdrop-blur-md flex gap-3 sticky bottom-0 z-20 pb-safe">
+                            {/* Floating Action Bar at Bottom - Mobile Optimized */}
+                            <div className="p-4 md:p-6 border-t border-[var(--glass-border)] bg-white/95 backdrop-blur-md flex flex-col sm:flex-row gap-3 sticky bottom-0 z-20 pb-safe">
                                 {hasWriteAccess && (
-                                    <>
+                                    <div className="flex-1 flex gap-3">
                                         {selectedOrder.status === 'on_hold' && (
                                             <button 
                                                 onClick={() => { handleUpdateStatus(selectedOrder.id, 'preparing'); setSelectedOrder(null); }} 
-                                                className="flex-1 py-4 bg-[var(--brand-primary)] text-white font-bold rounded-2xl hover:brightness-110 shadow-xl shadow-[var(--brand-primary)]/30 active:scale-[0.98] transition-all"
+                                                className="flex-1 py-4 bg-[var(--brand-primary)] text-white text-sm font-black rounded-2xl hover:brightness-110 shadow-lg active:scale-[0.98] transition-all"
                                             >
-                                                Resume & Accept
+                                                Accept Order
                                             </button>
                                         )}
                                         {selectedOrder.status === 'placed' && (
                                             <button 
                                                 onClick={() => { handleUpdateStatus(selectedOrder.id, 'preparing'); setSelectedOrder(null); }} 
-                                                className="flex-1 py-4 bg-blue-600 text-white font-bold rounded-2xl hover:brightness-110 shadow-xl shadow-blue-600/30 active:scale-[0.98] transition-all"
+                                                className="flex-1 py-4 bg-blue-600 text-white text-sm font-black rounded-2xl hover:brightness-110 shadow-lg active:scale-[0.98] transition-all"
                                             >
                                                 Accept Order
                                             </button>
@@ -662,22 +672,25 @@ const MerchantOrders: React.FC = () => {
                                         {selectedOrder.status === 'preparing' && (
                                             <button 
                                                 onClick={() => { handleUpdateStatus(selectedOrder.id, 'out_for_delivery'); setSelectedOrder(null); }} 
-                                                className="flex-1 py-4 bg-orange-500 text-white font-bold rounded-2xl hover:brightness-110 shadow-xl shadow-orange-500/30 active:scale-[0.98] transition-all"
+                                                className="flex-1 py-4 bg-orange-500 text-white text-sm font-black rounded-2xl hover:brightness-110 shadow-lg active:scale-[0.98] transition-all"
                                             >
-                                                {selectedOrder.deliveryAddress ? 'Mark Out for Delivery' : 'Mark Ready for Pickup'}
+                                                {selectedOrder.deliveryAddress ? 'Out for Delivery' : 'Ready for Pickup'}
                                             </button>
                                         )}
                                         {selectedOrder.status === 'out_for_delivery' && (
                                             <button 
                                                 onClick={() => { handleCompleteOrder(selectedOrder); setSelectedOrder(null); }} 
-                                                className="flex-1 py-4 bg-green-600 text-white font-bold rounded-2xl hover:brightness-110 shadow-xl shadow-green-600/30 active:scale-[0.98] transition-all"
+                                                className="flex-1 py-4 bg-green-600 text-white text-sm font-black rounded-2xl hover:brightness-110 shadow-lg active:scale-[0.98] transition-all"
                                             >
                                                 Complete Order
                                             </button>
                                         )}
-                                    </>
+                                    </div>
                                 )}
-                                <button onClick={() => setSelectedOrder(null)} className="px-6 py-4 border border-[var(--glass-border)] font-bold rounded-2xl text-gray-500 hover:bg-gray-50 transition-colors">
+                                <button 
+                                    onClick={() => setSelectedOrder(null)} 
+                                    className="px-6 py-4 border border-[var(--glass-border)] text-sm font-black rounded-2xl text-gray-500 hover:bg-gray-50 transition-colors w-full sm:w-auto"
+                                >
                                     Close
                                 </button>
                             </div>

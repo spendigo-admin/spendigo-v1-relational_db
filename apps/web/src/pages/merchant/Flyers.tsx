@@ -302,7 +302,7 @@ const MerchantFlyers: React.FC = () => {
                         <button onClick={() => setView('list')} className="text-[var(--text-muted)] hover:text-[var(--text-main)] mb-2 flex items-center gap-1">
                             ← Back to Flyers
                         </button>
-                        <h1 className="text-2xl font-bold text-[var(--text-main)]">
+                        <h1 className="page-headline">
                             {activeFlyerId ? 'Edit Flyer' : 'Create New Flyer'}
                         </h1>
                     </div>
@@ -641,7 +641,7 @@ const MerchantFlyers: React.FC = () => {
         <div className="p-4 sm:p-6 animate-fade-in pb-20">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                 <div>
-                    <h1 className="text-2xl font-bold text-[var(--text-main)]">📰 Flyers</h1>
+                    <h1 className="page-headline">📰 Flyers</h1>
                     <p className="text-sm text-[var(--text-muted)]">Manage your store's digital flyers and weekly deals</p>
                 </div>
                 {hasWriteAccess && !isRestrictedPlan && (

@@ -488,7 +488,7 @@ const MerchantProducts: React.FC = () => {
         <div className="p-4 sm:p-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                 <div>
-                    <h1 className="text-2xl font-bold text-[var(--text-main)]">Inventory</h1>
+                    <h1 className="page-headline">Inventory Management</h1>
                     <p className="text-sm text-[var(--text-muted)]">{products.length} products sync with Master Catalog</p>
                 </div>
                 <div className="flex items-center gap-2 w-full sm:w-auto">

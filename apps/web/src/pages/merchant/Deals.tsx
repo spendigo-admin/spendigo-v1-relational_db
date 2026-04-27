@@ -413,7 +413,7 @@ const MerchantDeals: React.FC = () => {
         <div className="p-4 sm:p-6 animate-fade-in pb-20">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
                 <div>
-                    <h1 className="text-2xl font-bold text-[var(--text-main)]">🏷️ Deals & Offers</h1>
+                    <h1 className="page-headline">🏷️ Deals & Offers</h1>
                     <p className="text-sm text-[var(--text-muted)]">Target customers with special limited-time offers</p>
                 </div>
                 {hasWriteAccess && !isRestrictedPlan && (

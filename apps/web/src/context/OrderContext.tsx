@@ -285,9 +285,6 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     };
 
     const cancelOrder = async (orderId: string, reason?: string) => {
-        const order = orders.find(o => o.id === orderId);
-        if (!order) return;
-
         try {
             const cancelOrderFn = httpsCallable(functions, 'cancelOrder');
             await cancelOrderFn({ orderId, reason });

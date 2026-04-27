@@ -141,7 +141,7 @@ const MerchantOnboarding: React.FC = () => {
                     />
                 </div>
 
-                <h1 className="mb-2 text-3xl text-[var(--text-main)]">Setup your Store</h1>
+                <h1 className="page-headline mb-2">Setup your Store</h1>
                 <p className="mb-8 text-[var(--text-muted)]">Join the Spendigo Marketplace Facilitator Platform.</p>
 
                 {step === 1 && (
