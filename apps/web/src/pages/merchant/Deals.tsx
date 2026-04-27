@@ -3,6 +3,7 @@ import '../../styles/design-system.css';
 import { useMarketplace } from '../../context/MarketplaceContext';
 import { useAuth } from '../../context/AuthContext';
 import { useNotifications } from '../../context/NotificationContext';
+import { useConfirmation } from '../../context/ConfirmationContext';
 import { doc, writeBatch, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { useStoreProducts } from '../../hooks/useStoreProducts';
@@ -60,6 +61,7 @@ const MerchantDeals: React.FC = () => {
     const can = (action: string) => true;
     const { user } = useAuth();
     const storeId = user?.storeId || '1';
+    const { confirm } = useConfirmation();
     const store = getStore(storeId);
     // const availableProducts = useMemo(() => store?.products || [], [store?.products]);
     const { products: availableProducts } = useStoreProducts(storeId);
@@ -136,10 +138,10 @@ const MerchantDeals: React.FC = () => {
 
     const getStatusColor = (status: string) => {
         switch (status) {
-            case 'active': return 'bg-green-100 text-green-700';
-            case 'scheduled': return 'bg-blue-100 text-blue-700';
-            case 'expired': return 'bg-gray-100 text-gray-600';
-            default: return 'bg-gray-100 text-gray-600';
+            case 'active': return 'bg-green-100 text-green-700 border border-green-200';
+            case 'scheduled': return 'bg-blue-100 text-blue-700 border border-blue-200';
+            case 'expired': return 'bg-red-100 text-red-700 border border-red-200';
+            default: return 'bg-gray-100 text-gray-600 border border-gray-200';
         }
     };
 
@@ -250,13 +252,107 @@ const MerchantDeals: React.FC = () => {
             closeWizard();
         } catch (error) {
             console.error("Failed to save deal:", error);
-            alert(`Failed to save deal. Error: ${(error as Error).message}`);
+            addNotification({
+                type: 'alert',
+                title: 'Save Failed',
+                message: `Failed to save deal. Error: ${(error as Error).message}`
+            });
+        }
+    };
+
+    const handleExtendDeal = async (deal: Deal) => {
+        const confirmed = await confirm({
+            title: 'Extend Deal?',
+            message: `Do you want to extend "${deal.productName}" for another 3 days? It will be reactivated immediately.`,
+            confirmText: 'Extend 3 Days',
+            type: 'info'
+        });
+
+        if (confirmed) {
+            try {
+                const now = new Date();
+                const newEnd = new Date();
+                newEnd.setDate(newEnd.getDate() + 3);
+                const endDateStr = newEnd.toISOString().slice(0, 16);
+
+                const updatedDeal: Deal = {
+                    ...deal,
+                    endDate: endDateStr,
+                    status: 'active'
+                };
+
+                // 1. Update Merchant DB
+                await saveDeal(storeId, updatedDeal);
+
+                // 2. Sync with Global Marketplace Context (Immediate UX)
+                if (updatedDeal.isFlashSale) {
+                    const currentOffers = store?.oneDayOffers || [];
+                    const hours = Math.max(1, Math.ceil((newEnd.getTime() - now.getTime()) / (1000 * 60 * 60)));
+                    const updatedOffers = [...currentOffers.filter((o: any) => o.id !== deal.id), {
+                        id: updatedDeal.id,
+                        productId: updatedDeal.productId,
+                        name: updatedDeal.productName,
+                        price: updatedDeal.salePrice,
+                        originalPrice: updatedDeal.originalPrice,
+                        endsIn: `${hours} hours`,
+                        image: updatedDeal.productImage,
+                        validUntil: updatedDeal.endDate
+                    }];
+                    updateStoreDeals(storeId, 'oneDayOffers', updatedOffers);
+                } else {
+                    const currentSales = store?.saleItems || [];
+                    const updatedSales = [...currentSales.filter((s: any) => s.id !== deal.id), {
+                        id: updatedDeal.id,
+                        productId: updatedDeal.productId,
+                        name: updatedDeal.productName,
+                        price: updatedDeal.salePrice,
+                        originalPrice: updatedDeal.originalPrice,
+                        discount: updatedDeal.type === 'percentage' ? `${updatedDeal.value}% OFF` : 'Special Offer',
+                        image: updatedDeal.productImage,
+                        validUntil: updatedDeal.endDate
+                    }];
+                    updateStoreDeals(storeId, 'saleItems', updatedSales);
+                }
+
+                // 3. Update individual merchant product document
+                const pRef = doc(db, 'merchant_products', updatedDeal.productId);
+                await updateDoc(pRef, {
+                    price: updatedDeal.salePrice,
+                    sale_price: updatedDeal.salePrice,
+                    on_sale: true,
+                    original_price: updatedDeal.originalPrice,
+                    discount_label: updatedDeal.type === 'percentage' ? `${updatedDeal.value}% OFF` : 'Special Offer',
+                    discount_valid_until: updatedDeal.endDate,
+                    updated_at: serverTimestamp()
+                });
+
+                addNotification({
+                    type: 'system',
+                    title: 'Deal Extended',
+                    message: `"${deal.productName}" has been extended by 3 days.`
+                });
+            } catch (error) {
+                console.error("Failed to extend deal:", error);
+                addNotification({
+                    type: 'alert',
+                    title: 'Extension Failed',
+                    message: 'Could not extend the deal. Please try again.'
+                });
+            }
         }
     };
 
     const handleDeleteDeal = async (id: string) => {
         const dealToDelete = deals.find(d => d.id === id);
-        if (confirm('Are you sure you want to end this deal?')) {
+        
+        const confirmed = await confirm({
+            title: 'End this deal?',
+            message: `Are you sure you want to end "${dealToDelete?.productName || 'this deal'}"? It will be removed from the marketplace immediately.`,
+            confirmText: 'End Deal',
+            type: 'danger'
+        });
+
+        if (confirmed) {
             try {
                 // 1. Remove from Merchant DB
                 await deleteDeal(storeId, id);
@@ -280,9 +376,19 @@ const MerchantDeals: React.FC = () => {
                         updated_at: serverTimestamp()
                     });
                 }
+
+                addNotification({
+                    type: 'system',
+                    title: 'Deal Ended',
+                    message: 'The deal has been successfully removed.'
+                });
             } catch (error) {
                 console.error("Failed to delete deal:", error);
-                alert(`Failed to delete deal. Error: ${(error as Error).message}`);
+                addNotification({
+                    type: 'alert',
+                    title: 'Delete Failed',
+                    message: `Failed to delete deal. Error: ${(error as Error).message}`
+                });
             }
         }
     };
@@ -497,9 +603,20 @@ const MerchantDeals: React.FC = () => {
                                                     <div className="text-[10px] text-[var(--text-muted)]">Clipped</div>
                                                 </div>
                                                 {hasWriteAccess ? (
-                                                    <button onClick={() => handleDeleteDeal(deal.id)} className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="End Deal">
-                                                        🗑️
-                                                    </button>
+                                                    <div className="flex items-center gap-1">
+                                                        {deal.status === 'expired' && (
+                                                            <button
+                                                                onClick={() => handleExtendDeal(deal)}
+                                                                className="p-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
+                                                                title="Extend Deal (3 Days)"
+                                                            >
+                                                                ⏳
+                                                            </button>
+                                                        )}
+                                                        <button onClick={() => handleDeleteDeal(deal.id)} className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="End Deal">
+                                                            🗑️
+                                                        </button>
+                                                    </div>
                                                 ) : (
                                                     <div className="p-2 opacity-30 grayscale cursor-not-allowed">🗑️</div>
                                                 )}

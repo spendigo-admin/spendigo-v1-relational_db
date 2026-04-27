@@ -178,7 +178,7 @@ async function runIngestion(postalCode, resetData = false) {
             await file.save(JSON.stringify(allDeals), {
                 contentType: 'application/json',
                 metadata: {
-                    cacheControl: 'public, max-age=3600'
+                    cacheControl: 'public, max-age=60' // Reduced from 3600s to 60s for faster updates
                 }
             });
             await file.makePublic();

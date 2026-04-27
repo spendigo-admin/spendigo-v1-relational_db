@@ -50,7 +50,9 @@ const PriceCompare = () => {
             try {
                 // Fetch static JSON file instead of running Cloud Function
                 // Using direct GCP storage URL instead of Firebase API to avoid 401 token errors
-                const response = await fetch('https://storage.googleapis.com/spendigo-8540c.firebasestorage.app/public/active_deals.json');
+                // Appending a timestamp query param to bypass aggressive browser/CDN caching
+                const cacheBuster = Math.floor(Date.now() / 60000); // changes every minute
+                const response = await fetch(`https://storage.googleapis.com/spendigo-8540c.firebasestorage.app/public/active_deals.json?v=${cacheBuster}`);
                 if (!response.ok) {
                     throw new Error(`Failed to fetch active_deals.json: ${response.statusText}`);
                 }
