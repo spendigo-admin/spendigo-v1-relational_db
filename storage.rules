@@ -27,6 +27,11 @@ service firebase.storage {
       allow read: if true; // Publicly accessible to unauthenticated users viewing the catalog
     }
 
+    // Publicly accessible exported JSON data
+    match /public/{allPaths=**} {
+      allow read: if true;
+    }
+
     // Default: deny everything else
     match /{allPaths=**} {
       allow read, write: if false;

@@ -147,6 +147,33 @@ export async function runIngestion(postalCode: string, resetData: boolean = fals
             summaryData.push({ retailer: flyer.merchant, dealsCount: dealsToWrite.length });
         }
 
+        // Generate static JSON export of all active deals for zero-read client comparison
+        console.log("Generating static JSON export of all active deals...");
+        const flyersSnapshot = await db.collection('public_flyers').get();
+        let allDeals: any[] = [];
+        for (const flyerDoc of flyersSnapshot.docs) {
+            const dealsSnapshot = await flyerDoc.ref.collection('deals').get();
+            dealsSnapshot.forEach(doc => {
+                allDeals.push({ ...doc.data(), flyerId: flyerDoc.id });
+            });
+        }
+        
+        try {
+            const bucket = admin.storage().bucket('spendigo-8540c.firebasestorage.app');
+            const file = bucket.file('public/active_deals.json');
+            await file.save(JSON.stringify(allDeals), {
+                contentType: 'application/json',
+                metadata: {
+                    cacheControl: 'public, max-age=3600'
+                }
+            });
+            await file.makePublic();
+            console.log(`Successfully exported ${allDeals.length} deals to Storage.`);
+        } catch (storageError) {
+            console.error("Failed to upload active_deals.json to storage:", storageError);
+            // Non-fatal error, we still want to return success for ingestion
+        }
+
         return {
             success: true,
             processedFlyers,

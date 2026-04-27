@@ -44,16 +44,33 @@ const PriceCompare = () => {
                 return;
             }
 
-            const listTerms = wishlistItems.map(i => i.name);
+            const listTerms = wishlistItems.map(i => i.name.toLowerCase().trim());
             
             setLoading(true);
             try {
-                const searchFn = httpsCallable(functions, 'searchPublicDeals');
-                const result = await searchFn({ searchTerm: '', filters: [], listTerms });
-                const data: any = result.data;
-                setDeals(data.deals || []);
+                // Fetch static JSON file instead of running Cloud Function
+                // Using direct GCP storage URL instead of Firebase API to avoid 401 token errors
+                const response = await fetch('https://storage.googleapis.com/spendigo-8540c.firebasestorage.app/public/active_deals.json');
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch active_deals.json: ${response.statusText}`);
+                }
+                const allDeals = await response.json();
+                
+                // Perform client-side filtering matching the old backend logic
+                const filteredDeals = allDeals.filter((deal: any) => {
+                    const lowerName = (deal.name || '').toLowerCase();
+                    
+                    const matchesList = listTerms.some(term => {
+                        return lowerName.includes(term) || term.includes(lowerName) || 
+                               term.split(' ').some(word => word.length > 3 && lowerName.includes(word));
+                    });
+                    
+                    return matchesList;
+                });
+                
+                setDeals(filteredDeals.slice(0, 3000));
             } catch (err) {
-                console.error("Error searching public deals:", err);
+                console.error("Error fetching public deals from storage:", err);
             } finally {
                 setLoading(false);
             }
@@ -86,12 +103,13 @@ const PriceCompare = () => {
             // Sort deals by parsed price
             matchingDeals.sort((a, b) => parseDealPrice(a) - parseDealPrice(b));
 
-            // Deduplicate by retailer
+            // Deduplicate by retailer and item name to allow different brands from the same store
             const uniqueDeals = new Map();
             matchingDeals.forEach(deal => {
-                const current = uniqueDeals.get(deal.retailer);
+                const key = `${deal.retailer}-${(deal.name || '').toLowerCase()}`;
+                const current = uniqueDeals.get(key);
                 if (!current || parseDealPrice(deal) < parseDealPrice(current)) {
-                    uniqueDeals.set(deal.retailer, deal);
+                    uniqueDeals.set(key, deal);
                 }
             });
 
