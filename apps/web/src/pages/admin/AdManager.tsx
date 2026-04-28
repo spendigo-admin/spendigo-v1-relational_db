@@ -13,6 +13,7 @@ interface AdCampaign {
     title: string;
     description?: string;
     imageUrl: string;
+    mobileImageUrl?: string;
     linkUrl?: string;
     status: 'active' | 'draft' | 'archived';
     startDate: string;
@@ -43,6 +44,7 @@ const AdManager: React.FC = () => {
     useEffect(() => {
         if (!showModal) {
             setLocalPreview(null);
+            setMobileLocalPreview(null);
         }
     }, [showModal]);
 
@@ -72,6 +74,7 @@ const AdManager: React.FC = () => {
                 title: currentAd.title || 'Untitled Ad',
                 description: currentAd.description || '',
                 imageUrl: currentAd.imageUrl || '',
+                mobileImageUrl: currentAd.mobileImageUrl || '',
                 linkUrl: currentAd.linkUrl || '',
                 status: currentAd.status || 'draft',
                 startDate: currentAd.startDate || new Date().toISOString().split('T')[0],
@@ -155,27 +158,37 @@ const AdManager: React.FC = () => {
         }
     };
 
-    const [localPreview, setLocalPreview] = useState<string | null>(null);
+    const [localPreview, setLocalPreview] = useState<{ url: string, type: string } | null>(null);
+    const [mobileLocalPreview, setMobileLocalPreview] = useState<{ url: string, type: string } | null>(null);
 
-    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const isAssetVideo = (url?: string, localType?: string) => {
+        if (localType) return localType.startsWith('video/');
+        if (!url) return false;
+        return url.toLowerCase().endsWith('.mp4') || url.includes('.mp4?') || url.includes('mp4?');
+    };
+
+    const handleAssetUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'desktop' | 'mobile') => {
         if (e.target.files && e.target.files[0]) {
             const file = e.target.files[0];
             
             // Show local preview immediately
             const objectUrl = URL.createObjectURL(file);
-            setLocalPreview(objectUrl);
+            if (type === 'desktop') setLocalPreview({ url: objectUrl, type: file.type });
+            else setMobileLocalPreview({ url: objectUrl, type: file.type });
             
             const path = `ads/${Date.now()}_${file.name}`;
             try {
-                const url = await uploadFile(file, path, 10); // Increase to 10MB
+                const url = await uploadFile(file, path, 20); // Increase to 20MB for video support
                 if (url) {
-                    setCurrentAd(prev => ({ ...prev, imageUrl: url }));
+                    setCurrentAd(prev => ({ ...prev, [type === 'desktop' ? 'imageUrl' : 'mobileImageUrl']: url }));
                 } else {
-                    setLocalPreview(null); // Reset if upload failed
+                    if (type === 'desktop') setLocalPreview(null);
+                    else setMobileLocalPreview(null);
                 }
             } catch (err) {
                 console.error("Upload error:", err);
-                setLocalPreview(null);
+                if (type === 'desktop') setLocalPreview(null);
+                else setMobileLocalPreview(null);
             }
         }
     };
@@ -276,23 +289,52 @@ const AdManager: React.FC = () => {
                                     />
                                 </div>
 
-                                <div className="md:col-span-2">
-                                    <label className="block text-sm font-bold mb-1">Banner Image</label>
-                                    <div className="flex gap-4 items-center">
-                                        <div className="w-24 h-16 bg-gray-100 rounded border overflow-hidden flex-shrink-0">
-                                            {(localPreview || currentAd.imageUrl) && (
-                                                <img src={localPreview || currentAd.imageUrl} className="w-full h-full object-cover" />
+                                <div className="md:col-span-1">
+                                    <label className="block text-sm font-bold mb-1">Desktop Banner (Wide)</label>
+                                    <div className="flex flex-col gap-2">
+                                        <div className="w-full h-24 bg-gray-100 rounded border overflow-hidden flex-shrink-0 relative">
+                                            {(localPreview || currentAd.imageUrl) ? (
+                                                isAssetVideo(currentAd.imageUrl, localPreview?.type) ? (
+                                                    <video src={localPreview?.url || currentAd.imageUrl} className="w-full h-full object-cover" muted loop autoPlay playsInline />
+                                                ) : (
+                                                    <img src={localPreview?.url || currentAd.imageUrl} className="w-full h-full object-cover" />
+                                                )
+                                            ) : (
+                                                <div className="flex items-center justify-center h-full text-xs text-gray-400 uppercase font-bold">1920 x 500</div>
                                             )}
                                         </div>
                                         <input
                                             type="file"
-                                            accept="image/*"
-                                            onChange={handleImageUpload}
-                                            className="text-sm"
+                                            accept="image/*,video/mp4"
+                                            onChange={(e) => handleAssetUpload(e, 'desktop')}
+                                            className="text-xs"
                                         />
-                                        {uploading && <span className="text-xs text-blue-600 animate-pulse">Uploading...</span>}
                                     </div>
                                 </div>
+
+                                <div className="md:col-span-1">
+                                    <label className="block text-sm font-bold mb-1">Mobile Banner (Vertical/Square)</label>
+                                    <div className="flex flex-col gap-2">
+                                        <div className="w-full h-24 bg-gray-100 rounded border overflow-hidden flex-shrink-0 relative">
+                                            {(mobileLocalPreview || currentAd.mobileImageUrl) ? (
+                                                isAssetVideo(currentAd.mobileImageUrl, mobileLocalPreview?.type) ? (
+                                                    <video src={mobileLocalPreview?.url || currentAd.mobileImageUrl} className="w-full h-full object-cover" muted loop autoPlay playsInline />
+                                                ) : (
+                                                    <img src={mobileLocalPreview?.url || currentAd.mobileImageUrl} className="w-full h-full object-cover" />
+                                                )
+                                            ) : (
+                                                <div className="flex items-center justify-center h-full text-xs text-gray-400 uppercase font-bold">1080 x 1350</div>
+                                            )}
+                                        </div>
+                                        <input
+                                            type="file"
+                                            accept="image/*,video/mp4"
+                                            onChange={(e) => handleAssetUpload(e, 'mobile')}
+                                            className="text-xs"
+                                        />
+                                    </div>
+                                </div>
+                                {uploading && <div className="md:col-span-2 text-center text-xs text-blue-600 font-bold animate-pulse">Uploading high-resolution assets...</div>}
 
                                 <div>
                                     <label className="block text-sm font-bold mb-1">Click Link (Optional)</label>

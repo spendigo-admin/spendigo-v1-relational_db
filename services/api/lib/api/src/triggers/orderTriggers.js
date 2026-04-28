@@ -62,16 +62,19 @@ exports.onOrderStatusUpdated = functions.firestore
     let body = '';
     switch (newStatus) {
         case 'preparing':
-            title = 'Order Preparing 🍳';
-            body = `Your order from ${afterData.storeName || 'the store'} is being prepared!`;
+            title = 'Order Accepted! ✅';
+            body = `Store is now preparing your items.`;
             break;
         case 'out_for_delivery':
-            title = 'Out for Delivery 🚚';
-            body = `Your order #${orderId.slice(-5)} is on its way to you!`;
+            const isDelivery = !!afterData.deliveryAddress;
+            title = isDelivery ? 'Out for Delivery 🚚' : 'Ready for Pickup! 🛍️';
+            body = isDelivery
+                ? `Your order #${orderId.slice(-5)} is on its way!`
+                : `Your items are ready. Visit the store to collect your order.`;
             break;
         case 'delivered':
-            title = 'Order Delivered! ✅';
-            body = `Your order #${orderId.slice(-5)} has arrived. Enjoy!`;
+            title = 'Order Completed! ✨';
+            body = `Your order #${orderId.slice(-5)} has been completed. Enjoy!`;
             break;
         case 'placed':
             title = 'Order Confirmed 🎉';
@@ -82,10 +85,22 @@ exports.onOrderStatusUpdated = functions.firestore
             body = `Your order #${orderId.slice(-5)} was cancelled.`;
             break;
         default:
-            return null; // Not a status we notify for push
+            return null;
     }
     try {
-        // Get the user document to fetch FCM tokens
+        // 1. Create Persistent In-App Notification
+        const notifId = `notif_status_${orderId}_${newStatus}`;
+        await admin.firestore().collection('users').doc(userId).collection('notifications').doc(notifId).set({
+            id: notifId,
+            type: 'order',
+            title,
+            message: body,
+            timestamp: new Date().toISOString(),
+            read: false,
+            orderId,
+            link: `/order/${orderId}`
+        });
+        // 2. Fetch FCM Tokens for Push Notification
         const userDoc = await admin.firestore().collection('users').doc(userId).get();
         if (!userDoc.exists) {
             functions.logger.warn(`User ${userId} not found for order ${orderId}.`);
@@ -94,61 +109,41 @@ exports.onOrderStatusUpdated = functions.firestore
         const userData = userDoc.data();
         const fcmTokens = userData === null || userData === void 0 ? void 0 : userData.fcmTokens;
         if (!fcmTokens || fcmTokens.length === 0) {
-            functions.logger.info(`User ${userId} has no FCM tokens registered.`);
+            functions.logger.info(`User ${userId} has no FCM tokens. Persistent notification created.`);
             return null;
         }
-        // Construct the FCM payload
+        // 3. Send Push Notification
         const payload = {
             tokens: fcmTokens,
-            notification: {
-                title,
-                body,
-            },
+            notification: { title, body },
             data: {
                 type: 'order',
                 orderId: orderId,
                 status: newStatus,
                 link: `/order/${orderId}`
             },
-            android: {
-                priority: 'high',
-                notification: {
-                    sound: 'default'
-                }
-            },
-            apns: {
-                payload: {
-                    aps: {
-                        sound: 'default'
-                    }
-                }
-            }
+            android: { priority: 'high', notification: { sound: 'default' } },
+            apns: { payload: { aps: { sound: 'default' } } }
         };
-        // Send the multicast message
         const response = await admin.messaging().sendEachForMulticast(payload);
-        // Cleanup invalid/expired tokens
         if (response.failureCount > 0) {
             const failedTokens = [];
             response.responses.forEach((resp, idx) => {
-                if (!resp.success) {
-                    const error = resp.error;
-                    if ((error === null || error === void 0 ? void 0 : error.code) === 'messaging/invalid-registration-token' ||
-                        (error === null || error === void 0 ? void 0 : error.code) === 'messaging/registration-token-not-registered') {
-                        failedTokens.push(fcmTokens[idx]);
-                    }
+                var _a, _b;
+                if (!resp.success && (((_a = resp.error) === null || _a === void 0 ? void 0 : _a.code) === 'messaging/invalid-registration-token' || ((_b = resp.error) === null || _b === void 0 ? void 0 : _b.code) === 'messaging/registration-token-not-registered')) {
+                    failedTokens.push(fcmTokens[idx]);
                 }
             });
             if (failedTokens.length > 0) {
-                functions.logger.info(`Removing ${failedTokens.length} stale FCM tokens for user ${userId}.`);
                 await admin.firestore().collection('users').doc(userId).update({
                     fcmTokens: admin.firestore.FieldValue.arrayRemove(...failedTokens)
                 });
             }
         }
-        functions.logger.info(`Successfully sent ${response.successCount} push notifications for order ${orderId} (Status: ${newStatus}).`);
+        functions.logger.info(`Successfully processed order status notification for ${orderId} (${newStatus})`);
     }
     catch (error) {
-        functions.logger.error(`Error sending push notification for order ${orderId}:`, error);
+        functions.logger.error(`Error processing status notification for order ${orderId}:`, error);
     }
     return null;
 });

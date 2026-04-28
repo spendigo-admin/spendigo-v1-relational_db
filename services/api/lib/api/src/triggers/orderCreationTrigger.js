@@ -47,42 +47,120 @@ if (!admin.apps.length) {
 exports.onOrderCreated = functions.firestore
     .document('orders/{orderId}')
     .onCreate(async (snapshot, context) => {
+    var _a;
     const orderData = snapshot.data();
     const orderId = context.params.orderId;
     const db = admin.firestore();
     const customerId = orderData.customerId;
-    const storeId = orderData.storeId;
     const storeName = orderData.storeName || 'the store';
     const total = orderData.total || 0;
     const customerName = orderData.customerName || 'A customer';
-    const timestamp = new Date().toISOString();
+    const rawStoreId = orderData.storeId;
+    const storeId = typeof rawStoreId === 'string' ? rawStoreId.trim() : rawStoreId;
+    functions.logger.info(`[OrderTrigger] Processing Order ${orderId} for StoreID: "${storeId}" (Type: ${typeof storeId})`);
     try {
         // 1. Create In-App Notification for Customer
-        const customerNotifId = `notif_cust_${Date.now()}`;
+        const customerNotifId = `notif_cust_${orderId}_${Date.now()}`;
         await db.collection('users').doc(customerId).collection('notifications').doc(customerNotifId).set({
             id: customerNotifId,
             type: 'order',
             title: 'Order Placed! 📋',
             message: `Your order from ${storeName} has been received.`,
-            timestamp,
+            timestamp: new Date().toISOString(),
             read: false,
-            orderId
+            orderId,
+            link: `/order/${orderId}`
         });
-        // 2. Create In-App Notification for Merchant
-        const merchantNotifId = `notif_merch_${Date.now()}`;
-        await db.collection('users').doc(storeId).collection('notifications').doc(merchantNotifId).set({
-            id: merchantNotifId,
-            type: 'order',
-            title: 'New Order! 🔔',
-            message: `New order from ${customerName} for $${total.toFixed(2)}`,
-            timestamp,
-            read: false,
-            orderId
+        // 2. Find all Merchant Users for this store
+        // Strategy: Query by storeId only first to avoid composite index requirements, then filter by role
+        functions.logger.info(`[OrderTrigger] Querying users for storeId: "${storeId}"`);
+        const usersSnapshot = await db.collection('users')
+            .where('storeId', '==', storeId)
+            .get();
+        const merchantDocs = usersSnapshot.docs.filter(doc => doc.data().role === 'merchant');
+        functions.logger.info(`[OrderTrigger] Found ${usersSnapshot.size} total users for this storeId, ${merchantDocs.length} are merchants.`);
+        // --- NEW FAIL-SAFE LOGIC ---
+        if (merchantDocs.length === 0) {
+            functions.logger.warn(`[OrderTrigger] No merchant users found for storeId "${storeId}". Attempting Store Document lookup...`);
+            const storeDoc = await db.collection('stores').doc(storeId).get();
+            if (storeDoc.exists) {
+                const storeData = storeDoc.data();
+                const ownerId = storeData === null || storeData === void 0 ? void 0 : storeData.ownerId;
+                const merchantEmail = storeData === null || storeData === void 0 ? void 0 : storeData.merchantEmail;
+                functions.logger.info(`[OrderTrigger] Store Doc found. OwnerId: ${ownerId}, MerchantEmail: ${merchantEmail}`);
+                // Try by OwnerId
+                if (ownerId) {
+                    const ownerDoc = await db.collection('users').doc(ownerId).get();
+                    if (ownerDoc.exists && ((_a = ownerDoc.data()) === null || _a === void 0 ? void 0 : _a.role) === 'merchant') {
+                        functions.logger.info(`[OrderTrigger] Found merchant via OwnerId: ${ownerId}`);
+                        merchantDocs.push(ownerDoc);
+                    }
+                }
+                // Try by Merchant Email (Case-insensitive-ish)
+                if (merchantDocs.length === 0 && merchantEmail) {
+                    const emailSnapshot = await db.collection('users')
+                        .where('email', '==', merchantEmail)
+                        .get();
+                    const emailMerchants = emailSnapshot.docs.filter(d => d.data().role === 'merchant');
+                    if (emailMerchants.length > 0) {
+                        functions.logger.info(`[OrderTrigger] Found ${emailMerchants.length} merchants via email: ${merchantEmail}`);
+                        merchantDocs.push(...emailMerchants);
+                    }
+                }
+            }
+            else {
+                functions.logger.error(`[OrderTrigger] CRITICAL: Store document "${storeId}" does not exist in 'stores' collection!`);
+            }
+        }
+        // --- END FAIL-SAFE LOGIC ---
+        // 3. Notify each Merchant User
+        const notificationPromises = merchantDocs.map(async (doc) => {
+            var _a;
+            const merchantUid = doc.id;
+            const merchantData = doc.data();
+            const merchantNotifId = `notif_merch_${orderId}_${Date.now()}`;
+            functions.logger.info(`[OrderTrigger] Dispatching to Merchant: ${merchantUid} (Tokens: ${((_a = merchantData.fcmTokens) === null || _a === void 0 ? void 0 : _a.length) || 0})`);
+            // A. In-App Notification
+            await db.collection('users').doc(merchantUid).collection('notifications').doc(merchantNotifId).set({
+                id: merchantNotifId,
+                type: 'order',
+                title: 'New Order! 🔔',
+                message: `New order from ${customerName} for $${total.toFixed(2)}`,
+                timestamp: new Date().toISOString(),
+                read: false,
+                orderId,
+                link: '/merchant/orders'
+            });
+            // B. Push Notification (FCM)
+            const merchantTokens = merchantData === null || merchantData === void 0 ? void 0 : merchantData.fcmTokens;
+            if (merchantTokens && merchantTokens.length > 0) {
+                const message = {
+                    tokens: merchantTokens.filter(t => typeof t === 'string' && t.length > 0),
+                    notification: {
+                        title: 'New Order Received! 🛍️',
+                        body: `${customerName} placed an order for $${total.toFixed(2)}`
+                    },
+                    data: {
+                        type: 'order',
+                        orderId: orderId,
+                        link: '/merchant/orders'
+                    }
+                };
+                try {
+                    const response = await admin.messaging().sendEachForMulticast(message);
+                    functions.logger.info(`[OrderTrigger] FCM Success: ${response.successCount}, Failure: ${response.failureCount}`);
+                }
+                catch (fcmError) {
+                    functions.logger.error(`[OrderTrigger] FCM Error for ${merchantUid}:`, fcmError);
+                }
+            }
+            return null;
         });
-        functions.logger.info(`Successfully created order notifications for order ${orderId}`);
+        await Promise.all(notificationPromises);
+        functions.logger.info(`[OrderTrigger] Successfully finished processing for order ${orderId}`);
     }
     catch (error) {
-        functions.logger.error(`Error creating order notifications for order ${orderId}:`, error);
+        functions.logger.error(`[OrderTrigger] Error for order ${orderId}:`, error);
     }
     return null;
 });

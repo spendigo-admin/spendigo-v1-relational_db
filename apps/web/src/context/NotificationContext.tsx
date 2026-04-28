@@ -1,5 +1,7 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { useAuth } from './AuthContext';
+import { useMarketplace } from './MarketplaceContext';
+import { isFlyerActive, filterActiveDeals } from '../utils/date-helpers';
 
 // Unified Notification Type
 export interface AppNotification {
@@ -49,6 +51,65 @@ const MOCK_NOTIFICATIONS: AppNotification[] = [
     }
 ];
 
+/**
+ * Generates dynamic notifications based on active marketplace data.
+ */
+const generateMarketplaceNotifications = (stores: Record<string, any>): AppNotification[] => {
+    const marketNotifs: AppNotification[] = [];
+    
+    Object.values(stores).forEach((store: any) => {
+        // 1. Generate Flyer Notification
+        if (isFlyerActive(store.flyer)) {
+            marketNotifs.push({
+                id: `flyer-${store.id}`,
+                type: 'promo',
+                title: `New Flyer: ${store.name} 📰`,
+                message: `${store.name} just published their new weekly flyer! Tap to browse fresh deals.`,
+                timestamp: new Date().toISOString(), // Use now as it's discovered now
+                time: 'Just now',
+                read: false,
+                link: `/store/${store.id}?tab=flyer`
+            });
+        }
+
+        // 2. Generate Deal Notifications (Limit to most interesting ones)
+        const allDeals = [...(store.oneDayOffers || []), ...(store.saleItems || [])];
+        const activeDeals = filterActiveDeals(allDeals);
+        
+        // Pick the top deal or flash sale
+        const flashSale = activeDeals.find((d: any) => d.isFlashSale);
+        const topDeal = flashSale || activeDeals[0];
+
+        if (topDeal) {
+            const discount = topDeal.type === 'percentage' 
+                ? `${topDeal.value}% OFF` 
+                : topDeal.type === 'fixed' 
+                ? `$${topDeal.value} OFF` 
+                : 'HOT DEAL';
+
+            marketNotifs.push({
+                id: `deal-${store.id}-${topDeal.id || 'top'}`,
+                type: flashSale ? 'alert' : 'price_drop',
+                title: `${flashSale ? '⚡ Flash Sale' : '🔥 Hot Deal'}: ${store.name}`,
+                message: `${topDeal.productName || topDeal.name || 'Special items'} are now ${discount}! Don't miss out.`,
+                timestamp: new Date().toISOString(),
+                time: 'Active now',
+                read: false,
+                link: `/store/${store.id}?tab=offers`
+            });
+        }
+    });
+
+    // Sort by type (alerts first, then promos) and limited to 10 to keep it manageable
+    return marketNotifs
+        .sort((a, b) => {
+            if (a.type === 'alert' && b.type !== 'alert') return -1;
+            if (a.type !== 'alert' && b.type === 'alert') return 1;
+            return 0;
+        })
+        .slice(0, 10);
+};
+
 export interface NotificationPreferences {
     priceDrop: boolean;
     orderUpdates: boolean;
@@ -90,6 +151,7 @@ const NotificationContext = createContext<NotificationContextType | undefined>(u
 
 export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const { user } = useAuth();
+    const { stores } = useMarketplace();
 
     // Determine context ID: Store > User > Guest
     // If user is logged in, we use their UID. If guest, we use LocalStorage.
@@ -104,6 +166,8 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     const [preferences, setPreferences] = useState<NotificationPreferences>(DEFAULT_PREFERENCES);
     const [toast, setToast] = useState<AppNotification | null>(null);
     const [loading, setLoading] = useState(true);
+    const lastNotifIds = useRef<Set<string>>(new Set());
+    const isFirstLoad = useRef(true);
 
     // Sync Logic
     useEffect(() => {
@@ -135,6 +199,20 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
                     snapshot.forEach(doc => {
                         loaded.push({ id: doc.id, ...doc.data() } as AppNotification);
                     });
+
+                    // Trigger toast for NEW notifications (not on first load)
+                    if (!isFirstLoad.current) {
+                        const newNotif = loaded.find(n => !lastNotifIds.current.has(n.id) && !n.read);
+                        if (newNotif) {
+                            setToast(newNotif);
+                            setTimeout(() => setToast(null), 5000);
+                        }
+                    }
+
+                    // Update tracking refs
+                    lastNotifIds.current = new Set(loaded.map(n => n.id));
+                    isFirstLoad.current = false;
+                    
                     setNotifications(loaded);
                     setLoading(false);
                 });
@@ -145,9 +223,16 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
                 const savedNotifs = localStorage.getItem(LOCAL_NOTIF_KEY);
                 if (savedNotifs) {
-                    try { setNotifications(JSON.parse(savedNotifs)); } catch (e) { console.error(e); }
+                    try { 
+                        const local = JSON.parse(savedNotifs);
+                        // Merge local with marketplace if local is sparse
+                        const market = generateMarketplaceNotifications(stores);
+                        setNotifications([...local, ...market.filter(m => !local.some((l: any) => l.id === m.id))].slice(0, 20));
+                    } catch (e) { 
+                        setNotifications(generateMarketplaceNotifications(stores));
+                    }
                 } else {
-                    setNotifications(MOCK_NOTIFICATIONS);
+                    setNotifications(generateMarketplaceNotifications(stores));
                 }
                 setLoading(false);
             }

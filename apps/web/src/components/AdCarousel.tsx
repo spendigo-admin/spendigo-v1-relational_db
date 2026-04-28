@@ -10,6 +10,7 @@ interface AdCampaign {
     title: string;
     description?: string;
     imageUrl: string;
+    mobileImageUrl?: string;
     linkUrl?: string;
     status: 'active' | 'draft' | 'archived';
     startDate: string;
@@ -108,6 +109,18 @@ const AdCarousel: React.FC<AdCarouselProps> = (props) => {
     const [currentIndex, setCurrentIndex] = useState(0);
     const [loading, setLoading] = useState(true);
     const timerRef = useRef<any>(null);
+    const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+    useEffect(() => {
+        const handleResize = () => setIsMobile(window.innerWidth < 768);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
+    const isVideo = (url?: string) => {
+        if (!url) return false;
+        return url.toLowerCase().endsWith('.mp4') || url.includes('.mp4?') || url.includes('mp4?');
+    };
 
     // Fetch Ads
     useEffect(() => {
@@ -181,81 +194,91 @@ const AdCarousel: React.FC<AdCarouselProps> = (props) => {
     const currentAd = ads[currentIndex];
 
     return (
-        <section className="relative overflow-hidden py-24 md:py-40 min-h-[400px] md:min-h-[550px] px-4 flex items-center justify-center group bg-black">
-            {/* Background Blur Effect */}
+        <section className="relative overflow-hidden group bg-black flex flex-col items-center justify-center min-h-[200px]">
+            {/* Background Blur Effect (Stays Absolute) */}
             <div className="absolute inset-0 z-0 opacity-40 blur-2xl scale-110">
-                <img
-                    src={currentAd.imageUrl}
-                    alt=""
-                    className="w-full h-full object-cover"
-                />
-            </div>
-
-            {/* Main Banner Image (Full Visibility) */}
-            <div className="absolute inset-0 z-0 flex items-center justify-center">
-                <img
-                    src={currentAd.imageUrl}
-                    alt={currentAd.title}
-                    className="w-full h-full object-contain transition-all duration-1000"
-                    key={currentAd.id}
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-black/20"></div>
-            </div>
-
-            <div className="relative z-10 max-w-5xl mx-auto text-center w-full">
-
-                {/* Search Bar pass-through overlay */}
-                <div className="group relative max-w-3xl mx-auto">
-                    <div className="relative flex items-center bg-white rounded-full p-1 md:p-1.5 shadow-2xl transition-all duration-300 group-hover:scale-[1.01]">
-                        <div 
-                            onClick={props.handleLocateMe}
-                            className={`pl-4 pr-1 md:pr-2 flex items-center text-red-500 cursor-pointer hover:scale-125 transition-all active:scale-95 group/loc ${props.isLocating ? 'animate-bounce' : ''}`}
-                            title="Locate Me"
-                        >
-                            <span className="text-lg">📍</span>
-                        </div>
-                        <input
-                            type="text"
-                            placeholder="Type postal code or address..."
-                            className="flex-1 py-2 md:py-3 px-1 md:px-2 bg-transparent outline-none text-gray-900 font-medium placeholder-gray-400 text-xs md:text-base min-w-0"
-                            value={props.address}
-                            onChange={(e) => props.setAddress(e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && props.handleSearch()}
-                        />
-
-                        {/* Radius Selector Integrated */}
-                        <div className="flex items-center gap-1 md:gap-2 px-2 md:px-4 border-l border-gray-100 h-8 md:h-10">
-                            <span className="hidden md:inline text-[9px] font-black text-gray-400 tracking-widest uppercase">Radius</span>
-                            <select 
-                                value={props.searchDistance} 
-                                onChange={(e) => props.setSearchDistance(Number(e.target.value))}
-                                className="text-[10px] md:text-xs font-black bg-transparent border-none outline-none text-blue-600 cursor-pointer focus:ring-0 text-center"
-                            >
-                                <option value={5}>5km</option>
-                                <option value={10}>10km</option>
-                                <option value={20}>20km</option>
-                                <option value={50}>50km</option>
-                            </select>
-                        </div>
-
-                        <button
-                            onClick={() => props.handleSearch()}
-                            disabled={props.isLocating}
-                            className="bg-blue-600 text-white px-4 md:px-10 py-2.5 md:py-3 rounded-full font-bold text-[10px] md:text-sm tracking-wide hover:bg-blue-700 transition-all shadow-xl active:scale-95 shrink-0"
-                        >
-                            {props.isLocating ? '...' : 'Search'}
-                        </button>
-                    </div>
-                </div>
-
-                {currentAd.linkUrl && (
-                    <button
-                        onClick={() => handleAdClick(currentAd)}
-                        className="mt-6 px-8 py-2.5 bg-white/10 hover:bg-white/20 backdrop-blur-md text-white border border-white/30 rounded-full font-bold text-xs tracking-widest transition-all shadow-xl active:scale-95"
-                    >
-                        View Offer &rarr;
-                    </button>
+                {isVideo(isMobile && currentAd.mobileImageUrl ? currentAd.mobileImageUrl : currentAd.imageUrl) ? (
+                    <video src={isMobile && currentAd.mobileImageUrl ? currentAd.mobileImageUrl : currentAd.imageUrl} className="w-full h-full object-cover" muted loop autoPlay playsInline />
+                ) : (
+                    <img src={isMobile && currentAd.mobileImageUrl ? currentAd.mobileImageUrl : currentAd.imageUrl} alt="" className="w-full h-full object-cover" />
                 )}
+            </div>
+
+            {/* Main Banner Image (Defines the Height) */}
+            <div className="relative z-10 w-full">
+                {isVideo(isMobile && currentAd.mobileImageUrl ? currentAd.mobileImageUrl : currentAd.imageUrl) ? (
+                    <video 
+                        key={currentAd.id}
+                        src={isMobile && currentAd.mobileImageUrl ? currentAd.mobileImageUrl : currentAd.imageUrl} 
+                        className="w-full h-auto block max-h-[85vh] object-contain mx-auto transition-all duration-1000 shadow-2xl" 
+                        muted 
+                        loop 
+                        autoPlay 
+                        playsInline 
+                    />
+                ) : (
+                    <img
+                        key={currentAd.id}
+                        src={isMobile && currentAd.mobileImageUrl ? currentAd.mobileImageUrl : currentAd.imageUrl}
+                        alt={currentAd.title}
+                        className="w-full h-auto block max-h-[85vh] object-contain mx-auto transition-all duration-1000 shadow-2xl"
+                    />
+                )}
+                
+                {/* Content Overlay (Centered) */}
+                <div className="absolute inset-0 flex flex-col items-center justify-center px-4 bg-gradient-to-t from-black/40 via-transparent to-black/20">
+                    {/* Search Bar Container */}
+                    <div className="group relative w-full max-w-3xl mx-auto transform translate-y-2 md:translate-y-0 scale-90 md:scale-100">
+                        <div className="relative flex items-center bg-white rounded-full p-1 md:p-1.5 shadow-2xl transition-all duration-300 group-hover:scale-[1.01]">
+                            <div 
+                                onClick={props.handleLocateMe}
+                                className={`pl-4 pr-1 md:pr-2 flex items-center text-red-500 cursor-pointer hover:scale-125 transition-all active:scale-95 group/loc ${props.isLocating ? 'animate-bounce' : ''}`}
+                                title="Locate Me"
+                            >
+                                <span className="text-lg">📍</span>
+                            </div>
+                            <input
+                                type="text"
+                                placeholder="Type postal code or address..."
+                                className="flex-1 py-2 md:py-3 px-1 md:px-2 bg-transparent outline-none text-gray-900 font-medium placeholder-gray-400 text-xs md:text-base min-w-0"
+                                value={props.address}
+                                onChange={(e) => props.setAddress(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && props.handleSearch()}
+                            />
+
+                            <div className="flex items-center gap-1 md:gap-2 px-2 md:px-4 border-l border-gray-100 h-8 md:h-10">
+                                <span className="hidden md:inline text-[9px] font-black text-gray-400 tracking-widest uppercase">Radius</span>
+                                <select 
+                                    value={props.searchDistance} 
+                                    onChange={(e) => props.setSearchDistance(Number(e.target.value))}
+                                    className="text-[10px] md:text-xs font-black bg-transparent border-none outline-none text-blue-600 cursor-pointer focus:ring-0 text-center"
+                                >
+                                    <option value={5}>5km</option>
+                                    <option value={10}>10km</option>
+                                    <option value={20}>20km</option>
+                                    <option value={50}>50km</option>
+                                </select>
+                            </div>
+
+                            <button
+                                onClick={() => props.handleSearch()}
+                                disabled={props.isLocating}
+                                className="bg-blue-600 text-white px-4 md:px-10 py-2.5 md:py-3 rounded-full font-bold text-[10px] md:text-sm tracking-wide hover:bg-blue-700 transition-all shadow-xl active:scale-95 shrink-0"
+                            >
+                                {props.isLocating ? '...' : 'Search'}
+                            </button>
+                        </div>
+                    </div>
+
+                    {currentAd.linkUrl && (
+                        <button
+                            onClick={() => handleAdClick(currentAd)}
+                            className="mt-4 md:mt-6 px-6 md:px-8 py-2 md:py-2.5 bg-white/10 hover:bg-white/20 backdrop-blur-md text-white border border-white/30 rounded-full font-bold text-[10px] md:text-xs tracking-widest transition-all shadow-xl active:scale-95"
+                        >
+                            View Offer &rarr;
+                        </button>
+                    )}
+                </div>
             </div>
 
             {/* Dots */}

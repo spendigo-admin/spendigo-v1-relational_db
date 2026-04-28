@@ -22,11 +22,11 @@ export const useFileUpload = () => {
             return null;
         }
 
-        if (!file.type.startsWith('image/')) {
+        if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) {
             addNotification({
                 type: 'alert',
                 title: 'Invalid File',
-                message: 'Please upload a valid image file (JPG, PNG).'
+                message: 'Please upload a valid image or video file.'
             });
             return null;
         }

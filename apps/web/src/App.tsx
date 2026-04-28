@@ -157,8 +157,8 @@ function App() {
                 <AuthProvider>
                     <AuditProvider>
                         <MaintenanceGuard>
-                            <NotificationProvider>
                                 <MarketplaceProvider>
+                                    <NotificationProvider>
                                 <CatalogProvider>
                                     <ReviewProvider>
                                         <CartProvider>
@@ -257,8 +257,8 @@ function App() {
                                         </CartProvider>
                                     </ReviewProvider>
                                 </CatalogProvider>
-                            </MarketplaceProvider>
-                        </NotificationProvider>
+                            </NotificationProvider>
+                        </MarketplaceProvider>
                     </MaintenanceGuard>
                     </AuditProvider>
                 </AuthProvider>

@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import '../../styles/design-system.css';
 import { useNotifications, AppNotification } from '../../context/NotificationContext';
 import { usePushNotifications } from '../../hooks/usePushNotifications';
@@ -6,6 +7,7 @@ import { useAuth } from '../../context/AuthContext';
 import SEO from '../../components/SEO';
 
 const Notifications: React.FC = () => {
+    const navigate = useNavigate();
     const { user } = useAuth();
     const { notifications, unreadCount, markAsRead, markAllRead, preferences, togglePreference } = useNotifications();
     const { permissionStatus, requestPermission } = usePushNotifications(user?.id);
@@ -53,7 +55,10 @@ const Notifications: React.FC = () => {
         return (
             <div
                 key={n.id}
-                onClick={() => markAsRead(n.id)}
+                onClick={() => {
+                    markAsRead(n.id);
+                    if (n.link) navigate(n.link);
+                }}
                 className={`flex gap-4 p-4 rounded-2xl cursor-pointer transition-all border ${!n.read
                         ? 'bg-blue-50/40 border-blue-100 shadow-sm'
                         : 'bg-white border-[var(--glass-border)] opacity-80'
