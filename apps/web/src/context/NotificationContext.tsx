@@ -200,6 +200,9 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
                         loaded.push({ id: doc.id, ...doc.data() } as AppNotification);
                     });
 
+                    // Explicitly sort by timestamp descending to ensure newest are first
+                    loaded.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+
                     // Trigger toast for NEW notifications (not on first load)
                     if (!isFirstLoad.current) {
                         const newNotif = loaded.find(n => !lastNotifIds.current.has(n.id) && !n.read);
@@ -227,7 +230,9 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
                         const local = JSON.parse(savedNotifs);
                         // Merge local with marketplace if local is sparse
                         const market = generateMarketplaceNotifications(stores);
-                        setNotifications([...local, ...market.filter(m => !local.some((l: any) => l.id === m.id))].slice(0, 20));
+                        const merged = [...local, ...market.filter(m => !local.some((l: any) => l.id === m.id))];
+                        merged.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+                        setNotifications(merged.slice(0, 20));
                     } catch (e) { 
                         setNotifications(generateMarketplaceNotifications(stores));
                     }

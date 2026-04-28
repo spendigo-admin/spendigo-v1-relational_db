@@ -11,6 +11,7 @@
     },
     "dependencies": {
         "@capacitor/core": "^6.0.0",
+        "@capacitor/push-notifications": "^6.0.5",
         "@google/generative-ai": "^0.24.1",
         "@sentry/react": "^10.46.0",
         "@stripe/react-stripe-js": "^6.1.0",

@@ -2,13 +2,16 @@ import { useState, useEffect } from 'react';
 import { getToken } from 'firebase/messaging';
 import { doc, updateDoc, arrayUnion, getDoc, arrayRemove } from 'firebase/firestore';
 import { messaging, db } from '../lib/firebase';
+import { Capacitor } from '@capacitor/core';
+import { PushNotifications } from '@capacitor/push-notifications';
 
 const MAX_FCM_TOKENS = 5;
 
 async function persistToken(userId: string, newToken: string) {
     const userRef = doc(db, 'users', userId);
     const snap = await getDoc(userRef);
-    const existing: string[] = snap.data()?.fcmTokens ?? [];
+    const data = snap.data();
+    const existing: string[] = data?.fcmTokens ?? [];
 
     // If we already have the token, nothing to do
     if (existing.includes(newToken)) return;
@@ -27,13 +30,19 @@ async function persistToken(userId: string, newToken: string) {
 
 export function usePushNotifications(userId?: string) {
     const [token, setToken] = useState<string | null>(null);
-    const [permissionStatus, setPermissionStatus] = useState<NotificationPermission>('default');
+    const [permissionStatus, setPermissionStatus] = useState<NotificationPermission | 'prompt' | 'denied' | 'granted'>('default');
+
+    const isNative = Capacitor.isNativePlatform();
 
     useEffect(() => {
-        if ('Notification' in window) {
+        if (isNative) {
+            PushNotifications.checkPermissions().then((res) => {
+                setPermissionStatus(res.receive as any);
+            });
+        } else if ('Notification' in window) {
             setPermissionStatus(Notification.permission);
         }
-    }, []);
+    }, [isNative]);
 
     const registerServiceWorker = async () => {
         if (!('serviceWorker' in navigator)) return null;
@@ -73,32 +82,61 @@ export function usePushNotifications(userId?: string) {
     };
 
     const requestPermission = async () => {
-        if (!messaging) return false;
-        
-        try {
-            const permission = await Notification.requestPermission();
-            setPermissionStatus(permission);
+        if (isNative) {
+            // NATIVE FLOW
+            try {
+                let perm = await PushNotifications.checkPermissions();
+                if (perm.receive === 'prompt') {
+                    perm = await PushNotifications.requestPermissions();
+                }
 
-            if (permission === 'granted') {
-                const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY;
-                if (!vapidKey) return false;
+                if (perm.receive === 'granted') {
+                    await PushNotifications.register();
+                    
+                    // Listeners for native registration
+                    PushNotifications.addListener('registration', async ({ value }) => {
+                        setToken(value);
+                        if (userId) await persistToken(userId, value);
+                    });
 
-                const registration = await registerServiceWorker();
-                if (!registration) return false;
+                    PushNotifications.addListener('registrationError', (error) => {
+                        console.error('Native registration error:', error);
+                    });
 
-                const currentToken = await getToken(messaging, { 
-                    vapidKey,
-                    serviceWorkerRegistration: registration 
-                });
-
-                if (currentToken) {
-                    setToken(currentToken);
-                    if (userId) await persistToken(userId, currentToken);
                     return true;
                 }
+            } catch (e) {
+                console.error('Native permission request failed:', e);
             }
-        } catch (error) {
-            console.error('Error requesting notifications:', error);
+            return false;
+        } else {
+            // WEB FLOW
+            if (!messaging) return false;
+            try {
+                const permission = await Notification.requestPermission();
+                setPermissionStatus(permission);
+
+                if (permission === 'granted') {
+                    const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY;
+                    if (!vapidKey) return false;
+
+                    const registration = await registerServiceWorker();
+                    if (!registration) return false;
+
+                    const currentToken = await getToken(messaging, { 
+                        vapidKey,
+                        serviceWorkerRegistration: registration 
+                    });
+
+                    if (currentToken) {
+                        setToken(currentToken);
+                        if (userId) await persistToken(userId, currentToken);
+                        return true;
+                    }
+                }
+            } catch (error) {
+                console.error('Error requesting notifications:', error);
+            }
         }
         return false;
     };
@@ -106,17 +144,26 @@ export function usePushNotifications(userId?: string) {
     const disableNotifications = async () => {
         if (!userId) return;
         try {
-            // 1. Get current token if possible to remove it specifically
-            const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY;
-            const registration = await navigator.serviceWorker.ready;
-            const currentToken = await getToken(messaging!, { vapidKey, serviceWorkerRegistration: registration });
+            if (isNative) {
+                // For native, we just stop listening or unregister if needed
+                // But usually we just remove the token from the DB
+                if (token) {
+                    await updateDoc(doc(db, 'users', userId), {
+                        fcmTokens: arrayRemove(token)
+                    });
+                    setToken(null);
+                }
+            } else {
+                const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY;
+                const registration = await navigator.serviceWorker.ready;
+                const currentToken = await getToken(messaging!, { vapidKey, serviceWorkerRegistration: registration });
 
-            if (currentToken) {
-                const userRef = doc(db, 'users', userId);
-                await updateDoc(userRef, {
-                    fcmTokens: arrayRemove(currentToken)
-                });
-                setToken(null);
+                if (currentToken) {
+                    await updateDoc(doc(db, 'users', userId), {
+                        fcmTokens: arrayRemove(currentToken)
+                    });
+                    setToken(null);
+                }
             }
             return true;
         } catch (error) {
@@ -125,9 +172,24 @@ export function usePushNotifications(userId?: string) {
         }
     };
 
-    // Refresh token
+    // Auto-register native on load if permission granted
     useEffect(() => {
-        if (!messaging || !userId) return;
+        if (isNative && userId) {
+            PushNotifications.checkPermissions().then(async (res) => {
+                if (res.receive === 'granted') {
+                    await PushNotifications.register();
+                    PushNotifications.addListener('registration', async ({ value }) => {
+                        setToken(value);
+                        await persistToken(userId, value);
+                    });
+                }
+            });
+        }
+    }, [isNative, userId]);
+
+    // Refresh token (Web only, Native is handled by listeners)
+    useEffect(() => {
+        if (isNative || !messaging || !userId) return;
         const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY;
         if (!vapidKey) return;
 
@@ -141,8 +203,7 @@ export function usePushNotifications(userId?: string) {
                 })
                 .catch(() => {});
         });
-    }, [userId]);
+    }, [userId, isNative]);
 
     return { token, permissionStatus, requestPermission, disableNotifications };
 }
-

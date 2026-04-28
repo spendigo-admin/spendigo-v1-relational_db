@@ -107,6 +107,7 @@ import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from './lib/firebase';
 import MaintenancePage from './pages/Maintenance';
 import ThemeSwitcher from './components/ThemeSwitcher';
+import NotificationToast from './components/NotificationToast';
 
 const PageLoader = () => (
     <div className="min-h-screen flex items-center justify-center">Loading...</div>
@@ -159,6 +160,7 @@ function App() {
                         <MaintenanceGuard>
                                 <MarketplaceProvider>
                                     <NotificationProvider>
+                                <NotificationToast />
                                 <CatalogProvider>
                                     <ReviewProvider>
                                         <CartProvider>
