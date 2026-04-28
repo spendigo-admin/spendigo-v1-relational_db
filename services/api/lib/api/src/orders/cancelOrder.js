@@ -55,6 +55,11 @@ exports.cancelOrder = functions.https.onCall(async (data, context) => {
         throw new functions.https.HttpsError('invalid-argument', 'Missing orderId.');
     }
     try {
+        // Fetch caller's user data for role-based permission check
+        const callerSnap = await db.collection('users').doc(userId).get();
+        const callerData = callerSnap.data();
+        const callerRole = (callerData === null || callerData === void 0 ? void 0 : callerData.role) || 'consumer';
+        const callerStoreId = callerData === null || callerData === void 0 ? void 0 : callerData.storeId;
         await db.runTransaction(async (transaction) => {
             var _a, _b;
             const orderRef = db.collection('orders').doc(orderId);
@@ -63,9 +68,12 @@ exports.cancelOrder = functions.https.onCall(async (data, context) => {
                 throw new functions.https.HttpsError('not-found', 'Order not found.');
             }
             const order = orderSnap.data();
-            // Security: Only Owner can cancel via this endpoint
-            if ((order === null || order === void 0 ? void 0 : order.customerId) !== userId) {
-                throw new functions.https.HttpsError('permission-denied', 'You can only cancel your own orders.');
+            // Security: Allowed if Shopper (Owner), Merchant of this store, or Admin
+            const isOwner = (order === null || order === void 0 ? void 0 : order.customerId) === userId;
+            const isStoreMerchant = callerRole === 'merchant' && (order === null || order === void 0 ? void 0 : order.storeId) === callerStoreId;
+            const isAdmin = callerRole === 'admin';
+            if (!isOwner && !isStoreMerchant && !isAdmin) {
+                throw new functions.https.HttpsError('permission-denied', 'You do not have permission to cancel this order.');
             }
             if ((order === null || order === void 0 ? void 0 : order.status) === 'cancelled') {
                 // Idempotent success or error? Let's error to be clear.

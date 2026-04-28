@@ -164,25 +164,37 @@ const AdminDashboard: React.FC = () => {
 
     return (
         <div className="p-4 md:p-6 animate-fade-in pb-20">
-            {/* Platform Hero */}
-            <div className="mb-6 md:mb-8 relative overflow-hidden rounded-2xl bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-primary-dark)] p-6 md:p-8 text-white shadow-lg">
-                <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-                    <div>
-                        <h1 className="text-2xl md:text-3xl font-bold mb-2 text-white">🛡️ Welcome, {user?.name || 'Administrator'}</h1>
-                        <p className="text-blue-100 text-base md:text-lg font-medium">Monitoring platform health and activities.</p>
+            {/* Platform Hero - Ultra Slim Redesign */}
+            <div className="mb-6 relative overflow-hidden rounded-xl bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-primary-dark)] p-3 md:p-4 text-white shadow-md group transition-all duration-300 hover:shadow-lg">
+                {/* Subtle Decorative Blobs - Scaled Down */}
+                <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full blur-2xl -mr-12 -mt-12"></div>
+                
+                <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+                    <div className="flex items-center gap-3">
+                        <div>
+                            <h1 className="page-headline text-white flex items-center gap-2">
+                                🛡️ Welcome, {user?.name || 'Administrator'}
+                            </h1>
+                            <p className="text-white/70 text-[9px] md:text-[10px] font-bold uppercase tracking-widest flex items-center gap-2">
+                                Monitoring platform health and activities
+                            </p>
+                        </div>
                     </div>
-                    <div className="w-full md:w-auto p-4 bg-white/10 backdrop-blur-md rounded-xl border border-white/20">
-                        <div className="text-[10px] opacity-80 uppercase tracking-widest font-bold mb-1">System Status</div>
-                        <div className="text-xl font-bold flex items-center gap-2 text-green-400">
-                            <span className="w-3 h-3 bg-green-400 rounded-full animate-pulse shadow-[0_0_10px_rgba(74,222,128,0.5)]"></span>
-                            Operational
+
+                    <div className="flex items-center gap-2 w-full md:w-auto">
+                        <div className="flex-1 md:flex-none bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/10 flex items-center gap-2">
+                            <span className="text-[9px] font-black opacity-60 uppercase">System Status</span>
+                            <span className="text-[10px] font-black text-green-400 flex items-center gap-1.5">
+                                <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse shadow-[0_0_5px_rgba(74,222,128,0.5)]"></span>
+                                OPERATIONAL
+                            </span>
                         </div>
                     </div>
                 </div>
             </div>
 
             {/* Platform Stats Grid */}
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-6 mb-8 md:mt-[-2rem]">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-6 mb-8">
                 {stats.map((stat, idx) => (
                     <div key={idx} className={`bg-white p-4 md:p-6 rounded-2xl border border-[var(--glass-border)] shadow-sm hover:shadow-md transition-all relative overflow-hidden group ${idx === 4 ? 'col-span-2 md:col-span-1' : ''}`}>
                         {stat.isTraffic && (

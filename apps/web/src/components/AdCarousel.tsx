@@ -25,7 +25,7 @@ interface AdCampaign {
 const DefaultHero = ({ handleSearch, address, setAddress, isLocating, handleLocateMe, searchDistance, setSearchDistance }: any) => {
     const { t } = useTranslation();
     return (
-    <section className="relative overflow-hidden bg-gradient-to-r from-blue-600 to-teal-500 py-12 md:py-20 px-4 flex items-center justify-center">
+    <section className="relative overflow-hidden bg-gradient-to-r from-blue-600 to-teal-500 py-24 md:py-40 min-h-[400px] md:min-h-[550px] px-4 flex items-center justify-center">
         {/* Background Decorative Elements */}
         <div className="absolute inset-0 z-0">
             <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-white/5 rounded-full blur-[100px] -mr-32 -mt-32"></div>
@@ -181,22 +181,28 @@ const AdCarousel: React.FC<AdCarouselProps> = (props) => {
     const currentAd = ads[currentIndex];
 
     return (
-        <section className="relative overflow-hidden bg-gradient-to-r from-blue-600 to-teal-500 py-10 md:py-16 px-4 flex items-center justify-center group">
-            {/* Background Image with Blur/Gradient */}
-            <div className="absolute inset-0 z-0">
+        <section className="relative overflow-hidden py-24 md:py-40 min-h-[400px] md:min-h-[550px] px-4 flex items-center justify-center group bg-black">
+            {/* Background Blur Effect */}
+            <div className="absolute inset-0 z-0 opacity-40 blur-2xl scale-110">
+                <img
+                    src={currentAd.imageUrl}
+                    alt=""
+                    className="w-full h-full object-cover"
+                />
+            </div>
+
+            {/* Main Banner Image (Full Visibility) */}
+            <div className="absolute inset-0 z-0 flex items-center justify-center">
                 <img
                     src={currentAd.imageUrl}
                     alt={currentAd.title}
-                    className="w-full h-full object-cover opacity-20 transition-all duration-1000 transform scale-105"
+                    className="w-full h-full object-contain transition-all duration-1000"
                     key={currentAd.id}
                 />
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-600/40 to-teal-500/40"></div>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-black/20"></div>
             </div>
 
             <div className="relative z-10 max-w-5xl mx-auto text-center w-full">
-                <h1 className="text-3xl md:text-5xl font-black text-white mb-6 leading-tight tracking-tighter drop-shadow-lg">
-                    {currentAd.title}
-                </h1>
 
                 {/* Search Bar pass-through overlay */}
                 <div className="group relative max-w-3xl mx-auto">

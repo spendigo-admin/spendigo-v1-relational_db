@@ -39,6 +39,13 @@ const AdManager: React.FC = () => {
     const [currentAd, setCurrentAd] = useState<Partial<AdCampaign>>({});
     const [showModal, setShowModal] = useState(false);
 
+    // Reset local preview when modal closes
+    useEffect(() => {
+        if (!showModal) {
+            setLocalPreview(null);
+        }
+    }, [showModal]);
+
     // Fetch Ads
     useEffect(() => {
         const q = query(collection(db, 'ads'), orderBy('priority', 'desc'));
@@ -54,6 +61,12 @@ const AdManager: React.FC = () => {
 
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
+        
+        if (!currentAd.imageUrl) {
+            addNotification({ type: 'alert', title: 'Image Required', message: 'Please select and upload a banner image.' });
+            return;
+        }
+
         try {
             const adData = {
                 title: currentAd.title || 'Untitled Ad',
@@ -142,13 +155,27 @@ const AdManager: React.FC = () => {
         }
     };
 
+    const [localPreview, setLocalPreview] = useState<string | null>(null);
+
     const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
             const file = e.target.files[0];
+            
+            // Show local preview immediately
+            const objectUrl = URL.createObjectURL(file);
+            setLocalPreview(objectUrl);
+            
             const path = `ads/${Date.now()}_${file.name}`;
-            const url = await uploadFile(file, path);
-            if (url) {
-                setCurrentAd(prev => ({ ...prev, imageUrl: url }));
+            try {
+                const url = await uploadFile(file, path, 10); // Increase to 10MB
+                if (url) {
+                    setCurrentAd(prev => ({ ...prev, imageUrl: url }));
+                } else {
+                    setLocalPreview(null); // Reset if upload failed
+                }
+            } catch (err) {
+                console.error("Upload error:", err);
+                setLocalPreview(null);
             }
         }
     };
@@ -161,7 +188,7 @@ const AdManager: React.FC = () => {
                     <p className="text-[var(--text-muted)]">Manage sponsored banners on the Consumer Homepage.</p>
                 </div>
                 <button
-                    onClick={() => { setCurrentAd({ status: 'draft', priority: 5 }); setShowModal(true); }}
+                    onClick={() => { setCurrentAd({ status: 'draft', priority: 5 }); setIsEditing(false); setShowModal(true); }}
                     className="bg-black text-white px-5 py-2.5 rounded-xl font-bold hover:bg-gray-800 transition-all shadow-lg shadow-gray-200"
                 >
                     + New Campaign
@@ -213,7 +240,7 @@ const AdManager: React.FC = () => {
 
                             <div className="flex gap-2">
                                 <button
-                                    onClick={() => { setCurrentAd(ad); setShowModal(true); }}
+                                    onClick={() => { setCurrentAd(ad); setIsEditing(true); setShowModal(true); }}
                                     className="flex-1 py-2 text-sm font-bold bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors"
                                 >
                                     Edit
@@ -253,7 +280,9 @@ const AdManager: React.FC = () => {
                                     <label className="block text-sm font-bold mb-1">Banner Image</label>
                                     <div className="flex gap-4 items-center">
                                         <div className="w-24 h-16 bg-gray-100 rounded border overflow-hidden flex-shrink-0">
-                                            {currentAd.imageUrl && <img src={currentAd.imageUrl} className="w-full h-full object-cover" />}
+                                            {(localPreview || currentAd.imageUrl) && (
+                                                <img src={localPreview || currentAd.imageUrl} className="w-full h-full object-cover" />
+                                            )}
                                         </div>
                                         <input
                                             type="file"
