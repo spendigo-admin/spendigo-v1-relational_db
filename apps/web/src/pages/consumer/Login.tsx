@@ -119,9 +119,9 @@ const Login = () => {
         <div className="min-h-screen flex items-center justify-center p-4 bg-[var(--surface-0)]">
             <SEO title="Sign In" description="Sign in to your Spendigo account to start shopping local and saving more." path="/login" />
             <div className="glass-panel w-full max-w-md p-8 animate-fade-in">
-                <div className="flex items-center gap-3 mb-6">
-                    <img src="/app-icon.png" alt="Spendigo Logo" style={{width: 48, height: 48, borderRadius: 10}} />
-                    <span className="text-3xl font-black text-[var(--text-main)] italic tracking-tighter">Spendigo</span>
+                <div className="flex items-center justify-center gap-3 mb-8">
+                    <img src="/app-icon.png" alt="Spendigo Logo" style={{width: 56, height: 56, borderRadius: 12}} />
+                    <span className="text-4xl font-black text-[var(--text-main)] italic tracking-tighter">Spendigo</span>
                 </div>
                 <h1 className="text-3xl font-bold mb-2 text-[var(--brand-primary)]">{t('welcomeBack')}</h1>
                 <p className="text-[var(--text-muted)] mb-8">{t('signInToAccess')}</p>
