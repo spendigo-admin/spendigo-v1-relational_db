@@ -79,10 +79,10 @@ const AdminLayout: React.FC = () => {
         <div className="min-h-screen bg-[var(--surface-0)] flex flex-col md:flex-row">
             {/* Mobile Header */}
             <header className="md:hidden h-16 bg-white border-b border-[var(--glass-border)] flex items-center justify-between px-4 sticky top-0 z-40 backdrop-blur-md bg-white/80">
-                <div className="flex items-center gap-2">
-                    <img src="/app-icon.png" alt="Spendigo Logo" style={{width: 32, height: 32, borderRadius: 8}} />
+                <div className="flex items-center gap-2 group cursor-pointer" onClick={() => navigate('/admin/dashboard')}>
+                    <img src="/app-icon.png" alt="Spendigo Logo" style={{width: 32, height: 32, borderRadius: 8}} className="group-hover:scale-105 transition-transform" />
                     <div className="flex flex-col">
-                        <span className="text-sm font-bold text-[var(--brand-primary)] leading-tight">Spendigo</span>
+                        <span className="text-sm font-black text-gray-900 leading-tight group-hover:text-blue-600 transition-colors italic">Spendigo</span>
                         <span className="text-[8px] font-bold text-[var(--text-muted)] tracking-tighter uppercase">Admin Console</span>
                     </div>
                 </div>
@@ -110,13 +110,13 @@ const AdminLayout: React.FC = () => {
             `}>
                 {/* Logo */}
                 <div className="p-6 border-b border-[var(--glass-border)] hidden md:block">
-                    <div className="flex items-center gap-3 group">
+                    <Link to="/admin/dashboard" className="flex items-center gap-3 group">
                         <img src="/app-icon.png" alt="Spendigo Logo" style={{width: 36, height: 36, borderRadius: 8}} className="group-hover:scale-105 transition-transform" />
                         <div className="flex flex-col">
-                            <span className="text-xl font-bold text-[var(--brand-primary)] leading-tight">Spendigo</span>
+                            <span className="text-xl font-black text-gray-900 leading-tight group-hover:text-blue-600 transition-colors italic">Spendigo</span>
                             <span className="text-[10px] font-semibold text-[var(--text-muted)] tracking-wider uppercase">ADMIN</span>
                         </div>
-                    </div>
+                    </Link>
                 </div>
 
                 {/* Mobile spacer */}

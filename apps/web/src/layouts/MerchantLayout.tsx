@@ -76,10 +76,10 @@ const MerchantLayout: React.FC = () => {
         <div className="min-h-screen bg-[var(--surface-0)] flex flex-col md:grid md:grid-cols-[250px_1fr]">
             {/* Mobile Header */}
             <header className="md:hidden h-16 bg-white/80 backdrop-blur-md border-b border-[var(--glass-border)] flex items-center justify-between px-4 sticky top-0 z-[40]">
-                <div className="flex items-center gap-2">
-                    <img src="/app-icon.png" alt="Spendigo Logo" style={{width: 32, height: 32, borderRadius: 8}} />
+                <div className="flex items-center gap-2 group cursor-pointer" onClick={() => navigate('/merchant/dashboard')}>
+                    <img src="/app-icon.png" alt="Spendigo Logo" style={{width: 32, height: 32, borderRadius: 8}} className="group-hover:scale-105 transition-transform" />
                     <div className="flex flex-col">
-                        <span className="text-sm font-bold text-[var(--brand-primary)] leading-tight">Spendigo</span>
+                        <span className="text-sm font-black text-gray-900 leading-tight group-hover:text-blue-600 transition-colors italic">Spendigo</span>
                         <span className="text-[8px] font-bold text-[var(--text-muted)] tracking-tighter uppercase">Merchant Console</span>
                     </div>
                 </div>
@@ -101,13 +101,13 @@ const MerchantLayout: React.FC = () => {
                 ${isSidebarOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'}
             `}>
                 <div className="p-6 mb-2 hidden md:block">
-                    <div className="flex items-center gap-2 group">
+                    <Link to="/merchant/dashboard" className="flex items-center gap-2 group">
                         <img src="/app-icon.png" alt="Spendigo Logo" style={{width: 36, height: 36, borderRadius: 8}} className="group-hover:scale-105 transition-transform" />
                         <div className="flex flex-col">
-                            <span className="text-xl font-bold text-[var(--brand-primary)] leading-tight">Spendigo</span>
+                            <span className="text-xl font-black text-gray-900 leading-tight group-hover:text-blue-600 transition-colors italic">Spendigo</span>
                             <span className="text-[10px] font-semibold text-[var(--text-muted)] tracking-wider uppercase">MERCHANT</span>
                         </div>
-                    </div>
+                    </Link>
                 </div>
 
                 {/* Mobile spacer */}
