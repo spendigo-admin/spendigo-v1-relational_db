@@ -59,3 +59,24 @@ export const filterActiveDeals = (deals: any[]): any[] => {
     return isDateActive(expiry);
   });
 };
+
+/**
+ * Formats a timestamp for notification display.
+ * Shows time if today, otherwise shows date.
+ */
+export const formatNotificationTime = (timestamp: string | number | Date): string => {
+  if (!timestamp) return '';
+  const date = new Date(timestamp);
+  const now = new Date();
+  
+  const isToday = date.getDate() === now.getDate() &&
+    date.getMonth() === now.getMonth() &&
+    date.getFullYear() === now.getFullYear();
+
+  if (isToday) {
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+
+  // If not today, show date (e.g. "Oct 24")
+  return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+};

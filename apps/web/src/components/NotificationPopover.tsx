@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useNotifications, AppNotification } from '../context/NotificationContext';
+import { formatNotificationTime } from '../utils/date-helpers';
 
 const NotificationPopover: React.FC = () => {
     const { notifications, unreadCount, markAsRead, markAllAsRead, clearAll } = useNotifications();
@@ -122,7 +123,7 @@ const NotificationPopover: React.FC = () => {
                                             )}
 
                                             <p className="text-[10px] text-[var(--text-muted)] mt-1.5 opacity-70 flex justify-end">
-                                                {new Date(notif.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                {formatNotificationTime(notif.timestamp)}
                                             </p>
                                         </div>
                                     </div>

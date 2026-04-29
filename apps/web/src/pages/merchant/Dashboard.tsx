@@ -6,6 +6,7 @@ import { useAuth } from '../../context/AuthContext';
 import { Order, useOrders } from '../../context/OrderContext';
 import { useNotifications } from '../../context/NotificationContext';
 import NotificationPopover from '../../components/NotificationPopover';
+import { formatNotificationTime } from '../../utils/date-helpers';
 
 type TimePeriod = 'daily' | 'weekly' | 'monthly';
 
@@ -276,7 +277,7 @@ const MerchantDashboard: React.FC = () => {
         items: o.items.slice(0, 2).map(i => `${i.quantity}x ${i.productName}`).join(', ') + (o.items.length > 2 ? '...' : ''),
         total: `$${o.total.toFixed(2)}`,
         status: o.status,
-        time: new Date(o.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        time: formatNotificationTime(o.date)
     }));
 
     return (
