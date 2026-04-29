@@ -82,7 +82,7 @@ const AdminLayout: React.FC = () => {
                 <div className="flex items-center gap-2 group cursor-pointer" onClick={() => navigate('/admin/dashboard')}>
                     <img src="/app-icon.png" alt="Spendigo Logo" style={{width: 32, height: 32, borderRadius: 8}} className="group-hover:scale-105 transition-transform" />
                     <div className="flex flex-col">
-                        <span className="text-sm font-black text-gray-900 leading-tight group-hover:text-blue-600 transition-colors italic">Spendigo</span>
+                        <span className="text-2xl font-black text-gray-900 leading-tight group-hover:text-blue-600 transition-colors italic tracking-tighter">Spendigo</span>
                         <span className="text-[8px] font-bold text-[var(--text-muted)] tracking-tighter uppercase">Admin Console</span>
                     </div>
                 </div>
@@ -113,7 +113,7 @@ const AdminLayout: React.FC = () => {
                     <Link to="/admin/dashboard" className="flex items-center gap-3 group">
                         <img src="/app-icon.png" alt="Spendigo Logo" style={{width: 36, height: 36, borderRadius: 8}} className="group-hover:scale-105 transition-transform" />
                         <div className="flex flex-col">
-                            <span className="text-xl font-black text-gray-900 leading-tight group-hover:text-blue-600 transition-colors italic">Spendigo</span>
+                            <span className="text-2xl font-black text-gray-900 leading-tight group-hover:text-blue-600 transition-colors italic tracking-tighter">Spendigo</span>
                             <span className="text-[10px] font-semibold text-[var(--text-muted)] tracking-wider uppercase">ADMIN</span>
                         </div>
                     </Link>
