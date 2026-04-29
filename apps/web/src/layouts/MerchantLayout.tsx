@@ -18,6 +18,7 @@ const MerchantLayout: React.FC = () => {
     }, [location]);
 
     const { stores, loading: storesLoading } = useMarketplace();
+    const store = user?.storeId ? stores[user.storeId] : null;
 
     // STRICT SECURITY CHECK
     React.useEffect(() => {
@@ -186,8 +187,10 @@ const MerchantLayout: React.FC = () => {
 
                 <div className="border-t border-[var(--glass-border)] pt-4 mt-auto p-4 pb-safe">
                     <div className="flex items-center gap-2 mb-2">
-                        <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-                        <span className="text-sm font-medium text-[var(--text-main)]">Store Online</span>
+                        <div className={`w-2 h-2 rounded-full ${store?.status === 'suspended' ? 'bg-red-500' : 'bg-green-500'} animate-pulse`}></div>
+                        <span className="text-sm font-medium text-[var(--text-main)]">
+                            {store?.status === 'suspended' ? 'Store Suspended' : 'Store Online'}
+                        </span>
                     </div>
                     <div className="flex items-center justify-between text-xs">
                         <div className="min-w-0 pr-2">

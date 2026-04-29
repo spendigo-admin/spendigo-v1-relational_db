@@ -164,6 +164,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             }
 
             // 2. Security Check: If Merchant, verify Store Status
+            // REMOVED: Allow merchants to login even if suspended so they can see suspension details.
+            /*
             if (storeDoc && storeDoc.exists()) {
                 if (storeDoc.data()?.status === 'suspended') {
                     await signOut(auth);
@@ -171,6 +173,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                     return;
                 }
             }
+            */
 
             // 3. Status Check: Enforce User Suspension
             if (data.status === 'banned') {

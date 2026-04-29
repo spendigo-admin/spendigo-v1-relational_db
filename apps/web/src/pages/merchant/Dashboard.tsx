@@ -281,6 +281,30 @@ const MerchantDashboard: React.FC = () => {
 
     return (
         <div className="p-4 md:p-6 animate-fade-in pb-20 space-y-6">
+            {/* Suspension Alert */}
+            {store?.status === 'suspended' && (
+                <div className="bg-red-50 border-2 border-red-200 rounded-2xl p-6 flex flex-col md:flex-row items-center gap-6 animate-pulse-subtle shadow-lg">
+                    <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center text-3xl shrink-0">
+                        ⚠️
+                    </div>
+                    <div className="flex-1 text-center md:text-left">
+                        <h2 className="text-xl font-bold text-red-900 mb-1">Your Store is Suspended</h2>
+                        <p className="text-sm text-red-700 font-medium">
+                            Reason: <span className="font-bold underline">{store.statusReason || 'Policy Violation'}</span>
+                        </p>
+                        <p className="text-xs text-red-600 mt-2 leading-relaxed">
+                            Your store and products are currently hidden from the Spendigo marketplace. Please resolve the issues mentioned above or contact support at <a href="mailto:support@spendigo.ca" className="font-bold underline">support@spendigo.ca</a> to request a review.
+                        </p>
+                    </div>
+                    <button 
+                        onClick={() => window.location.href = 'mailto:support@spendigo.ca?subject=Suspension Appeal: ' + encodeURIComponent(store.name)}
+                        className="px-6 py-3 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 transition-all shadow-md active:scale-95 whitespace-nowrap"
+                    >
+                        Appeal Suspension
+                    </button>
+                </div>
+            )}
+
             {/* Hero Section - Ultra Slim Redesign */}
             <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-[var(--brand-primary)] to-blue-500 p-3 md:p-4 text-white shadow-md group transition-all duration-300 hover:shadow-lg">
                 {/* Subtle Decorative Blobs - Scaled Down */}
@@ -295,9 +319,9 @@ const MerchantDashboard: React.FC = () => {
                                     {store?.name || 'Asian Grocers'}
                                 </span>
                             </h1>
-                            <p className="text-white/70 text-[9px] md:text-[10px] font-bold uppercase tracking-widest flex items-center gap-2">
-                                <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></span>
-                                Live & Accepting Orders
+                            <p className={`text-white/70 text-[9px] md:text-[10px] font-bold uppercase tracking-widest flex items-center gap-2`}>
+                                <span className={`w-1.5 h-1.5 ${store?.status === 'suspended' ? 'bg-red-400' : 'bg-green-400'} rounded-full animate-pulse`}></span>
+                                {store?.status === 'suspended' ? 'Currently Suspended' : 'Live & Accepting Orders'}
                             </p>
                         </div>
                     </div>
@@ -306,7 +330,7 @@ const MerchantDashboard: React.FC = () => {
                         {/* Ultra Compact Stats */}
                         <div className="flex-1 md:flex-none bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/10 flex items-center gap-2">
                             <span className="text-[9px] font-black opacity-60 uppercase">Status</span>
-                            <span className="text-[10px] font-black">ONLINE</span>
+                            <span className="text-[10px] font-black">{store?.status === 'suspended' ? 'OFFLINE' : 'ONLINE'}</span>
                         </div>
                         <div className="flex-1 md:flex-none bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/10 flex items-center gap-2">
                             <span className="text-[9px] font-black opacity-60 uppercase">Deals</span>

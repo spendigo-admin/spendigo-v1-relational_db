@@ -10,6 +10,15 @@ import { useNotifications } from '../../context/NotificationContext';
 import { useConfirmation } from '../../context/ConfirmationContext';
 import { BUSINESS_TYPES } from '../merchant/Settings';
 
+const SUSPENSION_REASONS = [
+    'Compliance Issue',
+    'Customer Complaint',
+    'Policy Violation',
+    'Maintenance',
+    'Unusual Activity',
+    'Other'
+];
+
 const StoreManagement: React.FC = () => {
     const { user } = useAuth();
     const { logEvent } = useAudit();
@@ -47,6 +56,11 @@ const StoreManagement: React.FC = () => {
         subscriptionEnd: ''
     });
 
+    const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
+    const [statusModalStore, setStatusModalStore] = useState<any>(null);
+    const [statusReason, setStatusReason] = useState('');
+    const [customReason, setCustomReason] = useState('');
+
     const resetForm = () => {
         setFormData({
             name: '',
@@ -64,6 +78,29 @@ const StoreManagement: React.FC = () => {
         setEditingStoreId(null);
         setSelectedStoreLegal(null);
         setShowFullAgreement(false);
+    };
+
+    const handleStatusUpdate = async (storeId: string, status: 'active' | 'suspended', reason?: string) => {
+        try {
+            await updateStoreStatus(storeId, status, reason);
+            await logEvent(status === 'suspended' ? 'STORE_SUSPEND' : 'STORE_RESUME', {
+                storeId,
+                reason: reason || 'N/A'
+            }, `stores/${storeId}`);
+            
+            addNotification({ 
+                type: 'system', 
+                title: status === 'suspended' ? 'Store Suspended' : 'Store Resumed', 
+                message: `Store status updated to ${status}.` 
+            });
+            setIsStatusModalOpen(false);
+            setStatusModalStore(null);
+            setStatusReason('');
+            setCustomReason('');
+        } catch (error) {
+            console.error(error);
+            addNotification({ type: 'alert', title: 'Update Failed', message: 'Could not update store status.' });
+        }
     };
 
     // --- Subscription Data Logic ---
@@ -432,6 +469,11 @@ const StoreManagement: React.FC = () => {
                                                     'bg-red-100 text-red-800'}`}>
                                                     {(store.status || 'active').replace('_', ' ')}
                                                 </span>
+                                                {store.status === 'suspended' && store.statusReason && (
+                                                    <div className="text-[10px] text-red-600 mt-1 font-medium bg-red-50 px-1.5 py-0.5 rounded border border-red-100 max-w-[150px] truncate" title={store.statusReason}>
+                                                        Reason: {store.statusReason}
+                                                    </div>
+                                                )}
                                             </td>
                                             <td className="p-4 text-right space-x-1 whitespace-nowrap">
                                                 <button onClick={() => handleEditClick(store)} className="text-[10px] bg-blue-50 text-blue-600 border border-blue-100 px-2 py-1 rounded-lg font-bold hover:bg-blue-100 transition-colors">Edit</button>
@@ -487,6 +529,35 @@ const StoreManagement: React.FC = () => {
                                                         Approve
                                                     </button>
                                                 )}
+                                                {store.status === 'active' && (
+                                                    <button 
+                                                        onClick={() => {
+                                                            setStatusModalStore(store);
+                                                            setStatusReason(SUSPENSION_REASONS[0]);
+                                                            setIsStatusModalOpen(true);
+                                                        }} 
+                                                        className="text-[10px] bg-red-50 text-red-600 border border-red-100 px-2 py-1 rounded-lg font-bold hover:bg-red-100 transition-colors"
+                                                    >
+                                                        Pause
+                                                    </button>
+                                                )}
+                                                {store.status === 'suspended' && (
+                                                    <button 
+                                                        onClick={async () => {
+                                                            if (await confirm({ 
+                                                                title: 'Resume Store?', 
+                                                                message: `Are you sure you want to resume ${store.name}? It will be visible to shoppers again.`,
+                                                                confirmText: 'Resume Store',
+                                                                type: 'success'
+                                                            })) {
+                                                                await handleStatusUpdate(store.id, 'active');
+                                                            }
+                                                        }} 
+                                                        className="text-[10px] bg-green-50 text-green-600 border border-green-100 px-2 py-1 rounded-lg font-bold hover:bg-green-100 transition-colors"
+                                                    >
+                                                        Resume
+                                                    </button>
+                                                )}
                                             </td>
                                         </tr>
                                     );
@@ -530,6 +601,11 @@ const StoreManagement: React.FC = () => {
                                             'bg-red-100 text-red-800 border border-red-200'}`}>
                                             {(store.status || 'active').replace('_', ' ')}
                                         </span>
+                                        {store.status === 'suspended' && store.statusReason && (
+                                            <div className="mt-1 text-[10px] text-red-600 font-medium italic">
+                                                {store.statusReason}
+                                            </div>
+                                        )}
                                     </div>
 
                                     <div className="grid grid-cols-2 gap-2">
@@ -567,6 +643,35 @@ const StoreManagement: React.FC = () => {
                                                 className="flex-1 py-2 bg-green-600 text-white rounded-lg text-xs font-bold shadow-sm active:scale-95 transition-transform"
                                             >
                                                 Approve
+                                            </button>
+                                        )}
+                                        {store.status === 'active' && (
+                                            <button 
+                                                onClick={() => {
+                                                    setStatusModalStore(store);
+                                                    setStatusReason(SUSPENSION_REASONS[0]);
+                                                    setIsStatusModalOpen(true);
+                                                }} 
+                                                className="flex-1 py-2 bg-red-50 text-red-600 rounded-lg text-xs font-bold border border-red-100 hover:bg-red-100"
+                                            >
+                                                Pause Store
+                                            </button>
+                                        )}
+                                        {store.status === 'suspended' && (
+                                            <button 
+                                                onClick={async () => {
+                                                    if (await confirm({ 
+                                                        title: 'Resume Store?', 
+                                                        message: `Are you sure you want to resume ${store.name}?`,
+                                                        confirmText: 'Resume',
+                                                        type: 'success'
+                                                    })) {
+                                                        await handleStatusUpdate(store.id, 'active');
+                                                    }
+                                                }} 
+                                                className="flex-1 py-2 bg-green-50 text-green-600 rounded-lg text-xs font-bold border border-green-100 hover:bg-green-100"
+                                            >
+                                                Resume
                                             </button>
                                         )}
                                     </div>
@@ -789,6 +894,69 @@ const StoreManagement: React.FC = () => {
                     </div>
                 )
             }
+            {/* Status Change Modal */}
+            {isStatusModalOpen && statusModalStore && (
+                <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-slide-up">
+                        <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+                            <div>
+                                <h2 className="text-xl font-bold text-gray-900">Pause Store</h2>
+                                <p className="text-xs text-gray-500 mt-0.5">Suspend {statusModalStore.name} from the marketplace</p>
+                            </div>
+                            <button onClick={() => { setIsStatusModalOpen(false); setStatusModalStore(null); }} className="text-gray-400 hover:text-gray-600">✕</button>
+                        </div>
+                        
+                        <div className="p-6 space-y-4">
+                            <div>
+                                <label className="block text-xs font-bold text-gray-700 mb-2 uppercase">Reason for Suspension</label>
+                                <select 
+                                    className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 outline-none bg-white"
+                                    value={statusReason}
+                                    onChange={(e) => setStatusReason(e.target.value)}
+                                >
+                                    {SUSPENSION_REASONS.map(r => (
+                                        <option key={r} value={r}>{r}</option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {statusReason === 'Other' && (
+                                <div className="animate-fade-in">
+                                    <label className="block text-xs font-bold text-gray-700 mb-2 uppercase">Custom Reason</label>
+                                    <textarea 
+                                        className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 outline-none min-h-[100px]"
+                                        placeholder="Explain the specific reason for suspension..."
+                                        value={customReason}
+                                        onChange={(e) => setCustomReason(e.target.value)}
+                                    />
+                                </div>
+                            )}
+
+                            <div className="bg-red-50 p-4 rounded-xl border border-red-100">
+                                <p className="text-xs text-red-700 leading-relaxed">
+                                    <strong>Note:</strong> Pausing this store will hide it from all shopper searches and category lists immediately. The merchant will still be able to access their dashboard but cannot create new deals until resumed.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="p-6 bg-gray-50 flex gap-3">
+                            <button 
+                                onClick={() => { setIsStatusModalOpen(false); setStatusModalStore(null); }}
+                                className="flex-1 py-3 border border-gray-200 text-gray-600 rounded-xl font-bold hover:bg-white transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button 
+                                onClick={() => handleStatusUpdate(statusModalStore.id, 'suspended', statusReason === 'Other' ? customReason : statusReason)}
+                                disabled={statusReason === 'Other' && !customReason.trim()}
+                                className="flex-1 py-3 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 shadow-lg shadow-red-200 transition-all active:scale-95 disabled:opacity-50"
+                            >
+                                Suspend Store
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div >
     );
 };

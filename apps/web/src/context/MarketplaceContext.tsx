@@ -11,7 +11,7 @@ interface MarketplaceContextType {
     updateStoreFlyer: (storeId: string | number, flyer: any) => Promise<void>;
     updateStoreDeals: (storeId: string | number, type: 'oneDayOffers' | 'saleItems', deals: any[]) => Promise<void>;
     updateStoreTeam: (storeId: string | number, team: any[]) => Promise<void>;
-    updateStoreStatus: (storeId: string | number, status: 'active' | 'pending' | 'suspended') => Promise<void>;
+    updateStoreStatus: (storeId: string | number, status: 'active' | 'pending' | 'suspended', reason?: string) => Promise<void>;
     addStore: (store: any) => Promise<any>;
     deleteStore: (storeId: string) => Promise<void>;
     requestDeleteStore: (storeId: string, requesterId: string, requesterRole: string) => Promise<void>;
@@ -95,10 +95,19 @@ export const MarketplaceProvider: React.FC<{ children: ReactNode }> = ({ childre
         await updateDoc(storeRef, { team });
     };
 
-    const updateStoreStatus = async (storeId: string | number, status: 'active' | 'pending' | 'suspended') => {
+    const updateStoreStatus = async (storeId: string | number, status: 'active' | 'pending' | 'suspended', reason?: string) => {
         const storeRef = doc(db, 'stores', String(storeId));
-        // Audit logging removed
-        await updateDoc(storeRef, { status });
+        const updateData: any = { status };
+        
+        if (reason) {
+            updateData.statusReason = reason;
+            updateData.statusUpdatedAt = new Date().toISOString();
+        } else if (status === 'active') {
+            // Clear reason when activating
+            updateData.statusReason = null;
+        }
+        
+        await updateDoc(storeRef, updateData);
     };
 
     const addStore = async (store: any) => {

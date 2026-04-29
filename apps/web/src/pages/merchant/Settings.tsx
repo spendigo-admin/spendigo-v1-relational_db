@@ -443,6 +443,13 @@ const MerchantSettings: React.FC = () => {
             if (store.hours) {
                 setHours(store.hours);
             }
+
+            if (store.notificationPreferences) {
+                setNotifications(prev => ({
+                    ...prev,
+                    ...store.notificationPreferences
+                }));
+            }
         }
     }, [storeId, stores]);
 
@@ -528,6 +535,7 @@ const MerchantSettings: React.FC = () => {
                 deliveryEnabled: operations.deliveryEnabled,
                 deliveryTime: operations.deliveryTime,
                 hours: hours,
+                notificationPreferences: notifications,
                 // Legacy/Display Fields
                 deliveryFee: displayFee
             };
