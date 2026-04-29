@@ -4,7 +4,10 @@ const MaintenancePage: React.FC = () => {
     return (
         <div className="min-h-screen bg-gray-900 flex flex-col items-center justify-center p-4 text-center">
             <div className="bg-gray-800 p-8 rounded-2xl shadow-2xl max-w-lg w-full border border-gray-700 animate-fade-in">
-                <div className="text-6xl mb-6">🚧</div>
+                <div className="flex flex-col items-center gap-3 mb-8">
+                    <img src="/app-icon.png" alt="Spendigo Logo" style={{width: 64, height: 64, borderRadius: 12}} />
+                    <span className="text-4xl font-black text-white italic tracking-tighter">Spendigo</span>
+                </div>
                 <h1 className="text-3xl font-bold text-white mb-4">Under Maintenance</h1>
                 <p className="text-gray-300 text-lg mb-8">
                     Spendigo is currently undergoing scheduled upgrades to improve your experience.

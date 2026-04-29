@@ -58,7 +58,10 @@ const MerchantLayout: React.FC = () => {
         return (
             <div className="min-h-screen bg-[var(--surface-0)]">
                 <header className="h-16 bg-white border-b border-[var(--glass-border)] flex items-center justify-between px-8">
-                    <span className="text-xl font-bold text-[var(--brand-primary)]">Spendigo Merchant</span>
+                    <div className="flex items-center gap-2">
+                        <img src="/app-icon.png" alt="Spendigo Logo" style={{width: 32, height: 32, borderRadius: 8}} />
+                        <span className="text-xl font-bold text-[var(--brand-primary)]">Spendigo Merchant</span>
+                    </div>
                     <button onClick={logout} className="text-sm font-medium text-[var(--text-muted)] hover:text-[var(--text-main)]">Sign Out</button>
                 </header>
                 <Outlet />

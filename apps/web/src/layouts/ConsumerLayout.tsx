@@ -71,9 +71,7 @@ const ConsumerLayout: React.FC = () => {
                 <div className="flex items-center gap-8 flex-1 max-w-4xl">
                     {/* PREMIUM RETAIL LOGO */}
                     <Link to="/" className="flex items-center gap-3 group shrink-0">
-                        <div className="w-10 h-10 bg-blue-600 flex items-center justify-center skew-x-[-12deg] shadow-lg group-hover:scale-105 transition-transform group-hover:bg-blue-500">
-                            <span className="text-white text-2xl font-black italic">S</span>
-                        </div>
+                        <img src="/app-icon.png" alt="Spendigo Logo" style={{width: 40, height: 40, borderRadius: 8}} className="group-hover:scale-105 transition-transform" />
                         <div className="flex flex-col leading-none">
                             <span className="text-2xl font-black text-gray-900 italic tracking-tighter group-hover:text-blue-600 transition-colors">Spendigo</span>
                             <span className="text-[8px] font-black text-gray-500 tracking-[0.4em] mt-1">SmartCart AI</span>
@@ -225,9 +223,9 @@ const ConsumerLayout: React.FC = () => {
             <footer className="bg-white border-t-2 border-gray-200 pb-[calc(5rem+var(--safe-area-bottom))] md:pb-12 pt-16 px-4">
                 <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center md:items-start justify-between gap-12 text-center md:text-left">
                     <div className="max-w-xs">
-                        <div className="flex items-center gap-2 justify-center md:justify-start mb-6">
+                        <div className="flex items-center gap-3 justify-center md:justify-start mb-6">
+                            <img src="/app-icon.png" alt="Spendigo Logo" style={{width: 32, height: 32, borderRadius: 6}} />
                             <span className="text-3xl font-black text-gray-900 italic tracking-tighter">Spendigo</span>
-                            <span className="w-2 h-2 bg-blue-600 skew-x-[-12deg]"></span>
                         </div>
                         <p className="text-gray-500 text-[10px] font-bold tracking-widest leading-relaxed">
                             The high-performance local marketplace. Powered by SmartCart AI.

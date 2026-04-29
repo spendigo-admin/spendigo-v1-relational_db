@@ -109,8 +109,9 @@ const Register: React.FC = () => {
             
             {/* Header */}
             <div className="w-full max-w-2xl text-center mb-8">
-                <Link to="/" className="inline-block mb-6">
-                    <span className="text-3xl font-black bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)] bg-clip-text text-transparent">Spendigo</span>
+                <Link to="/" className="inline-flex items-center gap-3 mb-6">
+                    <img src="/app-icon.png" alt="Spendigo Logo" style={{width: 48, height: 48, borderRadius: 10}} />
+                    <span className="text-3xl font-black text-[var(--text-main)] italic tracking-tighter">Spendigo</span>
                 </Link>
                 
                 <h1 className="text-3xl font-extrabold text-[var(--text-main)] mb-2">{t('joinSpendigo')}</h1>
