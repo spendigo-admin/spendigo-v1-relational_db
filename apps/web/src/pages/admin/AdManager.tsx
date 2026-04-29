@@ -214,9 +214,13 @@ const AdManager: React.FC = () => {
                         {/* Image Preview */}
                         <div className="h-40 bg-gray-100 relative overflow-hidden">
                             {ad.imageUrl ? (
-                                <img src={ad.imageUrl} alt={ad.title} className="w-full h-full object-cover" />
+                                isAssetVideo(ad.imageUrl) ? (
+                                    <video src={ad.imageUrl} className="w-full h-full object-cover" muted loop autoPlay playsInline />
+                                ) : (
+                                    <img src={ad.imageUrl} alt={ad.title} className="w-full h-full object-cover" />
+                                )
                             ) : (
-                                <div className="flex items-center justify-center h-full text-gray-400 text-sm">No Image</div>
+                                <div className="flex items-center justify-center h-full text-gray-400 text-sm">No Asset</div>
                             )}
                             <div className="absolute top-2 right-2 flex gap-2">
                                 <span className={`px-2 py-1 text-xs font-bold rounded shadow-sm backdrop-blur-md ${ad.status === 'active' ? 'bg-green-500/90 text-white' : 'bg-gray-500/90 text-white'}`}>
@@ -243,11 +247,11 @@ const AdManager: React.FC = () => {
                             <div className="grid grid-cols-2 gap-2 bg-[var(--surface-1)] p-2 rounded-lg mb-4 text-center">
                                 <div>
                                     <div className="text-[10px] uppercase font-bold text-[var(--text-muted)]">Views</div>
-                                    <div className="font-bold">{ad.views.toLocaleString()}</div>
+                                    <div className="font-bold">{(ad.views || 0).toLocaleString()}</div>
                                 </div>
                                 <div>
                                     <div className="text-[10px] uppercase font-bold text-[var(--text-muted)]">Clicks</div>
-                                    <div className="font-bold">{ad.clicks.toLocaleString()}</div>
+                                    <div className="font-bold">{(ad.clicks || 0).toLocaleString()}</div>
                                 </div>
                             </div>
 
