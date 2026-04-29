@@ -197,38 +197,62 @@ const AdCarousel: React.FC<AdCarouselProps> = (props) => {
         <section className="relative overflow-hidden group bg-black flex flex-col items-center justify-center min-h-[200px]">
             {/* Background Blur Effect (Stays Absolute) */}
             <div className="absolute inset-0 z-0 opacity-40 blur-2xl scale-110">
-                {isVideo(isMobile && currentAd.mobileImageUrl ? currentAd.mobileImageUrl : currentAd.imageUrl) ? (
-                    <video src={isMobile && currentAd.mobileImageUrl ? currentAd.mobileImageUrl : currentAd.imageUrl} className="w-full h-full object-cover" muted loop autoPlay playsInline />
-                ) : (
-                    <img src={isMobile && currentAd.mobileImageUrl ? currentAd.mobileImageUrl : currentAd.imageUrl} alt="" className="w-full h-full object-cover" />
-                )}
+                {ads.map((ad, idx) => {
+                    const isActive = idx === currentIndex;
+                    const src = isMobile && ad.mobileImageUrl ? ad.mobileImageUrl : ad.imageUrl;
+                    const isVid = isVideo(src);
+                    
+                    return (
+                        <div key={ad.id} className={`absolute inset-0 transition-opacity duration-1000 ${isActive ? 'opacity-100' : 'opacity-0'}`}>
+                            {isVid ? (
+                                <video src={src} className="w-full h-full object-cover" muted loop autoPlay playsInline />
+                            ) : (
+                                <img src={src} alt="" className="w-full h-full object-cover" />
+                            )}
+                        </div>
+                    );
+                })}
             </div>
 
             {/* Main Banner Image (Defines the Height) */}
-            <div className="relative z-10 w-full">
-                {isVideo(isMobile && currentAd.mobileImageUrl ? currentAd.mobileImageUrl : currentAd.imageUrl) ? (
-                    <video 
-                        key={currentAd.id}
-                        src={isMobile && currentAd.mobileImageUrl ? currentAd.mobileImageUrl : currentAd.imageUrl} 
-                        className="w-full h-auto block max-h-[85vh] object-contain mx-auto transition-all duration-1000 shadow-2xl" 
-                        muted 
-                        loop 
-                        autoPlay 
-                        playsInline 
-                    />
-                ) : (
-                    <img
-                        key={currentAd.id}
-                        src={isMobile && currentAd.mobileImageUrl ? currentAd.mobileImageUrl : currentAd.imageUrl}
-                        alt={currentAd.title}
-                        className="w-full h-auto block max-h-[85vh] object-contain mx-auto transition-all duration-1000 shadow-2xl"
-                    />
-                )}
+            <div className="relative z-10 w-full flex items-center justify-center">
+                {ads.map((ad, idx) => {
+                    const isActive = idx === currentIndex;
+                    const src = isMobile && ad.mobileImageUrl ? ad.mobileImageUrl : ad.imageUrl;
+                    const isVid = isVideo(src);
+
+                    return (
+                        <div 
+                            key={ad.id} 
+                            className={`
+                                transition-opacity duration-1000 w-full flex items-center justify-center
+                                ${isActive ? 'relative opacity-100 z-10' : 'absolute inset-0 opacity-0 z-0 pointer-events-none'}
+                            `}
+                        >
+                            {isVid ? (
+                                <video 
+                                    src={src} 
+                                    className="w-full h-auto block max-h-[65vh] object-contain mx-auto shadow-2xl" 
+                                    muted 
+                                    loop 
+                                    autoPlay 
+                                    playsInline 
+                                />
+                            ) : (
+                                <img
+                                    src={src}
+                                    alt={ad.title}
+                                    className="w-full h-auto block max-h-[65vh] object-contain mx-auto shadow-2xl"
+                                />
+                            )}
+                        </div>
+                    );
+                })}
                 
                 {/* Content Overlay (Centered) */}
-                <div className="absolute inset-0 flex flex-col items-center justify-center px-4 bg-gradient-to-t from-black/40 via-transparent to-black/20">
+                <div className="absolute inset-0 flex flex-col items-center justify-center px-4 bg-gradient-to-t from-black/40 via-transparent to-black/20 z-20 pointer-events-none">
                     {/* Search Bar Container */}
-                    <div className="group relative w-full max-w-3xl mx-auto transform translate-y-2 md:translate-y-0 scale-90 md:scale-100">
+                    <div className="group relative w-full max-w-3xl mx-auto transform translate-y-2 md:translate-y-0 scale-90 md:scale-100 pointer-events-auto">
                         <div className="relative flex items-center bg-white rounded-full p-1 md:p-1.5 shadow-2xl transition-all duration-300 group-hover:scale-[1.01]">
                             <div 
                                 onClick={props.handleLocateMe}
@@ -273,7 +297,7 @@ const AdCarousel: React.FC<AdCarouselProps> = (props) => {
                     {currentAd.linkUrl && (
                         <button
                             onClick={() => handleAdClick(currentAd)}
-                            className="mt-4 md:mt-6 px-6 md:px-8 py-2 md:py-2.5 bg-white/10 hover:bg-white/20 backdrop-blur-md text-white border border-white/30 rounded-full font-bold text-[10px] md:text-xs tracking-widest transition-all shadow-xl active:scale-95"
+                            className="mt-4 md:mt-6 px-6 md:px-8 py-2 md:py-2.5 bg-white/10 hover:bg-white/20 backdrop-blur-md text-white border border-white/30 rounded-full font-bold text-[10px] md:text-xs tracking-widest transition-all shadow-xl active:scale-95 pointer-events-auto"
                         >
                             View Offer &rarr;
                         </button>
