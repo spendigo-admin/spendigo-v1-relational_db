@@ -123,8 +123,8 @@ const Login = () => {
                     <img src="/app-icon.png" alt="Spendigo Logo" style={{width: 56, height: 56, borderRadius: 12}} />
                     <span className="text-4xl font-black text-[var(--text-main)] italic tracking-tighter">Spendigo</span>
                 </div>
-                <h1 className="text-3xl font-bold mb-2 text-[var(--brand-primary)]">{t('welcomeBack')}</h1>
-                <p className="text-[var(--text-muted)] mb-8">{t('signInToAccess')}</p>
+                <h1 className="text-3xl font-bold mb-2 text-[var(--brand-primary)] text-center">{t('welcomeBack')}</h1>
+                <p className="text-[var(--text-muted)] mb-8 text-center">{t('signInToAccess')}</p>
 
                 {/* Recaptcha hidden container */}
                 <div id="mfa-recaptcha-login"></div>

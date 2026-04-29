@@ -110,6 +110,7 @@ const AdCarousel: React.FC<AdCarouselProps> = (props) => {
     const [loading, setLoading] = useState(true);
     const timerRef = useRef<any>(null);
     const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+    const [mediaLoaded, setMediaLoaded] = useState(false);
 
     useEffect(() => {
         const handleResize = () => setIsMobile(window.innerWidth < 768);
@@ -169,13 +170,13 @@ const AdCarousel: React.FC<AdCarouselProps> = (props) => {
 
     // Track View (Impression)
     useEffect(() => {
-        if (ads.length > 0) {
+        if (ads.length > 0 && mediaLoaded) {
             const ad = ads[currentIndex];
             updateDoc(doc(db, 'ads', ad.id), {
                 views: increment(1)
             }).catch(console.error);
         }
-    }, [currentIndex, ads]);
+    }, [currentIndex, ads, mediaLoaded]);
 
     const handleAdClick = async (ad: AdCampaign) => {
         await updateDoc(doc(db, 'ads', ad.id), {
@@ -194,7 +195,13 @@ const AdCarousel: React.FC<AdCarouselProps> = (props) => {
     const currentAd = ads[currentIndex];
 
     return (
-        <section className="relative overflow-hidden group bg-black flex flex-col items-center justify-center min-h-[200px]">
+        <div className="relative">
+            {/* Seamless Transition Overlay */}
+            <div className={`absolute inset-0 z-50 transition-opacity duration-1000 ${mediaLoaded ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
+                <DefaultHero {...props} />
+            </div>
+
+        <section className={`relative overflow-hidden group bg-black flex flex-col items-center justify-center min-h-[400px] md:min-h-[550px] transition-opacity duration-1000 ${mediaLoaded ? 'opacity-100' : 'opacity-0'}`}>
             {/* Background Blur Effect (Stays Absolute) */}
             <div className="absolute inset-0 z-0 opacity-40 blur-2xl scale-110">
                 {ads.map((ad, idx) => {
@@ -237,12 +244,14 @@ const AdCarousel: React.FC<AdCarouselProps> = (props) => {
                                     loop 
                                     autoPlay 
                                     playsInline 
+                                    onLoadedData={() => { if (isActive) setMediaLoaded(true); }}
                                 />
                             ) : (
                                 <img
                                     src={src}
                                     alt={ad.title}
                                     className="w-full h-auto block max-h-[65vh] object-contain mx-auto shadow-2xl"
+                                    onLoad={() => { if (isActive) setMediaLoaded(true); }}
                                 />
                             )}
                         </div>
@@ -318,6 +327,7 @@ const AdCarousel: React.FC<AdCarouselProps> = (props) => {
                 </div>
             )}
         </section>
+        </div>
     );
 };
 
