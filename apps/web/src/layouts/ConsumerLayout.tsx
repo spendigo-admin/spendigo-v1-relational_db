@@ -222,10 +222,10 @@ const ConsumerLayout: React.FC = () => {
             </main>
 
             {/* GLOBAL RETAIL FOOTER */}
-            <footer className="bg-white border-t-2 border-gray-200 pb-[calc(5rem+var(--safe-area-bottom))] md:pb-12 pt-16 px-4">
-                <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center md:items-start justify-between gap-12 text-center md:text-left">
+            <footer className="bg-white border-t-2 border-gray-200 pb-[calc(5rem+var(--safe-area-bottom))] md:pb-6 pt-8 px-4">
+                <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center md:items-start justify-between gap-6 text-center md:text-left">
                     <div className="max-w-xs">
-                        <div className="flex items-center gap-3 justify-center md:justify-start mb-6">
+                        <div className="flex items-center gap-3 justify-center md:justify-start mb-3">
                             <img src="/app-icon.png" alt="Spendigo Logo" style={{width: 32, height: 32, borderRadius: 6}} />
                             <span className="text-3xl font-black text-gray-900 italic tracking-tighter">Spendigo</span>
                         </div>
@@ -249,7 +249,7 @@ const ConsumerLayout: React.FC = () => {
                     </div>
                 </div>
                 
-                <div className="max-w-7xl mx-auto mt-16 pt-8 border-t border-gray-100 text-center md:text-left flex flex-col md:flex-row items-center justify-between gap-4">
+                <div className="max-w-7xl mx-auto mt-8 pt-4 border-t border-gray-100 text-center md:text-left flex flex-col md:flex-row items-center justify-between gap-4">
                     <p className="text-[9px] font-black text-gray-400 tracking-widest">&copy; {new Date().getFullYear()} Spendigo Inc. All rights reserved.</p>
                     <div className="flex items-center gap-4 text-2xl hover:scale-110 transition-transform cursor-default">
                         🍁

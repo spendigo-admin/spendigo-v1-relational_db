@@ -417,27 +417,27 @@ const StoreList: React.FC = () => {
             </div>
 
             {/* HIGH-IMPACT MARKETPLACE PROMO */}
-            <section className="py-12 md:py-20 px-4 bg-white overflow-hidden">
+            <section className="py-6 md:py-10 px-4 bg-white overflow-hidden">
                 <div className="max-w-7xl mx-auto">
-                    <div className="relative bg-gray-50 rounded-[2rem] md:rounded-[4rem] p-8 md:p-12 overflow-hidden group shadow-xl border border-gray-200">
+                    <div className="relative bg-gray-50 rounded-[2rem] md:rounded-[3rem] p-6 md:p-8 overflow-hidden group shadow-xl border border-gray-200">
                         <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-teal-600/5 rounded-full blur-[120px] -mr-96 -mt-96 group-hover:bg-teal-600/10 transition-all duration-700"></div>
                         <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-blue-600/5 rounded-full blur-[100px] -ml-48 -mb-48"></div>
                         
-                        <div className="relative z-10 flex flex-col md:flex-row items-center gap-8 md:gap-16">
-                            <div className="text-5xl md:text-8xl animate-bounce-slow drop-shadow-xl">🛍️✨</div>
+                        <div className="relative z-10 flex flex-col md:flex-row items-center gap-4 md:gap-8">
+                            <div className="text-4xl md:text-6xl animate-bounce-slow drop-shadow-xl">🛍️✨</div>
                             <div className="flex-1 text-center md:text-left">
-                                <span className="text-[10px] font-black text-blue-600 bg-blue-50 px-3 py-1 rounded shadow-sm tracking-[0.3em] mb-4 inline-block border border-blue-100">Spendigo Smartcart AI</span>
-                                <h3 className="text-3xl md:text-5xl font-black text-gray-900 tracking-tighter italic leading-[0.9] mb-4">
+                                <span className="text-[10px] font-black text-blue-600 bg-blue-50 px-3 py-1 rounded shadow-sm tracking-[0.3em] mb-2 inline-block border border-blue-100">Spendigo Smartcart AI</span>
+                                <h3 className="text-2xl md:text-4xl font-black text-gray-900 tracking-tighter italic leading-[0.9] mb-3">
                                     Why Pay <span className="text-blue-600 underline decoration-gray-200 underline-offset-8">Retail?</span>
                                 </h3>
-                                <p className="text-sm md:text-lg text-gray-500 font-bold tracking-tight max-w-2xl leading-tight">
+                                <p className="text-sm md:text-base text-gray-500 font-bold tracking-tight max-w-2xl leading-tight">
                                     Our SmartCart engine analyzes {stats.totalProducts}+ products across the marketplace to save you <span className="text-gray-900 font-black">15% or more</span> on every shop.
                                 </p>
-                                <div className="mt-6 flex flex-wrap gap-4 justify-center md:justify-start">
-                                    <Link to="/how-it-works" className="px-8 py-4 bg-gray-900 text-white font-black text-[10px] tracking-[0.2em] rounded-full hover:bg-blue-600 transition-all shadow-xl active:scale-95 border-b-4 border-gray-800 hover:border-blue-800">
+                                <div className="mt-4 flex flex-wrap gap-4 justify-center md:justify-start">
+                                    <Link to="/how-it-works" className="px-6 py-3 bg-gray-900 text-white font-black text-[10px] tracking-[0.2em] rounded-full hover:bg-blue-600 transition-all shadow-xl active:scale-95 border-b-4 border-gray-800 hover:border-blue-800">
                                         Activate Optimizer
                                     </Link>
-                                    <Link to="/register" className="px-8 py-4 bg-white border border-gray-300 text-gray-900 font-black text-[10px] tracking-[0.2em] rounded-full hover:bg-gray-100 transition-all shadow-sm">
+                                    <Link to="/register" className="px-6 py-3 bg-white border border-gray-300 text-gray-900 font-black text-[10px] tracking-[0.2em] rounded-full hover:bg-gray-100 transition-all shadow-sm">
                                         Join Marketplace
                                     </Link>
                                 </div>
