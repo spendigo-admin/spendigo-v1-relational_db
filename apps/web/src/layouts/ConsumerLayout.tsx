@@ -79,16 +79,18 @@ const ConsumerLayout: React.FC = () => {
                     </Link>
 
                     {/* Expanded Retail Search Bar */}
-                    <form onSubmit={handleSearch} className="hidden md:flex flex-1 relative group max-w-lg">
-                        <input
-                            type="text"
-                            placeholder="Search marketplace..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full h-10 pl-12 pr-4 bg-gray-100 border-2 border-transparent text-xs text-gray-900 font-black tracking-widest placeholder-gray-400 focus:bg-white focus:border-blue-600 transition-all outline-none"
-                        />
-                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-hover:text-blue-600 transition-colors text-sm">🔍</span>
-                    </form>
+                    {location.pathname !== '/search' && (
+                        <form onSubmit={handleSearch} className="hidden md:flex flex-1 relative group max-w-lg">
+                            <input
+                                type="text"
+                                placeholder="Search marketplace..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="w-full h-10 pl-12 pr-4 bg-gray-100 border-2 border-transparent text-xs text-gray-900 font-black tracking-widest placeholder-gray-400 focus:bg-white focus:border-blue-600 transition-all outline-none"
+                            />
+                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-hover:text-blue-600 transition-colors text-sm">🔍</span>
+                        </form>
+                    )}
                 </div>
 
                 {/* RIGHT: Actions (Optimizer, Cart, Notifications, Profile) */}

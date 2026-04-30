@@ -48,7 +48,7 @@ const algoliaClient = (ALGOLIA_APP_ID && ALGOLIA_API_KEY)
 exports.syncMerchantProductToAlgolia = functions.firestore
     .document('merchant_products/{merchantProductId}')
     .onWrite(async (change, context) => {
-    var _a, _b, _c, _d, _e, _f;
+    var _a, _b, _c, _d, _e, _f, _g, _h;
     if (!algoliaClient) {
         functions.logger.warn('Algolia Sync skipped: ALGOLIA_APP_ID or ALGOLIA_API_KEY is not set.');
         return null;
@@ -103,13 +103,19 @@ exports.syncMerchantProductToAlgolia = functions.firestore
         const storeData = storeDoc.data();
         // Only add GPS data if store has location coordinates
         let geoloc = null;
-        if (((_a = storeData === null || storeData === void 0 ? void 0 : storeData.location) === null || _a === void 0 ? void 0 : _a.lat) && ((_b = storeData === null || storeData === void 0 ? void 0 : storeData.location) === null || _b === void 0 ? void 0 : _b.lng)) {
+        if (((_a = storeData === null || storeData === void 0 ? void 0 : storeData.coordinates) === null || _a === void 0 ? void 0 : _a.lat) && ((_b = storeData === null || storeData === void 0 ? void 0 : storeData.coordinates) === null || _b === void 0 ? void 0 : _b.lng)) {
+            geoloc = {
+                lat: storeData.coordinates.lat,
+                lng: storeData.coordinates.lng
+            };
+        }
+        else if (((_c = storeData === null || storeData === void 0 ? void 0 : storeData.location) === null || _c === void 0 ? void 0 : _c.lat) && ((_d = storeData === null || storeData === void 0 ? void 0 : storeData.location) === null || _d === void 0 ? void 0 : _d.lng)) {
             geoloc = {
                 lat: storeData.location.lat,
                 lng: storeData.location.lng
             };
         }
-        else if (((_c = storeData === null || storeData === void 0 ? void 0 : storeData.geoloc) === null || _c === void 0 ? void 0 : _c.latitude) && ((_d = storeData === null || storeData === void 0 ? void 0 : storeData.geoloc) === null || _d === void 0 ? void 0 : _d.longitude)) {
+        else if (((_e = storeData === null || storeData === void 0 ? void 0 : storeData.geoloc) === null || _e === void 0 ? void 0 : _e.latitude) && ((_f = storeData === null || storeData === void 0 ? void 0 : storeData.geoloc) === null || _f === void 0 ? void 0 : _f.longitude)) {
             // Some schemas use .latitude instead of .lat
             geoloc = {
                 lat: storeData.geoloc.latitude,
@@ -150,7 +156,7 @@ exports.syncMerchantProductToAlgolia = functions.firestore
             // Geo-Spatial Data
             _geoloc: geoloc,
             // Highlighting
-            is_canadian_local: (_f = (_e = data === null || data === void 0 ? void 0 : data.is_canadian_local) !== null && _e !== void 0 ? _e : masterData === null || masterData === void 0 ? void 0 : masterData.is_canadian_local) !== null && _f !== void 0 ? _f : false,
+            is_canadian_local: (_h = (_g = data === null || data === void 0 ? void 0 : data.is_canadian_local) !== null && _g !== void 0 ? _g : masterData === null || masterData === void 0 ? void 0 : masterData.is_canadian_local) !== null && _h !== void 0 ? _h : false,
             // Meta
             updated_at: Date.now()
         };

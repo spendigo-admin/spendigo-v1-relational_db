@@ -77,7 +77,12 @@ export const syncMerchantProductToAlgolia = functions.firestore
 
       // Only add GPS data if store has location coordinates
       let geoloc = null;
-      if (storeData?.location?.lat && storeData?.location?.lng) {
+      if (storeData?.coordinates?.lat && storeData?.coordinates?.lng) {
+        geoloc = {
+          lat: storeData.coordinates.lat,
+          lng: storeData.coordinates.lng
+        };
+      } else if (storeData?.location?.lat && storeData?.location?.lng) {
         geoloc = {
           lat: storeData.location.lat,
           lng: storeData.location.lng

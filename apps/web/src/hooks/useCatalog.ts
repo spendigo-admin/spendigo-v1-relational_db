@@ -412,11 +412,13 @@ export const useCatalog = () => {
                         };
                         
                         // Apply Geo-Spatial Filtering
+                        // Temporarily disabled at the Algolia level because the merchant_products index 
+                        // is currently missing _geoloc fields. Search.tsx performs local distance filtering anyway.
                         if (location?.lat && location?.lng) {
-                           searchOptions.aroundLatLng = `${location.lat},${location.lng}`;
-                           if (searchDistance && searchDistance > 0) {
-                               searchOptions.aroundRadius = searchDistance * 1000; // Convert km to meters if needed, wait calculateDistance in Search.tsx looks like km. Let's assume searchDistance is in km.
-                           }
+                           // searchOptions.aroundLatLng = `${location.lat},${location.lng}`;
+                           // if (searchDistance && searchDistance > 0) {
+                           //    searchOptions.aroundRadius = searchDistance * 1000;
+                           // }
                         }
 
                         // 1. Search Algolia for Merchant Products
@@ -478,9 +480,8 @@ export const useCatalog = () => {
                     setLoading(false);
                 }
             };
-
             fetchProducts();
-        }, [searchQuery]);
+        }, [searchQuery, location?.lat, location?.lng, searchDistance]);
 
         // Helper: Convert MerchantProduct + MasterProduct + Store => UI Product
         const mapSnapshotToProducts = async (snapshot: any) => {

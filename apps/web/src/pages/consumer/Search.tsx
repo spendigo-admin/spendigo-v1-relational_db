@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useMemo, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
 import { useMarketplace } from '../../context/MarketplaceContext';
 import { useCatalog } from '../../hooks/useCatalog';
@@ -9,20 +9,20 @@ import SEO from '../../components/SEO';
 
 const Search: React.FC = () => {
     const navigate = useNavigate();
+    const [searchParams, setSearchParams] = useSearchParams();
     const { addToCart } = useCart();
     const { stores } = useMarketplace();
     const { userCoords, userPostalCode, searchDistance, calculateDistance } = useLocation();
 
-    const [searchQuery, setSearchQuery] = useState('');
+    const initialQuery = searchParams.get('q') || '';
+    const [searchQuery, setSearchQuery] = useState(initialQuery);
+    const [activeSearchQuery, setActiveSearchQuery] = useState(initialQuery);
     const [selectedCategory, setSelectedCategory] = useState('All');
     const [sortBy, setSortBy] = useState<'relevance' | 'price_low' | 'price_high'>('relevance');
 
-    // Debounce search input (wait 800ms after typing stops)
-    const debouncedSearchQuery = useDebounce(searchQuery, 800);
-
-    // Use new global catalog search
+    // Use new global catalog search using the submitted active query
     const { useGlobalCatalog } = useCatalog();
-    const { products: allProducts, loading } = useGlobalCatalog(debouncedSearchQuery, userCoords || undefined, searchDistance);
+    const { products: allProducts, loading } = useGlobalCatalog(activeSearchQuery, userCoords || undefined, searchDistance);
 
     // Derived categories
     const categories = useMemo(() => {
@@ -31,14 +31,16 @@ const Search: React.FC = () => {
 
 
 
-    // Read query parameter from URL on mount
-    React.useEffect(() => {
-        const params = new URLSearchParams(window.location.search);
-        const query = params.get('q');
-        if (query) {
-            setSearchQuery(query);
+    // Sync URL parameter if submitted search query changes
+    useEffect(() => {
+        if (activeSearchQuery !== initialQuery) {
+            if (activeSearchQuery) {
+                setSearchParams({ q: activeSearchQuery }, { replace: true });
+            } else {
+                setSearchParams({}, { replace: true });
+            }
         }
-    }, []);
+    }, [activeSearchQuery, setSearchParams, initialQuery]);
 
     const filteredProducts = useMemo(() => {
         let results = allProducts;
@@ -120,32 +122,47 @@ const Search: React.FC = () => {
         <div className="animate-fade-in pb-20">
             <SEO title="Search Products" description="Search across all local grocery stores on Spendigo. Find the best prices and compare products." path="/search" />
             {/* Search Header */}
-            <div className="sticky top-14 z-30 bg-white border-b border-[var(--glass-border)] p-4">
+            <div className="sticky top-14 z-30 bg-white/80 backdrop-blur-xl border-b border-[var(--glass-border)] p-4 shadow-sm transition-all duration-300">
                 <div className="max-w-3xl mx-auto">
                     <form
-                        className="relative"
-                        onSubmit={(e) => { e.preventDefault(); (document.activeElement as HTMLElement)?.blur(); }}
+                        className="flex gap-2"
+                        onSubmit={(e) => { 
+                            e.preventDefault(); 
+                            (document.activeElement as HTMLElement)?.blur(); 
+                            setActiveSearchQuery(searchQuery.trim());
+                        }}
                     >
-                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xl">🔍</span>
-                        <input
-                            type="text"
-                            inputMode="search"
-                            enterKeyHint="search"
-                            placeholder="Search products..."
-                            value={searchQuery}
-                            onChange={e => setSearchQuery(e.target.value)}
-                            className="w-full pl-12 pr-10 py-3 bg-[var(--surface-1)] border border-[var(--glass-border)] rounded-xl text-[var(--text-main)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--brand-primary)]"
-                            autoFocus
-                        />
-                        {searchQuery && (
-                            <button
-                                type="button"
-                                onClick={() => setSearchQuery('')}
-                                className="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center bg-gray-200 rounded-full text-xs text-gray-600 hover:bg-gray-300 transition-colors"
-                            >
-                                ✕
-                            </button>
-                        )}
+                        <div className="relative flex-1">
+                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xl">🔍</span>
+                            <input
+                                type="text"
+                                inputMode="search"
+                                enterKeyHint="search"
+                                placeholder="Search products..."
+                                value={searchQuery}
+                                onChange={e => setSearchQuery(e.target.value)}
+                                className="w-full pl-12 pr-10 py-3.5 bg-white/50 backdrop-blur-sm border border-[var(--glass-border)] rounded-2xl text-[var(--text-main)] placeholder-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)]/50 focus:border-[var(--brand-primary)] shadow-inner transition-all duration-300"
+                                autoFocus
+                            />
+                            {searchQuery && (
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setSearchQuery('');
+                                        setActiveSearchQuery('');
+                                    }}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center bg-gray-200 rounded-full text-xs text-gray-600 hover:bg-gray-300 transition-colors"
+                                >
+                                    ✕
+                                </button>
+                            )}
+                        </div>
+                        <button 
+                            type="submit" 
+                            className="hidden md:block px-6 py-3.5 bg-gradient-to-r from-[var(--brand-primary)] to-blue-500 text-white font-bold rounded-2xl shadow-lg hover:shadow-xl hover:-translate-y-0.5 active:scale-95 transition-all duration-300 whitespace-nowrap"
+                        >
+                            Search
+                        </button>
                     </form>
 
                     {/* Category Filters */}
@@ -154,7 +171,7 @@ const Search: React.FC = () => {
                             <button
                                 key={cat}
                                 onClick={() => setSelectedCategory(cat)}
-                                className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all ${selectedCategory === cat ? 'bg-[var(--brand-primary)] text-white' : 'bg-[var(--surface-2)] text-[var(--text-muted)]'}`}
+                                className={`px-4 py-2 rounded-full text-xs font-medium whitespace-nowrap transition-all duration-300 transform active:scale-95 hover:-translate-y-0.5 hover:shadow-md ${selectedCategory === cat ? 'bg-gradient-to-r from-[var(--brand-primary)] to-blue-500 text-white shadow-lg shadow-[var(--brand-primary)]/30' : 'bg-[var(--surface-1)] text-[var(--text-muted)] border border-[var(--glass-border)] hover:border-[var(--brand-primary)]/30'}`}
                             >
                                 {cat}
                             </button>
@@ -182,10 +199,12 @@ const Search: React.FC = () => {
             {/* Results */}
             <div className="max-w-3xl mx-auto px-4 space-y-6">
                 {filteredProducts.length === 0 ? (
-                    <div className="text-center py-16">
-                        <p className="text-5xl mb-4">🔍</p>
-                        <p className="text-lg font-medium text-[var(--text-main)]">No products found</p>
-                        <p className="text-sm text-[var(--text-muted)]">Try a different search term or category</p>
+                    <div className="flex flex-col items-center justify-center py-20 animate-fade-in">
+                        <div className="w-24 h-24 mb-6 rounded-full bg-[var(--surface-1)] flex items-center justify-center animate-bounce shadow-inner border border-[var(--glass-border)]">
+                            <span className="text-5xl">🔍</span>
+                        </div>
+                        <h3 className="text-xl font-bold text-[var(--text-main)] mb-2">No products found</h3>
+                        <p className="text-sm text-[var(--text-muted)] text-center max-w-xs">We couldn't find anything matching your search. Try a different term or check another category.</p>
                     </div>
                 ) : (
                     Object.entries(groupedByStore).map(([storeName, products]) => (
@@ -194,28 +213,38 @@ const Search: React.FC = () => {
                                 <span className="text-xl">🏪</span> {storeName}
                                 <span className="text-sm font-normal text-[var(--text-muted)]">({products.length})</span>
                             </h3>
-                            <div className="grid grid-cols-2 gap-3">
-                                {products.map(product => (
-                                    <div key={product.id} className="bg-white rounded-xl border border-[var(--glass-border)] overflow-hidden shadow-sm">
-                                        <div onClick={() => navigate(`/product/${product.id}`)} className="h-28 bg-[var(--surface-1)] cursor-pointer">
-                                            <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
+                            <div className="grid grid-cols-2 gap-4">
+                                {products.map((product, index) => (
+                                    <div key={product.id} 
+                                         className="group bg-white rounded-2xl border border-[var(--glass-border)] overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-500 flex flex-col justify-between"
+                                         style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'both' }}
+                                    >
+                                        <div onClick={() => navigate(`/product/${product.id}`)} className="h-32 bg-[var(--surface-1)] cursor-pointer overflow-hidden relative">
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                                            <img src={product.image} alt={product.name} className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700 ease-out" />
                                         </div>
-                                        <div className="p-3">
-                                            <p className="font-medium text-sm text-[var(--text-main)] truncate">{product.name}</p>
-                                            {product.is_canadian_local && (
-                                                <span className="inline-flex mt-1 px-1.5 py-0.5 bg-red-50 text-red-700 text-[10px] font-bold rounded shadow-sm border border-red-100 uppercase items-center gap-1 w-max">
-                                                    <span className="text-xs">🍁</span> Canadian Local
-                                                </span>
-                                            )}
-                                            <div className="flex items-baseline gap-2 mt-1">
-                                                <span className="font-bold text-[var(--brand-primary)]">${product.price.toFixed(2)}</span>
-                                                {product.originalPrice && (
-                                                    <span className="text-xs text-[var(--text-muted)] line-through">${product.originalPrice.toFixed(2)}</span>
+                                        <div className="p-3.5 flex flex-col flex-grow">
+                                            <div className="flex-grow">
+                                                <p className="font-semibold text-sm text-[var(--text-main)] line-clamp-2 leading-tight">{product.name}</p>
+                                                {product.is_canadian_local && (
+                                                    <span className="inline-flex mt-1.5 px-1.5 py-0.5 bg-red-50 text-red-700 text-[10px] font-bold rounded shadow-sm border border-red-100 uppercase items-center gap-1 w-max">
+                                                        <span className="text-xs">🍁</span> Canadian Local
+                                                    </span>
                                                 )}
                                             </div>
-                                            <button onClick={() => handleQuickAdd(product)} className="w-full mt-2 py-2 bg-[var(--brand-primary)] text-white text-xs font-medium rounded-lg">
-                                                + Add
-                                            </button>
+                                            <div className="mt-2">
+                                                <div className="flex items-baseline gap-2">
+                                                    <span className="font-bold text-lg text-[var(--brand-primary)]">${product.price.toFixed(2)}</span>
+                                                    {product.originalPrice && (
+                                                        <span className="text-xs text-[var(--text-muted)] line-through">${product.originalPrice.toFixed(2)}</span>
+                                                    )}
+                                                </div>
+                                                <button onClick={() => handleQuickAdd(product)} 
+                                                    className="w-full mt-2.5 py-2.5 bg-gradient-to-r from-[var(--brand-primary)] to-[#3b82f6] text-white text-sm font-bold rounded-xl transform active:scale-95 hover:shadow-lg transition-all duration-300"
+                                                >
+                                                    + Add
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 ))}
