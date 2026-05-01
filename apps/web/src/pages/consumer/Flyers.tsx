@@ -5,6 +5,8 @@ import { useLocation } from '../../context/LocationContext';
 import '../../styles/design-system.css';
 import SEO from '../../components/SEO';
 import { isFlyerActive } from '../../utils/date-helpers';
+import { Skeleton } from '../../components/ui/Skeleton';
+import { EmptyState } from '../../components/ui/EmptyState';
 
 const getValidFlyerImage = (imageUrl?: string): string | undefined => {
     if (!imageUrl) return undefined;
@@ -69,21 +71,26 @@ const Flyers: React.FC = () => {
                 {loading ? (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                         {[1, 2, 3].map(n => (
-                            <div key={n} className="h-64 bg-[var(--surface-2)] rounded-2xl animate-pulse" />
+                            <div key={n} className="glass-panel overflow-hidden rounded-2xl">
+                                <Skeleton className="h-48 w-full rounded-none" />
+                                <div className="p-4 flex items-center justify-between">
+                                    <Skeleton className="h-4 w-16 rounded-full" />
+                                    <Skeleton className="h-4 w-20 rounded-full" />
+                                </div>
+                            </div>
                         ))}
                     </div>
                 ) : activeFlyerStores.length === 0 ? (
-                    <div className="text-center py-20">
-                        <p className="text-5xl mb-4">📭</p>
-                        <h2 className="text-xl font-bold text-[var(--text-main)] mb-2">No active flyers found</h2>
-                        <p className="text-[var(--text-muted)]">Check back later for new weekly deals!</p>
-                        <button 
-                            onClick={() => navigate('/')}
-                            className="mt-6 px-6 py-2 bg-[var(--brand-primary)] text-white font-bold rounded-lg"
-                        >
-                            Back to Stores
-                        </button>
-                    </div>
+                    <EmptyState
+                        icon="📭"
+                        heading="No active flyers found"
+                        subtext="Check back later for new weekly deals!"
+                        action={
+                            <button onClick={() => navigate('/')} className="btn-primary">
+                                Back to Stores
+                            </button>
+                        }
+                    />
                 ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                         {activeFlyerStores.map((store: any) => (
@@ -111,15 +118,15 @@ const Flyers: React.FC = () => {
                                             </div>
                                             <div>
                                                 <h3 className="text-white font-bold drop-shadow-md">{store.name}</h3>
-                                                <p className="text-white/80 text-[10px] uppercase font-bold tracking-wider">
+                                                <p className="text-white/80 text-xs font-medium">
                                                     Valid until {new Date(store.flyer.validUntil).toLocaleDateString()}
                                                 </p>
                                             </div>
                                         </div>
                                     </div>
                                     
-                                    <div className="absolute top-3 right-3 bg-red-600 text-white text-[10px] uppercase font-bold px-2 py-1 rounded shadow-lg animate-pulse">
-                                        Weekly Flyer
+                                    <div className="absolute top-3 right-3">
+                                        <span className="badge-deal animate-pulse">Weekly Flyer</span>
                                     </div>
                                 </div>
                                 <div className="p-4 bg-white">

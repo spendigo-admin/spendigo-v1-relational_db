@@ -6,6 +6,7 @@ import '../../styles/design-system.css';
 import SEO from '../../components/SEO';
 import { filterActiveDeals } from '../../utils/date-helpers';
 import { useTranslation } from 'react-i18next';
+import { EmptyState } from '../../components/ui/EmptyState';
 
 const FILTERS = ['All', 'Flash Sales', 'Sale Items', 'Percentage Off', 'Fixed Price'];
 
@@ -111,17 +112,16 @@ const Deals: React.FC = () => {
                         ))}
                     </div>
                 ) : storesWithDeals.length === 0 ? (
-                    <div className="text-center py-20 px-4">
-                        <p className="text-6xl mb-6">🏷️</p>
-                        <h2 className="text-2xl font-bold text-[var(--text-main)] mb-2">No active deals found</h2>
-                        <p className="text-[var(--text-muted)] max-w-sm mx-auto">We couldn't find any active deals matching your filters in your area. Try adjusting your radius or checking back later.</p>
-                        <button
-                            onClick={() => navigate('/')}
-                            className="mt-8 px-8 py-3 bg-[var(--brand-primary)] text-white font-black rounded-2xl shadow-lg hover:brightness-110 active:scale-95 transition-all"
-                        >
-                            Back to Stores
-                        </button>
-                    </div>
+                    <EmptyState
+                        icon="🏷️"
+                        heading="No active deals found"
+                        subtext="We couldn't find any active deals matching your filters in your area. Try adjusting your radius or checking back later."
+                        action={
+                            <button onClick={() => navigate('/')} className="btn-primary">
+                                Back to Stores
+                            </button>
+                        }
+                    />
                 ) : (
                     <div className="space-y-10">
                         {storesWithDeals.map((store: any) => (
@@ -180,12 +180,12 @@ const Deals: React.FC = () => {
                                                     ) : (
                                                         <div className="w-full h-full flex items-center justify-center text-5xl opacity-40">🏷️</div>
                                                     )}
-                                                    <div className="absolute top-2 left-2 bg-green-600 text-white text-[10px] font-black px-2 py-1 rounded shadow-lg uppercase tracking-wider">
-                                                        {discount}
+                                                    <div className="absolute top-2 left-2">
+                                                        <span className="badge-best">{discount}</span>
                                                     </div>
                                                     {deal.isFlashSale && (
-                                                        <div className="absolute top-2 right-2 bg-red-500 text-white text-[9px] font-black px-2 py-1 rounded shadow animate-pulse uppercase tracking-wider">
-                                                            ⚡ Flash
+                                                        <div className="absolute top-2 right-2">
+                                                            <span className="badge-deal animate-pulse">⚡ Flash</span>
                                                         </div>
                                                     )}
                                                 </div>
@@ -199,7 +199,7 @@ const Deals: React.FC = () => {
                                                         )}
                                                     </div>
                                                     {savings && savings !== '0.00' && (
-                                                        <p className="text-[10px] font-bold text-green-600 mt-1 uppercase tracking-tighter">You Save ${savings}</p>
+                                                        <p className="text-xs font-semibold text-green-600 mt-1">You Save ${savings}</p>
                                                     )}
                                                 </div>
                                             </div>

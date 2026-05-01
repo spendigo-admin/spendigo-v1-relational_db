@@ -4,6 +4,7 @@ import { useCart } from '../../context/CartContext';
 import { STORE_DATA } from '../../data/productData';
 import '../../styles/design-system.css';
 import SEO from '../../components/SEO';
+import { EmptyState } from '../../components/ui/EmptyState';
 
 const Cart: React.FC = () => {
     const navigate = useNavigate();
@@ -52,16 +53,13 @@ const Cart: React.FC = () => {
 
     if (items.length === 0) {
         return (
-            <div className="animate-fade-in flex flex-col items-center justify-center min-h-[60vh] px-4 text-center">
-                <div className="text-6xl mb-4">🛒</div>
-                <h2 className="text-2xl font-bold text-[var(--text-main)] mb-2">Your cart is empty</h2>
-                <p className="text-[var(--text-muted)] mb-6">Start shopping to add items to your cart.</p>
-                <Link
-                    to="/"
-                    className="px-6 py-3 bg-[var(--brand-primary)] text-white font-bold rounded-full hover:brightness-110 transition-all"
-                >
-                    Browse Stores
-                </Link>
+            <div className="animate-fade-in min-h-[60vh] flex items-center justify-center">
+                <EmptyState
+                    icon="🛒"
+                    heading="Your cart is empty"
+                    subtext="Start shopping to add items to your cart."
+                    action={<Link to="/" className="btn-primary">Browse Stores</Link>}
+                />
             </div>
         );
     }

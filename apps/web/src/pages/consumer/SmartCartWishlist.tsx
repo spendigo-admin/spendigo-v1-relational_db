@@ -8,6 +8,8 @@ import { WishlistItemCard } from './components/WishlistItemCard';
 import { OrderSummaryPanel } from './components/OrderSummaryPanel';
 import '../../styles/design-system.css';
 import SEO from '../../components/SEO';
+import { Skeleton } from '../../components/ui/Skeleton';
+import { EmptyState } from '../../components/ui/EmptyState';
 
 const SmartCartWishlist: React.FC = () => {
     const { items: wishlistItems, removeItem, addItem } = useWishlist();
@@ -80,14 +82,16 @@ const SmartCartWishlist: React.FC = () => {
                             <img src={deal.image} alt="" className="w-full h-16 object-cover rounded mb-2" />
                         )}
                         <p className="text-xs font-medium text-gray-800 truncate">{deal.productName}</p>
-                        <p className="text-[10px] text-gray-400 truncate">{deal.storeName}</p>
+                        <p className="text-xs text-gray-400 truncate">{deal.storeName}</p>
                         <div className="flex items-center gap-1.5 mt-1">
                             <span className="text-xs font-bold text-red-600">${deal.salePrice.toFixed(2)}</span>
-                            <span className="text-[10px] text-gray-400 line-through">${deal.originalPrice.toFixed(2)}</span>
+                            <span className="text-xs text-gray-400 line-through">${deal.originalPrice.toFixed(2)}</span>
                         </div>
-                        <span className="inline-block mt-1 text-[9px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded font-bold">
-                            {deal.isFlashSale ? '⚡ ' : ''}{deal.discount}
-                        </span>
+                        <div className="mt-1">
+                            <span className="badge-deal">
+                                {deal.isFlashSale ? '⚡ ' : ''}{deal.discount}
+                            </span>
+                        </div>
                     </button>
                 ))}
             </div>
@@ -173,7 +177,7 @@ const SmartCartWishlist: React.FC = () => {
                             ))}
                         </select>
                         {preferredStoreId && (
-                            <span className="text-[10px] text-gray-400">Picks this store when within 2% of cheapest</span>
+                            <span className="text-xs text-gray-400">Picks this store when within 2% of cheapest</span>
                         )}
                     </div>
                 )}
@@ -182,36 +186,34 @@ const SmartCartWishlist: React.FC = () => {
                 {inventoryLoading ? (
                     <div className="space-y-4">
                         {[1, 2, 3].map(i => (
-                            <div key={i} className="bg-white rounded-xl border border-[var(--glass-border)] p-4 animate-pulse">
+                            <div key={i} className="bg-white rounded-xl border border-[var(--glass-border)] p-4">
                                 <div className="flex items-center gap-3 mb-4">
-                                    <div className="w-12 h-12 bg-gray-200 rounded-lg" />
+                                    <Skeleton className="w-12 h-12 rounded-lg" />
                                     <div className="flex-1 space-y-2">
-                                        <div className="h-4 bg-gray-200 rounded w-1/3" />
-                                        <div className="h-3 bg-gray-100 rounded w-1/4" />
+                                        <Skeleton className="h-4 rounded-full w-1/3" />
+                                        <Skeleton className="h-3 rounded-full w-1/4" />
                                     </div>
                                 </div>
                                 <div className="space-y-2">
-                                    <div className="h-10 bg-gray-100 rounded" />
-                                    <div className="h-10 bg-gray-100 rounded" />
+                                    <Skeleton className="h-10 rounded-lg" />
+                                    <Skeleton className="h-10 rounded-lg" />
                                 </div>
                             </div>
                         ))}
                     </div>
                 ) : wishlistItems.length === 0 ? (
                     <div className="space-y-8 animate-fade-in">
-                        <div className="text-center py-24 bg-white rounded-[2.5rem] border-2 border-dashed border-gray-100 shadow-inner max-w-2xl mx-auto">
-                            <div className="w-24 h-24 bg-gray-50 rounded-3xl flex items-center justify-center text-5xl mx-auto mb-6 shadow-sm grayscale opacity-60">
-                                📋
-                            </div>
-                            <h2 className="text-2xl font-black text-[var(--text-main)] mb-3 tracking-tight">Wishlist is empty</h2>
-                            <p className="text-[var(--text-muted)] max-w-sm mx-auto mb-8 font-medium">Add items from the selector above to start comparing prices across all stores and save big!</p>
-                            <button
-                                onClick={() => setShowAddItems(true)}
-                                className="bg-[var(--brand-primary)] text-white px-8 py-3 rounded-full font-bold shadow-lg shadow-[var(--brand-primary)]/20 hover:scale-105 transition-transform"
-                            >
-                                Get Started
-                            </button>
-                        </div>
+                        <EmptyState
+                            icon="📋"
+                            heading="Wishlist is empty"
+                            subtext="Add items from the selector above to start comparing prices across all stores and save big!"
+                            action={
+                                <button onClick={() => setShowAddItems(true)} className="btn-primary">
+                                    Get Started
+                                </button>
+                            }
+                            className="bg-white rounded-2xl border-2 border-dashed border-gray-100 max-w-2xl mx-auto"
+                        />
                         {dealsSection}
                     </div>
                 ) : (

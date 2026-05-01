@@ -6,6 +6,7 @@ import { useCatalog } from '../../hooks/useCatalog';
 import { useLocation } from '../../context/LocationContext';
 import { useDebounce } from '../../hooks/useDebounce';
 import SEO from '../../components/SEO';
+import { EmptyState } from '../../components/ui/EmptyState';
 
 const Search: React.FC = () => {
     const navigate = useNavigate();
@@ -205,16 +206,12 @@ const Search: React.FC = () => {
             {/* Results */}
             <div className="max-w-5xl mx-auto px-4 space-y-12">
                 {filteredProducts.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-24 animate-fade-in">
-                        <div className="relative w-32 h-32 mb-8">
-                            <div className="absolute inset-0 bg-blue-100 rounded-full animate-ping opacity-20"></div>
-                            <div className="relative w-full h-full rounded-full bg-white flex items-center justify-center shadow-xl shadow-gray-200/50 border border-gray-100 animate-float">
-                                <span className="text-6xl">🔍</span>
-                            </div>
-                        </div>
-                        <h3 className="text-2xl font-black text-gray-900 mb-3 tracking-tight">No products found</h3>
-                        <p className="text-base text-gray-500 text-center max-w-sm">We couldn't find anything matching your search. Try a different term or check another category.</p>
-                    </div>
+                    <EmptyState
+                        icon="🔍"
+                        heading="No products found"
+                        subtext="We couldn't find anything matching your search. Try a different term or check another category."
+                        className="animate-fade-in"
+                    />
                 ) : (
                     Object.entries(groupedByStore).map(([storeName, products]) => (
                         <div key={storeName} className="animate-fade-in-up">
@@ -234,12 +231,12 @@ const Search: React.FC = () => {
                                     >
                                         <div onClick={() => navigate(`/product/${product.id}`)} className="aspect-[4/3] bg-gray-50 cursor-pointer overflow-hidden relative">
                                             {product.discount && (
-                                                <div className="absolute top-3 left-3 z-20 px-2.5 py-1 bg-red-500 text-white text-xs font-black tracking-wider rounded-lg shadow-lg">
-                                                    {product.discount}
+                                                <div className="absolute top-3 left-3 z-20">
+                                                    <span className="badge-deal">{product.discount}</span>
                                                 </div>
                                             )}
-                                            <div className="absolute bottom-3 left-3 z-20 px-2.5 py-1 bg-black/60 backdrop-blur-md text-white text-[10px] font-bold tracking-wider rounded-lg shadow-sm border border-white/20 flex items-center gap-1.5">
-                                                <span className="text-[10px]">🏪</span> {storeName}
+                                            <div className="absolute bottom-3 left-3 z-20 px-2 py-0.5 bg-black/60 backdrop-blur-md text-white text-xs font-medium rounded-lg shadow-sm border border-white/20 flex items-center gap-1">
+                                                <span>🏪</span> {storeName}
                                             </div>
                                             <div className="absolute inset-0 bg-black/5 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                                             <img src={product.image} alt={product.name} className="w-full h-full object-contain p-4 transform group-hover:scale-110 transition-transform duration-700 ease-out mix-blend-multiply" />
@@ -248,7 +245,7 @@ const Search: React.FC = () => {
                                             <div className="flex-grow">
                                                 <p className="font-bold text-sm md:text-base text-gray-900 line-clamp-2 leading-tight group-hover:text-[var(--brand-primary)] transition-colors">{product.name}</p>
                                                 {product.is_canadian_local && (
-                                                    <span className="inline-flex mt-2 px-2 py-1 bg-red-50 text-red-700 text-[10px] md:text-xs font-bold rounded-md shadow-sm border border-red-100 uppercase items-center gap-1.5 w-max">
+                                                    <span className="inline-flex mt-2 px-2 py-0.5 bg-red-50 text-red-700 text-xs font-semibold rounded-md border border-red-100 items-center gap-1 w-max">
                                                         <span>🍁</span> Local
                                                     </span>
                                                 )}

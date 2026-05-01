@@ -172,6 +172,152 @@ p {
     }
 }
 
+/* ─── Button Variants ──────────────────────────────────────────────────────── */
+.btn-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    padding: 0.625rem 1.5rem;
+    background-color: var(--brand-primary);
+    color: var(--text-inverse);
+    border-radius: 9999px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    border: 2px solid transparent;
+    transition: background-color 0.15s, box-shadow 0.15s, transform 0.1s;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.btn-primary:hover {
+    background-color: var(--brand-primary-dark);
+    box-shadow: 0 4px 12px rgba(0, 120, 255, 0.25);
+}
+
+.btn-primary:active {
+    transform: scale(0.97);
+}
+
+.btn-primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+}
+
+.btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    padding: 0.625rem 1.5rem;
+    background-color: transparent;
+    color: var(--brand-primary);
+    border-radius: 9999px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    border: 2px solid var(--brand-primary);
+    transition: background-color 0.15s, color 0.15s, transform 0.1s;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.btn-secondary:hover {
+    background-color: var(--brand-primary-light);
+}
+
+.btn-secondary:active {
+    transform: scale(0.97);
+}
+
+.btn-secondary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btn-ghost {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    padding: 0.5rem 1rem;
+    background-color: var(--surface-2);
+    color: var(--text-main);
+    border-radius: 9999px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    border: 2px solid transparent;
+    transition: background-color 0.15s, transform 0.1s;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.btn-ghost:hover {
+    background-color: var(--surface-3);
+}
+
+.btn-ghost:active {
+    transform: scale(0.97);
+}
+
+/* ─── Badge Variants ───────────────────────────────────────────────────────── */
+.badge-deal {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.125rem 0.5rem;
+    background-color: hsl(0, 80%, 55%);
+    color: #fff;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    border-radius: 4px;
+    letter-spacing: 0.02em;
+    transform: skewX(-8deg);
+    white-space: nowrap;
+}
+
+.badge-deal > * {
+    transform: skewX(8deg);
+}
+
+.badge-best {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.125rem 0.5rem;
+    background-color: var(--brand-secondary);
+    color: #fff;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    border-radius: 4px;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+}
+
+.badge-info {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.125rem 0.5rem;
+    background-color: var(--brand-primary-light);
+    color: var(--brand-primary);
+    font-size: 0.6875rem;
+    font-weight: 600;
+    border-radius: 4px;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+}
+
+/* ─── Skeleton Loader ──────────────────────────────────────────────────────── */
+@keyframes skeleton-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+}
+
+.skeleton {
+    background-color: var(--surface-2);
+    border-radius: var(--radius-sm);
+    animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
 /* Scrollbar hiding utility */
 .scrollbar-hide {
     -ms-overflow-style: none;

@@ -56,18 +56,18 @@ export const WishlistItemCard: React.FC<WishlistItemCardProps> = ({
                             <p className="text-xs text-[var(--text-muted)] truncate">
                                 {selectedOption.storeName}
                                 {item.options.length > 1 && (
-                                    <span className="ml-1.5 text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-full">
+                                    <span className="ml-1.5 badge-info">
                                         +{item.options.length - 1} more
                                     </span>
                                 )}
                             </p>
                             {reasonText && (
-                                <p className="text-[10px] text-green-600 font-medium mt-0.5">{reasonText}</p>
+                                <p className="text-xs text-green-600 font-medium mt-0.5">{reasonText}</p>
                             )}
                         </div>
                     )}
                     {isExpanded && selectedOption?.brand && (
-                        <span className="text-[10px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">
+                        <span className="badge-info">
                             {selectedOption.brand}
                         </span>
                     )}
@@ -78,13 +78,13 @@ export const WishlistItemCard: React.FC<WishlistItemCardProps> = ({
                     {selectedOption && (
                         <div className="text-right">
                              {selectedOption.originalPrice && (
-                                <p className="text-[10px] text-gray-400 line-through leading-none mb-0.5">
+                                <p className="text-xs text-gray-400 line-through leading-none mb-0.5">
                                     ${selectedOption.originalPrice.toFixed(2)}
                                 </p>
                             )}
                             <div className="flex items-center gap-1.5">
                                 {selectedOption.discount && (
-                                    <span className="text-[10px] bg-red-100 text-red-600 px-1 py-0.5 rounded font-bold">
+                                    <span className="badge-deal">
                                         {selectedOption.discount}
                                     </span>
                                 )}
@@ -153,20 +153,20 @@ export const WishlistItemCard: React.FC<WishlistItemCardProps> = ({
                                                 })()}
                                             </p>
                                             {option.discount && (
-                                                <span className="text-[9px] bg-red-50 text-red-500 px-1 py-0.5 rounded font-bold uppercase tracking-tight">
+                                                <span className="badge-deal">
                                                     {option.discount}
                                                 </span>
                                             )}
                                         </div>
-                                        <p className="text-[11px] text-gray-400 mt-0.5">{option.storeName}</p>
+                                        <p className="text-xs text-gray-400 mt-0.5">{option.storeName}</p>
                                         <div className="flex items-center gap-2 mt-0.5">
                                             {isCheapest && (
-                                                <span className="inline-block px-1.5 py-0.5 bg-green-100 text-green-700 text-[10px] uppercase font-bold tracking-wider rounded">
+                                                <span className="badge-best">
                                                     Best Price
                                                 </span>
                                             )}
                                             {option.normalizedUnitPrice != null && option.comparisonUnit && (
-                                                <span className="text-[10px] text-gray-500 bg-gray-50 px-1.5 py-0.5 rounded">
+                                                <span className="badge-info">
                                                     ${option.normalizedUnitPrice.toFixed(2)}/{option.comparisonUnit}
                                                 </span>
                                             )}
@@ -176,13 +176,13 @@ export const WishlistItemCard: React.FC<WishlistItemCardProps> = ({
 
                                 <div className="text-right flex-shrink-0 ml-2">
                                     {option.originalPrice && (
-                                        <p className="text-[10px] text-gray-400 line-through leading-none mb-0.5">
+                                        <p className="text-xs text-gray-400 line-through leading-none mb-0.5">
                                             ${option.originalPrice.toFixed(2)}
                                         </p>
                                     )}
                                     <div className="flex items-center justify-end gap-1">
                                         {option.priceTrend && option.priceTrend !== 'stable' && (
-                                            <span className={`text-[10px] ${option.priceTrend === 'down' ? 'text-green-500' : 'text-red-400'}`}>
+                                            <span className={`text-xs ${option.priceTrend === 'down' ? 'text-green-500' : 'text-red-400'}`}>
                                                 {option.priceTrend === 'down' ? '↓' : '↑'}
                                             </span>
                                         )}
@@ -191,7 +191,7 @@ export const WishlistItemCard: React.FC<WishlistItemCardProps> = ({
                                         </p>
                                     </div>
                                     {priceDelta > 0 && (
-                                        <p className="text-[10px] text-amber-600 font-medium">
+                                        <p className="text-xs text-amber-600 font-medium">
                                             +${priceDelta.toFixed(2)} more
                                         </p>
                                     )}
@@ -204,7 +204,7 @@ export const WishlistItemCard: React.FC<WishlistItemCardProps> = ({
             {/* Substitution Suggestions */}
             {isExpanded && item.substitutions && item.substitutions.length > 0 && (
                 <div className="border-t border-[var(--glass-border)] bg-amber-50/50 p-3">
-                    <p className="text-[10px] uppercase tracking-wider font-bold text-amber-700 mb-2">Cheaper Alternative{item.substitutions.length > 1 ? 's' : ''}</p>
+                    <p className="text-xs uppercase tracking-wide font-semibold text-amber-700 mb-2">Cheaper Alternative{item.substitutions.length > 1 ? 's' : ''}</p>
                     {item.substitutions.map(sub => (
                         <div key={sub.id} className="flex items-center justify-between gap-2 py-1.5">
                             <div className="flex items-center gap-2 min-w-0">
@@ -214,18 +214,18 @@ export const WishlistItemCard: React.FC<WishlistItemCardProps> = ({
                                         {sub.brand && <span className="text-gray-500">{sub.brand} </span>}
                                         {sub.name}
                                     </p>
-                                    <p className="text-[10px] text-gray-400">{sub.cheapestStore}</p>
+                                    <p className="text-xs text-gray-400">{sub.cheapestStore}</p>
                                 </div>
                             </div>
                             <div className="flex items-center gap-2 flex-shrink-0">
                                 <div className="text-right">
                                     <p className="text-xs font-bold text-amber-700">${sub.cheapestPrice.toFixed(2)}</p>
-                                    <p className="text-[10px] text-green-600 font-medium">Save ${sub.priceDifference.toFixed(2)}</p>
+                                    <p className="text-xs text-green-600 font-medium">Save ${sub.priceDifference.toFixed(2)}</p>
                                 </div>
                                 {onSwapItem && (
                                     <button
                                         onClick={(e) => { e.stopPropagation(); onSwapItem(item.id, sub.id); }}
-                                        className="text-[10px] font-bold text-amber-700 bg-amber-100 hover:bg-amber-200 px-2 py-1 rounded transition-colors"
+                                        className="text-xs font-semibold text-amber-700 bg-amber-100 hover:bg-amber-200 px-2 py-1 rounded transition-colors"
                                     >
                                         Swap
                                     </button>

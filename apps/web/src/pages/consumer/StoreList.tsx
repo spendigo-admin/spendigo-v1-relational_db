@@ -7,6 +7,7 @@ import AdCarousel from '../../components/AdCarousel';
 import { useTranslation } from 'react-i18next';
 import SEO from '../../components/SEO';
 import { isFlyerActive, filterActiveDeals } from '../../utils/date-helpers';
+import { StoreCardSkeleton } from '../../components/ui/Skeleton';
 
 const CATEGORIES = ['All', 'Fastest', 'Offers', 'Low Prices', 'Grocery', 'Convenience', 'Wholesale'];
 
@@ -137,8 +138,8 @@ const StoreList: React.FC = () => {
                 path="/"
             />
             {loading && (
-                <div className="fixed inset-0 bg-white/50 backdrop-blur-sm z-50 flex items-center justify-center">
-                    <div className="animate-spin text-4xl">⏳</div>
+                <div className="fixed inset-0 bg-white/60 backdrop-blur-sm z-50 flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-full border-4 border-[var(--brand-primary)] border-t-transparent animate-spin"></div>
                 </div>
             )}
 
@@ -156,29 +157,29 @@ const StoreList: React.FC = () => {
             <section className="relative z-30 max-w-7xl mx-auto px-4 -mt-8">
                 <div className="bg-white rounded-[1.5rem] md:rounded-[2rem] shadow-2xl border border-gray-100 p-1 md:p-3 flex flex-nowrap items-stretch gap-1 overflow-x-auto scrollbar-hide">
                     <div className="flex-1 min-w-0 bg-gray-50/50 p-3 md:p-6 rounded-xl md:rounded-2xl border border-gray-50 flex flex-col items-center justify-center text-center group hover:bg-black hover:shadow-xl transition-all shrink-0">
-                        <span className="text-[7px] md:text-[10px] font-black text-gray-600 tracking-widest mb-1 uppercase group-hover:text-white/70 transition-colors">Stores</span>
+                        <span className="text-[10px] md:text-[10px] font-semibold text-gray-600 tracking-wider mb-1 uppercase group-hover:text-white/70 transition-colors">Stores</span>
                         <p className="text-xl md:text-3xl font-black text-gray-900 tracking-tighter group-hover:text-white transition-colors">{stats.totalStores}</p>
-                        <p className="text-[7px] md:text-[9px] text-gray-600 font-bold mt-1 group-hover:text-white/70 transition-colors">Verified</p>
+                        <p className="text-[10px] md:text-xs text-gray-600 font-medium mt-1 group-hover:text-white/70 transition-colors">Verified</p>
                     </div>
                     <div className="w-px bg-gray-100 my-2 md:my-4"></div>
                     <div className="flex-1 min-w-0 bg-gray-50/50 p-3 md:p-6 rounded-xl md:rounded-2xl border border-gray-100 flex flex-col items-center justify-center text-center group hover:bg-black hover:shadow-xl transition-all shrink-0">
-                        <span className="text-[7px] md:text-[10px] font-black text-gray-600 tracking-widest mb-1 uppercase group-hover:text-white/70 transition-colors">Flyers</span>
+                        <span className="text-[10px] md:text-[10px] font-semibold text-gray-600 tracking-wider mb-1 uppercase group-hover:text-white/70 transition-colors">Flyers</span>
                         <p className="text-xl md:text-3xl font-black text-blue-600 tracking-tighter group-hover:text-white transition-colors">{stats.totalFlyers}</p>
-                        <p className="text-[7px] md:text-[9px] text-gray-600 font-bold mt-1 group-hover:text-white/70 transition-colors">Live</p>
+                        <p className="text-[10px] md:text-xs text-gray-600 font-medium mt-1 group-hover:text-white/70 transition-colors">Live</p>
                     </div>
                     <div className="w-px bg-gray-100 my-2 md:my-4"></div>
                     <div className="flex-1 min-w-0 bg-gray-50/50 p-3 md:p-6 rounded-xl md:rounded-2xl border border-gray-100 flex flex-col items-center justify-center text-center group hover:bg-black hover:shadow-xl transition-all shrink-0">
-                        <span className="text-[7px] md:text-[10px] font-black text-gray-600 tracking-widest mb-1 uppercase group-hover:text-white/70 transition-colors">Deals</span>
+                        <span className="text-[10px] md:text-[10px] font-semibold text-gray-600 tracking-wider mb-1 uppercase group-hover:text-white/70 transition-colors">Deals</span>
                         <p className="text-xl md:text-3xl font-black text-gray-900 tracking-tighter group-hover:text-white transition-colors">{stats.totalDeals}</p>
-                        <p className="text-[7px] md:text-[9px] text-gray-600 font-bold mt-1 group-hover:text-white/70 transition-colors">Limited</p>
+                        <p className="text-[10px] md:text-xs text-gray-600 font-medium mt-1 group-hover:text-white/70 transition-colors">Limited</p>
                     </div>
                     <div className="w-px bg-gray-100 my-2 md:my-4"></div>
                     <div className="flex-1 min-w-0 bg-blue-600 p-3 md:p-6 rounded-xl md:rounded-2xl flex flex-col items-center justify-center text-center shadow-lg group hover:bg-black transition-all shrink-0 opacity-90 hover:opacity-100">
-                        <span className="text-[7px] md:text-[10px] font-black text-white/80 tracking-widest mb-1 uppercase group-hover:text-white transition-colors">Items</span>
+                        <span className="text-[10px] md:text-[10px] font-semibold text-white/80 tracking-wider mb-1 uppercase group-hover:text-white transition-colors">Items</span>
                         <p className="text-lg md:text-3xl font-black text-white tracking-tighter font-mono">
                             {stats.totalProducts >= 1000 ? `${(stats.totalProducts / 1000).toFixed(1)}k+` : stats.totalProducts}
                         </p>
-                        <p className="text-[7px] md:text-[9px] text-white/80 font-bold mt-1 group-hover:text-white transition-colors">Available</p>
+                        <p className="text-[10px] md:text-xs text-white/80 font-medium mt-1 group-hover:text-white transition-colors">Available</p>
                     </div>
                 </div>
             </section>
@@ -291,16 +292,16 @@ const StoreList: React.FC = () => {
                                                             ) : (
                                                                 <div className="w-full h-full flex items-center justify-center text-5xl opacity-40">🏷️</div>
                                                             )}
-                                                            <div className="absolute top-3 left-3 bg-blue-600 text-white text-[9px] font-black px-2 py-1 rounded shadow-lg tracking-wider skew-x-[-12deg]">
-                                                                {discount}
+                                                            <div className="absolute top-3 left-3">
+                                                                <span className="badge-deal">{discount}</span>
                                                             </div>
                                                         </div>
                                                         <div className="p-3">
-                                                            <p className="text-[10px] font-black text-gray-900 tracking-tight line-clamp-2 h-7 group-hover/deal:text-blue-600 transition-colors leading-tight">{productName}</p>
+                                                            <p className="text-xs font-semibold text-gray-900 tracking-tight line-clamp-2 h-8 group-hover/deal:text-blue-600 transition-colors leading-tight">{productName}</p>
                                                             <div className="flex items-baseline gap-1.5 mt-2">
                                                                 <span className="text-xl font-black text-gray-900 tracking-tighter">${salePrice?.toFixed(2)}</span>
                                                                 {originalPrice && (
-                                                                    <span className="text-[10px] text-gray-400 font-bold line-through">${originalPrice.toFixed(2)}</span>
+                                                                    <span className="text-xs text-gray-400 font-medium line-through">${originalPrice.toFixed(2)}</span>
                                                                 )}
                                                             </div>
                                                         </div>
@@ -344,9 +345,9 @@ const StoreList: React.FC = () => {
                                 <button
                                     key={cat}
                                     onClick={() => setActiveCategory(cat)}
-                                    className={`px-6 py-3 rounded-2xl text-[10px] font-black tracking-widest transition-all whitespace-nowrap border-2 ${activeCategory === cat 
-                                        ? 'bg-blue-600 text-white border-blue-600 shadow-xl -translate-y-1' 
-                                        : 'bg-white text-gray-900 border-gray-50 hover:border-gray-200'}`}
+                                    className={`px-5 py-2.5 rounded-full text-xs font-semibold tracking-wide transition-all whitespace-nowrap border-2 ${activeCategory === cat
+                                        ? 'bg-[var(--brand-primary)] text-white border-[var(--brand-primary)] shadow-md -translate-y-0.5'
+                                        : 'bg-white text-gray-700 border-[var(--glass-border)] hover:border-gray-300'}`}
                                 >
                                     {cat}
                                 </button>
@@ -357,7 +358,7 @@ const StoreList: React.FC = () => {
                     {loading ? (
                         <div className={viewMode === 'grid' ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8" : "flex flex-col gap-6"}>
                             {[1, 2, 3, 4, 5, 6].map((n) => (
-                                <div key={n} className="bg-gray-50 h-80 rounded-[2rem] animate-pulse"></div>
+                                <StoreCardSkeleton key={n} />
                             ))}
                         </div>
                     ) : (
@@ -366,19 +367,19 @@ const StoreList: React.FC = () => {
                                 <div
                                     key={store.id}
                                     onClick={() => navigate(`/store/${store.id}`)}
-                                    className={`group bg-white rounded-[2.5rem] border-2 border-gray-200 shadow-xl hover:shadow-2xl hover:-translate-y-2 lg:hover:w-[102%] lg:hover:-ml-[1%] transition-all duration-500 cursor-pointer overflow-hidden relative ${viewMode === 'list' ? 'flex flex-row h-40' : 'min-h-[380px]'}`}
+                                    className={`group glass-panel rounded-2xl hover:shadow-xl hover:-translate-y-1 transition-all duration-200 cursor-pointer overflow-hidden relative ${viewMode === 'list' ? 'flex flex-row h-40' : 'min-h-[360px]'}`}
                                 >
                                     {/* Store Graphics */}
                                     <div className={`relative bg-gray-100 overflow-hidden ${viewMode === 'list' ? 'w-32 md:w-80 shrink-0' : 'h-52'}`}>
                                         <img src={store.image} alt={store.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 opacity-90 group-hover:opacity-100" />
                                         <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
-                                        <div className="absolute top-4 left-4 bg-black/70 backdrop-blur-md px-3 py-1.5 rounded-xl text-[10px] text-white font-black tracking-widest border border-white/20">
+                                        <div className="absolute top-4 left-4 bg-black/70 backdrop-blur-md px-3 py-1.5 rounded-xl text-xs text-white font-semibold border border-white/20">
                                             {store.deliveryTime}
                                         </div>
                                         {(store.hasFlyer || store.activeDealsCount > 0) && (
                                             <div className="absolute top-4 right-4 flex flex-col gap-2 scale-75 md:scale-100">
-                                                {store.hasFlyer && <span className="bg-teal-600 text-white text-[8px] font-black px-2 py-1 rounded shadow-lg tracking-widest skew-x-[-12deg]">Flyer Live</span>}
-                                                {store.activeDealsCount > 0 && <span className="bg-gray-900 text-white text-[8px] font-black px-2 py-1 rounded shadow-lg tracking-widest skew-x-[-12deg]">{store.activeDealsCount} Hot Deals</span>}
+                                                {store.hasFlyer && <span className="badge-best">Flyer Live</span>}
+                                                {store.activeDealsCount > 0 && <span className="badge-deal">{store.activeDealsCount} Hot Deals</span>}
                                             </div>
                                         )}
                                     </div>
@@ -394,9 +395,9 @@ const StoreList: React.FC = () => {
                                                 <h3 className="font-black text-2xl md:text-3xl text-gray-900 tracking-tighter italic m-0 group-hover:text-blue-600 transition-colors leading-none">{store.name}</h3>
                                             </div>
                                             <div className="flex items-center gap-3">
-                                                <p className="text-[10px] md:text-xs font-black text-gray-500 tracking-[0.15em] uppercase m-0">{store.distance} Away</p>
+                                                <p className="text-xs md:text-xs font-semibold text-gray-500 tracking-wide uppercase m-0">{store.distance} Away</p>
                                                 <div className="w-1 h-1 bg-gray-300 rounded-full"></div>
-                                                <span className="text-[10px] md:text-xs font-black flex items-center gap-1 bg-yellow-50 text-yellow-700 px-2 py-0.5 rounded-full shadow-sm">
+                                                <span className="text-xs font-semibold flex items-center gap-1 bg-yellow-50 text-yellow-700 px-2 py-0.5 rounded-full shadow-sm">
                                                     ★ {store.rating > 0 ? store.rating.toFixed(1) : 'NEW'}
                                                 </span>
                                             </div>
@@ -404,9 +405,9 @@ const StoreList: React.FC = () => {
 
                                         <div className="flex flex-wrap gap-2 mt-auto pt-6">
                                             {store.tags.slice(0, 3).map((tag: string) => (
-                                                <span key={tag} className="text-[8px] font-black text-white bg-gray-900 px-2 py-1 rounded-sm tracking-widest skew-x-[-12deg]">{tag}</span>
+                                                <span key={tag} className="badge-info">{tag}</span>
                                             ))}
-                                            <span className="text-[8px] font-black text-gray-600 bg-gray-50 border border-gray-100 px-2 py-1 rounded-sm tracking-widest ml-auto shadow-inner">{store.deliveryFee} FEE</span>
+                                            <span className="ml-auto text-xs font-medium text-gray-500 bg-[var(--surface-2)] border border-[var(--glass-border)] px-2.5 py-0.5 rounded-full">{store.deliveryFee}</span>
                                         </div>
                                     </div>
                                 </div>

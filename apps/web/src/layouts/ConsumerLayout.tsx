@@ -74,7 +74,7 @@ const ConsumerLayout: React.FC = () => {
                         <img src="/app-icon.png" alt="Spendigo Logo" style={{width: 40, height: 40, borderRadius: 8}} className="group-hover:scale-105 transition-transform" />
                         <div className="flex flex-col leading-none">
                             <span className="text-2xl font-black text-gray-900 italic tracking-tighter group-hover:text-blue-600 transition-colors">Spendigo</span>
-                            <span className="text-[8px] font-black text-gray-500 tracking-[0.4em] mt-1">SmartCart AI</span>
+                            <span className="text-[10px] font-semibold text-gray-500 tracking-widest mt-1">SmartCart AI</span>
                         </div>
                     </Link>
 
@@ -86,7 +86,7 @@ const ConsumerLayout: React.FC = () => {
                                 placeholder="Search marketplace..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="w-full h-10 pl-12 pr-4 bg-gray-100 border-2 border-transparent text-xs text-gray-900 font-black tracking-widest placeholder-gray-400 focus:bg-white focus:border-blue-600 transition-all outline-none"
+                                className="w-full h-10 pl-12 pr-4 bg-gray-100 border-2 border-transparent text-sm text-gray-900 font-medium placeholder-gray-400 rounded-full focus:bg-white focus:border-blue-600 transition-all outline-none"
                             />
                             <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-hover:text-blue-600 transition-colors text-sm">🔍</span>
                         </form>
@@ -161,8 +161,8 @@ const ConsumerLayout: React.FC = () => {
                                 className="flex items-center gap-3 px-3 py-1.5 hover:bg-gray-50 transition-colors border border-transparent hover:border-gray-200"
                                 title={user.name}
                             >
-                                <span className="hidden lg:block text-[10px] font-black text-gray-900 tracking-widest text-right">
-                                    {user.name.split(' ')[0]}<br/><span className="text-gray-500 text-[8px]">Shopper</span>
+                                <span className="hidden lg:block text-xs font-semibold text-gray-900 tracking-wide text-right">
+                                    {user.name.split(' ')[0]}<br/><span className="text-gray-500 text-[10px] font-medium">Shopper</span>
                                 </span>
                                 <div className="w-8 h-8 bg-gray-900 text-white flex items-center justify-center text-xs font-black shadow-sm">
                                     <span>{user.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}</span>
@@ -172,26 +172,26 @@ const ConsumerLayout: React.FC = () => {
                             {/* Dropdown Menu (hidden on mobile, accessible on desktop) */}
                             <div className="hidden sm:block absolute right-0 top-12 w-56 bg-white border-2 border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 shadow-xl">
                                 <div className="p-4 border-b border-gray-100 bg-gray-50">
-                                    <p className="text-xs font-black text-gray-900 tracking-widest truncate">{user.name}</p>
-                                    <p className="text-[10px] text-gray-500 font-bold tracking-wide truncate mt-1">{user.email}</p>
+                                <p className="text-xs font-semibold text-gray-900 tracking-wide truncate">{user.name}</p>
+                                    <p className="text-[10px] text-gray-500 font-medium tracking-wide truncate mt-1">{user.email}</p>
                                 </div>
                                 <div>
                                     <Link
                                         to="/profile"
-                                        className="block px-5 py-3 text-[10px] font-black text-gray-700 tracking-widest hover:bg-blue-50 hover:text-blue-700 transition-colors"
+                                        className="block px-5 py-3 text-xs font-medium text-gray-700 tracking-wide hover:bg-blue-50 hover:text-blue-700 transition-colors"
                                     >
                                         → {t('myProfile')}
                                     </Link>
                                     <Link
                                         to="/profile"
                                         state={{ activeTab: 'orders' }}
-                                        className="block px-5 py-3 text-[10px] font-black text-gray-700 tracking-widest hover:bg-blue-50 hover:text-blue-700 transition-colors"
+                                        className="block px-5 py-3 text-xs font-medium text-gray-700 tracking-wide hover:bg-blue-50 hover:text-blue-700 transition-colors"
                                     >
                                         → {t('orderHistory')}
                                     </Link>
                                     <button
                                         onClick={logout}
-                                        className="w-full text-left px-5 py-3 text-[10px] font-black text-blue-600 tracking-widest hover:bg-blue-50 transition-colors border-t border-gray-100"
+                                        className="w-full text-left px-5 py-3 text-xs font-medium text-blue-600 tracking-wide hover:bg-blue-50 transition-colors border-t border-gray-100"
                                     >
                                         × {t('signOut')}
                                     </button>
@@ -217,7 +217,7 @@ const ConsumerLayout: React.FC = () => {
             </header>
 
             {/* MAIN CONTENT AREA */}
-            <main className="pt-[calc(4rem+var(--safe-area-top))] min-h-[calc(100vh-16rem)] pb-8 flex-1">
+            <main className="pt-[calc(4rem+var(--safe-area-top))] min-h-[calc(100vh-16rem)] pb-8 flex-1 animate-fade-in">
                 <Outlet />
             </main>
 
@@ -229,20 +229,20 @@ const ConsumerLayout: React.FC = () => {
                             <img src="/app-icon.png" alt="Spendigo Logo" style={{width: 32, height: 32, borderRadius: 6}} />
                             <span className="text-3xl font-black text-gray-900 italic tracking-tighter">Spendigo</span>
                         </div>
-                        <p className="text-gray-500 text-[10px] font-bold tracking-widest leading-relaxed">
+                        <p className="text-gray-500 text-xs font-medium tracking-wide leading-relaxed">
                             The high-performance local marketplace. Powered by SmartCart AI.
                         </p>
                     </div>
 
                     <div className="flex flex-wrap justify-center md:justify-end gap-x-12 gap-y-4">
                         <div className="flex flex-col gap-2">
-                            <span className="text-[10px] font-black text-gray-900 tracking-widest mb-1 border-b border-gray-200 pb-1 inline-block">Platform</span>
+                    <span className="hidden md:inline text-[10px] font-black text-gray-900 tracking-widest mb-1 border-b border-gray-200 pb-1 inline-block">Platform</span>
                             <Link to="/how-it-works" className="text-xs text-gray-500 font-bold hover:text-gray-900 tracking-wide transition-colors">How it Works</Link>
                             <Link to="/careers" className="text-xs text-gray-500 font-bold hover:text-gray-900 tracking-wide transition-colors">Careers</Link>
                             <Link to="/partner" className="text-xs text-gray-500 font-bold hover:text-blue-600 tracking-wide transition-colors">Partner with Us →</Link>
                         </div>
                         <div className="flex flex-col gap-2">
-                            <span className="text-[10px] font-black text-gray-900 tracking-widest mb-1 border-b border-gray-200 pb-1 inline-block">Legal</span>
+                            <span className="hidden md:inline text-[10px] font-black text-gray-900 tracking-widest mb-1 border-b border-gray-200 pb-1 inline-block">Legal</span>
                             <Link to="/privacy" className="text-xs text-gray-500 font-bold hover:text-gray-900 tracking-wide transition-colors">Privacy Policy</Link>
                             <Link to="/terms" className="text-xs text-gray-500 font-bold hover:text-gray-900 tracking-wide transition-colors">Terms of Service</Link>
                         </div>
@@ -250,7 +250,7 @@ const ConsumerLayout: React.FC = () => {
                 </div>
                 
                 <div className="max-w-7xl mx-auto mt-6 pt-3 border-t border-gray-100 text-center md:text-left flex flex-col md:flex-row items-center justify-between gap-3">
-                    <p className="text-[9px] font-black text-gray-400 tracking-widest">&copy; {new Date().getFullYear()} Spendigo Inc. All rights reserved.</p>
+                    <p className="text-[10px] font-medium text-gray-400 tracking-wide">&copy; {new Date().getFullYear()} Spendigo Inc. All rights reserved.</p>
                     <div className="flex items-center gap-4 text-2xl hover:scale-110 transition-transform cursor-default">
                         🍁
                     </div>
@@ -258,57 +258,78 @@ const ConsumerLayout: React.FC = () => {
             </footer>
 
             {/* HIGH-IMPACT MOBILE BOTTOM TAB BAR */}
-            <nav className="md:hidden fixed bottom-0 left-0 right-0 h-20 bg-white border-t border-gray-200 z-50 flex items-stretch shadow-[0_-5px_20px_rgba(0,0,0,0.05)]">
-                <NavLink to="/" end className={({ isActive }) => `flex flex-col items-center justify-center flex-1 transition-all ${isActive ? 'bg-gray-50 text-blue-600 border-t-2 border-blue-600' : 'text-gray-400 hover:text-gray-600 border-t-2 border-transparent'}`}>
+            <nav className="md:hidden fixed bottom-0 left-0 right-0 h-20 bg-white border-t border-[var(--glass-border)] z-50 flex items-stretch shadow-[0_-4px_16px_rgba(0,0,0,0.06)]">
+                <NavLink to="/" end className={({ isActive }) => `flex flex-col items-center justify-center flex-1 transition-colors duration-150 gap-0.5 ${isActive ? 'text-[var(--brand-primary)]' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}`}>
                     {({ isActive }: any) => (
                         <React.Fragment>
-                            <span className={`text-xl mb-1 ${isActive ? 'animate-bounce-slow' : ''}`}>🏠</span>
-                            <span className="text-[8px] font-black tracking-widest">{t('homeNav')}</span>
+                            <div className={`w-10 h-7 flex items-center justify-center rounded-xl transition-colors duration-150 ${isActive ? 'bg-[var(--brand-primary-light)]' : ''}`}>
+                                <span className="text-lg">🏠</span>
+                            </div>
+                            <span className="text-[11px] font-medium">{t('homeNav')}</span>
                         </React.Fragment>
                     )}
                 </NavLink>
 
-                <NavLink to="/search" className={({ isActive }) => `flex flex-col items-center justify-center flex-1 transition-all ${isActive ? 'bg-gray-50 text-blue-600 border-t-2 border-blue-600' : 'text-gray-400 hover:text-gray-600 border-t-2 border-transparent'}`}>
-                    <span className="text-xl mb-1">🔍</span>
-                    <span className="text-[8px] font-black tracking-widest">{t('searchNav')}</span>
-                </NavLink>
-
-                <NavLink to="/smartcart" className={({ isActive }) => `flex flex-col items-center justify-center flex-1 transition-all relative ${isActive ? 'bg-gray-50 text-blue-600 border-t-2 border-blue-600' : 'text-gray-400 hover:text-gray-600 border-t-2 border-transparent'}`}>
+                <NavLink to="/search" className={({ isActive }) => `flex flex-col items-center justify-center flex-1 transition-colors duration-150 gap-0.5 ${isActive ? 'text-[var(--brand-primary)]' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}`}>
                     {({ isActive }: any) => (
                         <React.Fragment>
-                            <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-transparent ${isActive ? 'opacity-100 animate-pulse' : 'opacity-0'}`}></div>
-                            <span className={`text-xl mb-1 ${isActive ? 'animate-bounce-slow' : ''}`}>✨</span>
-                            <span className="text-[8px] font-black tracking-widest">{t('smartCartNav')}</span>
+                            <div className={`w-10 h-7 flex items-center justify-center rounded-xl transition-colors duration-150 ${isActive ? 'bg-[var(--brand-primary-light)]' : ''}`}>
+                                <span className="text-lg">🔍</span>
+                            </div>
+                            <span className="text-[11px] font-medium">{t('searchNav')}</span>
+                        </React.Fragment>
+                    )}
+                </NavLink>
+
+                <NavLink to="/smartcart" className={({ isActive }) => `flex flex-col items-center justify-center flex-1 transition-colors duration-150 gap-0.5 relative ${isActive ? 'text-[var(--brand-primary)]' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}`}>
+                    {({ isActive }: any) => (
+                        <React.Fragment>
+                            <div className={`w-10 h-7 flex items-center justify-center rounded-xl transition-colors duration-150 ${isActive ? 'bg-[var(--brand-primary-light)]' : ''}`}>
+                                <span className={`text-lg ${isActive ? 'animate-pulse' : ''}`}>✨</span>
+                            </div>
+                            <span className="text-[11px] font-medium">{t('smartCartNav')}</span>
                         </React.Fragment>
                     )}
                 </NavLink>
 
                 {flyerIngestionEnabled && (
-                    <NavLink to="/compare" className={({ isActive }) => `flex flex-col items-center justify-center flex-1 transition-all ${isActive ? 'bg-gray-50 text-blue-600 border-t-2 border-blue-600' : 'text-gray-400 hover:text-gray-600 border-t-2 border-transparent'}`}>
-                        <span className="text-xl mb-1">⚖️</span>
-                        <span className="text-[8px] font-black tracking-widest">Compare</span>
+                    <NavLink to="/compare" className={({ isActive }) => `flex flex-col items-center justify-center flex-1 transition-colors duration-150 gap-0.5 ${isActive ? 'text-[var(--brand-primary)]' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}`}>
+                        {({ isActive }: any) => (
+                            <React.Fragment>
+                                <div className={`w-10 h-7 flex items-center justify-center rounded-xl transition-colors duration-150 ${isActive ? 'bg-[var(--brand-primary-light)]' : ''}`}>
+                                    <span className="text-lg">⚖️</span>
+                                </div>
+                                <span className="text-[11px] font-medium">Compare</span>
+                            </React.Fragment>
+                        )}
                     </NavLink>
                 )}
 
-                <NavLink to="/cart" className={({ isActive }) => `flex flex-col items-center justify-center flex-1 transition-all ${isActive ? 'bg-gray-50 text-blue-600 border-t-2 border-blue-600' : 'text-gray-400 hover:text-gray-600 border-t-2 border-transparent'}`}>
+                <NavLink to="/cart" className={({ isActive }) => `flex flex-col items-center justify-center flex-1 transition-colors duration-150 gap-0.5 ${isActive ? 'text-[var(--brand-primary)]' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}`}>
                     {({ isActive }: any) => (
                         <React.Fragment>
-                            <div className="relative mb-1">
-                                <span className={`text-xl ${isActive ? 'scale-110 transition-transform' : ''}`}>🛒</span>
+                            <div className={`w-10 h-7 flex items-center justify-center rounded-xl transition-colors duration-150 relative ${isActive ? 'bg-[var(--brand-primary-light)]' : ''}`}>
+                                <span className="text-lg">🛒</span>
                                 {itemCount > 0 && (
-                                    <span className="absolute -top-2 -right-3 w-4 h-4 border border-white bg-blue-600 text-white text-[9px] font-black flex items-center justify-center shadow-md animate-pulse">
+                                    <span className="absolute -top-1.5 -right-0.5 min-w-[16px] h-4 bg-[var(--brand-primary)] text-white text-[9px] font-bold flex items-center justify-center rounded-full px-1 border border-white animate-pulse">
                                         {itemCount}
                                     </span>
                                 )}
                             </div>
-                            <span className="text-[8px] font-black tracking-widest">{t('cart')}</span>
+                            <span className="text-[11px] font-medium">{t('cart')}</span>
                         </React.Fragment>
                     )}
                 </NavLink>
 
-                <NavLink to="/profile" className={({ isActive }) => `flex flex-col items-center justify-center flex-1 transition-all ${isActive ? 'bg-gray-50 text-blue-600 border-t-2 border-blue-600' : 'text-gray-400 hover:text-gray-600 border-t-2 border-transparent'}`}>
-                    <span className="text-xl mb-1">👤</span>
-                    <span className="text-[8px] font-black tracking-widest">{t('profileNav')}</span>
+                <NavLink to="/profile" className={({ isActive }) => `flex flex-col items-center justify-center flex-1 transition-colors duration-150 gap-0.5 ${isActive ? 'text-[var(--brand-primary)]' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}`}>
+                    {({ isActive }: any) => (
+                        <React.Fragment>
+                            <div className={`w-10 h-7 flex items-center justify-center rounded-xl transition-colors duration-150 ${isActive ? 'bg-[var(--brand-primary-light)]' : ''}`}>
+                                <span className="text-lg">👤</span>
+                            </div>
+                            <span className="text-[11px] font-medium">{t('profileNav')}</span>
+                        </React.Fragment>
+                    )}
                 </NavLink>
             </nav>
 
