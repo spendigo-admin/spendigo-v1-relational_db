@@ -222,10 +222,10 @@ const ConsumerLayout: React.FC = () => {
             </main>
 
             {/* GLOBAL RETAIL FOOTER */}
-            <footer className="bg-white border-t-2 border-gray-200 pb-[calc(5rem+var(--safe-area-bottom))] md:pb-6 pt-8 px-4">
-                <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center md:items-start justify-between gap-6 text-center md:text-left">
+            <footer className="bg-white border-t-2 border-gray-200 pb-[calc(5rem+var(--safe-area-bottom))] md:pb-4 pt-6 px-4">
+                <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center md:items-start justify-between gap-4 text-center md:text-left">
                     <div className="max-w-xs">
-                        <div className="flex items-center gap-3 justify-center md:justify-start mb-3">
+                        <div className="flex items-center gap-2 justify-center md:justify-start mb-2">
                             <img src="/app-icon.png" alt="Spendigo Logo" style={{width: 32, height: 32, borderRadius: 6}} />
                             <span className="text-3xl font-black text-gray-900 italic tracking-tighter">Spendigo</span>
                         </div>
@@ -234,22 +234,22 @@ const ConsumerLayout: React.FC = () => {
                         </p>
                     </div>
 
-                    <div className="flex flex-wrap justify-center md:justify-end gap-x-12 gap-y-6">
-                        <div className="flex flex-col gap-3">
-                            <span className="text-[10px] font-black text-gray-900 tracking-widest mb-2 border-b border-gray-200 pb-2 inline-block">Platform</span>
+                    <div className="flex flex-wrap justify-center md:justify-end gap-x-12 gap-y-4">
+                        <div className="flex flex-col gap-2">
+                            <span className="text-[10px] font-black text-gray-900 tracking-widest mb-1 border-b border-gray-200 pb-1 inline-block">Platform</span>
                             <Link to="/how-it-works" className="text-xs text-gray-500 font-bold hover:text-gray-900 tracking-wide transition-colors">How it Works</Link>
                             <Link to="/careers" className="text-xs text-gray-500 font-bold hover:text-gray-900 tracking-wide transition-colors">Careers</Link>
                             <Link to="/partner" className="text-xs text-gray-500 font-bold hover:text-blue-600 tracking-wide transition-colors">Partner with Us →</Link>
                         </div>
-                        <div className="flex flex-col gap-3">
-                            <span className="text-[10px] font-black text-gray-900 tracking-widest mb-2 border-b border-gray-200 pb-2 inline-block">Legal</span>
+                        <div className="flex flex-col gap-2">
+                            <span className="text-[10px] font-black text-gray-900 tracking-widest mb-1 border-b border-gray-200 pb-1 inline-block">Legal</span>
                             <Link to="/privacy" className="text-xs text-gray-500 font-bold hover:text-gray-900 tracking-wide transition-colors">Privacy Policy</Link>
                             <Link to="/terms" className="text-xs text-gray-500 font-bold hover:text-gray-900 tracking-wide transition-colors">Terms of Service</Link>
                         </div>
                     </div>
                 </div>
                 
-                <div className="max-w-7xl mx-auto mt-8 pt-4 border-t border-gray-100 text-center md:text-left flex flex-col md:flex-row items-center justify-between gap-4">
+                <div className="max-w-7xl mx-auto mt-6 pt-3 border-t border-gray-100 text-center md:text-left flex flex-col md:flex-row items-center justify-between gap-3">
                     <p className="text-[9px] font-black text-gray-400 tracking-widest">&copy; {new Date().getFullYear()} Spendigo Inc. All rights reserved.</p>
                     <div className="flex items-center gap-4 text-2xl hover:scale-110 transition-transform cursor-default">
                         🍁
