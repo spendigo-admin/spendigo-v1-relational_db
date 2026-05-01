@@ -54,36 +54,36 @@ const DefaultHero = ({ handleSearch, address, setAddress, isLocating, handleLoca
             </p>
 
             {/* PREMIUM SEARCH INTERACTION */}
-            <div className="group relative max-w-4xl mx-auto">
-                <div className="relative flex flex-col sm:flex-row items-stretch sm:items-center bg-white rounded-3xl sm:rounded-full p-2 md:p-3 shadow-2xl border border-gray-100 transition-all duration-500 hover:shadow-blue-500/10 hover:border-blue-100 group-hover:scale-[1.01]">
-                    <div className="flex flex-1 items-center gap-2">
-                        <div 
-                            onClick={handleLocateMe}
-                            className={`pl-4 pr-1 md:pr-2 flex items-center text-red-500 cursor-pointer hover:scale-125 transition-all active:scale-95 group/loc ${isLocating ? 'animate-bounce' : ''}`}
-                            title="Locate Me"
-                        >
-                            <svg className="w-5 h-5 md:w-6 md:h-6" viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
-                            </svg>
-                        </div>
-                        <input
-                            type="text"
-                            placeholder="Enter postal code or city..."
-                            className="flex-1 py-3 md:py-4 px-2 bg-transparent outline-none text-gray-900 font-bold placeholder-gray-400 text-sm md:text-lg min-w-0"
-                            value={address}
-                            onChange={(e) => setAddress(e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                        />
+            <div className="group relative max-w-4xl mx-auto scale-90 sm:scale-100 origin-center">
+                <div className="relative flex flex-row items-center bg-white rounded-full p-1 sm:p-2 md:p-3 shadow-2xl border border-gray-100 transition-all duration-500 hover:shadow-blue-500/10 hover:border-blue-100 group-hover:scale-[1.01]">
+                    {/* Locate Me */}
+                    <div 
+                        onClick={handleLocateMe}
+                        className={`pl-2 sm:pl-4 pr-1 flex items-center text-red-500 cursor-pointer hover:scale-125 transition-all active:scale-95 group/loc ${isLocating ? 'animate-bounce' : ''}`}
+                        title="Locate Me"
+                    >
+                        <svg className="w-4 h-4 sm:w-6 sm:h-6" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
+                        </svg>
                     </div>
+
+                    {/* Input */}
+                    <input
+                        type="text"
+                        placeholder="Postal code..."
+                        className="flex-1 py-2 sm:py-4 px-1 sm:px-2 bg-transparent outline-none text-gray-900 font-bold placeholder-gray-400 text-[10px] sm:text-lg min-w-0"
+                        value={address}
+                        onChange={(e) => setAddress(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                    />
                     
-                    <div className="flex items-center justify-between gap-4 p-2 sm:p-0">
+                    <div className="flex items-center gap-1 sm:gap-4 ml-auto">
                         {/* Radius Selector */}
-                        <div className="flex items-center gap-2 px-4 border-l-0 sm:border-l border-gray-100 h-10">
-                            <span className="text-[10px] font-black text-gray-400 tracking-widest uppercase">Distance</span>
+                        <div className="flex items-center sm:gap-2 sm:px-4 border-l border-gray-100 h-6 sm:h-10">
                             <select 
                                 value={searchDistance} 
                                 onChange={(e) => setSearchDistance(Number(e.target.value))}
-                                className="text-xs md:text-sm font-black bg-gray-50 px-3 py-1.5 rounded-xl border-none outline-none text-blue-600 cursor-pointer focus:ring-2 focus:ring-blue-100 transition-all"
+                                className="text-[10px] sm:text-sm font-black bg-transparent px-1 sm:px-3 py-1 rounded-lg border-none outline-none text-blue-600 cursor-pointer focus:ring-0 transition-all appearance-none sm:appearance-auto"
                             >
                                 <option value={5}>5km</option>
                                 <option value={10}>10km</option>
@@ -92,12 +92,14 @@ const DefaultHero = ({ handleSearch, address, setAddress, isLocating, handleLoca
                             </select>
                         </div>
 
+                        {/* Search Button */}
                         <button
                             onClick={() => handleSearch()}
                             disabled={isLocating}
-                            className="bg-gray-900 text-white px-8 md:px-12 py-3.5 md:py-4 rounded-2xl sm:rounded-full font-black text-xs md:text-sm tracking-widest hover:bg-blue-600 transition-all shadow-xl active:scale-95 shrink-0 uppercase border-b-4 border-black hover:border-blue-700"
+                            className="bg-gray-900 text-white px-3 sm:px-12 py-2 sm:py-4 rounded-full font-black text-[10px] sm:text-sm tracking-widest hover:bg-blue-600 transition-all shadow-xl active:scale-95 shrink-0 uppercase border-b-2 sm:border-b-4 border-black"
                         >
-                            {isLocating ? '...' : 'Search Stores'}
+                            <span className="sm:inline hidden">Search Stores</span>
+                            <span className="sm:hidden">GO</span>
                         </button>
                     </div>
                 </div>
@@ -283,37 +285,46 @@ const AdCarousel: React.FC<AdCarouselProps> = (props) => {
                 
                 {/* Content Overlay (Centered) */}
                 <div className="absolute inset-0 flex flex-col items-center justify-center px-4 bg-gradient-to-t from-black/40 via-transparent to-black/20 z-20 pointer-events-none">
+                    {currentAd.linkUrl && (
+                        <button
+                            onClick={() => handleAdClick(currentAd)}
+                            className="mb-8 px-10 py-3.5 bg-white text-[var(--brand-primary)] rounded-full font-black text-xs md:text-sm tracking-[0.2em] transition-all shadow-2xl hover:scale-105 active:scale-95 pointer-events-auto uppercase"
+                        >
+                            View Exclusive Offer &rarr;
+                        </button>
+                    )}
+
                     {/* Search Bar Container */}
                     <div className="group relative w-full max-w-4xl mx-auto transform translate-y-2 md:translate-y-0 scale-90 md:scale-100 pointer-events-auto">
-                        <div className="relative flex flex-col sm:flex-row items-stretch sm:items-center bg-white rounded-3xl sm:rounded-full p-2 md:p-3 shadow-2xl border border-gray-100 transition-all duration-500 hover:shadow-blue-500/10 hover:border-blue-100 group-hover:scale-[1.01]">
-                            <div className="flex flex-1 items-center gap-2">
-                                <div 
-                                    onClick={props.handleLocateMe}
-                                    className={`pl-4 pr-1 md:pr-2 flex items-center text-red-500 cursor-pointer hover:scale-125 transition-all active:scale-95 group/loc ${props.isLocating ? 'animate-bounce' : ''}`}
-                                    title="Locate Me"
-                                >
-                                    <svg className="w-5 h-5 md:w-6 md:h-6" viewBox="0 0 24 24" fill="currentColor">
-                                        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
-                                    </svg>
-                                </div>
-                                <input
-                                    type="text"
-                                    placeholder="Type postal code or city..."
-                                    className="flex-1 py-3 md:py-4 px-2 bg-transparent outline-none text-gray-900 font-bold placeholder-gray-400 text-sm md:text-lg min-w-0"
-                                    value={props.address}
-                                    onChange={(e) => props.setAddress(e.target.value)}
-                                    onKeyDown={(e) => e.key === 'Enter' && props.handleSearch()}
-                                />
+                        <div className="relative flex flex-row items-center bg-white rounded-full p-1 sm:p-2 md:p-3 shadow-2xl border border-gray-100 transition-all duration-500 hover:shadow-blue-500/10 hover:border-blue-100 group-hover:scale-[1.01]">
+                            {/* Locate Me */}
+                            <div 
+                                onClick={props.handleLocateMe}
+                                className={`pl-2 sm:pl-4 pr-1 flex items-center text-red-500 cursor-pointer hover:scale-125 transition-all active:scale-95 group/loc ${props.isLocating ? 'animate-bounce' : ''}`}
+                                title="Locate Me"
+                            >
+                                <svg className="w-4 h-4 sm:w-6 sm:h-6" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
+                                </svg>
                             </div>
 
-                            <div className="flex items-center justify-between gap-4 p-2 sm:p-0">
+                            {/* Input */}
+                            <input
+                                type="text"
+                                placeholder="Postal code..."
+                                className="flex-1 py-2 sm:py-4 px-1 sm:px-2 bg-transparent outline-none text-gray-900 font-bold placeholder-gray-400 text-[10px] sm:text-lg min-w-0"
+                                value={props.address}
+                                onChange={(e) => props.setAddress(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && props.handleSearch()}
+                            />
+                            
+                            <div className="flex items-center gap-1 sm:gap-4 ml-auto">
                                 {/* Radius Selector */}
-                                <div className="flex items-center gap-2 px-4 border-l-0 sm:border-l border-gray-100 h-10">
-                                    <span className="text-[10px] font-black text-gray-400 tracking-widest uppercase">Distance</span>
+                                <div className="flex items-center sm:gap-2 sm:px-4 border-l border-gray-100 h-6 sm:h-10">
                                     <select 
                                         value={props.searchDistance} 
                                         onChange={(e) => props.setSearchDistance(Number(e.target.value))}
-                                        className="text-xs md:text-sm font-black bg-gray-50 px-3 py-1.5 rounded-xl border-none outline-none text-blue-600 cursor-pointer focus:ring-2 focus:ring-blue-100 transition-all"
+                                        className="text-[10px] sm:text-sm font-black bg-transparent px-1 sm:px-3 py-1 rounded-lg border-none outline-none text-blue-600 cursor-pointer focus:ring-0 transition-all appearance-none sm:appearance-auto"
                                     >
                                         <option value={5}>5km</option>
                                         <option value={10}>10km</option>
@@ -322,25 +333,18 @@ const AdCarousel: React.FC<AdCarouselProps> = (props) => {
                                     </select>
                                 </div>
 
+                                {/* Search Button */}
                                 <button
                                     onClick={() => props.handleSearch()}
                                     disabled={props.isLocating}
-                                    className="bg-gray-900 text-white px-8 md:px-12 py-3.5 md:py-4 rounded-2xl sm:rounded-full font-black text-xs md:text-sm tracking-widest hover:bg-blue-600 transition-all shadow-xl active:scale-95 shrink-0 uppercase border-b-4 border-black hover:border-blue-700"
+                                    className="bg-gray-900 text-white px-3 sm:px-12 py-2 sm:py-4 rounded-full font-black text-[10px] sm:text-sm tracking-widest hover:bg-blue-600 transition-all shadow-xl active:scale-95 shrink-0 uppercase border-b-2 sm:border-b-4 border-black"
                                 >
-                                    {props.isLocating ? '...' : 'Search Stores'}
+                                    <span className="sm:inline hidden">Search Stores</span>
+                                    <span className="sm:hidden">GO</span>
                                 </button>
                             </div>
                         </div>
                     </div>
-
-                    {currentAd.linkUrl && (
-                        <button
-                            onClick={() => handleAdClick(currentAd)}
-                            className="mt-6 md:mt-8 px-10 py-3.5 bg-white text-[var(--brand-primary)] rounded-full font-black text-xs md:text-sm tracking-[0.2em] transition-all shadow-2xl hover:scale-105 active:scale-95 pointer-events-auto uppercase"
-                        >
-                            View Exclusive Offer &rarr;
-                        </button>
-                    )}
                 </div>
             </div>
 
