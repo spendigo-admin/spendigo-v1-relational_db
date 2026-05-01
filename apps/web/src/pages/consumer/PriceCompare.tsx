@@ -149,22 +149,54 @@ const PriceCompare = () => {
     }
 
     return (
-        <div className="animate-fade-in pb-20 bg-[var(--surface-1)] min-h-screen">
+        <div className="bg-[var(--surface-0)] min-h-screen animate-fade-in pb-20">
             <SEO title="Compare My List" description="Compare flyer deals for the items on your wishlist." path="/compare" />
 
-            {/* Header */}
-            <div className="bg-[var(--surface-0)] border-b border-[var(--glass-border)] sticky top-0 z-30 px-4 py-6 backdrop-blur-md bg-white/90">
-                <div className="max-w-5xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div className="flex-1 max-w-xl">
-                        <h1 className="text-2xl font-black text-[var(--text-main)] flex items-center gap-2 tracking-tighter">
-                            <span className="text-3xl">⚖️</span> Compare My List
-                        </h1>
-                        <p className="text-sm text-[var(--text-muted)] font-medium mt-1">
-                            Finding deals for items on your wishlist. <span className="badge-info">Note</span> This information comes from public grocery flyers for price comparison only. <strong className="text-[var(--text-main)]">Items shown here cannot be ordered through the platform.</strong>
-                        </p>
+            {/* Premium Hero Section */}
+            <section className="relative overflow-hidden pt-12 pb-8 md:pt-20 md:pb-12 px-4 border-b border-[var(--glass-border)] mb-4">
+                {/* Background Decorative Elements */}
+                <div className="absolute inset-0 z-0">
+                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full bg-[radial-gradient(circle_at_50%_-20%,var(--brand-primary-light),transparent_70%)]" />
+                    <div className="absolute top-1/4 -right-20 w-64 h-64 md:w-96 md:h-96 bg-blue-100/30 rounded-full blur-[100px] opacity-60 animate-pulse" />
+                    <div className="absolute bottom-0 -left-20 w-64 h-64 md:w-96 md:h-96 bg-emerald-100/30 rounded-full blur-[100px] opacity-60 animate-pulse" style={{ animationDelay: '2s' }} />
+                </div>
+
+                <div className="max-w-7xl mx-auto relative z-10">
+                    <div className="flex flex-col md:flex-row md:items-end justify-between gap-8">
+                        <div className="flex-1 max-w-2xl">
+                            <div className="inline-flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 rounded-full bg-white shadow-sm border border-gray-100 mb-6 animate-fade-in">
+                                <span className="flex h-2 w-2 rounded-full bg-[var(--brand-primary)] animate-ping" />
+                                <span className="text-[10px] md:text-xs font-black uppercase tracking-[0.2em] text-[var(--text-muted)]">
+                                    Flyer Price Analysis
+                                </span>
+                            </div>
+                            <h1 className="text-3xl md:text-5xl font-black text-[var(--text-main)] mb-4 leading-[1.05] tracking-tighter italic">
+                                Price<br />
+                                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[var(--brand-primary)] to-indigo-600">
+                                    Comparison
+                                </span>
+                            </h1>
+                            <p className="text-[var(--text-muted)] text-sm md:text-lg font-bold leading-relaxed">
+                                We've analyzed the latest grocery flyers to find matches for your wishlist. 
+                                <span className="text-emerald-600"> Real-time savings across all major retailers.</span>
+                            </p>
+                        </div>
+
+                        {!loading && deals.length > 0 && (
+                            <div className="glass-panel-premium rounded-[2rem] p-6 min-w-[240px] border-blue-100/50 bg-white/40">
+                                <div className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--text-muted)] mb-2">Deals Found</div>
+                                <div className="text-4xl font-black text-[var(--text-main)] tracking-tighter italic">{deals.length}</div>
+                                <div className="mt-2 text-xs font-bold text-[var(--brand-primary)] italic">Across multiple flyers</div>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="mt-8 p-4 rounded-2xl bg-amber-50/50 border border-amber-100 text-amber-800 text-[10px] md:text-xs font-bold uppercase tracking-widest leading-relaxed">
+                        <span className="bg-amber-100 px-2 py-0.5 rounded-full mr-2">Disclaimer</span>
+                        This information comes from public grocery flyers for price comparison only. Items shown here cannot be ordered through the platform.
                     </div>
                 </div>
-            </div>
+            </section>
 
             <main className="max-w-5xl mx-auto py-8 px-4 space-y-8">
                 {wishlistItems.length === 0 ? (

@@ -172,42 +172,57 @@ const SmartCartPrototype: React.FC = () => {
     }, [input]);
 
     return (
-        <div className="animate-fade-in pb-16">
+        <div className="bg-[var(--surface-0)] min-h-screen animate-fade-in pb-16">
             <SEO title="SmartCart Prototype" description="Internal SmartCart optimizer interface preview." noIndex />
-            <section className="relative overflow-hidden border-b border-[var(--glass-border)] bg-[radial-gradient(circle_at_top_left,_rgba(33,150,243,0.15),_transparent_35%),linear-gradient(135deg,_#f7f3ea_0%,_#ffffff_55%,_#eef8f4_100%)]">
-                <div className="max-w-7xl mx-auto px-4 py-12 md:py-16">
+            
+            {/* Premium Hero Section */}
+            <section className="relative overflow-hidden pt-12 pb-16 md:pt-24 md:pb-32 px-4">
+                {/* Background Decorative Elements */}
+                <div className="absolute inset-0 z-0">
+                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full bg-[radial-gradient(circle_at_50%_-20%,var(--brand-primary-light),transparent_70%)]" />
+                    <div className="absolute top-1/4 -right-20 w-64 h-64 md:w-96 md:h-96 bg-blue-100/50 rounded-full blur-[100px] opacity-60 animate-pulse" />
+                    <div className="absolute bottom-0 -left-20 w-64 h-64 md:w-96 md:h-96 bg-purple-100/50 rounded-full blur-[100px] opacity-60 animate-pulse" style={{ animationDelay: '2s' }} />
+                </div>
+
+                <div className="max-w-7xl mx-auto relative z-10">
                     <div className="max-w-3xl">
-                        <div className="inline-flex items-center gap-2 rounded-full border border-[var(--glass-border)] bg-white/80 px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-[var(--brand-primary)]">
-                            SmartCart Prototype
+                        <div className="inline-flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 rounded-full bg-white shadow-sm border border-gray-100 mb-6 animate-fade-in">
+                            <span className="flex h-2 w-2 rounded-full bg-[var(--brand-primary)] animate-ping" />
+                            <span className="text-[10px] md:text-xs font-black uppercase tracking-[0.2em] text-[var(--text-muted)]">
+                                Optimizer Intelligence v1.4
+                            </span>
                         </div>
-                        <h1 className="mt-5 text-4xl md:text-5xl font-black tracking-tight text-[var(--text-main)]">
-                            Optimizer interface preview
+                        <h1 className="text-3xl md:text-5xl font-black text-[var(--text-main)] mb-4 leading-[1.05] tracking-tighter italic">
+                            SmartCart<br />
+                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[var(--brand-primary)] to-indigo-600">
+                                Optimizer
+                            </span>
                         </h1>
-                        <p className="mt-4 text-base md:text-lg text-[var(--text-muted)] max-w-2xl">
+                        <p className="text-[var(--text-muted)] text-sm md:text-lg font-bold leading-relaxed">
                             This page mocks the future optimizer contract: inputs on the left, transparent item-by-item decisions on the right, and summary outputs at the top.
                         </p>
                     </div>
 
-                    <div className="mt-8 grid gap-4 md:grid-cols-4">
-                        <div className="glass-panel rounded-3xl p-5">
-                            <div className="text-xs uppercase tracking-[0.18em] text-[var(--text-muted)]">Shopping List</div>
-                            <div className="mt-2 text-3xl font-black text-[var(--text-main)]">{input.shoppingList.length}</div>
-                            <div className="text-sm text-[var(--text-muted)]">requested items</div>
+                    <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                        <div className="glass-panel-premium rounded-[2rem] p-6 hover:translate-y-[-4px] transition-all duration-300">
+                            <div className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--text-muted)]">Shopping List</div>
+                            <div className="mt-3 text-4xl font-black text-[var(--text-main)] tracking-tighter italic">{input.shoppingList.length}</div>
+                            <div className="mt-1 text-xs font-bold text-[var(--text-muted)]">Requested Items</div>
                         </div>
-                        <div className="glass-panel rounded-3xl p-5">
-                            <div className="text-xs uppercase tracking-[0.18em] text-[var(--text-muted)]">Split Cart Total</div>
-                            <div className="mt-2 text-3xl font-black text-[var(--text-main)]">{currency.format(mockResult.summary.totalCartCost)}</div>
-                            <div className="text-sm text-[var(--text-muted)]">{mockResult.summary.selectedStoreCount} stores selected</div>
+                        <div className="glass-panel-premium rounded-[2rem] p-6 hover:translate-y-[-4px] transition-all duration-300">
+                            <div className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--text-muted)]">Split Cart Total</div>
+                            <div className="mt-3 text-4xl font-black text-[var(--brand-primary)] tracking-tighter italic">{currency.format(mockResult.summary.totalCartCost)}</div>
+                            <div className="mt-1 text-xs font-bold text-[var(--text-muted)]">{mockResult.summary.selectedStoreCount} Stores Selected</div>
                         </div>
-                        <div className="glass-panel rounded-3xl p-5">
-                            <div className="text-xs uppercase tracking-[0.18em] text-[var(--text-muted)]">Best Single Store</div>
-                            <div className="mt-2 text-3xl font-black text-[var(--text-main)]">{currency.format(mockResult.summary.bestSingleStoreCost || 0)}</div>
-                            <div className="text-sm text-[var(--text-muted)]">{mockResult.bestSingleStore?.storeName || 'No baseline'}</div>
+                        <div className="glass-panel-premium rounded-[2rem] p-6 hover:translate-y-[-4px] transition-all duration-300">
+                            <div className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--text-muted)]">Best Single Store</div>
+                            <div className="mt-3 text-4xl font-black text-[var(--text-main)] tracking-tighter italic">{currency.format(mockResult.summary.bestSingleStoreCost || 0)}</div>
+                            <div className="mt-1 text-xs font-bold text-[var(--text-muted)]">{mockResult.bestSingleStore?.storeName || 'No baseline'}</div>
                         </div>
-                        <div className="glass-panel rounded-3xl p-5 bg-[linear-gradient(135deg,rgba(46,125,50,0.14),rgba(255,255,255,0.95))]">
-                            <div className="text-xs uppercase tracking-[0.18em] text-[var(--text-muted)]">Savings</div>
-                            <div className="mt-2 text-3xl font-black text-[var(--status-success)]">{currency.format(mockResult.summary.savingsVsSingleStore || 0)}</div>
-                            <div className="text-sm text-[var(--text-muted)]">versus single-store basket</div>
+                        <div className="glass-panel-premium rounded-[2rem] p-6 bg-gradient-to-br from-emerald-50/50 to-white hover:translate-y-[-4px] transition-all duration-300 border-emerald-100">
+                            <div className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-600">Smart Savings</div>
+                            <div className="mt-3 text-4xl font-black text-[var(--status-success)] tracking-tighter italic">{currency.format(mockResult.summary.savingsVsSingleStore || 0)}</div>
+                            <div className="mt-1 text-xs font-bold text-emerald-600/60 italic">Automated Split Logic</div>
                         </div>
                     </div>
                 </div>

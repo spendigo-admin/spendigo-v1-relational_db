@@ -97,60 +97,82 @@ const SmartCartWishlist: React.FC = () => {
             </div>
         </div>
     ) : null;
-
     return (
-        <div className="animate-fade-in pb-12 lg:pb-12">
+        <div className="bg-[var(--surface-0)] min-h-screen animate-fade-in pb-12 lg:pb-12">
             <SEO title="SmartCart Optimizer" description="Compare grocery prices across local stores and build the cheapest cart with Spendigo SmartCart." path="/smartcart" />
 
             {/* Location Change Toast */}
             {locationChanged && (
-                <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[60] bg-[var(--brand-primary)] text-white px-5 py-3 rounded-xl shadow-xl text-sm font-medium flex items-center gap-2 animate-fade-in">
+                <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[60] bg-[var(--brand-primary)] text-white px-5 py-3 rounded-xl shadow-xl text-sm font-black flex items-center gap-2 animate-fade-in">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                    Location updated — prices recalculated
+                    <span>Location updated — prices recalculated</span>
                 </div>
             )}
 
             {/* Mobile Sticky Bottom Bar */}
             {!inventoryLoading && wishlistItems.length > 0 && (
-                <div className="fixed bottom-0 left-0 right-0 lg:hidden bg-white/90 backdrop-blur-md border-t border-[var(--glass-border)] px-4 py-3 pb-safe z-50 flex items-center gap-3 shadow-2xl">
+                <div className="fixed bottom-0 left-0 right-0 lg:hidden bg-white/90 backdrop-blur-md border-t border-gray-100 px-4 py-3 pb-safe z-50 flex items-center gap-3 shadow-[0_-10px_30px_rgba(0,0,0,0.1)]">
                     <div className="flex-1 min-w-0">
-                        <p className="text-xs text-[var(--text-muted)]">Estimated total</p>
-                        <p className="text-lg font-bold text-[var(--text-main)]">${totalCost.toFixed(2)}</p>
+                        <p className="text-[10px] font-black uppercase tracking-wider text-[var(--text-muted)]">Estimated total</p>
+                        <p className="text-xl font-black text-[var(--text-main)] tracking-tighter italic">${totalCost.toFixed(2)}</p>
                     </div>
                     <button
                         onClick={handleAddAllToCart}
                         disabled={validCartItems.length === 0}
-                        className={`px-6 py-3 rounded-xl font-bold text-white text-sm transition-all flex items-center gap-2 ${validCartItems.length === 0 ? 'bg-gray-300 cursor-not-allowed' : 'bg-[var(--brand-primary)] active:scale-95'}`}
+                        className={`px-8 py-3.5 rounded-2xl font-black text-white text-xs tracking-widest uppercase transition-all flex items-center gap-2 shadow-xl ${validCartItems.length === 0 ? 'bg-gray-300 cursor-not-allowed' : 'bg-[var(--brand-primary)] hover:scale-105 active:scale-95'}`}
                     >
                         Add {validCartItems.length} to Cart
                     </button>
                 </div>
             )}
 
-            {/* Header */}
-            <div className="bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)] text-white p-6 shadow-md mb-6">
-                <div className="max-w-6xl mx-auto px-4">
-                    <h1 className="text-2xl font-bold mb-1 flex items-center gap-2">
-                        <span>🛒</span> SmartCart Optimizer
-                    </h1>
-                    <p className="text-white/80 text-sm">Compare prices and choose the best store for each item.</p>
-                    {!inventoryLoading && wishlistItems.length > 0 && (
-                        <div className="flex items-center gap-3 mt-3 text-sm text-white/90 flex-wrap">
-                            <span className="font-semibold">{validCartItems.length} matched</span>
-                            <span className="text-white/40">·</span>
-                            <span>{storeCount} store{storeCount !== 1 ? 's' : ''}</span>
-                            <span className="text-white/40">·</span>
-                            <span className="font-bold text-white">Est. ${totalCost.toFixed(2)}</span>
-                            {potentialSavings > 0 && (
-                                <>
-                                    <span className="text-white/40">·</span>
-                                    <span className="text-green-300 font-semibold">Save ~${potentialSavings.toFixed(2)}</span>
-                                </>
-                            )}
-                        </div>
-                    )}
+            {/* Premium Hero Section */}
+            <section className="relative overflow-hidden pt-12 pb-8 md:pt-20 md:pb-12 px-4 mb-8">
+                {/* Background Decorative Elements */}
+                <div className="absolute inset-0 z-0">
+                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full bg-[radial-gradient(circle_at_50%_-20%,var(--brand-primary-light),transparent_70%)]" />
+                    <div className="absolute top-1/4 -right-20 w-64 h-64 md:w-96 md:h-96 bg-blue-100/30 rounded-full blur-[100px] opacity-60 animate-pulse" />
+                    <div className="absolute bottom-0 -left-20 w-64 h-64 md:w-96 md:h-96 bg-purple-100/30 rounded-full blur-[100px] opacity-60 animate-pulse" style={{ animationDelay: '2s' }} />
                 </div>
-            </div>
+
+                <div className="max-w-7xl mx-auto relative z-10">
+                    <div className="flex flex-col md:flex-row md:items-end justify-between gap-8">
+                        <div className="max-w-2xl">
+                            <div className="inline-flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 rounded-full bg-white shadow-sm border border-gray-100 mb-6 animate-fade-in">
+                                <span className="flex h-2 w-2 rounded-full bg-[var(--brand-primary)] animate-ping" />
+                                <span className="text-[10px] md:text-xs font-black uppercase tracking-[0.2em] text-[var(--text-muted)]">
+                                    AI-Powered Savings
+                                </span>
+                            </div>
+                            <h1 className="text-3xl md:text-5xl font-black text-[var(--text-main)] mb-4 leading-[1.05] tracking-tighter italic">
+                                SmartCart<br />
+                                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[var(--brand-primary)] to-indigo-600">
+                                    Optimizer
+                                </span>
+                            </h1>
+                            <p className="text-[var(--text-muted)] text-sm md:text-lg font-bold leading-relaxed">
+                                Build your list and we'll find the absolute lowest total across all local stores. 
+                                <span className="text-[var(--brand-primary)]"> Real-time price matching, automatically.</span>
+                            </p>
+                        </div>
+
+                        {!inventoryLoading && wishlistItems.length > 0 && (
+                            <div className="glass-panel-premium rounded-[2rem] p-6 min-w-[280px] border-blue-100/50 bg-white/40">
+                                <div className="flex items-center justify-between mb-4">
+                                    <div className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--text-muted)]">Live Estimate</div>
+                                    <span className="badge-best">Saving ${potentialSavings.toFixed(2)}</span>
+                                </div>
+                                <div className="text-4xl font-black text-[var(--text-main)] tracking-tighter italic">${totalCost.toFixed(2)}</div>
+                                <div className="mt-2 flex items-center gap-2 text-xs font-bold text-[var(--text-muted)]">
+                                    <span>{validCartItems.length} Matched</span>
+                                    <span className="w-1 h-1 bg-gray-300 rounded-full"></span>
+                                    <span>{storeCount} Stores</span>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </section>
 
             <div className="max-w-6xl mx-auto px-4 pb-28 lg:pb-8">
                 {/* Add Items Panel */}

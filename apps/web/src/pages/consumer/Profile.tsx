@@ -221,29 +221,53 @@ const Profile: React.FC = () => {
     };
 
     return (
-        <div className="animate-fade-in pb-20">
+        <div className="bg-[var(--surface-0)] min-h-screen animate-fade-in pb-20">
             <SEO title="My Profile" description="Manage your Spendigo account, addresses, and order history." path="/profile" noIndex />
-            {/* Header */}
-            <div className="bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)] text-white p-6">
-                <div className="max-w-3xl mx-auto flex items-center gap-4">
-                    <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center text-2xl font-bold text-white select-none border-2 border-white/30">
-                        {(profile.name || user?.email || '?').charAt(0).toUpperCase()}
-                    </div>
-                    <div>
-                        <h1 className="text-2xl font-bold">{profile.name}</h1>
-                        <p className="text-white/80 text-sm">{profile.email}</p>
+            
+            {/* Premium Hero Section */}
+            <section className="relative overflow-hidden pt-12 pb-8 md:pt-20 md:pb-12 px-4 mb-4">
+                {/* Background Decorative Elements */}
+                <div className="absolute inset-0 z-0">
+                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full bg-[radial-gradient(circle_at_50%_-20%,var(--brand-primary-light),transparent_70%)]" />
+                    <div className="absolute top-1/4 -right-20 w-64 h-64 md:w-96 md:h-96 bg-blue-100/30 rounded-full blur-[100px] opacity-60 animate-pulse" />
+                    <div className="absolute bottom-0 -left-20 w-64 h-64 md:w-96 md:h-96 bg-purple-100/30 rounded-full blur-[100px] opacity-60 animate-pulse" style={{ animationDelay: '2s' }} />
+                </div>
+
+                <div className="max-w-3xl mx-auto relative z-10">
+                    <div className="flex flex-col md:flex-row items-center gap-6 md:gap-8 text-center md:text-left">
+                        <div className="relative">
+                            <div className="w-24 h-24 md:w-32 md:h-32 rounded-[2.5rem] bg-white shadow-xl flex items-center justify-center text-4xl md:text-5xl font-black text-[var(--brand-primary)] border-4 border-white select-none italic tracking-tighter">
+                                {(profile.name || user?.email || '?').charAt(0).toUpperCase()}
+                            </div>
+                            <div className="absolute -bottom-2 -right-2 w-8 h-8 md:w-10 md:h-10 bg-emerald-500 rounded-2xl border-4 border-white flex items-center justify-center text-white shadow-lg">
+                                <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
+                            </div>
+                        </div>
+                        
+                        <div className="flex-1">
+                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white shadow-sm border border-gray-100 mb-4 animate-fade-in">
+                                <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--text-muted)]">Verified Member</span>
+                            </div>
+                            <h1 className="text-3xl md:text-5xl font-black text-[var(--text-main)] mb-2 leading-[1.05] tracking-tighter italic">
+                                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[var(--brand-primary)] to-indigo-600">
+                                    {profile.name.split(' ')[0]}
+                                </span>
+                            </h1>
+                            <p className="text-[var(--text-muted)] text-sm md:text-base font-bold italic opacity-80">{profile.email}</p>
+                        </div>
                     </div>
                 </div>
-            </div>
+            </section>
 
             {/* Tabs */}
-            <div className="bg-white sticky top-[calc(4rem+var(--safe-area-top))] z-30 border-b border-[var(--glass-border)]">
+            <div className="sticky top-[calc(4rem+var(--safe-area-top))] z-30 border-b border-[var(--glass-border)] bg-white/70 backdrop-blur-xl">
                 <div className="max-w-3xl mx-auto flex gap-1 p-2">
                     {(['account', 'addresses', 'orders', 'wishlist'] as const).map(tab => (
                         <button
                             key={tab}
                             onClick={() => setActiveTab(tab)}
-                            className={`flex-1 py-2 text-xs font-semibold capitalize transition-all duration-150 rounded-full ${activeTab === tab ? 'bg-[var(--brand-primary)] text-white shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}`}
+                            className={`flex-1 py-3 text-[10px] font-black uppercase tracking-[0.15em] transition-all duration-300 rounded-2xl ${activeTab === tab ? 'bg-[var(--brand-primary)] text-white shadow-lg shadow-[var(--brand-primary)]/20 scale-[1.02]' : 'text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-black/5'}`}
                         >
                             {tab}
                         </button>
@@ -255,11 +279,11 @@ const Profile: React.FC = () => {
             <div className="max-w-3xl mx-auto p-4 min-h-[60vh]">
                 {/* ACCOUNT TAB */}
                 {activeTab === 'account' && (
-                    <div className="bg-white rounded-xl border border-[var(--glass-border)] p-6 animate-fade-in">
-                        <div className="flex items-center justify-between mb-6">
-                            <h2 className="text-lg font-bold text-[var(--text-main)]">Account Information</h2>
+                    <div className="glass-panel-premium rounded-[2.5rem] p-6 md:p-10 animate-fade-in border-gray-100 bg-white/50">
+                        <div className="flex items-center justify-between mb-8">
+                            <h2 className="text-xl font-black text-[var(--text-main)] tracking-tight italic">Account Overview</h2>
                             {!editingProfile && (
-                                <button onClick={() => setEditingProfile(true)} className="text-[var(--brand-primary)] text-sm font-medium">
+                                <button onClick={() => setEditingProfile(true)} className="px-4 py-2 rounded-xl bg-[var(--brand-primary-light)] text-[var(--brand-primary)] text-xs font-black uppercase tracking-widest hover:bg-[var(--brand-primary)] hover:text-white transition-all">
                                     Edit Profile
                                 </button>
                             )}
@@ -267,25 +291,25 @@ const Profile: React.FC = () => {
 
                         {/* IMPACT STATS */}
                         {!editingProfile && (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-                                <div className="p-6 bg-gradient-to-br from-[var(--brand-primary-light)] to-[var(--surface-1)] rounded-3xl border border-[var(--brand-primary)]/10 flex items-center justify-between">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-10">
+                                <div className="p-6 bg-gradient-to-br from-blue-50 to-white rounded-3xl border border-blue-100/50 flex items-center justify-between group hover:scale-[1.02] transition-all">
                                     <div>
-                                        <p className="text-xs font-bold text-[var(--brand-primary)] uppercase tracking-wide mb-1">Lifetime Savings</p>
-                                        <p className="text-2xl font-black text-[var(--text-main)]">${(orders.reduce((acc, o) => acc + (o.total * 0.12), 0)).toFixed(2)}</p>
-                                        <p className="text-xs text-[var(--text-muted)] mt-1">Via SmartCart optimization</p>
+                                        <p className="text-[10px] font-black text-blue-600 uppercase tracking-[0.2em] mb-1">Lifetime Savings</p>
+                                        <p className="text-3xl font-black text-[var(--text-main)] tracking-tighter italic">${(orders.reduce((acc, o) => acc + (o.total * 0.12), 0)).toFixed(2)}</p>
+                                        <p className="text-[10px] font-bold text-blue-600/60 mt-1 uppercase tracking-tight">SmartCart Protocol Optimized</p>
                                     </div>
-                                    <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-xl shadow-sm">
+                                    <div className="w-12 h-12 bg-white rounded-[1rem] flex items-center justify-center text-2xl shadow-sm border border-blue-50 group-hover:rotate-12 transition-transform">
                                         💰
                                     </div>
                                 </div>
 
-                                <div className="p-6 bg-gradient-to-br from-[var(--surface-2)] to-[var(--surface-1)] rounded-3xl border border-[var(--glass-border)] flex items-center justify-between">
+                                <div className="p-6 bg-gradient-to-br from-purple-50 to-white rounded-3xl border border-purple-100/50 flex items-center justify-between group hover:scale-[1.02] transition-all">
                                     <div>
-                                        <p className="text-xs font-bold text-[var(--brand-secondary)] uppercase tracking-wide mb-1">Neighbourhood Impact</p>
-                                        <p className="text-2xl font-black text-[var(--text-main)]">${(orders.reduce((acc, o) => acc + o.total, 0)).toFixed(2)}</p>
-                                        <p className="text-xs text-[var(--text-muted)] mt-1">Invested in local economy</p>
+                                        <p className="text-[10px] font-black text-purple-600 uppercase tracking-[0.2em] mb-1">Neighbourhood Impact</p>
+                                        <p className="text-3xl font-black text-[var(--text-main)] tracking-tighter italic">${(orders.reduce((acc, o) => acc + o.total, 0)).toFixed(2)}</p>
+                                        <p className="text-[10px] font-bold text-purple-600/60 mt-1 uppercase tracking-tight">Invested in Local Economy</p>
                                     </div>
-                                    <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-xl shadow-sm">
+                                    <div className="w-12 h-12 bg-white rounded-[1rem] flex items-center justify-center text-2xl shadow-sm border border-purple-50 group-hover:-rotate-12 transition-transform">
                                         🤝
                                     </div>
                                 </div>
@@ -518,7 +542,7 @@ const Profile: React.FC = () => {
                                 >
                                     {isDeleting ? (
                                         <>
-                                            <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
                                             Deleting...
                                         </>
                                     ) : 'Permanently Delete'}
@@ -530,35 +554,47 @@ const Profile: React.FC = () => {
 
                 {/* ADDRESSES TAB */}
                 {activeTab === 'addresses' && (
-                    <div className="space-y-4 animate-fade-in">
+                    <div className="space-y-6 animate-fade-in pb-10">
+                        <div className="flex items-center justify-between px-2 mb-2">
+                            <h2 className="text-xl font-black text-[var(--text-main)] italic tracking-tight">Saved Addresses</h2>
+                            <button onClick={() => setShowAddAddress(true)} className="text-[10px] font-black uppercase tracking-widest text-[var(--brand-primary)] bg-[var(--brand-primary-light)] px-4 py-2 rounded-full hover:bg-[var(--brand-primary)] hover:text-white transition-all">+ Add New</button>
+                        </div>
                         {profile.addresses.map(addr => (
-                            <div key={addr.id} className={`bg-white rounded-xl border p-4 ${addr.isDefault ? 'border-[var(--brand-primary)]' : 'border-[var(--glass-border)]'}`}>
-                                <div className="flex items-start justify-between">
-                                    <div>
-                                        <div className="flex items-center gap-2 mb-1">
-                                            <span className="font-bold text-[var(--text-main)]">{addr.label}</span>
-                                            {addr.isDefault && <span className="text-xs bg-[var(--brand-primary)] text-white px-2 py-0.5 rounded shadow-sm">Default</span>}
+                            <div key={addr.id} className={`glass-panel-premium rounded-[2rem] p-8 transition-all duration-500 border-gray-100 bg-white/70 hover:bg-white hover:shadow-xl group relative overflow-hidden ${addr.isDefault ? 'ring-2 ring-[var(--brand-primary)]' : ''}`}>
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-[var(--brand-primary-light)]/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl opacity-0 group-hover:opacity-100 transition-opacity" />
+                                
+                                <div className="flex items-start justify-between relative z-10">
+                                    <div className="flex-1">
+                                        <div className="flex items-center gap-3 mb-4">
+                                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-xl shadow-sm ${addr.isDefault ? 'bg-[var(--brand-primary)] text-white' : 'bg-white text-[var(--text-muted)]'}`}>
+                                                {addr.label.toLowerCase().includes('home') ? '🏠' : addr.label.toLowerCase().includes('work') ? '🏢' : '📍'}
+                                            </div>
+                                            <div>
+                                                <span className="text-sm font-black uppercase tracking-widest text-[var(--text-main)] italic">{addr.label}</span>
+                                                {addr.isDefault && <div className="text-[9px] font-black uppercase tracking-[0.2em] text-[var(--brand-primary)] mt-0.5">Primary Shipping</div>}
+                                            </div>
+                                        </div>
+                                        <p className="text-lg font-black text-[var(--text-main)] tracking-tight leading-tight">{addr.street}</p>
+                                        <p className="text-xs font-bold text-[var(--text-muted)] mt-1 uppercase tracking-tight">{addr.city}, {addr.province} {addr.postalCode}</p>
+                                        
+                                        <div className="mt-6 flex items-center gap-2">
                                             {addr.lat && addr.lng ? (
-                                                <span className="badge-best">
-                                                    Proximity Ready
-                                                </span>
+                                                <span className="badge-best text-[9px] uppercase tracking-widest px-3 py-1">GPS Verified</span>
                                             ) : (
                                                 <button
                                                     onClick={() => handleVerifyAddress(addr.id)}
-                                                    className="badge-info cursor-pointer hover:opacity-80 transition-opacity"
+                                                    className="badge-deal text-[9px] uppercase tracking-widest px-3 py-1 hover:scale-105 transition-transform"
                                                 >
-                                                    Sync Location
+                                                    Pending Sync
                                                 </button>
                                             )}
                                         </div>
-                                        <p className="text-sm text-[var(--text-muted)]">{addr.street}</p>
-                                        <p className="text-sm text-[var(--text-muted)]">{addr.city}, {addr.province} {addr.postalCode}</p>
                                     </div>
-                                    <div className="flex gap-2">
+                                    <div className="flex flex-col gap-3">
                                         {!addr.isDefault && (
-                                            <button onClick={() => setDefaultAddress(addr.id)} className="text-xs text-[var(--brand-primary)]">Set Default</button>
+                                            <button onClick={() => setDefaultAddress(addr.id)} className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 hover:bg-[var(--brand-primary-light)] hover:text-[var(--brand-primary)] transition-all" title="Set as Default">★</button>
                                         )}
-                                        <button onClick={() => deleteAddress(addr.id)} className="text-xs text-red-500">Delete</button>
+                                        <button onClick={() => deleteAddress(addr.id)} className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 hover:bg-red-50 hover:text-red-500 transition-all" title="Delete Address">✕</button>
                                     </div>
                                 </div>
                             </div>
@@ -627,49 +663,77 @@ const Profile: React.FC = () => {
 
                 {/* ORDERS TAB */}
                 {activeTab === 'orders' && (
-                    <div className="space-y-4 animate-fade-in min-w-0 overflow-hidden">
+                    <div className="space-y-8 animate-fade-in min-w-0 overflow-hidden pb-10">
+                        <div className="flex items-center justify-between px-2 mb-2">
+                            <h2 className="text-xl font-black text-[var(--text-main)] italic tracking-tight">Order History</h2>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] bg-white/50 px-3 py-1 rounded-full border border-gray-100">{orders.length} Total</span>
+                        </div>
                         {orders.length === 0 ? (
                             <EmptyState icon="📦" heading="No orders yet" subtext="Your order history will appear here." action={<Link to="/" className="btn-primary">Start Shopping</Link>} />
                         ) : (
                             orders.map(order => (
-                                <Link key={order.id} to={`/order/${order.id}`} className="block bg-white rounded-xl border border-[var(--glass-border)] p-4 hover:shadow-md transition-shadow">
-                                    <div className="flex items-center justify-between mb-3">
+                                <Link key={order.id} to={`/order/${order.id}`} className="block relative glass-panel-premium rounded-[2.5rem] p-8 transition-all duration-500 border-gray-100 bg-white/70 hover:bg-white hover:shadow-[0_20px_50px_rgba(0,0,0,0.08)] hover:translate-y-[-4px] group overflow-hidden">
+                                    {/* Decorative Gradient Edge */}
+                                    <div className="absolute top-0 left-0 w-2 h-full bg-gradient-to-b from-[var(--brand-primary)] to-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                                    
+                                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 relative z-10">
                                         <div>
-                                            <span className="font-bold text-[var(--text-main)]">{order.id}</span>
-                                            <span className="text-sm text-[var(--text-muted)] ml-2">
-                                                {new Date(order.date).toLocaleDateString()}
-                                            </span>
+                                            <div className="flex items-center gap-3">
+                                                <span className="text-sm font-black text-[var(--text-main)] tracking-tight italic uppercase">#{order.id.slice(-8)}</span>
+                                                <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${getStatusColor(order.status)}`}>
+                                                    <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
+                                                    {formatStatus(order.status)}
+                                                </div>
+                                            </div>
+                                            <p className="text-xs font-bold text-[var(--text-muted)] mt-1">
+                                                Placed on {new Date(order.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                            </p>
                                         </div>
-                                        <span className={getStatusColor(order.status)}>
-                                            {formatStatus(order.status)}
-                                        </span>
+                                        <div className="text-right">
+                                            <p className="text-2xl font-black text-[var(--text-main)] tracking-tighter italic">${order.total.toFixed(2)}</p>
+                                        </div>
                                     </div>
-                                    <div className="flex items-center gap-3 mb-3">
-                                        <div className="flex -space-x-2">
-                                            {order.items.slice(0, 3).map((item, i) => (
-                                                <img key={i} src={item.image} alt="" className="w-10 h-10 rounded-lg border-2 border-white object-cover" />
+                                    
+                                    <div className="flex items-center gap-4 mb-6 p-3 bg-white/40 rounded-2xl border border-white/50">
+                                        <div className="flex -space-x-3">
+                                            {order.items.slice(0, 4).map((item, i) => (
+                                                <img key={i} src={item.image} alt="" className="w-12 h-12 rounded-[1rem] border-4 border-white shadow-sm object-cover" />
                                             ))}
+                                            {order.items.length > 4 && (
+                                                <div className="w-12 h-12 rounded-[1rem] border-4 border-white shadow-sm bg-gray-100 flex items-center justify-center text-[10px] font-black text-[var(--text-muted)]">
+                                                    +{order.items.length - 4}
+                                                </div>
+                                            )}
                                         </div>
-                                        <div className="flex-1">
-                                            <p className="text-sm text-[var(--text-main)]">{order.storeName}</p>
-                                            <p className="text-xs text-[var(--text-muted)]">{order.items.length} item{order.items.length > 1 ? 's' : ''}</p>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-sm font-black text-[var(--text-main)] truncate">{order.storeName}</p>
+                                            <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-tight flex items-center gap-1.5">
+                                                <span className="w-1 h-1 rounded-full bg-emerald-500" />
+                                                Express Delivery Tracking Active
+                                            </p>
                                         </div>
-                                        <p className="font-bold text-[var(--text-main)]">${order.total.toFixed(2)}</p>
+                                        <div className="hidden md:flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-[var(--brand-primary)] opacity-0 group-hover:opacity-100 transition-all translate-x-4 group-hover:translate-x-0">
+                                            View Details
+                                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M9 5l7 7-7 7" /></svg>
+                                        </div>
                                     </div>
-                                    <div className="mt-2 pt-3 border-t border-[var(--glass-border)] flex justify-end gap-2">
+
+                                    <div className="flex justify-end gap-3">
                                         <button
                                             onClick={(e) => handleDownloadReceipt(e, order.id)}
                                             disabled={downloadingReceiptId === order.id}
-                                            className="px-4 py-2 bg-[var(--surface-3)] text-[var(--text-muted)] text-sm font-bold rounded-lg hover:bg-gray-200 disabled:opacity-50 transition-colors flex items-center gap-1"
+                                            className="px-6 py-2.5 bg-white text-[var(--text-muted)] text-[10px] font-black uppercase tracking-widest rounded-xl border border-gray-100 hover:bg-gray-50 disabled:opacity-50 transition-all flex items-center gap-2"
                                         >
-                                            {downloadingReceiptId === order.id ? '...' : <span>📄 Receipt</span>}
+                                            {downloadingReceiptId === order.id ? (
+                                                <span className="w-3 h-3 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin"></span>
+                                            ) : <span>📄 Receipt</span>}
                                         </button>
                                         <button
                                             onClick={(e) => handleReorder(e, order.id)}
                                             disabled={reorderingId === order.id}
-                                            className="px-4 py-2 bg-[var(--surface-3)] text-[var(--brand-primary)] text-sm font-bold rounded-lg hover:bg-[var(--brand-primary)] hover:text-white disabled:opacity-50 transition-colors"
+                                            className="px-6 py-2.5 bg-[var(--brand-primary)] text-white text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-[var(--brand-primary)]/10 hover:scale-105 active:scale-95 disabled:opacity-50 transition-all"
                                         >
-                                            {reorderingId === order.id ? 'Reordering...' : 'Reorder'}
+                                            {reorderingId === order.id ? 'Working...' : 'Reorder'}
                                         </button>
                                     </div>
                                 </Link>
@@ -680,11 +744,11 @@ const Profile: React.FC = () => {
 
                 {/* WISHLIST TAB */}
                 {activeTab === 'wishlist' && (
-                    <div className="space-y-4 animate-fade-in">
-                        <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-lg font-bold text-[var(--text-main)]">My Wishlist</h2>
+                    <div className="space-y-10 animate-fade-in pb-10">
+                        <div className="flex items-center justify-between mb-2 px-2">
+                            <h2 className="text-xl font-black text-[var(--text-main)] italic tracking-tight">Shopping Wishlist</h2>
                             {wishlistItems.length > 0 && (
-                                <button onClick={clearComparison} className="text-xs text-red-500 font-bold">Clear All</button>
+                                <button onClick={clearComparison} className="text-[10px] font-black uppercase tracking-widest text-red-500 hover:bg-red-50 px-3 py-1 rounded-full transition-all">Clear All</button>
                             )}
                         </div>
                         
@@ -692,45 +756,46 @@ const Profile: React.FC = () => {
                             <EmptyState icon="✨" heading="Wishlist is empty" subtext="Type a product name below to start building your list." />
                         ) : null}
 
-                        <div className="flex flex-col sm:flex-row items-center gap-3 mb-6">
+                        <div className="flex flex-col sm:flex-row items-center gap-3 mb-8 p-2">
                             <input 
                                 type="text"
                                 placeholder="Add an item (e.g. 'Milk')"
                                 value={newItemName}
                                 onChange={e => setNewItemName(e.target.value)}
                                 onKeyDown={e => e.key === 'Enter' && handleAddWishlistItem()}
-                                className="w-full sm:flex-1 px-4 py-3 border border-[var(--glass-border)] rounded-xl outline-none focus:border-[var(--brand-primary)] focus:ring-2 focus:ring-[var(--brand-primary)]/20 text-sm font-medium"
+                                className="w-full sm:flex-1 px-5 py-4 bg-white/50 border border-gray-100 rounded-[1.25rem] outline-none focus:border-[var(--brand-primary)] focus:ring-4 focus:ring-[var(--brand-primary)]/10 text-sm font-bold placeholder:text-[var(--text-muted)]/50 transition-all shadow-sm"
                             />
                             <button 
                                 onClick={handleAddWishlistItem}
                                 disabled={!newItemName.trim()}
-                                className="w-full sm:w-auto px-6 py-3 bg-[var(--brand-primary)] text-white font-bold rounded-xl disabled:opacity-50 transition-all hover:bg-[var(--brand-primary)]/90"
+                                className="w-full sm:w-auto px-8 py-4 bg-[var(--brand-primary)] text-white text-xs font-black uppercase tracking-widest rounded-[1.25rem] disabled:opacity-50 transition-all hover:scale-105 active:scale-95 shadow-lg shadow-[var(--brand-primary)]/20"
                             >
                                 Add Item
                             </button>
                         </div>
                         
                         {wishlistItems.length > 0 && (
-                            <div className="grid grid-cols-1 gap-3">
+                            <div className="grid grid-cols-1 gap-6">
                                 {wishlistItems.map((item, i) => (
-                                    <div key={i} className="bg-white rounded-xl border border-[var(--glass-border)] p-4 flex items-center gap-4 group">
-                                        <div className="w-16 h-16 rounded-lg bg-[var(--surface-1)] flex-shrink-0 overflow-hidden">
+                                    <div key={i} className="glass-panel-premium rounded-[2rem] p-6 flex items-center gap-6 group border-gray-100 bg-white/70 hover:bg-white hover:shadow-xl hover:translate-x-2 transition-all duration-300 relative overflow-hidden">
+                                        <div className="w-20 h-20 rounded-2xl bg-white flex-shrink-0 overflow-hidden border border-gray-100 shadow-sm group-hover:scale-105 transition-transform duration-500">
                                             {item.image ? (
                                                 <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
                                             ) : (
                                                 <div className="w-full h-full flex items-center justify-center text-2xl">📦</div>
                                             )}
                                         </div>
-                                        <div className="flex-1">
-                                            <h3 className="font-bold text-[var(--text-main)] leading-tight">{item.name}</h3>
-                                            <p className="text-xs text-[var(--text-muted)]">{item.category || 'Local Merchant'}</p>
-                                            <div className="mt-2 flex items-center gap-2">
-                                                <span className="badge-info">Price Alert Active</span>
+                                        <div className="flex-1 min-w-0 relative">
+                                            <h3 className="text-sm font-black text-[var(--text-main)] italic tracking-tight leading-tight truncate">{item.name}</h3>
+                                            <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-tight mt-0.5">{item.category || 'Standard Grocery'}</p>
+                                            <div className="mt-4 flex items-center gap-3">
+                                                <span className="badge-info text-[9px] uppercase font-black tracking-widest px-3 py-1 bg-blue-50 text-blue-600 border-blue-100">Live Monitor</span>
+                                                <span className="text-[9px] font-black uppercase tracking-widest text-[var(--brand-primary)] opacity-0 group-hover:opacity-100 transition-all">Price Comparison Ready</span>
                                             </div>
                                         </div>
                                         <button 
                                             onClick={() => removeItem(item.id)}
-                                            className="w-10 h-10 rounded-full flex items-center justify-center text-gray-300 hover:text-red-500 hover:bg-red-50 transition-all opacity-0 group-hover:opacity-100"
+                                            className="w-10 h-10 rounded-2xl flex items-center justify-center text-gray-300 hover:text-red-500 hover:bg-red-50 transition-all group-hover:scale-110"
                                         >
                                             ✕
                                         </button>
@@ -738,9 +803,11 @@ const Profile: React.FC = () => {
                                 ))}
                                 <button 
                                     onClick={() => navigate('/compare')}
-                                    className="w-full py-4 mt-2 bg-[var(--brand-primary)] text-white font-black rounded-2xl shadow-xl shadow-[var(--brand-primary)]/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                                    className="w-full py-5 mt-4 bg-gradient-to-r from-[var(--brand-primary)] to-indigo-600 text-white text-xs font-black uppercase tracking-[0.25em] rounded-[2rem] shadow-2xl shadow-[var(--brand-primary)]/30 hover:scale-[1.02] active:scale-[0.98] transition-all group"
                                 >
-                                    ⚖️ Compare Prices
+                                    <span className="flex items-center justify-center gap-3">
+                                        ⚖️ <span className="group-hover:tracking-[0.35em] transition-all">Compare Real-time Prices</span>
+                                    </span>
                                 </button>
                             </div>
                         )}
