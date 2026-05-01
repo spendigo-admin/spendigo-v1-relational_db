@@ -10,6 +10,7 @@ import { httpsCallable } from 'firebase/functions';
 import { functions } from '../../lib/firebase';
 import '../../styles/design-system.css';
 import SEO from '../../components/SEO';
+import { EmptyState } from '../../components/ui/EmptyState';
 
 const Profile: React.FC = () => {
     const { profile, orders, updateProfile, addAddress, updateAddress, deleteAddress, setDefaultAddress, reorder, downloadOrderReceipt } = useOrders();
@@ -206,12 +207,12 @@ const Profile: React.FC = () => {
 
     const getStatusColor = (status: string) => {
         switch (status) {
-            case 'delivered': return 'bg-green-100 text-green-700';
-            case 'out_for_delivery': return 'bg-blue-100 text-blue-700';
-            case 'preparing': return 'bg-yellow-100 text-yellow-700';
-            case 'placed': return 'bg-gray-100 text-gray-700';
-            case 'cancelled': return 'bg-red-100 text-red-700';
-            default: return 'bg-gray-100 text-gray-700';
+            case 'delivered': return 'badge-best';
+            case 'out_for_delivery':
+            case 'preparing':
+            case 'placed': return 'badge-info';
+            case 'cancelled': return 'badge-deal';
+            default: return 'badge-info';
         }
     };
 
@@ -225,8 +226,8 @@ const Profile: React.FC = () => {
             {/* Header */}
             <div className="bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)] text-white p-6">
                 <div className="max-w-3xl mx-auto flex items-center gap-4">
-                    <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center text-3xl">
-                        👤
+                    <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center text-2xl font-bold text-white select-none border-2 border-white/30">
+                        {(profile.name || user?.email || '?').charAt(0).toUpperCase()}
                     </div>
                     <div>
                         <h1 className="text-2xl font-bold">{profile.name}</h1>
@@ -236,15 +237,15 @@ const Profile: React.FC = () => {
             </div>
 
             {/* Tabs */}
-            <div className="border-b border-[var(--glass-border)] bg-white sticky top-[calc(4rem+var(--safe-area-top))] z-30">
-                <div className="max-w-3xl mx-auto flex">
+            <div className="bg-white sticky top-[calc(4rem+var(--safe-area-top))] z-30 border-b border-[var(--glass-border)]">
+                <div className="max-w-3xl mx-auto flex gap-1 p-2">
                     {(['account', 'addresses', 'orders', 'wishlist'] as const).map(tab => (
                         <button
                             key={tab}
                             onClick={() => setActiveTab(tab)}
-                            className={`flex-1 py-4 text-sm font-medium capitalize transition-colors ${activeTab === tab ? 'text-[var(--brand-primary)] border-b-2 border-[var(--brand-primary)]' : 'text-[var(--text-muted)]'}`}
+                            className={`flex-1 py-2 text-xs font-semibold capitalize transition-all duration-150 rounded-full ${activeTab === tab ? 'bg-[var(--brand-primary)] text-white shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}`}
                         >
-                            {tab === 'orders' ? 'Orders' : tab}
+                            {tab}
                         </button>
                     ))}
                 </div>
@@ -267,24 +268,24 @@ const Profile: React.FC = () => {
                         {/* IMPACT STATS */}
                         {!editingProfile && (
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-                                <div className="p-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-3xl border border-blue-100 flex items-center justify-between">
+                                <div className="p-6 bg-gradient-to-br from-[var(--brand-primary-light)] to-[var(--surface-1)] rounded-3xl border border-[var(--brand-primary)]/10 flex items-center justify-between">
                                     <div>
-                                        <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-1">Lifetime Savings</p>
-                                        <p className="text-2xl font-black text-blue-800">${(orders.reduce((acc, o) => acc + (o.total * 0.12), 0)).toFixed(2)}</p>
-                                        <p className="text-[10px] text-blue-600/80 mt-1 font-bold">Via SmartCart optimization</p>
+                                        <p className="text-xs font-bold text-[var(--brand-primary)] uppercase tracking-wide mb-1">Lifetime Savings</p>
+                                        <p className="text-2xl font-black text-[var(--text-main)]">${(orders.reduce((acc, o) => acc + (o.total * 0.12), 0)).toFixed(2)}</p>
+                                        <p className="text-xs text-[var(--text-muted)] mt-1">Via SmartCart optimization</p>
                                     </div>
-                                    <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-xl shadow-sm text-blue-600">
+                                    <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-xl shadow-sm">
                                         💰
                                     </div>
                                 </div>
 
-                                <div className="p-6 bg-gradient-to-br from-purple-50 to-fuchsia-50 rounded-3xl border border-purple-100 flex items-center justify-between">
+                                <div className="p-6 bg-gradient-to-br from-[var(--surface-2)] to-[var(--surface-1)] rounded-3xl border border-[var(--glass-border)] flex items-center justify-between">
                                     <div>
-                                        <p className="text-[10px] font-black text-purple-600 uppercase tracking-widest mb-1">Neighborhood Impact</p>
-                                        <p className="text-2xl font-black text-purple-800">${(orders.reduce((acc, o) => acc + o.total, 0)).toFixed(2)}</p>
-                                        <p className="text-[10px] text-purple-600/80 mt-1 font-bold">Invested in local economy</p>
+                                        <p className="text-xs font-bold text-[var(--brand-secondary)] uppercase tracking-wide mb-1">Neighbourhood Impact</p>
+                                        <p className="text-2xl font-black text-[var(--text-main)]">${(orders.reduce((acc, o) => acc + o.total, 0)).toFixed(2)}</p>
+                                        <p className="text-xs text-[var(--text-muted)] mt-1">Invested in local economy</p>
                                     </div>
-                                    <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-xl shadow-sm text-purple-600">
+                                    <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-xl shadow-sm">
                                         🤝
                                     </div>
                                 </div>
@@ -295,19 +296,19 @@ const Profile: React.FC = () => {
                             <div className="space-y-4">
                                 <div>
                                     <label className="block text-sm text-[var(--text-muted)] mb-1">Full Name</label>
-                                    <input type="text" value={formName} onChange={e => setFormName(e.target.value)} className="w-full px-4 py-3 border border-[var(--glass-border)] rounded-lg" />
+                                    <input type="text" value={formName} onChange={e => setFormName(e.target.value)} className="w-full px-4 py-3 border border-[var(--glass-border)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)] focus:border-transparent transition-colors" />
                                 </div>
                                 <div>
                                     <label className="block text-sm text-[var(--text-muted)] mb-1">Email</label>
-                                    <input type="email" value={formEmail} onChange={e => setFormEmail(e.target.value)} className="w-full px-4 py-3 border border-[var(--glass-border)] rounded-lg" />
+                                    <input type="email" value={formEmail} onChange={e => setFormEmail(e.target.value)} className="w-full px-4 py-3 border border-[var(--glass-border)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)] focus:border-transparent transition-colors" />
                                 </div>
                                 <div>
                                     <label className="block text-sm text-[var(--text-muted)] mb-1">Phone</label>
-                                    <input type="tel" value={formPhone} onChange={e => setFormPhone(e.target.value)} className="w-full px-4 py-3 border border-[var(--glass-border)] rounded-lg" />
+                                    <input type="tel" value={formPhone} onChange={e => setFormPhone(e.target.value)} className="w-full px-4 py-3 border border-[var(--glass-border)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)] focus:border-transparent transition-colors" />
                                 </div>
                                 <div className="flex gap-3 pt-4">
-                                    <button onClick={handleSaveProfile} className="flex-1 py-3 bg-[var(--brand-primary)] text-white font-medium rounded-lg">Save Changes</button>
-                                    <button onClick={() => setEditingProfile(false)} className="flex-1 py-3 border border-[var(--glass-border)] rounded-lg text-[var(--text-muted)]">Cancel</button>
+                                    <button onClick={handleSaveProfile} className="btn-primary flex-1 py-3">Save Changes</button>
+                                    <button onClick={() => setEditingProfile(false)} className="flex-1 py-3 border border-[var(--glass-border)] rounded-full text-[var(--text-muted)] text-sm font-medium hover:bg-[var(--surface-2)] transition-colors">Cancel</button>
                                 </div>
                             </div>
                         ) : (
@@ -380,10 +381,10 @@ const Profile: React.FC = () => {
                                     <h3 className="text-lg font-bold text-[var(--text-main)] mb-1">Alert Preferences</h3>
                                     <p className="text-sm text-[var(--text-muted)]">Configure which real-time alerts you receive.</p>
                                 </div>
-                                <div className={`px-3 py-1.5 rounded-full text-[10px] font-black tracking-widest uppercase border-2 flex items-center gap-1.5 ${permissionStatus === 'granted' ? 'bg-blue-50 text-blue-600 border-blue-100' : 'bg-gray-50 text-gray-400 border-gray-100'}`}>
-                                    <span className={`w-2 h-2 rounded-full ${permissionStatus === 'granted' ? 'bg-blue-600 animate-ping' : 'bg-gray-300'}`}></span>
+                                <span className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold ${permissionStatus === 'granted' ? 'badge-best' : 'badge-info'}`}>
+                                    <span className={`w-2 h-2 rounded-full bg-white ${permissionStatus === 'granted' ? 'animate-pulse' : 'opacity-60'}`}></span>
                                     {permissionStatus === 'granted' ? 'Real-time Linked' : 'Offline Mode'}
-                                </div>
+                                </span>
                             </div>
 
                             <div className="space-y-3">
@@ -395,7 +396,7 @@ const Profile: React.FC = () => {
                                 ].map(item => (
                                     <div 
                                         key={item.id} 
-                                        className="flex items-center justify-between p-4 bg-gray-50/50 border border-gray-100 rounded-2xl group hover:border-blue-200 hover:bg-white transition-all cursor-pointer"
+                                        className="flex items-center justify-between p-4 bg-[var(--surface-1)] border border-[var(--glass-border)] rounded-2xl group hover:border-[var(--brand-primary)]/20 hover:bg-white transition-all cursor-pointer"
                                         onClick={() => togglePreference(item.id as any)}
                                     >
                                         <div className="flex items-center gap-4">
@@ -407,7 +408,7 @@ const Profile: React.FC = () => {
                                                 <p className="text-[10px] text-[var(--text-muted)] tracking-tight">{item.desc}</p>
                                             </div>
                                         </div>
-                                        <div className={`w-12 h-6 rounded-full transition-colors relative ${preferences[item.id as keyof NotificationPreferences] ? 'bg-blue-600' : 'bg-gray-200'}`}>
+                                        <div className={`w-12 h-6 rounded-full transition-colors relative ${preferences[item.id as keyof NotificationPreferences] ? 'bg-[var(--brand-primary)]' : 'bg-gray-200'}`}>
                                             <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${preferences[item.id as keyof NotificationPreferences] ? 'left-7 shadow-[-2px_0_4px_rgba(0,0,0,0.1)]' : 'left-1'}`}></div>
                                         </div>
                                     </div>
@@ -415,34 +416,34 @@ const Profile: React.FC = () => {
                             </div>
 
                             {/* Alert Radius Selector */}
-                            <div className="mt-8 p-5 bg-white border-2 border-dashed border-gray-100 rounded-[2rem]">
+                            <div className="mt-8 p-5 bg-[var(--surface-1)] border border-[var(--glass-border)] rounded-2xl">
                                 <div className="flex flex-col md:flex-row items-center justify-between gap-4">
                                     <div className="flex items-center gap-4">
-                                        <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center text-2xl shadow-sm">
+                                        <div className="w-12 h-12 bg-[var(--brand-primary-light)] text-[var(--brand-primary)] rounded-2xl flex items-center justify-center text-2xl shadow-sm">
                                             📍
                                         </div>
                                         <div>
-                                            <p className="font-black text-gray-900 text-sm tracking-tight">Proximity Alerts</p>
-                                            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Radius from default address</p>
+                                            <p className="font-bold text-[var(--text-main)] text-sm">Proximity Alerts</p>
+                                            <p className="text-xs text-[var(--text-muted)] mt-0.5">Radius from default address</p>
                                         </div>
                                     </div>
-                                    
-                                    <div className="flex items-center bg-gray-50 rounded-full p-1.5 border border-gray-100 shadow-inner">
+
+                                    <div className="flex items-center bg-[var(--surface-2)] rounded-full p-1.5 border border-[var(--glass-border)]">
                                         {[5, 10, 20, 50].map(dist => (
                                             <button
                                                 key={dist}
                                                 onClick={() => setPreference('maxDistance', dist)}
-                                                className={`px-4 py-1.5 rounded-full text-[10px] font-black transition-all ${preferences.maxDistance === dist ? 'bg-white shadow-md text-blue-600 scale-105' : 'text-gray-400 hover:text-gray-600'}`}
+                                                className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${preferences.maxDistance === dist ? 'bg-white shadow-sm text-[var(--brand-primary)]' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}`}
                                             >
-                                                {dist}KM
+                                                {dist}km
                                             </button>
                                         ))}
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="mt-6 p-4 bg-blue-50/30 rounded-2xl border border-blue-100/50">
-                                <p className="text-[10px] text-blue-700 font-medium leading-relaxed italic text-center">
+                            <div className="mt-6 p-4 bg-[var(--brand-primary-light)] rounded-2xl border border-[var(--brand-primary)]/10">
+                                <p className="text-xs text-[var(--brand-primary)] font-medium leading-relaxed italic text-center">
                                     "Spendigo Real-time Alerts use high-performance FCM streams for millisecond-latency order tracking."
                                 </p>
                             </div>
@@ -538,16 +539,14 @@ const Profile: React.FC = () => {
                                             <span className="font-bold text-[var(--text-main)]">{addr.label}</span>
                                             {addr.isDefault && <span className="text-xs bg-[var(--brand-primary)] text-white px-2 py-0.5 rounded shadow-sm">Default</span>}
                                             {addr.lat && addr.lng ? (
-                                                <span className="text-[8px] bg-green-50 text-green-600 px-1.5 py-0.5 rounded-full border border-green-100 font-black uppercase tracking-tighter decoration-dotted flex items-center gap-1">
-                                                    <span className="w-1 h-1 bg-green-500 rounded-full"></span>
+                                                <span className="badge-best">
                                                     Proximity Ready
                                                 </span>
                                             ) : (
-                                                <button 
+                                                <button
                                                     onClick={() => handleVerifyAddress(addr.id)}
-                                                    className="text-[8px] bg-yellow-50 text-yellow-700 px-1.5 py-0.5 rounded-full border border-yellow-200 font-black uppercase tracking-tighter hover:bg-yellow-100 transition-colors flex items-center gap-1"
+                                                    className="badge-info cursor-pointer hover:opacity-80 transition-opacity"
                                                 >
-                                                    <span className="w-1 h-1 bg-yellow-500 rounded-full animate-pulse"></span>
                                                     Sync Location
                                                 </button>
                                             )}
@@ -567,14 +566,14 @@ const Profile: React.FC = () => {
 
                         {showAddAddress ? (
                             <div className="bg-white rounded-xl border border-[var(--glass-border)] p-4 space-y-3">
-                                <input type="text" placeholder="Label (e.g., Home, Work)" value={newAddress.label} onChange={e => setNewAddress({ ...newAddress, label: e.target.value })} className="w-full px-4 py-3 border border-[var(--glass-border)] rounded-lg outline-none focus:border-[var(--brand-primary)]" />
-                                <input type="text" placeholder="Street Address" value={newAddress.street} onChange={e => setNewAddress({ ...newAddress, street: e.target.value })} className="w-full px-4 py-3 border border-[var(--glass-border)] rounded-lg outline-none focus:border-[var(--brand-primary)]" />
+                                <input type="text" placeholder="Label (e.g., Home, Work)" value={newAddress.label} onChange={e => setNewAddress({ ...newAddress, label: e.target.value })} className="w-full px-4 py-3 border border-[var(--glass-border)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)] focus:border-transparent transition-colors" />
+                                <input type="text" placeholder="Street Address" value={newAddress.street} onChange={e => setNewAddress({ ...newAddress, street: e.target.value })} className="w-full px-4 py-3 border border-[var(--glass-border)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)] focus:border-transparent transition-colors" />
                                 <div className="grid grid-cols-2 gap-3">
-                                    <input type="text" placeholder="City" value={newAddress.city} onChange={e => setNewAddress({ ...newAddress, city: e.target.value })} className="px-4 py-3 border border-[var(--glass-border)] rounded-lg outline-none focus:border-[var(--brand-primary)]" />
+                                    <input type="text" placeholder="City" value={newAddress.city} onChange={e => setNewAddress({ ...newAddress, city: e.target.value })} className="px-4 py-3 border border-[var(--glass-border)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)] focus:border-transparent transition-colors" />
                                     <select
                                         value={newAddress.province}
                                         onChange={e => setNewAddress({ ...newAddress, province: e.target.value })}
-                                        className="px-4 py-3 border border-[var(--glass-border)] rounded-lg outline-none focus:border-[var(--brand-primary)] bg-white"
+                                        className="px-4 py-3 border border-[var(--glass-border)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)] focus:border-transparent transition-colors bg-white"
                                     >
                                         <option value="ON">Ontario</option>
                                         <option value="QC">Quebec</option>
@@ -630,11 +629,7 @@ const Profile: React.FC = () => {
                 {activeTab === 'orders' && (
                     <div className="space-y-4 animate-fade-in min-w-0 overflow-hidden">
                         {orders.length === 0 ? (
-                            <div className="text-center py-12">
-                                <p className="text-4xl mb-4">📦</p>
-                                <p className="text-[var(--text-muted)]">No orders yet</p>
-                                <Link to="/" className="text-[var(--brand-primary)] text-sm font-medium">Start Shopping</Link>
-                            </div>
+                            <EmptyState icon="📦" heading="No orders yet" subtext="Your order history will appear here." action={<Link to="/" className="btn-primary">Start Shopping</Link>} />
                         ) : (
                             orders.map(order => (
                                 <Link key={order.id} to={`/order/${order.id}`} className="block bg-white rounded-xl border border-[var(--glass-border)] p-4 hover:shadow-md transition-shadow">
@@ -645,7 +640,7 @@ const Profile: React.FC = () => {
                                                 {new Date(order.date).toLocaleDateString()}
                                             </span>
                                         </div>
-                                        <span className={`text-xs font-medium px-2 py-1 rounded-full ${getStatusColor(order.status)}`}>
+                                        <span className={getStatusColor(order.status)}>
                                             {formatStatus(order.status)}
                                         </span>
                                     </div>
@@ -694,11 +689,7 @@ const Profile: React.FC = () => {
                         </div>
                         
                         {wishlistItems.length === 0 ? (
-                            <div className="text-center py-12 bg-white rounded-xl border border-[var(--glass-border)] mb-4 px-4">
-                                <p className="text-4xl mb-4">✨</p>
-                                <p className="text-[var(--text-main)] font-bold text-lg mb-1">Your wishlist is empty</p>
-                                <p className="text-[var(--text-muted)] text-sm">Type keywords or product names below to start building your list.</p>
-                            </div>
+                            <EmptyState icon="✨" heading="Wishlist is empty" subtext="Type a product name below to start building your list." />
                         ) : null}
 
                         <div className="flex flex-col sm:flex-row items-center gap-3 mb-6">
@@ -734,7 +725,7 @@ const Profile: React.FC = () => {
                                             <h3 className="font-bold text-[var(--text-main)] leading-tight">{item.name}</h3>
                                             <p className="text-xs text-[var(--text-muted)]">{item.category || 'Local Merchant'}</p>
                                             <div className="mt-2 flex items-center gap-2">
-                                                <span className="text-[10px] bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full font-bold">Price Alert Active</span>
+                                                <span className="badge-info">Price Alert Active</span>
                                             </div>
                                         </div>
                                         <button 

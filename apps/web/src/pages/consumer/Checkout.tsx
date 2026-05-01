@@ -430,6 +430,25 @@ const Checkout: React.FC = () => {
             <div className="max-w-3xl mx-auto px-4 py-6">
                 <h1 className="text-3xl font-bold text-[var(--text-main)] mb-6">Checkout</h1>
 
+                {/* Step progress indicator */}
+                <div className="flex items-center mb-8">
+                    {[
+                        { step: 1, label: 'Cart', done: true },
+                        { step: 2, label: 'Fulfillment', done: false, active: true },
+                        { step: 3, label: 'Payment', done: false },
+                    ].map((s, i, arr) => (
+                        <React.Fragment key={s.step}>
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${s.done ? 'bg-[var(--status-success)] text-white' : s.active ? 'bg-[var(--brand-primary)] text-white' : 'bg-[var(--surface-2)] text-[var(--text-muted)]'}`}>
+                                    {s.done ? '✓' : s.step}
+                                </div>
+                                <span className={`text-sm font-medium ${s.active ? 'text-[var(--text-main)]' : 'text-[var(--text-muted)]'}`}>{s.label}</span>
+                            </div>
+                            {i < arr.length - 1 && <div className="flex-1 h-px bg-[var(--glass-border)] mx-3" />}
+                        </React.Fragment>
+                    ))}
+                </div>
+
                 <div className="space-y-6">
                     {/* Iterate over Stores */}
                     {Object.entries(groupedItems).map(([storeId, { storeName, total, tier, items, isOpen, deliveryEnabled, pickupEnabled }]) => {
@@ -542,7 +561,12 @@ const Checkout: React.FC = () => {
                 </div>
 
                 {/* Footer Summary */}
-                <div className="mt-8 glass-panel p-6">
+                <div className="flex items-center gap-3 my-6">
+                    <div className="flex-1 h-px bg-[var(--glass-border)]" />
+                    <span className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wide">Order Summary</span>
+                    <div className="flex-1 h-px bg-[var(--glass-border)]" />
+                </div>
+                <div className="mt-2 glass-panel p-6">
                     <div className="flex justify-between items-center mb-4">
                         <span className="font-bold text-lg text-[var(--text-main)]">
                             {(() => {

@@ -62,7 +62,7 @@ export const WishlistItemCard: React.FC<WishlistItemCardProps> = ({
                                 )}
                             </p>
                             {reasonText && (
-                                <p className="text-xs text-green-600 font-medium mt-0.5">{reasonText}</p>
+                                <p className="text-xs text-[var(--status-success)] font-medium mt-0.5">{reasonText}</p>
                             )}
                         </div>
                     )}
@@ -128,21 +128,21 @@ export const WishlistItemCard: React.FC<WishlistItemCardProps> = ({
                                 className={`p-3 flex items-center justify-between cursor-pointer transition-colors border-l-4 ${
                                     isSelected
                                         ? 'bg-[var(--brand-primary)]/5 border-[var(--brand-primary)]'
-                                        : 'border-transparent hover:bg-gray-50'
+                                        : 'border-transparent hover:bg-[var(--surface-1)]'
                                 }`}
                             >
                                 <div className="flex items-center gap-3">
-                                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors flex-shrink-0 ${isSelected ? 'border-[var(--brand-primary)] bg-[var(--brand-primary)]' : 'border-gray-300'}`}>
+                                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors flex-shrink-0 ${isSelected ? 'border-[var(--brand-primary)] bg-[var(--brand-primary)]' : 'border-[var(--glass-border)]'}`}>
                                         {isSelected && <div className="w-2 h-2 bg-white rounded-full" />}
                                     </div>
                                     <div>
                                         <div className="flex items-center gap-2">
-                                            <p className={`font-medium text-sm leading-tight ${isSelected ? 'text-[var(--brand-primary)]' : 'text-gray-700'}`}>
+                                            <p className={`font-medium text-sm leading-tight ${isSelected ? 'text-[var(--brand-primary)]' : 'text-[var(--text-main)]'}`}>
                                                 {(() => {
                                                     const showBrand = option.brand && !option.name?.toLowerCase().startsWith(option.brand.toLowerCase());
                                                     return (
                                                         <>
-                                                            {showBrand && <span className="font-bold text-gray-900">{option.brand} </span>}
+                                                            {showBrand && <span className="font-bold text-[var(--text-main)]">{option.brand} </span>}
                                                             <span>{option.name}</span>
                                                             {option.unit && <span className="text-gray-400 text-xs"> ({option.unit})</span>}
                                                             {option.is_canadian_local && (
@@ -158,7 +158,7 @@ export const WishlistItemCard: React.FC<WishlistItemCardProps> = ({
                                                 </span>
                                             )}
                                         </div>
-                                        <p className="text-xs text-gray-400 mt-0.5">{option.storeName}</p>
+                                        <p className="text-xs text-[var(--text-muted)] mt-0.5">{option.storeName}</p>
                                         <div className="flex items-center gap-2 mt-0.5">
                                             {isCheapest && (
                                                 <span className="badge-best">
@@ -176,7 +176,7 @@ export const WishlistItemCard: React.FC<WishlistItemCardProps> = ({
 
                                 <div className="text-right flex-shrink-0 ml-2">
                                     {option.originalPrice && (
-                                        <p className="text-xs text-gray-400 line-through leading-none mb-0.5">
+                                        <p className="text-xs text-[var(--text-muted)] line-through leading-none mb-0.5">
                                             ${option.originalPrice.toFixed(2)}
                                         </p>
                                     )}
@@ -186,7 +186,7 @@ export const WishlistItemCard: React.FC<WishlistItemCardProps> = ({
                                                 {option.priceTrend === 'down' ? '↓' : '↑'}
                                             </span>
                                         )}
-                                        <p className={`font-bold text-sm ${isSelected ? 'text-[var(--brand-primary)]' : 'text-gray-900'}`}>
+                                        <p className={`font-bold text-sm ${isSelected ? 'text-[var(--brand-primary)]' : 'text-[var(--text-main)]'}`}>
                                             ${option.price.toFixed(2)}
                                         </p>
                                     </div>
@@ -210,17 +210,17 @@ export const WishlistItemCard: React.FC<WishlistItemCardProps> = ({
                             <div className="flex items-center gap-2 min-w-0">
                                 <img src={sub.image} alt="" className="w-7 h-7 rounded object-cover flex-shrink-0" />
                                 <div className="min-w-0">
-                                    <p className="text-xs font-medium text-gray-700 truncate">
-                                        {sub.brand && <span className="text-gray-500">{sub.brand} </span>}
+                                    <p className="text-xs font-medium text-[var(--text-main)] truncate">
+                                        {sub.brand && <span className="text-[var(--text-muted)]">{sub.brand} </span>}
                                         {sub.name}
                                     </p>
-                                    <p className="text-xs text-gray-400">{sub.cheapestStore}</p>
+                                    <p className="text-xs text-[var(--text-muted)]">{sub.cheapestStore}</p>
                                 </div>
                             </div>
                             <div className="flex items-center gap-2 flex-shrink-0">
                                 <div className="text-right">
                                     <p className="text-xs font-bold text-amber-700">${sub.cheapestPrice.toFixed(2)}</p>
-                                    <p className="text-xs text-green-600 font-medium">Save ${sub.priceDifference.toFixed(2)}</p>
+                                    <p className="text-xs text-[var(--status-success)] font-medium">Save ${sub.priceDifference.toFixed(2)}</p>
                                 </div>
                                 {onSwapItem && (
                                     <button

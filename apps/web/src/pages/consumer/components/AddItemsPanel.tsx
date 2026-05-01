@@ -45,7 +45,7 @@ export const AddItemsPanel: React.FC<AddItemsPanelProps> = ({ showAddItems, setS
                             <input
                                 type="text"
                                 placeholder="Add any item (e.g. 'Kale')"
-                                className="flex-1 border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[var(--brand-primary)] outline-none"
+                                className="flex-1 border border-[var(--glass-border)] rounded-full px-4 py-2 text-sm focus:ring-2 focus:ring-[var(--brand-primary)] focus:border-transparent focus:outline-none transition-colors"
                                 value={customItemName}
                                 onChange={(e) => setCustomItemName(e.target.value)}
                                 onKeyDown={(e) => {
@@ -54,7 +54,7 @@ export const AddItemsPanel: React.FC<AddItemsPanelProps> = ({ showAddItems, setS
                             />
                             <button
                                 onClick={handleCustomAdd}
-                                className="bg-[var(--brand-primary)] text-white px-4 py-2 rounded-lg text-sm font-bold"
+                                className="bg-[var(--brand-primary)] text-white px-5 py-2 rounded-full text-sm font-bold hover:brightness-110 transition-all"
                             >
                                 Add
                             </button>
@@ -71,7 +71,7 @@ export const AddItemsPanel: React.FC<AddItemsPanelProps> = ({ showAddItems, setS
                                         }}
                                         className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all flex items-center gap-1.5 ${isSelected
                                             ? 'bg-[var(--brand-primary)] text-white border-[var(--brand-primary)] shadow-md'
-                                            : 'bg-white text-gray-600 border-gray-200 hover:border-[var(--brand-primary)] hover:text-[var(--brand-primary)]'
+                                            : 'bg-white text-[var(--text-muted)] border-[var(--glass-border)] hover:border-[var(--brand-primary)] hover:text-[var(--brand-primary)]'
                                             }`}
                                     >
                                         <span className="text-sm">{staple.emoji}</span>
@@ -90,7 +90,7 @@ export const AddItemsPanel: React.FC<AddItemsPanelProps> = ({ showAddItems, setS
                         
                         if (!selectedCategory && !isActiveSearch) {
                             return (
-                                <p className="text-xs text-gray-400 text-center py-4">
+                                <p className="text-xs text-[var(--text-muted)] text-center py-4">
                                     Type an item name above or select a category to browse products
                                 </p>
                             );
@@ -148,7 +148,7 @@ export const AddItemsPanel: React.FC<AddItemsPanelProps> = ({ showAddItems, setS
                                 </div>
                             </>
                         ) : (
-                            <p className="text-xs text-gray-400 text-center py-4">
+                            <p className="text-xs text-[var(--text-muted)] text-center py-4">
                                 No catalog items found for {isActiveSearch ? `"${customItemName}"` : selectedCategory}
                             </p>
                         );

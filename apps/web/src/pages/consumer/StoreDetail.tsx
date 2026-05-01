@@ -11,6 +11,8 @@ import { useReviews } from '../../context/ReviewContext';
 import '../../styles/design-system.css';
 import SEO from '../../components/SEO';
 import { isFlyerActive, filterActiveDeals } from '../../utils/date-helpers';
+import { Skeleton } from '../../components/ui/Skeleton';
+import { EmptyState } from '../../components/ui/EmptyState';
 
 import { useEffect } from 'react';
 
@@ -52,13 +54,16 @@ const FlyerTab: React.FC<{ storeId: string; storeName: string; summary: any; vie
         });
     };
 
-    if (loading) return <div className="p-10 text-center text-gray-400">Loading flyer...</div>;
+    if (loading) return (
+        <div className="p-6 space-y-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {[1,2,3,4].map(i => <Skeleton key={i} className="h-56 rounded-xl" />)}
+            </div>
+        </div>
+    );
 
     if (!flyer) return (
-        <div className="text-center py-10">
-            <p className="text-4xl mb-4">📰</p>
-            <p className="text-[var(--text-muted)]">No active flyer details found.</p>
-        </div>
+        <EmptyState icon="📰" heading="No active flyer" subtext="Check back soon for this week's deals." />
     );
 
     // Sort items by savings to feature the biggest deals
@@ -214,10 +219,7 @@ const FlyerTab: React.FC<{ storeId: string; storeName: string; summary: any; vie
                 )}
 
                 {(!flyer.items || flyer.items.length === 0) && (
-                    <div className="text-center py-12 bg-white rounded-xl border-4 border-dashed border-gray-100 mt-6 box-content h-40 flex flex-col items-center justify-center">
-                        <span className="text-4xl mb-4 grayscale opacity-30">📰</span>
-                        <p className="text-gray-400 font-bold tracking-widest italic">Flyer Specials Coming Soon!</p>
-                    </div>
+                    <EmptyState icon="📰" heading="Flyer Specials Coming Soon!" subtext="Check back for weekly deals from this store." />
                 )}
             </div>
             
@@ -271,18 +273,17 @@ const OffersTab: React.FC<{ storeId: string, storeName: string; viewMode: 'grid'
         });
     };
 
-    if (loading) return <div className="p-10 text-center text-[var(--text-muted)]">Loading deals...</div>;
+    if (loading) return (
+        <div className="p-6 flex gap-4 overflow-hidden">
+            {[1,2,3,4].map(i => <Skeleton key={i} className="h-48 min-w-[180px] rounded-2xl flex-shrink-0" />)}
+        </div>
+    );
 
     const oneDayOffers = deals.filter(d => d.status === 'active' && d.isFlashSale);
     const saleItems = deals.filter(d => d.status === 'active' && !d.isFlashSale);
 
     if (oneDayOffers.length === 0 && saleItems.length === 0) {
-        return (
-            <div className="text-center py-10">
-                <p className="text-4xl mb-4">🍂</p>
-                <p className="text-[var(--text-muted)]">No special deals available right now.</p>
-            </div>
-        );
+        return <EmptyState icon="🍂" heading="No special deals right now" subtext="Check back soon for flash sales and offers." />;
     }
 
     // Sort items by savings for better impact
@@ -677,9 +678,9 @@ const StoreDetail: React.FC = () => {
                             <button
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id as any)}
-                                className={`px-5 py-2.5 rounded-2xl text-[10px] md:text-xs font-black tracking-widest transition-all whitespace-nowrap flex items-center gap-2 relative border-2 ${activeTab === tab.id 
-                                    ? 'bg-gray-900 text-white border-gray-900 shadow-xl -translate-y-0.5' 
-                                    : 'bg-white text-gray-600 border-gray-100 hover:border-gray-300 hover:text-gray-900'}`}
+                                className={`px-5 py-2.5 rounded-full text-xs font-semibold transition-all duration-150 whitespace-nowrap flex items-center gap-2 relative ${activeTab === tab.id
+                                    ? 'bg-[var(--brand-primary)] text-white shadow-md'
+                                    : 'bg-[var(--surface-2)] text-[var(--text-muted)] hover:text-[var(--text-main)]'}`}
                             >
                                 <span className={activeTab === tab.id ? 'scale-110' : 'opacity-80'}>{tab.icon}</span>
                                 {tab.label}
@@ -730,9 +731,9 @@ const StoreDetail: React.FC = () => {
                                 <button
                                     key={cat}
                                     onClick={() => setActiveCategory(cat)}
-                                    className={`px-4 py-2 rounded-full text-[10px] md:text-xs font-black tracking-widest transition-all whitespace-nowrap border-2 ${activeCategory === cat 
-                                        ? 'bg-teal-600 text-white border-teal-600 shadow-md transform scale-105' 
-                                        : 'bg-gray-50 text-gray-900 border-gray-100 hover:border-gray-300'}`}
+                                    className={`px-4 py-2 rounded-full text-xs font-semibold transition-all whitespace-nowrap border ${activeCategory === cat
+                                        ? 'bg-[var(--brand-primary)] text-white border-[var(--brand-primary)] shadow-sm'
+                                        : 'bg-[var(--surface-2)] text-[var(--text-main)] border-[var(--glass-border)] hover:border-[var(--brand-primary)]'}`}
                                 >
                                     {cat.replace(/^cat-/, '').replace(/-/g, ' ')}
                                 </button>
@@ -743,10 +744,7 @@ const StoreDetail: React.FC = () => {
                     {/* Product Grid/List View */}
                     <div className="p-4 bg-gray-50/50 min-h-screen">
                         {filteredProducts.length === 0 ? (
-                            <div className="text-center py-20 flex flex-col items-center justify-center bg-white rounded-3xl border-4 border-dashed border-gray-100">
-                                <span className="text-6xl mb-4 grayscale opacity-20">🛒</span>
-                                <p className="text-gray-400 font-bold tracking-widest italic">No Items Found In This Aisle!</p>
-                            </div>
+                            <EmptyState icon="🛒" heading="No items in this aisle" subtext="Try a different category or check back later." />
                         ) : viewMode === 'grid' ? (
                             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
                                 {filteredProducts.map((product: any) => {
@@ -811,22 +809,22 @@ const StoreDetail: React.FC = () => {
                                                 {/* Pricing Block */}
                                                 <div className="mt-3 bg-gray-50 p-2 rounded-lg border border-gray-100">
                                                     <div className="flex items-baseline gap-2">
-                                                        <span className="text-xl md:text-2xl font-black text-teal-600 tracking-tighter">${product.price.toFixed(2)}</span>
+                                                        <span className="text-xl md:text-2xl font-black text-[var(--brand-primary)] tracking-tighter">${product.price.toFixed(2)}</span>
                                                         {product.originalPrice && (
                                                             <span className="text-[10px] text-gray-400 line-through decoration-teal-600/30 font-bold">Reg {product.originalPrice.toFixed(2)}</span>
                                                         )}
                                                     </div>
                                                     {savingsAmount && Number(savingsAmount) > 0 && !isOutOfStock && (
-                                                        <p className="text-[9px] font-black text-green-600 tracking-tighter">You Save ${savingsAmount}</p>
+                                                        <p className="text-xs font-semibold text-green-600">You Save ${savingsAmount}</p>
                                                     )}
                                                 </div>
 
                                                 <button
                                                     onClick={() => !isOutOfStock && handleQuickAdd(product)}
                                                     disabled={isOutOfStock}
-                                                    className={`w-full mt-3 py-2 md:py-3 text-[10px] font-black rounded tracking-widest shadow-md transition-all active:scale-95 ${isOutOfStock
+                                                    className={`w-full mt-3 py-2 md:py-3 text-xs font-bold rounded-full tracking-wide shadow-sm transition-all active:scale-95 ${isOutOfStock
                                                         ? 'bg-gray-200 text-gray-400 cursor-not-allowed border border-gray-300'
-                                                        : 'bg-teal-600 text-white hover:bg-black'
+                                                        : 'bg-[var(--brand-primary)] text-white hover:brightness-110'
                                                         }`}
                                                 >
                                                     {isOutOfStock ? 'Sold Out' : '+ Add to Trolley'}
@@ -861,7 +859,7 @@ const StoreDetail: React.FC = () => {
                                                     )}
                                                 </div>
                                                 <div className="flex items-baseline gap-2 mt-0.5">
-                                                    <span className="text-lg font-black text-teal-600 tracking-tighter">${product.price.toFixed(2)}</span>
+                                                    <span className="text-lg font-black text-[var(--brand-primary)] tracking-tighter">${product.price.toFixed(2)}</span>
                                                     {product.originalPrice && (
                                                         <span className="text-[10px] text-gray-400 line-through font-bold">Reg ${product.originalPrice.toFixed(2)}</span>
                                                     )}
@@ -870,9 +868,9 @@ const StoreDetail: React.FC = () => {
                                             <button
                                                 onClick={() => !isOutOfStock && handleQuickAdd(product)}
                                                 disabled={isOutOfStock}
-                                                className={`px-4 md:px-6 py-2.5 rounded text-[10px] font-black tracking-widest shadow-md transition-all active:scale-95 ${isOutOfStock
+                                                className={`px-4 md:px-6 py-2.5 rounded-full text-xs font-bold tracking-wide shadow-sm transition-all active:scale-95 ${isOutOfStock
                                                     ? 'bg-gray-100 text-gray-400 border border-gray-200'
-                                                    : 'bg-teal-600 text-white hover:bg-black'
+                                                    : 'bg-[var(--brand-primary)] text-white hover:brightness-110'
                                                     }`}
                                             >
                                                 {isOutOfStock ? 'Out' : '+ Add'}
@@ -933,7 +931,7 @@ const StoreDetail: React.FC = () => {
                                             </div>
                                             <div className="flex-1 h-3 bg-gray-50 rounded-full overflow-hidden border border-gray-100 shadow-inner">
                                                 <div
-                                                    className="h-full bg-teal-600 rounded-full transition-all duration-1000 ease-out shadow-sm"
+                                                    className="h-full bg-[var(--brand-primary)] rounded-full transition-all duration-1000 ease-out shadow-sm"
                                                     style={{ width: `${pct}%` }}
                                                 />
                                             </div>

@@ -6,6 +6,8 @@ import { doc, onSnapshot } from 'firebase/firestore';
 import SEO from '../../components/SEO';
 import { calculateUnitPrice } from '../../smartcart/priceNormalization';
 import { Link } from 'react-router-dom';
+import { Skeleton } from '../../components/ui/Skeleton';
+import { EmptyState } from '../../components/ui/EmptyState';
 
 // Normalizes a flyer deal's price to a per-unit equivalent.
 const parseDealPrice = (deal: any): number => {
@@ -158,7 +160,7 @@ const PriceCompare = () => {
                             <span className="text-3xl">⚖️</span> Compare My List
                         </h1>
                         <p className="text-sm text-[var(--text-muted)] font-medium mt-1">
-                            Finding deals for the items on your wishlist. <span className="text-blue-600 bg-blue-50 px-1 rounded">Note:</span> This information is sourced directly from public grocery flyers to help you compare prices. <strong className="text-[var(--text-main)]">Items shown here are for comparison only and cannot be ordered through the platform.</strong>
+                            Finding deals for items on your wishlist. <span className="badge-info">Note</span> This information comes from public grocery flyers for price comparison only. <strong className="text-[var(--text-main)]">Items shown here cannot be ordered through the platform.</strong>
                         </p>
                     </div>
                 </div>
@@ -166,18 +168,28 @@ const PriceCompare = () => {
 
             <main className="max-w-5xl mx-auto py-8 px-4 space-y-8">
                 {wishlistItems.length === 0 ? (
-                    <div className="text-center py-20 bg-white rounded-3xl border border-[var(--glass-border)] shadow-sm">
-                        <span className="text-5xl mb-4 block">📋</span>
-                        <h3 className="text-xl font-bold text-[var(--text-main)] mb-2">Your wishlist is empty</h3>
-                        <p className="text-[var(--text-muted)] font-medium mb-6">Add items to your wishlist to compare flyer prices.</p>
-                        <Link to="/profile" state={{ activeTab: 'wishlist' }} className="px-6 py-3 bg-[var(--brand-primary)] text-white font-bold rounded-xl hover:bg-[var(--brand-primary)]/90 transition-colors">
-                            Manage Wishlist
-                        </Link>
-                    </div>
+                    <EmptyState
+                        icon="🔍"
+                        heading="No items to compare"
+                        subtext="Add items to your wishlist first, then come back to compare flyer prices."
+                        action={<Link to="/profile" state={{ activeTab: 'wishlist' }} className="btn-primary">Manage Wishlist</Link>}
+                    />
                 ) : loading ? (
-                    <div className="flex flex-col items-center justify-center py-20 opacity-50">
-                        <div className="w-12 h-12 border-4 border-[var(--brand-primary)] border-t-transparent rounded-full animate-spin mb-4" />
-                        <p className="font-bold text-[var(--text-main)] animate-pulse">Scanning flyers for your items...</p>
+                    <div className="space-y-6">
+                        {[1, 2, 3].map(i => (
+                            <div key={i} className="bg-white rounded-3xl border border-[var(--glass-border)] overflow-hidden">
+                                <div className="px-6 py-4 border-b border-[var(--glass-border)] flex items-center gap-4">
+                                    <Skeleton className="w-12 h-12 rounded-xl flex-shrink-0" />
+                                    <div className="flex-1 space-y-2">
+                                        <Skeleton className="h-4 rounded-full w-1/3" />
+                                        <Skeleton className="h-3 rounded-full w-1/5" />
+                                    </div>
+                                </div>
+                                <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    {[1,2,3].map(j => <Skeleton key={j} className="h-24 rounded-2xl" />)}
+                                </div>
+                            </div>
+                        ))}
                     </div>
                 ) : (
                     <div className="space-y-6">
@@ -198,7 +210,7 @@ const PriceCompare = () => {
                                         </div>
                                     </div>
                                     <div className="shrink-0">
-                                        <span className={`px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider ${group.deals.length > 0 ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' : 'bg-gray-100 text-gray-500 border border-gray-200'}`}>
+                                        <span className={group.deals.length > 0 ? 'badge-best' : 'badge-info'}>
                                             {group.deals.length} flyer deal{group.deals.length !== 1 ? 's' : ''} found
                                         </span>
                                     </div>
@@ -210,20 +222,20 @@ const PriceCompare = () => {
                                             {group.deals.map((deal: any, i: number) => {
                                                 const isBest = i === 0;
                                                 return (
-                                                    <div key={i} className={`flex flex-col p-3 rounded-2xl border ${isBest ? 'bg-emerald-50 border-emerald-200 shadow-sm' : 'bg-[var(--surface-0)] border-[var(--glass-border)] hover:border-gray-300'} transition-colors`}>
+                                                    <div key={i} className={`flex flex-col p-3 rounded-2xl border ${isBest ? 'bg-[var(--brand-primary-light)] border-[var(--brand-primary)]/20 shadow-sm' : 'bg-[var(--surface-0)] border-[var(--glass-border)] hover:border-[var(--glass-border)]'} transition-colors`}>
                                                         <div className="flex items-center justify-between mb-2">
                                                             <div className="flex items-center gap-2 min-w-0">
-                                                                {isBest && <span className="text-sm">🏆</span>}
-                                                                <span className={`text-sm font-bold truncate ${isBest ? 'text-emerald-800' : 'text-[var(--text-main)]'}`}>
+                                                                {isBest && <span className="badge-best">Best Price</span>}
+                                                                <span className={`text-sm font-bold truncate ${isBest ? 'text-[var(--brand-primary)]' : 'text-[var(--text-main)]'}`}>
                                                                     {deal.retailer}
                                                                 </span>
                                                             </div>
                                                             <div className="flex items-center gap-1 shrink-0 pl-2">
-                                                                {deal.prePriceText && <span className="text-[10px] text-[var(--text-muted)] font-bold uppercase tracking-wider">{deal.prePriceText}</span>}
-                                                                <span className={`text-xl font-black tracking-tight ${isBest ? 'text-emerald-600' : 'text-[var(--text-main)]'}`}>
+                                                                {deal.prePriceText && <span className="text-xs text-[var(--text-muted)] font-bold uppercase tracking-wider">{deal.prePriceText}</span>}
+                                                                <span className={`text-xl font-black tracking-tight ${isBest ? 'text-[var(--brand-primary)]' : 'text-[var(--text-main)]'}`}>
                                                                     {deal.currentPrice ? `$${parseFloat(deal.currentPrice).toFixed(2)}` : deal.priceText}
                                                                 </span>
-                                                                {deal.postPriceText && <span className="text-[10px] text-[var(--text-muted)] font-bold uppercase tracking-wider">{deal.postPriceText}</span>}
+                                                                {deal.postPriceText && <span className="text-xs text-[var(--text-muted)] font-bold uppercase tracking-wider">{deal.postPriceText}</span>}
                                                             </div>
                                                         </div>
                                                         
@@ -235,21 +247,21 @@ const PriceCompare = () => {
                                                             )}
                                                             <div className="flex-1 min-w-0 flex flex-col justify-between">
                                                                 <div className="flex items-start justify-between gap-2">
-                                                                    <p className="text-[11px] text-[var(--text-muted)] font-medium line-clamp-2">{deal.name}</p>
+                                                                    <p className="text-xs text-[var(--text-muted)] font-medium line-clamp-2">{deal.name}</p>
                                                                     {(() => {
                                                                         const price = parseDealPrice(deal);
                                                                         if (price >= 9999) return null;
                                                                         const unitPrice = calculateUnitPrice({ price, packageSize: deal.name || deal.description || '' });
                                                                         if (!unitPrice) return null;
                                                                         return (
-                                                                            <div className={`shrink-0 px-2 py-0.5 rounded bg-white border border-black/5 text-[10px] font-bold ${isBest ? 'text-emerald-700' : 'text-[var(--text-muted)]'}`}>
+                                                                            <div className={`shrink-0 px-2 py-0.5 rounded bg-white border border-black/5 text-xs font-bold ${isBest ? 'text-[var(--brand-primary)]' : 'text-[var(--text-muted)]'}`}>
                                                                                 ${unitPrice.pricePerComparisonUnit.toFixed(2)}/{unitPrice.comparisonUnit}
                                                                             </div>
                                                                         );
                                                                     })()}
                                                                 </div>
                                                                 {deal.validTo && (
-                                                                    <p className="text-[9px] font-bold text-red-500 mt-1">
+                                                                    <p className="text-[10px] font-bold text-[var(--status-error)] mt-1">
                                                                         Ends {new Date(deal.validTo).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                                                                     </p>
                                                                 )}
@@ -262,7 +274,7 @@ const PriceCompare = () => {
                                     ) : (
                                         <div className="text-center py-6 px-4 bg-[var(--surface-0)] rounded-2xl border border-dashed border-[var(--glass-border)]">
                                             <p className="text-sm font-bold text-[var(--text-muted)] mb-1">No matches in current flyers</p>
-                                            <p className="text-[11px] text-gray-400">Try checking back next Thursday when new flyers are released.</p>
+                                            <p className="text-xs text-[var(--text-muted)]">Try checking back next Thursday when new flyers are released.</p>
                                         </div>
                                     )}
                                 </div>

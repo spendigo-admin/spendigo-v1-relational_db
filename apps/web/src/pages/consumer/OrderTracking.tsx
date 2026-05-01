@@ -92,7 +92,7 @@ const OrderTracking: React.FC = () => {
         <div className="animate-fade-in pb-20">
             <SEO title="Order Tracking" description="Track your Spendigo order status." noIndex />
             {/* Header */}
-            <div className={`p-6 ${isDelivered ? 'bg-green-500' : isCancelled ? 'bg-red-500' : isOnHold ? 'bg-yellow-500' : 'bg-[var(--brand-primary)]'} text-white transition-colors duration-500`}>
+            <div className={`p-6 ${isDelivered ? 'bg-[var(--status-success)]' : isCancelled ? 'bg-[var(--status-error)]' : isOnHold ? 'bg-[var(--status-warning)]' : 'bg-[var(--brand-primary)]'} text-white transition-colors duration-500`}>
                 <div className="max-w-3xl mx-auto">
                     <p className="text-sm opacity-80 mb-1">{order.id}</p>
                     <h1 className="text-2xl font-bold mb-2">
@@ -149,7 +149,7 @@ const OrderTracking: React.FC = () => {
                                 return (
                                     <div key={step} className="flex items-start gap-4">
                                         <div className={`relative z-10 w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold transition-all ${isCompleted ? 'bg-[var(--brand-primary)] text-white' :
-                                            isCurrent ? 'bg-[var(--brand-primary)] text-white ring-4 ring-[var(--brand-primary)]/20' :
+                                            isCurrent ? 'bg-[var(--brand-primary)] text-white ring-4 ring-[var(--brand-primary)]/20 animate-pulse' :
                                                 'bg-[var(--surface-2)] text-[var(--text-muted)]'
                                             }`}>
                                             {getStepIcon(step, isCompleted, isCurrent)}

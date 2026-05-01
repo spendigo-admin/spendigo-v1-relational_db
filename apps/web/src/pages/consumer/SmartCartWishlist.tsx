@@ -81,11 +81,11 @@ const SmartCartWishlist: React.FC = () => {
                         {deal.image && (
                             <img src={deal.image} alt="" className="w-full h-16 object-cover rounded mb-2" />
                         )}
-                        <p className="text-xs font-medium text-gray-800 truncate">{deal.productName}</p>
-                        <p className="text-xs text-gray-400 truncate">{deal.storeName}</p>
+                        <p className="text-xs font-medium text-[var(--text-main)] truncate">{deal.productName}</p>
+                        <p className="text-xs text-[var(--text-muted)] truncate">{deal.storeName}</p>
                         <div className="flex items-center gap-1.5 mt-1">
                             <span className="text-xs font-bold text-red-600">${deal.salePrice.toFixed(2)}</span>
-                            <span className="text-xs text-gray-400 line-through">${deal.originalPrice.toFixed(2)}</span>
+                            <span className="text-xs text-[var(--text-muted)] line-through">${deal.originalPrice.toFixed(2)}</span>
                         </div>
                         <div className="mt-1">
                             <span className="badge-deal">
@@ -104,7 +104,7 @@ const SmartCartWishlist: React.FC = () => {
 
             {/* Location Change Toast */}
             {locationChanged && (
-                <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[60] bg-blue-600 text-white px-5 py-3 rounded-xl shadow-xl text-sm font-medium flex items-center gap-2 animate-fade-in">
+                <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[60] bg-[var(--brand-primary)] text-white px-5 py-3 rounded-xl shadow-xl text-sm font-medium flex items-center gap-2 animate-fade-in">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                     Location updated — prices recalculated
                 </div>
@@ -112,9 +112,9 @@ const SmartCartWishlist: React.FC = () => {
 
             {/* Mobile Sticky Bottom Bar */}
             {!inventoryLoading && wishlistItems.length > 0 && (
-                <div className="fixed bottom-0 left-0 right-0 lg:hidden bg-white border-t border-gray-200 px-4 py-3 pb-safe z-50 flex items-center gap-3 shadow-2xl">
+                <div className="fixed bottom-0 left-0 right-0 lg:hidden bg-white/90 backdrop-blur-md border-t border-[var(--glass-border)] px-4 py-3 pb-safe z-50 flex items-center gap-3 shadow-2xl">
                     <div className="flex-1 min-w-0">
-                        <p className="text-xs text-gray-500">Estimated total</p>
+                        <p className="text-xs text-[var(--text-muted)]">Estimated total</p>
                         <p className="text-lg font-bold text-[var(--text-main)]">${totalCost.toFixed(2)}</p>
                     </div>
                     <button
@@ -165,11 +165,11 @@ const SmartCartWishlist: React.FC = () => {
                 {/* Preferred Store Toggle */}
                 {!inventoryLoading && singleStoreAlternatives.length > 0 && (
                     <div className="mb-4 flex items-center gap-2 text-xs">
-                        <span className="text-gray-500">Preferred store:</span>
+                        <span className="text-[var(--text-muted)]">Preferred store:</span>
                         <select
                             value={preferredStoreId || ''}
                             onChange={e => setPreferredStore(e.target.value || null)}
-                            className="border border-gray-200 rounded-lg px-2 py-1 text-xs text-gray-700 bg-white"
+                            className="border border-[var(--glass-border)] rounded-lg px-2 py-1 text-xs text-[var(--text-main)] bg-white focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)] focus:border-transparent"
                         >
                             <option value="">None (pure price optimization)</option>
                             {singleStoreAlternatives.map(store => (
@@ -177,7 +177,7 @@ const SmartCartWishlist: React.FC = () => {
                             ))}
                         </select>
                         {preferredStoreId && (
-                            <span className="text-xs text-gray-400">Picks this store when within 2% of cheapest</span>
+                            <span className="text-xs text-[var(--text-muted)]">Picks this store when within 2% of cheapest</span>
                         )}
                     </div>
                 )}
@@ -246,7 +246,7 @@ const SmartCartWishlist: React.FC = () => {
                             {optimizerItems.filter(item => item && item.options.length === 0).length > 0 && (
                                 <div className="mt-6">
                                     <div className="flex items-center justify-between mb-3">
-                                        <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wide">
+                                        <h3 className="text-sm font-semibold text-[var(--text-muted)] uppercase tracking-wide">
                                             Not found nearby ({optimizerItems.filter(i => i && i.options.length === 0).length})
                                         </h3>
                                         <button
@@ -265,17 +265,17 @@ const SmartCartWishlist: React.FC = () => {
                                     </div>
                                     <div className="space-y-2">
                                         {optimizerItems.filter(item => item && item.options.length === 0).map(item => (
-                                            <div key={item!.name} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-dashed border-gray-200">
+                                            <div key={item!.name} className="flex items-center justify-between p-3 bg-[var(--surface-1)] rounded-lg border border-dashed border-[var(--glass-border)]">
                                                 <div className="flex items-center gap-3">
                                                     <img src={item!.image} alt="" className="w-8 h-8 rounded-md object-cover opacity-40 grayscale" />
-                                                    <span className="text-sm text-gray-400 font-medium">{item!.name}</span>
+                                                    <span className="text-sm text-[var(--text-muted)] font-medium">{item!.name}</span>
                                                 </div>
                                                 <button
                                                     onClick={() => {
                                                         const wItem = wishlistItems.find(w => w.name === item!.name);
                                                         if (wItem) removeItem(wItem.id);
                                                     }}
-                                                    className="text-gray-300 hover:text-red-400 transition-colors p-1"
+                                                    className="text-[var(--text-muted)] hover:text-red-400 transition-colors p-1"
                                                 >
                                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                                                 </button>

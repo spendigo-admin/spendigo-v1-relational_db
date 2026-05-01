@@ -182,6 +182,7 @@ function App() {
                                                                 {/* CONSUMER ROUTES wrapped in Layout */}
                                                                 <Route element={<ConsumerLayout />}>
                                                                     <Route path="/" element={<StoreList />} />
+                                                                    <Route path="/stores" element={<StoreList />} />
                                                                     <Route path="/store/:id" element={<StoreDetail />} />
                                                                     <Route path="/product/:id" element={<ProductDetail />} />
                                                                     <Route path="/cart" element={<Cart />} />

@@ -73,24 +73,24 @@ export const OrderSummaryPanel: React.FC<OrderSummaryPanelProps> = ({
 
             <div className="grid grid-cols-2 gap-3 mb-5">
                 <div className="rounded-2xl border border-[var(--glass-border)] bg-white/80 p-3">
-                    <div className="text-[11px] uppercase tracking-[0.12em] text-[var(--text-muted)]">Split Total</div>
+                    <div className="text-xs uppercase tracking-[0.12em] text-[var(--text-muted)]">Split Total</div>
                     <div className="mt-1 text-2xl font-black text-[var(--text-main)]">${totalCost.toFixed(2)}</div>
                     <div className="text-xs text-[var(--text-muted)]">{storeCount} store{storeCount !== 1 ? 's' : ''}</div>
                 </div>
                 <div className="rounded-2xl border border-[var(--glass-border)] bg-white/80 p-3">
-                    <div className="text-[11px] uppercase tracking-[0.12em] text-[var(--text-muted)]">Best Single Store</div>
+                    <div className="text-xs uppercase tracking-[0.12em] text-[var(--text-muted)]">Best Single Store</div>
                     <div className="mt-1 text-2xl font-black text-[var(--text-main)]">
                         {bestSingleStore?.cost !== null && bestSingleStore?.cost !== undefined ? `$${bestSingleStore.cost.toFixed(2)}` : 'N/A'}
                     </div>
                     <div className="text-xs text-[var(--text-muted)]">{bestSingleStore?.name || 'No full basket'}</div>
                 </div>
                 <div className="rounded-2xl border border-[var(--glass-border)] bg-white/80 p-3">
-                    <div className="text-[11px] uppercase tracking-[0.12em] text-[var(--text-muted)]">Matched</div>
+                    <div className="text-xs uppercase tracking-[0.12em] text-[var(--text-muted)]">Matched</div>
                     <div className="mt-1 text-2xl font-black text-[var(--text-main)]">{matchedCount}</div>
                     <div className="text-xs text-[var(--text-muted)]">{missingCount} missing</div>
                 </div>
                 <div className="rounded-2xl border border-[var(--glass-border)] bg-[linear-gradient(135deg,rgba(46,125,50,0.12),rgba(255,255,255,0.96))] p-3">
-                    <div className="text-[11px] uppercase tracking-[0.12em] text-[var(--text-muted)]">Savings</div>
+                    <div className="text-xs uppercase tracking-[0.12em] text-[var(--text-muted)]">Savings</div>
                     <div className="mt-1 text-2xl font-black text-[var(--status-success)]">
                         {(dealSavings > 0 || potentialSavings > 0) ? `$${(dealSavings + Math.max(0, potentialSavings)).toFixed(2)}` : '$0.00'}
                     </div>
@@ -128,7 +128,7 @@ export const OrderSummaryPanel: React.FC<OrderSummaryPanelProps> = ({
             )}
 
             {potentialSavings > 0 && (
-                <div className="flex items-center justify-between mb-4 text-green-600 text-sm bg-green-50 rounded-lg px-3 py-2">
+                <div className="flex items-center justify-between mb-4 text-[var(--status-success)] text-sm bg-[var(--brand-primary-light)] rounded-lg px-3 py-2">
                     <span className="font-medium">Savings vs Best Single Store</span>
                     <span className="font-bold">-${potentialSavings.toFixed(2)}</span>
                 </div>
@@ -157,7 +157,7 @@ export const OrderSummaryPanel: React.FC<OrderSummaryPanelProps> = ({
                         ))}
                     </div>
                 ) : (
-                    <p className="text-[10px] text-[var(--text-muted)] italic">
+                    <p className="text-xs text-[var(--text-muted)] italic">
                         Select more items to unlock AI-powered shopping insights.
                     </p>
                 )}
