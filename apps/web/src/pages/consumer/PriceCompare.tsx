@@ -65,8 +65,8 @@ const PriceCompare = () => {
                     const lowerName = (deal.name || '').toLowerCase();
                     
                     const matchesList = listTerms.some(term => {
-                        return lowerName.includes(term) || term.includes(lowerName) || 
-                               term.split(' ').some(word => word.length > 3 && lowerName.includes(word));
+                        return lowerName.includes(term) || term.includes(lowerName) ||
+                               term.split(' ').some(word => word.length > 3 && new RegExp(`\\b${word}\\b`).test(lowerName));
                     });
                     
                     return matchesList;
@@ -100,8 +100,8 @@ const PriceCompare = () => {
 
             const matchingDeals = deals.filter(deal => {
                 const lowerName = (deal.name || '').toLowerCase();
-                return lowerName.includes(term) || term.includes(lowerName) || 
-                       termWords.some(word => lowerName.includes(word));
+                return lowerName.includes(term) || term.includes(lowerName) ||
+                       termWords.some(word => new RegExp(`\\b${word}\\b`).test(lowerName));
             });
 
             // Sort deals by parsed price
@@ -217,61 +217,141 @@ const PriceCompare = () => {
                                 </div>
                                 
                                 <div className="p-6">
-                                    {group.deals.length > 0 ? (
-                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                            {group.deals.map((deal: any, i: number) => {
-                                                const isBest = i === 0;
-                                                return (
-                                                    <div key={i} className={`flex flex-col p-3 rounded-2xl border ${isBest ? 'bg-[var(--brand-primary-light)] border-[var(--brand-primary)]/20 shadow-sm' : 'bg-[var(--surface-0)] border-[var(--glass-border)] hover:border-[var(--glass-border)]'} transition-colors`}>
-                                                        <div className="flex items-center justify-between mb-2">
-                                                            <div className="flex items-center gap-2 min-w-0">
-                                                                {isBest && <span className="badge-best">Best Price</span>}
-                                                                <span className={`text-sm font-bold truncate ${isBest ? 'text-[var(--brand-primary)]' : 'text-[var(--text-main)]'}`}>
-                                                                    {deal.retailer}
-                                                                </span>
-                                                            </div>
-                                                            <div className="flex items-center gap-1 shrink-0 pl-2">
-                                                                {deal.prePriceText && <span className="text-xs text-[var(--text-muted)] font-bold uppercase tracking-wider">{deal.prePriceText}</span>}
-                                                                <span className={`text-xl font-black tracking-tight ${isBest ? 'text-[var(--brand-primary)]' : 'text-[var(--text-main)]'}`}>
-                                                                    {deal.currentPrice ? `$${parseFloat(deal.currentPrice).toFixed(2)}` : deal.priceText}
-                                                                </span>
-                                                                {deal.postPriceText && <span className="text-xs text-[var(--text-muted)] font-bold uppercase tracking-wider">{deal.postPriceText}</span>}
-                                                            </div>
-                                                        </div>
-                                                        
-                                                        <div className="flex gap-3 border-t border-black/5 pt-2 mt-auto">
-                                                            {deal.imageUrl && (
-                                                                <div className="w-12 h-12 shrink-0 bg-white rounded-lg border border-[var(--glass-border)] flex items-center justify-center p-1">
-                                                                    <img src={deal.imageUrl} alt={deal.name} className="max-w-full max-h-full object-contain mix-blend-multiply" />
-                                                                </div>
-                                                            )}
-                                                            <div className="flex-1 min-w-0 flex flex-col justify-between">
-                                                                <div className="flex items-start justify-between gap-2">
-                                                                    <p className="text-xs text-[var(--text-muted)] font-medium line-clamp-2">{deal.name}</p>
-                                                                    {(() => {
-                                                                        const price = parseDealPrice(deal);
-                                                                        if (price >= 9999) return null;
-                                                                        const unitPrice = calculateUnitPrice({ price, packageSize: deal.name || deal.description || '' });
-                                                                        if (!unitPrice) return null;
-                                                                        return (
-                                                                            <div className={`shrink-0 px-2 py-0.5 rounded bg-white border border-black/5 text-xs font-bold ${isBest ? 'text-[var(--brand-primary)]' : 'text-[var(--text-muted)]'}`}>
-                                                                                ${unitPrice.pricePerComparisonUnit.toFixed(2)}/{unitPrice.comparisonUnit}
-                                                                            </div>
-                                                                        );
-                                                                    })()}
-                                                                </div>
-                                                                {deal.validTo && (
-                                                                    <p className="text-[10px] font-bold text-[var(--status-error)] mt-1">
-                                                                        Ends {new Date(deal.validTo).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                                                                    </p>
+                                    {group.deals.length > 0 ? (() => {
+                                        // Split deals into same-product-multi-retailer groups vs unique products
+                                        const nameMap = new Map<string, any[]>();
+                                        group.deals.forEach((deal: any) => {
+                                            const key = (deal.name || '').toLowerCase().trim();
+                                            if (!nameMap.has(key)) nameMap.set(key, []);
+                                            nameMap.get(key)!.push(deal);
+                                        });
+                                        const headToHeadGroups = Array.from(nameMap.values())
+                                            .filter(g => g.length >= 2)
+                                            .map(g => [...g].sort((a, b) => parseDealPrice(a) - parseDealPrice(b)));
+                                        const uniqueDeals: any[] = Array.from(nameMap.values())
+                                            .filter(g => g.length === 1)
+                                            .map(g => g[0]);
+
+                                        return (
+                                            <div className="space-y-5">
+                                                {/* Head-to-head: same product, multiple retailers */}
+                                                {headToHeadGroups.map((nameGroup, gi) => {
+                                                    const best = nameGroup[0];
+                                                    const saving = parseDealPrice(nameGroup[nameGroup.length - 1]) - parseDealPrice(best);
+                                                    return (
+                                                        <div key={gi} className="rounded-2xl border border-[var(--brand-primary)]/20 bg-[var(--brand-primary-light)] overflow-hidden">
+                                                            <div className="flex items-center gap-3 px-4 py-3 border-b border-[var(--brand-primary)]/10">
+                                                                {best.imageUrl && (
+                                                                    <div className="w-10 h-10 shrink-0 bg-white rounded-lg border border-[var(--glass-border)] flex items-center justify-center p-1">
+                                                                        <img src={best.imageUrl} alt={best.name} className="max-w-full max-h-full object-contain mix-blend-multiply" />
+                                                                    </div>
+                                                                )}
+                                                                <p className="text-sm font-bold text-[var(--text-main)] flex-1 leading-snug">{best.name}</p>
+                                                                {saving > 0.01 && (
+                                                                    <span className="badge-best shrink-0">Save ${saving.toFixed(2)}</span>
                                                                 )}
                                                             </div>
+                                                            <div className="divide-y divide-[var(--brand-primary)]/10">
+                                                                {nameGroup.map((deal: any, ri: number) => {
+                                                                    const isWinner = ri === 0;
+                                                                    const price = parseDealPrice(deal);
+                                                                    const unitPrice = price < 9999 ? calculateUnitPrice({ price, packageSize: deal.name || '' }) : null;
+                                                                    return (
+                                                                        <div key={ri} className={`flex items-center justify-between px-4 py-2.5 ${isWinner ? 'bg-white/60' : ''}`}>
+                                                                            <div className="flex items-center gap-2 min-w-0">
+                                                                                {isWinner && <span className="text-base leading-none">🏆</span>}
+                                                                                <span className={`text-sm font-semibold truncate ${isWinner ? 'text-[var(--brand-primary)]' : 'text-[var(--text-muted)]'}`}>
+                                                                                    {deal.retailer}
+                                                                                </span>
+                                                                            </div>
+                                                                            <div className="flex items-center gap-2 shrink-0 pl-3">
+                                                                                {unitPrice && (
+                                                                                    <span className="text-xs text-[var(--text-muted)] font-medium hidden sm:inline">
+                                                                                        ${unitPrice.pricePerComparisonUnit.toFixed(2)}/{unitPrice.comparisonUnit}
+                                                                                    </span>
+                                                                                )}
+                                                                                {deal.validTo && (
+                                                                                    <span className="text-[10px] font-bold text-[var(--status-error)] hidden sm:inline">
+                                                                                        Ends {new Date(deal.validTo).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                                                                    </span>
+                                                                                )}
+                                                                                <span className={`text-base font-black tracking-tight ${isWinner ? 'text-[var(--brand-primary)]' : 'text-[var(--text-main)]'}`}>
+                                                                                    {deal.currentPrice ? `$${parseFloat(deal.currentPrice).toFixed(2)}` : deal.priceText}
+                                                                                </span>
+                                                                            </div>
+                                                                        </div>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+
+                                                {/* Unique products — different brands/variants */}
+                                                {uniqueDeals.length > 0 && (
+                                                    <div>
+                                                        {headToHeadGroups.length > 0 && (
+                                                            <p className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-3">
+                                                                Other Matches
+                                                            </p>
+                                                        )}
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                                            {uniqueDeals.map((deal: any, i: number) => {
+                                                                const isBest = headToHeadGroups.length === 0 && i === 0;
+                                                                return (
+                                                                    <div key={i} className={`flex flex-col p-3 rounded-2xl border ${isBest ? 'bg-[var(--brand-primary-light)] border-[var(--brand-primary)]/20 shadow-sm' : 'bg-[var(--surface-0)] border-[var(--glass-border)]'} transition-colors`}>
+                                                                        <div className="flex items-center justify-between mb-2">
+                                                                            <div className="flex items-center gap-2 min-w-0">
+                                                                                {isBest && <span className="badge-best">Best Price</span>}
+                                                                                <span className={`text-sm font-bold truncate ${isBest ? 'text-[var(--brand-primary)]' : 'text-[var(--text-main)]'}`}>
+                                                                                    {deal.retailer}
+                                                                                </span>
+                                                                            </div>
+                                                                            <div className="flex items-center gap-1 shrink-0 pl-2">
+                                                                                {deal.prePriceText && <span className="text-xs text-[var(--text-muted)] font-bold uppercase tracking-wider">{deal.prePriceText}</span>}
+                                                                                <span className={`text-xl font-black tracking-tight ${isBest ? 'text-[var(--brand-primary)]' : 'text-[var(--text-main)]'}`}>
+                                                                                    {deal.currentPrice ? `$${parseFloat(deal.currentPrice).toFixed(2)}` : deal.priceText}
+                                                                                </span>
+                                                                                {deal.postPriceText && <span className="text-xs text-[var(--text-muted)] font-bold uppercase tracking-wider">{deal.postPriceText}</span>}
+                                                                            </div>
+                                                                        </div>
+                                                                        <div className="flex gap-3 border-t border-black/5 pt-2 mt-auto">
+                                                                            {deal.imageUrl && (
+                                                                                <div className="w-12 h-12 shrink-0 bg-white rounded-lg border border-[var(--glass-border)] flex items-center justify-center p-1">
+                                                                                    <img src={deal.imageUrl} alt={deal.name} className="max-w-full max-h-full object-contain mix-blend-multiply" />
+                                                                                </div>
+                                                                            )}
+                                                                            <div className="flex-1 min-w-0 flex flex-col justify-between">
+                                                                                <div className="flex items-start justify-between gap-2">
+                                                                                    <p className="text-xs text-[var(--text-muted)] font-medium">{deal.name}</p>
+                                                                                    {(() => {
+                                                                                        const price = parseDealPrice(deal);
+                                                                                        if (price >= 9999) return null;
+                                                                                        const unitPrice = calculateUnitPrice({ price, packageSize: deal.name || deal.description || '' });
+                                                                                        if (!unitPrice) return null;
+                                                                                        return (
+                                                                                            <div className={`shrink-0 px-2 py-0.5 rounded bg-white border border-black/5 text-xs font-bold ${isBest ? 'text-[var(--brand-primary)]' : 'text-[var(--text-muted)]'}`}>
+                                                                                                ${unitPrice.pricePerComparisonUnit.toFixed(2)}/{unitPrice.comparisonUnit}
+                                                                                            </div>
+                                                                                        );
+                                                                                    })()}
+                                                                                </div>
+                                                                                {deal.validTo && (
+                                                                                    <p className="text-[10px] font-bold text-[var(--status-error)] mt-1">
+                                                                                        Ends {new Date(deal.validTo).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                                                                    </p>
+                                                                                )}
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                );
+                                                            })}
                                                         </div>
                                                     </div>
-                                                );
-                                            })}
-                                        </div>
-                                    ) : (
+                                                )}
+                                            </div>
+                                        );
+                                    })() : (
                                         <div className="text-center py-6 px-4 bg-[var(--surface-0)] rounded-2xl border border-dashed border-[var(--glass-border)]">
                                             <p className="text-sm font-bold text-[var(--text-muted)] mb-1">No matches in current flyers</p>
                                             <p className="text-xs text-[var(--text-muted)]">Try checking back next Thursday when new flyers are released.</p>
