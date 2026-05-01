@@ -242,7 +242,7 @@ const PriceCompare = () => {
                                                         <div key={gi} className="rounded-2xl border border-[var(--brand-primary)]/20 bg-[var(--brand-primary-light)] overflow-hidden">
                                                             <div className="flex items-center gap-3 px-4 py-3 border-b border-[var(--brand-primary)]/10">
                                                                 {best.imageUrl && (
-                                                                    <div className="w-10 h-10 shrink-0 bg-white rounded-lg border border-[var(--glass-border)] flex items-center justify-center p-1">
+                                                                    <div className="w-16 h-16 shrink-0 bg-white rounded-xl border border-[var(--glass-border)] flex items-center justify-center p-1.5">
                                                                         <img src={best.imageUrl} alt={best.name} className="max-w-full max-h-full object-contain mix-blend-multiply" />
                                                                     </div>
                                                                 )}
@@ -315,9 +315,9 @@ const PriceCompare = () => {
                                                                                 {deal.postPriceText && <span className="text-xs text-[var(--text-muted)] font-bold uppercase tracking-wider">{deal.postPriceText}</span>}
                                                                             </div>
                                                                         </div>
-                                                                        <div className="flex gap-3 border-t border-black/5 pt-2 mt-auto">
+                                                                        <div className="flex gap-3 border-t border-black/5 pt-3 mt-auto">
                                                                             {deal.imageUrl && (
-                                                                                <div className="w-12 h-12 shrink-0 bg-white rounded-lg border border-[var(--glass-border)] flex items-center justify-center p-1">
+                                                                                <div className="w-24 h-24 shrink-0 bg-white rounded-xl border border-[var(--glass-border)] flex items-center justify-center p-2">
                                                                                     <img src={deal.imageUrl} alt={deal.name} className="max-w-full max-h-full object-contain mix-blend-multiply" />
                                                                                 </div>
                                                                             )}
