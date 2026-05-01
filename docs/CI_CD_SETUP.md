@@ -1,13 +1,13 @@
 # GitHub Actions CI/CD Setup Guide
 
-**Last Updated**: 2026-04-20
+**Last Updated**: 2026-05-01
 **Status**: Production-Ready (v1.0)
 **Pipeline**: `.github/workflows/main.yml`
 
 ---
 
 ## 1. Overview
-Spendigo utilizes a robust **Continuous Integration and Continuous Deployment (CI/CD)** pipeline to ensure that every change to the `main` branch is validated and safely promoted to production.
+Spendigo utilizes a robust **Continuous Integration and Continuous Deployment (CI/CD)** pipeline to ensure that every change to the `main` branch is validated and safely promoted to production. The pipeline can also be triggered manually via the **GitHub Actions** interface (`workflow_dispatch`).
 
 ### Managed Operations:
 - **Automated Validation**: Runs unit and integration tests (`npm test`) on every push.
@@ -25,11 +25,14 @@ To enable the pipeline, the following secrets must be configured in **GitHub →
 
 ### 2.2 Framework Environment (Vite)
 These are injected into the build process to configure the production client:
-- `VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`
+- `VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`, `VITE_FIREBASE_PROJECT_ID`, `VITE_FIREBASE_STORAGE_BUCKET`, `VITE_FIREBASE_MESSAGING_SENDER_ID`, `VITE_FIREBASE_APP_ID`
 - `VITE_ALGOLIA_APP_ID`, `VITE_ALGOLIA_SEARCH_KEY`, `VITE_ALGOLIA_INDEX_NAME`
 - `VITE_GEMINI_API_KEY`: For real-time shopping insights.
 - `VITE_SENTRY_DSN`: For production error monitoring.
-- `VITE_STRIPE_PUBLISHABLE_KEY`: For merchant subscriptions.
+- `VITE_STRIPE_PUBLISHABLE_KEY`: For merchant subscriptions and checkouts.
+- `VITE_FIREBASE_APP_CHECK_KEY`: reCAPTCHA Enterprise key for platform security.
+- `VITE_FIREBASE_VAPID_KEY`: Web Push notification identity key.
+
 
 ---
 
@@ -37,7 +40,7 @@ These are injected into the build process to configure the production client:
 The pipeline follows a strict execution order to prevent broken releases:
 
 1. **Checkout**: Pulls the latest code from `main`.
-2. **Environment Setup**: Provisions Node.js v20 and caches `node_modules` for $3x$ faster builds.
+2. **Environment Setup**: Provisions **Node.js v22** and caches `node_modules` for faster builds. (Uses `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24` for internal action compatibility).
 3. **Dependency Sync**: Uses `npm ci` to ensure an exact replica of the `package-lock.json` environment.
 4. **Build & Test**:
    ```bash

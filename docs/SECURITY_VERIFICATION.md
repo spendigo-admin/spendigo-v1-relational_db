@@ -1,7 +1,7 @@
 # Spendigo Platform — Security Verification Report
 
-**Version**: 1.3 (Production v1.0 Target)
-**Date**: 2026-04-20 
+**Version**: 1.4 (GA Target)
+**Date**: 2026-05-01
 **Classification**: CONFIDENTIAL - Internal Use Only
 
 ---
@@ -30,7 +30,7 @@ The cornerstone of Spendigo's compliance strategy is the Forensic Audit Ledger.
 - **Immutability**: Firestore Security Rules completely block `update` and `delete` operations on the `audit_logs` collection.
 
 ### 2.2 Operational Gap (Pre-Launch)
-- ⚠️ **Genesis Block**: The production environment currently lacks an initialized Genesis Block (`testLog()` trigger). This must be executed in the Admin Dashboard to start the cryptographic chain before real actions are logged.
+- ✅ **Genesis Block**: The production environment has been initialized with the Genesis Block (`testLog()` trigger). The cryptographic chain is now actively securing real actions.
 
 ---
 
@@ -74,12 +74,16 @@ While the platform is highly secure, the following Gaps/Risks remain to be addre
 - **Vulnerability**: Any authenticated user could potentially upload a file to another store's directory.
 - **Action Required**: Add path-based restrictions to Storage rules (e.g., `/stores/{storeId}/` only writable by the store owner) specifically ahead of the **Merchant KYB Document upload** feature.
 
-### 5.2 Firebase App Check (Gap identified)
-- **Risk**: Cloud Functions and Firestore endpoints could be abused by automated bots.
-- **Action Required**: Enforce App Check (reCAPTCHA Enterprise) once baseline production traffic is established. Currently initialized on client, but not enforced on backend.
+### 5.2 Firebase App Check (✅ Resolved)
+- **Status**: App Check is fully enforced across all critical Cloud Functions and Firestore rules.
+- **Implementation**: Traffic is validated via DeviceCheck (iOS), Play Integrity (Android), and reCAPTCHA Enterprise (Web). Automated bots are effectively blocked.
 
 ### 5.3 Admin Authentication (✅ Resolved)
 - **Status**: Multi-Factor Authentication (MFA) via TOTP Authenticator is strictly enforced for all `admin` accounts. Non-enrolled admins are hard-routed to a mandatory setup page before being allowed to access the Dashboard.
+
+### 5.4 Account Governance & Data Lifecycle (✅ Resolved)
+- **Status**: Full compliance with GDPR/CCPA "Right to be Forgotten" mandates.
+- **Implementation**: Platform exposes `/deleteUser` and `/requestAccountDeletion` API endpoints, ensuring verifiable and permanent removal of user personal data upon request.
 
 ---
 
@@ -96,9 +100,9 @@ While the platform is highly secure, the following Gaps/Risks remain to be addre
 1.  [x] Enforce RBAC in Firestore rules.
 2.  [x] Verify Stripe Connect Sandbox integrations.
 3.  [x] Activate Forensic Audit Hash Chaining.
-4.  [ ] **Initialize Audit Genesis Block in Production.**
+4.  [x] **Initialize Audit Genesis Block in Production.**
 5.  [ ] **Deploy restricted Firebase Storage Rules for KYB documents.**
-6.  [ ] **Enable Firebase AppCheck Enforcement.**
+6.  [x] **Enable Firebase AppCheck Enforcement.**
 
 ---
 

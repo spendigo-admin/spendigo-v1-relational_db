@@ -1,7 +1,7 @@
 # Spendigo SmartCart
 
-**Status**: Beta (Feature Complete)  
-**Last Updated**: 2026-04-09
+**Status**: Production-Ready (v1.0)  
+**Last Updated**: 2026-05-01
 
 Spendigo SmartCart is a Canada-first **Marketplace Facilitator** platform connecting independent convenience stores with local consumers. It features smart basket optimization, real-time order management, digital flyer integration, robust subscription management, and production-grade security.
 
@@ -10,7 +10,7 @@ Spendigo SmartCart is a Canada-first **Marketplace Facilitator** platform connec
 ## 🚀 Quick Start
 
 ### Prerequisites
-- **Node.js**: v20+ 
+- **Node.js**: v22+ 
 - **npm**: 11.7.0
 
 **Install Node.js on Mac**:
@@ -91,11 +91,11 @@ Spendigo-v1/
 | Layer | Technology | Version |
 |-------|------------|---------|
 | **Frontend** | React + TypeScript | 18.2.0 + 5.4+ |
-| **Build Tool** | Vite | 7.3.0 |
+| **Build Tool** | Vite | 7.x |
 | **Backend** | Firebase (BaaS) | 10.14.1 |
 | **Database** | Cloud Firestore | NoSQL, real-time |
 | **Authentication** | Firebase Auth | Email/Password + SSO |
-| **Mobile** | Capacitor | 6.0.0 (iOS/Android) |
+| **Mobile** | Capacitor | 7.x (iOS/Android) |
 | **Styling** | TailwindCSS + Custom CSS | 3.4+ |
 
 **See**: [docs/TECH_STACK.md](./docs/TECH_STACK.md) for complete details.
@@ -131,13 +131,14 @@ Spendigo uses a **Firebase-based serverless architecture**:
 
 Firestore Collections:
 - `/users` - User profiles, FCM tokens, and roles
-- `/stores` - Merchant store metadata and configuration
+- `/stores` - Merchant store metadata, configuration, and `/teamMembers` subcollections
 - `/merchant_products` - Individual merchant product listings and prices
 - `/master_products` - Global canonical product definitions
-- `/orders` - Order documents with real-time status sync
+- `/orders` - Order documents with real-time status sync and **Hard Snapshots**
 - `/audit_logs` - SHA-256 linked security audit chain
 - `/notifications` - Multi-channel system notifications
 - `/price_history` - 30-day tracking of product price fluctuations
+- `/ads` - Private Ad Network campaigns (video/image) and metrics
 
 **See**: [docs/SCHEMA.md](./docs/SCHEMA.md) and [docs/SITEMAP.md](./docs/SITEMAP.md) for full details.
 
@@ -163,6 +164,7 @@ npm run build
 ### 🛒 Consumer Experience
 - 🔍 **Advanced Search**: Algolia-powered full-text search and faceting
 - 💰 **SmartCart Optimizer**: Real-time basket optimization finding the lowest total price
+- 🧠 **AI Savings Insights**: Gemini 2.5 Flash powered trip efficiency narratives
 - 📱 **Real-time Tracking**: Live order updates via Firestore and FCM Push Notifications
 - 🌍 **Multilingual**: i18n support for global consumer reach
 - 🛡️ **Integrity Check**: Automated validation against price attacks
@@ -170,12 +172,16 @@ npm run build
 
 ### 📊 Merchant Dashboard
 - 🚀 **Onboarding**: Integrated setup with Stripe Express
+- 👥 **Workforce Management**: Granular role-based access (Admin, Editor, Viewer)
 - 📁 **Catalog Sync**: Add products directly from the Spendigo Master Catalog
 - 📰 **Digital Flyers**: Interactive flyer builder for weekly promotions
 - 💳 **Stripe Subscriptions**: Multiple tiers (Free, Core, Growth) with feature gating
 - 📉 **Analytics**: Detailed revenue and traffic insights
+- ⚖️ **Store Compliance**: In-app suspension notice handling and compliance workflows
 
 ### 🛡️ System Admin Panel
+- 🤖 **Flyer Ingestion**: AI-powered automated flyer scraping jobs
+- 🩺 **System Health**: Real-time monitoring of critical API and database stability
 - 👥 **User Management**: Role orchestration and platform auditing
 - 🏪 **Store Oversight**: Approval workflow and compliance monitoring
 - 📝 **Master Catalog Management**: Centralized product definition and mapping
@@ -209,10 +215,16 @@ npx cap open android
 
 | Document | Description |
 |----------|-------------|
+| [ARCHITECTURE.md](./docs/ARCHITECTURE.md) | High-level system design and component interactions |
 | [TECH_STACK.md](./docs/TECH_STACK.md) | Complete technology stack & library versions |
-| [SITEMAP.md](./docs/SITEMAP.md) | Full route map and orphan page identification |
+| [OPENAPI.yaml](./docs/OPENAPI.yaml) | Callable API specification (v1.3.0) |
 | [SCHEMA.md](./docs/SCHEMA.md) | Database schema (Firestore) |
-| [MOBILE_DEPLOYMENT.md](./docs/MOBILE_DEPLOYMENT.md) | iOS/Android native build guide |
+| [SECURITY_VERIFICATION.md](./docs/SECURITY_VERIFICATION.md) | Security posture and compliance checks |
+| [AUDIT_IMPLEMENTATION.md](./docs/AUDIT_IMPLEMENTATION.md) | Forensic security ledger (SHA-256 hashing) |
+| [GAP_ANALYSIS.md](./docs/GAP_ANALYSIS.md) | Remaining tasks for GA launch |
+| [DEMO_CREDENTIALS.md](./docs/DEMO_CREDENTIALS.md) | QA accounts and role-based test workflows |
+| [SITEMAP.md](./docs/SITEMAP.md) | Full route map and orphan page identification |
+| [MOBILE_DEPLOYMENT.md](./docs/MOBILE_DEPLOYMENT.md) | iOS/Android native build guide (Capacitor 7) |
 
 ---
 
@@ -227,10 +239,10 @@ npx cap open android
 - [x] **Legal Compliance**: Privacy Policy & Terms of Service implementation
 - [x] **Internationalization**: `i18next` framework integration
 - [x] **Push Notifications**: FCM notification dispatch architecture
+- [x] **Stripe Connect**: Direct payout split per store with forensic refund tracking
 
 ### 🔜 Upcoming
 - [ ] Native Mobile App Store QA (iOS/Android)
-- [ ] Stripe Connect (Direct payout split per store)
 - [ ] Server-side Rendering (Next.js candidate migration)
 - [ ] Automated CI/CD performance benchmarking
 

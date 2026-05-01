@@ -1,6 +1,6 @@
 # SmartCart Algorithm Flow
 
-**Last Updated**: 2026-04-20
+**Last Updated**: 2026-05-01
 **Status**: Production-Ready (v1.0)
 
 ---
@@ -150,3 +150,4 @@ flowchart TD
 | **Trip Engine** | Dynamic Gatekeeping | `analyzeTripConsolidation.ts` |
 | **AI** | Gemini 2.5 Flash | `useSmartInsights.ts` |
 | **Search** | Levenshtein / Token | `fuzzy-search.ts` |
+| **Price History**| Firestore Sub-collection| `useOptimizedWishlist.ts` |

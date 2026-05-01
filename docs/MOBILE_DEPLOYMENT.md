@@ -1,6 +1,6 @@
 # Spendigo Mobile App Build Guide
 
-**Last Updated**: 2026-04-20
+**Last Updated**: 2026-05-01
 **Status**: Production-Ready (v1.0)
 **Framework**: Ionic Capacitor (v7.0)
 **Target Platforms**: iOS (14+), Android (API 24+)
@@ -8,7 +8,10 @@
 ---
 
 ## 1. Project Architecture
-Spendigo uses a hybrid mobile strategy. The mobile app is a Capacitor-wrapped instance of the `apps/web` React application. This ensures 1:1 parity for the **SmartCart Optimizer** and **Private Ad Network** features across all devices.
+Spendigo uses a hybrid mobile strategy powered by **Capacitor v7**. The mobile app is a native wrapper around the `apps/web` React application, ensuring 1:1 parity for the **SmartCart Optimizer** and **Private Ad Network** features across all devices.
+
+### Native Security & Verification
+- **App Check**: All native requests are verified using **Firebase App Check** (DeviceCheck for iOS, Play Integrity for Android).
 
 ### Native Plugin Dependencies
 - **Geolocation**: Required for proximity-based deals and delivery radius validation.
@@ -70,6 +73,7 @@ Spendigo supports the `spendigo://` URI scheme for sharing wishlists and orders.
 ## 5. Deployment Checklist
 - [ ] `capacitor.config.ts` has `server.url` REMOVED for production.
 - [ ] `StatusBar` color is set to `#ffffff` (matches new retail design).
-- [ ] Push notification certificates (p8/FCM Key) are uploaded to Firebase.
+- [ ] Push notification certificates (p8/FCM Key) and **VAPID Keys** are synchronized.
+- [ ] **App Check** (DeviceCheck/Play Integrity) is enabled in the Firebase Console.
 - [ ] Version code in `build.gradle` and `Info.plist` is incremented.
 - [ ] `google-services.json` / `GoogleService-Info.plist` are in place.

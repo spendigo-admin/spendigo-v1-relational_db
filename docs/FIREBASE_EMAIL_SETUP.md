@@ -1,6 +1,6 @@
 # Firebase Email Trigger Extension Setup
 
-**Last Updated**: 2026-04-20
+**Last Updated**: 2026-05-01
 **Status**: Production-Ready (v1.0)
 **Infrastructure**: Cloud Firestore + Trigger Email Extension
 
@@ -20,28 +20,30 @@ Spendigo utilizes the **"Trigger Email from Firestore"** extension to decouple a
 ## 2. Integrated Workflows
 The platform automatically queues emails into the `mail` collection based on the following triggers:
 
-### 2.1 Order Confirmation (`sendOrderConfirmation`)
-- **Trigger**: `onCreate` on `/orders/{orderId}`.
-- **Content**: Dynamic HTML table with items, prices, and branding.
+### 2.1 Order Confirmation
+- **Trigger**: `onOrderCreated` (or `onCreate` on `/orders/{orderId}`).
+- **Content**: Dynamic HTML table with items, prices, and branding generated in `sendOrderEmails.ts`.
 - **Action**: Informs the shopper that the store has received their order.
 
-### 2.2 Status Updates (`sendOrderStatusUpdate`)
+### 2.2 Status Updates
 - **Trigger**: `onUpdate` on `/orders/{orderId}` when `status` changes.
-- **States**: 
-  - `preparing` (Yellow)
-  - `out_for_delivery` (Blue)
-  - `delivered` (Green)
-  - `cancelled` (Red)
-- **Action**: Provides real-time tracking links to the shopper.
+- **States**: `preparing`, `out_for_delivery`, `delivered`, `cancelled`.
+- **Action**: Provides real-time status alerts and tracking details.
 
 ### 2.3 Merchant Approval
-- **Trigger**: Admin approval of a `PartnerWithUs` application.
+- **Trigger**: Admin approval via the `StoreManagement.tsx` module.
 - **Action**: Sends a "Welcome to Spendigo" kit with dashboard login instructions.
+
+### 2.4 Team Invitations
+- **Trigger**: `inviteTeamMember` Cloud Function.
+- **Action**: Delivers temporary credentials and an automated email verification link.
 
 ---
 
 ## 3. Template Management
-While the v1.0 engine uses inline HTML generation within Cloud Functions for high-speed dynamic data (Order Lists), future expansion will utilize the **`email_templates`** Firestore collection for non-transactional marketing.
+Spendigo v1.0 utilizes a **Dynamic HTML Generation Engine** within Cloud Functions (`sendOrderEmails.ts`) to construct transactional receipts. This ensures 100% accuracy for nested order items and real-time pricing data. 
+
+Future non-transactional marketing campaigns will utilize the `email_templates` Firestore collection for managed layouts.
 
 ---
 

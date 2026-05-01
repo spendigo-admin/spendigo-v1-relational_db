@@ -1,6 +1,6 @@
 # Spendigo Master Catalog: Production Status (v1.0)
 
-**Last Updated**: 2026-04-20
+**Last Updated**: 2026-05-01
 **Status**: Production-Ready / Feature-Complete
 
 ## 1. Overview
@@ -14,7 +14,7 @@ The **Facilitator-Safe Master Catalog** is the foundation of Spendigo's data int
 | **Data Migration** | ✅ | Automated migration of legacy assets into the dual-collection schema. |
 | **Merchant Integration** | ✅ | Barcode-first linking workflow with **Open Food Facts** enrichment. |
 | **Admin Moderation** | ✅ | End-to-end "Pending Review" queue with a Forensic-ready approval ledger. |
-| **Search & Discovery** | ✅ | **Algolia v5** proximity search integrated with the Master Catalog index. |
+| **Search & Discovery** | ✅ | **Algolia v5** explicit submission strategy with FSA fallback logic. |
 | **Savings Intelligence** | ✅ | **Substitution Groups** and **SmartCart Optimization** using unified IDs. |
 
 ---
@@ -31,9 +31,10 @@ The **Facilitator-Safe Master Catalog** is the foundation of Spendigo's data int
 *   **Forensic Verification**: Every administrative approval or modification to a Master Product is cryptographically logged in the **Forensic Audit Ledger** for legal defensibility.
 
 ### 3.3 Consumer Optimization (SmartCart)
-*   **ID-Driven Matching**: The optimizer uses unified Master IDs to provide 100% accurate price comparisons across different store names.
+*   **ID-Driven Matching**: The optimizer uses unified Master IDs to provide 100% accurate price comparisons across competing store locations.
 *   **Substitution Engine**: Surfaces cheaper alternatives based on `substitution_group_id` (e.g., matching Store Brand 2L Milk vs Name Brand 2L Milk).
-*   **Bulk Saving Hints**: Analyzes package sizes at the Master level to flag "Better Value" upsell opportunities.
+*   **AI Narrative Layer**: Leverages **Gemini 2.5 Flash** to translate Master Catalog metadata into actionable "Savings Stories" and price-drop alerts.
+*   **Performance Memoization**: Utilizes the 60s TTL cache (`performCachedSearch`) to ensure sub-second optimization even for large carts.
 
 ---
 
@@ -45,4 +46,5 @@ The **Facilitator-Safe Master Catalog** is the foundation of Spendigo's data int
 
 ## 5. Ongoing Maintenance
 - **Catalog Cleansing**: Regular administrative sweeps to merge duplicate master items and verify manufacturer images.
+- **Ingestion Guard**: Enforces a **65% Fuzzy Matching floor** for all merchant inventory linking to prevent catalog pollution.
 - **Brand Validation**: Future integration with Direct-to-Manufacturer data feeds to reach "Manufacturer Verified" status on premium SKUs.

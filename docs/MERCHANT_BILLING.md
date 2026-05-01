@@ -1,6 +1,6 @@
 # Merchant Billing & Subscription Operations
 
-**Last Updated**: 2026-04-20
+**Last Updated**: 2026-05-01
 **Status**: Production-Ready (v1.0)
 
 ---
@@ -12,11 +12,11 @@ Spendigo utilizes **Stripe** as the primary financial engine for merchant subscr
 
 ## 2. Subscription Tiers (v1.0)
 
-| Tier | Price (CAD) | Core Features | Marketplace Logic |
+| Tier | Price (CAD) | Marketplace Logic | Commission |
 | :--- | :--- | :--- | :--- |
-| **Starter** | $0/mo | • Up to 50 Products<br>• Pickup Only<br>• Basic Profile | 10% Platform Commission |
-| **Core Store** | $49/mo | • Unlimited Products<br>• Delivery Toggle<br>• Order Management | 5% Platform Commission |
-| **Growth** | $99/mo | • Featured Placement<br>• Flyer Highlighting<br>• Advanced Analytics | 2% Platform Commission |
+| **Starter** | $0/mo | Restricted to **Store Profile** only. Suppressed from global marketplace discovery. | 10% |
+| **Core Store** | $49/mo | Unlocks **Global Marketplace** discovery (Home/Search boosters). | 5% |
+| **Growth** | $99/mo | **Featured Placement** (Hero Carousel) + Flyer Highlights + Analytics. | 2% |
 
 ### Specialized Promotional Rates
 - **Code: `WELCOME2026`**:
@@ -29,8 +29,9 @@ Spendigo utilizes **Stripe** as the primary financial engine for merchant subscr
 
 ### 3.1 Payouts (Stripe Connect)
 - Merchants must complete **Standard Connect Onboarding** before receiving payouts.
-- Payouts are triggered automatically upon order delivery confirmation.
+- Payouts are triggered automatically when an order reaches the **Delivered** status (`orderTriggers.ts`).
 - The platform commission is deducted at the source using Stripe's `transfer_group` and `application_fee_amount`.
+- **Refund Handling**: Webhook events for `charge.refunded` trigger automated order status reconciliation and audit logging.
 
 ### 3.2 Payment History
 - The system retains a record of the last **12 successful payments** within `Settings > Subscription`.
@@ -52,6 +53,7 @@ Spendigo utilizes **Stripe** as the primary financial engine for merchant subscr
 The `stripeWebhook` manages critical state transitions:
 - `checkout.session.completed`: Initializes the initial customer object and first-time subscription.
 - `invoice.payment_succeeded`: Logs the transaction to the Firestore `payments` subcollection.
+- `charge.refunded`: Reverts order statuses and triggers forensic reconciliation logs.
 - `customer.subscription.deleted`: Gracefully transitions the store to the "Starter" tier.
 
 ---

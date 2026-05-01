@@ -1,7 +1,7 @@
 # Spendigo Demo Credentials (v1.0)
 
 **CONFIDENTIAL — Internal/QA Use Only**
-**Last Updated**: 2026-04-20
+**Last Updated**: 2026-05-01
 **Security Status**: Forensic Chains Active
 
 ---
@@ -23,8 +23,10 @@ To simplify multi-role testing, all demo accounts utilize:
 **Permissions**:
 - **Master Catalog**: Approve/Reject SKU requests.
 - **Forensic Audit**: Verify SHA-256 integrity chains and download legal evidence.
-- **Ad Manager**: Control the Private Ad Network (Priority/Active status).
-- **Merchant Approval**: Verify KYB business licenses.
+- **Ad Manager**: Control the Private Ad Network (Priority/Active status/Video creatives).
+- **System Health**: Real-time monitoring of Firestore/Algolia/Stripe service status.
+- **Flyer Ingestion**: Trigger and monitor AI-powered flyer scraping jobs.
+- **Merchant Approval**: Verify KYB business licenses and manage **Store Suspensions**.
 
 ---
 
@@ -46,7 +48,8 @@ To simplify multi-role testing, all demo accounts utilize:
 **Permissions**:
 - **Inventory Control**: Update local price Override and "Canadian Local" status.
 - **Subscription**: Manage Stripe billing and apply promo codes (e.g., `WELCOME2026`).
-- **Team**: Invite staff members with automated welcome triggers.
+- **Workforce**: Invite staff members with role-based access (**Admin**, **Editor**, **Viewer**).
+- **Compliance**: View active suspension notices and appeal administrative actions.
 
 ---
 
@@ -59,8 +62,8 @@ To simplify multi-role testing, all demo accounts utilize:
 | `student@spendigo.ca` | Savings Hunter (Flash Deal focus) |
 
 **Permissions**:
-- **SmartCart**: Execute 10-stage optimization across multiple stores.
-- **Private Ad network**: View featured carousels and store highlights.
+- **SmartCart**: Execute 10-stage optimization with **AI Savings Insights** (Gemini 2.5 Flash).
+- **Private Ad network**: View featured carousels (Image/Video) and store highlights.
 - **Wishlist**: Save frequent items for automated price-drop monitoring.
 
 ---
@@ -73,6 +76,7 @@ When testing **Store Subscriptions** or **SmartCart Checkout**:
 - **Expiry**: Any future date (e.g., `12/28`)
 - **CVC**: `123`
 - **ZIP/Postal**: `M5V 2H1` (or any valid FSA)
+- **Refunding**: Trigger `charge.refunded` via Stripe Dashboard to verify forensic reconciliation.
 
 ---
 

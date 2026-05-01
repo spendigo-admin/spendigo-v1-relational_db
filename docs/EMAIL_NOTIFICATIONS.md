@@ -1,6 +1,6 @@
 # Email Notifications & Verification System
 
-**Last Updated**: 2026-04-20
+**Last Updated**: 2026-05-01
 **Status**: Production-Ready (v1.0)
 **Engine**: Cloud Functions + Firebase Trigger Email Extension
 
@@ -26,8 +26,8 @@ Spendigo uses the `mail` collection to queue automated, rich HTML communications
 | Event | Trigger | Content |
 | :--- | :--- | :--- |
 | **Confirmed** | `onCreate` in `/orders` | Detailed receipt with store branding and items list. |
-| **Status Change** | `onUpdate` in `/orders` | Progression alerts (Preparing, Out for Delivery, etc.). |
-| **Refunded** | ` refundOrder` API call | Confirmation of credit back to the primary payment method. |
+| **Status Change** | `onUpdate` in `/orders` | Progression alerts (Preparing, Out for Delivery, Delivered). |
+| **Cancelled** | `onUpdate` in `/orders` | Formal cancellation notice with support contact info. |
 
 ### 2.2 Merchant Team Management
 - **Invite Sent**: When a store owner invites a new staff member via `inviteTeamMember`, the system automatically:
@@ -42,9 +42,13 @@ Spendigo uses the `mail` collection to queue automated, rich HTML communications
 ### 3.1 Merchant Approval (KYB)
 When the Admin Master Catalog processes a `PartnerWithUs` request, an automated verification email is sent confirming that the store is live and proximity alerts are active for their region.
 
-### 3.2 Savings Notifications
-- **Price Drop Alerts**: Based on products in the consumer's wishlist.
-- **Trip Consolidation Tips**: AI-generated hints via Gemini 2.5 on how to save by adding 1-2 more items to a trip.
+---
+
+## 3. Roadmap: Future Intelligence
+The following notifications are planned for future releases and currently exist only as client-side UI hints:
+- **Price Drop Alerts**: Email/Push alerts when a wishlist item goes on sale.
+- **AI Savings Tips**: Weekly digests generated via Gemini 2.5 on optimized trip planning.
+- **Refund Confirmation**: Automated confirmation of credit back to the primary payment method (Pending Webhook Integration).
 
 ---
 

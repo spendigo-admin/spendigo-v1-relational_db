@@ -1,6 +1,6 @@
 # Spendigo SmartCart — Database Schema
 
-**Last Updated**: 2026-04-20
+**Last Updated**: 2026-05-01
 **Database**: Cloud Firestore (NoSQL)
 **Status**: Production-Ready (v1.0)
 
@@ -24,9 +24,9 @@ The definitive registry for all consumer goods.
 
 ### 2.2 `/ads/{adId}`
 State-of-the-art ad campaign management for the Private Ad Network.
-- **Content**: `title`, `description`, `imageUrl`, `linkUrl`.
+- **Content**: `title`, `description`, `imageUrl`, `videoUrl` (MP4), `mobileImageUrl`, `linkUrl`.
 - **Execution**: `startDate`, `endDate`, `status` (active/draft/archived), `priority`.
-- **Analytics**: `views` (Impressions), `clicks` (CTR Tracking), `createdAt`.
+- **Analytics**: `views` (Impressions), `clicks` (CTR Tracking), `engagement_rate`, `createdAt`.
 
 ### 2.3 `/audit_logs/{txnId}`
 **Forensic Security Ledger** with tamper-evident SHA-256 hash chaining.
@@ -43,7 +43,8 @@ Root metadata and services for a merchant location.
 - **Identity**: `name`, `logo`, `address`, `phone`.
 - **Distance-Aware**: `coordinates` (lat/lng), `postalCode` (FSA-fallback), `maxDeliveryRadiusKm`.
 - **Policy**: `deliveryFee`, `freeDeliveryThreshold`, `pickupEnabled`, `deliveryEnabled`.
-- **State**: `subscriptionTier` (Core/Growth/Premium), `status` (active/pending/suspended).
+- **State**: `subscriptionTier` (Starter/Core/Growth), `status` (active/pending/suspended), `suspensionReason`.
+- **Workforce**: `/teamMembers/{userId}` subcollection for role-based store management.
 
 ### 3.2 `/stores/{storeId}/flyers/{flyerId}`
 - **Assets**: `imageUrl`, `name`.
@@ -66,8 +67,9 @@ Workflow for adding new SKU data to the Master Catalog.
 
 ### 4.2 `/orders/{orderId}`
 Frozen snapshots of transaction data for historical accuracy.
-- **Parties**: `customerId`, `storeId`.
-- **Status**: `placed`, `preparing`, `out_for_delivery`, `delivered`.
+- **Parties**: `customerId`, `storeId`, `merchantId`.
+- **Status**: `placed`, `preparing`, `out_for_delivery`, `delivered`, `cancelled`.
+- **Items Snapshot**: Array of products including `master_id`, `name`, `effective_price`, `substitution_group_id`, and `quantity`.
 - **Financial**: `subtotal`, `tax`, `deliveryFee`, `serviceFee`, `total`.
 
 ---
@@ -78,8 +80,9 @@ Frozen snapshots of transaction data for historical accuracy.
 |-------|------|-------|-------|
 | `master_products` | Public | Admin Only | Global registry protection. |
 | `merchant_products` | Public | Owner Only | Verification of `request.auth.uid`. |
-| `audit_logs` | Admin Only | System | Append-only logic via `logEvent`. |
-| `stores` | Public | Admin/Owner | Subscription checks on ad/flyer features. |
+| `audit_logs` | Admin Only | System | Append-only logic via `recordAuditEvent`. |
+| `stores` | Public | Admin/Owner | Gated by `subscriptionTier` and `status`. |
+| `users` | Owner Only | Owner Only | Basic profile and `role` (shopper/merchant/admin). |
 
 ---
 

@@ -104,7 +104,7 @@ Admin sub-roles: SUPER_ADMIN (admin:all), MODERATOR (admin:users, admin:stores),
 
 **Admin MFA**: Phone SMS MFA (Firebase Phone Auth) is required for all admin roles. `AuthContext` checks `multiFactor(currentUser).enrolledFactors.length`; enrollment is at `/admin/mfa-setup` using invisible reCAPTCHA.
 
-**Admin portal pages**: Dashboard (`/admin/dashboard`), Users (`/admin/users`), Stores (`/admin/stores`), Master catalog + pending approval (`/admin/catalog`), Ads (`/admin/ads`), Surveys (`/admin/surveys`), Careers (`/admin/careers`), Audit log (`/admin/audit-logs`), System tools (`/admin/tools`), Store insights analytics (`/admin/insights`), System health (`/admin/health`), Flyer ingestion (`/admin/flyer-ingestion`), Settings (`/admin/settings`). Note: `FlyerModeration.tsx` and `SeedUsers.tsx` exist under `pages/admin/` but have no routes wired in App.tsx.
+**Admin portal pages**: See the [Page Routes](#page-routes) section for the full list. Note: `FlyerModeration.tsx` and `SeedUsers.tsx` exist under `pages/admin/` but have no routes wired in App.tsx.
 
 **Audit log integrity** (`AuditContext.tsx`): Audit entries are chained via SHA-256 — each record hashes its own payload concatenated with the previous record's hash (blockchain-lite). Tampering with any historical entry breaks the chain. Verified by the AUDITOR role in the admin portal.
 
@@ -158,8 +158,9 @@ Firebase Cloud Functions v4 (v1 API). Organized by domain:
   - `onStoreCreate` / `onStoreUpdate` — auto-geocodes store address via Nominatim; re-geocodes on address field changes. **Note**: defined in `storeTriggers.ts` but not currently exported from `index.ts` (not deployed).
   - `onStoreDelete` — cascade cleanup: deletes merchant products, deals, flyers, de-links users, cancels Stripe subscriptions
   - `onMerchantProductPriceChange` (`priceHistoryTrigger.ts`) — records daily price history snapshot; detects price drops and new sales, then queries users with active FCM tokens within their configured proximity radius (Haversine) and sends geo-targeted multicast FCM notifications respecting `notificationPreferences.promotions` / `priceDrop` / `maxDistance` user fields
+  - `onOrderCreated` — post-order trigger (send confirmation, audit, analytics)
   - `syncMasterProductToAlgolia`, `syncMerchantProductToAlgolia` (includes `_geoloc` for location-based search)
-- `admin/` — Cleanup utilities (`cleanupOrphanedUsers`, `cleanupOrphanedStoreData`, `syncTrafficStats`), `getSystemHealth` (powers `/admin/health` dashboard), `scrapeFlyer` (flyer content extraction for `/admin/flyer-ingestion`), `searchPublicDeals`
+- `admin/` — Cleanup utilities (`cleanupOrphanedUsers`, `cleanupOrphanedStoreData`, `syncTrafficStats`), `getSystemHealth` (powers `/admin/health` dashboard), `scrapeFlyer` (flyer content extraction for `/admin/flyer-ingestion`), `processIngestionJobs` (background flyer ingestion runner), `searchPublicDeals`
 - `audit/` — `recordAuditEvent` (callable function; receives events from the client-side `auditBridge` and writes append-only entries to `audit_logs`)
 - `smartcart/` — Cart optimization HTTP endpoint (`/smartcartOptimize`) mirroring frontend logic
 - `cart/` — Additional `/cartOptimize` HTTP endpoint (delegates to smartcart service layer)
@@ -233,6 +234,8 @@ VITE_ALGOLIA_SEARCH_KEY=
 VITE_ALGOLIA_INDEX_NAME=   # optional, defaults to 'master_products'
 VITE_FIREBASE_VAPID_KEY=   # FCM VAPID key for push notifications (Web Push Certificates in Firebase Console)
 VITE_GEMINI_API_KEY=       # Gemini API key for SmartInsights feature
+VITE_STRIPE_PUBLISHABLE_KEY=  # Stripe publishable key for Checkout + Elements
+VITE_FIREBASE_APP_CHECK_KEY=  # ReCaptchaV3 site key (production only — skipped in dev)
 VITE_SENTRY_DSN=           # Sentry DSN for error tracking (optional, no-ops if missing)
 ```
 
@@ -262,6 +265,46 @@ Seed scripts in `scripts/`: `seedFirebase.ts` (full database — 11 test users +
 ## Documentation
 
 Architecture docs in `docs/` (25 files): `ARCHITECTURE.md`, `SEARCH_IMPLEMENTATION.md`, `SMARTCART_INTERFACE_DESIGN.md`, `MERCHANT_BILLING.md`, `SECURITY_VERIFICATION.md`, `EMAIL_SETUP_GUIDE.md`, `MASTER_CATALOG_PLAN.md`, `MOBILE_DEPLOYMENT.md`, `OPENAPI.yaml` (REST API spec), and more. Terraform infra config in `infra/` (`main.tf`, `variables.tf`).
+
+## Page Routes
+
+### Consumer (public unless noted)
+| Path | Component | Auth required |
+|---|---|---|
+| `/` | StoreList | No |
+| `/store/:id` | StoreDetail | No |
+| `/product/:id` | ProductDetail | No |
+| `/cart` | Cart | No (guest-capable) |
+| `/search` | Search | No |
+| `/compare` | PriceCompare | No |
+| `/smartcart` | SmartCartWishlist | Yes + email verified |
+| `/checkout` | Checkout | Yes + email verified |
+| `/profile` | Profile | Yes |
+| `/order/:id` | OrderTracking | Yes |
+| `/notifications` | Notifications | Yes |
+| `/flyers`, `/deals` | Flyers, Deals | No |
+| `/how-it-works`, `/partner` | HowItWorks, PartnerWithUs | No |
+| `/privacy`, `/terms` | Legal pages | No |
+| `/careers`, `/careers/:id` | Careers, CareerDetail | No |
+| `/surveys` | Surveys | No |
+| `/smartcart/prototype` | SmartCartPrototype | No |
+
+### Merchant (`/merchant/*` — requires role `merchant`)
+`/dashboard`, `/onboarding`, `/products`, `/orders`, `/flyers`, `/deals`, `/analytics`, `/settings`, `/subscription`
+
+### Admin (`/admin/*` — requires role `admin` + MFA enrolled)
+`/dashboard`, `/users`, `/stores`, `/catalog`, `/ads`, `/surveys`, `/careers`, `/audit-logs`, `/tools`, `/insights`, `/health`, `/flyer-ingestion`, `/settings`, `/mfa-setup`
+
+## LocalStorage Keys
+
+Non-obvious keys used across the app:
+| Key | Purpose |
+|---|---|
+| `page-has-been-force-refreshed` | `lazyWithRetry` guard — prevents reload loop on stale chunk error |
+| `last_tracked_visit` | Date string (YYYY-MM-DD) — deduplicates daily visit analytics |
+| `spendigo_cart_guest` | Guest cart (JSON) — merged into Firestore on login |
+| `spendigo_comparison_guest` | Guest comparison list (JSON) — merged into Firestore on login |
+| `smartcart_selections_v1` | SmartCart store selections — persists across logout |
 
 ## Troubleshooting
 

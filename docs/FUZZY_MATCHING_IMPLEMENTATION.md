@@ -1,6 +1,6 @@
 # 🔍 Spendigo SmartCart — Fuzzy Matching Implementation
 
-**Last Updated**: 2026-04-20
+**Last Updated**: 2026-05-01
 **Status**: Production-Ready (v1.0)
 **Engine**: Hybrid Levenshtein + Token Weighting
 
@@ -12,20 +12,21 @@ The Fuzzy Matching engine handles the transition from a consumer's "wishlist" (g
 ### Matching Tiers
 | Tier | Confidence | Logic | UI Representation |
 | :--- | :--- | :--- | :--- |
-| **Direct Match** | 100% | `master_product_id` match. | Green Badge (Verified) |
-| **High** | 90-99% | Exact name + brand overlap. | Blue Badge (Matched) |
-| **Probable** | 75-89% | Significant token overlap (3+ words). | Orange Badge (Partial) |
-| **Generic** | 60-74% | Category match + partial name fuzzy. | Gray Badge (Fuzzy) |
+| **Exact Match** | 100% | Exact name string match. | Green Badge (Verified) |
+| **Partial Match** | 70-90% | Brand overlap or >= 50% token match. | Blue Badge (Matched) |
+| **Fuzzy Match** | 40-65% | Levenshtein similarity above threshold. | Orange Badge (Partial) |
+| **Typo Correction**| +10 points | High similarity on short strings. | Gray Badge (Fuzzy) |
 
 ---
 
 ## 🧠 Core Algorithm: `fuzzy-search.ts`
 
-### 1. Weighted Overlap
-Instead of simple character matching, Spendigo uses token-weighted overlap:
-- **Brand Match**: +15% weight.
-- **Unit/Size Match** (e.g., "1L", "500g"): +20% weight.
-- **Noun Match**: Baseline weight.
+### 1. Scoring Hierarchy
+Instead of simple character matching, Spendigo uses a point-based hierarchy:
+- **Exact Match**: 100 points.
+- **Brand Match**: 85 points (when brand includes the query).
+- **Token Overlap**: 70-90 points (scaled by match percentage).
+- **Levenshtein Fallback**: 40-65 points (scaled by similarity ratio).
 
 ### 2. Levenshtein Distance (Threshold: 65%)
 For query strings with < 10 characters, the engine allows up to 2 character edits. For > 10 characters, it allows up to 35% edit distance.
@@ -52,7 +53,7 @@ While the client-side `fuzzy-search.ts` handles the wishlist processing, **Algol
 
 ## 🧪 Performance & Caching
 Given that optimization can involve 1,000+ candidate products, the engine utilizes:
-- **ID Memoization**: Results for specific `master_id` pairs are cached for the duration of the session.
+- **Memoization Cache**: Results for specific query/candidate pairs are cached via `performCachedSearch` with a 60-second TTL.
 - **Token Pre-computation**: Product tokens are generated once upon catalog load and stored in memory.
 
 ---

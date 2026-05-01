@@ -1,6 +1,6 @@
 # Spendigo SmartCart — Sponsored Listings Design
 
-**Last Updated**: 2026-04-20
+**Last Updated**: 2026-05-01
 **Status**: Production-Ready (Phase 2 Implemented)
 
 ---
@@ -14,18 +14,17 @@ Spendigo operates a **Private Ad Network** that is native, privacy-preserving, a
 *   **Placement**: Main Hero Carousel on the Consumer Homepage.
 *   **Management**: Admins control this via `AdminAdManager` (`/admin/ads`).
 *   **Functionality**:
-    *   **Creative**: High-resolution banner images stored in Firebase Storage.
-    *   **Targeting**: Dynamic link URLs (Internal Store URLs or external marketing pages).
-    *   **Automation**: Scheduled Start/End dates with active/draft/archived states.
-    *   **Analytics**: Real-time **Impression (Views)** and **Click-through** tracking directly in the ad ledger.
-*   **Revenue**: Sold as "National/Regional Banners" ($1,000 - $2,000/mo).
+    *   **Creative**: Support for high-resolution images and **MP4 video assets** (stored in Firebase Storage).
+*   **Targeting**: Global or Local (Geofenced) targeting with dynamic link URLs.
+*   **Analytics**: Real-time **Impression (Views)** incremented on media load, and **Click-through** tracking via `AdCarousel.tsx`.
+*   **Revenue**: Sold as premium placements for national brands or local seasonal events.
 
 ### B. Tiered Visibility Boosts (Active) ✅
 *   **Placement**: `StoreList` and Marketplace Sections.
 *   **Logic**: Orchestrated via `MarketplaceContext.tsx` (`filterStoreData` logic).
 *   **Functionality**:
-    *   **Free Plan**: Flyers and Flash Deals are suppressed from the global marketplace view (Store Profile only).
-    *   **Core/Growth Plan**: Unlocks global visibility for Weekly Flyers and Hot Deals across the homepage "Weekly Rack" and "Flash Inventory" sections.
+    *   **Starter/Free Plan**: Flyers and One-Day Offers are visible only on the individual Store Profile. They are suppressed from the global marketplace "Weekly Rack."
+*   **Core/Growth Plan**: Unlocks global discovery. Deals are promoted to the homepage and search result boosters.
 *   **Revenue**: Bundled into the **Growth Plan ($79/mo)** or **Core Plan ($49/mo)**.
 
 ### C. Featured Stores (Visual Branding) ✅
@@ -61,13 +60,15 @@ interface AdCampaign {
   id: string;
   title: string;
   imageUrl: string;
+  mobileImageUrl?: string; // Optimized for portrait viewing
   linkUrl: string;
   status: 'active' | 'draft' | 'archived';
   startDate: string;
   endDate: string;
   priority: number;
-  views: number; // Real-time Impression count
-  clicks: number; // Real-time CTR tracking
+  scope: 'global' | 'local';
+  views: number;
+  clicks: number;
 }
 ```
 

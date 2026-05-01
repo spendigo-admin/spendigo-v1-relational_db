@@ -1,6 +1,6 @@
 # Spendigo SmartCart — UI Wireframes
 
-**Last Updated**: 2026-04-20
+**Last Updated**: 2026-05-01
 **Status**: Production-Ready (v1.0)
 **Design System**: Premium Vanilla CSS / React (Emerald Green & Primary Blue Aesthetic)
 **Brand Assets**: Custom SVG `LogoIcon` (Scalable Shopping Cart)
@@ -85,6 +85,39 @@ graph TD
 *   **Layout**: Progress-tracked interactive flow (Account -> Delivery).
 *   **Social**: Google & Facebook Auth integrations.
 *   **Aesthetics**: Glassmorphism cards with vibrant gradients.
+
+### 2.7 Consumer: Price Comparison (`/compare`)
+*   **Header**: "⚖️ Compare My List" with flyer source attribution.
+*   **Comparison Engine**:
+    *   Wishlist items grouped with their corresponding flyer matches.
+    *   **Best Price Highlight**: 🏆 markers and emerald-green highlights for lowest prices.
+    *   **Normalization**: Price-per-unit display ($/100g, $/unit) for easy comparison.
+*   **Alerts**: "Ends [Date]" tags for expiring flyer deals.
+
+### 2.8 Consumer: Cart Manager (`/cart`)
+*   **Multi-Store Staging**: Cart items grouped by retailer for separate fulfillment.
+*   **Logistics Toggles**: Individual Store Pickup vs. Centralized Delivery options.
+*   **Checkout Pulse**: Animated checkout progression and totals calculation.
+
+### 2.9 Merchant: Analytics Suite (`/merchant/analytics`)
+*   **KPI Scorecard**: Real-time Revenue, Orders, Visits, and Conversion metrics.
+*   **Performance Charts**: 
+    *   Interactive SVG Trend charts with revenue/order toggles.
+    *   Grouped status breakdown (Fulfillment funnel).
+*   **Leaderboard**: Top-performing products by sales velocity and revenue.
+
+### 2.10 Admin: Flyer Ingestion Tool (`/admin/flyer-ingestion`)
+*   **Batch Controller**:
+    *   Postal code entry for regional flyer targeting.
+    *   Destructive "Full Reset" toggle for clean data ingestion.
+*   **Monitoring**: Real-time progress bar and step-by-step scraping status.
+*   **Scheduler**: One-time run vs. Recurring weekly ingestion calendar.
+
+### 2.11 Admin: System Health Monitoring (`/admin/health`)
+*   **Observability**: 
+    *   Firebase/GCP infrastructure consumption bars (Firestore, Functions, Storage).
+    *   Real-time quota alerts and limit proximity indicators.
+*   **Direct Access**: Deep links to Firebase Console for immediate scaling.
 
 ## 3. Responsive & Interactive Experience
 *   **Mobile Mobile-First**: Bottom Navigation (Home, Search, Trolley, Profile).

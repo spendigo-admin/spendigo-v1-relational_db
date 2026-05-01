@@ -1,6 +1,6 @@
 # SmartCart Optimizer Architecture & Design
 
-**Last Updated**: 2026-04-20
+**Last Updated**: 2026-05-01
 **Status**: Production-Ready (v1.0 Implemented)
 
 ---
@@ -25,12 +25,19 @@ Constructs a N x M grid of shopping list items vs. available stores.
   - Standard Sale flyers
   - Multi-buy logic (e.g., "3 for $5")
   - BOGO (Buy One Get One) effective unit pricing.
+- **Data Hygiene**: Automatically invalidates prices older than 30 days if no explicit expiration is provided.
 
 ### ⚙️ Optimization Engine (`smartcart_optimizer.ts`)
 The decision-making logic for cart selection.
 - **Lowest Price First**: Selects the absolute cheapest fulfilled offer for every item.
 - **Preference Bias**: Optional weighting for a "Preferred Store" if prices are within a small threshold.
 - **Availability Guard**: Ensures the selected store actually has the `available_quantity` to fulfill the request.
+- **Unit Normalization**: Standardizes prices across weights (g/kg), volumes (ml/L), and counts (ea/pk).
+
+### 🛰️ Trip Engine (`analyzeTripConsolidation.ts`)
+The final decision-making layer that validates the "Optimized Multi-Store" recommendation.
+- **Threshold Gate**: Requires a minimum absolute saving (dynamicMin) based on total basket value.
+- **Complexity Penalty**: Subtracts a 2% "Convenience Penalty" per additional store trip to verify if the savings justify the extra effort.
 
 ### ⚖️ Comparison Engine (`smartcart_comparison_engine.ts`)
 Computes the baseline "Best Single Store" fulfillment.
@@ -39,8 +46,9 @@ Computes the baseline "Best Single Store" fulfillment.
 
 ### 🧪 Substitution & Upsell Engine
 Surfaces high-impact value opportunities.
-- **Substitutions**: Recommends identical items in a different brand using `substitution_group_id`.
+- **Substitutions**: Recommends identical items in a different brand using `substitution_group_id`, with a fuzzy-search fallback for category-matched alternatives.
 - **Bulk Saving Hints**: Flags when a larger package size (e.g., 2kg vs 500g) at the same store has a better unit price.
+- **Smart Insights**: Integrates **Gemini 2.5 Flash** to provide a natural language narrative explaining why certain selections were made.
 
 ---
 

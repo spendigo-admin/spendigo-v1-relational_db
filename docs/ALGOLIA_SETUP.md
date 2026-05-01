@@ -1,6 +1,6 @@
 # Algolia Search Engine Configuration
 
-**Last Updated**: 2026-04-20
+**Last Updated**: 2026-05-01
 **Status**: Production-Ready (v1.0)
 **Primary Engine**: Algolia v5
 
@@ -18,8 +18,8 @@ Spendigo utilizes a dual-index strategy to balance global discovery with local m
 ### Index B: `merchant_products`
 - **Scope**: Hyper-local inventory, pricing, and proximity.
 - **Sync**: Managed via a custom Cloud Function trigger (`syncMerchantProductToAlgolia`).
-- **Core Feature**: Proximity Search.
-- **Attributes**: Includes all Master attributes + `merchant_id`, `price`, `discount_label`, and **`_geoloc`**.
+- **Core Feature**: Proximity Search with **Dynamic Price Reversion**.
+- **Attributes**: Includes all Master attributes + `merchant_id`, `price`, `original_price`, `available_quantity`, `is_canadian_local`, `dietary_tags`, `barcode`, and **`_geoloc`**.
 
 ---
 
@@ -51,9 +51,10 @@ The local inventory sync is handled by `services/api/src/triggers/algoliaMerchan
 
 ### Logic Flow:
 1. **Trigger**: Detects `onWrite` changes in `/merchant_products/{id}`.
-2. **Denormalization**: Fetches the parent `master_product` and `store` location to create a flat Algolia document.
-3. **Condition**: Only syncs if `is_active` is true and `available_quantity > 0`.
-4. **Availability**: Automatically deletes the Algolia object if an item goes out of stock or is deleted in Firestore.
+2. **Denormalization**: Uses `Promise.all` to concurrently fetch the parent `master_product` and `store` data, optimizing execution speed.
+3. **Geoloc Resolution**: Implements a robust fallback checker that resolves coordinates from `coordinates`, `location`, or `geoloc` store fields.
+4. **Condition**: Only syncs if `is_active` is true and `available_quantity > 0`.
+5. **Availability**: Automatically deletes the Algolia object if an item goes out of stock or is deleted in Firestore.
 
 ---
 

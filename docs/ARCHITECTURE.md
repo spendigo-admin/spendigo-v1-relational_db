@@ -1,8 +1,8 @@
 # Spendigo SmartCart — System Architecture
 
-**Last Updated**: 2026-04-20
+**Last Updated**: 2026-05-01
 **Status**: Production-Ready (v1.0)
-**Framework**: Turbo Monorepo (React + Node.js + Capacitor)
+**Framework**: Turbo Monorepo (React + Node.js 22 + Capacitor 7)
 
 ---
 
@@ -26,7 +26,7 @@ graph TB
     end
 
     subgraph Service Tier
-        API[Firebase Functions<br/>Node.js 20 / TypeScript]
+        API[Firebase Functions<br/>Node.js 22 / TypeScript]
         Optimizer[SmartCart Optimizer<br/>10-Stage Pipeline]
         AI[Gemini 2.5 Flash<br/>Shopping Insights]
     end
@@ -46,6 +46,7 @@ graph TB
     Web & Mobile --> API
     API --> DB & Search
     API --> Stripe & AI
+    API --> Audit
     Optimizer --> Search & DB
     DB -.-> Search
 ```
@@ -56,13 +57,15 @@ graph TB
 
 ### 3.1 SmartCart Optimization Engine
 A 10-stage deterministic pipeline executing entirely in the user's browser.
+- **Cost-Efficiency**: Uses **Explicit Search Submission** to minimize Algolia API calls and **Memoized Fuzzy Search** (60s TTL) for rapid local comparisons.
 - **Logic**: Filters merchant inventory by proximity (Haversine/FSA), calculates multi-buy/BOGO logic, and analyzes **Dynamic Trip Thresholds** (1.5% basket savings) to decide on store splits.
 - **AI Layer**: Integrates with **Gemini 2.5 Flash** to provide natural language insights on "Trip Efficiency" and "Savings Strategies."
 
 ### 3.2 Forensic Audit Ledger
 A critical compliance layer for Marketplace Facilitators.
 - **Security**: Every administrative change (approval, ad priority, commission adjustment) is hashed using SHA-256.
-- **Hash Chaining**: Each log entry includes the `prevHash` of the leading block, creating a persistent, immutable chain of custody for legal and compliance export.
+- **Hash Chaining**: Each log entry includes the `prevHash` of the leading block, creating a persistent, immutable chain of custody.
+- **Implementation**: See [AUDIT_IMPLEMENTATION.md](./AUDIT_IMPLEMENTATION.md) for technical deep-dive.
 
 ### 3.3 Search Architecture (Algolia v5 Hybrid)
 - **High-Speed Discovery**: Uses Algolia for fuzzy text and geospatial search (30ms avg response).
@@ -70,6 +73,8 @@ A critical compliance layer for Marketplace Facilitators.
 
 ### 3.4 Financial Engine (Stripe Connect Standard)
 - **Facilitator Model**: Implements **Split-Payment** logic. The platform collects a tiered commission (2%–10% based on subscription) while the merchant receives funds directly into their connected Stripe account.
+- **Automated Payouts**: Funds are released to the merchant upon the order reaching `Delivered` status.
+- **Forensic Refunds**: Full and partial refunds are reconcilled via `charge.refunded` webhooks and logged to the forensic ledger for dispute protection.
 
 ---
 
@@ -96,7 +101,7 @@ Spendigo utilizes a **Turbo Monorepo** for unified dependency management:
 | Service | Role | Provider |
 | :--- | :--- | :--- |
 | **Hosting** | CDN Delivery | Firebase Hosting |
-| **Functions** | Event Handlers | Google Cloud Functions v2 |
+| **Functions** | Event Handlers | Google Cloud Functions (Node.js 22) |
 | **Database** | Real-time Data | Cloud Firestore |
 | **Pipeline** | Automated Deploy | GitHub Actions (v4) |
 

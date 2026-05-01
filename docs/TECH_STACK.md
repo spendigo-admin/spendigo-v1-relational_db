@@ -1,6 +1,6 @@
 # Spendigo SmartCart — Tech Stack
 
-**Last Updated**: 2026-04-20
+**Last Updated**: 2026-05-01
 **Status**: Production-Ready (v1.0)
 
 ---
@@ -11,7 +11,7 @@
 - **Framework**: React 18.2.0 (Functional Components, Hooks)
 - **Build Tool**: Vite 7.3.0 (ESM-based HMR)
 - **Language**: TypeScript 5.4+ (Strict Mode)
-- **Styling**: TailwindCSS 3.4+ + Managed CSS Variables for Design System
+- **Styling**: TailwindCSS 3.0+ + Managed CSS Variables for Design System
 - **Branding**: Custom SVG `LogoIcon` component for multi-scale brand identity.
 - **State Management**: React Context API (Auth, Cart, Marketplace, Orders, Notifications, Confirmation, Review, Audit)
 - **Routing**: React Router v6.20+
@@ -28,7 +28,7 @@
   - **Auth**: Firebase Auth (Email/Pass, Google, Facebook OAuth)
   - **Firestore**: Real-time NoSQL document store (Global Sync)
   - **Storage**: Firebase Storage (Secure image/PDF assets)
-  - **Functions**: Node.js 20 Serverless Cloud Functions
+  - **Functions**: Node.js 22 Serverless Cloud Functions
 - **Hosting**: Firebase Global CDN
 
 ---
@@ -67,14 +67,16 @@
 | **Nominatim** | Open-source geocoding and reverse geocoding | ✅ Active |
 | **PDFKit** | Headless generation of retail flyers and invoices | ✅ Active |
 | **Google Analytics** | Data API for merchant traffic insights | ✅ Active |
+| **GCP Monitoring** | Infrastructure observability and system health metrics | ✅ Active |
+
 
 ---
 
 ## 4. Development & CI/CD Tooling
 
 - **Orchestration**: Turbo 1.10.0 (Monorepo management)
-- **Testing**: Vitest (Unit) + Playwright (E2E / Browser Automation)
-- **Linting**: ESLint 9.0 + Prettier (Production-grade linting)
+- **Testing**: Vitest 4.1+ (Unit) + Playwright (E2E / Browser Automation)
+- **Linting**: ESLint 8.0+ + Prettier (Production-grade linting)
 - **SSL**: Vite SSL plugin for secure local development on `spendigo.ca` aliases.
 - **Deployment**: GitHub Actions (Auto-deploy to Firebase on Merge)
 

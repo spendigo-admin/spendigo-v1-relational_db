@@ -1,6 +1,22 @@
 # Project TODOs & Backlog
 
-## Feature: Cloud Storage Image Mirroring for Public Flyers
+## 1. Pre-Launch Blockers (v1.0 GA Target)
+- [ ] **Staging Environment**: Provision an isolated `spendigo-staging` Firebase project (or Preview Channels) for Q&A.
+- [ ] **Merchant KYB Storage Rules**: Deploy path-restricted Firebase Storage rules (`/stores/{storeId}/`) for secure business license uploads.
+- [ ] **Careers Portal Validation**: Validate the CV upload workflow and integrate email notification triggers.
+- [ ] **Master Catalog Seeding**: Expand the verified Master Catalog from the ~50 SKU baseline to 500+ SKUs prior to public launch.
+
+---
+
+## 2. Future Enhancements (v1.1+)
+- [ ] **AI Auto-Moderation**: Implement Gemini-powered initial moderation for "Pending Products" submissions to reduce Admin manual workload.
+- [ ] **Historical Personalization**: Develop Algolia search boosting logic based on localized user purchase history.
+
+---
+
+## 3. Backlog & Technical Investigations
+
+### Feature: Cloud Storage Image Mirroring for Public Flyers
 
 **Status**: Proposed / Backlog
 **Description**: 
