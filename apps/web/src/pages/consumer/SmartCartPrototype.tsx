@@ -186,7 +186,7 @@ const SmartCartPrototype: React.FC = () => {
 
                 <div className="max-w-7xl mx-auto relative z-10">
                     <div className="max-w-3xl">
-                        <div className="inline-flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 rounded-full bg-white shadow-sm border border-gray-100 mb-6 animate-fade-in">
+                        <div className="inline-flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 rounded-full bg-white shadow-sm border border-gray-200 mb-6 animate-fade-in">
                             <span className="flex h-2 w-2 rounded-full bg-[var(--brand-primary)] animate-ping" />
                             <span className="text-[10px] md:text-xs font-black uppercase tracking-[0.2em] text-[var(--text-muted)]">
                                 Optimizer Intelligence v1.4
@@ -204,22 +204,22 @@ const SmartCartPrototype: React.FC = () => {
                     </div>
 
                     <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                        <div className="glass-panel-premium rounded-[2rem] p-6 hover:translate-y-[-4px] transition-all duration-300">
+                        <div className="glass-panel-premium rounded-[2rem] p-6 hover:translate-y-[-4px] transition-all duration-300 border border-gray-200">
                             <div className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--text-muted)]">Shopping List</div>
                             <div className="mt-3 text-4xl font-black text-[var(--text-main)] tracking-tighter italic">{input.shoppingList.length}</div>
                             <div className="mt-1 text-xs font-bold text-[var(--text-muted)]">Requested Items</div>
                         </div>
-                        <div className="glass-panel-premium rounded-[2rem] p-6 hover:translate-y-[-4px] transition-all duration-300">
+                        <div className="glass-panel-premium rounded-[2rem] p-6 hover:translate-y-[-4px] transition-all duration-300 border border-gray-200">
                             <div className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--text-muted)]">Split Cart Total</div>
                             <div className="mt-3 text-4xl font-black text-[var(--brand-primary)] tracking-tighter italic">{currency.format(mockResult.summary.totalCartCost)}</div>
                             <div className="mt-1 text-xs font-bold text-[var(--text-muted)]">{mockResult.summary.selectedStoreCount} Stores Selected</div>
                         </div>
-                        <div className="glass-panel-premium rounded-[2rem] p-6 hover:translate-y-[-4px] transition-all duration-300">
+                        <div className="glass-panel-premium rounded-[2rem] p-6 hover:translate-y-[-4px] transition-all duration-300 border border-gray-200">
                             <div className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--text-muted)]">Best Single Store</div>
                             <div className="mt-3 text-4xl font-black text-[var(--text-main)] tracking-tighter italic">{currency.format(mockResult.summary.bestSingleStoreCost || 0)}</div>
                             <div className="mt-1 text-xs font-bold text-[var(--text-muted)]">{mockResult.bestSingleStore?.storeName || 'No baseline'}</div>
                         </div>
-                        <div className="glass-panel-premium rounded-[2rem] p-6 bg-gradient-to-br from-emerald-50/50 to-white hover:translate-y-[-4px] transition-all duration-300 border-emerald-100">
+                        <div className="glass-panel-premium rounded-[2rem] p-6 bg-gradient-to-br from-emerald-50/50 to-white hover:translate-y-[-4px] transition-all duration-300 border border-emerald-200">
                             <div className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-600">Smart Savings</div>
                             <div className="mt-3 text-4xl font-black text-[var(--status-success)] tracking-tighter italic">{currency.format(mockResult.summary.savingsVsSingleStore || 0)}</div>
                             <div className="mt-1 text-xs font-bold text-emerald-600/60 italic">Automated Split Logic</div>
@@ -230,7 +230,7 @@ const SmartCartPrototype: React.FC = () => {
 
             <div className="max-w-7xl mx-auto px-4 py-8 grid gap-8 lg:grid-cols-12">
                 <div className="lg:col-span-5 space-y-6">
-                    <div className="glass-panel rounded-[2rem] p-6">
+                    <div className="glass-panel rounded-[2rem] p-6 border border-gray-200">
                         <div className="flex items-center justify-between">
                             <div>
                                 <h2 className="text-xl font-black text-[var(--text-main)]">Inputs</h2>
@@ -280,7 +280,7 @@ const SmartCartPrototype: React.FC = () => {
                         </div>
                     </div>
 
-                    <div className="glass-panel rounded-[2rem] p-6">
+                    <div className="glass-panel rounded-[2rem] p-6 border border-gray-200">
                         <h2 className="text-xl font-black text-[var(--text-main)]">Module boundaries</h2>
                         <p className="mt-1 text-sm text-[var(--text-muted)]">The page is mocked, but the integration seam is already designed.</p>
                         <div className="mt-5 grid gap-3">
@@ -301,7 +301,7 @@ const SmartCartPrototype: React.FC = () => {
                 </div>
 
                 <div className="lg:col-span-7 space-y-6">
-                    <div className="glass-panel rounded-[2rem] p-6">
+                    <div className="glass-panel rounded-[2rem] p-6 border border-gray-200">
                         <div className="flex items-center justify-between gap-4 flex-wrap">
                             <div>
                                 <h2 className="text-xl font-black text-[var(--text-main)]">Outputs</h2>
@@ -359,7 +359,7 @@ const SmartCartPrototype: React.FC = () => {
                     </div>
 
                     <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
-                        <div className="glass-panel rounded-[2rem] p-6">
+                        <div className="glass-panel rounded-[2rem] p-6 border border-gray-200">
                             <h2 className="text-xl font-black text-[var(--text-main)]">Split-cart grouping</h2>
                             <p className="mt-1 text-sm text-[var(--text-muted)]">How the chosen basket distributes across stores.</p>
                             <div className="mt-5 space-y-4">
@@ -397,7 +397,7 @@ const SmartCartPrototype: React.FC = () => {
                             </div>
                         </div>
 
-                        <div className="glass-panel rounded-[2rem] p-6">
+                        <div className="glass-panel rounded-[2rem] p-6 border border-gray-200">
                             <h2 className="text-xl font-black text-[var(--text-main)]">Single-store baseline</h2>
                             <p className="mt-1 text-sm text-[var(--text-muted)]">The comparison the optimizer uses for savings.</p>
                             <div className="mt-5 space-y-3">
