@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-Spendigo SmartCart is a Canada-first Marketplace Facilitator connecting independent convenience stores with local consumers. Status: Beta (Feature Complete). Firebase serverless backend, React 18 SPA frontend, Capacitor mobile wrapper.
+Spendigo SmartCart is a Canada-first Marketplace Facilitator connecting independent convenience stores with local consumers. Status: Production-Ready (v1.0). Firebase serverless backend, React 18 SPA frontend, Capacitor mobile wrapper.
 
 ## Coding Philosophy
 
@@ -17,7 +17,7 @@ Spendigo SmartCart is a Canada-first Marketplace Facilitator connecting independ
 
 ### Development
 ```bash
-npm install          # Install all workspace dependencies (Node 20+, npm 11.7.0)
+npm install          # Install all workspace dependencies (Node >=20, v22+ recommended; npm 11.7.0)
 npm run dev          # Start all apps (Turbo) — web runs at https://spendigo.ca:443
 npm run build        # Production build (all packages via Turbo)
 npm run lint         # ESLint across entire monorepo
@@ -67,7 +67,7 @@ This is a **Turbo monorepo** with npm workspaces:
 
 - **`apps/web/`** — React 18 + TypeScript SPA (Vite 7). Single app serving Consumer, Merchant, and Admin portals via role-based routing.
 - **`apps/mobile/`** — Capacitor wrapper (iOS/Android, app ID: `com.spendigo.smartcart`) — no logic of its own, wraps the web build.
-- **`services/api/`** — Firebase Cloud Functions (Node 20, TypeScript). Entry point: `src/index.ts`.
+- **`services/api/`** — Firebase Cloud Functions (Node >=20, TypeScript). Entry point: `src/index.ts`.
 - **`packages/shared/`** — Shared utilities (currently empty).
 
 ### Frontend (`apps/web/src/`)
@@ -261,6 +261,8 @@ Firebase project: `spendigo-8540c`. Service account secret: `FIREBASE_SERVICE_AC
 ## Data Seeding
 
 Seed scripts in `scripts/`: `seedFirebase.ts` (full database — 11 test users + 5 stores, password: `Spendigo123!`), `seedMasterCatalog.ts` (product catalog), `seedCatalog.ts` (categories). Run with `tsx scripts/<file>.ts`. Requires `service-account.json` in `scripts/`. Other scripts: `cleanup-duplicates.ts`, `linkAuthUsers.ts`, `benchmark-smartcart.mjs` (100 stores / 10k products / 25 items, target < 100 ms, 10 measured runs). See `scripts/README.md` for Firebase migration setup.
+
+Seeded QA account emails and role-by-role test workflows are documented in `docs/DEMO_CREDENTIALS.md`. Stripe test card: `4242 4242 4242 4242`, expiry any future date, CVC `123`, postal `M5V 2H1`.
 
 ## Documentation
 

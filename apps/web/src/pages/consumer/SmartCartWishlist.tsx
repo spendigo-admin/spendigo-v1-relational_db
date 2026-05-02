@@ -174,7 +174,7 @@ const SmartCartWishlist: React.FC = () => {
                 </div>
             </section>
 
-            <div className="max-w-6xl mx-auto px-4 pb-28 lg:pb-8">
+            <div className="max-w-7xl mx-auto px-4 pb-28 lg:pb-8">
                 {/* Add Items Panel */}
                 <AddItemsPanel
                     showAddItems={showAddItems}

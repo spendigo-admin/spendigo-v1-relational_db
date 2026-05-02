@@ -238,7 +238,7 @@ const StoreList: React.FC = () => {
                     <div className="max-w-7xl mx-auto">
                         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12 border-b-2 border-gray-100 pb-8">
                             <div>
-                                <h2 className="text-3xl md:text-5xl font-black text-gray-900 tracking-tighter leading-none italic">
+                                <h2 className="text-2xl md:text-4xl font-black text-gray-900 tracking-tighter leading-none italic">
                                     Weekly Rack <span className="text-blue-600 font-serif">/ Flyers</span>
                                 </h2>
                                 <p className="text-sm text-gray-600 font-bold tracking-widest mt-3">Browse standard pricing and fresh arrivals</p>
@@ -370,7 +370,7 @@ const StoreList: React.FC = () => {
                 <div className="max-w-7xl mx-auto px-4">
                     <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-12">
                         <div>
-                            <h2 className="text-4xl md:text-6xl font-black text-gray-900 tracking-tighter italic m-0">
+                            <h2 className="text-3xl md:text-5xl font-black text-gray-900 tracking-tighter italic m-0">
                                 Local <span className="text-blue-600">Merchants</span>
                             </h2>
                             <p className="text-sm text-gray-600 font-bold tracking-[0.2em] mt-2">Verified quality near your location</p>

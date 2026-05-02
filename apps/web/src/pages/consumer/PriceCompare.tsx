@@ -198,7 +198,7 @@ const PriceCompare = () => {
                 </div>
             </section>
 
-            <main className="max-w-5xl mx-auto py-8 px-4 space-y-8">
+            <main className="max-w-7xl mx-auto py-8 px-4 space-y-8">
                 {wishlistItems.length === 0 ? (
                     <EmptyState
                         icon="🔍"
