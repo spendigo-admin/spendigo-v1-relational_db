@@ -25,9 +25,30 @@ export const LocationProvider: React.FC<{ children: ReactNode }> = ({ children }
     const { profile } = useOrders();
     const { addNotification } = useNotifications();
 
-    const [userCoords, setUserCoords] = useState<{ lat: number, lng: number } | null>(null);
-    const [userPostalCode, setUserPostalCode] = useState<string | null>(null);
-    const [address, setAddress] = useState('');
+    const [userCoords, setUserCoords] = useState<{ lat: number, lng: number } | null>(() => {
+        const manual = sessionStorage.getItem('spendigo_location_manual');
+        if (manual === 'true') {
+            const saved = sessionStorage.getItem('spendigo_user_coords');
+            if (saved) {
+                try { return JSON.parse(saved); } catch (e) { return null; }
+            }
+        }
+        return null;
+    });
+    const [userPostalCode, setUserPostalCode] = useState<string | null>(() => {
+        const manual = sessionStorage.getItem('spendigo_location_manual');
+        if (manual === 'true') {
+            return sessionStorage.getItem('spendigo_user_postal_code') || null;
+        }
+        return null;
+    });
+    const [address, setAddress] = useState<string>(() => {
+        const manual = sessionStorage.getItem('spendigo_location_manual');
+        if (manual === 'true') {
+            return sessionStorage.getItem('spendigo_user_address') || '';
+        }
+        return '';
+    });
     const [searchDistance, setSearchDistance] = useState<number>(() => {
         const saved = sessionStorage.getItem('spendigo_search_distance');
         return saved ? Number(saved) : 10; // default 10km
@@ -37,6 +58,22 @@ export const LocationProvider: React.FC<{ children: ReactNode }> = ({ children }
     useEffect(() => {
         sessionStorage.setItem('spendigo_search_distance', String(searchDistance));
     }, [searchDistance]);
+
+    // Persist location preferences for the session
+    useEffect(() => {
+        if (userCoords) sessionStorage.setItem('spendigo_user_coords', JSON.stringify(userCoords));
+        else sessionStorage.removeItem('spendigo_user_coords');
+    }, [userCoords]);
+
+    useEffect(() => {
+        if (userPostalCode) sessionStorage.setItem('spendigo_user_postal_code', userPostalCode);
+        else sessionStorage.removeItem('spendigo_user_postal_code');
+    }, [userPostalCode]);
+
+    useEffect(() => {
+        if (address) sessionStorage.setItem('spendigo_user_address', address);
+        else sessionStorage.removeItem('spendigo_user_address');
+    }, [address]);
     const [isLocating, setIsLocating] = useState(false);
 
     // Calculate distance between two points in km
@@ -123,6 +160,7 @@ export const LocationProvider: React.FC<{ children: ReactNode }> = ({ children }
 
         navigator.geolocation.getCurrentPosition(
             (position) => {
+                sessionStorage.setItem('spendigo_location_manual', 'true');
                 setUserCoords({
                     lat: position.coords.latitude,
                     lng: position.coords.longitude
@@ -174,6 +212,7 @@ export const LocationProvider: React.FC<{ children: ReactNode }> = ({ children }
             const data = await response.json();
 
             if (data && data.length > 0) {
+                sessionStorage.setItem('spendigo_location_manual', 'true');
                 const { lat, lon } = data[0];
                 setUserCoords({ lat: parseFloat(lat), lng: parseFloat(lon) });
                 if (match) setAddress(queryAddress.toUpperCase());
@@ -182,6 +221,7 @@ export const LocationProvider: React.FC<{ children: ReactNode }> = ({ children }
                     const fallbackResponse = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(queryAddress)}&countrycodes=ca`);
                     const fallbackData = await fallbackResponse.json();
                     if (fallbackData && fallbackData.length > 0) {
+                        sessionStorage.setItem('spendigo_location_manual', 'true');
                         const { lat, lon } = fallbackData[0];
                         setUserCoords({ lat: parseFloat(lat), lng: parseFloat(lon) });
                         return;
@@ -194,6 +234,7 @@ export const LocationProvider: React.FC<{ children: ReactNode }> = ({ children }
                     const geoResponse = await fetch(`https://geocoder.ca/?json=1&locate=${encodeURIComponent(queryAddress)}`);
                     const geoData = await geoResponse.json();
                     if (geoData && geoData.latt && geoData.longt) {
+                        sessionStorage.setItem('spendigo_location_manual', 'true');
                         setUserCoords({ lat: parseFloat(geoData.latt), lng: parseFloat(geoData.longt) });
                         if (match) setAddress(queryAddress.toUpperCase());
                         return;
