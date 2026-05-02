@@ -143,43 +143,91 @@ const StoreList: React.FC = () => {
                 </div>
             )}
 
-            <AdCarousel
-                handleSearch={handleSearch}
-                address={address}
-                setAddress={setAddress}
-                isLocating={isLocating}
-                handleLocateMe={handleLocateMe}
-                searchDistance={searchDistance}
-                setSearchDistance={setSearchDistance}
-            />
+            <AdCarousel />
 
             {/* PREMIUM MARKETPLACE INFO BOARD */}
             <section className="relative z-30 max-w-7xl mx-auto px-4 -mt-8">
-                <div className="bg-white rounded-[1.5rem] md:rounded-[2rem] shadow-2xl border border-gray-100 p-1 md:p-3 flex flex-nowrap items-stretch gap-1 overflow-x-auto scrollbar-hide">
-                    <div className="flex-1 min-w-0 bg-gray-50/50 p-3 md:p-6 rounded-xl md:rounded-2xl border border-gray-50 flex flex-col items-center justify-center text-center group hover:bg-black hover:shadow-xl transition-all shrink-0">
-                        <span className="text-[10px] md:text-[10px] font-semibold text-gray-600 tracking-wider mb-1 uppercase group-hover:text-white/70 transition-colors">Stores</span>
-                        <p className="text-xl md:text-3xl font-black text-gray-900 tracking-tighter group-hover:text-white transition-colors">{stats.totalStores}</p>
-                        <p className="text-[10px] md:text-xs text-gray-600 font-medium mt-1 group-hover:text-white/70 transition-colors">Verified</p>
+                <div className="bg-white rounded-[1.5rem] md:rounded-[2rem] shadow-2xl border border-gray-100 p-1 md:p-3 flex flex-col lg:flex-row items-stretch gap-2 lg:gap-4 overflow-x-auto scrollbar-hide">
+                    
+                    {/* Stats Cards Container */}
+                    <div className="flex flex-1 flex-nowrap items-stretch gap-1 overflow-x-auto scrollbar-hide">
+                        <div className="flex-1 min-w-0 bg-gray-50/50 p-3 md:p-4 rounded-xl md:rounded-2xl border border-gray-50 flex flex-col items-center justify-center text-center group hover:bg-black hover:shadow-xl transition-all shrink-0">
+                            <span className="text-[10px] md:text-[10px] font-semibold text-gray-600 tracking-wider mb-1 uppercase group-hover:text-white/70 transition-colors">Stores</span>
+                            <p className="text-xl md:text-2xl font-black text-gray-900 tracking-tighter group-hover:text-white transition-colors">{stats.totalStores}</p>
+                            <p className="text-[10px] md:text-xs text-gray-600 font-medium mt-1 group-hover:text-white/70 transition-colors">Verified</p>
+                        </div>
+                        <div className="w-px bg-gray-100 my-2 md:my-4"></div>
+                        <div className="flex-1 min-w-0 bg-gray-50/50 p-3 md:p-4 rounded-xl md:rounded-2xl border border-gray-100 flex flex-col items-center justify-center text-center group hover:bg-black hover:shadow-xl transition-all shrink-0">
+                            <span className="text-[10px] md:text-[10px] font-semibold text-gray-600 tracking-wider mb-1 uppercase group-hover:text-white/70 transition-colors">Flyers</span>
+                            <p className="text-xl md:text-2xl font-black text-blue-600 tracking-tighter group-hover:text-white transition-colors">{stats.totalFlyers}</p>
+                            <p className="text-[10px] md:text-xs text-gray-600 font-medium mt-1 group-hover:text-white/70 transition-colors">Live</p>
+                        </div>
+                        <div className="w-px bg-gray-100 my-2 md:my-4"></div>
+                        <div className="flex-1 min-w-0 bg-gray-50/50 p-3 md:p-4 rounded-xl md:rounded-2xl border border-gray-100 flex flex-col items-center justify-center text-center group hover:bg-black hover:shadow-xl transition-all shrink-0">
+                            <span className="text-[10px] md:text-[10px] font-semibold text-gray-600 tracking-wider mb-1 uppercase group-hover:text-white/70 transition-colors">Deals</span>
+                            <p className="text-xl md:text-2xl font-black text-gray-900 tracking-tighter group-hover:text-white transition-colors">{stats.totalDeals}</p>
+                            <p className="text-[10px] md:text-xs text-gray-600 font-medium mt-1 group-hover:text-white/70 transition-colors">Limited</p>
+                        </div>
+                        <div className="w-px bg-gray-100 my-2 md:my-4"></div>
+                        <div className="flex-1 min-w-0 bg-blue-600 p-3 md:p-4 rounded-xl md:rounded-2xl flex flex-col items-center justify-center text-center shadow-lg group hover:bg-black transition-all shrink-0 opacity-90 hover:opacity-100">
+                            <span className="text-[10px] md:text-[10px] font-semibold text-white/80 tracking-wider mb-1 uppercase group-hover:text-white transition-colors">Items</span>
+                            <p className="text-lg md:text-2xl font-black text-white tracking-tighter font-mono">
+                                {stats.totalProducts >= 1000 ? `${(stats.totalProducts / 1000).toFixed(1)}k+` : stats.totalProducts}
+                            </p>
+                            <p className="text-[10px] md:text-xs text-white/80 font-medium mt-1 group-hover:text-white transition-colors">Available</p>
+                        </div>
                     </div>
-                    <div className="w-px bg-gray-100 my-2 md:my-4"></div>
-                    <div className="flex-1 min-w-0 bg-gray-50/50 p-3 md:p-6 rounded-xl md:rounded-2xl border border-gray-100 flex flex-col items-center justify-center text-center group hover:bg-black hover:shadow-xl transition-all shrink-0">
-                        <span className="text-[10px] md:text-[10px] font-semibold text-gray-600 tracking-wider mb-1 uppercase group-hover:text-white/70 transition-colors">Flyers</span>
-                        <p className="text-xl md:text-3xl font-black text-blue-600 tracking-tighter group-hover:text-white transition-colors">{stats.totalFlyers}</p>
-                        <p className="text-[10px] md:text-xs text-gray-600 font-medium mt-1 group-hover:text-white/70 transition-colors">Live</p>
-                    </div>
-                    <div className="w-px bg-gray-100 my-2 md:my-4"></div>
-                    <div className="flex-1 min-w-0 bg-gray-50/50 p-3 md:p-6 rounded-xl md:rounded-2xl border border-gray-100 flex flex-col items-center justify-center text-center group hover:bg-black hover:shadow-xl transition-all shrink-0">
-                        <span className="text-[10px] md:text-[10px] font-semibold text-gray-600 tracking-wider mb-1 uppercase group-hover:text-white/70 transition-colors">Deals</span>
-                        <p className="text-xl md:text-3xl font-black text-gray-900 tracking-tighter group-hover:text-white transition-colors">{stats.totalDeals}</p>
-                        <p className="text-[10px] md:text-xs text-gray-600 font-medium mt-1 group-hover:text-white/70 transition-colors">Limited</p>
-                    </div>
-                    <div className="w-px bg-gray-100 my-2 md:my-4"></div>
-                    <div className="flex-1 min-w-0 bg-blue-600 p-3 md:p-6 rounded-xl md:rounded-2xl flex flex-col items-center justify-center text-center shadow-lg group hover:bg-black transition-all shrink-0 opacity-90 hover:opacity-100">
-                        <span className="text-[10px] md:text-[10px] font-semibold text-white/80 tracking-wider mb-1 uppercase group-hover:text-white transition-colors">Items</span>
-                        <p className="text-lg md:text-3xl font-black text-white tracking-tighter font-mono">
-                            {stats.totalProducts >= 1000 ? `${(stats.totalProducts / 1000).toFixed(1)}k+` : stats.totalProducts}
-                        </p>
-                        <p className="text-[10px] md:text-xs text-white/80 font-medium mt-1 group-hover:text-white transition-colors">Available</p>
+
+                    <div className="w-px bg-gray-100 hidden lg:block my-2"></div>
+
+                    {/* MERGED Location Search Bar */}
+                    <div className="flex-1 lg:max-w-md relative flex flex-row items-center bg-gray-50/50 rounded-xl md:rounded-2xl p-1 sm:p-2 border border-gray-100 group shadow-sm hover:shadow-md transition-all shrink-0 min-w-[300px]">
+                        {/* Locate Me */}
+                        <div 
+                            onClick={handleLocateMe}
+                            className={`pl-2 sm:pl-4 pr-1 flex items-center text-red-500 cursor-pointer hover:scale-125 transition-all active:scale-95 group/loc ${isLocating ? 'animate-bounce' : ''}`}
+                            title="Locate Me"
+                        >
+                            <svg className="w-4 h-4 sm:w-6 sm:h-6" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
+                            </svg>
+                        </div>
+
+                        {/* Input */}
+                        <input
+                            type="text"
+                            placeholder="Postal code..."
+                            className="flex-1 py-2 sm:py-3 px-1 sm:px-2 bg-transparent outline-none text-gray-900 font-bold placeholder-gray-400 text-[10px] sm:text-sm min-w-0"
+                            value={address}
+                            onChange={(e) => setAddress(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                        />
+                        
+                        <div className="flex items-center gap-1 sm:gap-2 ml-auto">
+                            {/* Radius Selector */}
+                            <div className="flex items-center sm:gap-2 sm:px-2 border-l border-gray-100 h-6 sm:h-8">
+                                <select 
+                                    value={searchDistance} 
+                                    onChange={(e) => setSearchDistance(Number(e.target.value))}
+                                    className="text-[10px] sm:text-xs font-black bg-transparent px-1 sm:px-2 py-1 rounded-lg border-none outline-none text-blue-600 cursor-pointer focus:ring-0 transition-all appearance-none sm:appearance-auto"
+                                >
+                                    <option value={5}>5km</option>
+                                    <option value={10}>10km</option>
+                                    <option value={20}>20km</option>
+                                    <option value={50}>50km</option>
+                                </select>
+                            </div>
+
+                            {/* Search Button */}
+                            <button
+                                onClick={() => handleSearch()}
+                                disabled={isLocating}
+                                className="bg-gray-900 text-white px-3 sm:px-6 py-2 sm:py-2.5 rounded-xl font-black text-[10px] sm:text-xs tracking-widest hover:bg-blue-600 transition-all shadow-md active:scale-95 shrink-0 uppercase border-b-2 sm:border-b-[3px] border-black"
+                            >
+                                <span className="sm:inline hidden">Find</span>
+                                <span className="sm:hidden">GO</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
             </section>
