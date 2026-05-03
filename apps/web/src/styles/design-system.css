@@ -344,3 +344,54 @@ p {
 .pr-safe {
     padding-right: var(--safe-area-right);
 }
+
+@layer base {
+    /* Tailwind Utility Overrides for Night Theme */
+    /* By placing these in base, Tailwind's utility hover states (like hover:text-white) 
+       will correctly override these base defaults due to stylesheet order, fixing disappearing text issues. */
+    .theme-night .text-gray-900,
+    .theme-night .text-gray-800,
+    .theme-night .text-gray-700,
+    .theme-night .text-black {
+        color: var(--text-main);
+    }
+
+    .theme-night .text-gray-600,
+    .theme-night .text-gray-500,
+    .theme-night .text-gray-400 {
+        color: var(--text-muted);
+    }
+
+    .theme-night .bg-white,
+    .theme-night .bg-gray-50 {
+        background-color: var(--surface-1);
+    }
+
+    .theme-night .bg-gray-100,
+    .theme-night .bg-gray-200 {
+        background-color: var(--surface-2);
+    }
+
+    .theme-night .border-gray-100,
+    .theme-night .border-gray-200,
+    .theme-night .border-gray-300 {
+        border-color: var(--surface-3);
+    }
+
+    .theme-night .text-blue-700,
+    .theme-night .text-blue-600,
+    .theme-night .text-blue-800 {
+        color: var(--brand-primary);
+    }
+
+    .theme-night .bg-blue-50,
+    .theme-night .bg-blue-100 {
+        background-color: var(--surface-2);
+        color: var(--brand-primary);
+    }
+
+    .theme-night ::placeholder {
+        color: var(--text-muted);
+        opacity: 1;
+    }
+}
