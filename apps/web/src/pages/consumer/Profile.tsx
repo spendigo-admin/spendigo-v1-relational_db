@@ -11,6 +11,7 @@ import { functions } from '../../lib/firebase';
 import '../../styles/design-system.css';
 import SEO from '../../components/SEO';
 import { EmptyState } from '../../components/ui/EmptyState';
+import ThemeSwitcher from '../../components/ThemeSwitcher';
 
 const Profile: React.FC = () => {
     const { profile, orders, updateProfile, addAddress, updateAddress, deleteAddress, setDefaultAddress, reorder, downloadOrderReceipt } = useOrders();
@@ -225,7 +226,7 @@ const Profile: React.FC = () => {
             <SEO title="My Profile" description="Manage your Spendigo account, addresses, and order history." path="/profile" noIndex />
             
             {/* Premium Hero Section */}
-            <section className="relative overflow-hidden pt-12 pb-8 md:pt-20 md:pb-12 px-4 mb-4">
+            <section className="relative overflow-hidden pt-6 pb-4 md:pt-20 md:pb-12 px-4 mb-4">
                 {/* Background Decorative Elements */}
                 <div className="absolute inset-0 z-0">
                     <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full bg-[radial-gradient(circle_at_50%_-20%,var(--brand-primary-light),transparent_70%)]" />
@@ -234,27 +235,27 @@ const Profile: React.FC = () => {
                 </div>
 
                 <div className="max-w-3xl mx-auto relative z-10">
-                    <div className="flex flex-col md:flex-row items-center gap-6 md:gap-8 text-center md:text-left">
-                        <div className="relative">
-                            <div className="w-24 h-24 md:w-32 md:h-32 rounded-[2.5rem] bg-white shadow-xl flex items-center justify-center text-4xl md:text-5xl font-black text-[var(--brand-primary)] border-4 border-white select-none italic tracking-tighter">
+                    <div className="flex flex-row items-center gap-4 md:gap-8 text-left">
+                        <div className="relative shrink-0">
+                            <div className="w-16 h-16 md:w-32 md:h-32 rounded-2xl md:rounded-[2.5rem] bg-white shadow-xl flex items-center justify-center text-2xl md:text-5xl font-black text-[var(--brand-primary)] border-2 md:border-4 border-white select-none italic tracking-tighter">
                                 {(profile.name || user?.email || '?').charAt(0).toUpperCase()}
                             </div>
-                            <div className="absolute -bottom-2 -right-2 w-8 h-8 md:w-10 md:h-10 bg-emerald-500 rounded-2xl border-4 border-white flex items-center justify-center text-white shadow-lg">
-                                <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
+                            <div className="absolute -bottom-1 -right-1 md:-bottom-2 md:-right-2 w-6 h-6 md:w-10 md:h-10 bg-emerald-500 rounded-lg md:rounded-2xl border-2 md:border-4 border-white flex items-center justify-center text-white shadow-lg">
+                                <svg className="w-3 h-3 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
                             </div>
                         </div>
                         
-                        <div className="flex-1">
-                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white shadow-sm border border-gray-200 mb-4 animate-fade-in">
-                                <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--text-muted)]">Verified Member</span>
+                        <div className="flex-1 min-w-0">
+                            <div className="inline-flex items-center gap-2 px-2 py-0.5 md:px-3 md:py-1 rounded-full bg-white shadow-sm border border-gray-200 mb-1.5 md:mb-4 animate-fade-in">
+                                <span className="flex h-1.5 w-1.5 md:h-2 md:w-2 rounded-full bg-emerald-500 animate-pulse" />
+                                <span className="text-[8px] md:text-[10px] font-black uppercase tracking-[0.2em] text-[var(--text-muted)]">Verified</span>
                             </div>
-                            <h1 className="text-3xl md:text-5xl font-black text-[var(--text-main)] mb-2 leading-[1.05] tracking-tighter italic">
+                            <h1 className="text-xl md:text-5xl font-black text-[var(--text-main)] mb-0.5 md:mb-2 leading-[1.05] tracking-tighter italic truncate">
                                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-[var(--brand-primary)] to-indigo-600">
                                     {profile.name.split(' ')[0]}
                                 </span>
                             </h1>
-                            <p className="text-[var(--text-muted)] text-sm md:text-base font-bold italic opacity-80">{profile.email}</p>
+                            <p className="text-[var(--text-muted)] text-xs md:text-base font-bold italic opacity-80 truncate">{profile.email}</p>
                         </div>
                     </div>
                 </div>
@@ -472,8 +473,16 @@ const Profile: React.FC = () => {
                                 </p>
                             </div>
                         </div>
-
-
+                        {/* APP APPEARANCE */}
+                        <div className="mt-10 pt-6 border-t border-[var(--glass-border)]">
+                            <h3 className="text-lg font-bold text-[var(--text-main)] mb-2 flex items-center gap-2">
+                                <span>🎨</span> App Appearance
+                            </h3>
+                            <p className="text-sm text-[var(--text-muted)] mb-4">
+                                Customize your Spendigo experience with different premium themes.
+                            </p>
+                            <ThemeSwitcher variant="inline" />
+                        </div>
 
                         {/* DANGER ZONE */}
                         <div className="mt-10 pt-6 border-t-2 border-red-200">

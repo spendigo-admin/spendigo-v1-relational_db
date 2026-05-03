@@ -265,7 +265,6 @@ function App() {
                     </MaintenanceGuard>
                     </AuditProvider>
                 </AuthProvider>
-                <ThemeSwitcher />
             </Router>
         </ErrorBoundary>
     );

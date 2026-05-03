@@ -1,23 +1,60 @@
 import React, { useState, useEffect } from 'react';
 
-const themes = [
+export const themes = [
     { id: 'default', name: 'Default Theme', className: '' },
     { id: 'night', name: 'Night Navigator', className: 'theme-night' },
     { id: 'eco', name: 'Eco-Minimalist', className: 'theme-eco' },
     { id: 'deal', name: 'High-Velocity Deals', className: 'theme-deal' }
 ];
 
-const ThemeSwitcher: React.FC = () => {
+export const initTheme = () => {
+    const saved = localStorage.getItem('spendigo_theme') || 'default';
+    const theme = themes.find(t => t.id === saved);
+    if (theme) document.body.className = theme.className;
+};
+
+interface Props {
+    variant?: 'floating' | 'inline';
+}
+
+const ThemeSwitcher: React.FC<Props> = ({ variant = 'floating' }) => {
     const [isOpen, setIsOpen] = useState(false);
-    const [activeTheme, setActiveTheme] = useState('default');
+    const [activeTheme, setActiveTheme] = useState(() => localStorage.getItem('spendigo_theme') || 'default');
 
     useEffect(() => {
-        // Apply theme on mount/change
         const theme = themes.find(t => t.id === activeTheme);
         if (theme) {
             document.body.className = theme.className;
+            localStorage.setItem('spendigo_theme', activeTheme);
+            window.dispatchEvent(new Event('themechange'));
         }
     }, [activeTheme]);
+
+    useEffect(() => {
+        const handler = () => setActiveTheme(localStorage.getItem('spendigo_theme') || 'default');
+        window.addEventListener('themechange', handler);
+        return () => window.removeEventListener('themechange', handler);
+    }, []);
+
+    if (variant === 'inline') {
+        return (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {themes.map((theme) => (
+                    <button
+                        key={theme.id}
+                        onClick={() => setActiveTheme(theme.id)}
+                        className={`text-left px-4 py-3 rounded-xl border-2 transition-all ${
+                            activeTheme === theme.id 
+                                ? 'bg-blue-50 border-blue-600 text-blue-700 font-bold shadow-sm' 
+                                : 'bg-white border-gray-200 text-gray-700 hover:border-blue-300'
+                        }`}
+                    >
+                        {theme.name}
+                    </button>
+                ))}
+            </div>
+        );
+    }
 
     return (
         <div className="fixed bottom-24 md:bottom-4 right-4 z-50">
