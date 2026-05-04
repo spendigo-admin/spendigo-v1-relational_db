@@ -36,6 +36,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteUser = void 0;
 const functions = __importStar(require("firebase-functions"));
 const admin = __importStar(require("firebase-admin"));
+const audit_1 = require("../utils/audit");
 /**
  * Delete User Function (Admin Only)
  * Deletes a user from Firebase Authentication and Firestore.
@@ -84,6 +85,7 @@ exports.deleteUser = functions.https.onCall(async (data, context) => {
                 });
             }
         }
+        await (0, audit_1.logEvent)('USER_DELETE', (0, audit_1.buildActorFromContext)(context), { deletedUid: targetUid, deletedRole: userData === null || userData === void 0 ? void 0 : userData.role, deletedEmail: userData === null || userData === void 0 ? void 0 : userData.email }, `users/${targetUid}`);
         return { success: true, message: `User ${targetUid} deleted successfully.` };
     }
     catch (error) {

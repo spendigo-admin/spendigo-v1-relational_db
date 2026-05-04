@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { collection, onSnapshot, doc, updateDoc, setDoc, getDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { isFlyerActive, filterActiveDeals } from '../utils/date-helpers';
-// Audit import removed
+import { auditBridge } from '../utils/auditBridge';
 
 interface MarketplaceContextType {
     stores: Record<string, any>;
@@ -98,7 +98,7 @@ export const MarketplaceProvider: React.FC<{ children: ReactNode }> = ({ childre
     const updateStoreStatus = async (storeId: string | number, status: 'active' | 'pending' | 'suspended', reason?: string) => {
         const storeRef = doc(db, 'stores', String(storeId));
         const updateData: any = { status };
-        
+
         if (reason) {
             updateData.statusReason = reason;
             updateData.statusUpdatedAt = new Date().toISOString();
@@ -106,13 +106,13 @@ export const MarketplaceProvider: React.FC<{ children: ReactNode }> = ({ childre
             // Clear reason when activating
             updateData.statusReason = null;
         }
-        
+
         await updateDoc(storeRef, updateData);
+        auditBridge.emit('STORE_STATUS_CHANGE', { storeId: String(storeId), newStatus: status, reason }, `stores/${storeId}`);
     };
 
     const addStore = async (store: any) => {
         const newId = store.id || `store-${Date.now()}`;
-        // Audit logging removed
         const storeData = {
             ...store,
             id: newId,
@@ -121,6 +121,7 @@ export const MarketplaceProvider: React.FC<{ children: ReactNode }> = ({ childre
             joinedAt: new Date().toISOString().split('T')[0]
         };
         await setDoc(doc(db, 'stores', newId), storeData);
+        auditBridge.emit('STORE_CREATE', { storeId: newId, storeName: store.name }, `stores/${newId}`);
         return storeData;
     };
 
@@ -139,13 +140,13 @@ export const MarketplaceProvider: React.FC<{ children: ReactNode }> = ({ childre
                 requestedAt: new Date().toISOString()
             }
         });
-        // Audit logging removed
+        auditBridge.emit('STORE_DELETE_REQUEST', { storeId, requesterId, requesterRole }, `stores/${storeId}`);
     };
 
     const approveDeleteStore = async (storeId: string) => {
         const storeRef = doc(db, 'stores', storeId);
         await deleteDoc(storeRef);
-        // Audit logging removed
+        auditBridge.emit('STORE_DELETE_APPROVED', { storeId }, `stores/${storeId}`);
     };
 
     // --- Flyer Management (Subcollection) ---

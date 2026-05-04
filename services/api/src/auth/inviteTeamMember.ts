@@ -1,6 +1,7 @@
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import { checkRateLimit } from '../utils/rateLimiter';
+import { logEvent, buildActorFromContext } from '../utils/audit';
 
 interface InviteData {
     email: string;
@@ -154,7 +155,15 @@ export const inviteTeamMember = functions.https.onCall(
 
             functions.logger.info(`Queued invitation email for ${email}`);
 
-            // 9. Return success
+            // 9. Audit log
+            await logEvent(
+                'TEAM_MEMBER_INVITE',
+                buildActorFromContext(context),
+                { invitedEmail: email, merchantRole, storeId },
+                `stores/${storeId}`
+            );
+
+            // 10. Return success
             return {
                 success: true,
                 uid: authUser.uid,

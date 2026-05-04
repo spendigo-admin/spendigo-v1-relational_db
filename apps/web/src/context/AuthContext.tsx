@@ -323,6 +323,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             await setDoc(doc(db, 'users', uid), newUser);
             setUser(newUser as User);
 
+            await auditBridge.emit({ action: 'AUTH_REGISTER_SUCCESS', metadata: { role: newUser.role } });
+
             // Redirect to verification page
             window.location.href = '/verify-email';
 

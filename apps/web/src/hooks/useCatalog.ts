@@ -868,6 +868,12 @@ export const useCatalog = () => {
         }
 
         await batch.commit();
+        auditBridge.emit('MASTER_PRODUCT_APPROVE', {
+            requestId,
+            productName: masterData.name,
+            masterId,
+            merchantId: reqData.submitted_by_merchant_id
+        }, `product_creation_requests/${requestId}`);
     };
 
     const rejectProductRequest = async (requestId: string, reqData: any, reason: string) => {
@@ -916,6 +922,12 @@ export const useCatalog = () => {
         }
 
         await batch.commit();
+        auditBridge.emit('MASTER_PRODUCT_REJECT', {
+            requestId,
+            productName: reqData.requested_product_name,
+            reason,
+            merchantId: reqData.submitted_by_merchant_id
+        }, `product_creation_requests/${requestId}`);
     };
 
     // Bulk Add Merchant Products

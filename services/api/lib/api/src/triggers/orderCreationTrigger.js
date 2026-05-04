@@ -36,6 +36,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.onOrderCreated = void 0;
 const functions = __importStar(require("firebase-functions"));
 const admin = __importStar(require("firebase-admin"));
+const fcm_1 = require("../utils/fcm");
 // Initialize admin app if not already initialized
 if (!admin.apps.length) {
     admin.initializeApp();
@@ -134,8 +135,9 @@ exports.onOrderCreated = functions.firestore
             // B. Push Notification (FCM)
             const merchantTokens = merchantData === null || merchantData === void 0 ? void 0 : merchantData.fcmTokens;
             if (merchantTokens && merchantTokens.length > 0) {
+                const validTokens = merchantTokens.filter(t => typeof t === 'string' && t.length > 0);
                 const message = {
-                    tokens: merchantTokens.filter(t => typeof t === 'string' && t.length > 0),
+                    tokens: validTokens,
                     notification: {
                         title: 'New Order Received! 🛍️',
                         body: `${customerName} placed an order for $${total.toFixed(2)}`
@@ -149,6 +151,7 @@ exports.onOrderCreated = functions.firestore
                 try {
                     const response = await admin.messaging().sendEachForMulticast(message);
                     functions.logger.info(`[OrderTrigger] FCM Success: ${response.successCount}, Failure: ${response.failureCount}`);
+                    await (0, fcm_1.removeStaleTokens)(merchantUid, validTokens, response.responses);
                 }
                 catch (fcmError) {
                     functions.logger.error(`[OrderTrigger] FCM Error for ${merchantUid}:`, fcmError);

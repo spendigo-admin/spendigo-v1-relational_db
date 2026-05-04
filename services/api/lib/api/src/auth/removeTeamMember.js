@@ -36,12 +36,13 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.removeTeamMember = void 0;
 const functions = __importStar(require("firebase-functions"));
 const admin = __importStar(require("firebase-admin"));
+const audit_1 = require("../utils/audit");
 /**
  * Callable HTTPS Cloud Function to remove a team member
  * Removes the storeId and merchantRole from the target user
  */
 exports.removeTeamMember = functions.https.onCall(async (data, context) => {
-    var _a, _b, _c, _d;
+    var _a, _b, _c, _d, _e;
     if (!context.app && process.env.FUNCTIONS_EMULATOR !== 'true') {
         throw new functions.https.HttpsError('failed-precondition', 'The function must be called from an App Check verified app.');
     }
@@ -87,6 +88,7 @@ exports.removeTeamMember = functions.https.onCall(async (data, context) => {
         role: 'consumer', // Revert to consumer
         status: 'active' // Ensure they aren't stuck in pending
     });
+    await (0, audit_1.logEvent)('TEAM_MEMBER_REMOVE', (0, audit_1.buildActorFromContext)(context), { removedUserId: targetUserId, removedRole: (_e = targetDoc.data()) === null || _e === void 0 ? void 0 : _e.merchantRole, storeId }, `stores/${storeId}`);
     return { success: true };
 });
 //# sourceMappingURL=removeTeamMember.js.map

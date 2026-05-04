@@ -1,5 +1,6 @@
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
+import { removeStaleTokens } from '../utils/fcm';
 
 // Initialize admin app if not already initialized
 if (!admin.apps.length) {
@@ -99,24 +100,21 @@ export const onOrderStatusUpdated = functions.firestore
           link: `/order/${orderId}`
         },
         android: { priority: 'high', notification: { sound: 'default' } },
-        apns: { payload: { aps: { sound: 'default' } } }
+        apns: { payload: { aps: { sound: 'default' } } },
+        webpush: {
+          notification: {
+            icon: '/icon-192x192.png',
+            badge: '/badge-72x72.png',
+            // Tag deduplicates repeated status updates so the user sees only the latest
+            tag: `order-${orderId}`,
+          }
+        }
       };
 
       const response = await admin.messaging().sendEachForMulticast(payload);
-      
-      if (response.failureCount > 0) {
-        const failedTokens: string[] = [];
-        response.responses.forEach((resp, idx) => {
-          if (!resp.success && (resp.error?.code === 'messaging/invalid-registration-token' || resp.error?.code === 'messaging/registration-token-not-registered')) {
-              failedTokens.push(fcmTokens[idx]);
-          }
-        });
 
-        if (failedTokens.length > 0) {
-          await admin.firestore().collection('users').doc(userId).update({
-            fcmTokens: admin.firestore.FieldValue.arrayRemove(...failedTokens)
-          });
-        }
+      if (response.failureCount > 0) {
+        await removeStaleTokens(userId, fcmTokens, response.responses);
       }
 
       functions.logger.info(`Successfully processed order status notification for ${orderId} (${newStatus})`);

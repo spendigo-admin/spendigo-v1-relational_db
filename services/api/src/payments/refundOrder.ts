@@ -1,6 +1,7 @@
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import { stripe } from '../config/stripe';
+import { logEvent, buildActorFromContext } from '../utils/audit';
 
 const db = admin.firestore();
 
@@ -65,6 +66,13 @@ export const refundOrder = functions.https.onCall(async (data, context) => {
             refundReason: reason || 'Merchant initiated',
             refundedAt: admin.firestore.FieldValue.serverTimestamp()
         });
+
+        await logEvent(
+            'ORDER_REFUND_INITIATED',
+            buildActorFromContext(context),
+            { orderId, refundId: refund.id, reason: reason || 'Merchant initiated', storeId: orderStoreId },
+            `orders/${orderId}`
+        );
 
         return {
             success: true,

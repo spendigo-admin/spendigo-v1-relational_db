@@ -6,6 +6,16 @@ import { usePushNotifications } from '../../hooks/usePushNotifications';
 import { useAuth } from '../../context/AuthContext';
 import SEO from '../../components/SEO';
 
+const getRelativeTime = (timestamp: string): string => {
+    const diffMs = Date.now() - new Date(timestamp).getTime();
+    const mins = Math.floor(diffMs / 60000);
+    if (mins < 1) return 'Just now';
+    if (mins < 60) return `${mins}m ago`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs}h ago`;
+    return `${Math.floor(hrs / 24)}d ago`;
+};
+
 const Notifications: React.FC = () => {
     const navigate = useNavigate();
     const { user } = useAuth();
@@ -52,6 +62,7 @@ const Notifications: React.FC = () => {
 
     const renderNotification = (n: AppNotification) => {
         const config = getIconConfig(n.type);
+        const relativeTime = getRelativeTime(n.timestamp);
         return (
             <div
                 key={n.id}
@@ -80,7 +91,7 @@ const Notifications: React.FC = () => {
                         {n.message}
                     </p>
                     <div className="flex items-center gap-2 mt-3 text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] opacity-60">
-                        <span>{n.time}</span>
+                        <span>{relativeTime}</span>
                         <span>•</span>
                         <span>{n.type.replace('_', ' ')}</span>
                     </div>

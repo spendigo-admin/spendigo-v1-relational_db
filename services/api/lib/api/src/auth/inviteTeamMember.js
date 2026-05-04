@@ -37,6 +37,7 @@ exports.inviteTeamMember = void 0;
 const functions = __importStar(require("firebase-functions"));
 const admin = __importStar(require("firebase-admin"));
 const rateLimiter_1 = require("../utils/rateLimiter");
+const audit_1 = require("../utils/audit");
 /**
  * Callable HTTPS Cloud Function to invite team members
  * Creates both Firebase Auth account and Firestore user record
@@ -142,7 +143,9 @@ exports.inviteTeamMember = functions.https.onCall(async (data, context) => {
             createdAt: admin.firestore.FieldValue.serverTimestamp(),
         });
         functions.logger.info(`Queued invitation email for ${email}`);
-        // 9. Return success
+        // 9. Audit log
+        await (0, audit_1.logEvent)('TEAM_MEMBER_INVITE', (0, audit_1.buildActorFromContext)(context), { invitedEmail: email, merchantRole, storeId }, `stores/${storeId}`);
+        // 10. Return success
         return {
             success: true,
             uid: authUser.uid,

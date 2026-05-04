@@ -38,6 +38,7 @@ exports.updateSubscriptionPlan = void 0;
 const functions = __importStar(require("firebase-functions"));
 const admin = __importStar(require("firebase-admin"));
 const stripe_1 = require("../config/stripe");
+const audit_1 = require("../utils/audit");
 const db = admin.firestore();
 const PRICE_IDS = {
     core: ((_a = functions.config().stripe) === null || _a === void 0 ? void 0 : _a.price_core) || 'price_123_test_core',
@@ -110,6 +111,7 @@ exports.updateSubscriptionPlan = functions.https.onCall(async (data, context) =>
             subscriptionTier: newTier,
             subscriptionStatus: 'active' // Ensure it stays active
         });
+        await (0, audit_1.logEvent)('SUBSCRIPTION_CHANGE', (0, audit_1.buildActorFromContext)(context), { fromTier: currentTier, toTier: newTier, changeType: isUpgrade ? 'upgrade' : 'downgrade' }, `users/${userId}`);
         return { success: true, message: isUpgrade ? 'Plan upgraded.' : 'Plan downgraded (effective next cycle).' };
     }
     catch (error) {

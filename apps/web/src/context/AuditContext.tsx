@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useLayoutEffect, ReactNode, useCallback } from 'react';
 import { collection, query, orderBy, onSnapshot, doc, runTransaction, limit, getDocs } from 'firebase/firestore';
 import { db, functions } from '../lib/firebase';
 import { httpsCallable } from 'firebase/functions';
@@ -78,7 +78,8 @@ export const AuditProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
     // 1. Snapshot Listener: Sync logs (Admin Only)
     useEffect(() => {
-        if (!user || user.role !== 'admin') {
+        if (!user || (user.role !== 'admin' && !user.adminRole)) {
+            console.log('[AuditContext] User is not an admin, skipping sync.', user?.id, user?.role, user?.adminRole);
             setLogs([]);
             return;
         }
@@ -88,6 +89,7 @@ export const AuditProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
         const unsubscribeLogs = onSnapshot(q, 
             (snapshot) => {
+                console.log(`[AuditContext] Received ${snapshot.size} logs from Firestore`);
                 const fetchedLogs: AuditLog[] = [];
                 snapshot.forEach((doc) => {
                     fetchedLogs.push({ id: doc.id, ...doc.data() } as AuditLog);
@@ -95,7 +97,7 @@ export const AuditProvider: React.FC<{ children: ReactNode }> = ({ children }) =
                 setLogs(fetchedLogs);
             },
             (error) => {
-                console.error('[AuditContext] Snapshot error:', error);
+                console.error('[AuditContext] Snapshot error (Permission Denied?):', error);
             }
         );
 
@@ -103,7 +105,9 @@ export const AuditProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }, [user?.id, user?.role]);
 
     // 2. Bridge Listener: Record system-wide events (Active from app load)
-    useEffect(() => {
+    // useLayoutEffect fires before any useEffect in the tree, guaranteeing the bridge
+    // subscription is registered before AuthContext's useEffect emits its first auth event.
+    useLayoutEffect(() => {
         console.log('[AuditContext] Initializing forensic event capture bridge...');
         const unsubscribeBridge = auditBridge.subscribe((params) => {
             console.log(`[AuditBridge] Capture: ${params.action}`, params.metadata);
@@ -161,22 +165,22 @@ export const AuditProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             verifyIntegrity();
         }
     }, [logs.length]);
-    const logEvent = async (action: string, metadata: Record<string, any> = {}, resource: string = '') => {
+    const logEvent = useCallback(async (action: string, metadata: Record<string, any> = {}, resource: string = '') => {
         try {
             console.log(`[AuditContext] Requesting server-side log for: ${action}`);
             
             const recordAuditEvent = httpsCallable(functions, 'recordAuditEvent');
-            await recordAuditEvent({
+            const result = await recordAuditEvent({
                 action,
                 metadata,
                 resource
             });
             
-            console.log(`[AuditContext] Server-side log successful: ${action}`);
-        } catch (e) {
-            console.error("Failed to record audit event via Cloud Function:", e);
+            console.log(`[AuditContext] Server-side log successful: ${action}`, result.data);
+        } catch (e: any) {
+            console.error(`[AuditContext] Failed to record audit event [${action}]:`, e.message, e.details);
         }
-    };
+    }, []); // functions is a stable module-level import — no dep needed
 
     const testLog = async () => {
         await logEvent('SYSTEM_TEST_EVENT', { 

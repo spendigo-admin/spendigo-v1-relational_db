@@ -1,5 +1,6 @@
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
+import { logEvent, buildActorFromContext } from '../utils/audit';
 
 /**
  * Callable HTTPS Cloud Function to remove a team member
@@ -64,6 +65,13 @@ export const removeTeamMember = functions.https.onCall(async (data, context) => 
         role: 'consumer', // Revert to consumer
         status: 'active' // Ensure they aren't stuck in pending
     });
+
+    await logEvent(
+        'TEAM_MEMBER_REMOVE',
+        buildActorFromContext(context),
+        { removedUserId: targetUserId, removedRole: targetDoc.data()?.merchantRole, storeId },
+        `stores/${storeId}`
+    );
 
     return { success: true };
 });

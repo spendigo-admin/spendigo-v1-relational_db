@@ -1,6 +1,7 @@
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import { stripe } from '../config/stripe';
+import { logEvent, buildActorFromContext } from '../utils/audit';
 
 const db = admin.firestore();
 
@@ -89,6 +90,13 @@ export const updateSubscriptionPlan = functions.https.onCall(async (data, contex
             subscriptionTier: newTier,
             subscriptionStatus: 'active' // Ensure it stays active
         });
+
+        await logEvent(
+            'SUBSCRIPTION_CHANGE',
+            buildActorFromContext(context),
+            { fromTier: currentTier, toTier: newTier, changeType: isUpgrade ? 'upgrade' : 'downgrade' },
+            `users/${userId}`
+        );
 
         return { success: true, message: isUpgrade ? 'Plan upgraded.' : 'Plan downgraded (effective next cycle).' };
 

@@ -36,6 +36,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.onOrderStatusUpdated = void 0;
 const functions = __importStar(require("firebase-functions"));
 const admin = __importStar(require("firebase-admin"));
+const fcm_1 = require("../utils/fcm");
 // Initialize admin app if not already initialized
 if (!admin.apps.length) {
     admin.initializeApp();
@@ -123,22 +124,19 @@ exports.onOrderStatusUpdated = functions.firestore
                 link: `/order/${orderId}`
             },
             android: { priority: 'high', notification: { sound: 'default' } },
-            apns: { payload: { aps: { sound: 'default' } } }
+            apns: { payload: { aps: { sound: 'default' } } },
+            webpush: {
+                notification: {
+                    icon: '/icon-192x192.png',
+                    badge: '/badge-72x72.png',
+                    // Tag deduplicates repeated status updates so the user sees only the latest
+                    tag: `order-${orderId}`,
+                }
+            }
         };
         const response = await admin.messaging().sendEachForMulticast(payload);
         if (response.failureCount > 0) {
-            const failedTokens = [];
-            response.responses.forEach((resp, idx) => {
-                var _a, _b;
-                if (!resp.success && (((_a = resp.error) === null || _a === void 0 ? void 0 : _a.code) === 'messaging/invalid-registration-token' || ((_b = resp.error) === null || _b === void 0 ? void 0 : _b.code) === 'messaging/registration-token-not-registered')) {
-                    failedTokens.push(fcmTokens[idx]);
-                }
-            });
-            if (failedTokens.length > 0) {
-                await admin.firestore().collection('users').doc(userId).update({
-                    fcmTokens: admin.firestore.FieldValue.arrayRemove(...failedTokens)
-                });
-            }
+            await (0, fcm_1.removeStaleTokens)(userId, fcmTokens, response.responses);
         }
         functions.logger.info(`Successfully processed order status notification for ${orderId} (${newStatus})`);
     }

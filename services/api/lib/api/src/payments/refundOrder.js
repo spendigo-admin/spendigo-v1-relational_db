@@ -37,6 +37,7 @@ exports.refundOrder = void 0;
 const functions = __importStar(require("firebase-functions"));
 const admin = __importStar(require("firebase-admin"));
 const stripe_1 = require("../config/stripe");
+const audit_1 = require("../utils/audit");
 const db = admin.firestore();
 /**
  * Merchant-initiated refund for a specific order.
@@ -90,6 +91,7 @@ exports.refundOrder = functions.https.onCall(async (data, context) => {
             refundReason: reason || 'Merchant initiated',
             refundedAt: admin.firestore.FieldValue.serverTimestamp()
         });
+        await (0, audit_1.logEvent)('ORDER_REFUND_INITIATED', (0, audit_1.buildActorFromContext)(context), { orderId, refundId: refund.id, reason: reason || 'Merchant initiated', storeId: orderStoreId }, `orders/${orderId}`);
         return {
             success: true,
             refundId: refund.id

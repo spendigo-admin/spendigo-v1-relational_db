@@ -20,37 +20,6 @@ export interface AppNotification {
 // Alias for backward compatibility if needed
 export type Notification = AppNotification;
 
-const MOCK_NOTIFICATIONS: AppNotification[] = [
-    {
-        id: 'n1',
-        type: 'price_drop',
-        title: 'Price Drop: Organic Hass Avocados 🥑',
-        message: 'FreshMart: The Organic Hass Avocados in your wishlist are now $1.99 (was $3.49). Stock up while it lasts!',
-        timestamp: new Date(Date.now() - 7200000).toISOString(),
-        time: '2 hours ago',
-        read: false,
-        productId: 'p1'
-    },
-    {
-        id: 'n2',
-        type: 'promo',
-        title: 'Flash Sale: 25% Off Dairy 🥛',
-        message: 'DailyLoaf Bakery: Today only! Enjoy 25% off all milk and yogurt products. Tap to see eligible items.',
-        timestamp: new Date(Date.now() - 172800000).toISOString(),
-        time: '2 days ago',
-        read: false
-    },
-    {
-        id: 'n3',
-        type: 'order',
-        title: 'Order Delivered! ✅',
-        message: 'Your order #ORD-8821 from Metro Express has been delivered to your doorstep. Rate your experience!',
-        timestamp: new Date(Date.now() - 86400000).toISOString(),
-        time: '1 day ago',
-        read: true
-    }
-];
-
 /**
  * Generates dynamic notifications based on active marketplace data.
  */
@@ -143,7 +112,7 @@ interface NotificationContextType {
 }
 
 // Imports updated
-import { doc, onSnapshot, setDoc, getDoc, collection, query, orderBy, addDoc, updateDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, onSnapshot, setDoc, getDoc, collection, query, orderBy, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db, messaging } from '../lib/firebase';
 import { onMessage } from 'firebase/messaging';
 
@@ -165,7 +134,6 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     const [notifications, setNotifications] = useState<AppNotification[]>([]);
     const [preferences, setPreferences] = useState<NotificationPreferences>(DEFAULT_PREFERENCES);
     const [toast, setToast] = useState<AppNotification | null>(null);
-    const [loading, setLoading] = useState(true);
     const lastNotifIds = useRef<Set<string>>(new Set());
     const isFirstLoad = useRef(true);
 
@@ -217,7 +185,6 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
                     isFirstLoad.current = false;
                     
                     setNotifications(loaded);
-                    setLoading(false);
                 });
             } else {
                 // LOCAL STORAGE SYNC (Guest)
@@ -239,7 +206,6 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
                 } else {
                     setNotifications(generateMarketplaceNotifications(stores));
                 }
-                setLoading(false);
             }
 
             // Foreground Messages Listener
@@ -247,16 +213,28 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
                 onMessage(messaging, (payload) => {
                     console.log('Foreground message received. ', payload);
                     if (payload.notification) {
-                        // Construct AppNotification from FCM Payload
+                        const fcmType = (payload.data?.type as string) || 'system';
+
+                        // Map FCM data types to user preference keys and check consent
+                        const prefKey: keyof NotificationPreferences | null =
+                            fcmType === 'price_drop' ? 'priceDrop' :
+                            fcmType === 'order' ? 'orderUpdates' :
+                            fcmType === 'promo' ? 'promotions' : null;
+
+                        // Only suppress if there's an explicit false — default (undefined) means allowed
+                        if (prefKey && preferences[prefKey] === false) {
+                            console.log(`Foreground FCM suppressed — user preference '${prefKey}' is off.`);
+                            return;
+                        }
+
                         const newNotif: Omit<AppNotification, 'id' | 'timestamp' | 'read'> = {
-                            type: (payload.data?.type as any) || 'system',
+                            type: fcmType as AppNotification['type'],
                             title: payload.notification.title || 'New Notification',
                             message: payload.notification.body || '',
                             link: payload.data?.link,
                             orderId: payload.data?.orderId
                         };
-                        
-                        // Use the context's own function to trigger toast and save to Firestore
+
                         addNotification(newNotif);
                     }
                 });
@@ -293,9 +271,11 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
     // Actions
     const addNotification = async (n: Omit<AppNotification, 'id' | 'timestamp' | 'read'>) => {
+        const newId = `notif_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
         const payload = {
+            id: newId,
             ...n,
-            timestamp: new Date().toISOString(), // Use serverTimestamp in real app, but ISO string easy for UI
+            timestamp: new Date().toISOString(),
             read: false
         };
 
@@ -305,7 +285,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
         if (isAuth && contextId) {
             try {
-                await addDoc(collection(db, 'users', contextId, 'notifications'), payload);
+                await setDoc(doc(db, 'users', contextId, 'notifications', newId), payload);
             } catch (e) {
                 console.error("Failed to save notification to Firestore:", e);
             }

@@ -1,5 +1,6 @@
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
+import { logEvent, buildActorFromContext } from '../utils/audit';
 
 /**
  * Delete User Function (Admin Only)
@@ -58,6 +59,13 @@ export const deleteUser = functions.https.onCall(async (data, context) => {
                 });
             }
         }
+
+        await logEvent(
+            'USER_DELETE',
+            buildActorFromContext(context),
+            { deletedUid: targetUid, deletedRole: userData?.role, deletedEmail: userData?.email },
+            `users/${targetUid}`
+        );
 
         return { success: true, message: `User ${targetUid} deleted successfully.` };
     } catch (error: any) {

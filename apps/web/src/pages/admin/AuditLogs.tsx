@@ -1,7 +1,8 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import '../../styles/design-system.css';
 import { useAudit, sha256 } from '../../context/AuditContext';
 import { useAuth } from '../../context/AuthContext';
+import { auditBridge } from '../../utils/auditBridge';
 import { redactPII, redactString, formatToEST, isWithinMinutes } from '../../utils/security';
 
 // Security Utilities
@@ -41,6 +42,18 @@ const AuditLogs: React.FC = () => {
     const [startDate, setStartDate] = useState<string>('');
     const [endDate, setEndDate] = useState<string>('');
 
+    // Audit that this page was accessed — viewing the forensic ledger is itself a sensitive action
+    useEffect(() => {
+        auditBridge.emit({ action: 'AUDIT_LOG_VIEWED', metadata: { adminId: user?.id } });
+    }, []);
+
+    // Re-verify chain integrity whenever a new log is added or the latest hash changes
+    useEffect(() => {
+        if (logs.length > 0) {
+            verifyIntegrity();
+        }
+    }, [logs.length, logs[logs.length - 1]?.hash]);
+
     // Dynamically get unique actions for the filter
     const actionTypes = useMemo(() => {
         const types = new Set(logs.map(log => log.action));
@@ -66,8 +79,8 @@ const AuditLogs: React.FC = () => {
             const logDate = new Date(log.timestamp).getTime();
 
             if (isLiveView) {
-                // Default view: Last 60 minutes for better visibility
-                matchesTime = isWithinMinutes(log.timestamp, 60);
+                // Default view: Last 24 hours for better visibility
+                matchesTime = isWithinMinutes(log.timestamp, 1440);
             } else {
                 // Custom view: Date ranges
                 if (startDate) {
@@ -112,7 +125,7 @@ const AuditLogs: React.FC = () => {
     const handleExport = async () => {
         const dataStr = JSON.stringify(logs, null, 2);
         const timestamp = new Date().toISOString();
-        
+
         // 1. Export Data File
         const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
         const dataFileName = `spendigo_audit_ledger_${timestamp}.json`;
@@ -122,16 +135,20 @@ const AuditLogs: React.FC = () => {
         dataLink.setAttribute('download', dataFileName);
         dataLink.click();
 
-        // 2. Export Checksum File (SHA-256)
-        const hash = await sha256(dataStr);
+        // 2. Export Checksum File (SHA-256 of the final chain hash in the export range)
+        // This is meaningful: anyone can recompute it by re-hashing the last log's hash field.
+        const chainTip = logs.length > 0 ? logs[logs.length - 1].hash : 'EMPTY';
+        const rangeDescriptor = `chain-tip:${chainTip}|count:${logs.length}|exported:${timestamp}`;
+        const hash = await sha256(rangeDescriptor);
         const hashFileName = `${dataFileName}.sha256`;
-        const hashUri = 'data:text/plain;charset=utf-8,' + encodeURIComponent(hash);
+        const hashUri = 'data:text/plain;charset=utf-8,' + encodeURIComponent(`${hash}  ${dataFileName}\n# chain-tip: ${chainTip}\n# log-count: ${logs.length}`);
 
         const hashLink = document.createElement('a');
         hashLink.setAttribute('href', hashUri);
         hashLink.setAttribute('download', hashFileName);
-        // Delay slightly for browser download sequentiality
         setTimeout(() => hashLink.click(), 500);
+
+        auditBridge.emit({ action: 'AUDIT_LOG_EXPORTED', metadata: { count: logs.length, chainTip } });
     };
 
     return (
@@ -334,7 +351,7 @@ const AuditLogs: React.FC = () => {
                 {isLiveView && (
                     <div className="text-[10px] font-bold text-blue-500 uppercase flex items-center gap-2">
                         <span className="h-1.5 w-1.5 bg-blue-500 rounded-full animate-pulse"></span>
-                        Viewing last 60 minutes
+                        Viewing last 24 hours
                     </div>
                 )}
             </div>

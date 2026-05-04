@@ -307,6 +307,7 @@ Non-obvious keys used across the app:
 | `spendigo_cart_guest` | Guest cart (JSON) — merged into Firestore on login |
 | `spendigo_comparison_guest` | Guest comparison list (JSON) — merged into Firestore on login |
 | `smartcart_selections_v1` | SmartCart store selections — persists across logout |
+| `spendigo_theme` | Active theme ID (`default` \| `theme-night` \| `theme-eco` \| `theme-deal`) — read by `initTheme()` in `main.tsx` before React mounts to prevent FOUC |
 
 ## Troubleshooting
 

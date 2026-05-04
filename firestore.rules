@@ -195,9 +195,10 @@ service cloud.firestore {
     match /users/{userId}/notifications/{notificationId} {
       // User can manage their own notifications
       allow read, update, delete: if isOwner(userId);
-      // Owner can create their own notifications (e.g. order confirmations client-side)
-      // Admins can create notifications for any user
-      allow create: if isOwner(userId) || isAdmin();
+      // Owner or admin can create; enforce minimum required fields to prevent junk writes.
+      allow create: if (isOwner(userId) || isAdmin())
+        && request.resource.data.keys().hasAll(['id', 'type', 'title', 'message', 'timestamp', 'read'])
+        && request.resource.data.type in ['price_drop', 'order', 'promo', 'system', 'alert'];
     }
 
     // Deprecated
@@ -224,11 +225,19 @@ service cloud.firestore {
       allow read, write: if isOwner(wishlistId);
     }
 
-    // AUDIT LOGS
+    // AUDIT LOGS — append-only via Cloud Functions (Admin SDK) only.
+    // Direct client writes are blocked; the recordAuditEvent callable uses Admin SDK
+    // which bypasses client rules entirely.
     match /audit_logs/{logId} {
       allow read: if isAdmin();
-      allow create: if isAuthenticated();
+      allow create: if false;
       allow update, delete: if false;
+    }
+
+    // AUDIT LOG META — singleton doc that serializes concurrent chain writes.
+    match /audit_logs_meta/{docId} {
+      allow read: if isAdmin();
+      allow write: if false;
     }
     
     // MAIL

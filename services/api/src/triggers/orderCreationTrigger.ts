@@ -1,5 +1,6 @@
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
+import { removeStaleTokens } from '../utils/fcm';
 
 // Initialize admin app if not already initialized
 if (!admin.apps.length) {
@@ -112,8 +113,9 @@ export const onOrderCreated = functions.firestore
             // B. Push Notification (FCM)
             const merchantTokens = merchantData?.fcmTokens as string[] | undefined;
             if (merchantTokens && merchantTokens.length > 0) {
+                const validTokens = merchantTokens.filter(t => typeof t === 'string' && t.length > 0);
                 const message: admin.messaging.MulticastMessage = {
-                    tokens: merchantTokens.filter(t => typeof t === 'string' && t.length > 0),
+                    tokens: validTokens,
                     notification: {
                         title: 'New Order Received! 🛍️',
                         body: `${customerName} placed an order for $${total.toFixed(2)}`
@@ -127,6 +129,7 @@ export const onOrderCreated = functions.firestore
                 try {
                     const response = await admin.messaging().sendEachForMulticast(message);
                     functions.logger.info(`[OrderTrigger] FCM Success: ${response.successCount}, Failure: ${response.failureCount}`);
+                    await removeStaleTokens(merchantUid, validTokens, response.responses);
                 } catch (fcmError) {
                     functions.logger.error(`[OrderTrigger] FCM Error for ${merchantUid}:`, fcmError);
                 }

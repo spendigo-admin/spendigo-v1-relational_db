@@ -100,9 +100,9 @@ exports.onMerchantProductPriceChange = functions.firestore
         const merchantLat = merchant.coordinates.lat;
         const merchantLng = merchant.coordinates.lng;
         console.log(`[NotificationTrigger] Merchant Location: ${merchantLat}, ${merchantLng}`);
-        // Query Users with Alert Preferences Enabled
+        // Query all users — filtering by fcmTokens array inequality is unreliable in Firestore.
+        // Users without tokens are cheaply skipped below.
         const usersSnap = await db.collection('users')
-            .where('fcmTokens', '!=', [])
             .limit(500)
             .get();
         console.log(`[NotificationTrigger] Found ${usersSnap.size} users with FCM tokens to check.`);
@@ -111,9 +111,13 @@ exports.onMerchantProductPriceChange = functions.firestore
             const userData = userDoc.data();
             const userId = userDoc.id;
             const prefs = userData.notificationPreferences || {};
-            // Only users who want promotions/price drops
-            if (prefs.promotions === false && prefs.priceDrop === false) {
-                console.log(`[NotificationTrigger] User ${userId} has alerts disabled.`);
+            // Skip users who haven't opted in for this specific event type.
+            // isPriceDrop events require priceDrop preference; sale/promo events require promotions.
+            const wantsPriceDrop = prefs.priceDrop !== false;
+            const wantsPromotions = prefs.promotions !== false;
+            const isRelevant = isPriceDrop ? wantsPriceDrop : wantsPromotions;
+            if (!isRelevant) {
+                console.log(`[NotificationTrigger] User ${userId} has this alert type disabled.`);
                 return;
             }
             const maxDist = prefs.maxDistance || 10;
