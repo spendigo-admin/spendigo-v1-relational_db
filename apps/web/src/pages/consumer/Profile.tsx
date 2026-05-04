@@ -484,6 +484,20 @@ const Profile: React.FC = () => {
                             <ThemeSwitcher variant="inline" />
                         </div>
 
+                        {/* SIGN OUT */}
+                        <div className="mt-10 pt-6 border-t border-[var(--glass-border)]">
+                            <button
+                                onClick={logout}
+                                className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl bg-[var(--surface-1)] text-[var(--text-muted)] font-bold text-sm border border-[var(--glass-border)] hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-all"
+                            >
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.36 6.64a9 9 0 11-12.73 0" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 2v10" />
+                                </svg>
+                                Sign Out
+                            </button>
+                        </div>
+
                         {/* DANGER ZONE */}
                         <div className="mt-10 pt-6 border-t-2 border-red-500/30">
                             <h3 className="text-lg font-bold text-red-600 mb-2 flex items-center gap-2">
