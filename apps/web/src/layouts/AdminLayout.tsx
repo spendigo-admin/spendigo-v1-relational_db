@@ -116,7 +116,7 @@ const AdminLayout: React.FC = () => {
                 ${isSidebarOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'}
             `}>
                 {/* Logo */}
-                <div className="p-6 border-b border-[var(--glass-border)] hidden md:block">
+                <div className="h-16 px-6 border-b border-[var(--glass-border)] hidden md:flex items-center shrink-0">
                     <Link to="/admin/dashboard" className="flex items-center gap-3 group">
                         <img src="/app-icon.png" alt="Spendigo Logo" style={{width: 36, height: 36, borderRadius: 8}} className="group-hover:scale-105 transition-transform" />
                         <div className="flex flex-col">
