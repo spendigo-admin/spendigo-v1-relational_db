@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { httpsCallable } from 'firebase/functions';
 import { doc, onSnapshot, collection, getDocs, addDoc, deleteDoc, query, orderBy, limit } from 'firebase/firestore';
 import { db, functions } from '../../lib/firebase';
+import { auditBridge } from '../../utils/auditBridge';
 
 const FlyerIngestion = () => {
     const [postalCode, setPostalCode] = useState('');
@@ -152,6 +153,11 @@ const FlyerIngestion = () => {
                 createdAt: Date.now(),
                 lastRunAt: null
             });
+            auditBridge.emit('FLYER_INGESTION_SCHEDULED', {
+                postalCode: postalCode.replace(/\s+/g, '').toUpperCase(),
+                type: isRecurring ? 'recurring' : 'one-time',
+                scheduledAt: isRecurring ? 'recurring' : new Date(scheduledAt).toISOString()
+            });
             setScheduledDate('');
             setScheduledTime('');
             setRecurringDays([]);
@@ -172,6 +178,7 @@ const FlyerIngestion = () => {
     const cancelJob = async (jobId: string) => {
         try {
             await deleteDoc(doc(db, 'scheduled_ingestion', jobId));
+            auditBridge.emit('FLYER_INGESTION_CANCELLED', { jobId });
         } catch (e: any) {
             console.error("Cancel failed", e);
         }

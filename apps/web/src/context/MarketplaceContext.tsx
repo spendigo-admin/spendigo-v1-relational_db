@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { collection, onSnapshot, doc, updateDoc, setDoc, getDoc, deleteDoc } from 'firebase/firestore';
+import { collection, onSnapshot, doc, updateDoc, setDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { isFlyerActive, filterActiveDeals } from '../utils/date-helpers';
 import { auditBridge } from '../utils/auditBridge';
@@ -162,11 +162,13 @@ export const MarketplaceProvider: React.FC<{ children: ReactNode }> = ({ childre
         const flyerId = flyer.id || `f${Date.now()}`;
         const flyerRef = doc(db, 'stores', String(storeId), 'flyers', flyerId);
         await setDoc(flyerRef, { ...flyer, id: flyerId }, { merge: true });
+        auditBridge.emit('STORE_FLYER_SAVE', { storeId: String(storeId), flyerId, title: flyer.title }, `stores/${storeId}/flyers/${flyerId}`);
     };
 
     const deleteFlyer = async (storeId: string | number, flyerId: string) => {
         const flyerRef = doc(db, 'stores', String(storeId), 'flyers', flyerId);
         await deleteDoc(flyerRef);
+        auditBridge.emit('STORE_FLYER_DELETE', { storeId: String(storeId), flyerId }, `stores/${storeId}/flyers/${flyerId}`);
     };
 
     // --- Deal Management (Subcollection) ---
@@ -182,11 +184,13 @@ export const MarketplaceProvider: React.FC<{ children: ReactNode }> = ({ childre
         const dealId = deal.id || `d${Date.now()}`;
         const dealRef = doc(db, 'stores', String(storeId), 'deals', dealId);
         await setDoc(dealRef, { ...deal, id: dealId }, { merge: true });
+        auditBridge.emit('STORE_DEAL_SAVE', { storeId: String(storeId), dealId, name: deal.productName || deal.name }, `stores/${storeId}/deals/${dealId}`);
     };
 
     const deleteDeal = async (storeId: string | number, dealId: string) => {
         const dealRef = doc(db, 'stores', String(storeId), 'deals', dealId);
         await deleteDoc(dealRef);
+        auditBridge.emit('STORE_DEAL_DELETE', { storeId: String(storeId), dealId }, `stores/${storeId}/deals/${dealId}`);
     };
 
     const filterStoreData = (store: any) => {

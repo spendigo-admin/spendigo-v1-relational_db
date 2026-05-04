@@ -9,6 +9,7 @@ import { useFileUpload } from '../../hooks/useFileUpload';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { db } from '../../lib/firebase';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { auditBridge } from '../../utils/auditBridge';
 
 // --- TYPES ---
 type MerchantRole = 'OWNER' | 'MANAGER' | 'STAFF' | 'MARKETING';
@@ -551,6 +552,7 @@ const MerchantSettings: React.FC = () => {
             await new Promise(resolve => setTimeout(resolve, 1000));
 
             await updateStore(storeId, updates);
+            auditBridge.emit('STORE_SETTINGS_SAVE', { storeId, name: storeInfo.name, address: storeInfo.address }, `stores/${storeId}`);
             addNotification({ type: 'system', title: 'Settings Saved', message: 'Store configuration updated successfully.' });
         } catch (error: any) {
             console.error("Save failed:", error);
@@ -1224,6 +1226,7 @@ const MerchantSettings: React.FC = () => {
                 const result = await onboardStoreFn({ storeId }) as { data: { url: string } };
 
                 if (result.data?.url) {
+                    auditBridge.emit('STORE_STRIPE_CONNECT_INITIATED', { storeId }, `stores/${storeId}`);
                     // Redirect to Stripe Onboarding
                     window.location.href = result.data.url;
                 } else {
@@ -1253,6 +1256,7 @@ const MerchantSettings: React.FC = () => {
                         stripeOnboardingStatus: null,
                         stripeConnectedAt: null
                     });
+                    auditBridge.emit('STORE_STRIPE_DISCONNECT', { storeId }, `stores/${storeId}`);
                     addNotification({ type: 'system', title: 'Disconnected', message: 'Stripe account unlinked.' });
                 } catch (err) {
                     addNotification({ type: 'alert', title: 'Error', message: 'Failed to disconnect.' });
@@ -1444,6 +1448,7 @@ const MerchantSettings: React.FC = () => {
 
                             if (confirmed) {
                                 await updateStore(storeId, { status: 'suspended' });
+                                auditBridge.emit('STORE_PAUSED', { storeId }, `stores/${storeId}`);
                                 addNotification({
                                     type: 'system',
                                     title: 'Store Paused',

@@ -99,6 +99,9 @@ const CareerManagement: React.FC = () => {
                 isVisible: !job.isVisible,
                 updatedAt: serverTimestamp()
             });
+            auditBridge.emit('JOB_POST_TOGGLE_VISIBILITY', {
+                jobId: job.id, title: job.title, isVisible: !job.isVisible
+            }, `careers/${job.id}`);
         } catch (err) {
             console.error(err);
         }

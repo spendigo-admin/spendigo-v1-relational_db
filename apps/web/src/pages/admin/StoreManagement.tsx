@@ -632,11 +632,16 @@ const StoreManagement: React.FC = () => {
                                                         confirmText: 'Approve & Activate',
                                                         type: 'success'
                                                     })) {
-                                                        updateStoreStatus(store.id, 'active');
-                                                        addNotification({ 
-                                                            type: 'system', 
-                                                            title: 'Merchant Approved', 
-                                                            message: `${store.name} is now live.` 
+                                                        await updateStoreStatus(store.id, 'active');
+                                                        await logEvent('STORE_APPROVE', {
+                                                            storeId: store.id,
+                                                            storeName: store.name,
+                                                            merchantEmail: displayEmail
+                                                        }, `stores/${store.id}`);
+                                                        addNotification({
+                                                            type: 'system',
+                                                            title: 'Merchant Approved',
+                                                            message: `${store.name} is now live.`
                                                         });
                                                     }
                                                 }} 

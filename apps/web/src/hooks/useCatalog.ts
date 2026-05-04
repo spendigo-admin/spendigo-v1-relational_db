@@ -999,6 +999,9 @@ export const useCatalog = () => {
 
         if (results.success > 0) {
             await syncStoreProductCount(storeId);
+            auditBridge.emit('MERCHANT_PRODUCT_BULK_IMPORT', {
+                storeId, total: items.length, success: results.success, failed: results.failed
+            }, `stores/${storeId}`);
         }
 
         return results;
