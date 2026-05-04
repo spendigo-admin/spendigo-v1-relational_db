@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useMarketplace } from '../../context/MarketplaceContext';
+import { collection, getDocs } from 'firebase/firestore';
+import { db } from '../../lib/firebase';
 import { useAuth } from '../../context/AuthContext';
-import { Order, useOrders } from '../../context/OrderContext';
+import { useOrders } from '../../context/OrderContext';
 import '../../styles/design-system.css';
 
 type TimePeriod = 'today' | 'week' | 'month' | 'year';
@@ -14,13 +15,22 @@ interface ChartPoint {
 
 const MerchantAnalytics: React.FC = () => {
     const { user } = useAuth();
-    const { getStore } = useMarketplace();
     const { orders } = useOrders();
     const storeId = user?.storeId || '1';
-    const store = getStore(storeId);
 
     const [period, setPeriod] = useState<TimePeriod>('week');
     const [activeMetric, setActiveMetric] = useState<'revenue' | 'orders'>('revenue');
+    const [visitsByDate, setVisitsByDate] = useState<Record<string, number>>({});
+
+    // Fetch real visit data from analytics subcollection
+    useEffect(() => {
+        if (!storeId) return;
+        getDocs(collection(db, 'stores', storeId, 'analytics')).then(snap => {
+            const map: Record<string, number> = {};
+            snap.forEach(d => { map[d.id] = (d.data().views as number) || 0; });
+            setVisitsByDate(map);
+        }).catch(() => {});
+    }, [storeId]);
 
     // Filter orders by period
     const filteredOrders = useMemo(() => {
@@ -40,9 +50,17 @@ const MerchantAnalytics: React.FC = () => {
         const revenue = filteredOrders.filter(o => o.paymentStatus === 'paid').reduce((sum, o) => sum + o.total, 0);
         const orderCount = filteredOrders.length;
         const avgOrder = orderCount > 0 ? revenue / orderCount : 0;
-        
-        // Mocked engagement stats since we don't have real telemetry yet
-        const visits = filteredOrders.length * 15 + Math.floor(Math.random() * 100); 
+
+        const now = new Date();
+        const startDate = new Date(now);
+        if (period === 'today') startDate.setHours(0, 0, 0, 0);
+        else if (period === 'week') startDate.setDate(now.getDate() - 7);
+        else if (period === 'month') startDate.setMonth(now.getMonth() - 1);
+        else if (period === 'year') startDate.setFullYear(now.getFullYear() - 1);
+
+        const visits = Object.entries(visitsByDate).reduce((sum, [date, count]) => {
+            return new Date(date) >= startDate ? sum + count : sum;
+        }, 0);
         const conversion = visits > 0 ? (orderCount / visits) * 100 : 0;
 
         return [
@@ -52,7 +70,7 @@ const MerchantAnalytics: React.FC = () => {
             { label: 'Store Visits', value: visits.toLocaleString(), icon: '👁️', color: 'text-orange-600', bg: 'bg-orange-50' },
             { label: 'Conversion', value: `${conversion.toFixed(1)}%`, icon: '🎯', color: 'text-indigo-600', bg: 'bg-indigo-50' },
         ];
-    }, [filteredOrders]);
+    }, [filteredOrders, visitsByDate, period]);
 
     // Generate Chart Data
     const chartData = useMemo(() => {

@@ -152,6 +152,12 @@ service cloud.firestore {
         allow read: if true;
         allow write: if isAdmin() || (isMerchant() && getMerchantStoreId() == storeId);
       }
+      match /analytics/{dateId} {
+        allow read: if isAdmin() || (isMerchant() && getMerchantStoreId() == storeId);
+        // Anyone (including unauthenticated visitors) may increment the view counter.
+        // Write is restricted to only the `views` and `date` fields to prevent abuse.
+        allow create, update: if request.resource.data.keys().hasOnly(['views', 'date']);
+      }
     }
 
     // PUBLIC FLYERS (Ingested Grocery Deals)

@@ -72,7 +72,6 @@ const MerchantLayout: React.FC = () => {
         );
     }
 
-    const isTeamActive = location.pathname === '/merchant/settings' && currentTab === 'team';
     const isSettingsActive = location.pathname === '/merchant/settings' && currentTab !== 'team';
 
     return (
@@ -103,7 +102,7 @@ const MerchantLayout: React.FC = () => {
                 md:translate-x-0 md:static md:h-screen
                 ${isSidebarOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'}
             `}>
-                <div className="p-6 mb-2 hidden md:block">
+                <div className="h-16 px-6 border-b border-[var(--glass-border)] hidden md:flex items-center shrink-0">
                     <Link to="/merchant/dashboard" className="flex items-center gap-2 group">
                         <img src="/app-icon.png" alt="Spendigo Logo" style={{width: 36, height: 36, borderRadius: 8}} className="group-hover:scale-105 transition-transform" />
                         <div className="flex flex-col">
@@ -116,76 +115,102 @@ const MerchantLayout: React.FC = () => {
                 {/* Mobile spacer */}
                 <div className="md:hidden h-6"></div>
 
-                <nav className="flex-1 space-y-1 px-4 overflow-y-auto scrollbar-hide">
-                    <NavLink
-                        to="/merchant/dashboard"
-                        className={({ isActive }) => `flex items-center gap-3 p-3 rounded-lg font-medium transition-all ${isActive ? 'bg-[var(--brand-primary)] text-white shadow-lg shadow-[var(--brand-primary)]/30' : 'text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text-main)]'}`}
-                    >
-                        <span>📊</span> Dashboard
-                    </NavLink>
-                    {can('analytics:read') && (
-                        <NavLink
-                            to="/merchant/analytics"
-                            className={({ isActive }) => `flex items-center gap-3 p-3 rounded-lg font-medium transition-all ${isActive ? 'bg-[var(--brand-primary)] text-white shadow-lg shadow-[var(--brand-primary)]/30' : 'text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text-main)]'}`}
-                        >
-                            <span>📈</span> Analytics
-                        </NavLink>
-                    )}
+                <nav className="flex-1 space-y-6 px-4 py-4 overflow-y-auto scrollbar-hide pb-24">
+                    {/* Overview */}
+                    <div>
+                        <h3 className="px-1 text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-2">Overview</h3>
+                        <div className="space-y-1">
+                            <NavLink
+                                to="/merchant/dashboard"
+                                className={({ isActive }) => `flex items-center gap-3 p-3 rounded-lg font-medium transition-all ${isActive ? 'bg-[var(--brand-primary)] text-white shadow-lg shadow-[var(--brand-primary)]/30' : 'text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text-main)]'}`}
+                            >
+                                <span>📊</span> Dashboard
+                            </NavLink>
+                            {can('analytics:read') && (
+                                <NavLink
+                                    to="/merchant/analytics"
+                                    className={({ isActive }) => `flex items-center gap-3 p-3 rounded-lg font-medium transition-all ${isActive ? 'bg-[var(--brand-primary)] text-white shadow-lg shadow-[var(--brand-primary)]/30' : 'text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text-main)]'}`}
+                                >
+                                    <span>📈</span> Analytics
+                                </NavLink>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Store */}
+                    <div>
+                        <h3 className="px-1 text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-2">Store</h3>
+                        <div className="space-y-1">
+                            <NavLink
+                                to="/merchant/products"
+                                className={({ isActive }) => `flex items-center gap-3 p-3 rounded-lg font-medium transition-all ${isActive ? 'bg-[var(--brand-primary)] text-white shadow-lg shadow-[var(--brand-primary)]/30' : 'text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text-main)]'}`}
+                            >
+                                <span>📦</span> Products
+                            </NavLink>
+                            {can('flyers:write') && (
+                                <NavLink
+                                    to="/merchant/flyers"
+                                    className={({ isActive }) => `flex items-center gap-3 p-3 rounded-lg font-medium transition-all ${isActive ? 'bg-[var(--brand-primary)] text-white shadow-lg shadow-[var(--brand-primary)]/30' : 'text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text-main)]'}`}
+                                >
+                                    <span>📰</span> Flyers
+                                </NavLink>
+                            )}
+                            {can('deals:write') && (
+                                <NavLink
+                                    to="/merchant/deals"
+                                    className={({ isActive }) => `flex items-center gap-3 p-3 rounded-lg font-medium transition-all ${isActive ? 'bg-[var(--brand-primary)] text-white shadow-lg shadow-[var(--brand-primary)]/30' : 'text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text-main)]'}`}
+                                >
+                                    <span>🏷️</span> Deals
+                                </NavLink>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Operations */}
                     {can('orders:read') && (
-                        <NavLink
-                            to="/merchant/orders"
-                            className={({ isActive }) => `flex items-center gap-3 p-3 rounded-lg font-medium transition-all ${isActive ? 'bg-[var(--brand-primary)] text-white shadow-lg shadow-[var(--brand-primary)]/30' : 'text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text-main)]'}`}
-                        >
-                            <span>📋</span> Orders
-                        </NavLink>
-                    )}
-                    <NavLink
-                        to="/merchant/products"
-                        className={({ isActive }) => `flex items-center gap-3 p-3 rounded-lg font-medium transition-all ${isActive ? 'bg-[var(--brand-primary)] text-white shadow-lg shadow-[var(--brand-primary)]/30' : 'text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text-main)]'}`}
-                    >
-                        <span>📦</span> Products
-                    </NavLink>
-                    {can('flyers:write') && (
-                        <NavLink
-                            to="/merchant/flyers"
-                            className={({ isActive }) => `flex items-center gap-3 p-3 rounded-lg font-medium transition-all ${isActive ? 'bg-[var(--brand-primary)] text-white shadow-lg shadow-[var(--brand-primary)]/30' : 'text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text-main)]'}`}
-                        >
-                            <span>📰</span> Flyers
-                        </NavLink>
-                    )}
-                    {can('deals:write') && (
-                        <NavLink
-                            to="/merchant/deals"
-                            className={({ isActive }) => `flex items-center gap-3 p-3 rounded-lg font-medium transition-all ${isActive ? 'bg-[var(--brand-primary)] text-white shadow-lg shadow-[var(--brand-primary)]/30' : 'text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text-main)]'}`}
-                        >
-                            <span>🏷️</span> Deals
-                        </NavLink>
+                        <div>
+                            <h3 className="px-1 text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-2">Operations</h3>
+                            <div className="space-y-1">
+                                <NavLink
+                                    to="/merchant/orders"
+                                    className={({ isActive }) => `flex items-center gap-3 p-3 rounded-lg font-medium transition-all ${isActive ? 'bg-[var(--brand-primary)] text-white shadow-lg shadow-[var(--brand-primary)]/30' : 'text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text-main)]'}`}
+                                >
+                                    <span>📋</span> Orders
+                                </NavLink>
+                            </div>
+                        </div>
                     )}
 
-                    <NavLink
-                        to="/merchant/subscription"
-                        className={({ isActive }) => `flex items-center gap-3 p-3 rounded-lg font-medium transition-all ${isActive ? 'bg-[var(--brand-primary)] text-white shadow-lg shadow-[var(--brand-primary)]/30' : 'text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text-main)]'}`}
-                    >
-                        <span>💳</span> Billing & Plan
-                    </NavLink>
-                    <NavLink
-                        to="/merchant/settings"
-                        className={`flex items-center gap-3 p-3 rounded-lg font-medium transition-all ${isSettingsActive ? 'bg-[var(--brand-primary)] text-white shadow-lg shadow-[var(--brand-primary)]/30' : 'text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text-main)]'}`}
-                    >
-                        <span>⚙️</span> Settings
-                    </NavLink>
-                    <NavLink
-                        to="/merchant/notifications"
-                        className={({ isActive }) => `flex items-center gap-3 p-3 rounded-lg font-medium transition-all ${isActive ? 'bg-[var(--brand-primary)] text-white shadow-lg shadow-[var(--brand-primary)]/30' : 'text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text-main)]'}`}
-                    >
-                        <span>🔔</span>
-                        <span className="flex-1">Notifications</span>
-                        {unreadCount > 0 && (
-                            <span className="text-[10px] font-bold bg-red-500 text-white rounded-full px-1.5 min-w-[18px] text-center">
-                                {unreadCount > 9 ? '9+' : unreadCount}
-                            </span>
-                        )}
-                    </NavLink>
+                    {/* Account */}
+                    <div>
+                        <h3 className="px-1 text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-2">Account</h3>
+                        <div className="space-y-1">
+                            <NavLink
+                                to="/merchant/subscription"
+                                className={({ isActive }) => `flex items-center gap-3 p-3 rounded-lg font-medium transition-all ${isActive ? 'bg-[var(--brand-primary)] text-white shadow-lg shadow-[var(--brand-primary)]/30' : 'text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text-main)]'}`}
+                            >
+                                <span>💳</span> Billing & Plan
+                            </NavLink>
+                            <NavLink
+                                to="/merchant/settings"
+                                className={`flex items-center gap-3 p-3 rounded-lg font-medium transition-all ${isSettingsActive ? 'bg-[var(--brand-primary)] text-white shadow-lg shadow-[var(--brand-primary)]/30' : 'text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text-main)]'}`}
+                            >
+                                <span>⚙️</span> Settings
+                            </NavLink>
+                            <NavLink
+                                to="/merchant/notifications"
+                                className={({ isActive }) => `flex items-center gap-3 p-3 rounded-lg font-medium transition-all ${isActive ? 'bg-[var(--brand-primary)] text-white shadow-lg shadow-[var(--brand-primary)]/30' : 'text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text-main)]'}`}
+                            >
+                                <span>🔔</span>
+                                <span className="flex-1">Notifications</span>
+                                {unreadCount > 0 && (
+                                    <span className="text-[10px] font-bold bg-red-500 text-white rounded-full px-1.5 min-w-[18px] text-center">
+                                        {unreadCount > 9 ? '9+' : unreadCount}
+                                    </span>
+                                )}
+                            </NavLink>
+                        </div>
+                    </div>
                 </nav>
 
                 <div className="border-t border-[var(--glass-border)] my-2 mx-4"></div>

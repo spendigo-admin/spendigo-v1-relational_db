@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { doc, setDoc, increment } from 'firebase/firestore';
+import { db } from '../../lib/firebase';
 import { useCart } from '../../context/CartContext';
 import { useMarketplace } from '../../context/MarketplaceContext';
 import { useCatalog } from '../../hooks/useCatalog';
@@ -522,6 +524,13 @@ const StoreDetail: React.FC = () => {
             fetchReviews(id);
         }
     }, [id, fetchReviews]);
+
+    useEffect(() => {
+        if (!id) return;
+        const today = new Date().toISOString().slice(0, 10);
+        const ref = doc(db, 'stores', id, 'analytics', today);
+        setDoc(ref, { views: increment(1), date: today }, { merge: true }).catch(() => {});
+    }, [id]);
 
 
     const store = getStore(id || '') || null;
