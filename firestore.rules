@@ -198,7 +198,7 @@ service cloud.firestore {
       // Owner or admin can create; enforce minimum required fields to prevent junk writes.
       allow create: if (isOwner(userId) || isAdmin())
         && request.resource.data.keys().hasAll(['id', 'type', 'title', 'message', 'timestamp', 'read'])
-        && request.resource.data.type in ['price_drop', 'order', 'promo', 'system', 'alert'];
+        && request.resource.data.type in ['price_drop', 'order', 'promo', 'system', 'alert', 'review', 'approval', 'stock'];
     }
 
     // Deprecated

@@ -85,6 +85,7 @@ const MerchantDeals = lazyWithRetry(() => import('./pages/merchant/Deals'));
 const MerchantSettings = lazyWithRetry(() => import('./pages/merchant/Settings'));
 const MerchantSubscription = lazyWithRetry(() => import('./pages/merchant/Subscription'));
 const MerchantAnalytics = lazyWithRetry(() => import('./pages/merchant/Analytics'));
+const MerchantNotifications = lazyWithRetry(() => import('./pages/merchant/MerchantNotifications'));
 
 // Admin Pages — lazy loaded
 const AdminDashboard = lazyWithRetry(() => import('./pages/admin/Dashboard'));
@@ -101,6 +102,7 @@ const AdminMFAEnrollment = lazyWithRetry(() => import('./pages/admin/MFAEnrollme
 const AdminInsights = lazyWithRetry(() => import('./pages/admin/StoreInsights'));
 const AdminSystemHealth = lazyWithRetry(() => import('./pages/admin/SystemHealth'));
 const AdminFlyerIngestion = lazyWithRetry(() => import('./pages/admin/FlyerIngestion'));
+const AdminNotifications = lazyWithRetry(() => import('./pages/admin/AdminNotifications'));
 
 import { useState, useEffect } from 'react';
 import { doc, onSnapshot } from 'firebase/firestore';
@@ -224,6 +226,7 @@ function App() {
                                                                     <Route path="/merchant/analytics" element={<MerchantAnalytics />} />
                                                                     <Route path="/merchant/settings" element={<MerchantSettings />} />
                                                                     <Route path="/merchant/subscription" element={<MerchantSubscription />} />
+                                                                    <Route path="/merchant/notifications" element={<MerchantNotifications />} />
                                                                 </Route>
 
                                                                 {/* ADMIN ROUTES with Layout */}
@@ -246,6 +249,7 @@ function App() {
                                                                     <Route path="/admin/mfa-setup" element={<AdminMFAEnrollment />} />
                                                                     <Route path="/admin/health" element={<AdminSystemHealth />} />
                                                                     <Route path="/admin/flyer-ingestion" element={<AdminFlyerIngestion />} />
+                                                                    <Route path="/admin/notifications" element={<AdminNotifications />} />
                                                                 </Route>
 
                                                                     {/* 404 Catch All */}

@@ -35,6 +35,9 @@ const Notifications: React.FC = () => {
             case 'order': return { icon: '📦', color: 'bg-blue-100 text-blue-700' };
             case 'promo': return { icon: '✨', color: 'bg-purple-100 text-purple-700' };
             case 'alert': return { icon: '⚠️', color: 'bg-orange-100 text-orange-700' };
+            case 'review': return { icon: '⭐', color: 'bg-yellow-100 text-yellow-700' };
+            case 'approval': return { icon: '✅', color: 'bg-teal-100 text-teal-700' };
+            case 'stock': return { icon: '📦', color: 'bg-orange-100 text-orange-700' };
             default: return { icon: '🔔', color: 'bg-gray-100 text-gray-700' };
         }
     };

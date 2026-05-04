@@ -2,6 +2,7 @@ import React from 'react';
 import { NavLink, Outlet, useLocation, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useMarketplace } from '../context/MarketplaceContext';
+import { useNotifications } from '../context/NotificationContext';
 import NotificationPopover from '../components/NotificationPopover';
 import '../styles/design-system.css';
 const MerchantLayout: React.FC = () => {
@@ -11,6 +12,7 @@ const MerchantLayout: React.FC = () => {
     const searchParams = new URL(window.location.href).searchParams;
     const currentTab = searchParams.get('tab');
     const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
+    const { unreadCount } = useNotifications();
 
     // Close sidebar on route change
     React.useEffect(() => {
@@ -171,6 +173,18 @@ const MerchantLayout: React.FC = () => {
                         className={`flex items-center gap-3 p-3 rounded-lg font-medium transition-all ${isSettingsActive ? 'bg-[var(--brand-primary)] text-white shadow-lg shadow-[var(--brand-primary)]/30' : 'text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text-main)]'}`}
                     >
                         <span>⚙️</span> Settings
+                    </NavLink>
+                    <NavLink
+                        to="/merchant/notifications"
+                        className={({ isActive }) => `flex items-center gap-3 p-3 rounded-lg font-medium transition-all ${isActive ? 'bg-[var(--brand-primary)] text-white shadow-lg shadow-[var(--brand-primary)]/30' : 'text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text-main)]'}`}
+                    >
+                        <span>🔔</span>
+                        <span className="flex-1">Notifications</span>
+                        {unreadCount > 0 && (
+                            <span className="text-[10px] font-bold bg-red-500 text-white rounded-full px-1.5 min-w-[18px] text-center">
+                                {unreadCount > 9 ? '9+' : unreadCount}
+                            </span>
+                        )}
                     </NavLink>
                 </nav>
 

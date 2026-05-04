@@ -6,7 +6,7 @@ import { isFlyerActive, filterActiveDeals } from '../utils/date-helpers';
 // Unified Notification Type
 export interface AppNotification {
     id: string;
-    type: 'price_drop' | 'order' | 'promo' | 'system' | 'alert';
+    type: 'price_drop' | 'order' | 'promo' | 'system' | 'alert' | 'review' | 'approval' | 'stock';
     title: string;
     message: string;
     timestamp: string; // ISO String

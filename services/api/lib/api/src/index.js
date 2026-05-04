@@ -33,7 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.onStoreDelete = exports.onMerchantProductPriceChange = exports.onOrderCreated = exports.onOrderStatusUpdated = exports.refundOrder = exports.createPaymentIntent = exports.checkStripeAccountStatus = exports.onboardStore = exports.syncMerchantProductToAlgolia = exports.recordAuditEvent = exports.searchPublicDeals = exports.processIngestionJobs = exports.scrapeFlyer = exports.getSystemHealth = exports.syncTrafficStats = exports.syncMasterProductToAlgolia = exports.cartOptimize = exports.smartcartOptimize = exports.onMasterProductWrite = exports.onUserUpdate = exports.downloadReceipt = exports.cancelOrder = exports.placeOrder = exports.updateSubscriptionPlan = exports.sendOrderStatusUpdate = exports.sendOrderConfirmation = exports.getPaymentHistory = exports.stripeWebhook = exports.createCheckoutSession = exports.removeTeamMember = exports.requestAccountDeletion = exports.deleteUser = exports.inviteTeamMember = exports.cleanupOrphanedStoreData = void 0;
+exports.onReviewCreated = exports.onStoreDelete = exports.onMerchantProductPriceChange = exports.onOrderCreated = exports.onOrderStatusUpdated = exports.refundOrder = exports.createPaymentIntent = exports.checkStripeAccountStatus = exports.onboardStore = exports.syncMerchantProductToAlgolia = exports.recordAuditEvent = exports.searchPublicDeals = exports.processIngestionJobs = exports.scrapeFlyer = exports.getSystemHealth = exports.syncTrafficStats = exports.syncMasterProductToAlgolia = exports.cartOptimize = exports.smartcartOptimize = exports.onMasterProductWrite = exports.onUserUpdate = exports.downloadReceipt = exports.cancelOrder = exports.placeOrder = exports.updateSubscriptionPlan = exports.sendOrderStatusUpdate = exports.sendOrderConfirmation = exports.getPaymentHistory = exports.stripeWebhook = exports.createCheckoutSession = exports.removeTeamMember = exports.requestAccountDeletion = exports.deleteUser = exports.inviteTeamMember = exports.cleanupOrphanedStoreData = void 0;
 const admin = __importStar(require("firebase-admin"));
 // Initialize Firebase Admin
 admin.initializeApp();
@@ -105,4 +105,6 @@ var priceHistoryTrigger_1 = require("./triggers/priceHistoryTrigger");
 Object.defineProperty(exports, "onMerchantProductPriceChange", { enumerable: true, get: function () { return priceHistoryTrigger_1.onMerchantProductPriceChange; } });
 var storeTriggers_1 = require("./triggers/storeTriggers");
 Object.defineProperty(exports, "onStoreDelete", { enumerable: true, get: function () { return storeTriggers_1.onStoreDelete; } });
+var reviewTrigger_1 = require("./triggers/reviewTrigger");
+Object.defineProperty(exports, "onReviewCreated", { enumerable: true, get: function () { return reviewTrigger_1.onReviewCreated; } });
 //# sourceMappingURL=index.js.map

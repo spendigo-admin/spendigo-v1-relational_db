@@ -36,6 +36,11 @@ const NotificationPopover: React.FC = () => {
             case 'order': return '🛍️';
             case 'system': return 'ℹ️';
             case 'alert': return '⚠️';
+            case 'price_drop': return '🏷️';
+            case 'promo': return '✨';
+            case 'review': return '⭐';
+            case 'approval': return '✅';
+            case 'stock': return '📦';
             default: return '🔔';
         }
     };

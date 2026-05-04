@@ -38,3 +38,4 @@ export { onOrderStatusUpdated } from './triggers/orderTriggers';
 export { onOrderCreated } from './triggers/orderCreationTrigger';
 export { onMerchantProductPriceChange } from './triggers/priceHistoryTrigger';
 export { onStoreDelete } from './triggers/storeTriggers';
+export { onReviewCreated } from './triggers/reviewTrigger';
