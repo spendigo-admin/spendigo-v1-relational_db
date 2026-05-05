@@ -33,26 +33,30 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.onStoreUpdate = exports.onStoreCreate = exports.onStoreDelete = void 0;
+exports.onBackupJobResult = exports.onStoreUpdate = exports.onStoreCreate = exports.onStoreDelete = void 0;
 const functions = __importStar(require("firebase-functions"));
 const admin = __importStar(require("firebase-admin"));
 const stripe_1 = require("../config/stripe");
 /**
- * Triggered when a Store document is deleted.
- * Performs cascade deletions for orphaned data and cleans up third-party services.
+ * Safety-net trigger for direct store deletions (e.g., via Firebase console or Admin SDK).
+ * The normal deletion workflow goes through processPendingStoreDeletions (30-day grace period).
+ * This trigger fires only when a store document is hard-deleted without the grace period flow.
  */
 exports.onStoreDelete = functions.firestore
     .document('stores/{storeId}')
     .onDelete(async (snap, context) => {
     const storeId = context.params.storeId;
+    const storeData = snap.data();
     const db = admin.firestore();
-    // We cannot use a single batch because we might exceed 500 operations, 
-    // but typically a store won't have more than 500 products. 
-    // To be safe and thorough, we will execute deletes directly or in small batches.
-    functions.logger.info(`Starting cascade deletion for Store: ${storeId}`);
+    // If deleted via the grace-period flow, processPendingStoreDeletions already ran the cascade.
+    // This guard prevents double-deletion in that path.
+    if ((storeData === null || storeData === void 0 ? void 0 : storeData.status) === 'pending_deletion' && (storeData === null || storeData === void 0 ? void 0 : storeData.deletionApprovedAt)) {
+        functions.logger.info(`[onStoreDelete] Store ${storeId} was deleted via grace-period flow — cascade already handled.`);
+        return;
+    }
+    functions.logger.warn(`[onStoreDelete] Direct deletion detected for store ${storeId} — running emergency cascade.`);
     try {
         // 1. Delete Merchant Products
-        // Note: Deleting these will inherently trigger algoliaMerchantTriggers via rules
         const productsSnapshot = await db.collection('merchant_products')
             .where('merchant_id', '==', storeId)
             .get();
@@ -66,6 +70,8 @@ exports.onStoreDelete = functions.firestore
         const flyersSnapshot = await db.collection(`stores/${storeId}/flyers`).get();
         const flyerDeletes = flyersSnapshot.docs.map(doc => doc.ref.delete());
         await Promise.all(flyerDeletes);
+        const analyticsSnapshot = await db.collection(`stores/${storeId}/analytics`).get();
+        await Promise.all(analyticsSnapshot.docs.map(doc => doc.ref.delete()));
         functions.logger.info(`Deleted ${dealsSnapshot.size} deals and ${flyersSnapshot.size} flyers.`);
         // 3. De-link Users & Cancel Stripe Subscriptions
         const usersSnapshot = await db.collection('users').where('storeId', '==', storeId).get();
@@ -79,7 +85,6 @@ exports.onStoreDelete = functions.firestore
                 subscriptionStatus: 'inactive',
                 subscriptionEnd: null
             });
-            // Check for active Stripe subscriptions to cancel
             if (userData.stripeCustomerId) {
                 try {
                     const subscriptions = await stripe_1.stripe.subscriptions.list({
@@ -101,7 +106,6 @@ exports.onStoreDelete = functions.firestore
     }
     catch (error) {
         functions.logger.error(`Error during cascade delete for store ${storeId}:`, error);
-        // We don't re-throw because the store is already deleted. We just log the failure.
     }
 });
 /**
@@ -160,6 +164,30 @@ exports.onStoreUpdate = functions.firestore
         catch (err) {
             functions.logger.error(`Failed to re-geocode store ${context.params.storeId}:`, err);
         }
+    }
+});
+/**
+ * Fires when a system_backups document is created.
+ * Sends an email alert via the /mail collection when a backup job fails.
+ */
+exports.onBackupJobResult = functions.firestore
+    .document('system_backups/{backupId}')
+    .onCreate(async (snap) => {
+    var _a;
+    const data = snap.data();
+    if ((data === null || data === void 0 ? void 0 : data.status) !== 'failed')
+        return;
+    try {
+        await admin.firestore().collection('mail').add({
+            to: ((_a = functions.config().admin) === null || _a === void 0 ? void 0 : _a.alert_email) || 'ops@spendigo.ca',
+            message: {
+                subject: `ALERT: Spendigo backup job failed (${data.type})`,
+                text: `Backup job failed.\n\nType: ${data.type}\nDate: ${data.date}\nError: ${data.errorMessage || 'unknown'}\n\nCheck /admin/health in the Spendigo admin portal for details.`,
+            },
+        });
+    }
+    catch (err) {
+        functions.logger.error('[onBackupJobResult] Failed to send alert email:', err);
     }
 });
 //# sourceMappingURL=storeTriggers.js.map

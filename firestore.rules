@@ -245,6 +245,20 @@ service cloud.firestore {
       allow read: if isAdmin();
       allow write: if false;
     }
+
+    // SYSTEM BACKUPS — written exclusively by Cloud Functions (Admin SDK).
+    // Admin-only read to surface backup status in the health dashboard.
+    match /system_backups/{docId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
+    // PAYMENTS — webhook mirror written by Stripe webhook Cloud Function (Admin SDK).
+    // Merchants can read their own store's payment records for reconciliation.
+    match /payments/{paymentId} {
+      allow read: if isAdmin() || (isMerchant() && resource.data.storeId == getMerchantStoreId());
+      allow write: if false;
+    }
     
     // MAIL
     match /mail/{mailId} {

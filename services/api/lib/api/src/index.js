@@ -33,7 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.onReviewCreated = exports.onStoreDelete = exports.onMerchantProductPriceChange = exports.onOrderCreated = exports.onOrderStatusUpdated = exports.refundOrder = exports.createPaymentIntent = exports.checkStripeAccountStatus = exports.onboardStore = exports.syncMerchantProductToAlgolia = exports.recordAuditEvent = exports.searchPublicDeals = exports.processIngestionJobs = exports.scrapeFlyer = exports.getSystemHealth = exports.syncTrafficStats = exports.syncMasterProductToAlgolia = exports.cartOptimize = exports.smartcartOptimize = exports.onMasterProductWrite = exports.onUserUpdate = exports.downloadReceipt = exports.cancelOrder = exports.placeOrder = exports.updateSubscriptionPlan = exports.sendOrderStatusUpdate = exports.sendOrderConfirmation = exports.getPaymentHistory = exports.stripeWebhook = exports.createCheckoutSession = exports.removeTeamMember = exports.requestAccountDeletion = exports.deleteUser = exports.inviteTeamMember = exports.cleanupOrphanedStoreData = void 0;
+exports.processPendingStoreDeletions = exports.exportMerchantData = exports.exportFirebaseAuth = exports.triggerManualExport = exports.scheduledFirestoreExport = exports.onReviewCreated = exports.onBackupJobResult = exports.onStoreUpdate = exports.onStoreCreate = exports.onStoreDelete = exports.onMerchantProductPriceChange = exports.onOrderCreated = exports.onOrderStatusUpdated = exports.refundOrder = exports.createPaymentIntent = exports.checkStripeAccountStatus = exports.onboardStore = exports.syncMerchantProductToAlgolia = exports.recordAuditEvent = exports.searchPublicDeals = exports.processIngestionJobs = exports.scrapeFlyer = exports.getSystemHealth = exports.syncTrafficStats = exports.syncMasterProductToAlgolia = exports.cartOptimize = exports.smartcartOptimize = exports.onMasterProductWrite = exports.onUserUpdate = exports.downloadReceipt = exports.cancelOrder = exports.placeOrder = exports.updateSubscriptionPlan = exports.sendOrderStatusUpdate = exports.sendOrderConfirmation = exports.getPaymentHistory = exports.stripeWebhook = exports.createCheckoutSession = exports.removeTeamMember = exports.requestAccountDeletion = exports.deleteUser = exports.inviteTeamMember = exports.cleanupOrphanedStoreData = void 0;
 const admin = __importStar(require("firebase-admin"));
 // Initialize Firebase Admin
 admin.initializeApp();
@@ -105,6 +105,18 @@ var priceHistoryTrigger_1 = require("./triggers/priceHistoryTrigger");
 Object.defineProperty(exports, "onMerchantProductPriceChange", { enumerable: true, get: function () { return priceHistoryTrigger_1.onMerchantProductPriceChange; } });
 var storeTriggers_1 = require("./triggers/storeTriggers");
 Object.defineProperty(exports, "onStoreDelete", { enumerable: true, get: function () { return storeTriggers_1.onStoreDelete; } });
+Object.defineProperty(exports, "onStoreCreate", { enumerable: true, get: function () { return storeTriggers_1.onStoreCreate; } });
+Object.defineProperty(exports, "onStoreUpdate", { enumerable: true, get: function () { return storeTriggers_1.onStoreUpdate; } });
+Object.defineProperty(exports, "onBackupJobResult", { enumerable: true, get: function () { return storeTriggers_1.onBackupJobResult; } });
 var reviewTrigger_1 = require("./triggers/reviewTrigger");
 Object.defineProperty(exports, "onReviewCreated", { enumerable: true, get: function () { return reviewTrigger_1.onReviewCreated; } });
+var scheduledFirestoreExport_1 = require("./admin/scheduledFirestoreExport");
+Object.defineProperty(exports, "scheduledFirestoreExport", { enumerable: true, get: function () { return scheduledFirestoreExport_1.scheduledFirestoreExport; } });
+Object.defineProperty(exports, "triggerManualExport", { enumerable: true, get: function () { return scheduledFirestoreExport_1.triggerManualExport; } });
+var exportFirebaseAuth_1 = require("./admin/exportFirebaseAuth");
+Object.defineProperty(exports, "exportFirebaseAuth", { enumerable: true, get: function () { return exportFirebaseAuth_1.exportFirebaseAuth; } });
+var exportMerchantData_1 = require("./admin/exportMerchantData");
+Object.defineProperty(exports, "exportMerchantData", { enumerable: true, get: function () { return exportMerchantData_1.exportMerchantData; } });
+var processPendingStoreDeletions_1 = require("./admin/processPendingStoreDeletions");
+Object.defineProperty(exports, "processPendingStoreDeletions", { enumerable: true, get: function () { return processPendingStoreDeletions_1.processPendingStoreDeletions; } });
 //# sourceMappingURL=index.js.map

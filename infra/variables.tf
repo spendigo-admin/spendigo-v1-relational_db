@@ -1,7 +1,7 @@
 variable "project_id" {
   description = "The Google Cloud Project ID"
   type        = string
-  default     = "spendigo-smartcart-prod"
+  default     = "spendigo-8540c"
 }
 
 variable "region" {

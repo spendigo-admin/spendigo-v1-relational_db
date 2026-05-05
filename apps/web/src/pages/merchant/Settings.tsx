@@ -206,6 +206,7 @@ const MerchantSettings: React.FC = () => {
     const [searchParams] = useSearchParams();
     const [activeTab, setActiveTab] = useState<'profile' | 'operations' | 'team' | 'payments' | 'notifications'>((searchParams.get('tab') as any) || 'profile');
     const [isSaving, setIsSaving] = useState(false);
+    const [isExporting, setIsExporting] = useState(false);
     const [showCloseStoreModal, setShowCloseStoreModal] = useState(false);
     const [closeStoreInput, setCloseStoreInput] = useState('');
     const [isApplyingPreset, setIsApplyingPreset] = useState(false);
@@ -475,6 +476,36 @@ const MerchantSettings: React.FC = () => {
         } catch (error) {
             console.error('Geocoding error:', error);
             setIsLocatingStatus('error');
+        }
+    };
+
+    const handleExportData = async () => {
+        if (!await confirm({
+            title: 'Export Store Data?',
+            message: 'This will download a JSON file with your store profile, products, order history (customer PII redacted), price history, deals, and flyers. May take up to 30 seconds.',
+            confirmText: 'Export Data',
+        })) return;
+
+        setIsExporting(true);
+        try {
+            const fn = httpsCallable(getFunctions(), 'exportMerchantData');
+            const result = await fn({}) as { data: { success: boolean; data: unknown } };
+            if (result.data.success) {
+                const blob = new Blob([JSON.stringify(result.data.data, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `spendigo-store-export-${new Date().toISOString().slice(0, 10)}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                addNotification({ type: 'system', title: 'Export Complete', message: 'Your store data has been downloaded.' });
+            }
+        } catch (err: any) {
+            addNotification({ type: 'alert', title: 'Export Failed', message: err.message || 'Could not export data.' });
+        } finally {
+            setIsExporting(false);
         }
     };
 
@@ -1048,6 +1079,33 @@ const MerchantSettings: React.FC = () => {
                         />
                     </div>
                 </div>
+            </section>
+
+            {/* Data Portability */}
+            <section className="bg-white p-6 rounded-xl border border-[var(--glass-border)] shadow-sm">
+                <h2 className="text-lg font-bold text-[var(--text-main)] mb-1">Data Portability</h2>
+                <p className="text-sm text-[var(--text-muted)] mb-4">
+                    Download a complete export of your store data — products, orders (customer PII redacted), price history, deals, and flyers.
+                </p>
+                <button
+                    onClick={handleExportData}
+                    disabled={isExporting}
+                    className="flex items-center gap-2 px-4 py-2 border border-[var(--glass-border)] rounded-lg text-sm font-bold hover:bg-gray-50 disabled:opacity-50 transition-all"
+                >
+                    {isExporting ? (
+                        <>
+                            <span className="inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></span>
+                            Generating Export...
+                        </>
+                    ) : (
+                        <>
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                            </svg>
+                            Download Store Data
+                        </>
+                    )}
+                </button>
             </section>
         </div>
     );

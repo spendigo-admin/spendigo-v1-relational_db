@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import '../../styles/design-system.css';
 import { useAuth } from '../../context/AuthContext';
 import { useNotifications } from '../../context/NotificationContext';
@@ -8,6 +8,8 @@ import { useConfirmation } from '../../context/ConfirmationContext';
 import { validateOrderIntegrity } from '../../utils/IntegrityUtils';
 import NotificationPopover from '../../components/NotificationPopover';
 import ReviewForm from '../../components/ReviewForm';
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import { db } from '../../lib/firebase'; // db kept for future payment ledger queries
 
 const MerchantOrders: React.FC = () => {
     const { can, user } = useAuth();
@@ -32,7 +34,15 @@ const MerchantOrders: React.FC = () => {
     const hasWriteAccess = can('orders:write');
     // const storeId = user?.storeId || '1'; // Handled by OrderContext filtering
 
-    const [viewMode, setViewMode] = useState<'kanban' | 'list'>('kanban');
+    const [viewMode, setViewMode] = useState<'kanban' | 'list' | 'reconciliation'>('kanban');
+
+    const [reconData, setReconData] = useState<{
+        negativeStock: { id: string; name: string; qty: number }[];
+        paymentGaps: Order[];
+        integrityIssues: { orderId: string; issues: string[] }[];
+        totalRevenue: number;
+        loading: boolean;
+    }>({ negativeStock: [], paymentGaps: [], integrityIssues: [], totalRevenue: 0, loading: false });
 
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
@@ -48,6 +58,59 @@ const MerchantOrders: React.FC = () => {
         const interval = setInterval(() => setNow(new Date()), 30000); // Update every 30s
         return () => clearInterval(interval);
     }, []);
+
+    // Reconciliation data — fetched once when the tab is opened
+    useEffect(() => {
+        if (viewMode !== 'reconciliation' || !storeId) return;
+        setReconData(prev => ({ ...prev, loading: true }));
+
+        (async () => {
+            try {
+                // 1. Negative stock — products where available_quantity < 0
+                const productsSnap = await getDocs(
+                    query(collection(db, 'merchant_products'),
+                        where('merchant_id', '==', storeId),
+                        where('available_quantity', '<', 0))
+                );
+                const negativeStock = productsSnap.docs.map(d => ({
+                    id: d.id,
+                    name: d.data().product_name || d.data().name || d.id,
+                    qty: d.data().available_quantity as number,
+                }));
+
+                // 2. Revenue from paid orders in context
+                const paidOrders = contextOrders.filter(o => o.paymentStatus === 'paid');
+                const totalRevenue = paidOrders.reduce((sum, o) => sum + (o.total || 0), 0);
+
+                // 3. Payment gap detection — card orders still in 'pending' payment status
+                const paymentGaps = contextOrders.filter(
+                    o => o.paymentMethod === 'card' && o.paymentStatus === 'pending' && o.status !== 'cancelled'
+                );
+
+                // 4. Price integrity check on last 10 orders
+                const recentOrders = [...contextOrders]
+                    .sort((a, b) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime())
+                    .slice(0, 10);
+                const integrityIssues: { orderId: string; issues: string[] }[] = [];
+                for (const order of recentOrders) {
+                    const result = validateOrderIntegrity(order, storeProducts);
+                    if (result.flaggedItems.length > 0) {
+                        integrityIssues.push({
+                            orderId: order.id,
+                            issues: result.flaggedItems.map(f =>
+                                `${f.name}: charged $${f.orderPrice.toFixed(2)}, catalog $${f.catalogPrice.toFixed(2)}`
+                            ),
+                        });
+                    }
+                }
+
+                setReconData({ negativeStock, paymentGaps, integrityIssues, totalRevenue, loading: false });
+            } catch (err) {
+                console.error('[Reconciliation] Failed:', err);
+                setReconData(prev => ({ ...prev, loading: false }));
+            }
+        })();
+    }, [viewMode, storeId]);
 
     // Scroll Sync for Mobile Kanban
     const kanbanRef = useRef<HTMLDivElement>(null);
@@ -293,6 +356,12 @@ const MerchantOrders: React.FC = () => {
                             >
                                 List
                             </button>
+                            <button
+                                onClick={() => setViewMode('reconciliation')}
+                                className={`px-2 md:px-3 py-1.5 rounded-lg text-xs md:text-sm font-bold transition-all ${viewMode === 'reconciliation' ? 'bg-white shadow-sm text-[var(--text-main)]' : 'text-[var(--text-muted)]'}`}
+                            >
+                                Reconcile
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -474,6 +543,101 @@ const MerchantOrders: React.FC = () => {
                     </div>
                 )
             }
+
+            {/* Reconciliation View */}
+            {viewMode === 'reconciliation' && (
+                <div className="flex-1 overflow-y-auto p-4 md:p-6 pt-2 space-y-4 animate-fade-in">
+                    {reconData.loading ? (
+                        <div className="text-center py-20 text-[var(--text-muted)]">
+                            <div className="text-3xl mb-3 animate-spin">⚙️</div>
+                            <p className="text-sm font-medium">Loading reconciliation data...</p>
+                        </div>
+                    ) : (
+                        <>
+                            {/* Revenue Summary */}
+                            <div className="bg-white rounded-2xl border border-[var(--glass-border)] p-5 shadow-sm">
+                                <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)] mb-1">Paid Revenue (All Time)</p>
+                                <p className="text-3xl font-black text-[var(--brand-primary)]">${reconData.totalRevenue.toFixed(2)}</p>
+                                <p className="text-xs text-[var(--text-muted)] mt-1">{contextOrders.filter(o => o.paymentStatus === 'paid').length} paid orders</p>
+                            </div>
+
+                            {/* Negative Stock Alerts */}
+                            <div className="bg-white rounded-2xl border border-[var(--glass-border)] p-5 shadow-sm">
+                                <div className="flex items-center justify-between mb-3">
+                                    <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">Negative Stock</p>
+                                    <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${reconData.negativeStock.length > 0 ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
+                                        {reconData.negativeStock.length} issues
+                                    </span>
+                                </div>
+                                {reconData.negativeStock.length === 0 ? (
+                                    <p className="text-sm text-[var(--text-muted)]">All products have non-negative inventory.</p>
+                                ) : (
+                                    <div className="space-y-2">
+                                        {reconData.negativeStock.map(p => (
+                                            <div key={p.id} className="flex justify-between items-center p-3 bg-red-50 rounded-xl border border-red-100">
+                                                <span className="text-sm font-medium text-[var(--text-main)] truncate pr-4">{p.name}</span>
+                                                <span className="text-sm font-black text-red-600 shrink-0">{p.qty}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Payment Gaps */}
+                            <div className="bg-white rounded-2xl border border-[var(--glass-border)] p-5 shadow-sm">
+                                <div className="flex items-center justify-between mb-3">
+                                    <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">Payment Gaps</p>
+                                    <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${reconData.paymentGaps.length > 0 ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700'}`}>
+                                        {reconData.paymentGaps.length} gaps
+                                    </span>
+                                </div>
+                                <p className="text-[10px] text-[var(--text-muted)] mb-3">Card orders with payment still pending (not yet settled).</p>
+                                {reconData.paymentGaps.length === 0 ? (
+                                    <p className="text-sm text-[var(--text-muted)]">All paid orders are reconciled.</p>
+                                ) : (
+                                    <div className="space-y-2">
+                                        {reconData.paymentGaps.map(o => (
+                                            <div key={o.id} className="flex justify-between items-center p-3 bg-yellow-50 rounded-xl border border-yellow-100">
+                                                <div className="min-w-0 pr-4">
+                                                    <p className="text-xs font-bold text-[var(--text-main)]">#{o.id.substr(0, 8)}</p>
+                                                    <p className="text-[10px] text-[var(--text-muted)] truncate">{o.customerName}</p>
+                                                </div>
+                                                <span className="text-sm font-black text-yellow-700 shrink-0">${o.total.toFixed(2)}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Price Integrity Issues */}
+                            <div className="bg-white rounded-2xl border border-[var(--glass-border)] p-5 shadow-sm">
+                                <div className="flex items-center justify-between mb-3">
+                                    <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">Price Integrity (Last 10 Orders)</p>
+                                    <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${reconData.integrityIssues.length > 0 ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
+                                        {reconData.integrityIssues.length} alerts
+                                    </span>
+                                </div>
+                                {reconData.integrityIssues.length === 0 ? (
+                                    <p className="text-sm text-[var(--text-muted)]">No price discrepancies detected in recent orders.</p>
+                                ) : (
+                                    <div className="space-y-3">
+                                        {reconData.integrityIssues.map(({ orderId, issues }) => (
+                                            <div key={orderId} className="p-3 bg-red-50 rounded-xl border border-red-100">
+                                                <p className="text-xs font-bold text-red-700 mb-1">Order #{orderId.substr(0, 8)}</p>
+                                                <ul className="space-y-0.5">
+                                                    {issues.map((issue, i) => (
+                                                        <li key={i} className="text-[10px] text-red-600">• {issue}</li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </>
+                    )}
+                </div>
+            )}
 
             {/* Order Detail Modal / Mobile Side Panel */}
             {

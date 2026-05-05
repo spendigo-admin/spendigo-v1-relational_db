@@ -22,7 +22,7 @@ const SUSPENSION_REASONS = [
 const StoreManagement: React.FC = () => {
     const { user } = useAuth();
     const { logEvent } = useAudit();
-    const { stores, updateStore, updateStoreStatus, addStore, requestDeleteStore, approveDeleteStore } = useMarketplace();
+    const { stores, updateStore, updateStoreStatus, addStore, requestDeleteStore, approveDeleteStore, cancelStoreDeletion } = useMarketplace();
     const { addNotification } = useNotifications();
     const { confirm } = useConfirmation();
     const storeList = Object.values(stores);
@@ -542,22 +542,44 @@ const StoreManagement: React.FC = () => {
                                                     </button>
                                                 )}
                                                 {store.status === 'suspended' && (
-                                                    <button 
+                                                    <button
                                                         onClick={async () => {
-                                                            if (await confirm({ 
-                                                                title: 'Resume Store?', 
+                                                            if (await confirm({
+                                                                title: 'Resume Store?',
                                                                 message: `Are you sure you want to resume ${store.name}? It will be visible to shoppers again.`,
                                                                 confirmText: 'Resume Store',
                                                                 type: 'success'
                                                             })) {
                                                                 await handleStatusUpdate(store.id, 'active');
                                                             }
-                                                        }} 
+                                                        }}
                                                         className="text-[10px] bg-green-50 text-green-600 border border-green-100 px-2 py-1 rounded-lg font-bold hover:bg-green-100 transition-colors"
                                                     >
                                                         Resume
                                                     </button>
                                                 )}
+                                                {store.status === 'pending_deletion' && (() => {
+                                                    const approvedAt = store.deletionApprovedAt?.toDate?.() || (store.deletionApprovedAt?.seconds ? new Date(store.deletionApprovedAt.seconds * 1000) : null);
+                                                    const daysLeft = approvedAt ? Math.max(0, 30 - Math.floor((Date.now() - approvedAt.getTime()) / 86400000)) : 30;
+                                                    return (
+                                                        <button
+                                                            onClick={async () => {
+                                                                if (await confirm({
+                                                                    title: 'Cancel Deletion?',
+                                                                    message: `This will cancel the scheduled deletion of ${store.name} and restore it to suspended status.`,
+                                                                    confirmText: 'Cancel Deletion',
+                                                                    type: 'success'
+                                                                })) {
+                                                                    await cancelStoreDeletion(store.id);
+                                                                    addNotification({ type: 'system', title: 'Deletion Cancelled', message: `${store.name} has been restored to suspended.` });
+                                                                }
+                                                            }}
+                                                            className="text-[10px] bg-orange-50 text-orange-600 border border-orange-100 px-2 py-1 rounded-lg font-bold hover:bg-orange-100 transition-colors"
+                                                        >
+                                                            Cancel ({daysLeft}d left)
+                                                        </button>
+                                                    );
+                                                })()}
                                             </td>
                                         </tr>
                                     );

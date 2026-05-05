@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import '../../styles/design-system.css';
-import { functions } from '../../lib/firebase';
+import { functions, db } from '../../lib/firebase';
 import { httpsCallable } from 'firebase/functions';
+import { collection, query, orderBy, limit, onSnapshot, doc, setDoc } from 'firebase/firestore';
 import { useNotifications } from '../../context/NotificationContext';
 
 const SystemHealth: React.FC = () => {
@@ -10,6 +11,11 @@ const SystemHealth: React.FC = () => {
     const [systemHealth, setSystemHealth] = useState<any>(null);
     const [isLoadingHealth, setIsLoadingHealth] = useState(true);
     const [healthError, setHealthError] = useState<string | null>(null);
+
+    const [recentBackups, setRecentBackups] = useState<any[]>([]);
+    const [isTriggering, setIsTriggering] = useState(false);
+    const [scheduledEnabled, setScheduledEnabled] = useState<boolean | null>(null);
+    const [isTogglingSchedule, setIsTogglingSchedule] = useState(false);
 
     const fetchRealHealth = async () => {
         setIsLoadingHealth(true);
@@ -34,6 +40,58 @@ const SystemHealth: React.FC = () => {
         const interval = setInterval(fetchRealHealth, 300000); // Every 5 mins
         return () => clearInterval(interval);
     }, []);
+
+    useEffect(() => {
+        const q = query(
+            collection(db, 'system_backups'),
+            orderBy('timestamp', 'desc'),
+            limit(10)
+        );
+        const unsub = onSnapshot(q, (snap) => {
+            setRecentBackups(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+        });
+        return () => unsub();
+    }, []);
+
+    useEffect(() => {
+        const unsub = onSnapshot(doc(db, 'settings', 'platform'), (snap) => {
+            const val = snap.data()?.scheduledExportsEnabled;
+            setScheduledEnabled(val === undefined ? true : val);
+        });
+        return () => unsub();
+    }, []);
+
+    const handleToggleSchedule = async () => {
+        if (scheduledEnabled === null) return;
+        setIsTogglingSchedule(true);
+        try {
+            await setDoc(doc(db, 'settings', 'platform'), { scheduledExportsEnabled: !scheduledEnabled }, { merge: true });
+            addNotification({
+                type: 'system',
+                title: !scheduledEnabled ? 'Scheduled Backups Enabled' : 'Scheduled Backups Paused',
+                message: !scheduledEnabled
+                    ? 'Daily exports will run at 02:00 UTC.'
+                    : 'Daily exports are paused. Manual exports still work.',
+            });
+        } catch (err: any) {
+            addNotification({ type: 'alert', title: 'Toggle Failed', message: err.message });
+        } finally {
+            setIsTogglingSchedule(false);
+        }
+    };
+
+    const handleManualExport = async () => {
+        setIsTriggering(true);
+        try {
+            const fn = httpsCallable(functions, 'triggerManualExport');
+            await fn({});
+            addNotification({ type: 'system', title: 'Export Initiated', message: 'Manual Firestore export started. Check backup status below.' });
+        } catch (err: any) {
+            addNotification({ type: 'alert', title: 'Export Failed', message: err.message || 'Could not trigger export.' });
+        } finally {
+            setIsTriggering(false);
+        }
+    };
 
     return (
         <div className="p-4 md:p-6 animate-fade-in pb-20">
@@ -129,6 +187,69 @@ const SystemHealth: React.FC = () => {
                                 ))}
                             </div>
                         )}
+                </div>
+
+                {/* Backup Status */}
+                <div className="bg-white rounded-xl border border-[var(--glass-border)] p-6 shadow-sm mt-6">
+                    <div className="flex items-center justify-between mb-6">
+                        <div>
+                            <h2 className="text-xl font-bold text-[var(--text-main)]">Backup Status</h2>
+                            <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-widest font-bold">Scheduled & Manual Exports</p>
+                        </div>
+                        <div className="flex items-center gap-2 flex-wrap justify-end">
+                            {scheduledEnabled !== null && (
+                                <>
+                                    <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full border ${scheduledEnabled ? 'bg-green-50 text-green-700 border-green-200' : 'bg-yellow-50 text-yellow-700 border-yellow-200'}`}>
+                                        {scheduledEnabled ? '● Daily Active' : '⏸ Paused'}
+                                    </span>
+                                    <button
+                                        onClick={handleToggleSchedule}
+                                        disabled={isTogglingSchedule}
+                                        className={`text-xs px-3 py-1.5 rounded-lg font-bold transition-all disabled:opacity-50 border ${scheduledEnabled ? 'bg-yellow-50 text-yellow-700 border-yellow-200 hover:bg-yellow-100' : 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100'}`}
+                                    >
+                                        {isTogglingSchedule ? '...' : scheduledEnabled ? 'Pause Schedule' : 'Resume Schedule'}
+                                    </button>
+                                </>
+                            )}
+                            <button
+                                onClick={handleManualExport}
+                                disabled={isTriggering}
+                                className="text-xs bg-[var(--brand-primary)] text-white px-4 py-2 rounded-lg font-bold hover:opacity-90 disabled:opacity-50 transition-all"
+                            >
+                                {isTriggering ? 'Triggering...' : 'Trigger Manual Export'}
+                            </button>
+                        </div>
+                    </div>
+                    {recentBackups.length === 0 ? (
+                        <p className="text-sm text-[var(--text-muted)] text-center py-6">No backup records yet. Daily exports run at 02:00 UTC.</p>
+                    ) : (
+                        <div className="space-y-2">
+                            {recentBackups.map((backup) => {
+                                const statusColor = backup.status === 'completed' ? 'bg-green-100 text-green-700' :
+                                    backup.status === 'failed' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700';
+                                return (
+                                    <div key={backup.id} className="flex items-center justify-between p-3 bg-[var(--surface-1)] rounded-lg border border-[var(--glass-border)]">
+                                        <div className="flex items-center gap-3 min-w-0">
+                                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${statusColor}`}>
+                                                {backup.status?.toUpperCase()}
+                                            </span>
+                                            <span className="text-xs font-medium text-[var(--text-main)] shrink-0">{backup.type?.replace(/_/g, ' ')}</span>
+                                            {backup.userCount && (
+                                                <span className="text-[10px] text-[var(--text-muted)] shrink-0">{backup.userCount} users</span>
+                                            )}
+                                            {backup.errorMessage && (
+                                                <span className="text-[10px] text-red-500 truncate">{backup.errorMessage}</span>
+                                            )}
+                                        </div>
+                                        <span className="text-[10px] text-[var(--text-muted)] shrink-0 ml-2">{backup.date}</span>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+                    <p className="text-[10px] text-[var(--text-muted)] mt-4">
+                        IAM required: Cloud Datastore Import Export Admin + Storage Object Creator on the firestore-backups bucket.
+                    </p>
                 </div>
             </div>
         </div>

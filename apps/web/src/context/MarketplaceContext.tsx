@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { collection, onSnapshot, doc, updateDoc, setDoc, deleteDoc } from 'firebase/firestore';
+import { collection, onSnapshot, doc, updateDoc, setDoc, deleteDoc, serverTimestamp, deleteField } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { isFlyerActive, filterActiveDeals } from '../utils/date-helpers';
 import { auditBridge } from '../utils/auditBridge';
@@ -16,6 +16,7 @@ interface MarketplaceContextType {
     deleteStore: (storeId: string) => Promise<void>;
     requestDeleteStore: (storeId: string, requesterId: string, requesterRole: string) => Promise<void>;
     approveDeleteStore: (storeId: string) => Promise<void>;
+    cancelStoreDeletion: (storeId: string) => Promise<void>;
     // Flyer Management
     subscribeToFlyers: (storeId: string | number, callback: (flyers: any[]) => void) => () => void;
     saveFlyer: (storeId: string | number, flyer: any) => Promise<void>;
@@ -145,8 +146,20 @@ export const MarketplaceProvider: React.FC<{ children: ReactNode }> = ({ childre
 
     const approveDeleteStore = async (storeId: string) => {
         const storeRef = doc(db, 'stores', storeId);
-        await deleteDoc(storeRef);
+        await updateDoc(storeRef, {
+            status: 'pending_deletion',
+            deletionApprovedAt: serverTimestamp(),
+        });
         auditBridge.emit('STORE_DELETE_APPROVED', { storeId }, `stores/${storeId}`);
+    };
+
+    const cancelStoreDeletion = async (storeId: string) => {
+        const storeRef = doc(db, 'stores', storeId);
+        await updateDoc(storeRef, {
+            status: 'suspended',
+            deletionApprovedAt: deleteField(),
+        });
+        auditBridge.emit('STORE_DELETE_CANCELLED', { storeId }, `stores/${storeId}`);
     };
 
     // --- Flyer Management (Subcollection) ---
@@ -242,6 +255,7 @@ export const MarketplaceProvider: React.FC<{ children: ReactNode }> = ({ childre
             deleteStore,
             requestDeleteStore,
             approveDeleteStore,
+            cancelStoreDeletion,
 
             addStore,
             subscribeToFlyers,
