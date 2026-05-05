@@ -113,7 +113,7 @@ Admin sub-roles: SUPER_ADMIN (admin:all), MODERATOR (admin:users, admin:stores),
 **Key hooks:**
 - [apps/web/src/hooks/useOptimizedWishlist.ts](apps/web/src/hooks/useOptimizedWishlist.ts) — Core SmartCart engine (730+ lines). Real-time deal sync from `stores/{storeId}/deals` subcollection, effective price calculation with deal hierarchy (flash sale → standard sale → flyer → regular price), fuzzy matching fallback, distance filtering via Haversine + FSA, and full optimizer pipeline. Persists store selections to localStorage (`smartcart_selections_v1`).
 - [apps/web/src/hooks/useCatalog.ts](apps/web/src/hooks/useCatalog.ts) — Catalog management (1400+ lines). Master/merchant product CRUD, Algolia search with geo-filtering, barcode deduplication via GTIN variant generation (8/12/13/14-digit), Open Food Facts UPC lookup (tries multiple endpoints for CORS), `bulkAddMerchantProducts` for CSV import, pending product workflow for admin approval.
-- [apps/web/src/hooks/usePushNotifications.ts](apps/web/src/hooks/usePushNotifications.ts) — Firebase Cloud Messaging. Registers SW at `/firebase-messaging-sw.js`, stores FCM tokens in user document `fcmTokens` array, uses VAPID key.
+- [apps/web/src/hooks/usePushNotifications.ts](apps/web/src/hooks/usePushNotifications.ts) — Firebase Cloud Messaging. Registers SW at `/firebase-messaging-sw.js`, stores FCM tokens in user document `fcmTokens` array, uses VAPID key. **Notification preference storage by role**: consumer prefs → `users/{uid}.notificationPreferences`; merchant prefs → `stores/{storeId}.notificationPreferences`; admin prefs → `users/{uid}.adminNotificationPreferences`. Each role has a dedicated `/notifications` inbox page (`consumer/Notifications.tsx`, `merchant/MerchantNotifications.tsx`, `admin/AdminNotifications.tsx`).
 - [apps/web/src/hooks/useFileUpload.ts](apps/web/src/hooks/useFileUpload.ts) — Firebase Storage uploads with 2 MB max, image-only validation, 30 s timeout.
 - [apps/web/src/hooks/useTrafficStats.ts](apps/web/src/hooks/useTrafficStats.ts) — Admin analytics dashboard. Listens to `stats/traffic`, calculates day-over-day change, `refreshStats()` calls `syncTrafficStats` Cloud Function (GA4 integration).
 - [apps/web/src/utils/imageOptimizer.ts](apps/web/src/utils/imageOptimizer.ts) — Client-side image compression via Canvas (max 1024 px, JPEG 0.7 quality).
@@ -158,6 +158,7 @@ Firebase Cloud Functions v4 (v1 API). Organized by domain:
   - `onStoreCreate` / `onStoreUpdate` — auto-geocodes store address via Nominatim; re-geocodes on address field changes. **Note**: defined in `storeTriggers.ts` but not currently exported from `index.ts` (not deployed).
   - `onStoreDelete` — cascade cleanup: deletes merchant products, deals, flyers, de-links users, cancels Stripe subscriptions
   - `onMerchantProductPriceChange` (`priceHistoryTrigger.ts`) — records daily price history snapshot; detects price drops and new sales, then queries users with active FCM tokens within their configured proximity radius (Haversine) and sends geo-targeted multicast FCM notifications respecting `notificationPreferences.promotions` / `priceDrop` / `maxDistance` user fields
+  - `onReviewCreated` (`reviewTrigger.ts`) — when a `store`-type review is created, queries all merchant users for that `storeId` and writes a `type: 'review'` notification to each `users/{uid}/notifications/{id}` subcollection
   - `onOrderCreated` — post-order trigger (send confirmation, audit, analytics)
   - `syncMasterProductToAlgolia`, `syncMerchantProductToAlgolia` (includes `_geoloc` for location-based search)
 - `admin/` — Cleanup utilities (`cleanupOrphanedUsers`, `cleanupOrphanedStoreData`, `syncTrafficStats`), `getSystemHealth` (powers `/admin/health` dashboard), `scrapeFlyer` (flyer content extraction for `/admin/flyer-ingestion`), `processIngestionJobs` (background flyer ingestion runner), `searchPublicDeals`
@@ -181,7 +182,7 @@ Stripe webhook secret stored in Firebase Runtime Config: `stripe.webhook_secret`
 
 ### Firestore Collections
 
-`/users`, `/stores`, `/orders`, `/master_products`, `/pending_master_products`, `/merchant_products`, `/product_creation_requests`, `/categories`, `/substitution_groups`, `/reviews`, `/audit_logs`, `/carts`, `/wishlists`, `/comparison_wishlists` (ComparisonContext, mirrors wishlists pattern), `/notifications`, `/settings` (platform config), `/staff` (admin pre-staging), `/mail`, `/ads`, `/surveys`, `/stats`, `/_rate_limits` (rate limiter sliding windows), `/smartcart_optimizer_cache` (10-min TTL optimizer results), `/payments` (webhook reconciliation buffer). Subcollection: `merchant_products/{id}/price_history/{date}` (daily price snapshots written by `onMerchantProductPriceChange`). Legacy/seed-only: `/catalog` (populated by `scripts/seedCatalog.ts`, not used by app or API code).
+`/users`, `/stores`, `/orders`, `/master_products`, `/pending_master_products`, `/merchant_products`, `/product_creation_requests`, `/categories`, `/substitution_groups`, `/reviews`, `/audit_logs`, `/carts`, `/wishlists`, `/comparison_wishlists` (ComparisonContext, mirrors wishlists pattern), `/notifications`, `/settings` (platform config), `/staff` (admin pre-staging), `/mail`, `/ads`, `/surveys`, `/stats`, `/_rate_limits` (rate limiter sliding windows), `/smartcart_optimizer_cache` (10-min TTL optimizer results), `/payments` (webhook reconciliation buffer). Subcollections: `merchant_products/{id}/price_history/{date}` (daily price snapshots written by `onMerchantProductPriceChange`); `stores/{storeId}/analytics/{YYYY-MM-DD}` (daily view counts written by `StoreDetail.tsx` on each store page load — read by the merchant Analytics page; public writes restricted to `views` and `date` fields only). Legacy/seed-only: `/catalog` (populated by `scripts/seedCatalog.ts`, not used by app or API code).
 
 **Key Firestore write restrictions** (enforced in rules):
 - **Orders**: Created server-side only via Admin SDK (Cloud Functions). Clients cannot create orders directly. Updates use `diff().affectedKeys()` for field-level control — merchants can only change `status`, `rejectionReason`, `estimatedTime`, `paymentStatus`; customers can only set status to `cancelled`.
@@ -292,10 +293,10 @@ Architecture docs in `docs/` (25 files): `ARCHITECTURE.md`, `SEARCH_IMPLEMENTATI
 | `/smartcart/prototype` | SmartCartPrototype | No |
 
 ### Merchant (`/merchant/*` — requires role `merchant`)
-`/dashboard`, `/onboarding`, `/products`, `/orders`, `/flyers`, `/deals`, `/analytics`, `/settings`, `/subscription`
+`/dashboard`, `/onboarding`, `/products`, `/orders`, `/flyers`, `/deals`, `/analytics`, `/settings`, `/subscription`, `/notifications`
 
 ### Admin (`/admin/*` — requires role `admin` + MFA enrolled)
-`/dashboard`, `/users`, `/stores`, `/catalog`, `/ads`, `/surveys`, `/careers`, `/audit-logs`, `/tools`, `/insights`, `/health`, `/flyer-ingestion`, `/settings`, `/mfa-setup`
+`/dashboard`, `/users`, `/stores`, `/catalog`, `/ads`, `/surveys`, `/careers`, `/audit-logs`, `/tools`, `/insights`, `/health`, `/flyer-ingestion`, `/settings`, `/mfa-setup`, `/notifications`
 
 ## LocalStorage Keys
 

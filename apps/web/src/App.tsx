@@ -82,6 +82,7 @@ const MerchantProducts = lazyWithRetry(() => import('./pages/merchant/Products')
 const MerchantOrders = lazyWithRetry(() => import('./pages/merchant/Orders'));
 const MerchantFlyers = lazyWithRetry(() => import('./pages/merchant/Flyers'));
 const MerchantDeals = lazyWithRetry(() => import('./pages/merchant/Deals'));
+const MerchantMarketing = lazyWithRetry(() => import('./pages/merchant/Marketing'));
 const MerchantSettings = lazyWithRetry(() => import('./pages/merchant/Settings'));
 const MerchantSubscription = lazyWithRetry(() => import('./pages/merchant/Subscription'));
 const MerchantAnalytics = lazyWithRetry(() => import('./pages/merchant/Analytics'));
@@ -223,6 +224,7 @@ function App() {
                                                                     <Route path="/merchant/orders" element={<MerchantOrders />} />
                                                                     <Route path="/merchant/flyers" element={<MerchantFlyers />} />
                                                                     <Route path="/merchant/deals" element={<MerchantDeals />} />
+                                                                    <Route path="/merchant/marketing" element={<MerchantMarketing />} />
                                                                     <Route path="/merchant/analytics" element={<MerchantAnalytics />} />
                                                                     <Route path="/merchant/settings" element={<MerchantSettings />} />
                                                                     <Route path="/merchant/subscription" element={<MerchantSubscription />} />

@@ -137,6 +137,21 @@ const MerchantLayout: React.FC = () => {
                         </div>
                     </div>
 
+                    {/* Operations */}
+                    {can('orders:read') && (
+                        <div>
+                            <h3 className="px-1 text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-2">Operations</h3>
+                            <div className="space-y-1">
+                                <NavLink
+                                    to="/merchant/orders"
+                                    className={({ isActive }) => `flex items-center gap-3 p-3 rounded-lg font-medium transition-all ${isActive ? 'bg-[var(--brand-primary)] text-white shadow-lg shadow-[var(--brand-primary)]/30' : 'text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text-main)]'}`}
+                                >
+                                    <span>📋</span> Orders
+                                </NavLink>
+                            </div>
+                        </div>
+                    )}
+
                     {/* Store */}
                     <div>
                         <h3 className="px-1 text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-2">Store</h3>
@@ -163,23 +178,14 @@ const MerchantLayout: React.FC = () => {
                                     <span>🏷️</span> Deals
                                 </NavLink>
                             )}
+                            <NavLink
+                                to="/merchant/marketing"
+                                className={({ isActive }) => `flex items-center gap-3 p-3 rounded-lg font-medium transition-all ${isActive ? 'bg-[var(--brand-primary)] text-white shadow-lg shadow-[var(--brand-primary)]/30' : 'text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text-main)]'}`}
+                            >
+                                <span>📢</span> Digital Marketing
+                            </NavLink>
                         </div>
                     </div>
-
-                    {/* Operations */}
-                    {can('orders:read') && (
-                        <div>
-                            <h3 className="px-1 text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-2">Operations</h3>
-                            <div className="space-y-1">
-                                <NavLink
-                                    to="/merchant/orders"
-                                    className={({ isActive }) => `flex items-center gap-3 p-3 rounded-lg font-medium transition-all ${isActive ? 'bg-[var(--brand-primary)] text-white shadow-lg shadow-[var(--brand-primary)]/30' : 'text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text-main)]'}`}
-                                >
-                                    <span>📋</span> Orders
-                                </NavLink>
-                            </div>
-                        </div>
-                    )}
 
                     {/* Account */}
                     <div>
