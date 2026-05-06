@@ -75,8 +75,8 @@ exports.sendCampaign = functions.https.onCall(async (data, context) => {
     if (!userDoc.exists || (userData === null || userData === void 0 ? void 0 : userData.role) !== 'merchant' || (userData === null || userData === void 0 ? void 0 : userData.storeId) !== storeId) {
         throw new functions.https.HttpsError('permission-denied', 'You do not own this store.');
     }
-    // Rate limit: 5 campaigns per 24h per merchant
-    await (0, rateLimiter_1.checkRateLimit)(uid, 'sendCampaign', 5, 24 * 60 * 60 * 1000);
+    // Rate limit: 10 campaigns per 24h per merchant
+    await (0, rateLimiter_1.checkRateLimit)(uid, 'sendCampaign', 10, 24 * 60 * 60 * 1000);
     const storeDoc = await db.collection('stores').doc(storeId).get();
     if (!storeDoc.exists) {
         throw new functions.https.HttpsError('not-found', 'Store not found.');
@@ -90,9 +90,10 @@ exports.sendCampaign = functions.https.onCall(async (data, context) => {
             throw new functions.https.HttpsError('failed-precondition', 'Store coordinates are not set.');
         }
         const { lat: storeLat, lng: storeLng } = store.coordinates;
-        // Paginate all users — same pattern as priceHistoryTrigger
+        functions.logger.info(`[sendCampaign] nearby: store coords (${storeLat}, ${storeLng})`);
         let lastDoc;
         let hasMore = true;
+        let scanned = 0, noToken = 0, noPromo = 0, noCoords = 0, tooFar = 0;
         while (hasMore) {
             let q = db.collection('users').limit(500);
             if (lastDoc)
@@ -105,30 +106,39 @@ exports.sendCampaign = functions.https.onCall(async (data, context) => {
             snap.forEach(doc => {
                 var _a, _b, _c, _d, _e;
                 const u = doc.data();
-                if (!((_a = u.fcmTokens) === null || _a === void 0 ? void 0 : _a.length))
+                scanned++;
+                if (!((_a = u.fcmTokens) === null || _a === void 0 ? void 0 : _a.length)) {
+                    noToken++;
                     return;
+                }
                 const prefs = u.notificationPreferences || {};
-                if (prefs.promotions === false)
+                if (prefs.promotions === false) {
+                    noPromo++;
                     return;
+                }
                 const maxDist = prefs.maxDistance || 10;
                 const addresses = u.addresses || [];
                 const defaultAddr = addresses.find((a) => a.isDefault) || addresses[0];
-                // Prefer geocoded address coords; fall back to flat coordinates set at registration
                 const userLat = (_b = defaultAddr === null || defaultAddr === void 0 ? void 0 : defaultAddr.lat) !== null && _b !== void 0 ? _b : (_c = u.coordinates) === null || _c === void 0 ? void 0 : _c.lat;
                 const userLng = (_d = defaultAddr === null || defaultAddr === void 0 ? void 0 : defaultAddr.lng) !== null && _d !== void 0 ? _d : (_e = u.coordinates) === null || _e === void 0 ? void 0 : _e.lng;
-                if (!userLat || !userLng)
+                if (!userLat || !userLng) {
+                    noCoords++;
                     return;
-                const dist = calculateDistance(storeLat, storeLng, userLat, userLng);
-                if (dist <= maxDist) {
-                    qualifiedUsers.push({ uid: doc.id, fcmTokens: u.fcmTokens });
                 }
+                const dist = calculateDistance(storeLat, storeLng, userLat, userLng);
+                if (dist > maxDist) {
+                    tooFar++;
+                    return;
+                }
+                qualifiedUsers.push({ uid: doc.id, fcmTokens: u.fcmTokens });
             });
         }
+        functions.logger.info(`[sendCampaign] nearby scan: total=${scanned} noToken=${noToken} noPromo=${noPromo} noCoords=${noCoords} tooFar=${tooFar} qualified=${qualifiedUsers.length}`);
     }
     else {
-        // For store-specific segments: first get all customers who've ordered from this store
         const ordersSnap = await db.collection('orders').where('storeId', '==', storeId).get();
         const customerIds = [...new Set(ordersSnap.docs.map(d => d.data().customerId))];
+        functions.logger.info(`[sendCampaign] ${segment}: storeId=${storeId} orders=${ordersSnap.size} uniqueCustomers=${customerIds.length}`);
         if (customerIds.length === 0) {
             await db.collection('campaign_logs').add({
                 storeId, segment, message, title: campaignTitle,
@@ -138,8 +148,6 @@ exports.sendCampaign = functions.https.onCall(async (data, context) => {
             });
             return { sentCount: 0, failedCount: 0 };
         }
-        // Batch-get user docs in chunks of 30 (Firestore doc lookup limit per in() isn't the concern;
-        // we just use individual gets to avoid the 30-item in() limit on queries)
         const CHUNK = 30;
         const userDocs = [];
         for (let i = 0; i < customerIds.length; i += CHUNK) {
@@ -168,14 +176,13 @@ exports.sendCampaign = functions.https.onCall(async (data, context) => {
             });
         }
         else {
-            // high_value: top 25% by total platform spend among this store's customers
             const sorted = [...userDocs].sort((a, b) => (b.total_spend || 0) - (a.total_spend || 0));
             const topCount = Math.max(1, Math.ceil(sorted.length * 0.25));
             filtered = sorted.slice(0, topCount);
         }
-        filtered
-            .filter(u => { var _a; return (_a = u.fcmTokens) === null || _a === void 0 ? void 0 : _a.length; })
-            .forEach(u => qualifiedUsers.push({ uid: u.id, fcmTokens: u.fcmTokens }));
+        const withTokens = filtered.filter(u => { var _a; return (_a = u.fcmTokens) === null || _a === void 0 ? void 0 : _a.length; });
+        functions.logger.info(`[sendCampaign] ${segment}: fetched=${userDocs.length} afterFilter=${filtered.length} withTokens=${withTokens.length}`);
+        withTokens.forEach(u => qualifiedUsers.push({ uid: u.id, fcmTokens: u.fcmTokens }));
     }
     // Send FCM in batches of 500, tracking tokens per user for stale-token cleanup
     const BATCH_SIZE = 500;

@@ -54,8 +54,8 @@ export const sendCampaign = functions.https.onCall(async (data, context) => {
         throw new functions.https.HttpsError('permission-denied', 'You do not own this store.');
     }
 
-    // Rate limit: 5 campaigns per 24h per merchant
-    await checkRateLimit(uid, 'sendCampaign', 5, 24 * 60 * 60 * 1000);
+    // Rate limit: 10 campaigns per 24h per merchant
+    await checkRateLimit(uid, 'sendCampaign', 10, 24 * 60 * 60 * 1000);
 
     const storeDoc = await db.collection('stores').doc(storeId).get();
     if (!storeDoc.exists) {
@@ -72,10 +72,11 @@ export const sendCampaign = functions.https.onCall(async (data, context) => {
             throw new functions.https.HttpsError('failed-precondition', 'Store coordinates are not set.');
         }
         const { lat: storeLat, lng: storeLng } = store.coordinates;
+        functions.logger.info(`[sendCampaign] nearby: store coords (${storeLat}, ${storeLng})`);
 
-        // Paginate all users — same pattern as priceHistoryTrigger
         let lastDoc: admin.firestore.QueryDocumentSnapshot | undefined;
         let hasMore = true;
+        let scanned = 0, noToken = 0, noPromo = 0, noCoords = 0, tooFar = 0;
 
         while (hasMore) {
             let q: admin.firestore.Query = db.collection('users').limit(500);
@@ -87,30 +88,33 @@ export const sendCampaign = functions.https.onCall(async (data, context) => {
 
             snap.forEach(doc => {
                 const u = doc.data();
-                if (!u.fcmTokens?.length) return;
+                scanned++;
+                if (!u.fcmTokens?.length) { noToken++; return; }
 
                 const prefs = u.notificationPreferences || {};
-                if (prefs.promotions === false) return;
+                if (prefs.promotions === false) { noPromo++; return; }
 
                 const maxDist = prefs.maxDistance || 10;
                 const addresses = u.addresses || [];
                 const defaultAddr = addresses.find((a: any) => a.isDefault) || addresses[0];
-
-                // Prefer geocoded address coords; fall back to flat coordinates set at registration
                 const userLat: number | undefined = defaultAddr?.lat ?? u.coordinates?.lat;
                 const userLng: number | undefined = defaultAddr?.lng ?? u.coordinates?.lng;
-                if (!userLat || !userLng) return;
+                if (!userLat || !userLng) { noCoords++; return; }
 
                 const dist = calculateDistance(storeLat, storeLng, userLat, userLng);
-                if (dist <= maxDist) {
-                    qualifiedUsers.push({ uid: doc.id, fcmTokens: u.fcmTokens });
-                }
+                if (dist > maxDist) { tooFar++; return; }
+
+                qualifiedUsers.push({ uid: doc.id, fcmTokens: u.fcmTokens });
             });
         }
+
+        functions.logger.info(
+            `[sendCampaign] nearby scan: total=${scanned} noToken=${noToken} noPromo=${noPromo} noCoords=${noCoords} tooFar=${tooFar} qualified=${qualifiedUsers.length}`
+        );
     } else {
-        // For store-specific segments: first get all customers who've ordered from this store
         const ordersSnap = await db.collection('orders').where('storeId', '==', storeId).get();
         const customerIds = [...new Set(ordersSnap.docs.map(d => d.data().customerId as string))];
+        functions.logger.info(`[sendCampaign] ${segment}: storeId=${storeId} orders=${ordersSnap.size} uniqueCustomers=${customerIds.length}`);
 
         if (customerIds.length === 0) {
             await db.collection('campaign_logs').add({
@@ -122,8 +126,6 @@ export const sendCampaign = functions.https.onCall(async (data, context) => {
             return { sentCount: 0, failedCount: 0 };
         }
 
-        // Batch-get user docs in chunks of 30 (Firestore doc lookup limit per in() isn't the concern;
-        // we just use individual gets to avoid the 30-item in() limit on queries)
         const CHUNK = 30;
         const userDocs: (admin.firestore.DocumentData & { id: string })[] = [];
         for (let i = 0; i < customerIds.length; i += CHUNK) {
@@ -149,15 +151,16 @@ export const sendCampaign = functions.https.onCall(async (data, context) => {
                 return new Date(u.last_order_date) >= thirtyDaysAgo;
             });
         } else {
-            // high_value: top 25% by total platform spend among this store's customers
             const sorted = [...userDocs].sort((a, b) => (b.total_spend || 0) - (a.total_spend || 0));
             const topCount = Math.max(1, Math.ceil(sorted.length * 0.25));
             filtered = sorted.slice(0, topCount);
         }
 
-        filtered
-            .filter(u => u.fcmTokens?.length)
-            .forEach(u => qualifiedUsers.push({ uid: u.id, fcmTokens: u.fcmTokens }));
+        const withTokens = filtered.filter(u => u.fcmTokens?.length);
+        functions.logger.info(
+            `[sendCampaign] ${segment}: fetched=${userDocs.length} afterFilter=${filtered.length} withTokens=${withTokens.length}`
+        );
+        withTokens.forEach(u => qualifiedUsers.push({ uid: u.id, fcmTokens: u.fcmTokens }));
     }
 
     // Send FCM in batches of 500, tracking tokens per user for stale-token cleanup
