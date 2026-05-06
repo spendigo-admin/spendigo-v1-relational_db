@@ -5,7 +5,8 @@ import { useAuth } from '../../context/AuthContext';
 import { useNotifications } from '../../context/NotificationContext';
 import { useConfirmation } from '../../context/ConfirmationContext';
 import { doc, writeBatch, serverTimestamp, updateDoc } from 'firebase/firestore';
-import { db } from '../../lib/firebase';
+import { db, functions } from '../../lib/firebase';
+import { httpsCallable } from 'firebase/functions';
 import { useStoreProducts } from '../../hooks/useStoreProducts';
 
 // Types
@@ -393,6 +394,51 @@ const MerchantDeals: React.FC = () => {
         }
     };
 
+    const [promotingDealId, setPromotingDealId] = useState<string | null>(null);
+
+    const handlePromoteDeal = async (deal: Deal) => {
+        const autoMessage = `New deal at ${store?.name || 'our store'}: ${deal.productName} — $${deal.salePrice.toFixed(2)} (was $${deal.originalPrice.toFixed(2)})!`;
+
+        const confirmed = await confirm({
+            title: 'Promote This Deal?',
+            message: `Send a push notification to nearby customers:\n\n"${autoMessage}"`,
+            confirmText: 'Send Now',
+            type: 'info'
+        });
+
+        if (!confirmed) return;
+
+        setPromotingDealId(deal.id);
+        try {
+            const sendCampaign = httpsCallable<
+                { storeId: string; segment: string; message: string; title: string; dealId: string },
+                { sentCount: number; failedCount: number }
+            >(functions, 'sendCampaign');
+
+            const result = await sendCampaign({
+                storeId,
+                segment: 'nearby',
+                message: autoMessage,
+                title: store?.name || 'Special Offer',
+                dealId: deal.id,
+            });
+
+            addNotification({
+                type: 'system',
+                title: 'Campaign Sent',
+                message: `Push notification sent to ${result.data.sentCount} nearby customer${result.data.sentCount !== 1 ? 's' : ''}.`
+            });
+        } catch (error: any) {
+            addNotification({
+                type: 'alert',
+                title: 'Campaign Failed',
+                message: error?.message || 'Could not send notification. Please try again.'
+            });
+        } finally {
+            setPromotingDealId(null);
+        }
+    };
+
     const closeWizard = () => {
         setShowWizard(false);
         setWizardStep(1);
@@ -604,6 +650,16 @@ const MerchantDeals: React.FC = () => {
                                                 </div>
                                                 {hasWriteAccess ? (
                                                     <div className="flex items-center gap-1">
+                                                        {deal.status === 'active' && (
+                                                            <button
+                                                                onClick={() => handlePromoteDeal(deal)}
+                                                                disabled={promotingDealId === deal.id}
+                                                                className="p-2 text-purple-500 hover:text-purple-700 hover:bg-purple-50 rounded-lg transition-colors disabled:opacity-50"
+                                                                title="Promote to nearby customers"
+                                                            >
+                                                                {promotingDealId === deal.id ? '⏳' : '📣'}
+                                                            </button>
+                                                        )}
                                                         {deal.status === 'expired' && (
                                                             <button
                                                                 onClick={() => handleExtendDeal(deal)}

@@ -253,6 +253,13 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // CAMPAIGN LOGS — written by sendCampaign Cloud Function (Admin SDK).
+    // Merchants can read their own store's campaign history; nobody can write directly.
+    match /campaign_logs/{logId} {
+      allow read: if isAdmin() || (isMerchant() && resource.data.storeId == getMerchantStoreId());
+      allow write: if false;
+    }
+
     // PAYMENTS — webhook mirror written by Stripe webhook Cloud Function (Admin SDK).
     // Merchants can read their own store's payment records for reconciliation.
     match /payments/{paymentId} {

@@ -1,14 +1,115 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import '../../styles/design-system.css';
 import { useMarketplace } from '../../context/MarketplaceContext';
 import { useAuth } from '../../context/AuthContext';
+import { useNotifications } from '../../context/NotificationContext';
 import QRCode from 'react-qr-code';
+import { functions, db } from '../../lib/firebase';
+import { httpsCallable } from 'firebase/functions';
+import { collection, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
+
+const SEGMENTS = [
+    { value: 'nearby', label: 'Nearby Customers', description: 'Users within their preferred distance of your store' },
+    { value: 'active', label: 'Recent Customers (30d)', description: 'Customers who ordered from you in the last 30 days' },
+    { value: 'inactive', label: 'Inactive Customers (30d+)', description: 'Customers who haven\'t ordered in over 30 days' },
+    { value: 'high_value', label: 'High-Value Customers', description: 'Top 25% of customers by total spend' },
+] as const;
+
+type Segment = typeof SEGMENTS[number]['value'];
+
+interface CampaignLog {
+    id: string;
+    segment: Segment;
+    message: string;
+    sentCount: number;
+    failedCount: number;
+    timestamp: { seconds: number } | null;
+}
+
+const SEGMENT_COLORS: Record<Segment, string> = {
+    nearby: 'bg-blue-100 text-blue-700',
+    active: 'bg-green-100 text-green-700',
+    inactive: 'bg-amber-100 text-amber-700',
+    high_value: 'bg-purple-100 text-purple-700',
+};
 
 const MerchantMarketing: React.FC = () => {
     const { getStore } = useMarketplace();
     const { user } = useAuth();
+    const { addNotification } = useNotifications();
     const storeId = user?.storeId || '1';
     const store = getStore(storeId);
+
+    const [campaignMessage, setCampaignMessage] = useState('');
+    const [campaignSegment, setCampaignSegment] = useState<Segment>('nearby');
+    const [isSending, setIsSending] = useState(false);
+    const [recentCampaigns, setRecentCampaigns] = useState<CampaignLog[]>([]);
+    const [loadingLogs, setLoadingLogs] = useState(true);
+
+    useEffect(() => {
+        if (!storeId) return;
+        const fetchLogs = async () => {
+            try {
+                const q = query(
+                    collection(db, 'campaign_logs'),
+                    where('storeId', '==', storeId),
+                    orderBy('timestamp', 'desc'),
+                    limit(5)
+                );
+                const snap = await getDocs(q);
+                setRecentCampaigns(snap.docs.map(d => ({ id: d.id, ...d.data() } as CampaignLog)));
+            } catch {
+                // index may not exist yet on first use — show empty state
+            } finally {
+                setLoadingLogs(false);
+            }
+        };
+        fetchLogs();
+    }, [storeId]);
+
+    const handleSendCampaign = async () => {
+        if (!campaignMessage.trim()) return;
+        setIsSending(true);
+        try {
+            const sendCampaign = httpsCallable<
+                { storeId: string; segment: string; message: string; title: string },
+                { sentCount: number; failedCount: number }
+            >(functions, 'sendCampaign');
+
+            const result = await sendCampaign({
+                storeId,
+                segment: campaignSegment,
+                message: campaignMessage.trim(),
+                title: store?.name || 'Special Offer',
+            });
+
+            addNotification({
+                type: 'system',
+                title: 'Campaign Sent',
+                message: `Push notification sent to ${result.data.sentCount} customer${result.data.sentCount !== 1 ? 's' : ''}.`
+            });
+
+            // Prepend to local log immediately
+            const newLog: CampaignLog = {
+                id: `local_${Date.now()}`,
+                segment: campaignSegment,
+                message: campaignMessage.trim(),
+                sentCount: result.data.sentCount,
+                failedCount: result.data.failedCount,
+                timestamp: { seconds: Math.floor(Date.now() / 1000) },
+            };
+            setRecentCampaigns(prev => [newLog, ...prev].slice(0, 5));
+            setCampaignMessage('');
+        } catch (error: any) {
+            addNotification({
+                type: 'alert',
+                title: 'Campaign Failed',
+                message: error?.message || 'Could not send campaign. Please try again.'
+            });
+        } finally {
+            setIsSending(false);
+        }
+    };
 
     return (
         <>
@@ -125,6 +226,101 @@ const MerchantMarketing: React.FC = () => {
                                 🖨️ Print High-Res Poster
                             </button>
                         </div>
+                    </div>
+                </div>
+
+                {/* Push Campaign Section */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Send Campaign */}
+                    <div className="bg-white p-6 rounded-2xl border border-[var(--glass-border)] shadow-sm">
+                        <h3 className="font-bold text-xl mb-1 flex items-center gap-2 text-[var(--text-main)]">
+                            <span>📣</span> Send Push Campaign
+                        </h3>
+                        <p className="text-[var(--text-muted)] text-sm mb-5">
+                            Reach customers directly on their device with a targeted message.
+                        </p>
+
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">Audience</label>
+                                <select
+                                    value={campaignSegment}
+                                    onChange={e => setCampaignSegment(e.target.value as Segment)}
+                                    className="w-full px-3 py-2 border border-[var(--glass-border)] rounded-xl text-sm outline-none focus:border-[var(--brand-primary)] bg-white"
+                                >
+                                    {SEGMENTS.map(s => (
+                                        <option key={s.value} value={s.value}>{s.label}</option>
+                                    ))}
+                                </select>
+                                <p className="text-xs text-[var(--text-muted)] mt-1">
+                                    {SEGMENTS.find(s => s.value === campaignSegment)?.description}
+                                </p>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">
+                                    Message <span className={`float-right ${campaignMessage.length > 140 ? 'text-red-500' : ''}`}>{campaignMessage.length}/160</span>
+                                </label>
+                                <textarea
+                                    value={campaignMessage}
+                                    onChange={e => setCampaignMessage(e.target.value.slice(0, 160))}
+                                    placeholder={`e.g. "Weekend sale at ${store?.name || 'our store'}! 20% off all snacks today only."`}
+                                    rows={3}
+                                    className="w-full px-3 py-2 border border-[var(--glass-border)] rounded-xl text-sm outline-none focus:border-[var(--brand-primary)] resize-none"
+                                />
+                            </div>
+
+                            <button
+                                onClick={handleSendCampaign}
+                                disabled={isSending || !campaignMessage.trim()}
+                                className="w-full py-3 bg-[var(--brand-primary)] text-white font-bold rounded-xl hover:brightness-110 shadow-md shadow-[var(--brand-primary)]/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                            >
+                                {isSending ? <><span className="animate-spin">⏳</span> Sending...</> : '🚀 Send Campaign'}
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Recent Campaigns */}
+                    <div className="bg-white p-6 rounded-2xl border border-[var(--glass-border)] shadow-sm">
+                        <h3 className="font-bold text-xl mb-1 flex items-center gap-2 text-[var(--text-main)]">
+                            <span>📊</span> Recent Campaigns
+                        </h3>
+                        <p className="text-[var(--text-muted)] text-sm mb-5">Your last 5 push campaigns.</p>
+
+                        {loadingLogs ? (
+                            <div className="space-y-3">
+                                {[1, 2, 3].map(i => (
+                                    <div key={i} className="h-14 bg-[var(--surface-1)] rounded-xl animate-pulse" />
+                                ))}
+                            </div>
+                        ) : recentCampaigns.length === 0 ? (
+                            <div className="text-center py-10 text-[var(--text-muted)]">
+                                <div className="text-3xl mb-2 opacity-40">📭</div>
+                                <p className="text-sm">No campaigns sent yet.</p>
+                            </div>
+                        ) : (
+                            <div className="space-y-3">
+                                {recentCampaigns.map(log => (
+                                    <div key={log.id} className="flex items-start gap-3 p-3 rounded-xl bg-[var(--surface-1)] border border-[var(--glass-border)]">
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold capitalize ${SEGMENT_COLORS[log.segment] || 'bg-gray-100 text-gray-600'}`}>
+                                                    {SEGMENTS.find(s => s.value === log.segment)?.label || log.segment}
+                                                </span>
+                                                <span className="text-[10px] text-[var(--text-muted)]">
+                                                    {log.timestamp ? new Date(log.timestamp.seconds * 1000).toLocaleDateString() : '—'}
+                                                </span>
+                                            </div>
+                                            <p className="text-sm text-[var(--text-main)] truncate">{log.message}</p>
+                                        </div>
+                                        <div className="text-right flex-shrink-0">
+                                            <div className="text-sm font-bold text-green-600">{log.sentCount} sent</div>
+                                            {log.failedCount > 0 && <div className="text-xs text-red-400">{log.failedCount} failed</div>}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

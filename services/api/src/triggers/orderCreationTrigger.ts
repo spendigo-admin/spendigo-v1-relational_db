@@ -30,16 +30,25 @@ export const onOrderCreated = functions.firestore
     try {
         // 1. Create In-App Notification for Customer
         const customerNotifId = `notif_cust_${orderId}_${Date.now()}`;
+        const now = new Date().toISOString();
         await db.collection('users').doc(customerId).collection('notifications').doc(customerNotifId).set({
             id: customerNotifId,
             type: 'order',
             title: 'Order Placed! 📋',
             message: `Your order from ${storeName} has been received.`,
-            timestamp: new Date().toISOString(),
+            timestamp: now,
             read: false,
             orderId,
             link: `/order/${orderId}`
         });
+
+        // Update customer purchase metrics for segmentation
+        await db.collection('users').doc(customerId).set({
+            total_orders: admin.firestore.FieldValue.increment(1),
+            total_spend: admin.firestore.FieldValue.increment(total),
+            last_order_date: now,
+            last_active: now,
+        }, { merge: true });
 
         // 2. Find all Merchant Users for this store
         // Strategy: Query by storeId only first to avoid composite index requirements, then filter by role

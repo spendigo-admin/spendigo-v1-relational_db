@@ -1,0 +1,222 @@
+import * as functions from 'firebase-functions';
+import * as admin from 'firebase-admin';
+import { checkRateLimit } from '../utils/rateLimiter';
+import { removeStaleTokens } from '../utils/fcm';
+
+type Segment = 'nearby' | 'inactive' | 'active' | 'high_value';
+
+function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a =
+        Math.sin(dLat / 2) ** 2 +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+        Math.sin(dLon / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+/**
+ * Sends a push campaign to a merchant-defined segment of users.
+ * Segments: 'nearby' (proximity), 'inactive' (30d+), 'active' (within 30d), 'high_value' (top 25% spend).
+ * Rate-limited to 5 sends per 24h per merchant.
+ */
+export const sendCampaign = functions.https.onCall(async (data, context) => {
+    if (!context.auth) {
+        throw new functions.https.HttpsError('unauthenticated', 'Authentication required.');
+    }
+
+    const uid = context.auth.uid;
+    const { storeId, segment, message, title, dealId } = data as {
+        storeId: string;
+        segment: Segment;
+        message: string;
+        title?: string;
+        dealId?: string;
+    };
+
+    if (!storeId || !segment || !message) {
+        throw new functions.https.HttpsError('invalid-argument', 'storeId, segment, and message are required.');
+    }
+    if (message.length > 160) {
+        throw new functions.https.HttpsError('invalid-argument', 'Message must be 160 characters or fewer.');
+    }
+    if (!['nearby', 'inactive', 'active', 'high_value'].includes(segment)) {
+        throw new functions.https.HttpsError('invalid-argument', 'Invalid segment type.');
+    }
+
+    const db = admin.firestore();
+
+    // Verify merchant owns this store
+    const userDoc = await db.collection('users').doc(uid).get();
+    const userData = userDoc.data();
+    if (!userDoc.exists || userData?.role !== 'merchant' || userData?.storeId !== storeId) {
+        throw new functions.https.HttpsError('permission-denied', 'You do not own this store.');
+    }
+
+    // Rate limit: 5 campaigns per 24h per merchant
+    await checkRateLimit(uid, 'sendCampaign', 5, 24 * 60 * 60 * 1000);
+
+    const storeDoc = await db.collection('stores').doc(storeId).get();
+    if (!storeDoc.exists) {
+        throw new functions.https.HttpsError('not-found', 'Store not found.');
+    }
+    const store = storeDoc.data()!;
+    const campaignTitle = title || store.name || 'Special Offer';
+
+    // Resolve segment to a list of {uid, fcmTokens} pairs
+    const qualifiedUsers: { uid: string; fcmTokens: string[] }[] = [];
+
+    if (segment === 'nearby') {
+        if (!store.coordinates?.lat || !store.coordinates?.lng) {
+            throw new functions.https.HttpsError('failed-precondition', 'Store coordinates are not set.');
+        }
+        const { lat: storeLat, lng: storeLng } = store.coordinates;
+
+        // Paginate all users — same pattern as priceHistoryTrigger
+        let lastDoc: admin.firestore.QueryDocumentSnapshot | undefined;
+        let hasMore = true;
+
+        while (hasMore) {
+            let q: admin.firestore.Query = db.collection('users').limit(500);
+            if (lastDoc) q = q.startAfter(lastDoc);
+
+            const snap = await q.get();
+            if (snap.empty || snap.size < 500) hasMore = false;
+            if (!snap.empty) lastDoc = snap.docs[snap.docs.length - 1];
+
+            snap.forEach(doc => {
+                const u = doc.data();
+                if (!u.fcmTokens?.length) return;
+
+                const prefs = u.notificationPreferences || {};
+                if (prefs.promotions === false) return;
+
+                const maxDist = prefs.maxDistance || 10;
+                const addresses = u.addresses || [];
+                const defaultAddr = addresses.find((a: any) => a.isDefault) || addresses[0];
+                if (!defaultAddr?.lat || !defaultAddr?.lng) return;
+
+                const dist = calculateDistance(storeLat, storeLng, defaultAddr.lat, defaultAddr.lng);
+                if (dist <= maxDist) {
+                    qualifiedUsers.push({ uid: doc.id, fcmTokens: u.fcmTokens });
+                }
+            });
+        }
+    } else {
+        // For store-specific segments: first get all customers who've ordered from this store
+        const ordersSnap = await db.collection('orders').where('storeId', '==', storeId).get();
+        const customerIds = [...new Set(ordersSnap.docs.map(d => d.data().customerId as string))];
+
+        if (customerIds.length === 0) {
+            await db.collection('campaign_logs').add({
+                storeId, segment, message, title: campaignTitle,
+                dealId: dealId || null, sentCount: 0, failedCount: 0,
+                timestamp: admin.firestore.FieldValue.serverTimestamp(),
+                triggeredBy: 'merchant',
+            });
+            return { sentCount: 0, failedCount: 0 };
+        }
+
+        // Batch-get user docs in chunks of 30 (Firestore doc lookup limit per in() isn't the concern;
+        // we just use individual gets to avoid the 30-item in() limit on queries)
+        const CHUNK = 30;
+        const userDocs: (admin.firestore.DocumentData & { id: string })[] = [];
+        for (let i = 0; i < customerIds.length; i += CHUNK) {
+            const chunk = customerIds.slice(i, i + CHUNK);
+            const snaps = await Promise.all(chunk.map(id => db.collection('users').doc(id).get()));
+            snaps.forEach(snap => {
+                if (snap.exists) userDocs.push({ id: snap.id, ...snap.data() });
+            });
+        }
+
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+        let filtered: typeof userDocs;
+        if (segment === 'inactive') {
+            filtered = userDocs.filter(u => {
+                if (!u.last_order_date) return true;
+                return new Date(u.last_order_date) < thirtyDaysAgo;
+            });
+        } else if (segment === 'active') {
+            filtered = userDocs.filter(u => {
+                if (!u.last_order_date) return false;
+                return new Date(u.last_order_date) >= thirtyDaysAgo;
+            });
+        } else {
+            // high_value: top 25% by total platform spend among this store's customers
+            const sorted = [...userDocs].sort((a, b) => (b.total_spend || 0) - (a.total_spend || 0));
+            const topCount = Math.max(1, Math.ceil(sorted.length * 0.25));
+            filtered = sorted.slice(0, topCount);
+        }
+
+        filtered
+            .filter(u => u.fcmTokens?.length)
+            .forEach(u => qualifiedUsers.push({ uid: u.id, fcmTokens: u.fcmTokens }));
+    }
+
+    // Send FCM in batches of 500, tracking tokens per user for stale-token cleanup
+    const BATCH_SIZE = 500;
+    let totalSent = 0;
+    let totalFailed = 0;
+
+    const allTokens = qualifiedUsers.flatMap(u => u.fcmTokens);
+    const tokenOwner: string[] = qualifiedUsers.flatMap(u => u.fcmTokens.map(() => u.uid));
+
+    for (let i = 0; i < allTokens.length; i += BATCH_SIZE) {
+        const batchTokens = allTokens.slice(i, i + BATCH_SIZE);
+        const batchOwners = tokenOwner.slice(i, i + BATCH_SIZE);
+
+        const msg: admin.messaging.MulticastMessage = {
+            tokens: batchTokens,
+            notification: { title: campaignTitle, body: message },
+            data: {
+                type: 'promo',
+                storeId,
+                link: `/store/${storeId}`,
+                ...(dealId ? { dealId } : {}),
+            },
+        };
+
+        try {
+            const res = await admin.messaging().sendEachForMulticast(msg);
+            totalSent += res.successCount;
+            totalFailed += res.failureCount;
+
+            if (res.failureCount > 0) {
+                // Group by user so removeStaleTokens gets the right parallel arrays
+                const byUser = new Map<string, { tokens: string[]; responses: admin.messaging.SendResponse[] }>();
+                res.responses.forEach((r, idx) => {
+                    const userId = batchOwners[idx];
+                    if (!byUser.has(userId)) byUser.set(userId, { tokens: [], responses: [] });
+                    byUser.get(userId)!.tokens.push(batchTokens[idx]);
+                    byUser.get(userId)!.responses.push(r);
+                });
+                await Promise.all(
+                    [...byUser.entries()].map(([userId, { tokens, responses }]) =>
+                        removeStaleTokens(userId, tokens, responses)
+                    )
+                );
+            }
+        } catch (err) {
+            functions.logger.error('[sendCampaign] FCM batch error:', err);
+            totalFailed += batchTokens.length;
+        }
+    }
+
+    await db.collection('campaign_logs').add({
+        storeId,
+        segment,
+        message,
+        title: campaignTitle,
+        dealId: dealId || null,
+        sentCount: totalSent,
+        failedCount: totalFailed,
+        timestamp: admin.firestore.FieldValue.serverTimestamp(),
+        triggeredBy: 'merchant',
+    });
+
+    functions.logger.info(`[sendCampaign] store=${storeId} segment=${segment} sent=${totalSent} failed=${totalFailed}`);
+    return { sentCount: totalSent, failedCount: totalFailed };
+});
