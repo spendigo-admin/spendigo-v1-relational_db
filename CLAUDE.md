@@ -156,12 +156,13 @@ Firebase Cloud Functions v4 (v1 API). Organized by domain:
   - `onMasterProductWrite` — downloads external images to Storage with 1-year cache
   - `onOrderStatusUpdated` — sends FCM push notifications with emoji-prefixed titles, auto-removes stale tokens
   - `onStoreCreate` / `onStoreUpdate` — auto-geocodes store address via Nominatim; re-geocodes on address field changes. **Note**: defined in `storeTriggers.ts` but not currently exported from `index.ts` (not deployed).
-  - `onStoreDelete` — cascade cleanup: deletes merchant products, deals, flyers, de-links users, cancels Stripe subscriptions
+  - `onStoreDelete` — cascade cleanup: deletes merchant products, deals, flyers, de-links users, cancels Stripe subscriptions. Acts as safety net only — direct console deletes without `deletionApprovedAt` set are logged as warnings.
+  - `onBackupJobResult` (`storeTriggers.ts`) — Firestore `onCreate` on `system_backups/{id}`; if `status === 'failed'`, sends alert email via `/mail` collection.
   - `onMerchantProductPriceChange` (`priceHistoryTrigger.ts`) — records daily price history snapshot; detects price drops and new sales, then queries users with active FCM tokens within their configured proximity radius (Haversine) and sends geo-targeted multicast FCM notifications respecting `notificationPreferences.promotions` / `priceDrop` / `maxDistance` user fields
   - `onReviewCreated` (`reviewTrigger.ts`) — when a `store`-type review is created, queries all merchant users for that `storeId` and writes a `type: 'review'` notification to each `users/{uid}/notifications/{id}` subcollection
   - `onOrderCreated` — post-order trigger (send confirmation, audit, analytics)
   - `syncMasterProductToAlgolia`, `syncMerchantProductToAlgolia` (includes `_geoloc` for location-based search)
-- `admin/` — Cleanup utilities (`cleanupOrphanedUsers`, `cleanupOrphanedStoreData`, `syncTrafficStats`), `getSystemHealth` (powers `/admin/health` dashboard), `scrapeFlyer` (flyer content extraction for `/admin/flyer-ingestion`), `processIngestionJobs` (background flyer ingestion runner), `searchPublicDeals`
+- `admin/` — Cleanup utilities (`cleanupOrphanedUsers`, `cleanupOrphanedStoreData`, `syncTrafficStats`), `getSystemHealth` (powers `/admin/health` dashboard), `scrapeFlyer` (flyer content extraction for `/admin/flyer-ingestion`), `processIngestionJobs` (background flyer ingestion runner), `searchPublicDeals`. **Backup functions**: `scheduledFirestoreExport` (pubsub `0 2 * * *` Toronto — exports critical collections to GCS, skips if `settings/platform.scheduledExportsEnabled === false`), `triggerManualExport` (callable, admin-only — same export, always runs regardless of flag), `exportFirebaseAuth` (pubsub `0 3 * * *` — paginates Auth users to NDJSON in GCS), `exportMerchantData` (callable, OWNER-only, rate-limited 3/hr — returns store+products+orders JSON for download, redacts customer PII), `processPendingStoreDeletions` (pubsub `0 4 * * *` — runs cascade delete on stores with `status === 'pending_deletion'` AND `deletionApprovedAt` > 30 days ago). All backup jobs write a manifest doc to `system_backups` collection. **IAM required on `spendigo-8540c@appspot.gserviceaccount.com`**: `roles/datastore.importExportAdmin` (project-level) + `roles/storage.objectCreator` (bucket-level on `spendigo-8540c-firestore-backups`).
 - `audit/` — `recordAuditEvent` (callable function; receives events from the client-side `auditBridge` and writes append-only entries to `audit_logs`)
 - `smartcart/` — Cart optimization HTTP endpoint (`/smartcartOptimize`) mirroring frontend logic
 - `cart/` — Additional `/cartOptimize` HTTP endpoint (delegates to smartcart service layer)
@@ -178,16 +179,16 @@ Stripe webhook secret stored in Firebase Runtime Config: `stripe.webhook_secret`
 - **Hosting**: `apps/web/dist/` deployed to Firebase Hosting with SPA rewrite.
 - **Dev SSL**: Self-signed cert via `@vitejs/plugin-basic-ssl` stored in `apps/web/.certs/`. Dev server binds to `spendigo.ca:443` (requires `/etc/hosts` entry).
 - **Hosting headers**: CSP allows scripts from Stripe, Google reCAPTCHA, Sentry; connects to Firebase, Algolia, Stripe, OpenStreetMap, Sentry, Open Food Facts, Generative Language API. HSTS (1 year), X-Frame-Options: DENY, nosniff. HTML is no-cache/no-store.
-- **Terraform**: Infrastructure config in `infra/` (`main.tf`, `variables.tf`).
+- **Terraform**: Infrastructure config in `infra/` (`main.tf`, `variables.tf`). GCS backup bucket (`spendigo-8540c-firestore-backups`) must be in `northamerica-northeast1` — the Firestore Admin export API rejects buckets not co-located with the database (dual/multi-region buckets like `NAM4` that don't span the DB region will fail with `INVALID_ARGUMENT`).
 
 ### Firestore Collections
 
-`/users`, `/stores`, `/orders`, `/master_products`, `/pending_master_products`, `/merchant_products`, `/product_creation_requests`, `/categories`, `/substitution_groups`, `/reviews`, `/audit_logs`, `/carts`, `/wishlists`, `/comparison_wishlists` (ComparisonContext, mirrors wishlists pattern), `/notifications`, `/settings` (platform config), `/staff` (admin pre-staging), `/mail`, `/ads`, `/surveys`, `/stats`, `/_rate_limits` (rate limiter sliding windows), `/smartcart_optimizer_cache` (10-min TTL optimizer results), `/payments` (webhook reconciliation buffer). Subcollections: `merchant_products/{id}/price_history/{date}` (daily price snapshots written by `onMerchantProductPriceChange`); `stores/{storeId}/analytics/{YYYY-MM-DD}` (daily view counts written by `StoreDetail.tsx` on each store page load — read by the merchant Analytics page; public writes restricted to `views` and `date` fields only). Legacy/seed-only: `/catalog` (populated by `scripts/seedCatalog.ts`, not used by app or API code).
+`/users`, `/stores`, `/orders`, `/master_products`, `/pending_master_products`, `/merchant_products`, `/product_creation_requests`, `/categories`, `/substitution_groups`, `/reviews`, `/audit_logs`, `/carts`, `/wishlists`, `/comparison_wishlists` (ComparisonContext, mirrors wishlists pattern), `/notifications`, `/settings` (platform config), `/staff` (admin pre-staging), `/mail`, `/ads`, `/surveys`, `/stats`, `/_rate_limits` (rate limiter sliding windows), `/smartcart_optimizer_cache` (10-min TTL optimizer results), `/payments` (webhook reconciliation buffer), `/system_backups` (backup job manifests — admin read-only, written by backup Cloud Functions; fields: `type`, `date`, `status`, `outputUriPrefix`, `collections`, `triggeredBy`). Subcollections: `merchant_products/{id}/price_history/{date}` (daily price snapshots written by `onMerchantProductPriceChange`); `stores/{storeId}/analytics/{YYYY-MM-DD}` (daily view counts written by `StoreDetail.tsx` on each store page load — read by the merchant Analytics page; public writes restricted to `views` and `date` fields only). Legacy/seed-only: `/catalog` (populated by `scripts/seedCatalog.ts`, not used by app or API code).
 
 **Key Firestore write restrictions** (enforced in rules):
 - **Orders**: Created server-side only via Admin SDK (Cloud Functions). Clients cannot create orders directly. Updates use `diff().affectedKeys()` for field-level control — merchants can only change `status`, `rejectionReason`, `estimatedTime`, `paymentStatus`; customers can only set status to `cancelled`.
 - **Users**: `role`, `adminRole`, `merchantRole`, `storeId` are admin-only fields. Self-registration only sets `consumer` or `merchant` role.
-- **Stores**: Merchants cannot change `subscriptionTier`, `status`, Stripe config, or `ownerId`. Deals live in `stores/{storeId}/deals` subcollection (flash sales, standard sales, flyer items).
+- **Stores**: Merchants cannot change `subscriptionTier`, `status`, Stripe config, or `ownerId`. Deals live in `stores/{storeId}/deals` subcollection (flash sales, standard sales, flyer items). **Soft-delete**: admin approval sets `status: 'pending_deletion'` + `deletionApprovedAt: serverTimestamp()` instead of calling `deleteDoc` — `processPendingStoreDeletions` runs the cascade after 30 days. `cancelStoreDeletion` reverts to `status: 'suspended'`.
 - **Merchant products**: Must reference an existing `master_products` or `pending_master_products` document (enforced by `exists()` in rules). Merchants cannot change `merchant_id` or `master_product_id` after creation (admin can).
 - **Audit logs**: Append-only. Users create; nobody updates/deletes.
 
@@ -267,7 +268,7 @@ Seeded QA account emails and role-by-role test workflows are documented in `docs
 
 ## Documentation
 
-Architecture docs in `docs/` (25 files): `ARCHITECTURE.md`, `SEARCH_IMPLEMENTATION.md`, `SMARTCART_INTERFACE_DESIGN.md`, `MERCHANT_BILLING.md`, `SECURITY_VERIFICATION.md`, `EMAIL_SETUP_GUIDE.md`, `MASTER_CATALOG_PLAN.md`, `MOBILE_DEPLOYMENT.md`, `OPENAPI.yaml` (REST API spec), and more. Terraform infra config in `infra/` (`main.tf`, `variables.tf`).
+Architecture docs in `docs/` (27 files): `ARCHITECTURE.md`, `SCHEMA.md` (Firestore schema), `SITEMAP.md` (full route map), `OPENAPI.yaml` (REST API spec), `AUDIT_IMPLEMENTATION.md` (SHA-256 ledger), `SEARCH_IMPLEMENTATION.md`, `SMARTCART_INTERFACE_DESIGN.md`, `SMARTCART_ALGORITHM_FLOW.md`, `MERCHANT_BILLING.md`, `SECURITY_VERIFICATION.md`, `EMAIL_SETUP_GUIDE.md`, `MASTER_CATALOG_PLAN.md`, `MOBILE_DEPLOYMENT.md`, `GAP_ANALYSIS.md`, `DEPLOYMENT_GUIDE.md`, and more. Terraform infra config in `infra/` (`main.tf`, `variables.tf`).
 
 ## Page Routes
 
@@ -293,7 +294,7 @@ Architecture docs in `docs/` (25 files): `ARCHITECTURE.md`, `SEARCH_IMPLEMENTATI
 | `/smartcart/prototype` | SmartCartPrototype | No |
 
 ### Merchant (`/merchant/*` — requires role `merchant`)
-`/dashboard`, `/onboarding`, `/products`, `/orders`, `/flyers`, `/deals`, `/analytics`, `/settings`, `/subscription`, `/notifications`
+`/dashboard`, `/onboarding`, `/products`, `/orders`, `/flyers`, `/deals`, `/analytics`, `/marketing`, `/settings`, `/subscription`, `/notifications`
 
 ### Admin (`/admin/*` — requires role `admin` + MFA enrolled)
 `/dashboard`, `/users`, `/stores`, `/catalog`, `/ads`, `/surveys`, `/careers`, `/audit-logs`, `/tools`, `/insights`, `/health`, `/flyer-ingestion`, `/settings`, `/mfa-setup`, `/notifications`

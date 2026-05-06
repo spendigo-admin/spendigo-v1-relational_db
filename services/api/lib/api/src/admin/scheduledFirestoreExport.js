@@ -36,6 +36,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.triggerManualExport = exports.scheduledFirestoreExport = void 0;
 const functions = __importStar(require("firebase-functions"));
 const admin = __importStar(require("firebase-admin"));
+const audit_1 = require("../utils/audit");
 const CRITICAL_COLLECTIONS = [
     'orders',
     'audit_logs',
@@ -91,6 +92,7 @@ exports.scheduledFirestoreExport = functions
             collections: { critical: CRITICAL_COLLECTIONS, highValue: HIGH_VALUE_COLLECTIONS },
             status: 'completed',
         });
+        await (0, audit_1.logEvent)('SCHEDULED_FIRESTORE_EXPORT', { id: 'system', email: 'system@spendigo.local', ip: 'system' }, { date, outputUriPrefix: outputBase, collections: { critical: CRITICAL_COLLECTIONS, highValue: HIGH_VALUE_COLLECTIONS } }, 'backups/firestore-daily');
         functions.logger.info(`[ScheduledExport] Initiated exports to ${outputBase}`);
     }
     catch (error) {
@@ -104,6 +106,7 @@ exports.scheduledFirestoreExport = functions
             status: 'failed',
             errorMessage: error.message,
         });
+        await (0, audit_1.logEvent)('SCHEDULED_FIRESTORE_EXPORT_FAILED', { id: 'system', email: 'system@spendigo.local', ip: 'system' }, { date, outputUriPrefix: outputBase, errorMessage: error.message }, 'backups/firestore-daily');
         throw error;
     }
     return null;
@@ -111,7 +114,7 @@ exports.scheduledFirestoreExport = functions
 exports.triggerManualExport = functions
     .runWith({ timeoutSeconds: 540, memory: '256MB' })
     .https.onCall(async (_data, context) => {
-    var _a;
+    var _a, _b, _c;
     if (!context.app && process.env.FUNCTIONS_EMULATOR !== 'true') {
         throw new functions.https.HttpsError('failed-precondition', 'App Check required.');
     }
@@ -149,6 +152,7 @@ exports.triggerManualExport = functions
             status: 'completed',
             triggeredBy: context.auth.uid,
         });
+        await (0, audit_1.logEvent)('MANUAL_FIRESTORE_EXPORT', { id: context.auth.uid, email: context.auth.token.email || '', ip: ((_b = context.rawRequest) === null || _b === void 0 ? void 0 : _b.ip) || '' }, { date, outputUriPrefix: outputBase }, 'backups/firestore-manual');
         return { success: true, outputUriPrefix: outputBase };
     }
     catch (error) {
@@ -162,6 +166,7 @@ exports.triggerManualExport = functions
             errorMessage: error.message,
             triggeredBy: context.auth.uid,
         });
+        await (0, audit_1.logEvent)('MANUAL_FIRESTORE_EXPORT_FAILED', { id: context.auth.uid, email: context.auth.token.email || '', ip: ((_c = context.rawRequest) === null || _c === void 0 ? void 0 : _c.ip) || '' }, { date, outputUriPrefix: outputBase, errorMessage: error.message }, 'backups/firestore-manual');
         throw new functions.https.HttpsError('internal', `Export failed: ${error.message}`);
     }
 });

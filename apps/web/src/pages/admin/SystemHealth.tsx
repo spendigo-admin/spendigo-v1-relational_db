@@ -16,6 +16,7 @@ const SystemHealth: React.FC = () => {
     const [isTriggering, setIsTriggering] = useState(false);
     const [scheduledEnabled, setScheduledEnabled] = useState<boolean | null>(null);
     const [isTogglingSchedule, setIsTogglingSchedule] = useState(false);
+    const [showRestoreGuide, setShowRestoreGuide] = useState(false);
 
     const fetchRealHealth = async () => {
         setIsLoadingHealth(true);
@@ -311,8 +312,120 @@ const SystemHealth: React.FC = () => {
                         </div>
                     )}
                     <div className="mt-4 flex items-center gap-1.5 text-[10px] text-[var(--text-muted)]">
-                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                        IAM required: Cloud Datastore Import Export Admin + Storage Object Creator on the firestore-backups bucket.
+                        <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        IAM required: Cloud Datastore Import Export Admin (project-level) + Storage Object Creator on the firestore-backups bucket.
+                    </div>
+
+                    {/* Backup & Restore Guide */}
+                    <div className="mt-4 border border-[var(--glass-border)] rounded-xl overflow-hidden">
+                        <button
+                            onClick={() => setShowRestoreGuide(v => !v)}
+                            className="w-full flex items-center justify-between px-4 py-3 bg-[var(--surface-1)] hover:bg-gray-50 transition-colors text-left"
+                        >
+                            <span className="flex items-center gap-2 text-xs font-bold text-[var(--text-main)]">
+                                <svg className="w-4 h-4 text-[var(--brand-primary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
+                                Backup & Restore Guide
+                            </span>
+                            <svg className={`w-4 h-4 text-[var(--text-muted)] transition-transform ${showRestoreGuide ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                        </button>
+
+                        {showRestoreGuide && (
+                            <div className="p-4 space-y-5 bg-white text-xs text-[var(--text-main)]">
+
+                                {/* What's backed up */}
+                                <div>
+                                    <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)] mb-2">What Gets Backed Up</p>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                        <div className="bg-[var(--surface-1)] rounded-lg p-3 border border-[var(--glass-border)]">
+                                            <p className="font-bold text-red-700 mb-1.5 flex items-center gap-1.5">
+                                                <span className="w-2 h-2 rounded-full bg-red-500 inline-block"></span>
+                                                Critical — Daily 02:00 UTC
+                                            </p>
+                                            <p className="text-[var(--text-muted)] leading-relaxed">orders · audit_logs · audit_logs_meta · payments · users · stores</p>
+                                            <p className="text-[10px] text-[var(--text-muted)] mt-1.5">Path: <code className="bg-gray-100 px-1 rounded">gs://…/daily/YYYY-MM-DD/critical/</code></p>
+                                        </div>
+                                        <div className="bg-[var(--surface-1)] rounded-lg p-3 border border-[var(--glass-border)]">
+                                            <p className="font-bold text-blue-700 mb-1.5 flex items-center gap-1.5">
+                                                <span className="w-2 h-2 rounded-full bg-blue-500 inline-block"></span>
+                                                High-Value — Daily 02:00 UTC
+                                            </p>
+                                            <p className="text-[var(--text-muted)] leading-relaxed">merchant_products · master_products</p>
+                                            <p className="text-[10px] text-[var(--text-muted)] mt-1.5">Path: <code className="bg-gray-100 px-1 rounded">gs://…/daily/YYYY-MM-DD/high-value/</code></p>
+                                        </div>
+                                        <div className="bg-[var(--surface-1)] rounded-lg p-3 border border-[var(--glass-border)]">
+                                            <p className="font-bold text-purple-700 mb-1.5 flex items-center gap-1.5">
+                                                <span className="w-2 h-2 rounded-full bg-purple-500 inline-block"></span>
+                                                Auth Users — Daily 03:00 UTC
+                                            </p>
+                                            <p className="text-[var(--text-muted)] leading-relaxed">All Firebase Auth accounts exported as NDJSON (uid, email, displayName, providerData, customClaims)</p>
+                                            <p className="text-[10px] text-[var(--text-muted)] mt-1.5">Path: <code className="bg-gray-100 px-1 rounded">gs://…/auth-exports/auth_users_YYYY-MM-DD.ndjson</code></p>
+                                        </div>
+                                        <div className="bg-[var(--surface-1)] rounded-lg p-3 border border-[var(--glass-border)]">
+                                            <p className="font-bold text-gray-700 mb-1.5 flex items-center gap-1.5">
+                                                <span className="w-2 h-2 rounded-full bg-gray-400 inline-block"></span>
+                                                Manual Export
+                                            </p>
+                                            <p className="text-[var(--text-muted)] leading-relaxed">Critical collections only. Always runs regardless of schedule pause state.</p>
+                                            <p className="text-[10px] text-[var(--text-muted)] mt-1.5">Path: <code className="bg-gray-100 px-1 rounded">gs://…/manual/YYYY-MM-DD-{'{'}timestamp{'}'}/critical/</code></p>
+                                        </div>
+                                    </div>
+                                    <p className="text-[10px] text-[var(--text-muted)] mt-2">Retention: 90 days. Bucket: <code className="bg-gray-100 px-1 rounded">spendigo-8540c-firestore-backups</code> (northamerica-northeast1)</p>
+                                </div>
+
+                                {/* How to restore */}
+                                <div>
+                                    <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)] mb-2">How to Restore</p>
+                                    <div className="space-y-3">
+                                        <div className="bg-gray-900 rounded-lg p-3 text-green-400 font-mono text-[11px] leading-relaxed overflow-x-auto">
+                                            <p className="text-gray-500 mb-1"># Restore all critical collections from a specific date</p>
+                                            <p>gcloud firestore import \</p>
+                                            <p className="pl-4">gs://spendigo-8540c-firestore-backups/daily/YYYY-MM-DD/critical \</p>
+                                            <p className="pl-4">--project=spendigo-8540c</p>
+                                            <p className="text-gray-500 mt-2 mb-1"># Restore a single collection (e.g. orders only)</p>
+                                            <p>gcloud firestore import \</p>
+                                            <p className="pl-4">gs://spendigo-8540c-firestore-backups/daily/YYYY-MM-DD/critical \</p>
+                                            <p className="pl-4">--collection-ids=orders \</p>
+                                            <p className="pl-4">--project=spendigo-8540c</p>
+                                        </div>
+                                        <div className="bg-[var(--surface-1)] rounded-lg p-3 border border-[var(--glass-border)]">
+                                            <p className="font-bold mb-2">Browse available backups</p>
+                                            <p className="text-[var(--text-muted)] mb-2">Open Cloud Storage in the GCP console to find the exact export path:</p>
+                                            <a
+                                                href="https://console.cloud.google.com/storage/browser/spendigo-8540c-firestore-backups"
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                className="inline-flex items-center gap-1.5 text-[var(--brand-primary)] font-bold hover:underline"
+                                            >
+                                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                                                Open Backup Bucket ↗
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Caveats */}
+                                <div>
+                                    <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)] mb-2">Important Caveats</p>
+                                    <div className="space-y-2">
+                                        {[
+                                            { icon: '⚠️', title: 'Import merges, it does not wipe', body: 'Importing writes documents by ID — existing documents are overwritten, new ones are added. To do a full wipe-and-restore, delete the affected collections first via the Firebase console or Admin SDK.' },
+                                            { icon: '🔗', title: 'Never restore audit_logs directly', body: 'audit_logs uses a SHA-256 chain. Importing old entries into the live collection breaks the chain. Restore to a shadow collection (e.g. audit_logs_restored_YYYY_MM_DD) for forensic review instead.' },
+                                            { icon: '🔑', title: 'Auth passwords cannot be restored', body: 'Firebase Auth password hashes are inaccessible via the Admin SDK. After an auth restore, users with email/password must reset their password. Google/Apple SSO reconnects automatically on next sign-in.' },
+                                            { icon: '🕐', title: 'Point-in-Time Recovery (PITR)', body: 'Firestore PITR is enabled and provides 7-day nanosecond-granularity recovery without needing a backup file. Use: gcloud firestore databases restore --source-time="YYYY-MM-DDTHH:MM:SSZ"' },
+                                        ].map(({ icon, title, body }) => (
+                                            <div key={title} className="flex gap-3 p-3 bg-[var(--surface-1)] rounded-lg border border-[var(--glass-border)]">
+                                                <span className="text-base shrink-0">{icon}</span>
+                                                <div>
+                                                    <p className="font-bold mb-0.5">{title}</p>
+                                                    <p className="text-[var(--text-muted)] leading-relaxed">{body}</p>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

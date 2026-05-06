@@ -1,5 +1,6 @@
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
+import { logEvent } from '../utils/audit';
 
 const CRITICAL_COLLECTIONS = [
     'orders',
@@ -64,6 +65,13 @@ export const scheduledFirestoreExport = functions
                 status: 'completed',
             });
 
+            await logEvent(
+                'SCHEDULED_FIRESTORE_EXPORT',
+                { id: 'system', email: 'system@spendigo.local', ip: 'system' },
+                { date, outputUriPrefix: outputBase, collections: { critical: CRITICAL_COLLECTIONS, highValue: HIGH_VALUE_COLLECTIONS } },
+                'backups/firestore-daily'
+            );
+
             functions.logger.info(`[ScheduledExport] Initiated exports to ${outputBase}`);
         } catch (error: any) {
             functions.logger.error('[ScheduledExport] Export failed:', error);
@@ -76,6 +84,12 @@ export const scheduledFirestoreExport = functions
                 status: 'failed',
                 errorMessage: error.message,
             });
+            await logEvent(
+                'SCHEDULED_FIRESTORE_EXPORT_FAILED',
+                { id: 'system', email: 'system@spendigo.local', ip: 'system' },
+                { date, outputUriPrefix: outputBase, errorMessage: error.message },
+                'backups/firestore-daily'
+            );
             throw error;
         }
         return null;
@@ -127,6 +141,13 @@ export const triggerManualExport = functions
                 triggeredBy: context.auth.uid,
             });
 
+            await logEvent(
+                'MANUAL_FIRESTORE_EXPORT',
+                { id: context.auth.uid, email: context.auth.token.email || '', ip: context.rawRequest?.ip || '' },
+                { date, outputUriPrefix: outputBase },
+                'backups/firestore-manual'
+            );
+
             return { success: true, outputUriPrefix: outputBase };
         } catch (error: any) {
             await db.collection('system_backups').add({
@@ -139,6 +160,12 @@ export const triggerManualExport = functions
                 errorMessage: error.message,
                 triggeredBy: context.auth.uid,
             });
+            await logEvent(
+                'MANUAL_FIRESTORE_EXPORT_FAILED',
+                { id: context.auth.uid, email: context.auth.token.email || '', ip: context.rawRequest?.ip || '' },
+                { date, outputUriPrefix: outputBase, errorMessage: error.message },
+                'backups/firestore-manual'
+            );
             throw new functions.https.HttpsError('internal', `Export failed: ${error.message}`);
         }
     });

@@ -37,6 +37,7 @@ exports.exportFirebaseAuth = void 0;
 const functions = __importStar(require("firebase-functions"));
 const admin = __importStar(require("firebase-admin"));
 const storage_1 = require("@google-cloud/storage");
+const audit_1 = require("../utils/audit");
 const storage = new storage_1.Storage();
 exports.exportFirebaseAuth = functions
     .runWith({ timeoutSeconds: 540, memory: '512MB' })
@@ -47,44 +48,60 @@ exports.exportFirebaseAuth = functions
     const bucketName = `${projectId}-firestore-backups`;
     const date = new Date().toISOString().slice(0, 10);
     const filename = `auth-exports/auth_users_${date}.ndjson`;
-    const users = [];
-    let pageToken;
-    do {
-        const listResult = await admin.auth().listUsers(1000, pageToken);
-        listResult.users.forEach(user => {
-            // Retain what's needed for disaster recovery; skip password hashes (inaccessible via Admin SDK)
-            users.push({
-                uid: user.uid,
-                email: user.email,
-                emailVerified: user.emailVerified,
-                displayName: user.displayName,
-                phoneNumber: user.phoneNumber,
-                photoURL: user.photoURL,
-                disabled: user.disabled,
-                providerData: user.providerData,
-                customClaims: user.customClaims,
-                metadata: {
-                    creationTime: user.metadata.creationTime,
-                    lastSignInTime: user.metadata.lastSignInTime,
-                },
+    const systemActor = { id: 'system', email: 'system@spendigo.local', ip: 'system' };
+    try {
+        const users = [];
+        let pageToken;
+        do {
+            const listResult = await admin.auth().listUsers(1000, pageToken);
+            listResult.users.forEach(user => {
+                // Retain what's needed for disaster recovery; skip password hashes (inaccessible via Admin SDK)
+                users.push({
+                    uid: user.uid,
+                    email: user.email,
+                    emailVerified: user.emailVerified,
+                    displayName: user.displayName,
+                    phoneNumber: user.phoneNumber,
+                    photoURL: user.photoURL,
+                    disabled: user.disabled,
+                    providerData: user.providerData,
+                    customClaims: user.customClaims,
+                    metadata: {
+                        creationTime: user.metadata.creationTime,
+                        lastSignInTime: user.metadata.lastSignInTime,
+                    },
+                });
             });
+            pageToken = listResult.pageToken;
+        } while (pageToken);
+        const ndjson = users.map(u => JSON.stringify(u)).join('\n');
+        const bucket = storage.bucket(bucketName);
+        await bucket.file(filename).save(ndjson, {
+            contentType: 'application/x-ndjson',
+            metadata: { userCount: String(users.length) },
         });
-        pageToken = listResult.pageToken;
-    } while (pageToken);
-    const ndjson = users.map(u => JSON.stringify(u)).join('\n');
-    const bucket = storage.bucket(bucketName);
-    await bucket.file(filename).save(ndjson, {
-        contentType: 'application/x-ndjson',
-        metadata: { userCount: String(users.length) },
-    });
-    await admin.firestore().collection('system_backups').add({
-        type: 'auth_export',
-        timestamp: admin.firestore.FieldValue.serverTimestamp(),
-        date,
-        userCount: users.length,
-        gcsPath: `gs://${bucketName}/${filename}`,
-        status: 'completed',
-    });
-    functions.logger.info(`[AuthExport] Exported ${users.length} users to gs://${bucketName}/${filename}`);
+        await admin.firestore().collection('system_backups').add({
+            type: 'auth_export',
+            timestamp: admin.firestore.FieldValue.serverTimestamp(),
+            date,
+            userCount: users.length,
+            gcsPath: `gs://${bucketName}/${filename}`,
+            status: 'completed',
+        });
+        await (0, audit_1.logEvent)('FIREBASE_AUTH_EXPORT', systemActor, { date, userCount: users.length, gcsPath: `gs://${bucketName}/${filename}` }, 'backups/firebase-auth');
+        functions.logger.info(`[AuthExport] Exported ${users.length} users to gs://${bucketName}/${filename}`);
+    }
+    catch (error) {
+        functions.logger.error('[AuthExport] Export failed:', error);
+        await admin.firestore().collection('system_backups').add({
+            type: 'auth_export',
+            timestamp: admin.firestore.FieldValue.serverTimestamp(),
+            date,
+            status: 'failed',
+            errorMessage: error.message,
+        });
+        await (0, audit_1.logEvent)('FIREBASE_AUTH_EXPORT_FAILED', systemActor, { date, errorMessage: error.message }, 'backups/firebase-auth');
+        throw error;
+    }
 });
 //# sourceMappingURL=exportFirebaseAuth.js.map
