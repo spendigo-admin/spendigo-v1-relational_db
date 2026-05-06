@@ -114,8 +114,12 @@ export const onMerchantProductPriceChange = functions.firestore
                 const addresses = userData.addresses || [];
                 const defaultAddr = addresses.find((a: any) => a.isDefault) || addresses[0];
 
-                if (defaultAddr && defaultAddr.lat && defaultAddr.lng) {
-                    const dist = calculateDistance(merchantLat, merchantLng, defaultAddr.lat, defaultAddr.lng);
+                // Prefer geocoded address coords; fall back to flat coordinates set at registration
+                const userLat: number | undefined = defaultAddr?.lat ?? userData.coordinates?.lat;
+                const userLng: number | undefined = defaultAddr?.lng ?? userData.coordinates?.lng;
+
+                if (userLat && userLng) {
+                    const dist = calculateDistance(merchantLat, merchantLng, userLat, userLng);
                     console.log(`[NotificationTrigger] User ${userId} is ${dist.toFixed(2)}km away. (Max: ${maxDist}km)`);
 
                     if (dist <= maxDist) {

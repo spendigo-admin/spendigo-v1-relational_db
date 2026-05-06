@@ -118,6 +118,7 @@ exports.onMerchantProductPriceChange = functions.firestore
             if (!usersSnap.empty)
                 lastDoc = usersSnap.docs[usersSnap.docs.length - 1];
             usersSnap.forEach(userDoc => {
+                var _a, _b, _c, _d;
                 const userData = userDoc.data();
                 const userId = userDoc.id;
                 const prefs = userData.notificationPreferences || {};
@@ -133,8 +134,11 @@ exports.onMerchantProductPriceChange = functions.firestore
                 const maxDist = prefs.maxDistance || 10;
                 const addresses = userData.addresses || [];
                 const defaultAddr = addresses.find((a) => a.isDefault) || addresses[0];
-                if (defaultAddr && defaultAddr.lat && defaultAddr.lng) {
-                    const dist = calculateDistance(merchantLat, merchantLng, defaultAddr.lat, defaultAddr.lng);
+                // Prefer geocoded address coords; fall back to flat coordinates set at registration
+                const userLat = (_a = defaultAddr === null || defaultAddr === void 0 ? void 0 : defaultAddr.lat) !== null && _a !== void 0 ? _a : (_b = userData.coordinates) === null || _b === void 0 ? void 0 : _b.lat;
+                const userLng = (_c = defaultAddr === null || defaultAddr === void 0 ? void 0 : defaultAddr.lng) !== null && _c !== void 0 ? _c : (_d = userData.coordinates) === null || _d === void 0 ? void 0 : _d.lng;
+                if (userLat && userLng) {
+                    const dist = calculateDistance(merchantLat, merchantLng, userLat, userLng);
                     console.log(`[NotificationTrigger] User ${userId} is ${dist.toFixed(2)}km away. (Max: ${maxDist}km)`);
                     if (dist <= maxDist) {
                         const tokenList = userData.fcmTokens || [];

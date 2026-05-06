@@ -103,7 +103,7 @@ exports.sendCampaign = functions.https.onCall(async (data, context) => {
             if (!snap.empty)
                 lastDoc = snap.docs[snap.docs.length - 1];
             snap.forEach(doc => {
-                var _a;
+                var _a, _b, _c, _d, _e;
                 const u = doc.data();
                 if (!((_a = u.fcmTokens) === null || _a === void 0 ? void 0 : _a.length))
                     return;
@@ -113,9 +113,12 @@ exports.sendCampaign = functions.https.onCall(async (data, context) => {
                 const maxDist = prefs.maxDistance || 10;
                 const addresses = u.addresses || [];
                 const defaultAddr = addresses.find((a) => a.isDefault) || addresses[0];
-                if (!(defaultAddr === null || defaultAddr === void 0 ? void 0 : defaultAddr.lat) || !(defaultAddr === null || defaultAddr === void 0 ? void 0 : defaultAddr.lng))
+                // Prefer geocoded address coords; fall back to flat coordinates set at registration
+                const userLat = (_b = defaultAddr === null || defaultAddr === void 0 ? void 0 : defaultAddr.lat) !== null && _b !== void 0 ? _b : (_c = u.coordinates) === null || _c === void 0 ? void 0 : _c.lat;
+                const userLng = (_d = defaultAddr === null || defaultAddr === void 0 ? void 0 : defaultAddr.lng) !== null && _d !== void 0 ? _d : (_e = u.coordinates) === null || _e === void 0 ? void 0 : _e.lng;
+                if (!userLat || !userLng)
                     return;
-                const dist = calculateDistance(storeLat, storeLng, defaultAddr.lat, defaultAddr.lng);
+                const dist = calculateDistance(storeLat, storeLng, userLat, userLng);
                 if (dist <= maxDist) {
                     qualifiedUsers.push({ uid: doc.id, fcmTokens: u.fcmTokens });
                 }

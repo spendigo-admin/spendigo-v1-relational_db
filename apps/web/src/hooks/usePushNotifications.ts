@@ -123,10 +123,12 @@ export function usePushNotifications(userId?: string) {
                     const registration = await registerServiceWorker();
                     if (!registration) return false;
 
-                    const currentToken = await getToken(messaging, { 
-                        vapidKey,
-                        serviceWorkerRegistration: registration 
-                    });
+                    const currentToken = await Promise.race([
+                        getToken(messaging, { vapidKey, serviceWorkerRegistration: registration }),
+                        new Promise<never>((_, reject) =>
+                            setTimeout(() => reject(new Error('FCM token request timed out')), 15000)
+                        )
+                    ]);
 
                     if (currentToken) {
                         setToken(currentToken);

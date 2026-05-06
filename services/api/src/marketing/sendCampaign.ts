@@ -95,9 +95,13 @@ export const sendCampaign = functions.https.onCall(async (data, context) => {
                 const maxDist = prefs.maxDistance || 10;
                 const addresses = u.addresses || [];
                 const defaultAddr = addresses.find((a: any) => a.isDefault) || addresses[0];
-                if (!defaultAddr?.lat || !defaultAddr?.lng) return;
 
-                const dist = calculateDistance(storeLat, storeLng, defaultAddr.lat, defaultAddr.lng);
+                // Prefer geocoded address coords; fall back to flat coordinates set at registration
+                const userLat: number | undefined = defaultAddr?.lat ?? u.coordinates?.lat;
+                const userLng: number | undefined = defaultAddr?.lng ?? u.coordinates?.lng;
+                if (!userLat || !userLng) return;
+
+                const dist = calculateDistance(storeLat, storeLng, userLat, userLng);
                 if (dist <= maxDist) {
                     qualifiedUsers.push({ uid: doc.id, fcmTokens: u.fcmTokens });
                 }

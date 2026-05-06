@@ -55,8 +55,13 @@ const Profile: React.FC = () => {
     
     const handleRequestNotifications = async () => {
         setIsRequestingNotifications(true);
-        await requestPermission();
-        setIsRequestingNotifications(false);
+        try {
+            await requestPermission();
+        } catch {
+            // errors are logged inside requestPermission
+        } finally {
+            setIsRequestingNotifications(false);
+        }
     };
 
     // Reorder Handlers
@@ -372,8 +377,13 @@ const Profile: React.FC = () => {
                                         <button
                                             onClick={async () => {
                                                 setIsRequestingNotifications(true);
-                                                await disableNotifications();
-                                                setIsRequestingNotifications(false);
+                                                try {
+                                                    await disableNotifications();
+                                                } catch {
+                                                    // errors are logged inside disableNotifications
+                                                } finally {
+                                                    setIsRequestingNotifications(false);
+                                                }
                                             }}
                                             disabled={isRequestingNotifications}
                                             className="px-6 py-2.5 bg-[var(--surface-1)] text-red-600 font-bold text-sm rounded-xl border border-red-500/20 hover:bg-red-500/10 hover:border-red-500/30 transition-all disabled:opacity-50"
