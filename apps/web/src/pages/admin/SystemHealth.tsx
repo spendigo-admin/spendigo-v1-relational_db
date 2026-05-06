@@ -191,65 +191,129 @@ const SystemHealth: React.FC = () => {
 
                 {/* Backup Status */}
                 <div className="bg-white rounded-xl border border-[var(--glass-border)] p-6 shadow-sm mt-6">
-                    <div className="flex items-center justify-between mb-6">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
                         <div>
                             <h2 className="text-xl font-bold text-[var(--text-main)]">Backup Status</h2>
                             <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-widest font-bold">Scheduled & Manual Exports</p>
                         </div>
-                        <div className="flex items-center gap-2 flex-wrap justify-end">
+                        <div className="flex items-center gap-2 flex-wrap md:justify-end">
                             {scheduledEnabled !== null && (
                                 <>
-                                    <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full border ${scheduledEnabled ? 'bg-green-50 text-green-700 border-green-200' : 'bg-yellow-50 text-yellow-700 border-yellow-200'}`}>
-                                        {scheduledEnabled ? '● Daily Active' : '⏸ Paused'}
+                                    <span className={`flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1 rounded-full border ${scheduledEnabled ? 'bg-green-50 text-green-700 border-green-200' : 'bg-yellow-50 text-yellow-700 border-yellow-200'}`}>
+                                        {scheduledEnabled ? (
+                                            <><span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span> Daily Active</>
+                                        ) : (
+                                            <><svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M10 9v6m4-6v6" /></svg> Paused</>
+                                        )}
                                     </span>
                                     <button
                                         onClick={handleToggleSchedule}
                                         disabled={isTogglingSchedule}
-                                        className={`text-xs px-3 py-1.5 rounded-lg font-bold transition-all disabled:opacity-50 border ${scheduledEnabled ? 'bg-yellow-50 text-yellow-700 border-yellow-200 hover:bg-yellow-100' : 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100'}`}
+                                        className={`text-xs flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold transition-all disabled:opacity-50 border ${scheduledEnabled ? 'bg-yellow-50 text-yellow-700 border-yellow-200 hover:bg-yellow-100' : 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100'}`}
                                     >
-                                        {isTogglingSchedule ? '...' : scheduledEnabled ? 'Pause Schedule' : 'Resume Schedule'}
+                                        {isTogglingSchedule ? (
+                                            <svg className="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24">
+                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle>
+                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                            </svg>
+                                        ) : scheduledEnabled ? (
+                                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                        ) : (
+                                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                        )}
+                                        {isTogglingSchedule ? 'Processing...' : scheduledEnabled ? 'Pause Schedule' : 'Resume Schedule'}
                                     </button>
                                 </>
                             )}
                             <button
                                 onClick={handleManualExport}
                                 disabled={isTriggering}
-                                className="text-xs bg-[var(--brand-primary)] text-white px-4 py-2 rounded-lg font-bold hover:opacity-90 disabled:opacity-50 transition-all"
+                                className="text-xs flex items-center gap-1.5 bg-[var(--brand-primary)] text-white px-4 py-2 rounded-lg font-bold hover:opacity-90 disabled:opacity-50 transition-all shadow-sm"
                             >
-                                {isTriggering ? 'Triggering...' : 'Trigger Manual Export'}
+                                {isTriggering ? (
+                                    <>
+                                        <svg className="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle>
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                        Triggering...
+                                    </>
+                                ) : (
+                                    <>
+                                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" /></svg>
+                                        Trigger Manual Export
+                                    </>
+                                )}
                             </button>
                         </div>
                     </div>
                     {recentBackups.length === 0 ? (
-                        <p className="text-sm text-[var(--text-muted)] text-center py-6">No backup records yet. Daily exports run at 02:00 UTC.</p>
+                        <div className="flex flex-col items-center justify-center py-10 bg-[var(--surface-1)] rounded-xl border border-dashed border-[var(--glass-border)]">
+                            <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm mb-3">
+                                <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" /></svg>
+                            </div>
+                            <p className="text-sm font-medium text-[var(--text-main)]">No backup records found</p>
+                            <p className="text-xs text-[var(--text-muted)] mt-1">Daily scheduled exports run automatically at 02:00 UTC.</p>
+                        </div>
                     ) : (
-                        <div className="space-y-2">
-                            {recentBackups.map((backup) => {
-                                const statusColor = backup.status === 'completed' ? 'bg-green-100 text-green-700' :
-                                    backup.status === 'failed' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700';
-                                return (
-                                    <div key={backup.id} className="flex items-center justify-between p-3 bg-[var(--surface-1)] rounded-lg border border-[var(--glass-border)]">
-                                        <div className="flex items-center gap-3 min-w-0">
-                                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${statusColor}`}>
-                                                {backup.status?.toUpperCase()}
-                                            </span>
-                                            <span className="text-xs font-medium text-[var(--text-main)] shrink-0">{backup.type?.replace(/_/g, ' ')}</span>
-                                            {backup.userCount && (
-                                                <span className="text-[10px] text-[var(--text-muted)] shrink-0">{backup.userCount} users</span>
-                                            )}
-                                            {backup.errorMessage && (
-                                                <span className="text-[10px] text-red-500 truncate">{backup.errorMessage}</span>
-                                            )}
+                        <div className="bg-white rounded-xl border border-[var(--glass-border)] overflow-hidden">
+                            <div className="hidden md:grid grid-cols-12 gap-4 p-3 bg-gray-50 border-b border-[var(--glass-border)] text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">
+                                <div className="col-span-3">Status</div>
+                                <div className="col-span-4">Type</div>
+                                <div className="col-span-2">Items</div>
+                                <div className="col-span-3 text-right">Date & Time</div>
+                            </div>
+                            <div className="divide-y divide-[var(--glass-border)]">
+                                {recentBackups.map((backup) => {
+                                    const isCompleted = backup.status === 'completed';
+                                    const isFailed = backup.status === 'failed';
+                                    const statusColor = isCompleted ? 'bg-green-100 text-green-700' :
+                                        isFailed ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700';
+                                    
+                                    return (
+                                        <div key={backup.id} className="p-3 hover:bg-[var(--surface-1)] transition-colors flex flex-col md:grid md:grid-cols-12 md:items-center gap-2 md:gap-4">
+                                            <div className="col-span-3 flex items-center">
+                                                <span className={`flex items-center gap-1.5 text-[10px] font-bold px-2 py-0.5 rounded-full ${statusColor}`}>
+                                                    {isCompleted && <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>}
+                                                    {isFailed && <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>}
+                                                    {!isCompleted && !isFailed && <svg className="w-3 h-3 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>}
+                                                    {backup.status?.toUpperCase()}
+                                                </span>
+                                            </div>
+                                            <div className="col-span-4 flex flex-col justify-center min-w-0">
+                                                <div className="flex items-center min-w-0">
+                                                    <span className="text-xs font-semibold text-[var(--text-main)] capitalize truncate">{backup.type?.replace(/_/g, ' ')}</span>
+                                                    {backup.errorMessage && (
+                                                        <span className="ml-2 text-[10px] text-red-500 truncate" title={backup.errorMessage}>({backup.errorMessage})</span>
+                                                    )}
+                                                </div>
+                                                {backup.collections && (
+                                                    <div className="flex flex-wrap gap-1 mt-1">
+                                                        {(backup.collections.critical || []).map((col: string) => (
+                                                            <span key={`crit-${col}`} className="text-[8px] bg-red-50 text-red-600 px-1.5 py-0.5 rounded border border-red-100 uppercase tracking-wider">{col}</span>
+                                                        ))}
+                                                        {(backup.collections.highValue || []).map((col: string) => (
+                                                            <span key={`high-${col}`} className="text-[8px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded border border-blue-100 uppercase tracking-wider">{col}</span>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div className="col-span-2 text-[10px] text-[var(--text-muted)] font-medium">
+                                                {backup.userCount ? `${backup.userCount.toLocaleString()} items` : '-'}
+                                            </div>
+                                            <div className="col-span-3 md:text-right text-[10px] text-[var(--text-muted)]">
+                                                {backup.date}
+                                            </div>
                                         </div>
-                                        <span className="text-[10px] text-[var(--text-muted)] shrink-0 ml-2">{backup.date}</span>
-                                    </div>
-                                );
-                            })}
+                                    );
+                                })}
+                            </div>
                         </div>
                     )}
-                    <p className="text-[10px] text-[var(--text-muted)] mt-4">
+                    <div className="mt-4 flex items-center gap-1.5 text-[10px] text-[var(--text-muted)]">
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                         IAM required: Cloud Datastore Import Export Admin + Storage Object Creator on the firestore-backups bucket.
-                    </p>
+                    </div>
                 </div>
             </div>
         </div>
