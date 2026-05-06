@@ -115,12 +115,17 @@ interface NotificationContextType {
 import { doc, onSnapshot, setDoc, getDoc, collection, query, orderBy, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db, messaging } from '../lib/firebase';
 import { onMessage } from 'firebase/messaging';
+import { usePushNotifications } from '../hooks/usePushNotifications';
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
 
 export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const { user } = useAuth();
     const { stores } = useMarketplace();
+
+    // Ensure FCM tokens are registered/refreshed for every logged-in user on app load,
+    // not just when they visit the /notifications page.
+    usePushNotifications(user?.id);
 
     // Determine context ID: Store > User > Guest
     // If user is logged in, we use their UID. If guest, we use LocalStorage.

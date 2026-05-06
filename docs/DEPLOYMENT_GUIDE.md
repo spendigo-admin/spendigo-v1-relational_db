@@ -78,4 +78,4 @@ Ensure the **Stripe Webhook Secret** (`whsec_...`) in the Stripe Dashboard match
 If a production issue is detected:
 1. **Hosting**: Use the Firebase Console to "Rollback" to a previous version (instant).
 2. **Backend**: Revert the `main` branch in Git and allow the CI/CD pipeline to re-deploy.
-3. **Database**: Point-in-time recovery is available via Firestore scheduled backups (Growth/Premium plans only).
+3. **Database**: Point-in-time recovery (PITR) and scheduled backups are active. See [BACKUP_AND_RESTORE.md](./BACKUP_AND_RESTORE.md) for recovery steps.

@@ -36,6 +36,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.onMerchantProductPriceChange = void 0;
 const functions = __importStar(require("firebase-functions"));
 const admin = __importStar(require("firebase-admin"));
+const fcm_1 = require("../utils/fcm");
 const db = admin.firestore();
 /**
  * Captures price changes on merchant_products updates into a price_history subcollection.
@@ -102,60 +103,74 @@ exports.onMerchantProductPriceChange = functions.firestore
         console.log(`[NotificationTrigger] Merchant Location: ${merchantLat}, ${merchantLng}`);
         // Query all users — filtering by fcmTokens array inequality is unreliable in Firestore.
         // Users without tokens are cheaply skipped below.
-        const usersSnap = await db.collection('users')
-            .limit(500)
-            .get();
-        console.log(`[NotificationTrigger] Found ${usersSnap.size} users with FCM tokens to check.`);
         const notifications = [];
-        usersSnap.forEach(userDoc => {
-            const userData = userDoc.data();
-            const userId = userDoc.id;
-            const prefs = userData.notificationPreferences || {};
-            // Skip users who haven't opted in for this specific event type.
-            // isPriceDrop events require priceDrop preference; sale/promo events require promotions.
-            const wantsPriceDrop = prefs.priceDrop !== false;
-            const wantsPromotions = prefs.promotions !== false;
-            const isRelevant = isPriceDrop ? wantsPriceDrop : wantsPromotions;
-            if (!isRelevant) {
-                console.log(`[NotificationTrigger] User ${userId} has this alert type disabled.`);
-                return;
-            }
-            const maxDist = prefs.maxDistance || 10;
-            const addresses = userData.addresses || [];
-            const defaultAddr = addresses.find((a) => a.isDefault) || addresses[0];
-            if (defaultAddr && defaultAddr.lat && defaultAddr.lng) {
-                const dist = calculateDistance(merchantLat, merchantLng, defaultAddr.lat, defaultAddr.lng);
-                console.log(`[NotificationTrigger] User ${userId} is ${dist.toFixed(2)}km away. (Max: ${maxDist}km)`);
-                if (dist <= maxDist) {
-                    const tokenList = userData.fcmTokens || [];
-                    if (tokenList.length === 0)
-                        return;
-                    console.log(`[NotificationTrigger] User ${userId} MATCHED! Sending to ${tokenList.length} tokens.`);
-                    const message = {
-                        notification: {
-                            title: isPriceDrop ? 'Price Drop! 📉' : 'New Deal Alert! ✨',
-                            body: `${after.name} is now $${newPrice} at ${merchant.name} (${dist.toFixed(1)}km away).`
-                        },
-                        data: {
-                            type: 'price_drop',
-                            productId: productId,
-                            merchantId: after.merchant_id,
-                            link: `/store/${after.merchant_id}`
-                        },
-                        tokens: tokenList
-                    };
-                    notifications.push(admin.messaging().sendEachForMulticast(message).then(res => {
-                        console.log(`[NotificationTrigger] FCM Result for ${userId}: SUCCESS: ${res.successCount}, FAIL: ${res.failureCount}`);
-                        return res;
-                    }).catch(err => {
-                        console.error(`[NotificationTrigger] FCM Error for ${userId}:`, err);
-                    }));
+        let lastDoc;
+        let hasMore = true;
+        let totalChecked = 0;
+        while (hasMore) {
+            let usersQuery = db.collection('users').limit(500);
+            if (lastDoc)
+                usersQuery = usersQuery.startAfter(lastDoc);
+            const usersSnap = await usersQuery.get();
+            totalChecked += usersSnap.size;
+            if (usersSnap.empty || usersSnap.size < 500)
+                hasMore = false;
+            if (!usersSnap.empty)
+                lastDoc = usersSnap.docs[usersSnap.docs.length - 1];
+            usersSnap.forEach(userDoc => {
+                const userData = userDoc.data();
+                const userId = userDoc.id;
+                const prefs = userData.notificationPreferences || {};
+                // Skip users who haven't opted in for this specific event type.
+                // isPriceDrop events require priceDrop preference; sale/promo events require promotions.
+                const wantsPriceDrop = prefs.priceDrop !== false;
+                const wantsPromotions = prefs.promotions !== false;
+                const isRelevant = isPriceDrop ? wantsPriceDrop : wantsPromotions;
+                if (!isRelevant) {
+                    console.log(`[NotificationTrigger] User ${userId} has this alert type disabled.`);
+                    return;
                 }
-            }
-            else {
-                console.log(`[NotificationTrigger] User ${userId} missing coordinates in default address.`);
-            }
-        });
+                const maxDist = prefs.maxDistance || 10;
+                const addresses = userData.addresses || [];
+                const defaultAddr = addresses.find((a) => a.isDefault) || addresses[0];
+                if (defaultAddr && defaultAddr.lat && defaultAddr.lng) {
+                    const dist = calculateDistance(merchantLat, merchantLng, defaultAddr.lat, defaultAddr.lng);
+                    console.log(`[NotificationTrigger] User ${userId} is ${dist.toFixed(2)}km away. (Max: ${maxDist}km)`);
+                    if (dist <= maxDist) {
+                        const tokenList = userData.fcmTokens || [];
+                        if (tokenList.length === 0)
+                            return;
+                        console.log(`[NotificationTrigger] User ${userId} MATCHED! Sending to ${tokenList.length} tokens.`);
+                        const message = {
+                            notification: {
+                                title: isPriceDrop ? 'Price Drop! 📉' : 'New Deal Alert! ✨',
+                                body: `${after.name} is now $${newPrice} at ${merchant.name} (${dist.toFixed(1)}km away).`
+                            },
+                            data: {
+                                type: 'price_drop',
+                                productId: productId,
+                                merchantId: after.merchant_id,
+                                link: `/store/${after.merchant_id}`
+                            },
+                            tokens: tokenList
+                        };
+                        notifications.push(admin.messaging().sendEachForMulticast(message).then(async (res) => {
+                            console.log(`[NotificationTrigger] FCM Result for ${userId}: SUCCESS: ${res.successCount}, FAIL: ${res.failureCount}`);
+                            if (res.failureCount > 0) {
+                                await (0, fcm_1.removeStaleTokens)(userId, tokenList, res.responses);
+                            }
+                            return res;
+                        }).catch(err => {
+                            console.error(`[NotificationTrigger] FCM Error for ${userId}:`, err);
+                        }));
+                    }
+                }
+                else {
+                    console.log(`[NotificationTrigger] User ${userId} missing coordinates in default address.`);
+                }
+            });
+        }
+        console.log(`[NotificationTrigger] Checked ${totalChecked} users for proximity.`);
         if (notifications.length > 0) {
             await Promise.all(notifications);
             console.log(`[NotificationTrigger] Finished processing proximity alerts.`);

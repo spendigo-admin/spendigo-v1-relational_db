@@ -1,5 +1,6 @@
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
+import { removeStaleTokens } from '../utils/fcm';
 
 const db = admin.firestore();
 
@@ -79,19 +80,26 @@ export const onMerchantProductPriceChange = functions.firestore
 
             // Query all users — filtering by fcmTokens array inequality is unreliable in Firestore.
             // Users without tokens are cheaply skipped below.
-            const usersSnap = await db.collection('users')
-                .limit(500)
-                .get();
-
-            console.log(`[NotificationTrigger] Found ${usersSnap.size} users with FCM tokens to check.`);
-
             const notifications: Promise<any>[] = [];
+            let lastDoc: admin.firestore.QueryDocumentSnapshot | undefined;
+            let hasMore = true;
+            let totalChecked = 0;
+
+            while (hasMore) {
+                let usersQuery: admin.firestore.Query = db.collection('users').limit(500);
+                if (lastDoc) usersQuery = usersQuery.startAfter(lastDoc);
+
+                const usersSnap = await usersQuery.get();
+                totalChecked += usersSnap.size;
+
+                if (usersSnap.empty || usersSnap.size < 500) hasMore = false;
+                if (!usersSnap.empty) lastDoc = usersSnap.docs[usersSnap.docs.length - 1];
 
             usersSnap.forEach(userDoc => {
                 const userData = userDoc.data();
                 const userId = userDoc.id;
                 const prefs = userData.notificationPreferences || {};
-                
+
                 // Skip users who haven't opted in for this specific event type.
                 // isPriceDrop events require priceDrop preference; sale/promo events require promotions.
                 const wantsPriceDrop = prefs.priceDrop !== false;
@@ -109,7 +117,7 @@ export const onMerchantProductPriceChange = functions.firestore
                 if (defaultAddr && defaultAddr.lat && defaultAddr.lng) {
                     const dist = calculateDistance(merchantLat, merchantLng, defaultAddr.lat, defaultAddr.lng);
                     console.log(`[NotificationTrigger] User ${userId} is ${dist.toFixed(2)}km away. (Max: ${maxDist}km)`);
-                    
+
                     if (dist <= maxDist) {
                         const tokenList = userData.fcmTokens || [];
                         if (tokenList.length === 0) return;
@@ -130,8 +138,11 @@ export const onMerchantProductPriceChange = functions.firestore
                             tokens: tokenList
                         };
 
-                        notifications.push(admin.messaging().sendEachForMulticast(message).then(res => {
+                        notifications.push(admin.messaging().sendEachForMulticast(message).then(async res => {
                             console.log(`[NotificationTrigger] FCM Result for ${userId}: SUCCESS: ${res.successCount}, FAIL: ${res.failureCount}`);
+                            if (res.failureCount > 0) {
+                                await removeStaleTokens(userId, tokenList, res.responses);
+                            }
                             return res;
                         }).catch(err => {
                             console.error(`[NotificationTrigger] FCM Error for ${userId}:`, err);
@@ -141,6 +152,9 @@ export const onMerchantProductPriceChange = functions.firestore
                     console.log(`[NotificationTrigger] User ${userId} missing coordinates in default address.`);
                 }
             });
+            }
+
+            console.log(`[NotificationTrigger] Checked ${totalChecked} users for proximity.`);
 
             if (notifications.length > 0) {
                 await Promise.all(notifications);

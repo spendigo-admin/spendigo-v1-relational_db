@@ -1,6 +1,6 @@
 # Spendigo Site Map
 
-**Last Updated**: 2026-05-01
+**Last Updated**: 2026-05-06
 **Status**: Production-Ready (v1.0)
 **Base URL**: `https://spendigo.ca`
 

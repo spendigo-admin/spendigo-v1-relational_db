@@ -225,6 +225,7 @@ npx cap open android
 | [DEMO_CREDENTIALS.md](./docs/DEMO_CREDENTIALS.md) | QA accounts and role-based test workflows |
 | [SITEMAP.md](./docs/SITEMAP.md) | Full route map and orphan page identification |
 | [MOBILE_DEPLOYMENT.md](./docs/MOBILE_DEPLOYMENT.md) | iOS/Android native build guide (Capacitor 7) |
+| [BACKUP_AND_RESTORE.md](./docs/BACKUP_AND_RESTORE.md) | Data protection strategy, schedules, and recovery protocols |
 
 ---
 
