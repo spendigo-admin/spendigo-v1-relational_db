@@ -2,6 +2,8 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { useAuth } from './AuthContext';
 import { useOrders } from './OrderContext';
 import { useNotifications } from './NotificationContext';
+import { Capacitor } from '@capacitor/core';
+import { Geolocation } from '@capacitor/geolocation';
 
 interface LocationContextType {
     userCoords: { lat: number, lng: number } | null;
@@ -150,8 +152,38 @@ export const LocationProvider: React.FC<{ children: ReactNode }> = ({ children }
         }
     }, [user, profile, userCoords, address, authLoading]);
 
-    const handleLocateMe = () => {
+    const handleLocateMe = async () => {
         setIsLocating(true);
+        
+        if (Capacitor.isNativePlatform()) {
+            try {
+                // Request permissions first
+                const permissions = await Geolocation.requestPermissions();
+                if (permissions.location !== 'granted') {
+                    addNotification({ type: 'alert', title: 'Permission Denied', message: 'Location permission is required to use this feature.' });
+                    setIsLocating(false);
+                    return;
+                }
+
+                const position = await Geolocation.getCurrentPosition({
+                    enableHighAccuracy: true,
+                    timeout: 10000
+                });
+                sessionStorage.setItem('spendigo_location_manual', 'true');
+                setUserCoords({
+                    lat: position.coords.latitude,
+                    lng: position.coords.longitude
+                });
+                setAddress("Current Location");
+            } catch (error) {
+                console.error('Native location error:', error);
+                addNotification({ type: 'alert', title: 'Location Error', message: 'Unable to retrieve your location on this device.' });
+            } finally {
+                setIsLocating(false);
+            }
+            return;
+        }
+
         if (!navigator.geolocation) {
             addNotification({ type: 'alert', title: 'Geolocation Not Supported', message: 'Your browser does not support Geolocation.' });
             setIsLocating(false);

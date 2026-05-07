@@ -170,7 +170,15 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
                 unsubscribe = onSnapshot(q, (snapshot) => {
                     const loaded: AppNotification[] = [];
                     snapshot.forEach(doc => {
-                        loaded.push({ id: doc.id, ...doc.data() } as AppNotification);
+                        const data = doc.data();
+                        // Firestore serverTimestamp() returns a Timestamp object, not a string.
+                        // Convert to ISO string so the rest of the app always sees strings.
+                        if (data.timestamp && typeof data.timestamp !== 'string') {
+                            data.timestamp = data.timestamp.toDate
+                                ? data.timestamp.toDate().toISOString()
+                                : new Date(data.timestamp.seconds * 1000).toISOString();
+                        }
+                        loaded.push({ id: doc.id, ...data } as AppNotification);
                     });
 
                     // Explicitly sort by timestamp descending to ensure newest are first

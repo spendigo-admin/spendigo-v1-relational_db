@@ -38,6 +38,13 @@ const functions = __importStar(require("firebase-functions"));
 const admin = __importStar(require("firebase-admin"));
 const rateLimiter_1 = require("../utils/rateLimiter");
 const fcm_1 = require("../utils/fcm");
+const ALLOWED_MESSAGES = [
+    "Our latest flyer is live! Check out this week's deals.",
+    "New weekly deals just dropped. View our flyer and save big!",
+    "Don't miss this week's specials — see our latest flyer now!",
+    "Fresh savings in our new flyer. Limited time only!",
+    "Your favourite store has new deals. Check our flyer today!",
+];
 function calculateDistance(lat1, lon1, lat2, lon2) {
     const R = 6371;
     const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -65,6 +72,9 @@ exports.sendCampaign = functions.https.onCall(async (data, context) => {
     if (message.length > 160) {
         throw new functions.https.HttpsError('invalid-argument', 'Message must be 160 characters or fewer.');
     }
+    if (!ALLOWED_MESSAGES.includes(message)) {
+        throw new functions.https.HttpsError('invalid-argument', 'Message must be selected from the approved list.');
+    }
     if (!['nearby', 'inactive', 'active', 'high_value'].includes(segment)) {
         throw new functions.https.HttpsError('invalid-argument', 'Invalid segment type.');
     }
@@ -76,7 +86,7 @@ exports.sendCampaign = functions.https.onCall(async (data, context) => {
         throw new functions.https.HttpsError('permission-denied', 'You do not own this store.');
     }
     // Rate limit: 10 campaigns per 24h per merchant
-    await (0, rateLimiter_1.checkRateLimit)(uid, 'sendCampaign', 10, 24 * 60 * 60 * 1000);
+    await (0, rateLimiter_1.checkRateLimit)(uid, 'sendCampaign', 50, 24 * 60 * 60 * 1000);
     const storeDoc = await db.collection('stores').doc(storeId).get();
     if (!storeDoc.exists) {
         throw new functions.https.HttpsError('not-found', 'Store not found.');
@@ -231,6 +241,26 @@ exports.sendCampaign = functions.https.onCall(async (data, context) => {
         timestamp: admin.firestore.FieldValue.serverTimestamp(),
         triggeredBy: 'merchant',
     });
+    // Write in-app notification to each qualified user's inbox (batched, 500 per Firestore batch)
+    const FIRESTORE_BATCH = 500;
+    for (let i = 0; i < qualifiedUsers.length; i += FIRESTORE_BATCH) {
+        const batch = db.batch();
+        qualifiedUsers.slice(i, i + FIRESTORE_BATCH).forEach(({ uid: userId }) => {
+            const ref = db.collection('users').doc(userId).collection('notifications').doc();
+            batch.set(ref, {
+                id: ref.id,
+                type: 'promo',
+                title: campaignTitle,
+                message,
+                storeId,
+                dealId: dealId || null,
+                link: `/store/${storeId}`,
+                timestamp: new Date().toISOString(),
+                read: false,
+            });
+        });
+        await batch.commit();
+    }
     functions.logger.info(`[sendCampaign] store=${storeId} segment=${segment} sent=${totalSent} failed=${totalFailed}`);
     return { sentCount: totalSent, failedCount: totalFailed };
 });

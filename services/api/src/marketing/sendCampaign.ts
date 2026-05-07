@@ -5,6 +5,14 @@ import { removeStaleTokens } from '../utils/fcm';
 
 type Segment = 'nearby' | 'inactive' | 'active' | 'high_value';
 
+const ALLOWED_MESSAGES = [
+    "Our latest flyer is live! Check out this week's deals.",
+    "New weekly deals just dropped. View our flyer and save big!",
+    "Don't miss this week's specials — see our latest flyer now!",
+    "Fresh savings in our new flyer. Limited time only!",
+    "Your favourite store has new deals. Check our flyer today!",
+];
+
 function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
     const R = 6371;
     const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -41,6 +49,9 @@ export const sendCampaign = functions.https.onCall(async (data, context) => {
     if (message.length > 160) {
         throw new functions.https.HttpsError('invalid-argument', 'Message must be 160 characters or fewer.');
     }
+    if (!ALLOWED_MESSAGES.includes(message)) {
+        throw new functions.https.HttpsError('invalid-argument', 'Message must be selected from the approved list.');
+    }
     if (!['nearby', 'inactive', 'active', 'high_value'].includes(segment)) {
         throw new functions.https.HttpsError('invalid-argument', 'Invalid segment type.');
     }
@@ -55,7 +66,7 @@ export const sendCampaign = functions.https.onCall(async (data, context) => {
     }
 
     // Rate limit: 10 campaigns per 24h per merchant
-    await checkRateLimit(uid, 'sendCampaign', 10, 24 * 60 * 60 * 1000);
+    await checkRateLimit(uid, 'sendCampaign', 50, 24 * 60 * 60 * 1000);
 
     const storeDoc = await db.collection('stores').doc(storeId).get();
     if (!storeDoc.exists) {
@@ -223,6 +234,27 @@ export const sendCampaign = functions.https.onCall(async (data, context) => {
         timestamp: admin.firestore.FieldValue.serverTimestamp(),
         triggeredBy: 'merchant',
     });
+
+    // Write in-app notification to each qualified user's inbox (batched, 500 per Firestore batch)
+    const FIRESTORE_BATCH = 500;
+    for (let i = 0; i < qualifiedUsers.length; i += FIRESTORE_BATCH) {
+        const batch = db.batch();
+        qualifiedUsers.slice(i, i + FIRESTORE_BATCH).forEach(({ uid: userId }) => {
+            const ref = db.collection('users').doc(userId).collection('notifications').doc();
+            batch.set(ref, {
+                id: ref.id,
+                type: 'promo',
+                title: campaignTitle,
+                message,
+                storeId,
+                dealId: dealId || null,
+                link: `/store/${storeId}`,
+                timestamp: new Date().toISOString(),
+                read: false,
+            });
+        });
+        await batch.commit();
+    }
 
     functions.logger.info(`[sendCampaign] store=${storeId} segment=${segment} sent=${totalSent} failed=${totalFailed}`);
     return { sentCount: totalSent, failedCount: totalFailed };

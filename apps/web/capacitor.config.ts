@@ -25,6 +25,11 @@ const config: CapacitorConfig = {
             resize: 'body',
             style: 'DARK',
             scrollToInput: true
+        },
+        GoogleAuth: {
+            scopes: ['profile', 'email'],
+            serverClientId: '1012948918368-m29pbhj6nqvdpeda77vd19t6et3thn2u.apps.googleusercontent.com',
+            forceCodeForRefreshToken: true
         }
     }
 };

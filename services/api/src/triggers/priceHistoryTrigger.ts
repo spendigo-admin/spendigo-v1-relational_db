@@ -81,6 +81,7 @@ export const onMerchantProductPriceChange = functions.firestore
             // Query all users — filtering by fcmTokens array inequality is unreliable in Firestore.
             // Users without tokens are cheaply skipped below.
             const notifications: Promise<any>[] = [];
+            const matchedUsers: { uid: string; title: string; body: string }[] = [];
             let lastDoc: admin.firestore.QueryDocumentSnapshot | undefined;
             let hasMore = true;
             let totalChecked = 0;
@@ -123,6 +124,10 @@ export const onMerchantProductPriceChange = functions.firestore
                     console.log(`[NotificationTrigger] User ${userId} is ${dist.toFixed(2)}km away. (Max: ${maxDist}km)`);
 
                     if (dist <= maxDist) {
+                        const notifTitle = isPriceDrop ? 'Price Drop! 📉' : 'New Deal Alert! ✨';
+                        const notifBody = `${after.name} is now $${newPrice} at ${merchant.name} (${dist.toFixed(1)}km away).`;
+                        matchedUsers.push({ uid: userId, title: notifTitle, body: notifBody });
+
                         const tokenList = userData.fcmTokens || [];
                         if (tokenList.length === 0) return;
 
@@ -165,6 +170,31 @@ export const onMerchantProductPriceChange = functions.firestore
                 console.log(`[NotificationTrigger] Finished processing proximity alerts.`);
             } else {
                 console.log('[NotificationTrigger] No matching users found in proximity.');
+            }
+
+            // Write in-app inbox notification for every matched user (with or without FCM token)
+            if (matchedUsers.length > 0) {
+                const now = new Date().toISOString();
+                const BATCH_SIZE = 500;
+                for (let i = 0; i < matchedUsers.length; i += BATCH_SIZE) {
+                    const batch = db.batch();
+                    matchedUsers.slice(i, i + BATCH_SIZE).forEach(({ uid, title, body }) => {
+                        const ref = db.collection('users').doc(uid).collection('notifications').doc();
+                        batch.set(ref, {
+                            id: ref.id,
+                            type: isPriceDrop ? 'price_drop' : 'promo',
+                            title,
+                            message: body,
+                            productId,
+                            storeId: after.merchant_id,
+                            link: `/store/${after.merchant_id}`,
+                            timestamp: now,
+                            read: false,
+                        });
+                    });
+                    await batch.commit();
+                }
+                console.log(`[NotificationTrigger] Wrote ${matchedUsers.length} inbox notifications.`);
             }
         } else {
             console.log(`[NotificationTrigger] No deal criteria met for ${after.name}.`);

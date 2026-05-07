@@ -4,4 +4,6 @@
     <string name="title_activity_main">Spendigo</string>
     <string name="package_name">com.spendigo.smartcart</string>
     <string name="custom_url_scheme">com.spendigo.smartcart</string>
+    <string name="server_client_id">1012948918368-m29pbhj6nqvdpeda77vd19t6et3thn2u.apps.googleusercontent.com</string>
+    <string name="google_client_id">1012948918368-m29pbhj6nqvdpeda77vd19t6et3thn2u.apps.googleusercontent.com</string>
 </resources>

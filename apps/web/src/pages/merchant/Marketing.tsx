@@ -7,6 +7,7 @@ import QRCode from 'react-qr-code';
 import { functions, db } from '../../lib/firebase';
 import { httpsCallable } from 'firebase/functions';
 import { collection, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
+import { isFlyerActive } from '../../utils/date-helpers';
 
 const SEGMENTS = [
     { value: 'nearby', label: 'Nearby Customers', description: 'Users within their preferred distance of your store' },
@@ -16,6 +17,14 @@ const SEGMENTS = [
 ] as const;
 
 type Segment = typeof SEGMENTS[number]['value'];
+
+export const CAMPAIGN_MESSAGES = [
+    "Our latest flyer is live! Check out this week's deals.",
+    "New weekly deals just dropped. View our flyer and save big!",
+    "Don't miss this week's specials — see our latest flyer now!",
+    "Fresh savings in our new flyer. Limited time only!",
+    "Your favourite store has new deals. Check our flyer today!",
+];
 
 interface CampaignLog {
     id: string;
@@ -45,6 +54,7 @@ const MerchantMarketing: React.FC = () => {
     const [isSending, setIsSending] = useState(false);
     const [recentCampaigns, setRecentCampaigns] = useState<CampaignLog[]>([]);
     const [loadingLogs, setLoadingLogs] = useState(true);
+    const [hasActiveFlyer, setHasActiveFlyer] = useState<boolean | null>(null);
 
     useEffect(() => {
         if (!storeId) return;
@@ -64,7 +74,16 @@ const MerchantMarketing: React.FC = () => {
                 setLoadingLogs(false);
             }
         };
+        const checkFlyer = async () => {
+            try {
+                const flyerSnap = await getDocs(collection(db, 'stores', storeId, 'flyers'));
+                setHasActiveFlyer(flyerSnap.docs.some(d => isFlyerActive(d.data())));
+            } catch {
+                setHasActiveFlyer(false);
+            }
+        };
         fetchLogs();
+        checkFlyer();
     }, [storeId]);
 
     const handleSendCampaign = async () => {
@@ -241,6 +260,16 @@ const MerchantMarketing: React.FC = () => {
                         </p>
 
                         <div className="space-y-4">
+                            {hasActiveFlyer === false && (
+                                <div className="flex items-start gap-3 p-3 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-800">
+                                    <span className="text-lg shrink-0">📋</span>
+                                    <div>
+                                        <p className="font-bold">No active flyer</p>
+                                        <p className="text-xs mt-0.5">You need an active flyer to send push campaigns. <a href="/merchant/flyers" className="underline font-semibold">Upload a flyer →</a></p>
+                                    </div>
+                                </div>
+                            )}
+
                             <div>
                                 <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">Audience</label>
                                 <select
@@ -258,21 +287,22 @@ const MerchantMarketing: React.FC = () => {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">
-                                    Message <span className={`float-right ${campaignMessage.length > 140 ? 'text-red-500' : ''}`}>{campaignMessage.length}/160</span>
-                                </label>
-                                <textarea
+                                <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">Message</label>
+                                <select
                                     value={campaignMessage}
-                                    onChange={e => setCampaignMessage(e.target.value.slice(0, 160))}
-                                    placeholder={`e.g. "Weekend sale at ${store?.name || 'our store'}! 20% off all snacks today only."`}
-                                    rows={3}
-                                    className="w-full px-3 py-2 border border-[var(--glass-border)] rounded-xl text-sm outline-none focus:border-[var(--brand-primary)] resize-none"
-                                />
+                                    onChange={e => setCampaignMessage(e.target.value)}
+                                    className="w-full px-3 py-2 border border-[var(--glass-border)] rounded-xl text-sm outline-none focus:border-[var(--brand-primary)] bg-white"
+                                >
+                                    <option value="">— Select a message —</option>
+                                    {CAMPAIGN_MESSAGES.map(m => (
+                                        <option key={m} value={m}>{m}</option>
+                                    ))}
+                                </select>
                             </div>
 
                             <button
                                 onClick={handleSendCampaign}
-                                disabled={isSending || !campaignMessage.trim()}
+                                disabled={isSending || !campaignMessage || !hasActiveFlyer}
                                 className="w-full py-3 bg-[var(--brand-primary)] text-white font-bold rounded-xl hover:brightness-110 shadow-md shadow-[var(--brand-primary)]/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                             >
                                 {isSending ? <><span className="animate-spin">⏳</span> Sending...</> : '🚀 Send Campaign'}

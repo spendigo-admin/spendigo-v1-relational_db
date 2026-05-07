@@ -12,6 +12,8 @@ import {
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore'; 
 import { auth, db } from '../lib/firebase';
 import { auditBridge } from '../utils/auditBridge';
+import { Capacitor } from '@capacitor/core';
+import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth';
 
 // Define User Types
 export interface User {
@@ -362,8 +364,28 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         try {
             setLoading(true);
             const provider = new GoogleAuthProvider();
-            const result = await signInWithPopup(auth, provider);
-            const user = result.user;
+            let userCredential;
+
+            if (Capacitor.isNativePlatform()) {
+                // Native Mobile Flow
+                console.log('[AuthContext] Initiating Native Google Sign-In');
+                const googleUser = await GoogleAuth.signIn();
+                console.log('[AuthContext] Native Google Sign-In result:', googleUser);
+                
+                if (!googleUser || !googleUser.authentication || !googleUser.authentication.idToken) {
+                    throw new Error('Google Auth failed: Missing idToken');
+                }
+
+                const idToken = googleUser.authentication.idToken;
+                const credential = GoogleAuthProvider.credential(idToken);
+                const { signInWithCredential } = await import('firebase/auth');
+                userCredential = await signInWithCredential(auth, credential);
+            } else {
+                // Web Flow
+                userCredential = await signInWithPopup(auth, provider);
+            }
+
+            const user = userCredential.user;
 
             // Check if user exists in Firestore
             const userDocRef = doc(db, 'users', user.uid);
