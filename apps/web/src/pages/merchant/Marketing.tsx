@@ -68,8 +68,8 @@ const MerchantMarketing: React.FC = () => {
                 );
                 const snap = await getDocs(q);
                 setRecentCampaigns(snap.docs.map(d => ({ id: d.id, ...d.data() } as CampaignLog)));
-            } catch {
-                // index may not exist yet on first use — show empty state
+            } catch (err) {
+                console.error('[Marketing] Failed to load campaign logs:', err);
             } finally {
                 setLoadingLogs(false);
             }

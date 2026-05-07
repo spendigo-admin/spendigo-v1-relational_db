@@ -53,47 +53,47 @@ const ROLE_INFO: Record<MerchantRole, { label: string; desc: string; permissions
 
 export const BUSINESS_TYPES: Record<string, { logo: string; cover: string; tagline: string }> = {
     'Grocery Store': {
-        logo: '/defaults/branding/grocery_logo.jpg?v=4',
-        cover: '/defaults/branding/grocery_cover.jpg?v=4',
+        logo: '/defaults/branding/grocery_logo.png?v=5',
+        cover: '/defaults/branding/grocery_cover.png?v=5',
         tagline: 'Fresh groceries and daily essentials.'
     },
     'Convenience Store': {
-        logo: '/defaults/branding/convenience_logo.jpg?v=4',
-        cover: '/defaults/branding/convenience_cover.jpg?v=4',
+        logo: '/defaults/branding/convenience_logo.png?v=5',
+        cover: '/defaults/branding/convenience_cover.png?v=5',
         tagline: 'Quick stops for all your immediate needs.'
     },
     'Discount / Dollar Store': {
-        logo: '/defaults/branding/other_logo.jpg?v=4',
-        cover: '/defaults/branding/other_cover.jpg?v=4',
+        logo: '/defaults/branding/discount_logo.png?v=5',
+        cover: '/defaults/branding/discount_cover.png?v=5',
         tagline: 'Great deals and everyday value.'
     },
     'Ethnic / Specialty Grocery': {
-        logo: '/defaults/branding/desi_logo.jpg?v=4',
-        cover: '/defaults/branding/desi_cover.jpg?v=4',
+        logo: '/defaults/branding/ethnic_logo.png?v=5',
+        cover: '/defaults/branding/ethnic_cover.png?v=5',
         tagline: 'Authentic flavors, spices and traditional ingredients.'
     },
     'Farmers Market Vendor': {
-        logo: '/defaults/branding/grocery_logo.jpg?v=4',
-        cover: '/defaults/branding/grocery_cover.jpg?v=4',
+        logo: '/defaults/branding/farmers_logo.png?v=5',
+        cover: '/defaults/branding/farmers_cover.png?v=5',
         tagline: 'Fresh, local, and direct from the farm.'
     },
     'Organic / Health Food Store': {
-        logo: '/defaults/branding/grocery_logo.jpg?v=4', // Re-use grocery for reliability
-        cover: '/defaults/branding/grocery_cover.jpg?v=4',
+        logo: '/defaults/branding/organic_logo.png?v=5',
+        cover: '/defaults/branding/organic_cover.png?v=5',
         tagline: 'Healthy, organic, and locally sourced goodness.'
     },
     'Artisan Bakery': {
-        logo: '/defaults/branding/bakery_logo.jpg?v=4',
-        cover: '/defaults/branding/bakery_cover.jpg?v=4',
+        logo: '/defaults/branding/bakery_logo.png?v=5',
+        cover: '/defaults/branding/bakery_cover.png?v=5',
         tagline: 'Freshly baked breads and sweet treats daily.'
     },
     'Butcher Shop': {
-        logo: '/defaults/branding/butcher_logo.jpg?v=4',
-        cover: '/defaults/branding/butcher_cover.jpg?v=4',
+        logo: '/defaults/branding/butcher_logo.png?v=5',
+        cover: '/defaults/branding/butcher_cover.png?v=5',
         tagline: 'Quality cuts and fresh meats.'
     },
     'Fishmonger / Seafood Shop': {
-        logo: '/defaults/branding/other_logo.jpg?v=4',
+        logo: '/defaults/branding/seafood_logo.png?v=5',
         cover: '/defaults/branding/other_cover.jpg?v=4',
         tagline: 'Fresh catches from the sea.'
     },
@@ -555,7 +555,30 @@ const MerchantSettings: React.FC = () => {
                 businessType: storeInfo.businessType,
                 logoUrl: storeInfo.logoUrl,
                 image: storeInfo.coverUrl, // Map local coverUrl to DB 'image' field
-                // Operations
+            };
+
+            // --- Branding Auto-Refresh Logic ---
+            const currentStore = stores[storeId];
+            const typeChanged = currentStore && currentStore.businessType !== storeInfo.businessType;
+            
+            if (typeChanged) {
+                const newDefaults = BUSINESS_TYPES[storeInfo.businessType];
+                if (newDefaults) {
+                    // Only update if current assets are defaults (start with /defaults/branding/)
+                    const isCurrentLogoDefault = !storeInfo.logoUrl || storeInfo.logoUrl.includes('/defaults/branding/');
+                    const isCurrentCoverDefault = !storeInfo.coverUrl || storeInfo.coverUrl.includes('/defaults/branding/');
+
+                    if (isCurrentLogoDefault) {
+                        updates.logoUrl = newDefaults.logo;
+                    }
+                    if (isCurrentCoverDefault) {
+                        updates.image = newDefaults.cover;
+                    }
+                }
+            }
+
+            // Operations
+            Object.assign(updates, {
                 deliveryRadiusKm: operations.deliveryRadiusKm,
                 minDeliveryOrder: operations.minOrder,
                 deliveryFeeValue: operations.deliveryFee, // Numeric
@@ -570,7 +593,7 @@ const MerchantSettings: React.FC = () => {
                 notificationPreferences: notifications,
                 // Legacy/Display Fields
                 deliveryFee: displayFee
-            };
+            });
 
             // Remove any undefined payload fields to prevent Firestore crashes
             Object.keys(updates).forEach(key => {

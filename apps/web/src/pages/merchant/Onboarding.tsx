@@ -218,7 +218,7 @@ const MerchantOnboarding: React.FC = () => {
                                 ))}
                             </select>
                             <p className="text-xs text-[var(--text-muted)] mt-2">
-                                ✨ This sets your store's default imagery and taglines. It cannot be changed later.
+                                ✨ This sets your store's default imagery and taglines. You can change this later in Settings to refresh your branding.
                             </p>
                         </div>
 

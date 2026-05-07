@@ -191,6 +191,24 @@ const StoreManagement: React.FC = () => {
                     postalCode: formData.postalCode
                 };
                 if (finalCoordinates) updateData.coordinates = finalCoordinates;
+                
+                // --- Branding Auto-Refresh Logic ---
+                const typeChanged = storeToUpdate.businessType !== formData.type;
+                if (typeChanged) {
+                    const newDefaults = BUSINESS_TYPES[formData.type];
+                    if (newDefaults) {
+                        // Only update if current assets are defaults (start with /defaults/branding/)
+                        const isCurrentLogoDefault = !storeToUpdate.logoUrl || storeToUpdate.logoUrl.includes('/defaults/branding/');
+                        const isCurrentCoverDefault = !storeToUpdate.image || storeToUpdate.image.includes('/defaults/branding/');
+
+                        if (isCurrentLogoDefault) {
+                            updateData.logoUrl = newDefaults.logo;
+                        }
+                        if (isCurrentCoverDefault) {
+                            updateData.image = newDefaults.cover;
+                        }
+                    }
+                }
 
                 await updateStore(editingStoreId, updateData);
                 await logEvent('STORE_UPDATE', { 
@@ -200,6 +218,7 @@ const StoreManagement: React.FC = () => {
                 }, `stores/${editingStoreId}`);
                 addNotification({ type: 'system', title: 'Store Updated', message: `${formData.name} updated successfully.` });
             } else {
+                const newDefaults = BUSINESS_TYPES[formData.type];
                 const newStore = await addStore({
                     ...formData,
                     businessType: formData.type,
@@ -207,7 +226,8 @@ const StoreManagement: React.FC = () => {
                     rating: 0,
                     products: [],
                     coordinates: finalCoordinates,
-                    logo: `https://ui-avatars.com/api/?name=${formData.name}&background=random`
+                    logoUrl: newDefaults?.logo || `/defaults/branding/grocery_logo.png?v=5`,
+                    image: newDefaults?.cover || `/defaults/branding/grocery_cover.png?v=5`
                 });
                 await logEvent('STORE_CREATE', { 
                     storeName: formData.name,
