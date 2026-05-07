@@ -22,6 +22,7 @@ const Notifications: React.FC = () => {
     const { notifications, unreadCount, markAsRead, markAllRead, preferences, togglePreference } = useNotifications();
     const { permissionStatus, requestPermission } = usePushNotifications(user?.id);
     const [isRequesting, setIsRequesting] = useState(false);
+    const [filter, setFilter] = useState<'all' | 'orders' | 'deals'>('all');
 
     const handleRequestPermission = async () => {
         setIsRequesting(true);
@@ -44,7 +45,12 @@ const Notifications: React.FC = () => {
 
     // Simple grouping logic
     const sections = useMemo(() => {
-        const sorted = [...notifications].sort((a, b) =>
+        const visible = notifications.filter(n => {
+            if (filter === 'orders') return n.type === 'order';
+            if (filter === 'deals') return ['price_drop', 'promo', 'alert'].includes(n.type);
+            return true;
+        });
+        const sorted = [...visible].sort((a, b) =>
             new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
         );
 
@@ -61,7 +67,7 @@ const Notifications: React.FC = () => {
         });
 
         return { today, earlier };
-    }, [notifications]);
+    }, [notifications, filter]);
 
     const renderNotification = (n: AppNotification) => {
         const config = getIconConfig(n.type);
@@ -127,16 +133,29 @@ const Notifications: React.FC = () => {
                         </button>
                     )}
                 </div>
+                <div className="max-w-xl mx-auto mt-3 flex gap-2">
+                    {(['all', 'orders', 'deals'] as const).map(f => (
+                        <button
+                            key={f}
+                            onClick={() => setFilter(f)}
+                            className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${filter === f ? 'bg-[var(--brand-primary)] text-white shadow-sm' : 'bg-[var(--surface-2)] text-[var(--text-muted)] hover:bg-[var(--surface-3)]'}`}
+                        >
+                            {f === 'all' ? 'All' : f === 'orders' ? '📦 Orders' : '🏷️ Deals & Promos'}
+                        </button>
+                    ))}
+                </div>
             </div>
 
             <div className="max-w-xl mx-auto p-4 space-y-8">
-                {notifications.length === 0 ? (
+                {notifications.length === 0 || (sections.today.length === 0 && sections.earlier.length === 0) ? (
                     <div className="text-center py-20 animate-fade-in">
                         <div className="w-24 h-24 bg-white rounded-3xl flex items-center justify-center text-4xl mx-auto mb-6 shadow-xl border border-[var(--glass-border)]">
                             📭
                         </div>
                         <h2 className="text-xl font-bold text-[var(--text-main)]">All Caught Up!</h2>
-                        <p className="max-w-[240px] mx-auto text-sm">Your inbox is empty. We'll notify you when price drops or deals arrive.</p>
+                        <p className="max-w-[240px] mx-auto text-sm">
+                            {filter === 'orders' ? 'No order updates yet.' : filter === 'deals' ? 'No deals or promotions yet.' : 'Your inbox is empty. We\'ll notify you when price drops or deals arrive.'}
+                        </p>
                     </div>
                 ) : (
                     <>

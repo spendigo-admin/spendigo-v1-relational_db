@@ -72,7 +72,9 @@ exports.sendCampaign = functions.https.onCall(async (data, context) => {
     if (message.length > 160) {
         throw new functions.https.HttpsError('invalid-argument', 'Message must be 160 characters or fewer.');
     }
-    if (!ALLOWED_MESSAGES.includes(message)) {
+    // Deal promotions carry a dealId and use a system-generated message — exempt from the whitelist.
+    // Manual campaigns (no dealId) must use an approved message to prevent free-text abuse.
+    if (!dealId && !ALLOWED_MESSAGES.includes(message)) {
         throw new functions.https.HttpsError('invalid-argument', 'Message must be selected from the approved list.');
     }
     if (!['nearby', 'inactive', 'active', 'high_value'].includes(segment)) {
