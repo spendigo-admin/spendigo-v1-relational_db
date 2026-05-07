@@ -1,7 +1,7 @@
 # Spendigo SmartCart
 
 **Status**: Production-Ready (v1.0)  
-**Last Updated**: 2026-05-01
+**Last Updated**: 2026-05-07
 
 Spendigo SmartCart is a Canada-first **Marketplace Facilitator** platform connecting independent convenience stores with local consumers. It features smart basket optimization, real-time order management, digital flyer integration, robust subscription management, and production-grade security.
 
@@ -95,8 +95,8 @@ Spendigo-v1/
 | **Backend** | Firebase (BaaS) | 10.14.1 |
 | **Database** | Cloud Firestore | NoSQL, real-time |
 | **Authentication** | Firebase Auth | Email/Password + SSO |
-| **Mobile** | Capacitor | 7.x (iOS/Android) |
-| **Styling** | TailwindCSS + Custom CSS | 3.4+ |
+| **Mobile** | Capacitor | 6.x (iOS/Android) |
+| **Styling** | Tailwind + Midnight Navigator | Custom Premium Dark Mode |
 
 **See**: [docs/TECH_STACK.md](./docs/TECH_STACK.md) for complete details.
 
@@ -112,6 +112,7 @@ Spendigo uses a **Firebase-based serverless architecture**:
 - **State Management**: React Context API (8+ contexts including Auth, Cart, Wishlist, Audit)
 - **Real-time Sync**: Firestore `onSnapshot` listeners
 - **Security**: RBAC + SHA-256 tamper-evident audit ledger
+- **Data Protection**: Firestore PITR (Point-in-Time Recovery) enabled
 
 ---
 
@@ -122,6 +123,7 @@ Spendigo uses a **Firebase-based serverless architecture**:
 - ✅ **Audit Logging**: Tamper-evident blockchain-lite ledger (`AuditContext.tsx`)
 - ✅ **Integrity Verification**: Client-side price tampering detection (`IntegrityUtils.ts`)
 - ✅ **PII Redaction**: Automatic redaction in logs to SOC2 standards
+- ✅ **Backup Governance**: Firestore PITR & collection-level monitoring
 - ✅ **Maintenance Mode**: Remote platform-wide lockdown
 - ✅ **Suspended Stores**: Automated merchant lockout and cleanup
 
@@ -164,7 +166,7 @@ npm run build
 ### 🛒 Consumer Experience
 - 🔍 **Advanced Search**: Algolia-powered full-text search and faceting
 - 💰 **SmartCart Optimizer**: Real-time basket optimization finding the lowest total price
-- 🧠 **AI Savings Insights**: Gemini 2.5 Flash powered trip efficiency narratives
+- 🧠 **AI Savings Insights**: Gemini 3 Flash powered trip efficiency narratives
 - 📱 **Real-time Tracking**: Live order updates via Firestore and FCM Push Notifications
 - 🌍 **Multilingual**: i18n support for global consumer reach
 - 🛡️ **Integrity Check**: Automated validation against price attacks
@@ -186,6 +188,7 @@ npm run build
 - 🏪 **Store Oversight**: Approval workflow and compliance monitoring
 - 📝 **Master Catalog Management**: Centralized product definition and mapping
 - 🛡️ **Audit Ledger**: Forensic view of SHA-256 linked security logs
+- 📦 **Backup Status**: Granular visibility of protected database collections
 - 🛠️ **System Tools**: Maintenance mode and test data seeding
 
 ---
@@ -241,11 +244,14 @@ npx cap open android
 - [x] **Internationalization**: `i18next` framework integration
 - [x] **Push Notifications**: FCM notification dispatch architecture
 - [x] **Stripe Connect**: Direct payout split per store with forensic refund tracking
+- [x] **Native Mobile Parity**: Full iOS/Android support via Capacitor 6
+- [x] **Premium Theming**: Midnight Navigator (Dark Mode) global integration
+- [x] **Data Recovery**: Firestore PITR & Backup Strategy documentation
 
 ### 🔜 Upcoming
-- [ ] Native Mobile App Store QA (iOS/Android)
-- [ ] Server-side Rendering (Next.js candidate migration)
 - [ ] Automated CI/CD performance benchmarking
+- [ ] Server-side Rendering (Next.js candidate migration)
+- [ ] Merchant Ad Network self-service dashboard
 
 ---
 
