@@ -138,9 +138,18 @@ service cloud.firestore {
       // to prevent self-upgrading subscriptions or re-activating suspended stores.
       allow update: if isAdmin()
         || (isMerchant() && getMerchantStoreId() == storeId
-            && !request.resource.data.diff(resource.data).affectedKeys()
-                .hasAny(['subscriptionTier', 'status', 'stripeAccountId',
-                         'stripeOnboardingStatus', 'ownerId']))
+            && (
+              // 1. General Profile Updates (Privileged fields like status and subscription are blocked)
+              (!request.resource.data.diff(resource.data).affectedKeys()
+                  .hasAny(['subscriptionTier', 'status', 'stripeAccountId',
+                           'stripeOnboardingStatus', 'ownerId']))
+              ||
+              // 2. Deletion Requests (Merchants ARE allowed to move status to 'pending_deletion')
+              (request.resource.data.status == 'pending_deletion'
+               && !request.resource.data.diff(resource.data).affectedKeys()
+                   .hasAny(['subscriptionTier', 'stripeAccountId', 'stripeOnboardingStatus', 'ownerId']))
+            )
+           )
         || (isAuthenticated() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['rating', 'reviewCount']));
       allow delete: if isAdmin();
 

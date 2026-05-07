@@ -22,11 +22,11 @@ const OrderTracking: React.FC = () => {
     const order = orders.find(o => o.id === id);
     const store = order ? getStore(order.storeId) : null;
 
-    // Mock store contact info since it's not in the DB yet
+    // Real store contact info from the MarketplaceContext
     const storeContact = {
-        phone: '(555) 123-4567',
-        email: store?.merchantEmail || `support@${store?.name.toLowerCase().replace(/\s/g, '') || 'spendigo'}.com`,
-        address: '123 Market Street, Toronto, ON'
+        phone: store?.phone || 'Phone not provided',
+        email: store?.email || store?.merchantEmail || `support@${store?.name.toLowerCase().replace(/\s/g, '') || 'spendigo'}.com`,
+        address: store?.address ? `${store.address}, ${store.city || ''} ${store.province || ''}`.trim() : 'Address not provided'
     };
 
     const handleReorder = async () => {

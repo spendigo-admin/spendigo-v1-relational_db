@@ -72,6 +72,21 @@ export const BUSINESS_TYPES: Record<string, { logo: string; cover: string; tagli
         cover: '/defaults/branding/ethnic_cover.png?v=5',
         tagline: 'Authentic flavors, spices and traditional ingredients.'
     },
+    'Ethnic Speciality Grocery': {
+        logo: '/defaults/branding/ethnic_logo.png?v=5',
+        cover: '/defaults/branding/ethnic_cover.png?v=5',
+        tagline: 'Authentic flavors, spices and traditional ingredients.'
+    },
+    'Asian Grocers': {
+        logo: '/defaults/branding/asian_logo.jpg?v=5',
+        cover: '/defaults/branding/asian_cover.jpg?v=5',
+        tagline: 'Fresh Asian produce, spices, and specialty goods.'
+    },
+    'Indo-Pak / Desi Grocery': {
+        logo: '/defaults/branding/desi_logo.jpg?v=5',
+        cover: '/defaults/branding/desi_cover.jpg?v=5',
+        tagline: 'Authentic South Asian groceries and spices.'
+    },
     'Farmers Market Vendor': {
         logo: '/defaults/branding/farmers_logo.png?v=5',
         cover: '/defaults/branding/farmers_cover.png?v=5',
@@ -565,11 +580,18 @@ const MerchantSettings: React.FC = () => {
                 const newDefaults = BUSINESS_TYPES[storeInfo.businessType];
                 if (newDefaults) {
                     // Only update if current assets are defaults (start with /defaults/branding/)
-                    const isCurrentLogoDefault = !storeInfo.logoUrl || storeInfo.logoUrl.includes('/defaults/branding/');
-                    const isCurrentCoverDefault = !storeInfo.coverUrl || storeInfo.coverUrl.includes('/defaults/branding/');
+                    const currentLogo = storeInfo.logoUrl; 
+                    const currentCover = storeInfo.coverUrl;
+
+                    const isCurrentLogoDefault = !currentLogo || (typeof currentLogo === 'string' && currentLogo.includes('/defaults/branding/'));
+                    const isCurrentCoverDefault = !currentCover || (typeof currentCover === 'string' && currentCover.includes('/defaults/branding/'));
 
                     if (isCurrentLogoDefault) {
                         updates.logoUrl = newDefaults.logo;
+                        // Clear legacy logo field if present in current store
+                        if (currentStore?.logo) {
+                            updates.logo = '';
+                        }
                     }
                     if (isCurrentCoverDefault) {
                         updates.image = newDefaults.cover;

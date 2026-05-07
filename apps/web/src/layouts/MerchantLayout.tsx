@@ -219,16 +219,7 @@ const MerchantLayout: React.FC = () => {
                     </div>
                 </nav>
 
-                <div className="border-t border-[var(--glass-border)] my-2 mx-4"></div>
 
-                <nav className="space-y-1 px-4 mb-4">
-                    <Link
-                        to="/"
-                        className="flex items-center gap-3 p-3 rounded-lg font-medium text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text-main)] transition-colors"
-                    >
-                        <span>🏠</span> Back to Store
-                    </Link>
-                </nav>
 
                 <div className="border-t border-[var(--glass-border)] pt-4 mt-auto p-4 pb-safe">
                     <div className="flex items-center gap-2 mb-2">

@@ -4,7 +4,7 @@ import { useMarketplace } from '../../context/MarketplaceContext';
 import { useAuth } from '../../context/AuthContext';
 import { useNotifications } from '../../context/NotificationContext';
 import { useConfirmation } from '../../context/ConfirmationContext';
-import { doc, writeBatch, serverTimestamp, updateDoc } from 'firebase/firestore';
+import { doc, writeBatch, serverTimestamp, updateDoc, deleteField } from 'firebase/firestore';
 import { db, functions } from '../../lib/firebase';
 import { httpsCallable } from 'firebase/functions';
 import { useStoreProducts } from '../../hooks/useStoreProducts';
@@ -372,8 +372,10 @@ const MerchantDeals: React.FC = () => {
                     const pRef = doc(db, 'merchant_products', dealToDelete.productId);
                     await updateDoc(pRef, {
                         price: dealToDelete.originalPrice,
-                        discount_label: undefined,
-                        discount_valid_until: null,
+                        on_sale: false,
+                        sale_price: deleteField(),
+                        discount_label: deleteField(),
+                        discount_valid_until: deleteField(),
                         updated_at: serverTimestamp()
                     });
                 }

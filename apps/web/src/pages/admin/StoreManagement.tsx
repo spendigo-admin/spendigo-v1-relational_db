@@ -198,11 +198,18 @@ const StoreManagement: React.FC = () => {
                     const newDefaults = BUSINESS_TYPES[formData.type];
                     if (newDefaults) {
                         // Only update if current assets are defaults (start with /defaults/branding/)
-                        const isCurrentLogoDefault = !storeToUpdate.logoUrl || storeToUpdate.logoUrl.includes('/defaults/branding/');
-                        const isCurrentCoverDefault = !storeToUpdate.image || storeToUpdate.image.includes('/defaults/branding/');
+                        const currentLogo = storeToUpdate.logoUrl || storeToUpdate.logo;
+                        const currentCover = storeToUpdate.image;
+
+                        const isCurrentLogoDefault = !currentLogo || (typeof currentLogo === 'string' && currentLogo.includes('/defaults/branding/'));
+                        const isCurrentCoverDefault = !currentCover || (typeof currentCover === 'string' && currentCover.includes('/defaults/branding/'));
 
                         if (isCurrentLogoDefault) {
                             updateData.logoUrl = newDefaults.logo;
+                            // Also clear legacy logo field to avoid confusion
+                            if (storeToUpdate.logo) {
+                                updateData.logo = ''; 
+                            }
                         }
                         if (isCurrentCoverDefault) {
                             updateData.image = newDefaults.cover;
@@ -582,22 +589,42 @@ const StoreManagement: React.FC = () => {
                                                     const approvedAt = store.deletionApprovedAt?.toDate?.() || (store.deletionApprovedAt?.seconds ? new Date(store.deletionApprovedAt.seconds * 1000) : null);
                                                     const daysLeft = approvedAt ? Math.max(0, 30 - Math.floor((Date.now() - approvedAt.getTime()) / 86400000)) : 30;
                                                     return (
-                                                        <button
-                                                            onClick={async () => {
-                                                                if (await confirm({
-                                                                    title: 'Cancel Deletion?',
-                                                                    message: `This will cancel the scheduled deletion of ${store.name} and restore it to suspended status.`,
-                                                                    confirmText: 'Cancel Deletion',
-                                                                    type: 'success'
-                                                                })) {
-                                                                    await cancelStoreDeletion(store.id);
-                                                                    addNotification({ type: 'system', title: 'Deletion Cancelled', message: `${store.name} has been restored to suspended.` });
-                                                                }
-                                                            }}
-                                                            className="text-[10px] bg-orange-50 text-orange-600 border border-orange-100 px-2 py-1 rounded-lg font-bold hover:bg-orange-100 transition-colors"
-                                                        >
-                                                            Cancel ({daysLeft}d left)
-                                                        </button>
+                                                        <div className="flex gap-2">
+                                                            {!store.deletionApprovedAt && (
+                                                                <button
+                                                                    onClick={async () => {
+                                                                        if (await confirm({
+                                                                            title: 'Approve Deletion?',
+                                                                            message: `This will start the 30-day countdown for ${store.name}. After 30 days, all data will be permanently deleted.`,
+                                                                            confirmText: 'Approve Deletion',
+                                                                            type: 'danger'
+                                                                        })) {
+                                                                            await approveDeleteStore(store.id);
+                                                                            addNotification({ type: 'system', title: 'Deletion Approved', message: `${store.name} is now scheduled for deletion in 30 days.` });
+                                                                        }
+                                                                    }}
+                                                                    className="text-[10px] bg-red-600 shadow-md shadow-red-200 text-white px-3 py-1.5 rounded-lg font-bold hover:bg-red-700 transition-all transform active:scale-95"
+                                                                >
+                                                                    Approve
+                                                                </button>
+                                                            )}
+                                                            <button
+                                                                onClick={async () => {
+                                                                    if (await confirm({
+                                                                        title: 'Cancel Deletion?',
+                                                                        message: `This will cancel the scheduled deletion of ${store.name} and restore it to suspended status.`,
+                                                                        confirmText: 'Cancel Deletion',
+                                                                        type: 'success'
+                                                                    })) {
+                                                                        await cancelStoreDeletion(store.id);
+                                                                        addNotification({ type: 'system', title: 'Deletion Cancelled', message: `${store.name} has been restored to suspended.` });
+                                                                    }
+                                                                }}
+                                                                className="text-[10px] bg-orange-50 text-orange-600 border border-orange-100 px-2 py-1 rounded-lg font-bold hover:bg-orange-100 transition-colors"
+                                                            >
+                                                                Cancel {store.deletionApprovedAt ? `(${daysLeft}d left)` : ''}
+                                                            </button>
+                                                        </div>
                                                     );
                                                 })()}
                                             </td>
@@ -721,6 +748,48 @@ const StoreManagement: React.FC = () => {
                                                 Resume
                                             </button>
                                         )}
+                                        {store.status === 'pending_deletion' && (() => {
+                                            const approvedAt = store.deletionApprovedAt?.toDate?.() || (store.deletionApprovedAt?.seconds ? new Date(store.deletionApprovedAt.seconds * 1000) : null);
+                                            const daysLeft = approvedAt ? Math.max(0, 30 - Math.floor((Date.now() - approvedAt.getTime()) / 86400000)) : 30;
+                                            return (
+                                                <div className="flex gap-2 w-full">
+                                                    {!store.deletionApprovedAt && (
+                                                        <button
+                                                            onClick={async () => {
+                                                                if (await confirm({
+                                                                    title: 'Approve Deletion?',
+                                                                    message: `This will start the 30-day countdown for ${store.name}.`,
+                                                                    confirmText: 'Approve',
+                                                                    type: 'danger'
+                                                                })) {
+                                                                    await approveDeleteStore(store.id);
+                                                                    addNotification({ type: 'system', title: 'Deletion Approved', message: `${store.name} scheduled for deletion.` });
+                                                                }
+                                                            }}
+                                                            className="flex-1 py-2 bg-red-600 text-white rounded-lg text-xs font-bold shadow-sm"
+                                                        >
+                                                            Approve
+                                                        </button>
+                                                    )}
+                                                    <button
+                                                        onClick={async () => {
+                                                            if (await confirm({
+                                                                title: 'Cancel Deletion?',
+                                                                message: `Restore ${store.name}?`,
+                                                                confirmText: 'Restore Store',
+                                                                type: 'success'
+                                                            })) {
+                                                                await cancelStoreDeletion(store.id);
+                                                                addNotification({ type: 'system', title: 'Deletion Cancelled', message: `${store.name} restored.` });
+                                                            }
+                                                        }}
+                                                        className="flex-1 py-2 bg-orange-50 text-orange-600 rounded-lg text-xs font-bold border border-orange-100"
+                                                    >
+                                                        Cancel {store.deletionApprovedAt ? `(${daysLeft}d)` : ''}
+                                                    </button>
+                                                </div>
+                                            );
+                                        })()}
                                     </div>
                                 </div>
                             );
