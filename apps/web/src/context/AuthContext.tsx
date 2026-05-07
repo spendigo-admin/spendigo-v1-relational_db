@@ -367,11 +367,24 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             let userCredential;
 
             if (Capacitor.isNativePlatform()) {
-                // Native Mobile Flow
+                // Ensure the plugin is initialized before every sign-in attempt.
+                // On Android, DEVELOPER_ERROR (code 10) crashes the app when the plugin
+                // isn't initialized or the SHA-1 fingerprint isn't registered in Firebase.
+                try {
+                    await GoogleAuth.initialize({
+                        clientId: '1012948918368-m29pbhj6nqvdpeda77vd19t6et3thn2u.apps.googleusercontent.com',
+                        scopes: ['profile', 'email'],
+                        grantOfflineAccess: true,
+                    });
+                } catch (initErr) {
+                    // initialize() may throw if already initialized — safe to ignore
+                    console.log('[AuthContext] GoogleAuth.initialize skipped:', initErr);
+                }
+
                 console.log('[AuthContext] Initiating Native Google Sign-In');
                 const googleUser = await GoogleAuth.signIn();
                 console.log('[AuthContext] Native Google Sign-In result:', googleUser);
-                
+
                 if (!googleUser || !googleUser.authentication || !googleUser.authentication.idToken) {
                     throw new Error('Google Auth failed: Missing idToken');
                 }
@@ -398,35 +411,36 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                     email: user.email!,
                     name: user.displayName || 'New User',
                     role: targetRole,
-                    phoneNumber: user.phoneNumber || null, // Add phoneNumber from Google profile if available
+                    phoneNumber: user.phoneNumber || null,
                     joinedAt: new Date().toISOString()
                 };
 
                 if (targetRole === 'merchant') {
                     newUser.merchantRole = 'OWNER';
                     newUser.subscriptionTier = 'free';
-                    newUser.storeName = `${newUser.name}'s Store`; // Default store name
+                    newUser.storeName = `${newUser.name}'s Store`;
                 }
 
                 await setDoc(userDocRef, newUser);
             }
 
-            // 1. Log forensic success immediately after handshake (before any potential UI redirects)
             await auditBridge.emit({ action: 'AUTH_SOCIAL_LOGIN_SUCCESS', metadata: { email: user.email, provider: 'google' } });
 
-            // 2. Process profile and internal state
             const finalUserDoc = userDoc.exists() ? userDoc : await getDoc(userDocRef);
             if (finalUserDoc.exists()) {
                 await processUserData(user.uid, finalUserDoc.data(), user.emailVerified);
             }
-            
+
             return true;
         } catch (error: any) {
             console.error('Google Login failed:', error);
-            await auditBridge.emit({ action: 'AUTH_SOCIAL_LOGIN_FAILURE', metadata: { provider: 'google', error: error.code } });
-            if (error.code === 'auth/popup-closed-by-user') {
-                return false;
+            // Catch native DEVELOPER_ERROR (code 10) — usually means SHA-1 not registered in Firebase Console
+            const message = error?.message || '';
+            const nativeCode = error?.errorDetails?.errorCode ?? error?.errorCode ?? '';
+            if (String(nativeCode) === '10' || message.includes('DEVELOPER_ERROR')) {
+                console.error('[AuthContext] DEVELOPER_ERROR: SHA-1 fingerprint not registered in Firebase Console');
             }
+            await auditBridge.emit({ action: 'AUTH_SOCIAL_LOGIN_FAILURE', metadata: { provider: 'google', error: error.code ?? error.message } });
             return false;
         } finally {
             setLoading(false);

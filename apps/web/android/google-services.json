@@ -1,0 +1,55 @@
+{
+  "project_info": {
+    "project_number": "1012948918368",
+    "firebase_url": "https://spendigo-8540c-default-rtdb.firebaseio.com",
+    "project_id": "spendigo-8540c",
+    "storage_bucket": "spendigo-8540c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1012948918368:android:f292fb1911525fe8f0a305",
+        "android_client_info": {
+          "package_name": "com.spendigo.smartcart"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1012948918368-9ic108d42cu06qqvm9rkokc3fpkotarm.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.spendigo.smartcart",
+            "certificate_hash": "493e63d13d614b798e10873690372d94f4b54f88"
+          }
+        },
+        {
+          "client_id": "1012948918368-m29pbhj6nqvdpeda77vd19t6et3thn2u.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBUnmrBPSeVrII72OV8Q37ETGBhjnr-vxo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1012948918368-m29pbhj6nqvdpeda77vd19t6et3thn2u.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1012948918368-4rj59baf5id95r7t6ob5pcinrcb14j35.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.spendigo.smartcart"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
