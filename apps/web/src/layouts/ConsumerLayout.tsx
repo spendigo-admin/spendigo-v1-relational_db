@@ -142,10 +142,10 @@ const ConsumerLayout: React.FC = () => {
                     </div>
 
                     {/* Mobile Inbox Link */}
-                    <Link to="/notifications" className={`sm:hidden relative w-10 h-10 flex items-center justify-center shadow-md transition-all border-2 bg-white skew-x-[-12deg] ${location.pathname === '/notifications' ? 'border-blue-600' : 'border-gray-200 hover:border-blue-600'}`}>
-                        <span className="text-sm skew-x-[12deg]">🔔</span>
+                    <Link to="/notifications" className="sm:hidden relative w-10 h-10 flex items-center justify-center transition-all">
+                        <span className={`text-2xl transition-opacity ${location.pathname === '/notifications' ? 'opacity-100' : 'opacity-70'}`}>🔔</span>
                         {unreadCount > 0 && (
-                            <span className="absolute -top-2 -right-2 w-3 h-3 border-2 border-white bg-blue-600 skew-x-[12deg] shadow-sm animate-pulse"></span>
+                            <span className="absolute top-1 right-1 w-2.5 h-2.5 rounded-full border-2 border-white bg-blue-600 shadow-sm animate-pulse"></span>
                         )}
                     </Link>
 
@@ -205,10 +205,10 @@ const ConsumerLayout: React.FC = () => {
                     )}
 
                     {/* Mobile Cart Icon */}
-                    <Link to="/cart" className={`md:hidden relative w-10 h-10 flex items-center justify-center shadow-md ml-2 transition-all border-2 bg-white skew-x-[-12deg] ${location.pathname === '/cart' ? 'border-blue-600 text-blue-600' : 'border-gray-200 text-gray-900 hover:border-blue-600'}`}>
-                        <span className="text-sm skew-x-[12deg]">🛒</span>
+                    <Link to="/cart" className="md:hidden relative w-10 h-10 flex items-center justify-center transition-all">
+                        <span className={`text-2xl transition-opacity ${location.pathname === '/cart' ? 'opacity-100' : 'opacity-70'}`}>🛒</span>
                         {itemCount > 0 && (
-                            <span className={`absolute -top-3 -right-2 w-5 h-5 text-[10px] font-black border-2 flex items-center justify-center shadow-sm skew-x-[12deg] animate-pulse ${location.pathname === '/cart' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-900 border-gray-200'}`}>
+                            <span className="absolute top-0 right-0 min-w-[18px] h-[18px] px-1 bg-blue-600 text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-white shadow-sm animate-pulse">
                                 {itemCount}
                             </span>
                         )}
