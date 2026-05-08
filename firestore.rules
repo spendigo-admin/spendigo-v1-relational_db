@@ -34,6 +34,11 @@ service cloud.firestore {
       return getUserData().storeId;
     }
 
+    // Check if a store is in the pending_deletion grace period
+    function isStorePendingDeletion(storeId) {
+      return get(/databases/$(database)/documents/stores/$(storeId)).data.status == 'pending_deletion';
+    }
+
     // --- SPENDIGO MASTER CATALOG ---
 
     // 1. MASTER PRODUCTS (Spendigo-Owned, Shared Growth)
@@ -56,23 +61,26 @@ service cloud.firestore {
       allow read: if true;
 
       // Merchant Write Rules
-      allow create: if isAdmin() || (isMerchant() 
+      allow create: if isAdmin() || (isMerchant()
         && request.resource.data.merchant_id == getMerchantStoreId()
         // CRITICAL: Product must exist in master OR pending
         && (exists(/databases/$(database)/documents/master_products/$(request.resource.data.master_product_id))
-           || exists(/databases/$(database)/documents/pending_master_products/$(request.resource.data.master_product_id))));
+           || exists(/databases/$(database)/documents/pending_master_products/$(request.resource.data.master_product_id)))
+        && !isStorePendingDeletion(request.resource.data.merchant_id));
 
-      allow update: if isAdmin() || (isMerchant() 
+      allow update: if isAdmin() || (isMerchant()
         // 1. Must own the existing doc
         && resource.data.merchant_id == getMerchantStoreId()
         // 2. Cannot change ownership (merchant_id)
         && request.resource.data.merchant_id == resource.data.merchant_id
         // 3. Cannot change the master product link (prevents broken links)
         // EXCEPTION: Admins can change master_product_id during commit workflow
-        && (isAdmin() || request.resource.data.master_product_id == resource.data.master_product_id));
-        
-      allow delete: if isAdmin() || (isMerchant() 
-        && resource.data.merchant_id == getMerchantStoreId());
+        && (isAdmin() || request.resource.data.master_product_id == resource.data.master_product_id)
+        && !isStorePendingDeletion(resource.data.merchant_id));
+
+      allow delete: if isAdmin() || (isMerchant()
+        && resource.data.merchant_id == getMerchantStoreId()
+        && !isStorePendingDeletion(resource.data.merchant_id));
     }
 
     // 3. PRODUCT CREATION REQUESTS (Controlled Growth)
@@ -155,11 +163,13 @@ service cloud.firestore {
 
       match /flyers/{flyerId} {
         allow read: if true;
-        allow write: if isAdmin() || (isMerchant() && getMerchantStoreId() == storeId);
+        allow write: if isAdmin() || (isMerchant() && getMerchantStoreId() == storeId
+            && !isStorePendingDeletion(storeId));
       }
       match /deals/{dealId} {
         allow read: if true;
-        allow write: if isAdmin() || (isMerchant() && getMerchantStoreId() == storeId);
+        allow write: if isAdmin() || (isMerchant() && getMerchantStoreId() == storeId
+            && !isStorePendingDeletion(storeId));
       }
       match /analytics/{dateId} {
         allow read: if isAdmin() || (isMerchant() && getMerchantStoreId() == storeId);

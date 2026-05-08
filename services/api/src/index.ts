@@ -43,4 +43,5 @@ export { scheduledFirestoreExport, triggerManualExport } from './admin/scheduled
 export { exportFirebaseAuth } from './admin/exportFirebaseAuth';
 export { exportMerchantData } from './admin/exportMerchantData';
 export { processPendingStoreDeletions } from './admin/processPendingStoreDeletions';
+export { forceDeleteStore } from './admin/forceDeleteStore';
 export { sendCampaign } from './marketing/sendCampaign';

@@ -22,7 +22,7 @@ const SUSPENSION_REASONS = [
 const StoreManagement: React.FC = () => {
     const { user } = useAuth();
     const { logEvent } = useAudit();
-    const { stores, updateStore, updateStoreStatus, addStore, requestDeleteStore, approveDeleteStore, cancelStoreDeletion } = useMarketplace();
+    const { stores, updateStore, updateStoreStatus, addStore, requestDeleteStore, approveDeleteStore, cancelStoreDeletion, forceDeleteStore } = useMarketplace();
     const { addNotification } = useNotifications();
     const { confirm } = useConfirmation();
     const storeList = Object.values(stores);
@@ -608,6 +608,24 @@ const StoreManagement: React.FC = () => {
                                                                     Approve
                                                                 </button>
                                                             )}
+                                                            {store.deletionApprovedAt && (
+                                                                <button
+                                                                    onClick={async () => {
+                                                                        if (await confirm({
+                                                                            title: 'Force Delete Now?',
+                                                                            message: `This permanently deletes ${store.name} and all its data immediately, bypassing the grace period. This cannot be undone.`,
+                                                                            confirmText: 'Delete Now',
+                                                                            type: 'danger'
+                                                                        })) {
+                                                                            await forceDeleteStore(store.id);
+                                                                            addNotification({ type: 'alert', title: 'Store Deleted', message: `${store.name} has been permanently deleted.` });
+                                                                        }
+                                                                    }}
+                                                                    className="text-[10px] bg-red-700 text-white px-2 py-1 rounded-lg font-bold hover:bg-red-800 transition-colors"
+                                                                >
+                                                                    Force Delete
+                                                                </button>
+                                                            )}
                                                             <button
                                                                 onClick={async () => {
                                                                     if (await confirm({
@@ -769,6 +787,24 @@ const StoreManagement: React.FC = () => {
                                                             className="flex-1 py-2 bg-red-600 text-white rounded-lg text-xs font-bold shadow-sm"
                                                         >
                                                             Approve
+                                                        </button>
+                                                    )}
+                                                    {store.deletionApprovedAt && (
+                                                        <button
+                                                            onClick={async () => {
+                                                                if (await confirm({
+                                                                    title: 'Force Delete Now?',
+                                                                    message: `This permanently deletes ${store.name} and all its data immediately. This cannot be undone.`,
+                                                                    confirmText: 'Delete Now',
+                                                                    type: 'danger'
+                                                                })) {
+                                                                    await forceDeleteStore(store.id);
+                                                                    addNotification({ type: 'alert', title: 'Store Deleted', message: `${store.name} has been permanently deleted.` });
+                                                                }
+                                                            }}
+                                                            className="flex-1 py-2 bg-red-700 text-white rounded-lg text-xs font-bold shadow-sm"
+                                                        >
+                                                            Force Delete
                                                         </button>
                                                     )}
                                                     <button

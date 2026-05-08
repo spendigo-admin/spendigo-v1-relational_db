@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { collection, onSnapshot, doc, updateDoc, setDoc, deleteDoc, serverTimestamp, deleteField } from 'firebase/firestore';
-import { db } from '../lib/firebase';
+import { httpsCallable } from 'firebase/functions';
+import { db, functions } from '../lib/firebase';
 import { isFlyerActive, filterActiveDeals } from '../utils/date-helpers';
 import { auditBridge } from '../utils/auditBridge';
 
@@ -17,6 +18,7 @@ interface MarketplaceContextType {
     requestDeleteStore: (storeId: string, requesterId: string, requesterRole: string) => Promise<void>;
     approveDeleteStore: (storeId: string) => Promise<void>;
     cancelStoreDeletion: (storeId: string) => Promise<void>;
+    forceDeleteStore: (storeId: string) => Promise<void>;
     // Flyer Management
     subscribeToFlyers: (storeId: string | number, callback: (flyers: any[]) => void) => () => void;
     saveFlyer: (storeId: string | number, flyer: any) => Promise<void>;
@@ -162,6 +164,12 @@ export const MarketplaceProvider: React.FC<{ children: ReactNode }> = ({ childre
         auditBridge.emit('STORE_DELETE_CANCELLED', { storeId }, `stores/${storeId}`);
     };
 
+    const forceDeleteStore = async (storeId: string) => {
+        const fn = httpsCallable(functions, 'forceDeleteStore');
+        await fn({ storeId });
+        auditBridge.emit('STORE_FORCE_DELETED', { storeId }, `stores/${storeId}`);
+    };
+
     // --- Flyer Management (Subcollection) ---
     const subscribeToFlyers = (storeId: string | number, callback: (flyers: any[]) => void) => {
         const flyersRef = collection(db, 'stores', String(storeId), 'flyers');
@@ -256,6 +264,7 @@ export const MarketplaceProvider: React.FC<{ children: ReactNode }> = ({ childre
             requestDeleteStore,
             approveDeleteStore,
             cancelStoreDeletion,
+            forceDeleteStore,
 
             addStore,
             subscribeToFlyers,

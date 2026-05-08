@@ -17,7 +17,7 @@ interface Branding {
 
 const categoriesToUpdate: Record<string, Branding> = {
     'Grocery Store': {
-        logo: '/defaults/branding/grocery_logo.png?v=5',
+        logo: '/defaults/branding/grocery_logo.png?v=6',
         cover: '/defaults/branding/grocery_cover.png?v=5'
     },
     'Convenience Store': {
@@ -118,7 +118,11 @@ const categoriesToUpdate: Record<string, Branding> = {
     },
     'General Retail': {
         logo: '/defaults/branding/general_logo.png?v=5',
-        cover: '/defaults/branding/other_cover.jpg?v=4'
+        cover: '/defaults/branding/general_cover.png?v=5'
+    },
+    'Specialty Retail': {
+        logo: '/defaults/branding/specialty_logo.png?v=5',
+        cover: '/defaults/branding/specialty_cover.png?v=5'
     }
 };
 
