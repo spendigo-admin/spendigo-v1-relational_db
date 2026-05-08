@@ -36,6 +36,29 @@ const MerchantOnboarding: React.FC = () => {
         agreedToTerms: false
     });
 
+    const { stores } = useMarketplace();
+    const isLocked = user?.storeId ? stores[user.storeId]?.status === 'pending_deletion' : false;
+
+    if (isLocked) {
+        return (
+            <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-orange-50 to-orange-100">
+                <div className="glass-panel w-full max-w-md p-8 text-center">
+                    <div className="text-5xl mb-4">⚠️</div>
+                    <h1 className="text-2xl font-bold text-orange-900 mb-2">Access Restricted</h1>
+                    <p className="text-orange-800 mb-6">
+                        This account is associated with a store that is pending deletion. 
+                        Onboarding actions are disabled.
+                    </p>
+                    <button 
+                        onClick={() => navigate('/merchant/dashboard')}
+                        className="px-6 py-2 bg-orange-600 text-white rounded-lg font-bold"
+                    >
+                        Go to Dashboard
+                    </button>
+                </div>
+            </div>
+        );
+    }
     const handleSubmitStep1 = (e: React.FormEvent) => {
         e.preventDefault();
         setStep(step + 1);

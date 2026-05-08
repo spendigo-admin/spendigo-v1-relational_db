@@ -3,6 +3,7 @@ import { collection, query, where, getDocs, updateDoc, doc, increment } from 'fi
 import { db } from '../lib/firebase';
 import { useTranslation } from 'react-i18next';
 import { useLocation } from '../context/LocationContext';
+import { useMarketplace } from '../context/MarketplaceContext';
 import '../styles/design-system.css';
 
 interface AdCampaign {
@@ -70,6 +71,7 @@ const DefaultHero = () => {
 const AdCarousel: React.FC = () => {
     const { t } = useTranslation();
     const { userCoords, calculateDistance } = useLocation();
+    const { stores } = useMarketplace();
     const [ads, setAds] = useState<AdCampaign[]>([]);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [loading, setLoading] = useState(true);
@@ -102,12 +104,24 @@ const AdCarousel: React.FC = () => {
                     .filter(ad => {
                         if (!ad.scope || ad.scope === 'global') return true;
                         if (ad.scope === 'local') {
-                            if (!userCoords) return false; // If local ad, and user has no coords, hide it
+                            if (!userCoords) return false;
                             if (!ad.targetLat || !ad.targetLng || !ad.targetRadius) return false;
                             const distance = calculateDistance(userCoords.lat, userCoords.lng, ad.targetLat, ad.targetLng);
                             return distance <= ad.targetRadius;
                         }
                         return false;
+                    })
+                    .filter(ad => {
+                        // If ad points to a specific store, verify that store is active
+                        if (!ad.linkUrl) return true;
+                        const storeIdMatch = ad.linkUrl.match(/\/store\/([^\/\?]+)/);
+                        if (storeIdMatch) {
+                            const sid = storeIdMatch[1];
+                            const linkedStore = stores[sid];
+                            // If we have the store data and it's NOT active, hide the ad
+                            if (linkedStore && linkedStore.status !== 'active') return false;
+                        }
+                        return true;
                     })
                     .sort((a, b) => b.priority - a.priority);
 

@@ -58,16 +58,15 @@ const INITIAL_DEALS: Deal[] = [
 ];
 
 const MerchantDeals: React.FC = () => {
-    const { getStore, updateStoreDeals, subscribeToDeals, saveDeal, deleteDeal } = useMarketplace();
-    const can = (action: string) => true;
     const { user } = useAuth();
+    const { stores, getStore, updateStoreDeals, subscribeToDeals, saveDeal, deleteDeal } = useMarketplace();
     const storeId = user?.storeId || '1';
+    const isLocked = stores[storeId]?.status === 'pending_deletion';
     const { confirm } = useConfirmation();
     const store = getStore(storeId);
     // const availableProducts = useMemo(() => store?.products || [], [store?.products]);
     const { products: availableProducts } = useStoreProducts(storeId);
-    const hasWriteAccess = true;
-
+    const hasWriteAccess = !isLocked;
 
     const isRestrictedPlan = (user?.subscriptionTier || 'free') !== 'growth';
 

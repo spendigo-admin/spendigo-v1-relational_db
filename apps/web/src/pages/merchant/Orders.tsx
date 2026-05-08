@@ -24,15 +24,18 @@ const MerchantOrders: React.FC = () => {
         downloadOrderReceipt,
         loading
     } = useOrders();
-    const { getStore } = useMarketplace();
+    const { stores, getStore } = useMarketplace();
     const { confirm } = useConfirmation();
     const storeId = user?.storeId;
     const store = storeId ? getStore(storeId) : null;
+    const isLocked = storeId ? stores[storeId]?.status === 'pending_deletion' : false;
     const storeProducts = store?.products || [];
 
     const hasReadAccess = can('orders:read');
-    const hasWriteAccess = can('orders:write');
+    const hasWriteAccess = can('orders:write') && !isLocked;
+
     // const storeId = user?.storeId || '1'; // Handled by OrderContext filtering
+
 
     const [viewMode, setViewMode] = useState<'kanban' | 'list' | 'reconciliation'>('kanban');
 

@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
 import { STORE_DATA } from '../../data/productData';
 import { useCatalog } from '../../hooks/useCatalog';
+import { useMarketplace } from '../../context/MarketplaceContext';
 import '../../styles/design-system.css';
 import SEO from '../../components/SEO';
 
@@ -44,18 +45,33 @@ const ProductDetail: React.FC = () => {
     }, [id, productData]);
 
     const displayProduct = productData || legacyProductData;
+    const { getStore } = useMarketplace();
+    const store = getStore(displayProduct?.storeId || '');
+    const isInactive = store && store.status && store.status !== 'active';
 
     if (loading) return <div className="p-20 text-center">Loading product details...</div>;
 
-    if (!displayProduct) {
+    if (!displayProduct || isInactive) {
         return (
-            <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
-                <p className="text-[var(--text-muted)] text-lg">Product not found.</p>
+            <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6 text-center px-4">
+                <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center text-4xl">
+                    {isInactive ? '⏸️' : '🛒'}
+                </div>
+                <div className="max-w-md">
+                    <h2 className="text-2xl font-black text-gray-900 mb-2">
+                        {isInactive ? 'Product Currently Unavailable' : 'Product Not Found'}
+                    </h2>
+                    <p className="text-gray-500 font-medium">
+                        {isInactive 
+                            ? "This product belongs to a store that is currently inactive or closed. We cannot process orders for this item at this time."
+                            : "We couldn't find the product you're looking for. It may have been removed or the link might be broken."}
+                    </p>
+                </div>
                 <button
                     onClick={() => navigate('/')}
-                    className="px-6 py-2 bg-[var(--brand-primary)] text-white rounded-lg hover:brightness-110"
+                    className="px-8 py-3 bg-[var(--brand-primary)] text-white font-black rounded-2xl shadow-lg shadow-blue-500/20 hover:shadow-xl hover:-translate-y-0.5 transition-all"
                 >
-                    Back to Home
+                    Back to Marketplace
                 </button>
             </div>
         );

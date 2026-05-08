@@ -12,11 +12,17 @@ type TimePeriod = 'daily' | 'weekly' | 'monthly';
 
 const MerchantDashboard: React.FC = () => {
     const navigate = useNavigate();
-    const { getStore, updateStore } = useMarketplace();
-    const { can, user } = useAuth();
+    const { stores, getStore, updateStore } = useMarketplace();
+    const { can: authCan, user } = useAuth();
     const { addNotification } = useNotifications();
     const storeId = user?.storeId || '1';
     const store = getStore(storeId);
+    const isLocked = stores[storeId]?.status === 'pending_deletion';
+
+    const can = (action: string) => {
+        if (isLocked && (action.endsWith(':write') || action === 'team:manage' || action === 'flyers:write' || action === 'store:write')) return false;
+        return authCan(action as any);
+    };
 
     const { orders } = useOrders();
     const [timePeriod, setTimePeriod] = useState<TimePeriod>('daily');
@@ -306,6 +312,34 @@ const MerchantDashboard: React.FC = () => {
                 </div>
             )}
 
+            {/* Deletion Pending Alert */}
+            {store?.status === 'pending_deletion' && (
+                <div className="bg-orange-50 border-2 border-orange-200 rounded-2xl p-6 flex flex-col md:flex-row items-center gap-6 animate-pulse-subtle shadow-lg">
+                    <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center text-3xl shrink-0">
+                        🗑️
+                    </div>
+                    <div className="flex-1 text-center md:text-left">
+                        <h2 className="text-xl font-bold text-orange-900 mb-1">Store Deletion Pending</h2>
+                        <p className="text-sm text-orange-700 font-medium">
+                            Status: <span className="font-bold underline">Approved for Deletion</span>
+                        </p>
+                        <p className="text-xs text-orange-600 mt-2 leading-relaxed">
+                            Your store is currently <strong>unavailable</strong> to shoppers and will be permanently deleted in 30 days. 
+                            All products, deals, and account data will be wiped at the end of the grace period.
+                        </p>
+                        <p className="text-xs text-orange-500 mt-2 italic">
+                            Changed your mind? To cancel this deletion request, please contact Spendigo Support immediately.
+                        </p>
+                    </div>
+                    <button 
+                        onClick={() => window.location.href = 'mailto:support@spendigo.ca?subject=Cancel Store Deletion: ' + encodeURIComponent(store.name)}
+                        className="px-6 py-3 bg-orange-600 text-white rounded-xl font-bold hover:bg-orange-700 transition-all shadow-md active:scale-95 whitespace-nowrap"
+                    >
+                        Cancel Deletion Request
+                    </button>
+                </div>
+            )}
+
             {/* Hero Section - Ultra Slim Redesign */}
             <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-[var(--brand-primary)] to-blue-500 p-3 md:p-4 text-white shadow-md group transition-all duration-300 hover:shadow-lg">
                 {/* Subtle Decorative Blobs - Scaled Down */}
@@ -321,8 +355,8 @@ const MerchantDashboard: React.FC = () => {
                                 </span>
                             </h1>
                             <p className={`text-white/70 text-[9px] md:text-[10px] font-bold uppercase tracking-widest flex items-center gap-2`}>
-                                <span className={`w-1.5 h-1.5 ${store?.status === 'suspended' ? 'bg-red-400' : 'bg-green-400'} rounded-full animate-pulse`}></span>
-                                {store?.status === 'suspended' ? 'Currently Suspended' : 'Live & Accepting Orders'}
+                                <span className={`w-1.5 h-1.5 ${store?.status === 'suspended' || store?.status === 'pending_deletion' ? 'bg-red-400' : 'bg-green-400'} rounded-full animate-pulse`}></span>
+                                {store?.status === 'suspended' ? 'Currently Suspended' : store?.status === 'pending_deletion' ? 'Pending Deletion' : 'Live & Accepting Orders'}
                             </p>
                         </div>
                     </div>
@@ -331,7 +365,7 @@ const MerchantDashboard: React.FC = () => {
                         {/* Ultra Compact Stats */}
                         <div className="flex-1 md:flex-none bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/10 flex items-center gap-2">
                             <span className="text-[9px] font-black opacity-60 uppercase">Status</span>
-                            <span className="text-[10px] font-black">{store?.status === 'suspended' ? 'OFFLINE' : 'ONLINE'}</span>
+                            <span className="text-[10px] font-black">{store?.status === 'suspended' || store?.status === 'pending_deletion' ? 'OFFLINE' : 'ONLINE'}</span>
                         </div>
                         <div className="flex-1 md:flex-none bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/10 flex items-center gap-2">
                             <span className="text-[9px] font-black opacity-60 uppercase">Deals</span>
@@ -490,12 +524,12 @@ const MerchantDashboard: React.FC = () => {
                                 </div>
                                 <button 
                                     onClick={handleVerifyAddress}
-                                    disabled={isLocating}
+                                    disabled={isLocating || isLocked}
                                     className="w-full py-4 bg-[var(--brand-primary)] hover:bg-black text-white font-black rounded-2xl transition-all flex items-center justify-center gap-3 shadow-lg shadow-[var(--brand-primary)]/10 disabled:opacity-50"
                                 >
                                     {isLocating ? (
                                         <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                                    ) : '📍 Verify Address & Locate'}
+                                    ) : isLocked ? '🚫 Actions Restricted' : '📍 Verify Address & Locate'}
                                 </button>
                             </div>
                             

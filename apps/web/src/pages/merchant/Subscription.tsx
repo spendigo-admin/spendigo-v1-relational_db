@@ -2,15 +2,21 @@ import React from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useSearchParams } from 'react-router-dom';
 import { useNotifications } from '../../context/NotificationContext';
+import { useMarketplace } from '../../context/MarketplaceContext';
 import { useConfirmation } from '../../context/ConfirmationContext';
 import '../../styles/design-system.css';
 
 const Subscription: React.FC = () => {
     const { user, updateSubscription } = useAuth();
+    const { stores } = useMarketplace();
     const { addNotification } = useNotifications();
     const { confirm } = useConfirmation();
     const [searchParams, setSearchParams] = useSearchParams();
+
     const currentTier = user?.subscriptionTier || 'free';
+    const storeId = user?.storeId || '';
+    const isLocked = storeId ? stores[storeId]?.status === 'pending_deletion' : false;
+
 
     const [processingId, setProcessingId] = React.useState<string | null>(null);
     const [successMessage, setSuccessMessage] = React.useState<string | null>(null);
@@ -118,7 +124,7 @@ const Subscription: React.FC = () => {
         }
     ];
 
-    const isViewOnly = user?.merchantRole === 'STAFF';
+    const isViewOnly = user?.merchantRole === 'STAFF' || isLocked;
 
     const handleUpgrade = async (tierId: string, price: string) => {
         const isFree = tierId === 'free';
@@ -217,7 +223,11 @@ const Subscription: React.FC = () => {
                 {isViewOnly && (
                     <div className="mb-8 p-4 bg-orange-50 border border-orange-200 rounded-lg flex items-center justify-center gap-2 text-orange-800">
                         <span className="text-xl">🔒</span>
-                        <span className="font-medium">Subscription management is restricted to Owners and Managers.</span>
+                        <span className="font-medium">
+                            {isLocked 
+                                ? 'Subscription management is disabled during the store deletion grace period.' 
+                                : 'Subscription management is restricted to Owners and Managers.'}
+                        </span>
                     </div>
                 )}
 

@@ -532,26 +532,40 @@ const StoreDetail: React.FC = () => {
         setDoc(ref, { views: increment(1), date: today }, { merge: true }).catch(() => {});
     }, [id]);
 
-
-    const store = getStore(id || '') || null;
     const { products: catalogProducts, loading: loadingProducts } = useStoreProducts(id || '');
-
-    // Check for initial tab in state
     const [activeTab, setActiveTab] = useState<'products' | 'flyer' | 'offers' | 'reviews' | 'info'>((location.state as any)?.initialTab || 'products');
     const [activeCategory, setActiveCategory] = useState('All');
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
-    if (!store) {
+    const store = getStore(id || '') || null;
+    const isInactive = store && store.status && store.status !== 'active';
+
+    if (!store || isInactive) {
         return (
-            <div className="flex items-center justify-center min-h-[60vh]">
-                <div className="text-center">
-                    <p className="text-4xl mb-4">🏪</p>
-                    <p className="text-[var(--text-muted)] mb-4">Store not found.</p>
-                    <button onClick={() => navigate('/')} className="text-[var(--brand-primary)] hover:underline">Return Home</button>
+            <div className="flex items-center justify-center min-h-[60vh] bg-white">
+                <div className="text-center p-8 max-w-md">
+                    <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center text-4xl mx-auto mb-6">
+                        {isInactive ? '⏸️' : '🏪'}
+                    </div>
+                    <h2 className="text-2xl font-black text-gray-900 mb-2">
+                        {isInactive ? 'Store Currently Unavailable' : 'Store Not Found'}
+                    </h2>
+                    <p className="text-gray-500 mb-8 font-medium">
+                        {isInactive 
+                            ? "This store is temporarily inactive or has been closed. Please check back later or browse other shops nearby."
+                            : "We couldn't find the store you're looking for. It may have moved or the link might be incorrect."}
+                    </p>
+                    <button 
+                        onClick={() => navigate('/')} 
+                        className="px-8 py-3 bg-[var(--brand-primary)] text-white font-black rounded-2xl shadow-lg shadow-blue-500/20 hover:shadow-xl hover:-translate-y-0.5 transition-all"
+                    >
+                        Return to Marketplace
+                    </button>
                 </div>
             </div>
         );
     }
+
 
     // Merge or Override products
     // Only fallback to legacy if the store hasn't been migrated (indicated by missing productCount)

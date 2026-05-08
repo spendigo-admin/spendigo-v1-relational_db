@@ -210,9 +210,11 @@ const MerchantSettings: React.FC = () => {
     const { addNotification } = useNotifications();
     const { confirm } = useConfirmation();
     const { uploadFile, deleteFile, uploading } = useFileUpload(); // New Hook
-    const hasTeamAccess = can('team:manage');
-    const hasSettingsAccess = can('settings:write');
     const storeId = user?.storeId || '1'; // Fallback to 1 if missing
+    const isLocked = stores[storeId]?.status === 'pending_deletion';
+    const hasTeamAccess = can('team:manage') && !isLocked;
+    const hasSettingsAccess = can('settings:write') && !isLocked;
+
 
     // Hidden File Input Ref
     const fileInputRef = React.useRef<HTMLInputElement>(null);
@@ -1559,15 +1561,17 @@ const MerchantSettings: React.FC = () => {
                                 });
                             }
                         }}
-                        className="px-4 py-2 border border-red-300 text-red-700 rounded-lg hover:bg-red-100 font-medium transition-colors"
+                        disabled={isLocked}
+                        className="px-4 py-2 border border-red-300 text-red-700 rounded-lg hover:bg-red-100 font-medium transition-colors disabled:opacity-50"
                     >
                         Pause Store Operations
                     </button>
                     <button
                         onClick={() => setShowCloseStoreModal(true)}
-                        className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium transition-colors shadow-sm"
+                        disabled={stores[storeId]?.status === 'pending_deletion'}
+                        className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium transition-colors shadow-sm disabled:opacity-50"
                     >
-                        Close Store Permanently
+                        {stores[storeId]?.status === 'pending_deletion' ? 'Deletion Pending...' : 'Close Store Permanently'}
                     </button>
                 </div>
             </section>
@@ -1576,6 +1580,32 @@ const MerchantSettings: React.FC = () => {
 
     return (
         <div className="p-6 animate-fade-in max-w-5xl mx-auto pb-24">
+            {stores[storeId]?.status === 'pending_deletion' && (
+                <div className="bg-orange-50 border-2 border-orange-200 rounded-2xl p-6 flex flex-col md:flex-row items-center gap-6 animate-pulse-subtle shadow-lg mb-8">
+                    <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center text-3xl shrink-0">
+                        🗑️
+                    </div>
+                    <div className="flex-1 text-center md:text-left">
+                        <h2 className="text-xl font-bold text-orange-900 mb-1">Store Deletion Pending</h2>
+                        <p className="text-sm text-orange-700 font-medium">
+                            Status: <span className="font-bold underline">Approved for Deletion</span>
+                        </p>
+                        <p className="text-xs text-orange-600 mt-2 leading-relaxed">
+                            Your store is currently <strong>unavailable</strong> to shoppers and will be permanently deleted in 30 days. 
+                            All products, deals, and account data will be wiped at the end of the grace period.
+                        </p>
+                        <p className="text-xs text-orange-500 mt-2 italic">
+                            Changed your mind? To cancel this deletion request, please contact Spendigo Support immediately.
+                        </p>
+                    </div>
+                    <button 
+                        onClick={() => window.location.href = 'mailto:support@spendigo.ca?subject=Cancel Store Deletion: ' + encodeURIComponent(storeInfo.name)}
+                        className="px-6 py-3 bg-orange-600 text-white rounded-xl font-bold hover:bg-orange-700 transition-all shadow-md active:scale-95 whitespace-nowrap"
+                    >
+                        Cancel Deletion Request
+                    </button>
+                </div>
+            )}
             {/* Combined Sticky Header */}
             <div className="sticky top-[64px] md:top-0 z-30 -mx-6 px-6 pt-6 pb-2 bg-[var(--surface-1)]/95 backdrop-blur-xl border-b border-[var(--glass-border)] mb-8">
                 <div className="flex items-center justify-between mb-6">

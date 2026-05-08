@@ -43,11 +43,12 @@ const SEGMENT_COLORS: Record<Segment, string> = {
 };
 
 const MerchantMarketing: React.FC = () => {
-    const { getStore } = useMarketplace();
+    const { stores, getStore } = useMarketplace();
     const { user } = useAuth();
     const { addNotification } = useNotifications();
     const storeId = user?.storeId || '1';
     const store = getStore(storeId);
+    const isLocked = stores[storeId]?.status === 'pending_deletion';
 
     const [campaignMessage, setCampaignMessage] = useState('');
     const [campaignSegment, setCampaignSegment] = useState<Segment>('nearby');
@@ -239,10 +240,17 @@ const MerchantMarketing: React.FC = () => {
                         
                         <div className="mt-auto">
                             <button
-                                onClick={() => window.print()}
-                                className="w-full py-3 bg-[var(--surface-2)] text-[var(--text-main)] border border-[var(--glass-border)] rounded-xl text-base font-bold shadow-sm hover:bg-[var(--glass-border)] transition-colors flex items-center justify-center gap-2 active:scale-[0.98]"
+                                onClick={() => {
+                                    if (isLocked) {
+                                        addNotification({ type: 'alert', title: 'Actions Restricted', message: 'Campaign tools are disabled during the store deletion grace period.' });
+                                        return;
+                                    }
+                                    window.print();
+                                }}
+                                disabled={isLocked}
+                                className="w-full py-3 bg-[var(--surface-2)] text-[var(--text-main)] border border-[var(--glass-border)] rounded-xl text-base font-bold shadow-sm hover:bg-[var(--glass-border)] transition-colors flex items-center justify-center gap-2 active:scale-[0.98] disabled:opacity-50"
                             >
-                                🖨️ Print High-Res Poster
+                                {isLocked ? '🚫 Actions Restricted' : '🖨️ Print High-Res Poster'}
                             </button>
                         </div>
                     </div>
@@ -302,10 +310,10 @@ const MerchantMarketing: React.FC = () => {
 
                             <button
                                 onClick={handleSendCampaign}
-                                disabled={isSending || !campaignMessage || !hasActiveFlyer}
+                                disabled={isSending || !campaignMessage || !hasActiveFlyer || isLocked}
                                 className="w-full py-3 bg-[var(--brand-primary)] text-white font-bold rounded-xl hover:brightness-110 shadow-md shadow-[var(--brand-primary)]/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                             >
-                                {isSending ? <><span className="animate-spin">⏳</span> Sending...</> : '🚀 Send Campaign'}
+                                {isSending ? <><span className="animate-spin">⏳</span> Sending...</> : isLocked ? '🚫 Actions Restricted' : '🚀 Send Campaign'}
                             </button>
                         </div>
                     </div>

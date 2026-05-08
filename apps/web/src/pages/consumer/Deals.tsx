@@ -18,7 +18,7 @@ const Deals: React.FC = () => {
     const [activeFilter, setActiveFilter] = useState('All');
 
     const storesWithDeals = useMemo(() => {
-        return Object.values(stores || {}).map((store: any) => {
+        return Object.values(stores || {}).filter((s: any) => s.status === 'active').map((store: any) => {
             // Distance filter
             if (userCoords && searchDistance > 0 && store.coordinates) {
                 const distance = calculateDistance(userCoords.lat, userCoords.lng, store.coordinates.lat, store.coordinates.lng);

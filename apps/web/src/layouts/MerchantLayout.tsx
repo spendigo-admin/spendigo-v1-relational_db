@@ -21,6 +21,8 @@ const MerchantLayout: React.FC = () => {
 
     const { stores, loading: storesLoading } = useMarketplace();
     const store = user?.storeId ? stores[user.storeId] : null;
+    const isLocked = store?.status === 'pending_deletion';
+
 
     // STRICT SECURITY CHECK
     React.useEffect(() => {
@@ -223,9 +225,9 @@ const MerchantLayout: React.FC = () => {
 
                 <div className="border-t border-[var(--glass-border)] pt-4 mt-auto p-4 pb-safe">
                     <div className="flex items-center gap-2 mb-2">
-                        <div className={`w-2 h-2 rounded-full ${store?.status === 'suspended' ? 'bg-red-500' : 'bg-green-500'} animate-pulse`}></div>
+                        <div className={`w-2 h-2 rounded-full ${isLocked ? 'bg-orange-500' : store?.status === 'suspended' ? 'bg-red-500' : 'bg-green-500'} animate-pulse`}></div>
                         <span className="text-sm font-medium text-[var(--text-main)]">
-                            {store?.status === 'suspended' ? 'Store Suspended' : 'Store Online'}
+                            {isLocked ? 'Read-Only Mode' : store?.status === 'suspended' ? 'Store Suspended' : 'Store Online'}
                         </span>
                     </div>
                     <div className="flex items-center justify-between text-xs">
@@ -305,6 +307,33 @@ const MerchantLayout: React.FC = () => {
                 </header>
 
                 <main className="flex-1 overflow-y-auto bg-[var(--surface-1)]">
+                    {/* Global Store Status Alert (Suspended or Pending Deletion) */}
+                    {(store?.status === 'suspended' || store?.status === 'pending_deletion') && (
+                        <div className={`mx-4 mt-4 md:mx-6 p-4 rounded-2xl border-2 flex items-center gap-4 animate-fade-in shadow-sm ${
+                            store.status === 'suspended' ? 'bg-red-50 border-red-100 text-red-900' : 'bg-orange-50 border-orange-100 text-orange-900'
+                        }`}>
+                            <div className="text-2xl">{store.status === 'suspended' ? '⚠️' : '🗑️'}</div>
+                            <div className="flex-1">
+                                <p className="text-sm font-bold">
+                                    {store.status === 'suspended' ? 'Store Suspended' : 'Store Deletion Pending'}
+                                </p>
+                                <p className="text-xs opacity-80 leading-relaxed">
+                                    {store.status === 'suspended' 
+                                        ? `Your store is hidden due to: ${store.statusReason || 'Policy Violation'}. Contact support to appeal.` 
+                                        : 'Your store is in read-only mode and will be permanently deleted in 30 days. All mutation actions are disabled.'
+                                    }
+                                </p>
+                            </div>
+                            <button 
+                                onClick={() => navigate('/merchant/settings')}
+                                className={`text-xs font-bold px-3 py-1.5 rounded-lg border transition-all ${
+                                    store.status === 'suspended' ? 'bg-red-100 border-red-200 hover:bg-red-200' : 'bg-orange-100 border-orange-200 hover:bg-orange-200'
+                                }`}
+                            >
+                                View Details
+                            </button>
+                        </div>
+                    )}
                     <Outlet />
                 </main>
             </div>

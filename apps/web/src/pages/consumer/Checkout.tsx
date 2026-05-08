@@ -81,16 +81,18 @@ const Checkout: React.FC = () => {
              }
         }
 
+        const isActive = store && store.status === 'active';
+        
         if (!acc[item.storeId]) {
             acc[item.storeId] = {
                 storeName: item.storeName,
                 total: 0,
                 items: [],
                 tier: store?.subscriptionTier || STORE_DATA[item.storeId]?.subscriptionTier || 'free',
-                deliveryEnabled: (store?.deliveryEnabled !== false) && !distanceViolation,
-                pickupEnabled: store?.pickupEnabled !== false,
-                isOpen: isStoreOpen(store),
-                acceptsOnlinePayment: !!store?.stripeAccountId && store?.stripeOnboardingStatus === 'complete',
+                deliveryEnabled: (store?.deliveryEnabled !== false) && !distanceViolation && isActive,
+                pickupEnabled: (store?.pickupEnabled !== false) && isActive,
+                isOpen: isStoreOpen(store) && isActive,
+                acceptsOnlinePayment: !!store?.stripeAccountId && store?.stripeOnboardingStatus === 'complete' && isActive,
                 distanceViolation,
                 distance
             };

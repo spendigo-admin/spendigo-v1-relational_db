@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import '../../styles/design-system.css';
 import { useAuth } from '../../context/AuthContext';
+import { useMarketplace } from '../../context/MarketplaceContext';
 import { useNotifications } from '../../context/NotificationContext';
 import { useConfirmation } from '../../context/ConfirmationContext';
 import { useCatalog, Product, generateBarcodeVariants } from '../../hooks/useCatalog';
@@ -117,7 +118,9 @@ const MerchantProducts: React.FC = () => {
     } = useCatalog();
 
     const storeId = user?.storeId || '';
-    const hasWriteAccess = can('products:write');
+    const { stores } = useMarketplace();
+    const isLocked = stores[storeId]?.status === 'pending_deletion';
+    const hasWriteAccess = can('products:write') && !isLocked;
 
     const { products, loading } = useStoreProducts(storeId);
 

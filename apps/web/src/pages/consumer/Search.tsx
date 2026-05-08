@@ -50,7 +50,7 @@ const Search: React.FC = () => {
         if (userCoords && searchDistance > 0) {
             results = results.filter(p => {
                 const store = stores[p.storeId];
-                if (!store || !store.coordinates) return false;
+                if (!store || store.status !== 'active' || !store.coordinates) return false;
                 const distance = calculateDistance(userCoords.lat, userCoords.lng, store.coordinates.lat, store.coordinates.lng);
                 if (distance <= searchDistance) return true;
                 

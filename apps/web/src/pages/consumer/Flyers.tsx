@@ -27,6 +27,7 @@ const Flyers: React.FC = () => {
     const { userCoords, userPostalCode, searchDistance, calculateDistance } = useLocation();
 
     const activeFlyerStores = Object.values(stores || {}).filter((store: any) => {
+        if (store.status !== 'active') return false;
         if (!isFlyerActive(store.flyer)) return false;
 
         if (userCoords && searchDistance > 0 && store.coordinates) {

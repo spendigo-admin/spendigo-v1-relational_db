@@ -46,17 +46,13 @@ const getValidFlyerImage = (imageUrl?: string): string | undefined => {
 };
 
 const MerchantFlyers: React.FC = () => {
-    const { getStore, updateStoreFlyer, subscribeToFlyers, saveFlyer, deleteFlyer } = useMarketplace();
-    const can = (action: string) => true; // Bypass RBAC for now, rely on Plan
     const { user } = useAuth();
+    const { stores, getStore, updateStoreFlyer, subscribeToFlyers, saveFlyer, deleteFlyer } = useMarketplace();
     const storeId = user?.storeId || '1';
-    const store = getStore(storeId);
-    // const availableProducts = useMemo(() => store?.products || [], [store?.products]);
+    const isLocked = stores[storeId]?.status === 'pending_deletion';
     const { products: availableProducts } = useStoreProducts(storeId);
-    const hasWriteAccess = true; // Simplified for owner
-
+    const hasWriteAccess = !isLocked;
     const isRestrictedPlan = (user?.subscriptionTier || 'free') !== 'growth';
-
 
     const [flyers, setFlyers] = useState<Flyer[]>([]);
     const [view, setView] = useState<'list' | 'editor'>('list');

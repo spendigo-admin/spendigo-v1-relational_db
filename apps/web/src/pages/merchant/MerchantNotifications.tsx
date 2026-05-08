@@ -4,6 +4,7 @@ import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { useAuth } from '../../context/AuthContext';
 import { useNotifications, AppNotification } from '../../context/NotificationContext';
+import { useMarketplace } from '../../context/MarketplaceContext';
 import { usePushNotifications } from '../../hooks/usePushNotifications';
 import SEO from '../../components/SEO';
 
@@ -50,11 +51,14 @@ const getIconConfig = (type: string) => {
 const MerchantNotifications: React.FC = () => {
     const navigate = useNavigate();
     const { user } = useAuth();
+    const { stores } = useMarketplace();
     const { notifications, unreadCount, markAsRead, markAllAsRead, clearAll } = useNotifications();
     const { permissionStatus, requestPermission } = usePushNotifications(user?.id);
     const [isRequesting, setIsRequesting] = useState(false);
     const [prefs, setPrefs] = useState<MerchantNotificationPreferences>(DEFAULT_MERCHANT_PREFS);
     const [savingPrefs, setSavingPrefs] = useState(false);
+    
+    const isLocked = user?.storeId ? stores[user.storeId]?.status === 'pending_deletion' : false;
 
     useEffect(() => {
         if (!user?.storeId) return;
@@ -67,12 +71,14 @@ const MerchantNotifications: React.FC = () => {
     }, [user?.storeId]);
 
     const handleRequestPermission = async () => {
+        if (isLocked) return;
         setIsRequesting(true);
         await requestPermission();
         setIsRequesting(false);
     };
 
     const togglePref = async (key: keyof MerchantNotificationPreferences) => {
+        if (isLocked) return;
         const updated = { ...prefs, [key]: !prefs[key] };
         setPrefs(updated);
         if (!user?.storeId) return;
