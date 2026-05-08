@@ -1,5 +1,6 @@
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
+import { logEvent, buildActorFromContext } from '../utils/audit';
 
 /**
  * DSAR: Request Account Deletion (Self-Service)
@@ -68,11 +69,19 @@ export const requestAccountDeletion = functions.https.onCall(async (data, contex
         notifSnapshot.docs.forEach(doc => notifBatch.delete(doc.ref));
         await notifBatch.commit();
 
-        // 6. Delete Firestore user document (PII)
+        // 6. Record forensic audit event BEFORE deletion
+        await logEvent(
+            'USER_SELF_DELETE',
+            buildActorFromContext(context),
+            { role: userData?.role, email: userData?.email },
+            `users/${uid}`
+        );
+
+        // 7. Delete Firestore user document (PII)
         await admin.firestore().collection('users').doc(uid).delete();
         functions.logger.info(`DSAR: Deleted Firestore /users/${uid}`);
 
-        // 7. Delete Firebase Auth record (credentials)
+        // 8. Delete Firebase Auth record (credentials)
         await admin.auth().deleteUser(uid);
         functions.logger.info(`DSAR: Deleted Firebase Auth for ${uid}`);
 

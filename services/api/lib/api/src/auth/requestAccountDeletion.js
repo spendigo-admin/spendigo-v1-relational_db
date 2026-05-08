@@ -36,6 +36,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.requestAccountDeletion = void 0;
 const functions = __importStar(require("firebase-functions"));
 const admin = __importStar(require("firebase-admin"));
+const audit_1 = require("../utils/audit");
 /**
  * DSAR: Request Account Deletion (Self-Service)
  * Allows an authenticated user to permanently delete their own account.
@@ -95,10 +96,12 @@ exports.requestAccountDeletion = functions.https.onCall(async (data, context) =>
         const notifBatch = admin.firestore().batch();
         notifSnapshot.docs.forEach(doc => notifBatch.delete(doc.ref));
         await notifBatch.commit();
-        // 6. Delete Firestore user document (PII)
+        // 6. Record forensic audit event BEFORE deletion
+        await (0, audit_1.logEvent)('USER_SELF_DELETE', (0, audit_1.buildActorFromContext)(context), { role: userData === null || userData === void 0 ? void 0 : userData.role, email: userData === null || userData === void 0 ? void 0 : userData.email }, `users/${uid}`);
+        // 7. Delete Firestore user document (PII)
         await admin.firestore().collection('users').doc(uid).delete();
         functions.logger.info(`DSAR: Deleted Firestore /users/${uid}`);
-        // 7. Delete Firebase Auth record (credentials)
+        // 8. Delete Firebase Auth record (credentials)
         await admin.auth().deleteUser(uid);
         functions.logger.info(`DSAR: Deleted Firebase Auth for ${uid}`);
         return { success: true, message: 'Your account has been permanently deleted.' };
