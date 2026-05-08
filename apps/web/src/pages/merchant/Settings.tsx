@@ -153,47 +153,47 @@ export const BUSINESS_TYPES: Record<string, { logo: string; cover: string; tagli
         tagline: 'Beautiful blooms for every occasion.'
     },
     'Home & Garden Store': {
-        logo: '/defaults/branding/other_logo.jpg?v=4',
-        cover: '/defaults/branding/other_cover.jpg?v=4',
+        logo: '/defaults/branding/home_garden_logo.png?v=5',
+        cover: '/defaults/branding/home_garden_cover.png?v=5',
         tagline: 'Everything to make your house a home.'
     },
     'Hardware Store': {
-        logo: '/defaults/branding/other_logo.jpg?v=4',
-        cover: '/defaults/branding/other_cover.jpg?v=4',
+        logo: '/defaults/branding/hardware_logo.png?v=5',
+        cover: '/defaults/branding/hardware_cover.png?v=5',
         tagline: 'Tools and supplies for every project.'
     },
     'Bookstore / Stationery': {
-        logo: '/defaults/branding/other_logo.jpg?v=4',
-        cover: '/defaults/branding/other_cover.jpg?v=4',
+        logo: '/defaults/branding/books_logo.png?v=5',
+        cover: '/defaults/branding/books_cover.png?v=5',
         tagline: 'Books, supplies, and inspiration.'
     },
     'Craft / Handmade Goods Store': {
-        logo: '/defaults/branding/other_logo.jpg?v=4',
-        cover: '/defaults/branding/other_cover.jpg?v=4',
+        logo: '/defaults/branding/craft_logo.png?v=5',
+        cover: '/defaults/branding/craft_cover.png?v=5',
         tagline: 'Unique, handmade goods and crafts.'
     },
     'Clothing / Boutique': {
-        logo: '/defaults/branding/other_logo.jpg?v=4',
-        cover: '/defaults/branding/other_cover.jpg?v=4',
+        logo: '/defaults/branding/clothing_logo.png?v=5',
+        cover: '/defaults/branding/clothing_cover.png?v=5',
         tagline: 'Apparel and accessories for every style.'
     },
     'Toy & Gift Store': {
-        logo: '/defaults/branding/other_logo.jpg?v=4',
-        cover: '/defaults/branding/other_cover.jpg?v=4',
+        logo: '/defaults/branding/toys_logo.png?v=5',
+        cover: '/defaults/branding/toys_cover.png?v=5',
         tagline: 'Fun toys and perfect gifts.'
     },
     'Electronics / Mobile Accessories': {
-        logo: '/defaults/branding/other_logo.jpg?v=4',
-        cover: '/defaults/branding/other_cover.jpg?v=4',
+        logo: '/defaults/branding/electronics_logo.png?v=5',
+        cover: '/defaults/branding/electronics_cover.png?v=5',
         tagline: 'Tech gadgets and accessories.'
     },
     'Thrift / Second-Hand Store': {
-        logo: '/defaults/branding/other_logo.jpg?v=4',
-        cover: '/defaults/branding/other_cover.jpg?v=4',
+        logo: '/defaults/branding/thrift_logo.png?v=5',
+        cover: '/defaults/branding/thrift_cover.png?v=5',
         tagline: 'Pre-loved goods and hidden treasures.'
     },
     'General Retail': {
-        logo: '/defaults/branding/other_logo.jpg?v=4',
+        logo: '/defaults/branding/general_logo.png?v=5',
         cover: '/defaults/branding/other_cover.jpg?v=4',
         tagline: 'Quality goods and services.'
     },

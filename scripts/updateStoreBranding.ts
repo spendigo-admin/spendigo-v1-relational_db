@@ -83,6 +83,42 @@ const categoriesToUpdate: Record<string, Branding> = {
     'Florist': {
         logo: '/defaults/branding/florist_logo.png?v=5',
         cover: '/defaults/branding/florist_cover.png?v=5'
+    },
+    'Home & Garden Store': {
+        logo: '/defaults/branding/home_garden_logo.png?v=5',
+        cover: '/defaults/branding/home_garden_cover.png?v=5'
+    },
+    'Hardware Store': {
+        logo: '/defaults/branding/hardware_logo.png?v=5',
+        cover: '/defaults/branding/hardware_cover.png?v=5'
+    },
+    'Bookstore / Stationery': {
+        logo: '/defaults/branding/books_logo.png?v=5',
+        cover: '/defaults/branding/books_cover.png?v=5'
+    },
+    'Craft / Handmade Goods Store': {
+        logo: '/defaults/branding/craft_logo.png?v=5',
+        cover: '/defaults/branding/craft_cover.png?v=5'
+    },
+    'Clothing / Boutique': {
+        logo: '/defaults/branding/clothing_logo.png?v=5',
+        cover: '/defaults/branding/clothing_cover.png?v=5'
+    },
+    'Toy & Gift Store': {
+        logo: '/defaults/branding/toys_logo.png?v=5',
+        cover: '/defaults/branding/toys_cover.png?v=5'
+    },
+    'Electronics / Mobile Accessories': {
+        logo: '/defaults/branding/electronics_logo.png?v=5',
+        cover: '/defaults/branding/electronics_cover.png?v=5'
+    },
+    'Thrift / Second-Hand Store': {
+        logo: '/defaults/branding/thrift_logo.png?v=5',
+        cover: '/defaults/branding/thrift_cover.png?v=5'
+    },
+    'General Retail': {
+        logo: '/defaults/branding/general_logo.png?v=5',
+        cover: '/defaults/branding/other_cover.jpg?v=4'
     }
 };
 

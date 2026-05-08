@@ -104,7 +104,7 @@ Admin sub-roles: SUPER_ADMIN (admin:all), MODERATOR (admin:users, admin:stores),
 
 **Admin MFA**: Phone SMS MFA (Firebase Phone Auth) is required for all admin roles. `AuthContext` checks `multiFactor(currentUser).enrolledFactors.length`; enrollment is at `/admin/mfa-setup` using invisible reCAPTCHA.
 
-**Admin portal pages**: See the [Page Routes](#page-routes) section for the full list. Note: `FlyerModeration.tsx` and `SeedUsers.tsx` exist under `pages/admin/` but have no routes wired in App.tsx.
+**Admin portal pages**: See the [Page Routes](#page-routes) section for the full list. Note: `SeedUsers.tsx` exists under `pages/admin/` but has no route wired in App.tsx.
 
 **Audit log integrity** (`AuditContext.tsx`): Audit entries are chained via SHA-256 — each record hashes its own payload concatenated with the previous record's hash (blockchain-lite). Tampering with any historical entry breaks the chain. Verified by the AUDITOR role in the admin portal.
 
@@ -150,6 +150,7 @@ Firebase Cloud Functions v4 (v1 API). Organized by domain:
   - **Webhook race condition**: Payment webhook can arrive before `placeOrder` finishes; temporary `payments` collection stores webhook data for later reconciliation.
 - `orders/` — `placeOrder` (transactional: reads stock → verifies quantity → decrements → validates payment → creates order), `cancelOrder` (restores stock), `downloadReceipt` (PDF via PDFKit, stored with Firebase download token)
 - `auth/` — Team member invite/delete/remove, `requestAccountDeletion`. Role-based rank: OWNER (3) > MANAGER (2) > STAFF/MARKETING (1) — prevents privilege escalation.
+- `marketing/` — `sendCampaign` (callable, OWNER/MANAGER): sends FCM push to a merchant-defined user segment (`nearby` / `inactive` / `active` / `high_value`). Message must come from a pre-approved allowlist. Rate-limited to 5 sends per 24 h per merchant via `rateLimiter`.
 - `email/` — `sendOrderConfirmation` (Firestore onCreate trigger), `sendOrderStatusUpdate` (onUpdate trigger). Emails are **not sent directly** — they write styled HTML to the `/mail` Firestore collection; a Firebase Extension handles SMTP delivery.
 - `triggers/` — Firestore-triggered functions:
   - `onUserUpdate` — syncs subscriptionTier to store doc
