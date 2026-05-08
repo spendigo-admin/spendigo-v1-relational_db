@@ -86,12 +86,16 @@ async function cascadeDeleteStore(db, storeId, storeData) {
     await Promise.all(usersSnap.docs.map(async (docSnap) => {
         const userData = docSnap.data();
         await docSnap.ref.update({
-            storeId: admin.firestore.FieldValue.delete(),
             role: 'consumer',
+            storeId: admin.firestore.FieldValue.delete(),
             merchantRole: admin.firestore.FieldValue.delete(),
-            subscriptionTier: 'free',
+            storeName: admin.firestore.FieldValue.delete(),
+            businessRegistrationNumber: admin.firestore.FieldValue.delete(),
+            manualOverride: admin.firestore.FieldValue.delete(),
             subscriptionStatus: 'inactive',
+            subscriptionTier: 'free',
             subscriptionEnd: null,
+            lastAdminEdit: admin.firestore.FieldValue.delete()
         });
         if (userData.stripeCustomerId) {
             try {

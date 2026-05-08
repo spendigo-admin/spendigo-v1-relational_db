@@ -46,15 +46,11 @@ exports.onStoreDelete = functions.firestore
     .document('stores/{storeId}')
     .onDelete(async (snap, context) => {
     const storeId = context.params.storeId;
-    const storeData = snap.data();
     const db = admin.firestore();
-    // If deleted via the grace-period flow, processPendingStoreDeletions already ran the cascade.
-    // This guard prevents double-deletion in that path.
-    if ((storeData === null || storeData === void 0 ? void 0 : storeData.status) === 'pending_deletion' && (storeData === null || storeData === void 0 ? void 0 : storeData.deletionApprovedAt)) {
-        functions.logger.info(`[onStoreDelete] Store ${storeId} was deleted via grace-period flow — cascade already handled.`);
-        return;
-    }
-    functions.logger.warn(`[onStoreDelete] Direct deletion detected for store ${storeId} — running emergency cascade.`);
+    // Removed the guard that previously skipped cleanup for stores in 'pending_deletion' status.
+    // This ensures that even if a store was approved for deletion but deleted early/manually,
+    // the associated merchants are still correctly reverted to consumer status.
+    functions.logger.warn(`[onStoreDelete] Deletion detected for store ${storeId} — running cleanup cascade.`);
     try {
         // 1. Delete Merchant Products
         const productsSnapshot = await db.collection('merchant_products')
@@ -78,12 +74,16 @@ exports.onStoreDelete = functions.firestore
         const userUpdates = usersSnapshot.docs.map(async (docSnap) => {
             const userData = docSnap.data();
             await docSnap.ref.update({
-                storeId: admin.firestore.FieldValue.delete(),
                 role: 'consumer',
+                storeId: admin.firestore.FieldValue.delete(),
                 merchantRole: admin.firestore.FieldValue.delete(),
-                subscriptionTier: 'free',
+                storeName: admin.firestore.FieldValue.delete(),
+                businessRegistrationNumber: admin.firestore.FieldValue.delete(),
+                manualOverride: admin.firestore.FieldValue.delete(),
                 subscriptionStatus: 'inactive',
-                subscriptionEnd: null
+                subscriptionTier: 'free',
+                subscriptionEnd: null,
+                lastAdminEdit: admin.firestore.FieldValue.delete()
             });
             if (userData.stripeCustomerId) {
                 try {

@@ -157,7 +157,7 @@ Firebase Cloud Functions v4 (v1 API). Organized by domain:
   - `onMasterProductWrite` — downloads external images to Storage with 1-year cache
   - `onOrderStatusUpdated` — sends FCM push notifications with emoji-prefixed titles, auto-removes stale tokens
   - `onStoreCreate` / `onStoreUpdate` — auto-geocodes store address via Nominatim; re-geocodes on address field changes.
-  - `onStoreDelete` — cascade cleanup: deletes merchant products, deals, flyers, de-links users, cancels Stripe subscriptions. Acts as safety net only — direct console deletes without `deletionApprovedAt` set are logged as warnings.
+  - `onStoreDelete` — cascade cleanup: deletes merchant products, deals, flyers, de-links users (reverts to `consumer` role, removes merchant fields), cancels Stripe subscriptions. Always runs on any store deletion — no longer skips stores deleted via the grace-period flow, ensuring merchants are always correctly reverted even on early/manual deletion.
   - `onBackupJobResult` (`storeTriggers.ts`) — Firestore `onCreate` on `system_backups/{id}`; if `status === 'failed'`, sends alert email via `/mail` collection.
   - `onMerchantProductPriceChange` (`priceHistoryTrigger.ts`) — records daily price history snapshot; detects price drops and new sales, then queries users with active FCM tokens within their configured proximity radius (Haversine) and sends geo-targeted multicast FCM notifications respecting `notificationPreferences.promotions` / `priceDrop` / `maxDistance` user fields
   - `onReviewCreated` (`reviewTrigger.ts`) — when a `store`-type review is created, queries all merchant users for that `storeId` and writes a `type: 'review'` notification to each `users/{uid}/notifications/{id}` subcollection
