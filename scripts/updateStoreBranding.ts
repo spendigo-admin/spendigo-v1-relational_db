@@ -49,7 +49,40 @@ const categoriesToUpdate: Record<string, Branding> = {
         cover: '/defaults/branding/butcher_cover.png?v=5'
     },
     'Fishmonger / Seafood Shop': {
-        logo: '/defaults/branding/seafood_logo.png?v=5'
+        logo: '/defaults/branding/seafood_logo.png?v=5',
+        cover: '/defaults/branding/seafood_cover.png?v=5'
+    },
+    'Deli / Prepared Foods': {
+        logo: '/defaults/branding/deli_logo.png?v=5',
+        cover: '/defaults/branding/deli_cover.png?v=5'
+    },
+    'Restaurant': {
+        logo: '/defaults/branding/restaurant_logo.png?v=5',
+        cover: '/defaults/branding/restaurant_cover.png?v=5'
+    },
+    'Local Café / Coffee Shop': {
+        logo: '/defaults/branding/cafe_logo.png?v=5',
+        cover: '/defaults/branding/cafe_cover.png?v=5'
+    },
+    'Dessert & Sweets Shop': {
+        logo: '/defaults/branding/sweets_logo.png?v=5',
+        cover: '/defaults/branding/sweets_cover.png?v=5'
+    },
+    'Meal Prep / Tiffin Service': {
+        logo: '/defaults/branding/tiffin_logo.png?v=5',
+        cover: '/defaults/branding/tiffin_cover.png?v=5'
+    },
+    'Pharmacy / Health Store': {
+        logo: '/defaults/branding/pharmacy_logo.png?v=5',
+        cover: '/defaults/branding/pharmacy_cover.png?v=5'
+    },
+    'Pet Store': {
+        logo: '/defaults/branding/pet_logo.png?v=5',
+        cover: '/defaults/branding/pet_cover.png?v=5'
+    },
+    'Florist': {
+        logo: '/defaults/branding/florist_logo.png?v=5',
+        cover: '/defaults/branding/florist_cover.png?v=5'
     }
 };
 

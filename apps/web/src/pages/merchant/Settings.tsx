@@ -109,47 +109,47 @@ export const BUSINESS_TYPES: Record<string, { logo: string; cover: string; tagli
     },
     'Fishmonger / Seafood Shop': {
         logo: '/defaults/branding/seafood_logo.png?v=5',
-        cover: '/defaults/branding/other_cover.jpg?v=4',
+        cover: '/defaults/branding/seafood_cover.png?v=5',
         tagline: 'Fresh catches from the sea.'
     },
     'Deli / Prepared Foods': {
-        logo: '/defaults/branding/grocery_logo.jpg?v=4',
-        cover: '/defaults/branding/grocery_cover.jpg?v=4',
+        logo: '/defaults/branding/deli_logo.png?v=5',
+        cover: '/defaults/branding/deli_cover.png?v=5',
         tagline: 'Ready-to-eat meals and deli meats.'
     },
     'Restaurant': {
-        logo: '/defaults/branding/cafe_logo.jpg?v=4',
-        cover: '/defaults/branding/cafe_cover.jpg?v=4',
+        logo: '/defaults/branding/restaurant_logo.png?v=5',
+        cover: '/defaults/branding/restaurant_cover.png?v=5',
         tagline: 'Delicious meals made to order.'
     },
     'Local Café / Coffee Shop': {
-        logo: '/defaults/branding/cafe_logo.jpg?v=4',
-        cover: '/defaults/branding/cafe_cover.jpg?v=4',
+        logo: '/defaults/branding/cafe_logo.png?v=5',
+        cover: '/defaults/branding/cafe_cover.png?v=5',
         tagline: 'Premium coffee and cozy vibes.'
     },
     'Dessert & Sweets Shop': {
-        logo: '/defaults/branding/bakery_logo.jpg?v=4',
-        cover: '/defaults/branding/bakery_cover.jpg?v=4',
+        logo: '/defaults/branding/sweets_logo.png?v=5',
+        cover: '/defaults/branding/sweets_cover.png?v=5',
         tagline: 'Treat yourself to something sweet.'
     },
     'Meal Prep / Tiffin Service': {
-        logo: '/defaults/branding/grocery_logo.jpg?v=4',
-        cover: '/defaults/branding/grocery_cover.jpg?v=4',
+        logo: '/defaults/branding/tiffin_logo.png?v=5',
+        cover: '/defaults/branding/tiffin_cover.png?v=5',
         tagline: 'Home-cooked meals delivered fresh.'
     },
     'Pharmacy / Health Store': {
-        logo: '/defaults/branding/pharmacy_logo.jpg?v=4',
-        cover: '/defaults/branding/pharmacy_cover.jpg?v=4',
+        logo: '/defaults/branding/pharmacy_logo.png?v=5',
+        cover: '/defaults/branding/pharmacy_cover.png?v=5',
         tagline: 'Health, wellness, and prescriptions.'
     },
     'Pet Store': {
-        logo: '/defaults/branding/pet_logo.jpg?v=4',
-        cover: '/defaults/branding/pet_cover.jpg?v=4',
+        logo: '/defaults/branding/pet_logo.png?v=5',
+        cover: '/defaults/branding/pet_cover.png?v=5',
         tagline: 'Everything your furry friends need.'
     },
     'Florist': {
-        logo: '/defaults/branding/florist_logo.jpg?v=4',
-        cover: '/defaults/branding/florist_cover.jpg?v=4',
+        logo: '/defaults/branding/florist_logo.png?v=5',
+        cover: '/defaults/branding/florist_cover.png?v=5',
         tagline: 'Beautiful blooms for every occasion.'
     },
     'Home & Garden Store': {

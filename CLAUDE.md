@@ -76,7 +76,7 @@ This is a **Turbo monorepo** with npm workspaces:
 
 **Context providers** (wrap order in App.tsx matters):
 ```
-AuthProvider → AuditProvider → MaintenanceGuard → NotificationProvider → MarketplaceProvider
+AuthProvider → AuditProvider → MaintenanceGuard → MarketplaceProvider → NotificationProvider
   → CatalogProvider → ReviewProvider → CartProvider → WishlistProvider → ComparisonProvider
   → OrderProvider → LocationProvider → ConfirmationProvider
 ```
@@ -155,7 +155,7 @@ Firebase Cloud Functions v4 (v1 API). Organized by domain:
   - `onUserUpdate` — syncs subscriptionTier to store doc
   - `onMasterProductWrite` — downloads external images to Storage with 1-year cache
   - `onOrderStatusUpdated` — sends FCM push notifications with emoji-prefixed titles, auto-removes stale tokens
-  - `onStoreCreate` / `onStoreUpdate` — auto-geocodes store address via Nominatim; re-geocodes on address field changes. **Note**: defined in `storeTriggers.ts` but not currently exported from `index.ts` (not deployed).
+  - `onStoreCreate` / `onStoreUpdate` — auto-geocodes store address via Nominatim; re-geocodes on address field changes.
   - `onStoreDelete` — cascade cleanup: deletes merchant products, deals, flyers, de-links users, cancels Stripe subscriptions. Acts as safety net only — direct console deletes without `deletionApprovedAt` set are logged as warnings.
   - `onBackupJobResult` (`storeTriggers.ts`) — Firestore `onCreate` on `system_backups/{id}`; if `status === 'failed'`, sends alert email via `/mail` collection.
   - `onMerchantProductPriceChange` (`priceHistoryTrigger.ts`) — records daily price history snapshot; detects price drops and new sales, then queries users with active FCM tokens within their configured proximity radius (Haversine) and sends geo-targeted multicast FCM notifications respecting `notificationPreferences.promotions` / `priceDrop` / `maxDistance` user fields
@@ -292,6 +292,9 @@ Architecture docs in `docs/` (27 files): `ARCHITECTURE.md`, `SCHEMA.md` (Firesto
 | `/careers`, `/careers/:id` | Careers, CareerDetail | No |
 | `/surveys` | Surveys | No |
 | `/smartcart/prototype` | SmartCartPrototype | No |
+| `*` | NotFound (404) | No |
+
+**Utility pages** (not in the route table above): `Maintenance.tsx` — rendered by `MaintenanceGuard` when `settings/platform.maintenanceMode` is `true`.
 
 ### Merchant (`/merchant/*` — requires role `merchant`)
 `/dashboard`, `/onboarding`, `/products`, `/orders`, `/flyers`, `/deals`, `/analytics`, `/marketing`, `/settings`, `/subscription`, `/notifications`
