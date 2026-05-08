@@ -588,14 +588,14 @@ const StoreDetail: React.FC = () => {
             <SEO title={store.name} description={`Shop at ${store.name} on Spendigo. Browse products, weekly flyers, and deals from this local store.`} path={`/store/${store.id}`} />
             
             {/* IMMERSIVE RETAIL HEADER */}
-            <div className="relative h-64 md:h-80 bg-gray-900 group">
+            <div className="relative h-72 md:h-96 lg:h-[400px] bg-gray-900 group">
                 <img 
                     src={store.image} 
                     alt={store.name} 
-                    className="w-full h-full object-cover opacity-60 group-hover:opacity-70 transition-opacity duration-700" 
+                    className="w-full h-full object-cover opacity-85 group-hover:opacity-100 transition-opacity duration-700" 
                     decoding="async" 
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/40 to-transparent"></div>
+                <div className="absolute inset-0 bg-gradient-to-t from-gray-900/90 via-gray-900/40 to-transparent"></div>
 
                 {/* Premium Back Button */}
                 <button
@@ -607,12 +607,12 @@ const StoreDetail: React.FC = () => {
                 </button>
 
                 {/* Floating Store Identity */}
-                <div className="absolute bottom-0 left-0 right-0 p-6 md:p-10 pb-16">
-                    <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-end gap-6 md:gap-8">
+                <div className="absolute bottom-0 left-0 right-0 p-4 md:p-10 pb-12 md:pb-16">
+                    <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-start md:items-end gap-4 md:gap-8">
                         {/* THE STORE SIGN */}
                         <div className="relative group/logo">
                             <div className="absolute -inset-1 bg-gradient-to-r from-teal-600 to-teal-400 rounded-3xl blur opacity-25 group-hover/logo:opacity-50 transition duration-1000 group-hover/logo:duration-200"></div>
-                            <div className="w-24 h-24 md:w-32 md:h-32 relative rounded-3xl bg-white flex items-center justify-center text-4xl md:text-5xl shadow-2xl overflow-hidden border-4 border-white ring-4 ring-black/5">
+                            <div className="w-20 h-20 md:w-32 md:h-32 relative rounded-3xl bg-white flex items-center justify-center text-3xl md:text-5xl shadow-2xl overflow-hidden border-4 border-white ring-4 ring-black/5">
                                 {((store.logoUrl || store.logo || '').startsWith('http') || (store.logoUrl || store.logo || '').startsWith('/') || (store.logoUrl || store.logo || '').startsWith('data:')) ? (
                                     <img src={store.logoUrl || store.logo} alt="Logo" className="w-full h-full object-cover p-2" decoding="async" />
                                 ) : (

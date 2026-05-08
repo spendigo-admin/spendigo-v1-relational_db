@@ -26,7 +26,7 @@ interface AdCampaign {
 const DefaultHero = () => {
     const { t } = useTranslation();
     return (
-    <section className="relative overflow-hidden bg-white py-16 md:py-32 min-h-[340px] md:min-h-[450px] px-4 flex items-center justify-center">
+    <section className="relative overflow-hidden bg-white py-12 md:py-24 min-h-[250px] md:min-h-[340px] px-4 flex items-center justify-center">
         {/* Background Decorative Elements */}
         <div className="absolute inset-0 z-0">
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full bg-[radial-gradient(circle_at_50%_-20%,var(--brand-primary-light),transparent_70%)]" />
@@ -166,7 +166,7 @@ const AdCarousel: React.FC = () => {
                 <DefaultHero />
             </div>
 
-        <section className={`relative overflow-hidden group bg-white flex flex-col items-center justify-center min-h-[340px] md:min-h-[450px] transition-all duration-[1500ms] ease-in-out ${mediaLoaded ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
+        <section className={`relative overflow-hidden group bg-white flex flex-col items-center justify-center min-h-[250px] md:min-h-[340px] transition-all duration-[1500ms] ease-in-out ${mediaLoaded ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
             {/* Background Blur Effect (Stays Absolute) */}
             <div className="absolute inset-0 z-0 opacity-40 blur-2xl scale-110">
                 {ads.map((ad, idx) => {
@@ -204,7 +204,7 @@ const AdCarousel: React.FC = () => {
                             {isVid ? (
                                 <video 
                                     src={src} 
-                                    className="w-full h-auto block max-h-[65vh] object-contain mx-auto shadow-2xl" 
+                                    className="w-full h-auto block max-h-[50vh] object-contain mx-auto shadow-2xl" 
                                     muted 
                                     loop 
                                     autoPlay 
@@ -215,7 +215,7 @@ const AdCarousel: React.FC = () => {
                                 <img
                                     src={src}
                                     alt={ad.title}
-                                    className="w-full h-auto block max-h-[65vh] object-contain mx-auto shadow-2xl"
+                                    className="w-full h-auto block max-h-[50vh] object-contain mx-auto shadow-2xl"
                                     onLoad={() => { if (isActive) setMediaLoaded(true); }}
                                 />
                             )}

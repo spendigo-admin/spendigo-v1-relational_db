@@ -146,7 +146,7 @@ const StoreList: React.FC = () => {
             <AdCarousel />
 
             {/* PREMIUM MARKETPLACE INFO BOARD */}
-            <section className="relative z-30 max-w-7xl mx-auto px-4 -mt-8">
+            <section className="relative z-[60] max-w-7xl mx-auto px-4 -mt-8">
                 <div className="bg-white rounded-[1.5rem] md:rounded-[2rem] shadow-2xl border border-gray-100 p-1 md:p-3 flex flex-col lg:flex-row items-stretch gap-2 lg:gap-4 overflow-x-auto scrollbar-hide">
                     
                     {/* Stats Cards Container */}
