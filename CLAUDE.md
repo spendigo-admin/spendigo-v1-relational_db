@@ -163,7 +163,7 @@ Firebase Cloud Functions v4 (v1 API). Organized by domain:
   - `onReviewCreated` (`reviewTrigger.ts`) — when a `store`-type review is created, queries all merchant users for that `storeId` and writes a `type: 'review'` notification to each `users/{uid}/notifications/{id}` subcollection
   - `onOrderCreated` — post-order trigger (send confirmation, audit, analytics)
   - `syncMasterProductToAlgolia`, `syncMerchantProductToAlgolia` (includes `_geoloc` for location-based search)
-- `admin/` — Cleanup utilities (`cleanupOrphanedUsers`, `cleanupOrphanedStoreData`, `syncTrafficStats`), `getSystemHealth` (powers `/admin/health` dashboard), `scrapeFlyer` (flyer content extraction for `/admin/flyer-ingestion`), `processIngestionJobs` (background flyer ingestion runner), `searchPublicDeals`. **Backup functions**: `scheduledFirestoreExport` (pubsub `0 2 * * *` Toronto — exports critical collections to GCS, skips if `settings/platform.scheduledExportsEnabled === false`), `triggerManualExport` (callable, admin-only — same export, always runs regardless of flag), `exportFirebaseAuth` (pubsub `0 3 * * *` — paginates Auth users to NDJSON in GCS), `exportMerchantData` (callable, OWNER-only, rate-limited 3/hr — returns store+products+orders JSON for download, redacts customer PII), `processPendingStoreDeletions` (pubsub `0 4 * * *` — runs cascade delete on stores with `status === 'pending_deletion'` AND `deletionApprovedAt` > 30 days ago). All backup jobs write a manifest doc to `system_backups` collection. **IAM required on `spendigo-8540c@appspot.gserviceaccount.com`**: `roles/datastore.importExportAdmin` (project-level) + `roles/storage.objectCreator` (bucket-level on `spendigo-8540c-firestore-backups`).
+- `admin/` — Cleanup utilities (`cleanupOrphanedUsers`, `cleanupOrphanedStoreData`, `syncTrafficStats`), `getSystemHealth` (powers `/admin/health` dashboard), `scrapeFlyer` (flyer content extraction for `/admin/flyer-ingestion`), `processIngestionJobs` (background flyer ingestion runner), `searchPublicDeals`, `forceDeleteStore` (callable, admin-only — immediately runs cascade delete on a store already in `pending_deletion` status, bypassing the 30-day grace period; sets `status: 'deletion_failed'` on error; uses shared `storeCleanupUtils.ts`). **Backup functions**: `scheduledFirestoreExport` (pubsub `0 2 * * *` Toronto — exports critical collections to GCS, skips if `settings/platform.scheduledExportsEnabled === false`), `triggerManualExport` (callable, admin-only — same export, always runs regardless of flag), `exportFirebaseAuth` (pubsub `0 3 * * *` — paginates Auth users to NDJSON in GCS), `exportMerchantData` (callable, OWNER-only, rate-limited 3/hr — returns store+products+orders JSON for download, redacts customer PII), `processPendingStoreDeletions` (pubsub `0 4 * * *` — runs cascade delete on stores with `status === 'pending_deletion'` AND `deletionApprovedAt` > 30 days ago). All backup jobs write a manifest doc to `system_backups` collection. **IAM required on `spendigo-8540c@appspot.gserviceaccount.com`**: `roles/datastore.importExportAdmin` (project-level) + `roles/storage.objectCreator` (bucket-level on `spendigo-8540c-firestore-backups`).
 - `audit/` — `recordAuditEvent` (callable function; receives events from the client-side `auditBridge` and writes append-only entries to `audit_logs`)
 - `smartcart/` — Cart optimization HTTP endpoint (`/smartcartOptimize`) mirroring frontend logic
 - `cart/` — Additional `/cartOptimize` HTTP endpoint (delegates to smartcart service layer)
@@ -189,7 +189,7 @@ Stripe webhook secret stored in Firebase Runtime Config: `stripe.webhook_secret`
 **Key Firestore write restrictions** (enforced in rules):
 - **Orders**: Created server-side only via Admin SDK (Cloud Functions). Clients cannot create orders directly. Updates use `diff().affectedKeys()` for field-level control — merchants can only change `status`, `rejectionReason`, `estimatedTime`, `paymentStatus`; customers can only set status to `cancelled`.
 - **Users**: `role`, `adminRole`, `merchantRole`, `storeId` are admin-only fields. Self-registration only sets `consumer` or `merchant` role.
-- **Stores**: Merchants cannot change `subscriptionTier`, `status`, Stripe config, or `ownerId`. Deals live in `stores/{storeId}/deals` subcollection (flash sales, standard sales, flyer items). **Soft-delete**: admin approval sets `status: 'pending_deletion'` + `deletionApprovedAt: serverTimestamp()` instead of calling `deleteDoc` — `processPendingStoreDeletions` runs the cascade after 30 days. `cancelStoreDeletion` reverts to `status: 'suspended'`.
+- **Stores**: Merchants cannot change `subscriptionTier`, `status`, Stripe config, or `ownerId`. Deals live in `stores/{storeId}/deals` subcollection (flash sales, standard sales, flyer items). **Soft-delete**: admin approval sets `status: 'pending_deletion'` + `deletionApprovedAt: serverTimestamp()` instead of calling `deleteDoc` — `processPendingStoreDeletions` runs the cascade after 30 days. `cancelStoreDeletion` reverts to `status: 'suspended'` (removes `deletionApprovedAt`). Admins can bypass the grace period via the `forceDeleteStore` Cloud Function, which requires `pending_deletion` status and sets `status: 'deletion_failed'` on error.
 - **Merchant products**: Must reference an existing `master_products` or `pending_master_products` document (enforced by `exists()` in rules). Merchants cannot change `merchant_id` or `master_product_id` after creation (admin can).
 - **Audit logs**: Append-only. Users create; nobody updates/deletes.
 
@@ -269,7 +269,7 @@ Seeded QA account emails and role-by-role test workflows are documented in `docs
 
 ## Documentation
 
-Architecture docs in `docs/` (27 files): `ARCHITECTURE.md`, `SCHEMA.md` (Firestore schema), `SITEMAP.md` (full route map), `OPENAPI.yaml` (REST API spec), `AUDIT_IMPLEMENTATION.md` (SHA-256 ledger), `SEARCH_IMPLEMENTATION.md`, `SMARTCART_INTERFACE_DESIGN.md`, `SMARTCART_ALGORITHM_FLOW.md`, `MERCHANT_BILLING.md`, `SECURITY_VERIFICATION.md`, `EMAIL_SETUP_GUIDE.md`, `MASTER_CATALOG_PLAN.md`, `MOBILE_DEPLOYMENT.md`, `GAP_ANALYSIS.md`, `DEPLOYMENT_GUIDE.md`, and more. Terraform infra config in `infra/` (`main.tf`, `variables.tf`).
+Architecture docs in `docs/` (28 files): `ARCHITECTURE.md`, `SCHEMA.md` (Firestore schema), `SITEMAP.md` (full route map), `OPENAPI.yaml` (REST API spec), `AUDIT_IMPLEMENTATION.md` (SHA-256 ledger), `SEARCH_IMPLEMENTATION.md`, `SMARTCART_INTERFACE_DESIGN.md`, `SMARTCART_ALGORITHM_FLOW.md`, `MERCHANT_BILLING.md`, `SECURITY_VERIFICATION.md`, `EMAIL_SETUP_GUIDE.md`, `MASTER_CATALOG_PLAN.md`, `MOBILE_DEPLOYMENT.md`, `GAP_ANALYSIS.md`, `DEPLOYMENT_GUIDE.md`, `PROCESS_LIFECYCLES.md` (step-by-step flows for 17 major processes — order placement, store deletion, team invites, payments, subscriptions, etc.; includes error paths, async gaps, and known race conditions — consult before touching any multi-step workflow), and more. Terraform infra config in `infra/` (`main.tf`, `variables.tf`).
 
 ## Page Routes
 
@@ -295,7 +295,7 @@ Architecture docs in `docs/` (27 files): `ARCHITECTURE.md`, `SCHEMA.md` (Firesto
 | `/smartcart/prototype` | SmartCartPrototype | No |
 | `*` | NotFound (404) | No |
 
-**Utility pages** (not in the route table above): `Maintenance.tsx` — rendered by `MaintenanceGuard` when `settings/platform.maintenanceMode` is `true`.
+**Utility pages** (not in the route table above): `Maintenance.tsx` — rendered by `MaintenanceGuard` when `settings/platform.maintenanceMode` is `true`. Features a two-column layout (brand info + interactive 2048 game) with a link to `/login` for admin access. The `Game2048` component (`apps/web/src/components/Game2048.tsx`) handles keyboard (arrows/WASD) and touch controls; best score persists in `localStorage` under key `2048-best-score`.
 
 ### Merchant (`/merchant/*` — requires role `merchant`)
 `/dashboard`, `/onboarding`, `/products`, `/orders`, `/flyers`, `/deals`, `/analytics`, `/marketing`, `/settings`, `/subscription`, `/notifications`
@@ -314,6 +314,7 @@ Non-obvious keys used across the app:
 | `spendigo_comparison_guest` | Guest comparison list (JSON) — merged into Firestore on login |
 | `smartcart_selections_v1` | SmartCart store selections — persists across logout |
 | `spendigo_theme` | Active theme ID (`default` \| `theme-night` \| `theme-eco` \| `theme-deal`) — read by `initTheme()` in `main.tsx` before React mounts to prevent FOUC |
+| `2048-best-score` | All-time best score for the Game2048 component embedded in the maintenance page |
 
 ## Troubleshooting
 
