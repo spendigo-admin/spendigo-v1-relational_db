@@ -62,7 +62,7 @@ export const WishlistItemCard: React.FC<WishlistItemCardProps> = ({
                                 )}
                             </p>
                             {reasonText && (
-                                <p className="text-xs text-[var(--status-success)] font-medium mt-0.5">{reasonText}</p>
+                                <p className="text-[10px] text-emerald-600 font-black uppercase tracking-widest mt-0.5">{reasonText}</p>
                             )}
                         </div>
                     )}
@@ -88,7 +88,7 @@ export const WishlistItemCard: React.FC<WishlistItemCardProps> = ({
                                         {selectedOption.discount}
                                     </span>
                                 )}
-                                <span className="font-bold text-[var(--brand-primary)] text-sm">
+                                <span className="font-black text-[#007AFF] text-sm italic tracking-tighter">
                                     ${selectedOption.price.toFixed(2)}
                                 </span>
                             </div>
@@ -127,22 +127,22 @@ export const WishlistItemCard: React.FC<WishlistItemCardProps> = ({
                                 onClick={() => handleSelectionChange(item.id, option.storeId)}
                                 className={`p-3 flex items-center justify-between cursor-pointer transition-colors border-l-4 ${
                                     isSelected
-                                        ? 'bg-[var(--brand-primary)]/5 border-[var(--brand-primary)]'
-                                        : 'border-transparent hover:bg-[var(--surface-1)]'
+                                        ? 'bg-blue-50 border-[#007AFF]'
+                                        : 'border-transparent hover:bg-gray-50'
                                 }`}
                             >
                                 <div className="flex items-center gap-3">
-                                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors flex-shrink-0 ${isSelected ? 'border-[var(--brand-primary)] bg-[var(--brand-primary)]' : 'border-[var(--glass-border)]'}`}>
+                                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors flex-shrink-0 ${isSelected ? 'border-[#007AFF] bg-[#007AFF]' : 'border-gray-200'}`}>
                                         {isSelected && <div className="w-2 h-2 bg-white rounded-full" />}
                                     </div>
                                     <div>
                                         <div className="flex items-center gap-2">
-                                            <p className={`font-medium text-sm leading-tight ${isSelected ? 'text-[var(--brand-primary)]' : 'text-[var(--text-main)]'}`}>
+                                            <p className={`font-black uppercase tracking-widest text-[10px] leading-tight ${isSelected ? 'text-[#007AFF]' : 'text-[#112244]'}`}>
                                                 {(() => {
                                                     const showBrand = option.brand && !option.name?.toLowerCase().startsWith(option.brand.toLowerCase());
                                                     return (
                                                         <>
-                                                            {showBrand && <span className="font-bold text-[var(--text-main)]">{option.brand} </span>}
+                                                            {showBrand && <span className="font-black text-[#112244] italic">{option.brand} </span>}
                                                             <span>{option.name}</span>
                                                             {option.unit && <span className="text-gray-400 text-xs"> ({option.unit})</span>}
                                                             {option.is_canadian_local && (
@@ -186,7 +186,7 @@ export const WishlistItemCard: React.FC<WishlistItemCardProps> = ({
                                                 {option.priceTrend === 'down' ? '↓' : '↑'}
                                             </span>
                                         )}
-                                        <p className={`font-bold text-sm ${isSelected ? 'text-[var(--brand-primary)]' : 'text-[var(--text-main)]'}`}>
+                                        <p className={`font-black text-sm italic tracking-tighter ${isSelected ? 'text-[#007AFF]' : 'text-[#112244]'}`}>
                                             ${option.price.toFixed(2)}
                                         </p>
                                     </div>
@@ -219,8 +219,8 @@ export const WishlistItemCard: React.FC<WishlistItemCardProps> = ({
                             </div>
                             <div className="flex items-center gap-2 flex-shrink-0">
                                 <div className="text-right">
-                                    <p className="text-xs font-bold text-amber-700">${sub.cheapestPrice.toFixed(2)}</p>
-                                    <p className="text-xs text-[var(--status-success)] font-medium">Save ${sub.priceDifference.toFixed(2)}</p>
+                                    <p className="text-xs font-black text-amber-700 italic tracking-tighter">${sub.cheapestPrice.toFixed(2)}</p>
+                                    <p className="text-[10px] text-emerald-600 font-black uppercase tracking-widest">Save ${sub.priceDifference.toFixed(2)}</p>
                                 </div>
                                 {onSwapItem && (
                                     <button

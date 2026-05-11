@@ -29,7 +29,7 @@ export const AddItemsPanel: React.FC<AddItemsPanelProps> = ({ showAddItems, setS
         <div className="mb-8">
             <button
                 onClick={() => setShowAddItems(!showAddItems)}
-                className="w-full py-3 border border-dashed border-[var(--brand-primary)] rounded-xl text-[var(--brand-primary)] font-medium hover:bg-[var(--brand-primary)]/5 transition-colors text-sm"
+                className="w-full py-3 border border-dashed border-[#112244]/30 rounded-xl text-[#112244] font-black uppercase tracking-widest hover:bg-[#112244]/5 transition-all text-[10px]"
             >
                 {showAddItems ? '▲ Hide Item Selector' : `+ Add Items${wishlistItems.length > 0 ? ` (${wishlistItems.length} in list)` : ''}`}
             </button>
@@ -54,7 +54,7 @@ export const AddItemsPanel: React.FC<AddItemsPanelProps> = ({ showAddItems, setS
                             />
                             <button
                                 onClick={handleCustomAdd}
-                                className="bg-[var(--brand-primary)] text-white px-5 py-2 rounded-full text-sm font-bold hover:brightness-110 transition-all"
+                                className="bg-[#112244] text-white px-5 py-2 rounded-full text-xs font-black uppercase tracking-widest hover:bg-black transition-all"
                             >
                                 Add
                             </button>
@@ -69,9 +69,9 @@ export const AddItemsPanel: React.FC<AddItemsPanelProps> = ({ showAddItems, setS
                                         onClick={() => {
                                             setSelectedCategory(isSelected ? null : staple.name);
                                         }}
-                                        className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all flex items-center gap-1.5 ${isSelected
-                                            ? 'bg-[var(--brand-primary)] text-white border-[var(--brand-primary)] shadow-md'
-                                            : 'bg-white text-[var(--text-muted)] border-[var(--glass-border)] hover:border-[var(--brand-primary)] hover:text-[var(--brand-primary)]'
+                                        className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all flex items-center gap-1.5 ${isSelected
+                                            ? 'bg-[#007AFF] text-white border-[#007AFF] shadow-md shadow-blue-500/20'
+                                            : 'bg-white text-[var(--text-muted)] border-gray-100 hover:border-[#007AFF] hover:text-[#007AFF]'
                                             }`}
                                     >
                                         <span className="text-sm">{staple.emoji}</span>
@@ -134,9 +134,9 @@ export const AddItemsPanel: React.FC<AddItemsPanelProps> = ({ showAddItems, setS
                                                         addItem(item);
                                                     }
                                                 }}
-                                                className={`flex items-center gap-2 p-2 rounded-lg text-left transition-all text-xs ${isAdded
-                                                    ? 'bg-[var(--brand-primary)] text-white shadow-md transform scale-[1.02]'
-                                                    : 'bg-[var(--surface-1)] hover:bg-[var(--surface-2)] border border-transparent'
+                                                className={`flex items-center gap-2 p-2 rounded-lg text-left transition-all text-[10px] uppercase font-black tracking-tighter ${isAdded
+                                                    ? 'bg-[#112244] text-white shadow-md transform scale-[1.02]'
+                                                    : 'bg-gray-50 hover:bg-gray-100 border border-transparent'
                                                     }`}
                                             >
                                                 <img src={item.image} alt="" className="w-8 h-8 rounded-md object-cover bg-white" />

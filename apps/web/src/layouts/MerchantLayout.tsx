@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useMarketplace } from '../context/MarketplaceContext';
 import { useNotifications } from '../context/NotificationContext';
 import NotificationPopover from '../components/NotificationPopover';
+import NotificationToast from '../components/NotificationToast';
 import '../styles/design-system.css';
 const MerchantLayout: React.FC = () => {
     const { user, logout, can } = useAuth();
@@ -78,6 +79,7 @@ const MerchantLayout: React.FC = () => {
 
     return (
         <div className="min-h-screen bg-[var(--surface-0)] flex flex-col md:grid md:grid-cols-[250px_1fr]">
+            <NotificationToast />
             {/* Mobile Header */}
             <header className="md:hidden h-16 bg-white/80 backdrop-blur-md border-b border-[var(--glass-border)] flex items-center justify-between px-4 sticky top-0 z-[40]">
                 <div className="flex items-center gap-2 group cursor-pointer" onClick={() => navigate('/merchant/dashboard')}>

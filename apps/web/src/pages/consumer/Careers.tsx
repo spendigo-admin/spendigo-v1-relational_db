@@ -311,7 +311,7 @@ const Careers: React.FC = () => {
             {/* Final CTA */}
             <section className="py-20 md:py-32 bg-white px-4">
                 <div className="container mx-auto max-w-4xl">
-                    <div className="bg-gradient-to-br from-[var(--brand-primary)] to-indigo-600 rounded-[2.5rem] md:rounded-[4rem] p-10 md:p-20 text-center text-white shadow-2xl relative overflow-hidden">
+                    <div className="bg-[#112244] rounded-[2.5rem] md:rounded-[4rem] p-10 md:p-20 text-center text-white shadow-2xl relative overflow-hidden">
                         <div className="relative z-10">
                             <h2 className="text-3xl md:text-5xl font-black mb-6 md:mb-8 text-white leading-tight">Ready to make an impact?</h2>
                             <p className="text-base md:text-lg mb-8 md:mb-12 max-w-xl mx-auto text-white/90">

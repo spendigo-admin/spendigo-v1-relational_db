@@ -70,21 +70,22 @@ const Cart: React.FC = () => {
             <div className="max-w-6xl mx-auto px-4 py-8">
                 {/* PAGE HEADER */}
                 <div className="mb-6">
-                    <h1 className="text-3xl font-bold text-[var(--text-main)] mb-1">Your Cart</h1>
-                    <p className="text-[var(--text-muted)]">
+                    <h1 className="text-4xl md:text-5xl font-black text-[#112244] tracking-tighter italic mb-1">Your Cart</h1>
+                    <p className="text-gray-400 font-bold tracking-widest uppercase text-xs">
                         {items.length} item{items.length !== 1 ? 's' : ''} from {storeCount} store{storeCount !== 1 ? 's' : ''}
                     </p>
                 </div>
 
                 {/* SAVINGS BANNER */}
-                <div className="mb-8 glass-panel p-4 bg-gradient-to-r from-[var(--status-success)]/20 to-[var(--brand-primary)]/20 border-[var(--status-success)]/30 flex items-center gap-4">
-                    <div className="text-3xl">🎉</div>
-                    <div className="flex-1">
-                        <p className="font-bold text-[var(--text-main)]">
+                <div className="mb-8 rounded-3xl p-6 bg-gradient-to-r from-[#112244] to-[#007AFF] text-white flex items-center gap-4 shadow-xl relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl"></div>
+                    <div className="text-4xl relative z-10">🎉</div>
+                    <div className="flex-1 relative z-10">
+                        <p className="font-black text-lg md:text-xl tracking-tight">
                             You're saving ~${estimatedSavings} by shopping smart!
                         </p>
-                        <p className="text-sm text-[var(--text-muted)]">
-                            Spendigo optimizes your order across multiple stores.
+                        <p className="text-sm font-medium text-white/70">
+                            Spendigo's AI optimized your order across local merchants.
                         </p>
                     </div>
                 </div>
@@ -183,7 +184,7 @@ const Cart: React.FC = () => {
 
                             <button
                                 onClick={() => navigate('/checkout')}
-                                className="w-full py-4 bg-[var(--brand-primary)] text-white font-bold text-lg rounded-2xl hover:brightness-110 transition-all active:scale-95 shadow-lg shadow-[var(--brand-primary)]/30 mb-3"
+                                className="w-full py-4 bg-[#112244] text-white font-black text-sm tracking-[0.2em] uppercase rounded-2xl hover:bg-[#007AFF] transition-all active:scale-95 shadow-xl shadow-blue-900/20 mb-3"
                             >
                                 Proceed to Checkout
                             </button>

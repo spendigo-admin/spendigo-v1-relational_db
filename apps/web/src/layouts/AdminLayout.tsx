@@ -3,6 +3,7 @@ import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationContext';
 import NotificationPopover from '../components/NotificationPopover';
+import NotificationToast from '../components/NotificationToast';
 import '../styles/design-system.css';
 const AdminLayout: React.FC = () => {
     const location = useLocation();
@@ -81,6 +82,7 @@ const AdminLayout: React.FC = () => {
 
     return (
         <div className="min-h-screen bg-[var(--surface-0)] flex flex-col md:flex-row">
+            <NotificationToast />
             {/* Mobile Header */}
             <header className="md:hidden h-16 bg-white border-b border-[var(--glass-border)] flex items-center justify-between px-4 sticky top-0 z-40 backdrop-blur-md bg-white/80">
                 <div className="flex items-center gap-2 group cursor-pointer" onClick={() => navigate('/admin/dashboard')}>

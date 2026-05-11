@@ -141,7 +141,7 @@ const ProductDetail: React.FC = () => {
                     {/* PRODUCT INFO */}
                     <div className="space-y-6">
                         <div>
-                            <h1 className="text-3xl font-bold text-[var(--text-main)] mb-2">{displayProduct.name}</h1>
+                            <h1 className="text-3xl md:text-5xl font-black text-[#112244] tracking-tighter mb-2 leading-tight italic">{displayProduct.name}</h1>
                             {displayProduct.is_canadian_local && (
                                 <div className="mb-4">
                                     <span className="inline-flex px-3 py-1 bg-red-50 text-red-700 text-xs font-bold rounded-lg shadow-sm border border-red-100 uppercase items-center gap-1.5">
@@ -152,7 +152,7 @@ const ProductDetail: React.FC = () => {
 
                             {/* Price */}
                             <div className="flex items-baseline gap-3 mb-4">
-                                <span className="text-4xl font-bold text-[var(--brand-primary)]">
+                                <span className="text-4xl font-black text-[#112244] tracking-tighter">
                                     ${displayProduct.price.toFixed(2)}
                                 </span>
                                 {displayProduct.originalPrice && (
@@ -169,10 +169,10 @@ const ProductDetail: React.FC = () => {
                         </div>
 
                         {/* SOLD BY */}
-                        <div className="glass-panel p-4 border-l-4 border-[var(--brand-primary)]">
-                            <p className="text-xs text-[var(--text-muted)] uppercase tracking-widest mb-1">Sold & Fulfilled By</p>
-                            <p className="font-bold text-[var(--text-main)]">{displayProduct.storeName}</p>
-                            <p className="text-sm text-[var(--text-muted)]">{displayProduct.storeAddress}</p>
+                        <div className="glass-panel p-4 border-l-4 border-[#112244] bg-white shadow-sm rounded-xl">
+                            <p className="text-[10px] text-[#007AFF] font-black uppercase tracking-[0.2em] mb-1">Sold & Fulfilled By</p>
+                            <p className="font-black text-lg text-[#112244]">{displayProduct.storeName}</p>
+                            <p className="text-sm text-gray-400 font-medium">{displayProduct.storeAddress}</p>
                         </div>
 
                         {/* Description */}
@@ -253,17 +253,17 @@ const ProductDetail: React.FC = () => {
             </div>
 
             {/* STICKY ADD TO CART BUTTON */}
-            <div className="fixed bottom-20 left-0 right-0 p-4 bg-gradient-to-t from-[var(--surface-0)] to-transparent pointer-events-none">
+            <div className="fixed bottom-20 left-0 right-0 p-4 bg-gradient-to-t from-white to-transparent pointer-events-none">
                 <div className="max-w-xl mx-auto pointer-events-auto">
                     <button
                         onClick={handleAddToCart}
-                        className={`w-full py-4 rounded-2xl font-bold text-lg shadow-lg transition-all active:scale-95 flex items-center justify-between px-6 ${added
-                            ? 'bg-[var(--status-success)] text-white'
-                            : 'bg-[var(--brand-primary)] text-white hover:brightness-110 shadow-[var(--brand-primary)]/30'
+                        className={`w-full py-4 rounded-2xl font-black text-sm tracking-[0.2em] uppercase shadow-xl transition-all active:scale-95 flex items-center justify-between px-8 ${added
+                            ? 'bg-green-600 text-white'
+                            : 'bg-[#112244] text-white hover:bg-[#007AFF] shadow-blue-900/20'
                             }`}
                     >
                         <span>{added ? '✓ Added to Cart!' : 'Add to Cart'}</span>
-                        <span className="font-mono">${(displayProduct.price * quantity).toFixed(2)}</span>
+                        <span className="font-black">${(displayProduct.price * quantity).toFixed(2)}</span>
                     </button>
                 </div>
             </div>

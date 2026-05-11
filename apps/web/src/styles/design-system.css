@@ -4,46 +4,45 @@
 
 :root {
     /* 
-     * COLOR PALETTE - Bright White & Blue Theme
-     * Primary: Vibrant Blue (Instacart/Trust-inspired)
-     * Secondary: Bright Green for success/savings
-     * Background: Clean white
+     * CORE BRAND PALETTE - High-Density Premium Theme
+     * Navy (#112244): Primary background and depth
+     * Blue (#007AFF): Primary action and interaction
      */
-    --brand-primary: hsl(212, 100%, 47%);
-    /* Bright Blue */
-    --brand-primary-dark: hsl(212, 100%, 40%);
-    --brand-primary-light: hsl(212, 100%, 95%);
+    --brand-primary: #007AFF;
+    --brand-navy: #112244;
+    --brand-primary-dark: #0056b3;
+    --brand-primary-light: #E5F1FF;
 
-    --brand-secondary: hsl(145, 63%, 42%);
-    /* Success Green */
-    --brand-secondary-hover: hsl(145, 63%, 35%);
+    --brand-secondary: #34C759; /* iOS Success Green */
+    --brand-secondary-hover: #28a745;
 
     /* Neutral Scale (Light Mode) */
-    --surface-0: hsl(0, 0%, 100%);
-    /* Pure White Background */
-    --surface-1: hsl(210, 20%, 98%);
-    /* Slightly off-white for cards */
-    --surface-2: hsl(210, 15%, 95%);
-    /* Hover/divider state */
-    --surface-3: hsl(210, 10%, 90%);
-    /* Borders */
+    --surface-0: #FFFFFF;
+    --surface-1: #F2F2F7;
+    --surface-2: #E5E5EA;
+    --surface-3: #D1D1D6;
 
-    --text-main: hsl(210, 20%, 15%);
-    /* Near black */
-    --text-muted: hsl(210, 10%, 50%);
-    /* Gray */
-    --text-inverse: hsl(0, 0%, 100%);
+    --text-main: #0f172a;
+    --text-muted: #64748b;
+    --text-inverse: #FFFFFF;
 
-    /* Status Colors (Accessible) */
-    --status-success: hsl(145, 63%, 42%);
-    --status-error: hsl(0, 72%, 51%);
-    --status-warning: hsl(38, 92%, 50%);
+    /* Status Colors */
+    --status-success: #34C759;
+    --status-error: #FF3B30;
+    --status-warning: #FF9500;
 
-    /* CARD STYLES (Light Mode) */
-    --glass-bg: hsl(0, 0%, 100%);
-    --glass-border: hsl(210, 15%, 80%);
-    --glass-blur: 0px;
-    --glass-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.06);
+    /* RADIUS SCALE */
+    --radius-sm: 0.5rem;
+    --radius-md: 0.75rem;
+    --radius-lg: 1rem;
+    --radius-xl: 1.5rem;
+    --radius-2xl: 2rem;
+    --radius-3xl: 2.5rem;
+
+    /* GLASSMORPHISM */
+    --glass-bg: rgba(255, 255, 255, 0.8);
+    --glass-border: rgba(0, 0, 0, 0.05);
+    --glass-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
 
     /* SPACING SCALE (4px grid) */
     --space-1: 0.25rem;
@@ -60,11 +59,6 @@
     --font-weight-medium: 500;
     --font-weight-bold: 600;
 
-    /* BORDERS & RADIUS */
-    --radius-sm: 8px;
-    --radius-md: 12px;
-    --radius-lg: 16px;
-
     /* SAFE AREA INSETS (Capacitor/Mobile) */
     --safe-area-top: env(safe-area-inset-top, 0px);
     --safe-area-bottom: env(safe-area-inset-bottom, 0px);
@@ -74,14 +68,14 @@
 
 /* Base Styles */
 body {
-    background-color: var(--surface-0);
+    background-color: var(--bg-app, #f8fafc);
     color: var(--text-main);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
     scrollbar-gutter: stable;
 }
 
-/* Card/Panel Style - Clean White Cards with Subtle Shadow */
+/* Card/Panel Style */
 .glass-panel {
     background: var(--glass-bg);
     border: 1px solid var(--glass-border);
@@ -89,7 +83,6 @@ body {
     border-radius: var(--radius-md);
 }
 
-/* Hover effect for cards */
 .glass-panel:hover {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
@@ -116,15 +109,15 @@ h3 {
 }
 
 .page-headline {
-    font-size: 1rem; /* text-base */
-    font-weight: 900; /* font-black */
-    letter-spacing: -0.025em; /* tracking-tight */
+    font-size: 1rem;
+    font-weight: 900;
+    letter-spacing: -0.025em;
     color: var(--text-main);
 }
 
 @media (min-width: 768px) {
     .page-headline {
-        font-size: 1.125rem; /* text-lg */
+        font-size: 1.125rem;
     }
 }
 
@@ -150,7 +143,6 @@ p {
         opacity: 0;
         transform: translateY(8px);
     }
-
     to {
         opacity: 1;
         transform: translateY(0);
@@ -172,7 +164,7 @@ p {
     }
 }
 
-/* ─── Button Variants ──────────────────────────────────────────────────────── */
+/* Button Variants */
 .btn-primary {
     display: inline-flex;
     align-items: center;
@@ -192,18 +184,11 @@ p {
 
 .btn-primary:hover {
     background-color: var(--brand-primary-dark);
-    box-shadow: 0 4px 12px rgba(0, 120, 255, 0.25);
+    box-shadow: 0 4px 12px rgba(0, 122, 255, 0.25);
 }
 
 .btn-primary:active {
     transform: scale(0.97);
-}
-
-.btn-primary:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    box-shadow: none;
-    transform: none;
 }
 
 .btn-secondary {
@@ -227,13 +212,27 @@ p {
     background-color: var(--brand-primary-light);
 }
 
-.btn-secondary:active {
-    transform: scale(0.97);
+/* Scrollbar hiding utility */
+.scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
 }
 
-.btn-secondary:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+.scrollbar-hide::-webkit-scrollbar {
+    display: none;
+}
+
+/* Safe Area Utilities */
+.pb-safe {
+    padding-bottom: var(--safe-area-bottom);
+}
+
+.pt-safe {
+    padding-top: var(--safe-area-top);
+}
+
+.pr-safe {
+    padding-right: var(--safe-area-right);
 }
 
 .btn-ghost {
@@ -261,7 +260,6 @@ p {
     transform: scale(0.97);
 }
 
-/* ─── Badge Variants ───────────────────────────────────────────────────────── */
 .badge-deal {
     display: inline-flex;
     align-items: center;
@@ -306,7 +304,6 @@ p {
     white-space: nowrap;
 }
 
-/* ─── Skeleton Loader ──────────────────────────────────────────────────────── */
 @keyframes skeleton-pulse {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.4; }
@@ -318,37 +315,7 @@ p {
     animation: skeleton-pulse 1.5s ease-in-out infinite;
 }
 
-/* Scrollbar hiding utility */
-.scrollbar-hide {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-}
-
-.scrollbar-hide::-webkit-scrollbar {
-    display: none;
-}
-
-/* Safe Area Utilities */
-.pb-safe {
-    padding-bottom: var(--safe-area-bottom);
-}
-
-.pt-safe {
-    padding-top: var(--safe-area-top);
-}
-
-.pl-safe {
-    padding-left: var(--safe-area-left);
-}
-
-.pr-safe {
-    padding-right: var(--safe-area-right);
-}
-
 @layer base {
-    /* Tailwind Utility Overrides for Night Theme */
-    /* By placing these in base, Tailwind's utility hover states (like hover:text-white) 
-       will correctly override these base defaults due to stylesheet order, fixing disappearing text issues. */
     .theme-night .text-gray-900,
     .theme-night .text-gray-800,
     .theme-night .text-gray-700,

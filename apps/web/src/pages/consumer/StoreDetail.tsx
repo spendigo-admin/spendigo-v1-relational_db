@@ -87,7 +87,7 @@ const FlyerTab: React.FC<{ storeId: string; storeName: string; summary: any; vie
     return (
         <div className="animate-fade-in bg-white min-h-screen">
             {/* RETAIL FLYER HEADER */}
-            <div className="bg-blue-600 text-white px-4 py-3 md:py-4 flex flex-col md:flex-row md:items-center justify-between gap-2 shadow-inner border-b-4 border-blue-700">
+            <div className="bg-[#112244] text-white px-4 py-3 md:py-4 flex flex-col md:flex-row md:items-center justify-between gap-2 shadow-inner border-b-4 border-[#112244]">
                 <div className="flex items-center gap-3">
                     <div className="bg-white p-1 rounded-lg">
                         <span className="text-2xl">🍁</span>
@@ -110,7 +110,7 @@ const FlyerTab: React.FC<{ storeId: string; storeName: string; summary: any; vie
                         <p className="text-[10px] md:text-xs font-black tracking-widest text-yellow-300 drop-shadow-sm">
                             VALID: {new Date(flyer.validFrom).toLocaleDateString()} - {new Date(flyer.validUntil).toLocaleDateString()}
                         </p>
-                        <p className="text-[9px] md:text-[10px] font-black tracking-tighter bg-blue-800 px-1.5 py-0.5 rounded mt-0.5 animate-pulse text-white">
+                        <p className="text-[9px] md:text-[10px] font-black tracking-tighter bg-white/10 px-1.5 py-0.5 rounded mt-0.5 animate-pulse text-white">
                             ⏰ {flyerDaysLeft} {flyerDaysLeft === 1 ? 'DAY' : 'DAYS'} LEFT
                         </p>
                     </div>
@@ -125,7 +125,7 @@ const FlyerTab: React.FC<{ storeId: string; storeName: string; summary: any; vie
                                 <div className="w-16 h-16 rounded-lg bg-gray-100 flex-shrink-0 relative overflow-hidden">
                                     <img src={item.image} className="w-full h-full object-cover" loading="lazy" />
                                     {item.salePrice < item.originalPrice && (
-                                        <div className="absolute top-0 left-0 bg-teal-600 text-white text-[8px] font-black px-1.5 py-0.5 rounded-br tracking-tighter font-serif shadow-sm">
+                                        <div className="absolute top-0 left-0 bg-[#007AFF] text-white text-[8px] font-black px-1.5 py-0.5 rounded-br tracking-tighter font-serif shadow-sm">
                                             SAVE {Math.round(((item.originalPrice - item.salePrice) / item.originalPrice) * 100)}%
                                         </div>
                                     )}
@@ -133,13 +133,13 @@ const FlyerTab: React.FC<{ storeId: string; storeName: string; summary: any; vie
                                 <div className="flex-1 min-w-0">
                                     <p className="font-bold text-sm text-[var(--text-main)] truncate">{item.name}</p>
                                     <div className="flex items-baseline gap-2">
-                                        <span className="text-sm font-black text-blue-600">${item.salePrice.toFixed(2)}</span>
+                                        <span className="text-sm font-black text-[#007AFF]">${item.salePrice.toFixed(2)}</span>
                                         <span className="text-[10px] text-[var(--text-muted)] line-through">Reg ${item.originalPrice.toFixed(2)}</span>
                                     </div>
                                 </div>
                                 <button
                                     onClick={() => handleAdd(item)}
-                                    className="px-4 py-2 bg-blue-600 text-white text-xs font-black rounded tracking-widest hover:bg-blue-700 active:scale-95 transition-all shadow-md"
+                                    className="px-4 py-2 bg-[#007AFF] text-white text-xs font-black rounded tracking-widest hover:bg-[#112244] active:scale-95 transition-all shadow-md"
                                 >
                                     + ADD
                                 </button>
@@ -162,9 +162,9 @@ const FlyerTab: React.FC<{ storeId: string; storeName: string; summary: any; vie
                                     {/* Big Savings Circle Badge */}
                                     {savingsPercent >= 20 && (
                                         <div className={`absolute ${isFeatured ? '-top-3 -right-3 w-16 h-16 md:w-20 md:h-20' : '-top-2 -right-2 w-12 h-12 md:w-14 md:h-14'} z-20 bg-yellow-400 rounded-full flex flex-col items-center justify-center border-4 border-white shadow-lg rotate-12 group-hover:rotate-0 transition-transform duration-300`}>
-                                            <span className="text-[8px] md:text-[10px] font-black text-teal-700 -mb-1">Save</span>
-                                            <span className={`${isFeatured ? 'text-lg md:text-2xl' : 'text-xs md:text-lg'} font-black text-teal-700 leading-none`}>${Math.floor(Number(savingsAmount))}</span>
-                                            {isFeatured && <span className="text-[8px] font-bold text-teal-700">Ltd time</span>}
+                                            <span className="text-[8px] md:text-[10px] font-black text-[#112244] -mb-1">Save</span>
+                                            <span className={`${isFeatured ? 'text-lg md:text-2xl' : 'text-xs md:text-lg'} font-black text-[#112244] leading-none`}>${Math.floor(Number(savingsAmount))}</span>
+                                            {isFeatured && <span className="text-[8px] font-bold text-[#112244]">Ltd time</span>}
                                         </div>
                                     )}
 
@@ -176,7 +176,7 @@ const FlyerTab: React.FC<{ storeId: string; storeName: string; summary: any; vie
                                             loading={isFeatured ? "eager" : "lazy"}
                                         />
                                         {isFeatured && (
-                                            <div className="absolute top-2 left-2 bg-teal-600 text-white text-[10px] font-black px-2 py-1 rounded skew-x-[-12deg] shadow-lg">
+                                            <div className="absolute top-2 left-2 bg-[#007AFF] text-white text-[10px] font-black px-2 py-1 rounded skew-x-[-12deg] shadow-lg">
                                                 HOT DEAL
                                             </div>
                                         )}
@@ -186,14 +186,14 @@ const FlyerTab: React.FC<{ storeId: string; storeName: string; summary: any; vie
                                         <div className="flex flex-col">
                                             <div className="flex items-start gap-2 mb-1">
                                                 <div className="flex flex-col">
-                                                    <span className="text-[8px] md:text-[10px] font-black bg-blue-600 text-white px-1 w-max rounded-sm tracking-tighter">Sale</span>
-                                                    <span className={`${isFeatured ? 'text-2xl md:text-4xl' : 'text-xl md:text-2xl'} font-black text-blue-700 tracking-tighter leading-none`}>
+                                                    <span className="text-[8px] md:text-[10px] font-black bg-[#112244] text-white px-1 w-max rounded-sm tracking-tighter">Sale</span>
+                                                    <span className={`${isFeatured ? 'text-2xl md:text-4xl' : 'text-xl md:text-2xl'} font-black text-[#007AFF] tracking-tighter leading-none`}>
                                                         {item.salePrice.toFixed(2)}
                                                     </span>
                                                 </div>
                                                 <div className="flex flex-col mt-4">
                                                     <span className="text-[8px] md:text-[10px] font-bold text-gray-500 line-through">Reg {item.originalPrice.toFixed(2)}</span>
-                                                    <span className="text-[8px] md:text-[10px] font-black text-blue-600 tracking-tighter">Limit 4</span>
+                                                    <span className="text-[8px] md:text-[10px] font-black text-[#007AFF] tracking-tighter">Limit 4</span>
                                                 </div>
                                             </div>
 
@@ -209,7 +209,7 @@ const FlyerTab: React.FC<{ storeId: string; storeName: string; summary: any; vie
 
                                             <button
                                                 onClick={() => handleAdd(item)}
-                                                className="w-full mt-2 py-2 md:py-3 bg-blue-600 text-white text-[10px] md:text-xs font-black rounded tracking-widest hover:bg-black transition-colors shadow-md active:translate-y-0.5"
+                                                className="w-full mt-2 py-2 md:py-3 bg-[#007AFF] text-white text-[10px] md:text-xs font-black rounded tracking-widest hover:bg-[#112244] transition-colors shadow-md active:translate-y-0.5"
                                             >
                                                 + Add To Cart
                                             </button>
@@ -314,23 +314,25 @@ const OffersTab: React.FC<{ storeId: string, storeName: string; viewMode: 'grid'
             {/* FLASH SALES SECTION */}
             {sortedFlashSales.length > 0 && (
                 <div className="mb-8">
-                    <div className="bg-orange-500 text-white px-4 py-3 md:py-4 flex items-center justify-between border-b-4 border-orange-600 shadow-inner">
+                    <div className="bg-[#112244] text-white px-4 py-3 md:py-4 flex items-center justify-between border-b-4 border-[#112244] shadow-inner">
                         <div className="flex items-center gap-3">
-                            <span className="text-2xl md:text-3xl animate-pulse">⏰</span>
+                            <div className="bg-white p-1 rounded-lg">
+                                <span className="text-2xl md:text-3xl animate-pulse">⚡</span>
+                            </div>
                             <div>
-                                <h3 className="text-lg md:text-xl font-black italic tracking-tighter leading-none m-0">
-                                    Hurry! Flash Sales
+                                <h3 className="text-lg md:text-xl font-black italic tracking-tighter leading-none m-0 text-white uppercase">
+                                    Great Deals & Savings
                                 </h3>
-                                <p className="text-[10px] font-bold tracking-widest opacity-90 mt-1">LIMITED TIME ONLY • WHILE SUPPLIES LAST</p>
+                                <p className="text-[10px] font-black tracking-[0.2em] text-white/80 mt-1 uppercase">THE PRICES YOU LOVE • EVERY DAY</p>
                             </div>
                         </div>
-                        <div className="text-right">
-                            <span className="text-xs font-black bg-white text-orange-600 px-3 py-1 rounded-full tracking-widest inline-block mb-1 shadow-sm">
-                                HOT DEALS
+                        <div className="text-right flex flex-col items-end">
+                            <span className="text-[10px] font-black bg-white text-[#007AFF] px-3 py-1 rounded-full tracking-[0.2em] uppercase inline-block mb-1 shadow-sm">
+                                Hot Deals
                             </span>
                             {sortedFlashSales[0]?.endDate && (
-                                <p className="text-[9px] md:text-[10px] font-black bg-orange-700 px-2 py-0.5 rounded text-white animate-pulse">
-                                    {calculateDaysLeft(sortedFlashSales[0].endDate)} DAYS LEFT
+                                <p className="text-[9px] md:text-[10px] font-black bg-white/10 px-2 py-0.5 rounded text-white animate-pulse tracking-tighter">
+                                    ⏰ {calculateDaysLeft(sortedFlashSales[0].endDate)} DAYS LEFT
                                 </p>
                             )}
                         </div>
@@ -413,14 +415,14 @@ const OffersTab: React.FC<{ storeId: string, storeName: string; viewMode: 'grid'
             {/* SALE ITEMS SECTION */}
             {sortedSaleItems.length > 0 && (
                 <div>
-                    <div className="bg-blue-600 text-white px-4 py-3 md:py-4 flex items-center justify-between border-b-4 border-blue-700 shadow-inner">
+                    <div className="bg-[#112244] text-white px-4 py-3 md:py-4 flex items-center justify-between border-b-4 border-[#112244] shadow-inner">
                         <div className="flex items-center gap-3">
                             <span className="text-2xl md:text-3xl">🏷️</span>
                             <div>
-                                <h3 className="text-lg md:text-xl font-black italic tracking-tighter leading-none m-0">
+                                <h3 className="text-lg md:text-xl font-black italic tracking-tighter leading-none m-0 text-white">
                                     Great Deals & Savings
                                 </h3>
-                                <p className="text-[10px] font-bold tracking-widest opacity-90 mt-1">THE PRICES YOU LOVE • EVERY DAY</p>
+                                <p className="text-[10px] font-bold tracking-widest text-white/90 mt-1">THE PRICES YOU LOVE • EVERY DAY</p>
                             </div>
                         </div>
                     </div>
@@ -432,7 +434,7 @@ const OffersTab: React.FC<{ storeId: string, storeName: string; viewMode: 'grid'
                                     <div key={item.id} className="bg-white rounded-xl border border-[var(--glass-border)] p-3 flex gap-4 items-center shadow-sm hover:shadow-md transition-all">
                                         <div className="w-16 h-16 rounded-lg bg-gray-50 flex-shrink-0 relative overflow-hidden">
                                             <img src={item.productImage || item.image} className="w-full h-full object-contain" loading="lazy" />
-                                            <div className="absolute top-0 left-0 bg-teal-600 text-white text-[8px] font-black px-1 rounded-br">Sale</div>
+                                            <div className="absolute top-0 left-0 bg-[#007AFF] text-white text-[8px] font-black px-1 rounded-br">Sale</div>
                                         </div>
                                         <div className="flex-1 min-w-0">
                                             <p className="font-bold text-sm text-[var(--text-main)] truncate">{item.productName || item.name}</p>
@@ -441,7 +443,7 @@ const OffersTab: React.FC<{ storeId: string, storeName: string; viewMode: 'grid'
                                                 {item.originalPrice && <span className="text-[10px] text-gray-500 line-through">Reg ${item.originalPrice.toFixed(2)}</span>}
                                             </div>
                                         </div>
-                                        <button onClick={() => handleQuickAdd(item)} className="px-4 py-2 bg-teal-600 text-white text-xs font-black rounded tracking-widest shadow-md">
+                                        <button onClick={() => handleQuickAdd(item)} className="px-4 py-2 bg-[#007AFF] text-white text-xs font-black rounded tracking-widest shadow-md">
                                             + ADD
                                         </button>
                                     </div>
@@ -459,8 +461,8 @@ const OffersTab: React.FC<{ storeId: string, storeName: string; viewMode: 'grid'
                                         <div key={item.id} className={`relative group bg-white border-2 ${isFeatured ? 'col-span-2 md:col-span-2 border-red-200' : 'border-gray-100'} p-3 flex flex-col shadow-sm transition-all hover:shadow-xl`}>
                                             {/* Savings Badge */}
                                             <div className={`absolute -top-3 -right-3 ${isFeatured ? 'w-16 h-16 md:w-20 md:h-20' : 'w-12 h-12 md:w-14 md:h-14'} z-20 bg-yellow-400 rounded-full flex flex-col items-center justify-center border-4 border-white shadow-lg rotate-12`}>
-                                                <span className="text-[8px] md:text-[10px] font-black text-teal-700 -mb-1">Save</span>
-                                                <span className={`${isFeatured ? 'text-lg md:text-2xl' : 'text-xs md:text-lg'} font-black text-teal-700 leading-none`}>${Math.floor(Number(savingsAmount))}</span>
+                                                <span className="text-[8px] md:text-[10px] font-black text-[#112244] -mb-1">Save</span>
+                                                <span className={`${isFeatured ? 'text-lg md:text-2xl' : 'text-xs md:text-lg'} font-black text-[#112244] leading-none`}>${Math.floor(Number(savingsAmount))}</span>
                                             </div>
 
                                             <div className={`${isFeatured ? 'h-40 md:h-56' : 'h-32 md:h-40'} mb-3 bg-white overflow-hidden`}>
@@ -470,8 +472,8 @@ const OffersTab: React.FC<{ storeId: string, storeName: string; viewMode: 'grid'
                                             <div className="flex-1 flex flex-col px-1">
                                                 <div className="flex items-start gap-2 mb-1">
                                                     <div className="flex flex-col">
-                                                        <span className="text-[8px] md:text-[10px] font-black bg-blue-600 text-white px-1 w-max rounded-sm tracking-tighter">Sale</span>
-                                                        <span className={`${isFeatured ? 'text-2xl md:text-3xl' : 'text-xl md:text-2xl'} font-black text-blue-700 tracking-tighter leading-none`}>
+                                                        <span className="text-[8px] md:text-[10px] font-black bg-[#112244] text-white px-1 w-max rounded-sm tracking-tighter">Sale</span>
+                                                        <span className={`${isFeatured ? 'text-2xl md:text-3xl' : 'text-xl md:text-2xl'} font-black text-[#007AFF] tracking-tighter leading-none`}>
                                                             {sPrice.toFixed(2)}
                                                         </span>
                                                     </div>
@@ -482,7 +484,7 @@ const OffersTab: React.FC<{ storeId: string, storeName: string; viewMode: 'grid'
                                                 <p className={`${isFeatured ? 'text-sm md:text-lg' : 'text-xs md:text-sm'} font-black text-gray-800 leading-snug grow`}>
                                                     {item.productName || item.name}
                                                 </p>
-                                                <button onClick={() => handleQuickAdd(item)} className="w-full mt-2 py-2 md:py-3 bg-blue-600 text-white text-[10px] md:text-xs font-black rounded tracking-widest hover:bg-black transition-all shadow-md">
+                                                <button onClick={() => handleQuickAdd(item)} className="w-full mt-2 py-2 md:py-3 bg-[#007AFF] text-white text-[10px] md:text-xs font-black rounded tracking-widest hover:bg-[#112244] transition-all shadow-md">
                                                     + ADD TO CART
                                                 </button>
                                             </div>
@@ -602,14 +604,14 @@ const StoreDetail: React.FC = () => {
             <SEO title={store.name} description={`Shop at ${store.name} on Spendigo. Browse products, weekly flyers, and deals from this local store.`} path={`/store/${store.id}`} />
             
             {/* IMMERSIVE RETAIL HEADER */}
-            <div className="relative h-72 md:h-96 lg:h-[400px] bg-gray-900 group">
+            <div className="relative h-72 md:h-96 lg:h-[400px] bg-[var(--brand-navy)] group">
                 <img 
                     src={store.image} 
                     alt={store.name} 
                     className="w-full h-full object-cover opacity-85 group-hover:opacity-100 transition-opacity duration-700" 
                     decoding="async" 
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-gray-900/90 via-gray-900/40 to-transparent"></div>
+                <div className="absolute inset-0 bg-gradient-to-t from-[var(--brand-navy)]/90 via-[var(--brand-navy)]/40 to-transparent"></div>
 
                 {/* Premium Back Button */}
                 <button
@@ -617,7 +619,7 @@ const StoreDetail: React.FC = () => {
                     className="absolute top-6 left-6 px-4 py-2 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white flex items-center gap-2 hover:bg-white/20 transition-all shadow-2xl z-50 group/back"
                 >
                     <span className="group-hover:-translate-x-1 transition-transform">←</span>
-                    <span className="text-[10px] font-black tracking-widest">Marketplace</span>
+                    <span className="text-[10px] font-black tracking-widest uppercase">Marketplace</span>
                 </button>
 
                 {/* Floating Store Identity */}
@@ -625,22 +627,22 @@ const StoreDetail: React.FC = () => {
                     <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-start md:items-end gap-4 md:gap-8">
                         {/* THE STORE SIGN */}
                         <div className="relative group/logo">
-                            <div className="absolute -inset-1 bg-gradient-to-r from-teal-600 to-teal-400 rounded-3xl blur opacity-25 group-hover/logo:opacity-50 transition duration-1000 group-hover/logo:duration-200"></div>
+                            <div className="absolute -inset-1 bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-primary-light)] rounded-3xl blur opacity-25 group-hover/logo:opacity-50 transition duration-1000 group-hover/logo:duration-200"></div>
                             <div className="w-20 h-20 md:w-32 md:h-32 relative rounded-3xl bg-white flex items-center justify-center text-3xl md:text-5xl shadow-2xl overflow-hidden border-4 border-white ring-4 ring-black/5">
                                 {((store.logoUrl || store.logo || '').startsWith('http') || (store.logoUrl || store.logo || '').startsWith('/') || (store.logoUrl || store.logo || '').startsWith('data:')) ? (
                                     <img src={store.logoUrl || store.logo} alt="Logo" className="w-full h-full object-cover p-2" decoding="async" />
                                 ) : (
-                                    <span className="font-black text-gray-900">{store.logo || store.logoUrl || '🏪'}</span>
+                                    <span className="font-black text-[var(--brand-navy)]">{store.logo || store.logoUrl || '🏪'}</span>
                                 )}
                             </div>
                         </div>
 
                         <div className="flex-1 pb-2">
                             <div className="flex flex-wrap items-center gap-3 mb-2">
-                                <span className="text-[9px] font-black bg-blue-600 text-white px-2 py-0.5 rounded skew-x-[-12deg] shadow-lg tracking-widest">Verified Store</span>
-                                <span className="text-[9px] font-black bg-white/10 backdrop-blur-md text-white px-2 py-0.5 rounded border border-white/20 tracking-widest">Open Now</span>
+                                <span className="text-[9px] font-black bg-[var(--brand-primary)] text-white px-2 py-0.5 rounded skew-x-[-12deg] shadow-lg tracking-widest uppercase">Verified Store</span>
+                                <span className="text-[9px] font-black bg-white/10 backdrop-blur-md text-white px-2 py-0.5 rounded border border-white/20 tracking-widest uppercase">Open Now</span>
                             </div>
-                            <h1 className="text-4xl md:text-6xl font-black text-white tracking-tighter leading-none mb-2 drop-shadow-2xl italic">
+                            <h1 className="text-4xl md:text-6xl font-black text-white tracking-tighter leading-none mb-2 drop-shadow-2xl italic uppercase">
                                 {store.name}
                             </h1>
                             <p className="text-sm md:text-lg text-white/70 font-bold italic tracking-tight max-w-xl">{store.tagline}</p>
@@ -652,10 +654,10 @@ const StoreDetail: React.FC = () => {
             {/* PREMIUM RETAIL INFO BOARD */}
             <div className="max-w-7xl mx-auto px-4 -mt-10 relative z-30">
                 <div className="bg-white rounded-3xl shadow-2xl border border-gray-100 p-1 md:p-3 flex flex-nowrap items-stretch gap-1">
-                    <div className="flex-1 min-w-0 bg-gray-50/50 p-2 md:p-4 rounded-xl border border-gray-50 flex flex-col items-center justify-center text-center group hover:bg-black hover:shadow-lg transition-all">
-                        <span className="text-[7px] md:text-[9px] font-black text-gray-600 tracking-widest mb-0.5 md:mb-1 group-hover:text-white/70 transition-colors">Store</span>
+                    <div className="flex-1 min-w-0 bg-gray-50/50 p-2 md:p-4 rounded-xl border border-gray-50 flex flex-col items-center justify-center text-center group hover:bg-[var(--brand-navy)] hover:shadow-lg transition-all">
+                        <span className="text-[7px] md:text-[9px] font-black text-gray-600 tracking-widest mb-0.5 md:mb-1 group-hover:text-white/70 transition-colors uppercase">Store Rating</span>
                         <div className="flex items-center gap-0.5 md:gap-2">
-                            <span className="text-xs md:text-xl font-black text-gray-900 group-hover:text-white transition-colors">
+                            <span className="text-xs md:text-xl font-black text-[var(--brand-navy)] group-hover:text-white transition-colors">
                                 {reviews.length > 0 
                                     ? (reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length).toFixed(1) 
                                     : store.rating}
@@ -680,7 +682,7 @@ const StoreDetail: React.FC = () => {
                         </div>
                     </div>
                     <div className="w-px bg-gray-100 hidden md:block my-2"></div>
-                    <div className="flex-1 min-w-0 bg-blue-600 p-2 md:p-4 rounded-xl flex flex-col items-center justify-center text-center shadow-lg group hover:bg-black transition-all cursor-help" title="Quality Guaranteed by Spendigo">
+                    <div className="flex-1 min-w-0 bg-[#112244] p-2 md:p-4 rounded-xl flex flex-col items-center justify-center text-center shadow-lg group hover:bg-black transition-all cursor-help" title="Quality Guaranteed by Spendigo">
                         <span className="text-[7px] md:text-[9px] font-black text-white/70 tracking-widest mb-0.5 md:mb-1 leading-tight">Certified By</span>
                         <span className="text-[10px] md:text-lg font-black text-white italic tracking-tighter truncate max-w-[90%]">Spendigo🍁</span>
                     </div>
@@ -701,14 +703,14 @@ const StoreDetail: React.FC = () => {
                             <button
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id as any)}
-                                className={`px-5 py-2.5 rounded-full text-xs font-semibold transition-all duration-150 whitespace-nowrap flex items-center gap-2 relative ${activeTab === tab.id
-                                    ? 'bg-[var(--brand-primary)] text-white shadow-md'
-                                    : 'bg-[var(--surface-2)] text-[var(--text-muted)] hover:text-[var(--text-main)]'}`}
+                                className={`px-5 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all duration-150 whitespace-nowrap flex items-center gap-2 relative ${activeTab === tab.id
+                                    ? 'bg-[var(--brand-navy)] text-white shadow-lg shadow-[var(--brand-navy)]/20'
+                                    : 'bg-[var(--surface-2)] text-[var(--text-muted)] hover:text-[var(--brand-navy)]'}`}
                             >
                                 <span className={activeTab === tab.id ? 'scale-110' : 'opacity-80'}>{tab.icon}</span>
                                 {tab.label}
                                 {tab.badge && (
-                                    <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-teal-600 rounded-full border-2 border-white animate-pulse"></span>
+                                    <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[var(--brand-primary)] rounded-full border-2 border-white animate-pulse"></span>
                                 )}
                             </button>
                         ))}
@@ -721,7 +723,7 @@ const StoreDetail: React.FC = () => {
                             <div className="flex gap-1">
                                 <button
                                     onClick={() => setViewMode('grid')}
-                                    className={`p-2 rounded-xl transition-all ${viewMode === 'grid' ? 'bg-white shadow-md text-teal-600 shadow-teal-600/5' : 'text-gray-400'}`}
+                                    className={`p-2 rounded-xl transition-all ${viewMode === 'grid' ? 'bg-white shadow-md text-[#007AFF] shadow-[#007AFF]/5' : 'text-gray-400'}`}
                                     title="Grid View"
                                 >
                                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -730,7 +732,7 @@ const StoreDetail: React.FC = () => {
                                 </button>
                                 <button
                                     onClick={() => setViewMode('list')}
-                                    className={`p-2 rounded-xl transition-all ${viewMode === 'list' ? 'bg-white shadow-md text-teal-600 shadow-teal-600/5' : 'text-gray-400'}`}
+                                    className={`p-2 rounded-xl transition-all ${viewMode === 'list' ? 'bg-white shadow-md text-[#007AFF] shadow-[#007AFF]/5' : 'text-gray-400'}`}
                                     title="List View"
                                 >
                                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -799,7 +801,7 @@ const StoreDetail: React.FC = () => {
                                                     loading="lazy"
                                                 />
                                                 {product.originalPrice && !isOutOfStock && (
-                                                    <div className="absolute top-2 left-2 bg-teal-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded skew-x-[-10deg] shadow-lg">
+                                                    <div className="absolute top-2 left-2 bg-[#007AFF] text-white text-[9px] font-black px-1.5 py-0.5 rounded skew-x-[-10deg] shadow-lg">
                                                         HOT DEAL
                                                     </div>
                                                 )}
@@ -812,29 +814,13 @@ const StoreDetail: React.FC = () => {
                                                 )}
                                             </div>
 
-                                            <div className="p-1 mt-2 flex-1 flex flex-col">
-                                                {/* Meta Info */}
-                                                <div className="flex items-center gap-1 mb-1 min-h-[14px]">
-                                                    {product.is_canadian_local && (
-                                                        <span className="text-[9px] font-black text-teal-600 bg-teal-50 px-1 rounded border border-teal-100 flex items-center gap-0.5 shadow-sm">
-                                                            🍁 CANADIAN
-                                                        </span>
-                                                    )}
-                                                </div>
-
-                                                <p 
-                                                    onClick={() => navigate(`/product/${product.id}`)} 
-                                                    className="font-black text-xs md:text-sm text-gray-800 tracking-tight leading-snug grow cursor-pointer hover:text-teal-600 transition-colors line-clamp-2"
-                                                >
-                                                    {product.name}
-                                                </p>
 
                                                 {/* Pricing Block */}
                                                 <div className="mt-3 bg-gray-50 p-2 rounded-lg border border-gray-100">
                                                     <div className="flex items-baseline gap-2">
                                                         <span className="text-xl md:text-2xl font-black text-[var(--brand-primary)] tracking-tighter">${product.price.toFixed(2)}</span>
                                                         {product.originalPrice && (
-                                                            <span className="text-[10px] text-gray-400 line-through decoration-teal-600/30 font-bold">Reg {product.originalPrice.toFixed(2)}</span>
+                                                            <span className="text-[10px] text-gray-400 line-through decoration-blue-600/30 font-bold">Reg {product.originalPrice.toFixed(2)}</span>
                                                         )}
                                                     </div>
                                                     {savingsAmount && Number(savingsAmount) > 0 && !isOutOfStock && (
@@ -853,9 +839,8 @@ const StoreDetail: React.FC = () => {
                                                     {isOutOfStock ? 'Sold Out' : '+ Add to Trolley'}
                                                 </button>
                                             </div>
-                                        </div>
-                                    );
-                                })}
+                                        );
+                                    })}
                             </div>
                         ) : (
                             /* List View Redesign */
@@ -872,13 +857,13 @@ const StoreDetail: React.FC = () => {
                                                 {isOutOfStock && <div className="absolute inset-0 bg-white/40 z-10"></div>}
                                             </div>
                                             <div className="flex-1 min-w-0">
-                                                <p onClick={() => navigate(`/product/${product.id}`)} className="font-black text-xs md:text-sm text-gray-800 truncate cursor-pointer hover:text-teal-600">{product.name}</p>
+                                                <p onClick={() => navigate(`/product/${product.id}`)} className="font-black text-xs md:text-sm text-gray-800 truncate cursor-pointer hover:text-[#007AFF]">{product.name}</p>
                                                 <div className="flex items-center gap-2 mt-1">
                                                     {product.is_canadian_local && (
-                                                        <span className="text-[8px] font-black text-teal-600 bg-teal-50 px-1 rounded border border-teal-100">🍁 LOCAL</span>
+                                                        <span className="text-[8px] font-black text-[#007AFF] bg-blue-50 px-1 rounded border border-blue-100">🍁 LOCAL</span>
                                                     )}
                                                     {product.originalPrice && (
-                                                        <span className="text-[8px] font-black bg-teal-600 text-white px-1.5 py-0.5 rounded-sm skew-x-[-12deg]">Sale</span>
+                                                        <span className="text-[8px] font-black bg-[#007AFF] text-white px-1.5 py-0.5 rounded-sm skew-x-[-12deg]">Sale</span>
                                                     )}
                                                 </div>
                                                 <div className="flex items-baseline gap-2 mt-0.5">
@@ -1016,7 +1001,7 @@ const StoreDetail: React.FC = () => {
                                 <div className="space-y-4">
                                     <div className="flex justify-between items-center border-b border-gray-200 pb-3">
                                         <span className="font-bold text-gray-700 text-sm">Delivery Available</span>
-                                        <span className="font-black text-teal-700 bg-teal-100 px-3 py-1 rounded-full text-[10px] tracking-widest shadow-sm">YES</span>
+                                        <span className="font-black text-[#112244] bg-blue-100 px-3 py-1 rounded-full text-[10px] tracking-widest shadow-sm">YES</span>
                                     </div>
                                     <div className="flex justify-between items-center border-b border-gray-200 pb-3">
                                         <span className="font-bold text-gray-700 text-sm">Estimated Time</span>

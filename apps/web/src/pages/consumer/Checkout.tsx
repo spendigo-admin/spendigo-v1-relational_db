@@ -433,20 +433,20 @@ const Checkout: React.FC = () => {
                 <h1 className="text-3xl font-bold text-[var(--text-main)] mb-6">Checkout</h1>
 
                 {/* Step progress indicator */}
-                <div className="flex items-center mb-8">
+                <div className="flex items-center mb-12">
                     {[
                         { step: 1, label: 'Cart', done: true },
                         { step: 2, label: 'Fulfillment', done: false, active: true },
                         { step: 3, label: 'Payment', done: false },
                     ].map((s, i, arr) => (
                         <React.Fragment key={s.step}>
-                            <div className="flex items-center gap-2 flex-shrink-0">
-                                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${s.done ? 'bg-[var(--status-success)] text-white' : s.active ? 'bg-[var(--brand-primary)] text-white' : 'bg-[var(--surface-2)] text-[var(--text-muted)]'}`}>
+                            <div className="flex items-center gap-3 flex-shrink-0">
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-black transition-all ${s.done ? 'bg-[var(--status-success)] text-white' : s.active ? 'bg-[var(--brand-primary)] text-white shadow-lg shadow-[var(--brand-primary)]/20 scale-110' : 'bg-[var(--surface-2)] text-[var(--text-muted)]'}`}>
                                     {s.done ? '✓' : s.step}
                                 </div>
-                                <span className={`text-sm font-medium ${s.active ? 'text-[var(--text-main)]' : 'text-[var(--text-muted)]'}`}>{s.label}</span>
+                                <span className={`text-[10px] font-black uppercase tracking-widest ${s.active ? 'text-[var(--brand-navy)]' : 'text-[var(--text-muted)]'}`}>{s.label}</span>
                             </div>
-                            {i < arr.length - 1 && <div className="flex-1 h-px bg-[var(--glass-border)] mx-3" />}
+                            {i < arr.length - 1 && <div className="flex-1 h-0.5 bg-[var(--glass-border)] mx-4" />}
                         </React.Fragment>
                     ))}
                 </div>
@@ -458,10 +458,10 @@ const Checkout: React.FC = () => {
                         const isBlocked = !isOpen || bothDisabled;
 
                         return (
-                            <div key={storeId} className={`glass-panel p-6 ${isBlocked ? 'opacity-70 grayscale-[0.5] border-2 border-red-100' : ''}`}>
-                                <div className="flex items-center justify-between mb-4">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-lg bg-white border border-[var(--glass-border)] flex items-center justify-center text-lg shadow-sm overflow-hidden">
+                            <div key={storeId} className={`glass-panel p-6 rounded-3xl ${isBlocked ? 'opacity-70 grayscale-[0.5] border-2 border-red-100' : 'border-gray-100'}`}>
+                                <div className="flex items-center justify-between mb-6">
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-12 h-12 rounded-xl bg-white border border-[var(--glass-border)] flex items-center justify-center text-xl shadow-sm overflow-hidden p-1">
                                             {(() => {
                                                 const store = getStore(storeId) || STORE_DATA[storeId];
                                                 const logo = store?.logoUrl || store?.logo;
@@ -473,19 +473,14 @@ const Checkout: React.FC = () => {
                                         </div>
                                         <div>
                                             <div className="flex items-center gap-2">
-                                                <h2 className="font-bold text-[var(--text-main)]">{storeName}</h2>
+                                                <h2 className="font-black text-lg text-[var(--brand-navy)] mb-0">{storeName}</h2>
                                                 {groupedItems[storeId].acceptsOnlinePayment && (
-                                                    <span className="text-[10px] font-bold bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full border border-purple-200">
+                                                    <span className="text-[9px] font-black bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full border border-purple-200 uppercase tracking-widest">
                                                         💳 Online Pay
                                                     </span>
                                                 )}
-                                                {groupedItems[storeId].distanceViolation && (
-                                                    <span className="text-[10px] bg-red-100 text-red-700 border border-red-200 px-2 py-0.5 rounded ml-2 font-bold cursor-help" title={`You are ${groupedItems[storeId].distance.toFixed(1)}km away. Store delivers within ${getStore(storeId)?.deliveryRadiusKm || 5}km.`}>
-                                                        Too Far for Delivery
-                                                    </span>
-                                                )}
                                             </div>
-                                            <p className="text-xs text-[var(--text-muted)]">{items.length} items • ${total.toFixed(2)}</p>
+                                            <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest">{items.length} items • ${total.toFixed(2)}</p>
                                         </div>
                                     </div>
                                     {(tier === 'free' || !groupedItems[storeId].deliveryEnabled) && !bothDisabled && (
@@ -568,9 +563,9 @@ const Checkout: React.FC = () => {
                     <span className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wide">Order Summary</span>
                     <div className="flex-1 h-px bg-[var(--glass-border)]" />
                 </div>
-                <div className="mt-2 glass-panel p-6">
-                    <div className="flex justify-between items-center mb-4">
-                        <span className="font-bold text-lg text-[var(--text-main)]">
+                <div className="mt-8 glass-panel p-8 rounded-[2rem] border-gray-100 shadow-xl">
+                    <div className="flex justify-between items-center mb-6">
+                        <span className="font-black text-xl text-[var(--brand-navy)] italic tracking-tighter">
                             {(() => {
                                 const methods = Object.values(fulfillmentMethods);
                                 const hasDelivery = methods.includes('delivery');
@@ -581,7 +576,7 @@ const Checkout: React.FC = () => {
                                 return "Total Due (Pay at Store)";
                             })()}
                         </span>
-                        <span className="font-bold text-2xl text-[var(--brand-primary)]">${grandTotal.toFixed(2)}</span>
+                        <span className="font-black text-4xl text-[var(--brand-primary)] tracking-tighter italic">${grandTotal.toFixed(2)}</span>
                     </div>
                     <div>
                         <div className="flex justify-between text-sm text-[var(--text-muted)] mb-1">
@@ -673,16 +668,16 @@ const Checkout: React.FC = () => {
                                 <button
                                     onClick={handlePayment}
                                     disabled={isProcessing || hasBlockers || ageBlocked}
-                                    className={`w-full py-4 text-white font-bold text-lg rounded-2xl transition-all flex items-center justify-center gap-2 shadow-lg ${isProcessing || hasBlockers || ageBlocked
+                                    className={`w-full py-5 text-white font-black text-sm uppercase tracking-[0.2em] rounded-2xl transition-all flex items-center justify-center gap-3 shadow-2xl ${isProcessing || hasBlockers || ageBlocked
                                         ? 'bg-gray-400 cursor-not-allowed opacity-80'
-                                        : 'bg-[var(--brand-primary)] hover:brightness-110 active:scale-95 shadow-[var(--brand-primary)]/30'
+                                        : 'bg-[var(--brand-navy)] hover:bg-[var(--brand-primary)] active:scale-95 shadow-[var(--brand-navy)]/30'
                                         }`}
                                 >
                                     {isProcessing ? 'Processing Secure Payment...' :
                                         hasBlockers ? '⚠️ Checkout Disabled' :
                                             ageBlocked ? '🔞 Verify Age Above' :
-                                                hasOnlinePay ? `Complete Payment & Order • $${grandTotal.toFixed(2)}` :
-                                                    `Confirm Reservations • $${grandTotal.toFixed(2)}`}
+                                                hasOnlinePay ? `Complete Payment • $${grandTotal.toFixed(2)}` :
+                                                    `Confirm Order • $${grandTotal.toFixed(2)}`}
                                 </button>
                             </div>
                         );

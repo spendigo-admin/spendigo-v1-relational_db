@@ -103,9 +103,9 @@ const SmartCartWishlist: React.FC = () => {
 
             {/* Location Change Toast */}
             {locationChanged && (
-                <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[60] bg-[var(--brand-primary)] text-white px-5 py-3 rounded-xl shadow-xl text-sm font-black flex items-center gap-2 animate-fade-in">
+                <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[60] bg-[var(--brand-primary)] text-white px-5 py-3 rounded-xl shadow-xl text-sm font-black flex items-center gap-2 animate-fade-in uppercase tracking-widest">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                    <span>Location updated — prices recalculated</span>
+                    <span>Location updated — Recalculating...</span>
                 </div>
             )}
 
@@ -119,7 +119,7 @@ const SmartCartWishlist: React.FC = () => {
                     <button
                         onClick={handleAddAllToCart}
                         disabled={validCartItems.length === 0}
-                        className={`px-8 py-3.5 rounded-2xl font-black text-white text-xs tracking-widest uppercase transition-all flex items-center gap-2 shadow-xl ${validCartItems.length === 0 ? 'bg-gray-300 cursor-not-allowed' : 'bg-[var(--brand-primary)] hover:scale-105 active:scale-95'}`}
+                        className={`px-8 py-3.5 rounded-2xl font-black text-white text-xs tracking-widest uppercase transition-all flex items-center gap-2 shadow-xl ${validCartItems.length === 0 ? 'bg-gray-300 cursor-not-allowed' : 'bg-[#112244] hover:bg-black active:scale-95'}`}
                     >
                         Add {validCartItems.length} to Cart
                     </button>
@@ -139,20 +139,20 @@ const SmartCartWishlist: React.FC = () => {
                     <div className="flex flex-col md:flex-row md:items-end justify-between gap-8">
                         <div className="max-w-2xl">
                             <div className="inline-flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 rounded-full bg-white shadow-sm border border-gray-100 mb-6 animate-fade-in">
-                                <span className="flex h-2 w-2 rounded-full bg-[var(--brand-primary)] animate-ping" />
+                                <span className="flex h-2 w-2 rounded-full bg-[#007AFF] animate-ping" />
                                 <span className="text-[10px] md:text-xs font-black uppercase tracking-[0.2em] text-[var(--text-muted)]">
                                     AI-Powered Savings
                                 </span>
                             </div>
-                            <h1 className="text-3xl md:text-5xl font-black text-[var(--text-main)] mb-4 leading-[1.05] tracking-tighter italic">
+                            <h1 className="text-3xl md:text-5xl font-black text-[#112244] mb-4 leading-[1.05] tracking-tighter italic">
                                 SmartCart<br />
-                                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[var(--brand-primary)] to-indigo-600">
+                                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#112244] to-[#007AFF]">
                                     Optimizer
                                 </span>
                             </h1>
                             <p className="text-[var(--text-muted)] text-sm md:text-lg font-bold leading-relaxed">
                                 Build your list and we'll find the absolute lowest total across all local stores. 
-                                <span className="text-[var(--brand-primary)]"> Real-time price matching, automatically.</span>
+                                <span className="text-[#007AFF]"> Real-time price matching, automatically.</span>
                             </p>
                         </div>
 
@@ -160,9 +160,9 @@ const SmartCartWishlist: React.FC = () => {
                             <div className="glass-panel-premium rounded-[2rem] p-6 min-w-[280px] border-blue-100/50 bg-white/40">
                                 <div className="flex items-center justify-between mb-4">
                                     <div className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--text-muted)]">Live Estimate</div>
-                                    <span className="badge-best">Saving ${potentialSavings.toFixed(2)}</span>
+                                    <span className="badge-best italic">Saving ${potentialSavings.toFixed(2)}</span>
                                 </div>
-                                <div className="text-4xl font-black text-[var(--text-main)] tracking-tighter italic">${totalCost.toFixed(2)}</div>
+                                <div className="text-4xl font-black text-[#112244] tracking-tighter italic">${totalCost.toFixed(2)}</div>
                                 <div className="mt-2 flex items-center gap-2 text-xs font-bold text-[var(--text-muted)]">
                                     <span>{validCartItems.length} Matched</span>
                                     <span className="w-1 h-1 bg-gray-300 rounded-full"></span>

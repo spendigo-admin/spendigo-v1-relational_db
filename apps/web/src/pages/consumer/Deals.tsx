@@ -65,19 +65,19 @@ const Deals: React.FC = () => {
             <SEO title="Active Deals" description="Discover hot deals and sale items from local grocery stores near you. Save more with Spendigo SmartCart." path="/deals" />
 
             {/* Header */}
-            <div className="bg-[var(--surface-0)] border-b border-[var(--glass-border)] sticky top-0 z-30 px-4 py-4 backdrop-blur-md bg-white/80">
+            <div className="bg-white border-b border-[var(--glass-border)] sticky top-0 z-30 px-4 py-4 backdrop-blur-md bg-white/80">
                 <div className="max-w-5xl mx-auto flex items-center gap-4">
                     <button
                         onClick={() => navigate('/')}
-                        className="w-10 h-10 rounded-full bg-[var(--surface-2)] flex items-center justify-center text-[var(--text-main)] hover:bg-[var(--surface-1)] transition-colors border border-[var(--glass-border)]"
+                        className="w-10 h-10 rounded-xl bg-[var(--surface-1)] flex items-center justify-center text-[var(--brand-navy)] hover:bg-[var(--surface-2)] transition-all border border-[var(--glass-border)] group"
                     >
-                        ←
+                        <span className="group-hover:-translate-x-1 transition-transform">←</span>
                     </button>
                     <div>
-                        <h1 className="text-xl font-bold text-[var(--text-main)] flex items-center gap-2">
+                        <h1 className="text-xl font-black text-[var(--brand-navy)] flex items-center gap-2 italic tracking-tighter">
                             <span className="text-2xl">🔥</span> {t('activeDeals')}
                         </h1>
-                        <p className="text-xs text-[var(--text-muted)]">{totalDealsCount} deal{totalDealsCount !== 1 ? 's' : ''} available nearby</p>
+                        <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest">{totalDealsCount} deal{totalDealsCount !== 1 ? 's' : ''} available nearby</p>
                     </div>
                 </div>
 
@@ -88,7 +88,7 @@ const Deals: React.FC = () => {
                             <button
                                 key={f}
                                 onClick={() => setActiveFilter(f)}
-                                className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all border ${activeFilter === f ? 'bg-[var(--brand-primary)] text-white border-[var(--brand-primary)] shadow-md shadow-[var(--brand-primary)]/20' : 'bg-white text-[var(--text-muted)] border-[var(--glass-border)] hover:bg-[var(--surface-1)]'}`}
+                                className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all border ${activeFilter === f ? 'bg-[var(--brand-navy)] text-white border-[var(--brand-navy)] shadow-lg' : 'bg-white text-[var(--text-muted)] border-[var(--glass-border)] hover:border-[var(--brand-primary)]'}`}
                             >
                                 {f}
                             </button>
@@ -126,9 +126,9 @@ const Deals: React.FC = () => {
                     <div className="space-y-10">
                         {storesWithDeals.map((store: any) => (
                             <section key={store.id} className="animate-slide-up">
-                                <div className="px-4 flex items-center justify-between mb-4">
-                                    <h3 className="text-lg font-bold text-[var(--text-main)] flex items-center gap-3">
-                                        <div className="w-8 h-8 rounded-lg bg-white border border-[var(--glass-border)] flex items-center justify-center overflow-hidden shadow-sm">
+                                <div className="px-4 flex items-center justify-between mb-6">
+                                    <h3 className="text-lg font-black text-[var(--brand-navy)] flex items-center gap-3 italic tracking-tight">
+                                        <div className="w-10 h-10 rounded-xl bg-white border border-[var(--glass-border)] flex items-center justify-center overflow-hidden shadow-sm p-1.5">
                                             {store.logoUrl && (store.logoUrl.startsWith('http') || store.logoUrl.startsWith('/') || store.logoUrl.startsWith('data:')) ? (
                                                 <img src={store.logoUrl} alt="" className="w-full h-full object-cover" />
                                             ) : (
@@ -136,11 +136,11 @@ const Deals: React.FC = () => {
                                             )}
                                         </div>
                                         {store.name}
-                                        <span className="text-xs font-normal text-[var(--text-muted)] px-2 py-0.5 bg-[var(--surface-2)] rounded-full">{store.deals.length}</span>
+                                        <span className="text-[10px] font-black text-[var(--brand-primary)] px-2.5 py-1 bg-[var(--brand-primary-light)] rounded-full uppercase tracking-widest">{store.deals.length} DEALS</span>
                                     </h3>
                                     <button 
                                         onClick={() => navigate(`/store/${store.id}`)}
-                                        className="text-xs font-bold text-[var(--brand-primary)] hover:underline"
+                                        className="text-[10px] font-black text-[var(--brand-primary)] hover:underline uppercase tracking-[0.2em]"
                                     >
                                         Visit Store →
                                     </button>
@@ -190,16 +190,16 @@ const Deals: React.FC = () => {
                                                     )}
                                                 </div>
 
-                                                <div className="p-3">
-                                                    <p className="text-xs font-bold text-[var(--text-main)] leading-tight line-clamp-2 h-8 group-hover:text-[var(--brand-primary)] transition-colors">{productName}</p>
-                                                    <div className="flex items-center gap-1.5 mt-2">
-                                                        <span className="text-lg font-black text-green-600">${salePrice?.toFixed(2)}</span>
+                                                <div className="p-4">
+                                                    <p className="text-xs font-black text-[var(--brand-navy)] leading-tight line-clamp-2 h-8 group-hover:text-[var(--brand-primary)] transition-colors mb-3 uppercase tracking-tight">{productName}</p>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-xl font-black text-[var(--brand-primary)]">${salePrice?.toFixed(2)}</span>
                                                         {originalPrice && (
-                                                            <span className="text-xs text-[var(--text-muted)] line-through">${originalPrice.toFixed(2)}</span>
+                                                            <span className="text-[10px] font-bold text-[var(--text-muted)] line-through tracking-tighter">${originalPrice.toFixed(2)}</span>
                                                         )}
                                                     </div>
                                                     {savings && savings !== '0.00' && (
-                                                        <p className="text-xs font-semibold text-green-600 mt-1">You Save ${savings}</p>
+                                                        <p className="text-[9px] font-black text-green-600 mt-2 uppercase tracking-[0.1em] italic">You Save ${savings}</p>
                                                     )}
                                                 </div>
                                             </div>

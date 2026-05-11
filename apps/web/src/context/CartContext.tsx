@@ -29,6 +29,7 @@ interface CartContextType {
     notification: {
         message: string;
         type: 'success' | 'info';
+        description?: string;
         savings?: number;
         competitor?: { name: string; price: number };
     } | null;
@@ -125,6 +126,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [notification, setNotification] = useState<{
         message: string;
         type: 'success' | 'info';
+        description?: string;
         savings?: number;
         competitor?: { name: string; price: number };
     } | null>(null);

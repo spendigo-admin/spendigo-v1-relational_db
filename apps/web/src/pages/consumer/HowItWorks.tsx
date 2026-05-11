@@ -63,7 +63,7 @@ const HowItWorks: React.FC = () => {
             title: t('hiwStep1Title'),
             desc: t('hiwStep1Desc'),
             detail: t('hiwStep1Detail'),
-            color: 'from-blue-500 to-indigo-600'
+            color: 'from-[#007AFF] to-[#112244]'
         },
         {
             step: 2,
@@ -71,7 +71,7 @@ const HowItWorks: React.FC = () => {
             title: t('hiwStep2Title'),
             desc: t('hiwStep2Desc'),
             detail: t('hiwStep2Detail'),
-            color: 'from-purple-500 to-pink-600'
+            color: 'from-[#112244] to-[#007AFF]'
         },
         {
             step: 3,
@@ -79,7 +79,7 @@ const HowItWorks: React.FC = () => {
             title: t('hiwStep3Title'),
             desc: t('hiwStep3Desc'),
             detail: t('hiwStep3Detail'),
-            color: 'from-amber-400 to-orange-500'
+            color: 'from-[#007AFF] to-[#E5F1FF]'
         },
         {
             step: 4,
@@ -87,7 +87,7 @@ const HowItWorks: React.FC = () => {
             title: t('hiwStep4Title'),
             desc: t('hiwStep4Desc'),
             detail: t('hiwStep4Detail'),
-            color: 'from-emerald-400 to-teal-600'
+            color: 'from-[#112244] to-[#34C759]'
         },
     ];
 
@@ -126,8 +126,8 @@ const HowItWorks: React.FC = () => {
                 {/* Background Decor */}
                 <div className="absolute inset-0 z-0">
                     <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full bg-[radial-gradient(circle_at_50%_-20%,var(--brand-primary-light),transparent_70%)]" />
-                    <div className="absolute top-1/4 -right-20 w-64 h-64 md:w-96 md:h-96 bg-purple-100 rounded-full blur-3xl opacity-50 animate-pulse" />
-                    <div className="absolute bottom-0 -left-20 w-64 h-64 md:w-96 md:h-96 bg-blue-100 rounded-full blur-3xl opacity-50 animate-pulse" style={{ animationDelay: '2s' }} />
+                    <div className="absolute top-1/4 -right-20 w-64 h-64 md:w-96 md:h-96 bg-blue-50/50 rounded-full blur-3xl opacity-50 animate-pulse" />
+                    <div className="absolute bottom-0 -left-20 w-64 h-64 md:w-96 md:h-96 bg-blue-100/30 rounded-full blur-3xl opacity-50 animate-pulse" style={{ animationDelay: '2s' }} />
                 </div>
 
                 <div className="max-w-7xl mx-auto px-4 relative z-10 text-center">
@@ -140,7 +140,7 @@ const HowItWorks: React.FC = () => {
 
                     <h1 className="text-3xl sm:text-4xl md:text-7xl font-black tracking-tight text-[var(--text-main)] mb-4 md:mb-6 leading-[1.15] md:leading-[1.1]">
                         {t('hiwTitle1')} <br />
-                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-[var(--brand-primary)] to-indigo-600">
+                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#112244] to-[#007AFF]">
                             {t('hiwTitle2')}
                         </span>
                     </h1>
@@ -150,10 +150,10 @@ const HowItWorks: React.FC = () => {
                     </p>
 
                     <div className="flex flex-col sm:flex-row items-center justify-center gap-3 md:gap-4 px-4 sm:px-0">
-                        <Link to="/" className="w-full sm:w-auto px-8 md:px-10 py-3.5 md:py-4 bg-[var(--brand-primary)] text-white font-black rounded-2xl shadow-xl shadow-blue-500/20 hover:scale-[1.02] active:scale-[0.98] transition-all text-sm md:text-base text-center">
+                        <Link to="/" className="w-full sm:w-auto px-8 md:px-10 py-3.5 md:py-4 bg-[#112244] text-white font-black rounded-2xl shadow-xl shadow-blue-500/10 hover:scale-[1.02] active:scale-[0.98] transition-all text-sm md:text-base text-center uppercase tracking-widest">
                             {t('hiwBrowseStores')}
                         </Link>
-                        <Link to="/smartcart" className="w-full sm:w-auto px-8 md:px-10 py-3.5 md:py-4 bg-white text-[var(--brand-primary)] font-black rounded-2xl border-2 border-[var(--brand-primary)] hover:bg-[var(--brand-primary-light)] transition-all text-sm md:text-base text-center">
+                        <Link to="/smartcart" className="w-full sm:w-auto px-8 md:px-10 py-3.5 md:py-4 bg-white text-[#112244] font-black rounded-2xl border-2 border-gray-100 hover:border-[#007AFF] transition-all text-sm md:text-base text-center uppercase tracking-widest">
                             {t('hiwTrySmartCart')}
                         </Link>
                     </div>
@@ -164,8 +164,8 @@ const HowItWorks: React.FC = () => {
             <section className="py-16 md:py-24 bg-white relative">
                 <div className="max-w-5xl mx-auto px-4">
                     <div className="text-center mb-12 md:mb-20">
-                        <h2 className="text-2xl md:text-4xl font-black text-[var(--text-main)] mb-4">{t('hiwHowItWorks')}</h2>
-                        <div className="w-16 md:w-20 h-1.5 bg-[var(--brand-primary)] mx-auto rounded-full" />
+                        <h2 className="text-2xl md:text-4xl font-black text-[#112244] mb-4">{t('hiwHowItWorks')}</h2>
+                        <div className="w-16 md:w-20 h-1.5 bg-[#007AFF] mx-auto rounded-full" />
                     </div>
 
                     <div className="space-y-16 md:space-y-32">
@@ -176,8 +176,8 @@ const HowItWorks: React.FC = () => {
                                         {item.icon}
                                     </div>
                                     <div className="flex items-center justify-center md:justify-start gap-3 mb-3 md:mb-4">
-                                        <span className="text-[var(--brand-primary)] font-black text-[10px] md:text-sm uppercase tracking-widest">{t('stepWord')} 0{item.step}</span>
-                                        <div className="h-px w-6 md:w-8 bg-[var(--brand-primary)]/30" />
+                                        <span className="text-[#007AFF] font-black text-[10px] md:text-sm uppercase tracking-widest">{t('stepWord')} 0{item.step}</span>
+                                        <div className="h-px w-6 md:w-8 bg-[#007AFF]/30" />
                                     </div>
                                     <h3 className="text-xl md:text-3xl font-black text-[var(--text-main)] mb-3 md:mb-4">{item.title}</h3>
                                     <p className="text-base md:text-lg text-[var(--text-muted)] leading-relaxed mb-4 md:mb-6">{item.desc}</p>
@@ -207,9 +207,9 @@ const HowItWorks: React.FC = () => {
             <section className="py-16 md:py-24 bg-[var(--surface-1)]">
                 <div className="max-w-4xl mx-auto px-4">
                     <div className="bg-white rounded-3xl md:rounded-[2.5rem] shadow-xl md:shadow-2xl overflow-hidden border border-gray-100">
-                        <div className="bg-gradient-to-r from-[var(--brand-primary)] to-indigo-600 p-6 md:p-8 text-white text-center">
-                            <h2 className="text-xl md:text-2xl font-black mb-1 md:mb-2">{t('hiwReceiptTitle')}</h2>
-                            <p className="text-white/80 text-[10px] md:text-sm font-medium uppercase tracking-wider">{t('hiwReceiptSubtitle')}</p>
+                        <div className="bg-[#112244] p-6 md:p-8 text-white text-center">
+                            <h2 className="text-xl md:text-2xl font-black mb-1 md:mb-2 text-white italic uppercase tracking-widest">{t('hiwReceiptTitle')}</h2>
+                            <p className="text-white/70 text-[10px] md:text-sm font-bold uppercase tracking-widest">{t('hiwReceiptSubtitle')}</p>
                         </div>
                         
                         <div className="p-5 md:p-12 relative">
@@ -238,14 +238,14 @@ const HowItWorks: React.FC = () => {
                                                 <span className="text-[10px] md:text-xs text-[var(--text-muted)] line-through">
                                                     ${row.stores.find(s => !s.best)?.price}
                                                 </span>
-                                                <span className="text-base md:text-lg font-black text-[var(--brand-secondary)]">
+                                                <span className="text-base md:text-lg font-black text-[#007AFF]">
                                                     ${row.stores.find(s => s.best)?.price}
                                                 </span>
                                             </div>
                                         </div>
                                         <div className="flex flex-wrap gap-1.5 md:gap-2">
                                             {row.stores.map((s, j) => (
-                                                <div key={j} className={`text-[9px] md:text-[10px] uppercase tracking-tighter px-1.5 py-0.5 md:px-2 md:py-1 rounded-md font-bold ${s.best ? 'bg-[var(--brand-secondary)]/10 text-[var(--brand-secondary)] border border-[var(--brand-secondary)]/20' : 'bg-gray-50 text-gray-400 border border-gray-100'}`}>
+                                                <div key={j} className={`text-[9px] md:text-[10px] uppercase tracking-tighter px-1.5 py-0.5 md:px-2 md:py-1 rounded-md font-bold ${s.best ? 'bg-blue-50 text-[#007AFF] border border-blue-100' : 'bg-gray-50 text-gray-400 border border-gray-100'}`}>
                                                     {s.name}
                                                 </div>
                                             ))}
@@ -256,7 +256,7 @@ const HowItWorks: React.FC = () => {
 
                             <div className="mt-8 md:mt-12 pt-6 md:pt-8 border-t-2 border-dashed border-gray-100 flex flex-col sm:flex-row items-center sm:items-end justify-between gap-4 md:gap-6">
                                 <div className="text-center sm:text-left w-full sm:w-auto">
-                                    <h4 className="text-xl md:text-2xl font-black text-[var(--brand-secondary)] mb-1">{t('hiwYouSave')} $13.50</h4>
+                                    <h4 className="text-xl md:text-2xl font-black text-[#007AFF] mb-1">{t('hiwYouSave')} $13.50</h4>
                                     <p className="text-[10px] md:text-xs font-bold text-[var(--text-muted)] uppercase tracking-widest">{t('hiwAcrossStores')}</p>
                                 </div>
                                 <div className="w-full sm:w-auto px-4 md:px-6 py-3 md:py-4 bg-[var(--surface-1)] rounded-xl md:rounded-2xl border border-[var(--glass-border)] text-center">
@@ -292,23 +292,48 @@ const HowItWorks: React.FC = () => {
                 </div>
             </section>
 
-            {/* For Merchants CTA */}
-            <section className="max-w-7xl mx-auto px-4 py-8 md:py-12">
-                <div className="relative rounded-[2rem] md:rounded-[3rem] bg-gradient-to-br from-[#4f46e5] via-[var(--brand-primary)] to-indigo-600 p-6 md:p-16 overflow-hidden text-white">
-                    <div className="absolute top-0 right-0 w-48 h-48 md:w-64 md:h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-                    <div className="relative z-10 flex flex-col lg:flex-row items-center gap-6 md:gap-10">
-                        <div className="w-20 h-20 md:w-32 md:h-32 flex-shrink-0 bg-white/20 backdrop-blur-xl rounded-2xl md:rounded-[2rem] flex items-center justify-center text-4xl md:text-5xl">
-                            🏪
+            {/* For Merchants CTA - Brand Navy & White */}
+            <section className="max-w-7xl mx-auto px-4 py-12 md:py-20">
+                <div className="relative rounded-[2.5rem] md:rounded-[4rem] bg-[var(--brand-navy)] p-8 md:p-20 overflow-hidden text-white shadow-2xl shadow-blue-500/20">
+                    {/* Glowing Decorative Blurs */}
+                    <div className="absolute -top-20 -right-20 w-80 h-80 bg-white/20 rounded-full blur-[80px] animate-pulse" />
+                    <div className="absolute -bottom-20 -left-20 w-80 h-80 bg-blue-400/20 rounded-full blur-[80px] animate-pulse" style={{ animationDelay: '2s' }} />
+                    
+                    <div className="relative z-10 flex flex-col lg:flex-row items-center gap-8 md:gap-16">
+                        <div className="relative">
+                            <div className="w-24 h-24 md:w-40 md:h-40 bg-white/10 backdrop-blur-2xl rounded-[2rem] md:rounded-[3rem] flex items-center justify-center text-5xl md:text-7xl shadow-2xl border border-white/20 transform -rotate-6">
+                                🏪
+                            </div>
+                            <div className="absolute -bottom-2 -right-2 w-10 h-10 md:w-16 md:h-16 bg-white rounded-2xl md:rounded-3xl flex items-center justify-center text-xl md:text-3xl shadow-lg transform rotate-12">
+                                ✨
+                            </div>
                         </div>
+                        
                         <div className="flex-1 text-center lg:text-left">
-                            <h2 className="text-2xl md:text-4xl font-black mb-3 md:mb-4">{t('hiwOwnStore')}</h2>
-                            <p className="text-base md:text-lg text-white/80 leading-relaxed max-w-2xl">
+                            <h2 className="text-3xl md:text-6xl font-black mb-4 md:mb-6 tracking-tighter leading-none italic uppercase">
+                                {t('hiwOwnStore')}
+                            </h2>
+                            <p className="text-lg md:text-2xl text-white/90 leading-relaxed max-w-2xl font-medium">
                                 {t('hiwOwnStoreDesc')}
                             </p>
+                            <div className="mt-8 flex flex-wrap items-center justify-center lg:justify-start gap-4">
+                                <div className="flex items-center gap-2 px-4 py-2 bg-white/10 rounded-full border border-white/20 text-xs font-black uppercase tracking-widest">
+                                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                                    Active Platform
+                                </div>
+                                <div className="flex items-center gap-2 px-4 py-2 bg-white/10 rounded-full border border-white/20 text-xs font-black uppercase tracking-widest">
+                                    🚀 Rapid Growth
+                                </div>
+                            </div>
                         </div>
-                        <Link to="/register" className="w-full sm:w-auto px-8 md:px-10 py-3.5 md:py-4 bg-white text-[var(--brand-primary)] font-black rounded-xl md:rounded-2xl hover:scale-105 transition-transform shadow-xl text-center">
-                            {t('hiwJoinFree')}
-                        </Link>
+                        
+                        <div className="shrink-0 w-full lg:w-auto">
+                            <Link to="/register" className="group relative inline-flex items-center justify-center w-full lg:w-auto px-12 py-5 bg-white text-[#112244] font-black rounded-2xl md:rounded-[2rem] hover:scale-105 transition-all shadow-[0_20px_50px_rgba(255,255,255,0.2)] text-xl uppercase tracking-widest overflow-hidden">
+                                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
+                                <span className="relative z-10">{t('hiwJoinFree')} →</span>
+                            </Link>
+                            <p className="text-center mt-4 text-xs font-bold text-white/60 uppercase tracking-widest">No hidden setup fees</p>
+                        </div>
                     </div>
                 </div>
             </section>
@@ -349,7 +374,7 @@ const HowItWorks: React.FC = () => {
                     </p>
                     <Link
                         to="/smartcart"
-                        className="inline-flex items-center gap-3 px-10 py-4 md:px-12 md:py-5 bg-[var(--brand-primary)] text-white font-black rounded-2xl md:rounded-[2rem] text-lg md:text-xl shadow-2xl shadow-blue-500/30 hover:scale-105 active:scale-95 transition-all w-full sm:w-auto justify-center"
+                        className="inline-flex items-center gap-3 px-10 py-4 md:px-12 md:py-5 bg-[#112244] text-white font-black rounded-2xl md:rounded-[2rem] text-lg md:text-xl shadow-2xl shadow-blue-500/10 hover:scale-105 active:scale-95 transition-all w-full sm:w-auto justify-center uppercase tracking-widest"
                     >
                         {t('hiwStartShop')}
                     </Link>

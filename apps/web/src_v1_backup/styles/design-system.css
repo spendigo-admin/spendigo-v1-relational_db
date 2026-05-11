@@ -1,0 +1,397 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+    /* 
+     * COLOR PALETTE - Bright White & Blue Theme
+     * Primary: Vibrant Blue (Instacart/Trust-inspired)
+     * Secondary: Bright Green for success/savings
+     * Background: Clean white
+     */
+    --brand-primary: hsl(212, 100%, 47%);
+    /* Bright Blue */
+    --brand-primary-dark: hsl(212, 100%, 40%);
+    --brand-primary-light: hsl(212, 100%, 95%);
+
+    --brand-secondary: hsl(145, 63%, 42%);
+    /* Success Green */
+    --brand-secondary-hover: hsl(145, 63%, 35%);
+
+    /* Neutral Scale (Light Mode) */
+    --surface-0: hsl(0, 0%, 100%);
+    /* Pure White Background */
+    --surface-1: hsl(210, 20%, 98%);
+    /* Slightly off-white for cards */
+    --surface-2: hsl(210, 15%, 95%);
+    /* Hover/divider state */
+    --surface-3: hsl(210, 10%, 90%);
+    /* Borders */
+
+    --text-main: hsl(210, 20%, 15%);
+    /* Near black */
+    --text-muted: hsl(210, 10%, 50%);
+    /* Gray */
+    --text-inverse: hsl(0, 0%, 100%);
+
+    /* Status Colors (Accessible) */
+    --status-success: hsl(145, 63%, 42%);
+    --status-error: hsl(0, 72%, 51%);
+    --status-warning: hsl(38, 92%, 50%);
+
+    /* CARD STYLES (Light Mode) */
+    --glass-bg: hsl(0, 0%, 100%);
+    --glass-border: hsl(210, 15%, 80%);
+    --glass-blur: 0px;
+    --glass-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.06);
+
+    /* SPACING SCALE (4px grid) */
+    --space-1: 0.25rem;
+    --space-2: 0.5rem;
+    --space-3: 0.75rem;
+    --space-4: 1rem;
+    --space-6: 1.5rem;
+    --space-8: 2rem;
+    --space-12: 3rem;
+
+    /* TYPOGRAPHY */
+    --font-sans: 'Inter', 'Outfit', system-ui, -apple-system, sans-serif;
+    --font-weight-regular: 400;
+    --font-weight-medium: 500;
+    --font-weight-bold: 600;
+
+    /* BORDERS & RADIUS */
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+
+    /* SAFE AREA INSETS (Capacitor/Mobile) */
+    --safe-area-top: env(safe-area-inset-top, 0px);
+    --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-area-left: env(safe-area-inset-left, 0px);
+    --safe-area-right: env(safe-area-inset-right, 0px);
+}
+
+/* Base Styles */
+body {
+    background-color: var(--surface-0);
+    color: var(--text-main);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    scrollbar-gutter: stable;
+}
+
+/* Card/Panel Style - Clean White Cards with Subtle Shadow */
+.glass-panel {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+    border-radius: var(--radius-md);
+}
+
+/* Hover effect for cards */
+.glass-panel:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Typography Scale */
+h1 {
+    font-size: 2rem;
+    font-weight: var(--font-weight-bold);
+    line-height: 1.2;
+    color: var(--text-main);
+}
+
+h2 {
+    font-size: 1.5rem;
+    font-weight: var(--font-weight-bold);
+    margin-bottom: var(--space-4);
+    color: var(--text-main);
+}
+
+h3 {
+    font-size: 1.25rem;
+    font-weight: var(--font-weight-medium);
+    color: var(--text-main);
+}
+
+.page-headline {
+    font-size: 1rem; /* text-base */
+    font-weight: 900; /* font-black */
+    letter-spacing: -0.025em; /* tracking-tight */
+    color: var(--text-main);
+}
+
+@media (min-width: 768px) {
+    .page-headline {
+        font-size: 1.125rem; /* text-lg */
+    }
+}
+
+p {
+    font-size: 1rem;
+    line-height: 1.6;
+    color: var(--text-muted);
+}
+
+/* Accessible Focus States */
+:focus-visible {
+    outline: 2px solid var(--brand-primary);
+    outline-offset: 2px;
+}
+
+/* Animation */
+.animate-fade-in {
+    animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-slide-up {
+    animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(100%);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ─── Button Variants ──────────────────────────────────────────────────────── */
+.btn-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    padding: 0.625rem 1.5rem;
+    background-color: var(--brand-primary);
+    color: var(--text-inverse);
+    border-radius: 9999px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    border: 2px solid transparent;
+    transition: background-color 0.15s, box-shadow 0.15s, transform 0.1s;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.btn-primary:hover {
+    background-color: var(--brand-primary-dark);
+    box-shadow: 0 4px 12px rgba(0, 120, 255, 0.25);
+}
+
+.btn-primary:active {
+    transform: scale(0.97);
+}
+
+.btn-primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+}
+
+.btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    padding: 0.625rem 1.5rem;
+    background-color: transparent;
+    color: var(--brand-primary);
+    border-radius: 9999px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    border: 2px solid var(--brand-primary);
+    transition: background-color 0.15s, color 0.15s, transform 0.1s;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.btn-secondary:hover {
+    background-color: var(--brand-primary-light);
+}
+
+.btn-secondary:active {
+    transform: scale(0.97);
+}
+
+.btn-secondary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btn-ghost {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    padding: 0.5rem 1rem;
+    background-color: var(--surface-2);
+    color: var(--text-main);
+    border-radius: 9999px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    border: 2px solid transparent;
+    transition: background-color 0.15s, transform 0.1s;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.btn-ghost:hover {
+    background-color: var(--surface-3);
+}
+
+.btn-ghost:active {
+    transform: scale(0.97);
+}
+
+/* ─── Badge Variants ───────────────────────────────────────────────────────── */
+.badge-deal {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.125rem 0.5rem;
+    background-color: hsl(0, 80%, 55%);
+    color: #fff;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    border-radius: 4px;
+    letter-spacing: 0.02em;
+    transform: skewX(-8deg);
+    white-space: nowrap;
+}
+
+.badge-deal > * {
+    transform: skewX(8deg);
+}
+
+.badge-best {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.125rem 0.5rem;
+    background-color: var(--brand-secondary);
+    color: #fff;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    border-radius: 4px;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+}
+
+.badge-info {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.125rem 0.5rem;
+    background-color: var(--brand-primary-light);
+    color: var(--brand-primary);
+    font-size: 0.6875rem;
+    font-weight: 600;
+    border-radius: 4px;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+}
+
+/* ─── Skeleton Loader ──────────────────────────────────────────────────────── */
+@keyframes skeleton-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+}
+
+.skeleton {
+    background-color: var(--surface-2);
+    border-radius: var(--radius-sm);
+    animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+/* Scrollbar hiding utility */
+.scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+    display: none;
+}
+
+/* Safe Area Utilities */
+.pb-safe {
+    padding-bottom: var(--safe-area-bottom);
+}
+
+.pt-safe {
+    padding-top: var(--safe-area-top);
+}
+
+.pl-safe {
+    padding-left: var(--safe-area-left);
+}
+
+.pr-safe {
+    padding-right: var(--safe-area-right);
+}
+
+@layer base {
+    /* Tailwind Utility Overrides for Night Theme */
+    /* By placing these in base, Tailwind's utility hover states (like hover:text-white) 
+       will correctly override these base defaults due to stylesheet order, fixing disappearing text issues. */
+    .theme-night .text-gray-900,
+    .theme-night .text-gray-800,
+    .theme-night .text-gray-700,
+    .theme-night .text-black {
+        color: var(--text-main);
+    }
+
+    .theme-night .text-gray-600,
+    .theme-night .text-gray-500,
+    .theme-night .text-gray-400 {
+        color: var(--text-muted);
+    }
+
+    .theme-night .bg-white,
+    .theme-night .bg-gray-50 {
+        background-color: var(--surface-1);
+    }
+
+    .theme-night .bg-gray-100,
+    .theme-night .bg-gray-200 {
+        background-color: var(--surface-2);
+    }
+
+    .theme-night .border-gray-100,
+    .theme-night .border-gray-200,
+    .theme-night .border-gray-300 {
+        border-color: var(--surface-3);
+    }
+
+    .theme-night .text-blue-700,
+    .theme-night .text-blue-600,
+    .theme-night .text-blue-800 {
+        color: var(--brand-primary);
+    }
+
+    .theme-night .bg-blue-50,
+    .theme-night .bg-blue-100 {
+        background-color: var(--surface-2);
+        color: var(--brand-primary);
+    }
+
+    .theme-night ::placeholder {
+        color: var(--text-muted);
+        opacity: 1;
+    }
+}

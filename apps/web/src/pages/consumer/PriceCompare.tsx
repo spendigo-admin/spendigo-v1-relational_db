@@ -153,12 +153,12 @@ const PriceCompare = () => {
             <SEO title="Compare My List" description="Compare flyer deals for the items on your wishlist." path="/compare" />
 
             {/* Premium Hero Section */}
-            <section className="relative overflow-hidden pt-12 pb-8 md:pt-20 md:pb-12 px-4 border-b border-[var(--glass-border)] mb-4">
+            <section className="relative overflow-hidden pt-12 pb-8 md:pt-20 md:pb-12 px-4 mb-8">
                 {/* Background Decorative Elements */}
                 <div className="absolute inset-0 z-0">
                     <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full bg-[radial-gradient(circle_at_50%_-20%,var(--brand-primary-light),transparent_70%)]" />
                     <div className="absolute top-1/4 -right-20 w-64 h-64 md:w-96 md:h-96 bg-blue-100/30 rounded-full blur-[100px] opacity-60 animate-pulse" />
-                    <div className="absolute bottom-0 -left-20 w-64 h-64 md:w-96 md:h-96 bg-emerald-100/30 rounded-full blur-[100px] opacity-60 animate-pulse" style={{ animationDelay: '2s' }} />
+                    <div className="absolute bottom-0 -left-20 w-64 h-64 md:w-96 md:h-96 bg-purple-100/30 rounded-full blur-[100px] opacity-60 animate-pulse" style={{ animationDelay: '2s' }} />
                 </div>
 
                 <div className="max-w-7xl mx-auto relative z-10">
@@ -166,27 +166,28 @@ const PriceCompare = () => {
                         <div className="flex-1 max-w-2xl">
                             <div className="inline-flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 rounded-full bg-white shadow-sm border border-gray-100 mb-6 animate-fade-in">
                                 <span className="flex h-2 w-2 rounded-full bg-[var(--brand-primary)] animate-ping" />
-                                <span className="text-[10px] md:text-xs font-black uppercase tracking-[0.2em] text-[var(--text-muted)]">
+                                <span className="text-[10px] md:text-xs font-black uppercase tracking-[0.4em] text-[var(--text-muted)]">
                                     Flyer Price Analysis
                                 </span>
                             </div>
-                            <h1 className="text-3xl md:text-5xl font-black text-[var(--text-main)] mb-4 leading-[1.05] tracking-tighter italic">
+                            <h1 className="text-3xl md:text-5xl font-black italic tracking-tighter mb-4 leading-[1.05] text-[var(--brand-navy)]">
                                 Price<br />
-                                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[var(--brand-primary)] to-indigo-600">
-                                    Comparison
-                                </span>
+                                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#112244] to-[#007AFF]">Comparison.</span>
                             </h1>
-                            <p className="text-[var(--text-muted)] text-sm md:text-lg font-bold leading-relaxed">
+                            <p className="text-lg md:text-xl font-bold text-[var(--text-muted)] max-w-xl leading-relaxed">
                                 We've analyzed the latest grocery flyers to find matches for your wishlist. 
-                                <span className="text-emerald-600"> Real-time savings across all major retailers.</span>
+                                <span className="text-[var(--brand-primary)]"> Real-time savings across all major retailers.</span>
                             </p>
                         </div>
 
                         {!loading && deals.length > 0 && (
-                            <div className="glass-panel-premium rounded-[2rem] p-6 min-w-[240px] border-blue-100/50 bg-white/40">
-                                <div className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--text-muted)] mb-2">Deals Found</div>
-                                <div className="text-4xl font-black text-[var(--text-main)] tracking-tighter italic">{deals.length}</div>
-                                <div className="mt-2 text-xs font-bold text-[var(--brand-primary)] italic">Across multiple flyers</div>
+                            <div className="bg-white rounded-3xl p-8 min-w-[280px] shadow-2xl border-b-8 border-[var(--brand-primary)] relative overflow-hidden group">
+                                <div className="absolute top-0 right-0 w-24 h-24 bg-[var(--brand-primary)]/5 rounded-full -mr-12 -mt-12 group-hover:scale-150 transition-transform duration-700"></div>
+                                <div className="text-[10px] font-black uppercase tracking-[0.3em] text-[var(--brand-navy)] mb-2 relative z-10">Total Matches</div>
+                                <div className="text-6xl font-black text-[var(--brand-navy)] tracking-tighter italic relative z-10">{deals.length}</div>
+                                <div className="mt-4 text-[9px] font-black text-white uppercase tracking-widest bg-[var(--brand-primary)] inline-block px-4 py-1.5 rounded-full shadow-lg shadow-blue-500/20 relative z-10">
+                                    Active In-Store
+                                </div>
                             </div>
                         )}
                     </div>
@@ -226,8 +227,8 @@ const PriceCompare = () => {
                 ) : (
                     <div className="space-y-6">
                         {groupedDeals.map(group => (
-                            <div key={group.wishlistItem.id} className="bg-white rounded-3xl border border-[var(--glass-border)] shadow-sm overflow-hidden">
-                                <div className="bg-[var(--surface-1)] px-6 py-4 border-b border-[var(--glass-border)] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div key={group.wishlistItem.id} className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
+                                <div className="bg-gray-50/50 px-6 py-4 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                                     <div className="flex items-center gap-4">
                                         <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center overflow-hidden border border-[var(--glass-border)] shrink-0">
                                             {group.wishlistItem.image ? (
@@ -237,12 +238,12 @@ const PriceCompare = () => {
                                             )}
                                         </div>
                                         <div>
-                                            <h2 className="text-lg font-black text-[var(--text-main)] leading-tight">{group.wishlistItem.name}</h2>
-                                            <p className="text-xs text-[var(--text-muted)] font-medium uppercase tracking-wider">{group.wishlistItem.category || 'Item'}</p>
+                                            <h2 className="text-lg font-black text-[var(--brand-navy)] leading-tight italic tracking-tight">{group.wishlistItem.name}</h2>
+                                            <p className="text-[10px] text-[var(--brand-primary)] font-black uppercase tracking-widest">{group.wishlistItem.category || 'Item'}</p>
                                         </div>
                                     </div>
                                     <div className="shrink-0">
-                                        <span className={group.deals.length > 0 ? 'badge-best' : 'badge-info'}>
+                                        <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${group.deals.length > 0 ? 'bg-[#EBF5FF] text-[#007AFF]' : 'bg-gray-100 text-gray-400'}`}>
                                             {group.deals.length} flyer deal{group.deals.length !== 1 ? 's' : ''} found
                                         </span>
                                     </div>
@@ -271,7 +272,7 @@ const PriceCompare = () => {
                                                     const best = nameGroup[0];
                                                     const saving = parseDealPrice(nameGroup[nameGroup.length - 1]) - parseDealPrice(best);
                                                     return (
-                                                        <div key={gi} className="rounded-2xl border border-[var(--brand-primary)]/20 bg-[var(--brand-primary-light)] overflow-hidden">
+                                                        <div key={gi} className="rounded-2xl border border-blue-100 bg-blue-50/30 overflow-hidden">
                                                             <div className="flex items-center gap-3 px-4 py-3 border-b border-[var(--brand-primary)]/10">
                                                                 {best.imageUrl && (
                                                                     <div className="w-16 h-16 shrink-0 bg-white rounded-xl border border-[var(--glass-border)] flex items-center justify-center p-1.5">
@@ -292,7 +293,7 @@ const PriceCompare = () => {
                                                                         <div key={ri} className={`flex items-center justify-between px-4 py-2.5 ${isWinner ? 'bg-white/60' : ''}`}>
                                                                             <div className="flex items-center gap-2 min-w-0">
                                                                                 {isWinner && <span className="text-base leading-none">🏆</span>}
-                                                                                <span className={`text-sm font-semibold truncate ${isWinner ? 'text-[var(--brand-primary)]' : 'text-[var(--text-muted)]'}`}>
+                                                                                <span className={`text-sm font-bold truncate ${isWinner ? 'text-[#007AFF]' : 'text-[#112244]/60'}`}>
                                                                                     {deal.retailer}
                                                                                 </span>
                                                                             </div>
@@ -303,11 +304,11 @@ const PriceCompare = () => {
                                                                                     </span>
                                                                                 )}
                                                                                 {deal.validTo && (
-                                                                                    <span className="text-[10px] font-bold text-[var(--status-error)] hidden sm:inline">
+                                                                                    <span className="text-[10px] font-bold text-[var(--status-error)] hidden sm:inline uppercase tracking-widest">
                                                                                         Ends {new Date(deal.validTo).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                                                                                     </span>
                                                                                 )}
-                                                                                <span className={`text-base font-black tracking-tight ${isWinner ? 'text-[var(--brand-primary)]' : 'text-[var(--text-main)]'}`}>
+                                                                                <span className={`text-lg font-black tracking-tighter italic ${isWinner ? 'text-[var(--brand-primary)]' : 'text-[var(--brand-navy)]'}`}>
                                                                                     {deal.currentPrice ? `$${parseFloat(deal.currentPrice).toFixed(2)}` : deal.priceText}
                                                                                 </span>
                                                                             </div>
@@ -334,8 +335,8 @@ const PriceCompare = () => {
                                                                     <div key={i} className={`flex flex-col p-3 rounded-2xl border ${isBest ? 'bg-[var(--brand-primary-light)] border-[var(--brand-primary)]/20 shadow-sm' : 'bg-[var(--surface-0)] border-[var(--glass-border)]'} transition-colors`}>
                                                                         <div className="flex items-center justify-between mb-2">
                                                                             <div className="flex items-center gap-2 min-w-0">
-                                                                                {isBest && <span className="badge-best">Best Price</span>}
-                                                                                <span className={`text-sm font-bold truncate ${isBest ? 'text-[var(--brand-primary)]' : 'text-[var(--text-main)]'}`}>
+                                                                                {isBest && <span className="bg-[#007AFF] text-white text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-tighter">Best Price</span>}
+                                                                                <span className={`text-sm font-bold truncate ${isBest ? 'text-[#007AFF]' : 'text-[#112244]'}`}>
                                                                                     {deal.retailer}
                                                                                 </span>
                                                                             </div>

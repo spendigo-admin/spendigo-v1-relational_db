@@ -107,27 +107,30 @@ const MerchantRegister: React.FC = () => {
             {/* Header */}
             <div className="w-full max-w-2xl text-center mb-8">
                 <Link to="/" className="inline-block mb-6">
-                    <span className="text-3xl font-black bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)] bg-clip-text text-transparent">Spendigo</span>
+                    <div className="flex flex-col items-center">
+                        <span className="text-3xl font-black text-[#112244] tracking-tighter leading-none">Spendigo</span>
+                        <span className="text-[8px] font-black uppercase tracking-[0.2em] text-[#007AFF] mt-1">AI SmartCart</span>
+                    </div>
                 </Link>
                 
                 {/* PROMO BADGE */}
-                <div className="mb-6 inline-flex items-center gap-2 bg-blue-50 border border-blue-100 px-4 py-2 rounded-2xl animate-bounce-slow">
+                <div className="mb-6 inline-flex items-center gap-2 bg-blue-50 border border-blue-100 px-5 py-2.5 rounded-2xl">
                     <span className="text-xl">🎁</span>
                     <div className="text-left">
-                        <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest leading-none">Founder Promo</p>
-                        <p className="text-xs font-bold text-blue-800">First 100 Stores: 90-Day Free Trial</p>
+                        <p className="text-[10px] font-black text-[#007AFF] uppercase tracking-widest leading-none">Founder Promo</p>
+                        <p className="text-xs font-bold text-[#112244]">First 100 Stores: 90-Day Free Trial</p>
                     </div>
                 </div>
 
-                <h1 className="text-3xl font-extrabold text-[var(--text-main)] mb-2">Partner Registration</h1>
+                <h1 className="text-3xl font-black text-[#112244] tracking-tight mb-2 italic">Partner Registration</h1>
                 <p className="text-[var(--text-muted)] max-w-lg mx-auto">Join the Spendigo marketplace and start reaching thousands of nearby shoppers.</p>
             </div>
 
             <div className="w-full max-w-2xl bg-white rounded-3xl border border-[var(--glass-border)] shadow-2xl shadow-[var(--brand-primary)]/5 overflow-hidden animate-fade-in">
                 {/* Progress Bar */}
-                <div className="bg-[var(--surface-2)] h-1.5 w-full">
+                <div className="bg-gray-100 h-1.5 w-full">
                     <div
-                        className="bg-[var(--brand-primary)] h-full transition-all duration-500 ease-out"
+                        className="bg-[#007AFF] h-full transition-all duration-500 ease-out"
                         style={{ width: `${(step / steps.length) * 100}%` }}
                     ></div>
                 </div>
@@ -137,16 +140,16 @@ const MerchantRegister: React.FC = () => {
                     <div className="flex justify-between mb-12">
                         {steps.map((s) => (
                             <div key={s.id} className="flex flex-col items-center gap-2 flex-1 relative">
-                                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-all ${step >= s.id
-                                        ? 'bg-[var(--brand-primary)] text-white scale-110 shadow-lg shadow-[var(--brand-primary)]/20'
-                                        : 'bg-[var(--surface-2)] text-[var(--text-muted)]'
+                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm font-black transition-all ${step >= s.id
+                                        ? 'bg-[#112244] text-white scale-110 shadow-lg shadow-blue-500/10'
+                                        : 'bg-gray-100 text-gray-400'
                                     }`}>
                                     {step > s.id ? '✓' : s.icon}
                                 </div>
-                                <span className={`text-xs font-bold uppercase tracking-wider ${step >= s.id ? 'text-[var(--brand-primary)]' : 'text-[var(--text-muted)]'
+                                <span className={`text-[10px] font-black uppercase tracking-widest ${step >= s.id ? 'text-[#112244]' : 'text-gray-400'
                                     }`}>{s.name}</span>
                                 {s.id < steps.length && (
-                                    <div className={`absolute top-5 -right-1/2 w-full h-[1px] -z-10 ${step > s.id ? 'bg-[var(--brand-primary)]' : 'bg-[var(--surface-2)]'}`}></div>
+                                    <div className={`absolute top-5 -right-1/2 w-full h-[1px] -z-10 ${step > s.id ? 'bg-[#007AFF]' : 'bg-gray-100'}`}></div>
                                 )}
                             </div>
                         ))}
@@ -354,7 +357,7 @@ const MerchantRegister: React.FC = () => {
                                     type="button"
                                     onClick={nextStep}
                                     disabled={allowRegistrations === false}
-                                    className={`flex-[2] py-4 px-6 rounded-2xl bg-[var(--brand-primary)] text-white font-bold shadow-xl shadow-[var(--brand-primary)]/20 transition-all flex items-center justify-center gap-2 ${allowRegistrations === false ? 'opacity-50 cursor-not-allowed grayscale' : 'hover:brightness-110'}`}
+                                    className={`flex-[2] py-4 px-6 rounded-2xl bg-[#112244] text-white font-black shadow-xl shadow-blue-500/10 transition-all flex items-center justify-center gap-2 uppercase tracking-widest text-xs ${allowRegistrations === false ? 'opacity-50 cursor-not-allowed grayscale' : 'hover:bg-black'}`}
                                 >
                                     Continue →
                                 </button>
@@ -362,11 +365,11 @@ const MerchantRegister: React.FC = () => {
                                 <button
                                     type="submit"
                                     disabled={isLoading || !formData.agreedToTerms || allowRegistrations === false}
-                                    className="flex-[2] py-4 px-6 rounded-2xl bg-[var(--brand-primary)] text-white font-bold hover:brightness-110 shadow-xl shadow-[var(--brand-primary)]/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:grayscale transition-all"
+                                    className="flex-[2] py-4 px-6 rounded-2xl bg-[#007AFF] text-white font-black hover:brightness-110 shadow-xl shadow-blue-500/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:grayscale transition-all uppercase tracking-widest text-xs"
                                 >
                                     {isLoading ? (
                                         <>
-                                            <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                                            <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
                                             Processing...
                                         </>
                                     ) : (

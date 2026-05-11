@@ -44,6 +44,18 @@ const Notifications: React.FC = () => {
     };
 
     // Simple grouping logic
+    const categoryCounts = useMemo(() => {
+        const counts = { all: 0, orders: 0, deals: 0 };
+        notifications.forEach(n => {
+            if (!n.read) {
+                counts.all++;
+                if (n.type === 'order') counts.orders++;
+                if (['price_drop', 'promo', 'alert'].includes(n.type)) counts.deals++;
+            }
+        });
+        return counts;
+    }, [notifications]);
+
     const sections = useMemo(() => {
         const visible = notifications.filter(n => {
             if (filter === 'orders') return n.type === 'order';
@@ -124,25 +136,27 @@ const Notifications: React.FC = () => {
                             </div>
                         )}
                     </div>
-                    {unreadCount > 0 && (
-                        <button
-                            onClick={markAllRead}
-                            className="bg-[var(--brand-primary-light)] text-[var(--brand-primary)] px-3 py-1.5 rounded-full text-xs font-bold transition-all hover:bg-[var(--brand-primary)] hover:text-white"
-                        >
-                            Mark all read
-                        </button>
-                    )}
-                </div>
-                <div className="max-w-xl mx-auto mt-3 flex gap-2">
-                    {(['all', 'orders', 'deals'] as const).map(f => (
-                        <button
-                            key={f}
-                            onClick={() => setFilter(f)}
-                            className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${filter === f ? 'bg-[var(--brand-primary)] text-white shadow-sm' : 'bg-[var(--surface-2)] text-[var(--text-muted)] hover:bg-[var(--surface-3)]'}`}
-                        >
-                            {f === 'all' ? 'All' : f === 'orders' ? '📦 Orders' : '🏷️ Deals & Promos'}
-                        </button>
-                    ))}
+                    <div className="flex gap-2">
+                        {[
+                            { id: 'all', label: 'All', icon: '📬', count: categoryCounts.all },
+                            { id: 'orders', label: 'Orders', icon: '📦', count: categoryCounts.orders },
+                            { id: 'deals', label: 'Deals & Promos', icon: '🏷️', count: categoryCounts.deals }
+                        ].map(f => (
+                            <button
+                                key={f.id}
+                                onClick={() => setFilter(f.id as any)}
+                                className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border flex items-center gap-2 relative ${filter === f.id ? 'bg-[var(--brand-navy)] text-white border-[var(--brand-navy)] shadow-lg' : 'bg-white text-[var(--text-muted)] border-[var(--glass-border)] hover:border-[var(--brand-primary)]'}`}
+                            >
+                                <span className="text-sm">{f.icon}</span>
+                                {f.label}
+                                {f.count > 0 && (
+                                    <span className={`flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 rounded-full text-[9px] font-black ${filter === f.id ? 'bg-white text-[var(--brand-navy)]' : 'bg-[var(--brand-primary)] text-white shadow-sm shadow-blue-500/20'}`}>
+                                        {f.count}
+                                    </span>
+                                )}
+                            </button>
+                        ))}
+                    </div>
                 </div>
             </div>
 

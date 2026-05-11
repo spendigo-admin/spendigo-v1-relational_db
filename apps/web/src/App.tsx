@@ -110,7 +110,6 @@ import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from './lib/firebase';
 import MaintenancePage from './pages/Maintenance';
 import ThemeSwitcher from './components/ThemeSwitcher';
-import NotificationToast from './components/NotificationToast';
 
 const PageLoader = () => (
     <div className="min-h-screen flex items-center justify-center">Loading...</div>
@@ -163,7 +162,6 @@ function App() {
                         <MaintenanceGuard>
                                 <MarketplaceProvider>
                                     <NotificationProvider>
-                                <NotificationToast />
                                 <CatalogProvider>
                                     <ReviewProvider>
                                         <CartProvider>
@@ -193,6 +191,7 @@ function App() {
                                                                     {/* Protected Consumer Routes - Require Email Verification */}
                                                                     <Route path="/checkout" element={<RequireVerification><Checkout /></RequireVerification>} />
                                                                     <Route path="/profile" element={<RequireVerification><Profile /></RequireVerification>} />
+                                                                    <Route path="/orders" element={<RequireVerification><Navigate to="/profile" state={{ activeTab: 'orders' }} replace /></RequireVerification>} />
                                                                     <Route path="/order/:id" element={<RequireVerification><OrderTracking /></RequireVerification>} />
                                                                     <Route path="/notifications" element={<RequireVerification><Notifications /></RequireVerification>} />
                                                                     <Route path="/smartcart" element={<RequireVerification><SmartCartWishlist /></RequireVerification>} />

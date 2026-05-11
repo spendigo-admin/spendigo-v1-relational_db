@@ -32,16 +32,11 @@ const Search: React.FC = () => {
 
 
 
-    // Sync URL parameter if submitted search query changes
+    // Sync with URL parameter
     useEffect(() => {
-        if (activeSearchQuery !== initialQuery) {
-            if (activeSearchQuery) {
-                setSearchParams({ q: activeSearchQuery }, { replace: true });
-            } else {
-                setSearchParams({}, { replace: true });
-            }
-        }
-    }, [activeSearchQuery, setSearchParams, initialQuery]);
+        setActiveSearchQuery(initialQuery);
+        setSearchQuery(initialQuery);
+    }, [initialQuery]);
 
     const filteredProducts = useMemo(() => {
         let results = allProducts;
@@ -101,7 +96,7 @@ const Search: React.FC = () => {
     if (loading) {
         return (
             <div className="flex items-center justify-center min-h-[50vh]">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[var(--brand-primary)]"></div>
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#007AFF]"></div>
             </div>
         );
     }
@@ -127,58 +122,24 @@ const Search: React.FC = () => {
             {/* Search Header - Sticky & Glassmorphic */}
             <div className="sticky top-14 z-30 bg-white/70 backdrop-blur-2xl border-b border-gray-200/50 p-4 shadow-[0_4px_30px_rgba(0,0,0,0.03)] transition-all duration-300">
                 <div className="max-w-5xl mx-auto">
-                    <form
-                        className="flex gap-3"
-                        onSubmit={(e) => { 
-                            e.preventDefault(); 
-                            (document.activeElement as HTMLElement)?.blur(); 
-                            setActiveSearchQuery(searchQuery.trim());
-                        }}
-                    >
-                        <div className="relative flex-1 group">
-                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xl text-gray-400 group-focus-within:text-[var(--brand-primary)] transition-colors">🔍</span>
+                    {activeSearchQuery && (
+                        <div className="flex items-center gap-3 bg-[var(--surface-1)] rounded-2xl px-4 py-3 border border-[var(--glass-border)] shadow-inner">
+                            <svg className="w-5 h-5 text-[var(--brand-primary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
                             <input
                                 type="text"
-                                inputMode="search"
-                                enterKeyHint="search"
-                                placeholder="What are you looking for today?"
+                                placeholder="Search fresh items, local brands..."
+                                className="bg-transparent border-none outline-none flex-1 text-sm font-bold text-[var(--brand-navy)] placeholder:text-[var(--text-muted)]"
                                 value={searchQuery}
-                                onChange={e => setSearchQuery(e.target.value)}
-                                className="w-full pl-12 pr-10 py-4 bg-white/60 backdrop-blur-md border-2 border-white shadow-[inset_0_2px_4px_rgba(0,0,0,0.02),0_4px_12px_rgba(0,0,0,0.03)] rounded-2xl text-[var(--text-main)] font-medium placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-[var(--brand-primary)]/10 focus:border-[var(--brand-primary)] focus:bg-white transition-all duration-300"
-                                autoFocus
+                                onChange={(e) => setSearchQuery(e.target.value)}
                             />
-                            {searchQuery && (
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setSearchQuery('');
-                                        setActiveSearchQuery('');
-                                    }}
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center bg-gray-200 rounded-full text-xs text-gray-600 hover:bg-gray-300 transition-colors"
-                                >
-                                    ✕
-                                </button>
-                            )}
                         </div>
-                        <button 
-                            type="submit" 
-                            className="hidden md:flex items-center justify-center px-8 py-4 bg-gradient-to-br from-[var(--brand-primary)] to-blue-600 text-white font-bold rounded-2xl shadow-lg shadow-blue-500/20 hover:shadow-xl hover:shadow-blue-500/30 hover:-translate-y-0.5 active:scale-95 transition-all duration-300 whitespace-nowrap"
-                        >
-                            Search
-                        </button>
-                    </form>
-
-                    {/* Category Filters */}
-                    <div className="mt-4 flex gap-2 overflow-x-auto scrollbar-hide pb-2 -mx-4 px-4 md:mx-0 md:px-0 mask-image-linear-edge">
+                    )}
+                    <div className="flex gap-2 overflow-x-auto mt-4 scrollbar-hide pb-1">
                         {categories.map(cat => (
                             <button
                                 key={cat}
                                 onClick={() => setSelectedCategory(cat)}
-                                className={`px-5 py-2.5 rounded-full text-sm font-semibold whitespace-nowrap transition-all duration-300 transform active:scale-95 hover:-translate-y-0.5 border ${
-                                    selectedCategory === cat 
-                                    ? 'bg-gray-900 border-gray-900 text-white shadow-md' 
-                                    : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300 hover:shadow-sm hover:text-gray-900'
-                                }`}
+                                className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap border ${selectedCategory === cat ? 'bg-[var(--brand-navy)] text-white border-[var(--brand-navy)] shadow-lg' : 'bg-white text-[var(--text-muted)] border-[var(--glass-border)] hover:border-[var(--brand-primary)]'}`}
                             >
                                 {cat}
                             </button>
@@ -187,15 +148,14 @@ const Search: React.FC = () => {
                 </div>
             </div>
 
-            {/* Sort & Results Count */}
-            <div className="max-w-5xl mx-auto px-4 py-6 flex items-center justify-between animate-fade-in-up">
-                <p className="text-sm text-[var(--text-muted)]">
+            <div className="max-w-5xl mx-auto px-4 py-6 flex items-center justify-between">
+                <p className="text-sm font-bold text-[var(--text-muted)]">
                     {filteredProducts.length} result{filteredProducts.length !== 1 ? 's' : ''}
                 </p>
                 <select
                     value={sortBy}
                     onChange={e => setSortBy(e.target.value as any)}
-                    className="text-sm bg-transparent text-[var(--text-muted)] border-none cursor-pointer"
+                    className="text-sm font-bold bg-transparent text-[var(--brand-navy)] border-none cursor-pointer outline-none"
                 >
                     <option value="relevance">Relevance</option>
                     <option value="price_low">Price: Low to High</option>
@@ -203,47 +163,33 @@ const Search: React.FC = () => {
                 </select>
             </div>
 
-            {/* Results */}
             <div className="max-w-5xl mx-auto px-4 space-y-12">
                 {filteredProducts.length === 0 ? (
                     <EmptyState
                         icon="🔍"
                         heading="No products found"
-                        subtext="We couldn't find anything matching your search. Try a different term or check another category."
-                        className="animate-fade-in"
+                        subtext="We couldn't find anything matching your search."
                     />
                 ) : (
                     Object.entries(groupedByStore).map(([storeName, products]) => (
                         <div key={storeName} className="animate-fade-in-up">
-                            <div className="flex items-center gap-4 mb-6">
-                                <h3 className="text-2xl font-black text-gray-900 flex items-center gap-3">
-                                    <span className="p-2 bg-white rounded-xl shadow-sm border border-gray-100 text-2xl">🏪</span> 
+                             <div className="flex items-center gap-4 mb-6">
+                                <h3 className="text-xl font-black text-[var(--brand-navy)] flex items-center gap-3">
                                     {storeName}
-                                    <span className="text-sm font-semibold px-3 py-1 bg-gray-100 text-gray-600 rounded-full">{products.length}</span>
                                 </h3>
-                                <div className="flex-1 h-px bg-gradient-to-r from-gray-200 to-transparent"></div>
+                                <div className="flex-1 h-px bg-[var(--glass-border)]"></div>
                             </div>
-                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                                 {products.map((product, index) => (
                                     <div key={product.id} 
-                                         className="group bg-white rounded-3xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-[0_8px_30px_rgb(0,0,0,0.06)] hover:-translate-y-1 transition-all duration-500 flex flex-col justify-between"
-                                         style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'both' }}
+                                         className="group bg-white rounded-3xl border border-[var(--glass-border)] overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col"
                                     >
                                         <div onClick={() => navigate(`/product/${product.id}`)} className="aspect-[4/3] bg-gray-50 cursor-pointer overflow-hidden relative">
-                                            {product.discount && (
-                                                <div className="absolute top-3 left-3 z-20">
-                                                    <span className="badge-deal">{product.discount}</span>
-                                                </div>
-                                            )}
-                                            <div className="absolute bottom-3 left-3 z-20 px-2 py-0.5 bg-black/60 backdrop-blur-md text-white text-xs font-medium rounded-lg shadow-sm border border-white/20 flex items-center gap-1">
-                                                <span>🏪</span> {storeName}
-                                            </div>
-                                            <div className="absolute inset-0 bg-black/5 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                                            <img src={product.image} alt={product.name} className="w-full h-full object-contain p-4 transform group-hover:scale-110 transition-transform duration-700 ease-out mix-blend-multiply" />
+                                            <img src={product.image} alt={product.name} className="w-full h-full object-contain group-hover:scale-105 transition-all duration-700" />
                                         </div>
                                         <div className="p-4 md:p-5 flex flex-col flex-grow">
                                             <div className="flex-grow">
-                                                <p className="font-bold text-sm md:text-base text-gray-900 line-clamp-2 leading-tight group-hover:text-[var(--brand-primary)] transition-colors">{product.name}</p>
+                                                <p className="font-bold text-sm md:text-base text-[#112244] line-clamp-2 leading-tight group-hover:text-[#007AFF] transition-colors">{product.name}</p>
                                                 {product.is_canadian_local && (
                                                     <span className="inline-flex mt-2 px-2 py-0.5 bg-red-50 text-red-700 text-xs font-semibold rounded-md border border-red-100 items-center gap-1 w-max">
                                                         <span>🍁</span> Local
@@ -261,7 +207,7 @@ const Search: React.FC = () => {
                                                         </div>
                                                     </div>
                                                     <button onClick={(e) => { e.stopPropagation(); handleQuickAdd(product); }} 
-                                                        className="w-full md:w-auto px-5 py-2.5 bg-gray-900 text-white text-sm font-bold rounded-xl transform active:scale-95 hover:bg-[var(--brand-primary)] hover:shadow-lg hover:shadow-[var(--brand-primary)]/20 transition-all duration-300"
+                                                        className="w-full md:w-auto px-5 py-2.5 bg-[#112244] text-white text-[10px] font-black uppercase tracking-widest rounded-xl transform active:scale-95 hover:bg-black hover:shadow-lg shadow-blue-500/10 transition-all duration-300"
                                                     >
                                                         Add
                                                     </button>

@@ -119,12 +119,24 @@ const Login = () => {
         <div className="min-h-screen flex items-center justify-center p-4 bg-[var(--surface-0)]">
             <SEO title="Sign In" description="Sign in to your Spendigo account to start shopping local and saving more." path="/login" />
             <div className="glass-panel w-full max-w-md p-8 animate-fade-in">
-                <div className="flex items-center justify-center gap-3 mb-8">
-                    <img src="/app-icon.png" alt="Spendigo Logo" style={{width: 56, height: 56, borderRadius: 12}} />
-                    <span className="text-4xl font-black text-[var(--text-main)] italic tracking-tighter">Spendigo</span>
+                <div className="flex flex-col items-center justify-center gap-4 mb-10">
+                    <div className="w-16 h-16 bg-[var(--brand-primary)] rounded-[1.5rem] flex items-center justify-center shadow-2xl shadow-blue-500/20 transform -rotate-3 hover:rotate-0 transition-transform duration-500">
+                        <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                        </svg>
+                    </div>
+                    <div className="text-center">
+                        <h2 className="text-4xl font-black text-[#112244] italic tracking-tighter leading-none uppercase">Spendigo</h2>
+                        <div className="flex items-center justify-center gap-2 mt-1">
+                            <span className="w-8 h-px bg-[#007AFF]/20" />
+                            <p className="text-[9px] font-black uppercase tracking-[0.3em] text-[#007AFF]">SmartCart AI</p>
+                            <span className="w-8 h-px bg-[#007AFF]/20" />
+                        </div>
+                    </div>
                 </div>
-                <h1 className="text-3xl font-bold mb-2 text-[var(--brand-primary)] text-center">{t('welcomeBack')}</h1>
-                <p className="text-[var(--text-muted)] mb-8 text-center">{t('signInToAccess')}</p>
+
+                <h1 className="text-2xl font-black mb-1 text-[var(--brand-navy)] text-center">{t('welcomeBack')}</h1>
+                <p className="text-xs font-bold text-[var(--text-muted)] mb-8 text-center uppercase tracking-widest">{t('signInToAccess')}</p>
 
                 {/* Recaptcha hidden container */}
                 <div id="mfa-recaptcha-login"></div>

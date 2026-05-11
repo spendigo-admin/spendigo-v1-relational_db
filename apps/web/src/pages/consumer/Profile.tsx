@@ -20,7 +20,7 @@ const Profile: React.FC = () => {
     const { user, logout } = useAuth();
     const location = useLocation();
     const navigate = useNavigate();
-    const [activeTab, setActiveTab] = useState<'account' | 'addresses' | 'orders' | 'wishlist'>(
+    const [activeTab, setActiveTab] = useState<'account' | 'orders' | 'wishlist' | 'settings' | 'support'>(
         (location.state as any)?.activeTab || 'account'
     );
 
@@ -213,12 +213,18 @@ const Profile: React.FC = () => {
 
     const getStatusColor = (status: string) => {
         switch (status) {
-            case 'delivered': return 'badge-best';
-            case 'out_for_delivery':
-            case 'preparing':
-            case 'placed': return 'badge-info';
-            case 'cancelled': return 'badge-deal';
-            default: return 'badge-info';
+            case 'delivered': 
+                return 'bg-emerald-600 text-white border border-emerald-600 shadow-sm';
+            case 'preparing': 
+                return 'bg-amber-50 text-amber-600 border border-amber-100';
+            case 'out_for_delivery': 
+                return 'bg-[#EBF5FF] text-[#007AFF] border border-blue-100';
+            case 'placed': 
+                return 'bg-gray-50 text-gray-500 border border-gray-100';
+            case 'cancelled': 
+                return 'bg-red-600 text-white border border-red-600 shadow-sm';
+            default: 
+                return 'bg-blue-50 text-blue-600 border border-blue-100';
         }
     };
 
@@ -231,7 +237,7 @@ const Profile: React.FC = () => {
             <SEO title="My Profile" description="Manage your Spendigo account, addresses, and order history." path="/profile" noIndex />
             
             {/* Premium Hero Section */}
-            <section className="relative overflow-hidden pt-6 pb-4 md:pt-20 md:pb-12 px-4 mb-4">
+            <section className="relative overflow-hidden pt-12 pb-16 md:pt-16 md:pb-20 px-6">
                 {/* Background Decorative Elements */}
                 <div className="absolute inset-0 z-0">
                     <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full bg-[radial-gradient(circle_at_50%_-20%,var(--brand-primary-light),transparent_70%)]" />
@@ -239,43 +245,50 @@ const Profile: React.FC = () => {
                     <div className="absolute bottom-0 -left-20 w-64 h-64 md:w-96 md:h-96 bg-purple-100/30 rounded-full blur-[100px] opacity-60 animate-pulse" style={{ animationDelay: '2s' }} />
                 </div>
 
-                <div className="max-w-3xl mx-auto relative z-10">
-                    <div className="flex flex-row items-center gap-4 md:gap-8 text-left">
-                        <div className="relative shrink-0">
-                            <div className="w-16 h-16 md:w-32 md:h-32 rounded-2xl md:rounded-[2.5rem] bg-[var(--surface-1)] shadow-xl flex items-center justify-center text-2xl md:text-5xl font-black text-[var(--brand-primary)] border-2 md:border-4 border-[var(--glass-border)] select-none italic tracking-tighter">
-                                {(profile.name || user?.email || '?').charAt(0).toUpperCase()}
-                            </div>
-                            <div className="absolute -bottom-1 -right-1 md:-bottom-2 md:-right-2 w-6 h-6 md:w-10 md:h-10 bg-emerald-500 rounded-lg md:rounded-2xl border-2 md:border-4 border-[var(--glass-border)] flex items-center justify-center text-white shadow-lg">
-                                <svg className="w-3 h-3 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
+                <div className="max-w-4xl mx-auto relative z-10">
+                    <div className="flex items-center gap-6">
+                        <div className="relative group">
+                            <div className="absolute -inset-1 bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-primary-light)] rounded-full blur opacity-25 group-hover:opacity-50 transition duration-1000"></div>
+                            <div className="w-20 h-20 md:w-28 md:h-28 rounded-full bg-white flex items-center justify-center text-3xl md:text-5xl shadow-2xl relative border-4 border-white/10 overflow-hidden">
+                                {user?.avatar ? (
+                                    <img src={user.avatar} alt="" className="w-full h-full object-cover" />
+                                ) : (
+                                    <span className="font-black text-[var(--brand-navy)]">{(user?.name?.[0] || user?.email?.[0] || 'U').toUpperCase()}</span>
+                                )}
                             </div>
                         </div>
-                        
-                        <div className="flex-1 min-w-0">
-                            <div className="inline-flex items-center gap-2 px-2 py-0.5 md:px-3 md:py-1 rounded-full bg-[var(--surface-1)] shadow-sm border border-[var(--glass-border)] mb-1.5 md:mb-4 animate-fade-in">
-                                <span className="flex h-1.5 w-1.5 md:h-2 md:w-2 rounded-full bg-emerald-500 animate-pulse" />
-                                <span className="text-[8px] md:text-[10px] font-black uppercase tracking-[0.2em] text-[var(--text-muted)]">Verified</span>
+                        <div>
+                            <div className="flex items-center gap-3 mb-2">
+                                <span className="text-[9px] font-black bg-[var(--brand-primary)] text-white px-2 py-0.5 rounded tracking-widest uppercase shadow-lg">Premium Member</span>
+                                <span className="text-[9px] font-black bg-white shadow-sm text-[var(--text-muted)] px-2 py-0.5 rounded border border-gray-100 tracking-widest uppercase">Since 2024</span>
                             </div>
-                            <h1 className="text-xl md:text-5xl font-black text-[var(--text-main)] mb-0.5 md:mb-2 leading-[1.05] tracking-tighter italic truncate">
-                                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[var(--brand-primary)] to-indigo-600">
-                                    {profile.name.split(' ')[0]}
-                                </span>
+                            <h1 className="text-3xl md:text-5xl font-black text-[var(--brand-navy)] tracking-tighter leading-none italic capitalize">
+                                {user?.name?.toLowerCase() || 'Spendigo Shopper'}
                             </h1>
-                            <p className="text-[var(--text-muted)] text-xs md:text-base font-bold italic opacity-80 truncate">{profile.email}</p>
+                            <p className="text-sm font-bold text-[var(--text-muted)] tracking-widest mt-2">{user?.email}</p>
                         </div>
                     </div>
                 </div>
             </section>
 
             {/* Tabs */}
-            <div className="sticky top-[calc(4rem+var(--safe-area-top))] z-30 border-b border-[var(--glass-border)] bg-[var(--glass-bg)] backdrop-blur-xl">
-                <div className="max-w-3xl mx-auto flex gap-1 p-2">
-                    {(['account', 'addresses', 'orders', 'wishlist'] as const).map(tab => (
+            <div className="max-w-4xl mx-auto px-6 -mt-8 relative z-20">
+                <div className="bg-white rounded-3xl p-1 md:p-2 shadow-2xl border border-gray-100 flex gap-1">
+                    {[
+                        { id: 'account', label: 'Profile', icon: '👤' },
+                        { id: 'orders', label: 'History', icon: '📦' },
+                        { id: 'wishlist', label: 'Wishlist', icon: '✨' },
+                        { id: 'settings', label: 'Preferences', icon: '⚙️' }
+                    ].map(t => (
                         <button
-                            key={tab}
-                            onClick={() => setActiveTab(tab)}
-                            className={`flex-1 py-3 text-[10px] font-black uppercase tracking-[0.15em] transition-all duration-300 rounded-2xl ${activeTab === tab ? 'bg-[var(--brand-primary)] text-white shadow-lg shadow-[var(--brand-primary)]/20 scale-[1.02]' : 'text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-black/5'}`}
+                            key={t.id}
+                            onClick={() => setActiveTab(t.id as any)}
+                            className={`flex-1 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all flex flex-col items-center gap-1 ${activeTab === t.id
+                                ? 'bg-[var(--brand-navy)] text-white shadow-lg'
+                                : 'text-[var(--text-muted)] hover:bg-gray-50'}`}
                         >
-                            {tab}
+                            <span className="text-xl">{t.icon}</span>
+                            {t.label}
                         </button>
                     ))}
                 </div>
@@ -289,7 +302,7 @@ const Profile: React.FC = () => {
                         <div className="flex items-center justify-between mb-8">
                             <h2 className="text-xl font-black text-[var(--text-main)] tracking-tight italic">Account Overview</h2>
                             {!editingProfile && (
-                                <button onClick={() => setEditingProfile(true)} className="px-4 py-2 rounded-xl bg-[var(--brand-primary-light)] text-[var(--brand-primary)] text-xs font-black uppercase tracking-widest hover:bg-[var(--brand-primary)] hover:text-white transition-all">
+                                <button onClick={() => setEditingProfile(true)} className="px-4 py-2 rounded-xl bg-blue-50 text-[#007AFF] text-[10px] font-black uppercase tracking-widest hover:bg-[#007AFF] hover:text-white transition-all">
                                     Edit Profile
                                 </button>
                             )}
@@ -298,24 +311,24 @@ const Profile: React.FC = () => {
                         {/* IMPACT STATS */}
                         {!editingProfile && (
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-10">
-                                <div className="p-6 bg-gradient-to-br from-blue-50 to-white rounded-3xl border border-[var(--glass-border)]/50 flex items-center justify-between group hover:scale-[1.02] transition-all">
+                                <div className="p-6 bg-gradient-to-br from-emerald-50 to-white rounded-3xl border-2 border-emerald-300 flex items-center justify-between group hover:scale-[1.02] transition-all">
                                     <div>
-                                        <p className="text-[10px] font-black text-blue-600 uppercase tracking-[0.2em] mb-1">Lifetime Savings</p>
-                                        <p className="text-3xl font-black text-[var(--text-main)] tracking-tighter italic">${(orders.reduce((acc, o) => acc + (o.total * 0.12), 0)).toFixed(2)}</p>
-                                        <p className="text-[10px] font-bold text-blue-600/60 mt-1 uppercase tracking-tight">SmartCart Protocol Optimized</p>
+                                        <p className="text-[10px] font-black text-emerald-600 uppercase tracking-[0.2em] mb-1">Lifetime Savings</p>
+                                        <p className="text-3xl font-black text-[#112244] tracking-tighter italic">${(orders.reduce((acc, o) => acc + (o.total * 0.12), 0)).toFixed(2)}</p>
+                                        <p className="text-[10px] font-bold text-emerald-600/60 mt-1 uppercase tracking-tight">SmartCart Protocol Optimized</p>
                                     </div>
-                                    <div className="w-12 h-12 bg-[var(--surface-1)] rounded-[1rem] flex items-center justify-center text-2xl shadow-sm border border-blue-50 group-hover:rotate-12 transition-transform">
+                                    <div className="w-12 h-12 bg-white rounded-[1rem] flex items-center justify-center text-2xl shadow-sm border border-emerald-50 group-hover:rotate-12 transition-transform">
                                         💰
                                     </div>
                                 </div>
 
-                                <div className="p-6 bg-gradient-to-br from-purple-50 to-white rounded-3xl border border-purple-100/50 flex items-center justify-between group hover:scale-[1.02] transition-all">
+                                <div className="p-6 bg-gradient-to-br from-indigo-50 to-white rounded-3xl border-2 border-indigo-300 flex items-center justify-between group hover:scale-[1.02] transition-all">
                                     <div>
-                                        <p className="text-[10px] font-black text-purple-600 uppercase tracking-[0.2em] mb-1">Neighbourhood Impact</p>
-                                        <p className="text-3xl font-black text-[var(--text-main)] tracking-tighter italic">${(orders.reduce((acc, o) => acc + o.total, 0)).toFixed(2)}</p>
-                                        <p className="text-[10px] font-bold text-purple-600/60 mt-1 uppercase tracking-tight">Invested in Local Economy</p>
+                                        <p className="text-[10px] font-black text-indigo-600 uppercase tracking-[0.2em] mb-1">Neighbourhood Impact</p>
+                                        <p className="text-3xl font-black text-[#112244] tracking-tighter italic">${(orders.reduce((acc, o) => acc + o.total, 0)).toFixed(2)}</p>
+                                        <p className="text-[10px] font-bold text-indigo-600/60 mt-1 uppercase tracking-tight">Invested in Local Economy</p>
                                     </div>
-                                    <div className="w-12 h-12 bg-[var(--surface-1)] rounded-[1rem] flex items-center justify-center text-2xl shadow-sm border border-purple-50 group-hover:-rotate-12 transition-transform">
+                                    <div className="w-12 h-12 bg-white rounded-[1rem] flex items-center justify-center text-2xl shadow-sm border border-indigo-50 group-hover:-rotate-12 transition-transform">
                                         🤝
                                     </div>
                                 </div>
@@ -345,7 +358,7 @@ const Profile: React.FC = () => {
                             <div className="space-y-4">
                                 <div className="flex justify-between py-3 border-b border-[var(--glass-border)]">
                                     <span className="text-[var(--text-muted)]">Name</span>
-                                    <span className="font-medium text-[var(--text-main)]">{profile.name}</span>
+                                    <span className="font-medium text-[var(--text-main)] capitalize">{profile.name?.toLowerCase()}</span>
                                 </div>
                                 <div className="flex justify-between py-3 border-b border-[var(--glass-border)]">
                                     <span className="text-[var(--text-muted)]">Email</span>
@@ -358,8 +371,108 @@ const Profile: React.FC = () => {
                             </div>
                         )}
 
-                    {/* NOTIFICATIONS */}
-                        <div className="mt-10 pt-6 border-t border-[var(--glass-border)]">
+                        {/* ADDRESSES SECTION */}
+                        <div className="mt-10 pt-8 border-t border-[var(--glass-border)]">
+                            <div className="flex items-center justify-between mb-6">
+                                <h3 className="text-lg font-bold text-[var(--text-main)] italic flex items-center gap-2">
+                                    <span>📍</span> Saved Addresses
+                                </h3>
+                                {!showAddAddress && (
+                                    <button onClick={() => setShowAddAddress(true)} className="text-[10px] font-black uppercase tracking-widest text-[#007AFF] bg-blue-50 px-4 py-2 rounded-xl hover:bg-[#007AFF] hover:text-white transition-all">
+                                        + Add New
+                                    </button>
+                                )}
+                            </div>
+
+                            <div className="space-y-4">
+                                {profile.addresses.map(addr => (
+                                    <div key={addr.id} className={`glass-panel rounded-2xl p-5 border border-[var(--glass-border)] bg-[var(--surface-0)] hover:bg-[var(--surface-1)] transition-all group ${addr.isDefault ? 'ring-1 ring-[#007AFF]' : ''}`}>
+                                        <div className="flex items-start justify-between">
+                                            <div className="flex-1">
+                                                <div className="flex items-center gap-3 mb-2">
+                                                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm ${addr.isDefault ? 'bg-[#112244] text-white' : 'bg-gray-100 text-gray-400'}`}>
+                                                        {addr.label.toLowerCase().includes('home') ? '🏠' : addr.label.toLowerCase().includes('work') ? '🏢' : '📍'}
+                                                    </div>
+                                                    <span className="text-xs font-black uppercase tracking-widest text-[#112244] italic">{addr.label}</span>
+                                                    {addr.isDefault && <span className="text-[8px] font-black uppercase tracking-widest text-[#007AFF] bg-blue-50 px-2 py-0.5 rounded">Default</span>}
+                                                    {addr.lat && addr.lng ? (
+                                                        <span className="text-[8px] font-black uppercase tracking-widest text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100 flex items-center gap-1">
+                                                            <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
+                                                            GPS Verified
+                                                        </span>
+                                                    ) : (
+                                                        <button 
+                                                            onClick={() => handleVerifyAddress(addr.id)} 
+                                                            disabled={isValidating}
+                                                            className="text-[8px] font-black uppercase tracking-widest text-[#007AFF] bg-blue-50 px-2 py-0.5 rounded border border-blue-100 hover:bg-[#007AFF] hover:text-white transition-all disabled:opacity-50"
+                                                        >
+                                                            {isValidating ? 'Verifying...' : 'Verify GPS'}
+                                                        </button>
+                                                    )}
+                                                </div>
+                                                <p className="text-sm font-bold text-[var(--text-main)]">{addr.street}</p>
+                                                <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-tight">{addr.city}, {addr.province} {addr.postalCode}</p>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                {!addr.isDefault && (
+                                                    <button onClick={() => setDefaultAddress(addr.id)} className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-gray-400 hover:bg-blue-50 hover:text-[#007AFF] transition-all" title="Set as Default">★</button>
+                                                )}
+                                                <button onClick={() => deleteAddress(addr.id)} className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-gray-400 hover:bg-red-50 hover:text-red-500 transition-all">✕</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+
+                                {showAddAddress && (
+                                    <div className="bg-[var(--surface-1)] rounded-2xl border border-[var(--glass-border)] p-5 space-y-4 animate-fade-in">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <input type="text" placeholder="Label (e.g., Home)" value={newAddress.label} onChange={e => setNewAddress({ ...newAddress, label: e.target.value })} className="w-full px-4 py-3 bg-white border border-[var(--glass-border)] rounded-xl text-sm outline-none focus:border-[var(--brand-primary)]" />
+                                            <input type="text" placeholder="Street Address" value={newAddress.street} onChange={e => setNewAddress({ ...newAddress, street: e.target.value })} className="w-full px-4 py-3 bg-white border border-[var(--glass-border)] rounded-xl text-sm outline-none focus:border-[var(--brand-primary)]" />
+                                        </div>
+                                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                            <input type="text" placeholder="City" value={newAddress.city} onChange={e => setNewAddress({ ...newAddress, city: e.target.value })} className="w-full px-4 py-3 bg-white border border-[var(--glass-border)] rounded-xl text-sm outline-none focus:border-[var(--brand-primary)]" />
+                                            <select
+                                                value={newAddress.province}
+                                                onChange={e => setNewAddress({ ...newAddress, province: e.target.value })}
+                                                className="w-full px-4 py-3 bg-white border border-[var(--glass-border)] rounded-xl text-sm outline-none focus:border-[var(--brand-primary)]"
+                                            >
+                                                <option value="ON">Ontario</option>
+                                                <option value="QC">Quebec</option>
+                                                <option value="BC">BC</option>
+                                                <option value="AB">Alberta</option>
+                                            </select>
+                                            <input type="text" placeholder="Postal Code" value={newAddress.postalCode} onChange={e => setNewAddress({ ...newAddress, postalCode: e.target.value })} className="w-full px-4 py-3 bg-white border border-[var(--glass-border)] rounded-xl text-sm outline-none focus:border-[var(--brand-primary)]" />
+                                        </div>
+
+                                        {validationError && <p className="text-[10px] text-red-500 font-bold uppercase px-1">⚠️ {validationError}</p>}
+
+                                        <div className="flex gap-3">
+                                            <button onClick={handleAddAddress} disabled={isValidating} className="btn-primary flex-1 py-3 text-[10px]">{isValidating ? 'Verifying...' : 'Save Address'}</button>
+                                            <button onClick={() => { setShowAddAddress(false); setValidationError(''); }} className="flex-1 py-3 border border-[var(--glass-border)] rounded-full text-[10px] font-black uppercase">Cancel</button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {!showAddAddress && profile.addresses.length === 0 && (
+                                    <div className="text-center py-10 border-2 border-dashed border-[var(--glass-border)] rounded-3xl">
+                                        <p className="text-sm text-[var(--text-muted)] font-medium">No addresses saved yet.</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* PREFERENCES TAB */}
+                {activeTab === 'settings' && (
+                    <div className="glass-panel-premium rounded-[2.5rem] p-6 md:p-10 animate-fade-in border border-[var(--glass-border)] bg-[var(--glass-bg)]">
+                        <div className="mb-8">
+                            <h2 className="text-xl font-black text-[var(--text-main)] tracking-tight italic">Preferences & Settings</h2>
+                            <p className="text-sm text-[var(--text-muted)] mt-1">Manage your app experience and security.</p>
+                        </div>
+
+                        {/* NOTIFICATIONS */}
+                        <div className="pt-6">
                             <h3 className="text-lg font-bold text-[var(--text-main)] mb-2 flex items-center gap-2">
                                 <span>🔔</span> Push Notifications
                             </h3>
@@ -443,8 +556,8 @@ const Profile: React.FC = () => {
                                                 <p className="text-[10px] text-[var(--text-muted)] tracking-tight">{item.desc}</p>
                                             </div>
                                         </div>
-                                        <div className={`w-12 h-6 rounded-full transition-colors relative ${preferences[item.id as keyof NotificationPreferences] ? 'bg-[var(--brand-primary)]' : 'bg-gray-200'}`}>
-                                            <div className={`absolute top-1 w-4 h-4 bg-[var(--surface-1)] rounded-full transition-all ${preferences[item.id as keyof NotificationPreferences] ? 'left-7 shadow-[-2px_0_4px_rgba(0,0,0,0.1)]' : 'left-1'}`}></div>
+                                        <div className={`w-12 h-6 rounded-full transition-colors relative ${preferences[item.id as keyof NotificationPreferences] ? 'bg-[#007AFF]' : 'bg-gray-200'}`}>
+                                            <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${preferences[item.id as keyof NotificationPreferences] ? 'left-7 shadow-[-2px_0_4px_rgba(0,0,0,0.1)]' : 'left-1'}`}></div>
                                         </div>
                                     </div>
                                 ))}
@@ -468,7 +581,7 @@ const Profile: React.FC = () => {
                                             <button
                                                 key={dist}
                                                 onClick={() => setPreference('maxDistance', dist)}
-                                                className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${preferences.maxDistance === dist ? 'bg-[var(--surface-1)] shadow-sm text-[var(--brand-primary)]' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}`}
+                                                className={`px-4 py-1.5 rounded-full text-xs font-black transition-all ${preferences.maxDistance === dist ? 'bg-white shadow-sm text-[#007AFF]' : 'text-[var(--text-muted)] hover:text-[#112244]'}`}
                                             >
                                                 {dist}km
                                             </button>
@@ -476,13 +589,8 @@ const Profile: React.FC = () => {
                                     </div>
                                 </div>
                             </div>
-
-                            <div className="mt-6 p-4 bg-[var(--brand-primary-light)] rounded-2xl border border-[var(--brand-primary)]/10">
-                                <p className="text-xs text-[var(--brand-primary)] font-medium leading-relaxed italic text-center">
-                                    "Spendigo Real-time Alerts use high-performance FCM streams for millisecond-latency order tracking."
-                                </p>
-                            </div>
                         </div>
+
                         {/* APP APPEARANCE */}
                         <div className="mt-10 pt-6 border-t border-[var(--glass-border)]">
                             <h3 className="text-lg font-bold text-[var(--text-main)] mb-2 flex items-center gap-2">
@@ -493,7 +601,6 @@ const Profile: React.FC = () => {
                             </p>
                             <ThemeSwitcher variant="inline" />
                         </div>
-
 
                         {/* DANGER ZONE */}
                         <div className="mt-10 pt-6 border-t-2 border-red-500/30">
@@ -572,114 +679,7 @@ const Profile: React.FC = () => {
                     </div>
                 )}
 
-                {/* ADDRESSES TAB */}
-                {activeTab === 'addresses' && (
-                    <div className="space-y-6 animate-fade-in pb-10">
-                        <div className="flex items-center justify-between px-2 mb-2">
-                            <h2 className="text-xl font-black text-[var(--text-main)] italic tracking-tight">Saved Addresses</h2>
-                            <button onClick={() => setShowAddAddress(true)} className="text-[10px] font-black uppercase tracking-widest text-[var(--brand-primary)] bg-[var(--brand-primary-light)] px-4 py-2 rounded-full hover:bg-[var(--brand-primary)] hover:text-white transition-all">+ Add New</button>
-                        </div>
-                        {profile.addresses.map(addr => (
-                            <div key={addr.id} className={`glass-panel-premium rounded-[2rem] p-8 transition-all duration-500 border border-[var(--glass-border)] bg-[var(--glass-bg)] hover:bg-[var(--surface-1)] hover:shadow-xl group relative overflow-hidden ${addr.isDefault ? 'ring-2 ring-[var(--brand-primary)]' : ''}`}>
-                                <div className="absolute top-0 right-0 w-32 h-32 bg-[var(--brand-primary-light)]/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl opacity-0 group-hover:opacity-100 transition-opacity" />
-                                
-                                <div className="flex items-start justify-between relative z-10">
-                                    <div className="flex-1">
-                                        <div className="flex items-center gap-3 mb-4">
-                                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-xl shadow-sm ${addr.isDefault ? 'bg-[var(--brand-primary)] text-white' : 'bg-[var(--surface-1)] text-[var(--text-muted)]'}`}>
-                                                {addr.label.toLowerCase().includes('home') ? '🏠' : addr.label.toLowerCase().includes('work') ? '🏢' : '📍'}
-                                            </div>
-                                            <div>
-                                                <span className="text-sm font-black uppercase tracking-widest text-[var(--text-main)] italic">{addr.label}</span>
-                                                {addr.isDefault && <div className="text-[9px] font-black uppercase tracking-[0.2em] text-[var(--brand-primary)] mt-0.5">Primary Shipping</div>}
-                                            </div>
-                                        </div>
-                                        <p className="text-lg font-black text-[var(--text-main)] tracking-tight leading-tight">{addr.street}</p>
-                                        <p className="text-xs font-bold text-[var(--text-muted)] mt-1 uppercase tracking-tight">{addr.city}, {addr.province} {addr.postalCode}</p>
-                                        
-                                        <div className="mt-6 flex items-center gap-2">
-                                            {addr.lat && addr.lng ? (
-                                                <span className="badge-best text-[9px] uppercase tracking-widest px-3 py-1">GPS Verified</span>
-                                            ) : (
-                                                <button
-                                                    onClick={() => handleVerifyAddress(addr.id)}
-                                                    className="badge-deal text-[9px] uppercase tracking-widest px-3 py-1 hover:scale-105 transition-transform"
-                                                >
-                                                    Pending Sync
-                                                </button>
-                                            )}
-                                        </div>
-                                    </div>
-                                    <div className="flex flex-col gap-3">
-                                        {!addr.isDefault && (
-                                            <button onClick={() => setDefaultAddress(addr.id)} className="w-10 h-10 rounded-full bg-[var(--surface-2)] flex items-center justify-center text-gray-400 hover:bg-[var(--brand-primary-light)] hover:text-[var(--brand-primary)] transition-all" title="Set as Default">★</button>
-                                        )}
-                                        <button onClick={() => deleteAddress(addr.id)} className="w-10 h-10 rounded-full bg-[var(--surface-2)] flex items-center justify-center text-gray-400 hover:bg-red-500/10 hover:text-red-500 transition-all" title="Delete Address">✕</button>
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
 
-                        {showAddAddress ? (
-                            <div className="bg-[var(--surface-1)] rounded-xl border border-[var(--glass-border)] p-4 space-y-3">
-                                <input type="text" placeholder="Label (e.g., Home, Work)" value={newAddress.label} onChange={e => setNewAddress({ ...newAddress, label: e.target.value })} className="w-full px-4 py-3 border border-[var(--glass-border)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)] focus:border-transparent transition-colors" />
-                                <input type="text" placeholder="Street Address" value={newAddress.street} onChange={e => setNewAddress({ ...newAddress, street: e.target.value })} className="w-full px-4 py-3 border border-[var(--glass-border)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)] focus:border-transparent transition-colors" />
-                                <div className="grid grid-cols-2 gap-3">
-                                    <input type="text" placeholder="City" value={newAddress.city} onChange={e => setNewAddress({ ...newAddress, city: e.target.value })} className="px-4 py-3 border border-[var(--glass-border)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)] focus:border-transparent transition-colors" />
-                                    <select
-                                        value={newAddress.province}
-                                        onChange={e => setNewAddress({ ...newAddress, province: e.target.value })}
-                                        className="px-4 py-3 border border-[var(--glass-border)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)] focus:border-transparent transition-colors bg-[var(--surface-1)]"
-                                    >
-                                        <option value="ON">Ontario</option>
-                                        <option value="QC">Quebec</option>
-                                        <option value="BC">British Columbia</option>
-                                        <option value="AB">Alberta</option>
-                                        <option value="MB">Manitoba</option>
-                                        <option value="SK">Saskatchewan</option>
-                                        <option value="NS">Nova Scotia</option>
-                                        <option value="NB">New Brunswick</option>
-                                        <option value="PE">PEI</option>
-                                        <option value="NL">Newfoundland</option>
-                                    </select>
-                                </div>
-                                <input type="text" placeholder="Postal Code (e.g. M5V 2H1)" value={newAddress.postalCode} onChange={e => setNewAddress({ ...newAddress, postalCode: e.target.value })} className="w-full px-4 py-3 border border-[var(--glass-border)] rounded-lg outline-none focus:border-[var(--brand-primary)]" />
-
-                                {validationError && (
-                                    <p className="text-xs text-red-500 font-medium px-1 flex items-center gap-1">
-                                        <span>⚠️</span> {validationError}
-                                    </p>
-                                )}
-
-                                <div className="flex gap-3">
-                                    <button
-                                        onClick={handleAddAddress}
-                                        disabled={isValidating}
-                                        className="flex-1 py-3 bg-[var(--brand-primary)] text-white font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                                    >
-                                        {isValidating ? (
-                                            <>
-                                                <span className="w-4 h-4 border-2 border-[var(--glass-border)]/30 border-t-white rounded-full animate-spin"></span>
-                                                Validating...
-                                            </>
-                                        ) : 'Add Address'}
-                                    </button>
-                                    <button
-                                        onClick={() => { setShowAddAddress(false); setValidationError(''); }}
-                                        disabled={isValidating}
-                                        className="flex-1 py-3 border border-[var(--glass-border)] rounded-lg disabled:opacity-50"
-                                    >
-                                        Cancel
-                                    </button>
-                                </div>
-                            </div>
-                        ) : (
-                            <button onClick={() => setShowAddAddress(true)} className="w-full py-4 border-2 border-dashed border-[var(--glass-border)] rounded-xl text-[var(--text-muted)] hover:border-[var(--brand-primary)] hover:text-[var(--brand-primary)] transition-colors">
-                                + Add New Address
-                            </button>
-                        )}
-                    </div>
-                )}
 
                 {/* ORDERS TAB */}
                 {activeTab === 'orders' && (
@@ -692,11 +692,11 @@ const Profile: React.FC = () => {
                             <EmptyState icon="📦" heading="No orders yet" subtext="Your order history will appear here." action={<Link to="/" className="btn-primary">Start Shopping</Link>} />
                         ) : (
                             orders.map(order => (
-                                <Link key={order.id} to={`/order/${order.id}`} className="block relative glass-panel-premium rounded-[2.5rem] p-8 transition-all duration-500 border border-[var(--glass-border)] bg-[var(--glass-bg)] hover:bg-[var(--surface-1)] hover:shadow-[0_20px_50px_rgba(0,0,0,0.08)] hover:translate-y-[-4px] group overflow-hidden">
+                                <Link key={order.id} to={`/order/${order.id}`} className="block relative bg-white rounded-[1.5rem] md:rounded-[2.5rem] p-5 md:p-8 transition-all duration-500 border-2 border-gray-300 shadow-sm hover:shadow-[0_20px_50px_rgba(0,0,0,0.08)] hover:border-[var(--brand-primary)]/30 hover:translate-y-[-4px] group overflow-hidden">
                                     {/* Decorative Gradient Edge */}
                                     <div className="absolute top-0 left-0 w-2 h-full bg-gradient-to-b from-[var(--brand-primary)] to-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                                     
-                                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 relative z-10">
+                                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-6 mb-6 md:mb-8 relative z-10">
                                         <div>
                                             <div className="flex items-center gap-3">
                                                 <span className="text-sm font-black text-[var(--text-main)] tracking-tight italic uppercase">#{order.id.slice(-8)}</span>
@@ -709,12 +709,12 @@ const Profile: React.FC = () => {
                                                 Placed on {new Date(order.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                                             </p>
                                         </div>
-                                        <div className="text-right">
-                                            <p className="text-2xl font-black text-[var(--text-main)] tracking-tighter italic">${order.total.toFixed(2)}</p>
+                                        <div className="md:text-right">
+                                            <p className="text-xl md:text-2xl font-black text-[var(--text-main)] tracking-tighter italic">${order.total.toFixed(2)}</p>
                                         </div>
                                     </div>
                                     
-                                    <div className="flex items-center gap-4 mb-6 p-3 bg-[var(--glass-bg)] rounded-2xl border border-[var(--glass-border)]">
+                                    <div className="flex items-center gap-3 md:gap-4 mb-4 md:mb-6 p-2 md:p-3 bg-gray-50 rounded-xl md:rounded-2xl border border-gray-100">
                                         <div className="flex -space-x-3">
                                             {order.items.slice(0, 4).map((item, i) => (
                                                 <img key={i} src={item.image} alt="" className="w-12 h-12 rounded-[1rem] border-4 border-[var(--glass-border)] shadow-sm object-cover" />
@@ -751,7 +751,7 @@ const Profile: React.FC = () => {
                                         <button
                                             onClick={(e) => handleReorder(e, order.id)}
                                             disabled={reorderingId === order.id}
-                                            className="px-6 py-2.5 bg-[var(--brand-primary)] text-white text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-[var(--brand-primary)]/10 hover:scale-105 active:scale-95 disabled:opacity-50 transition-all"
+                                            className="px-6 py-2.5 bg-[#112244] text-white text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-blue-500/10 hover:scale-105 active:scale-95 disabled:opacity-50 transition-all"
                                         >
                                             {reorderingId === order.id ? 'Working...' : 'Reorder'}
                                         </button>
@@ -807,7 +807,7 @@ const Profile: React.FC = () => {
                                         </div>
                                         <div className="flex-1 min-w-0 relative">
                                             <h3 className="text-sm font-black text-[var(--text-main)] italic tracking-tight leading-tight truncate">{item.name}</h3>
-                                            <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-tight mt-0.5">{item.category || 'Standard Grocery'}</p>
+                                            <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-tight mt-0.5">{item.category || 'Local Shop'}</p>
                                             <div className="mt-4 flex items-center gap-3">
                                                 <span className="badge-info text-[9px] uppercase font-black tracking-widest px-3 py-1 bg-[var(--surface-2)] text-blue-600 border-[var(--glass-border)]">Live Monitor</span>
                                                 <span className="text-[9px] font-black uppercase tracking-widest text-[var(--brand-primary)] opacity-0 group-hover:opacity-100 transition-all">Price Comparison Ready</span>
@@ -835,16 +835,12 @@ const Profile: React.FC = () => {
                 )}
 
                 {/* SIGN OUT - Global Action at end of page */}
-                <div className="mt-12 pt-8 border-t border-[var(--glass-border)]">
+                <div className="max-w-4xl mx-auto px-6 mt-12 pb-12">
                     <button
                         onClick={logout}
-                        className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl bg-[var(--surface-1)] text-[var(--text-muted)] font-bold text-sm border border-[var(--glass-border)] hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-all shadow-sm group"
+                        className="w-full py-5 bg-white border-2 border-[var(--surface-2)] text-[var(--brand-navy)] font-black text-sm uppercase tracking-[0.2em] rounded-2xl hover:border-[var(--brand-primary)] hover:text-[var(--brand-primary)] transition-all flex items-center justify-center gap-3"
                     >
-                        <svg className="w-5 h-5 group-hover:rotate-12 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.36 6.64a9 9 0 11-12.73 0" />
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 2v10" />
-                        </svg>
-                        Sign Out from Spendigo
+                        <span>🚪</span> Secure Sign Out
                     </button>
                 </div>
             </div>

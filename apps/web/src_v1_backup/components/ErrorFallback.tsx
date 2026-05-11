@@ -1,0 +1,73 @@
+import React from 'react';
+import { FallbackProps } from 'react-error-boundary';
+import { Sentry } from '../lib/sentry';
+
+const ErrorFallback: React.FC<FallbackProps> = ({ error, resetErrorBoundary }) => {
+    // Report the error to Sentry (if configured)
+    React.useEffect(() => {
+        Sentry.captureException(error);
+    }, [error]);
+
+    return (
+        <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
+            <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 text-center animate-fade-in">
+                <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl">
+                    ⚠️
+                </div>
+
+                <h1 className="text-2xl font-bold text-gray-900 mb-2">Something went wrong</h1>
+                <p className="text-gray-500 mb-6">
+                    We apologize for the inconvenience. The application encountered an unexpected error.
+                </p>
+
+                {/* Developer details (hidden in production typically, or behind toggle) */}
+                <div className="bg-gray-100 rounded-lg p-4 mb-6 text-left overflow-auto max-h-40 text-xs font-mono text-gray-700">
+                    {error.message}
+                </div>
+
+                {error.message?.includes('Failed to fetch dynamically imported module') ? (
+                    <div className="flex flex-col gap-3">
+                        <button
+                            onClick={() => window.location.href = window.location.pathname + '?reload=' + Date.now()}
+                            className="w-full px-4 py-3 bg-[var(--brand-primary)] text-white rounded-lg font-bold hover:brightness-110 transition-all shadow-lg shadow-[var(--brand-primary)]/20 animate-pulse"
+                        >
+                            🔄 Update App to Latest Version
+                        </button>
+                        <p className="text-xs text-red-500 font-bold">
+                            A new version of the app was just deployed! Click above to get the latest update.
+                        </p>
+                    </div>
+                ) : (
+                    <div className="flex gap-3">
+                        <button
+                            onClick={() => window.location.href = '/'}
+                            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-colors"
+                        >
+                            Go Home
+                        </button>
+                        <button
+                            onClick={resetErrorBoundary}
+                            className="flex-1 px-4 py-2 bg-[var(--brand-primary)] text-white rounded-lg font-medium hover:brightness-110 transition-all shadow-lg shadow-[var(--brand-primary)]/20"
+                        >
+                            Try Again
+                        </button>
+                    </div>
+                )}
+
+                {/* User feedback — Sentry dialog */}
+                <button
+                    onClick={() => Sentry.showReportDialog({ eventId: Sentry.lastEventId() })}
+                    className="mt-4 text-xs text-gray-400 hover:text-gray-600 underline transition-colors"
+                >
+                    Report this issue
+                </button>
+            </div>
+
+            <p className="mt-8 text-xs text-gray-400">
+                Error ID: {Sentry.lastEventId() || Date.now().toString(36)}
+            </p>
+        </div>
+    );
+};
+
+export default ErrorFallback;

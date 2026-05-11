@@ -109,9 +109,11 @@ const Register: React.FC = () => {
             
             {/* Header */}
             <div className="w-full max-w-2xl text-center mb-8">
-                <Link to="/" className="inline-flex items-center justify-center gap-3 mb-6">
-                    <img src="/app-icon.png" alt="Spendigo Logo" style={{width: 56, height: 56, borderRadius: 12}} />
-                    <span className="text-4xl font-black text-[var(--text-main)] italic tracking-tighter">Spendigo</span>
+                <Link to="/" className="inline-block mb-6">
+                    <div className="flex flex-col items-center">
+                        <span className="text-4xl font-black text-[#112244] tracking-tighter leading-none italic">Spendigo</span>
+                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#007AFF] mt-1">AI SmartCart</span>
+                    </div>
                 </Link>
                 
                 <h1 className="text-3xl font-extrabold text-[var(--text-main)] mb-2">{t('joinSpendigo')}</h1>
@@ -120,9 +122,9 @@ const Register: React.FC = () => {
 
             <div className="w-full max-w-2xl bg-white rounded-3xl border border-[var(--glass-border)] shadow-2xl shadow-[var(--brand-primary)]/5 overflow-hidden animate-fade-in">
                 {/* Progress Bar */}
-                <div className="bg-[var(--surface-2)] h-1.5 w-full">
+                <div className="bg-gray-100 h-1.5 w-full">
                     <div
-                        className="bg-[var(--brand-primary)] h-full transition-all duration-500 ease-out"
+                        className="bg-[#007AFF] h-full transition-all duration-500 ease-out"
                         style={{ width: `${(step / steps.length) * 100}%` }}
                     ></div>
                 </div>
@@ -132,16 +134,16 @@ const Register: React.FC = () => {
                     <div className="flex justify-between mb-12">
                         {steps.map((s) => (
                             <div key={s.id} className="flex flex-col items-center gap-2 flex-1 relative">
-                                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-all ${step >= s.id
-                                        ? 'bg-[var(--brand-primary)] text-white scale-110 shadow-lg shadow-[var(--brand-primary)]/20'
-                                        : 'bg-[var(--surface-2)] text-[var(--text-muted)]'
+                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm font-black transition-all ${step >= s.id
+                                        ? 'bg-[#112244] text-white scale-110 shadow-lg shadow-blue-500/10'
+                                        : 'bg-gray-100 text-gray-400'
                                     }`}>
                                     {step > s.id ? '✓' : s.icon}
                                 </div>
-                                <span className={`text-xs font-bold uppercase tracking-wider ${step >= s.id ? 'text-[var(--brand-primary)]' : 'text-[var(--text-muted)]'
+                                <span className={`text-[10px] font-black uppercase tracking-widest ${step >= s.id ? 'text-[#112244]' : 'text-gray-400'
                                     }`}>{s.name}</span>
                                 {s.id < steps.length && (
-                                    <div className={`absolute top-5 -right-1/2 w-full h-[1px] -z-10 ${step > s.id ? 'bg-[var(--brand-primary)]' : 'bg-[var(--surface-2)]'}`}></div>
+                                    <div className={`absolute top-5 -right-1/2 w-full h-[1px] -z-10 ${step > s.id ? 'bg-[#007AFF]' : 'bg-gray-100'}`}></div>
                                 )}
                             </div>
                         ))}
@@ -353,7 +355,7 @@ const Register: React.FC = () => {
                                     type="button"
                                     onClick={nextStep}
                                     disabled={allowRegistrations === false}
-                                    className={`flex-[2] py-4 px-6 rounded-2xl bg-[var(--brand-primary)] text-white font-bold shadow-xl shadow-[var(--brand-primary)]/20 transition-all flex items-center justify-center gap-2 ${allowRegistrations === false ? 'opacity-50 cursor-not-allowed grayscale' : 'hover:brightness-110'}`}
+                                    className={`flex-[2] py-4 px-6 rounded-2xl bg-[#112244] text-white font-black shadow-xl shadow-blue-500/10 transition-all flex items-center justify-center gap-2 uppercase tracking-widest text-xs ${allowRegistrations === false ? 'opacity-50 cursor-not-allowed grayscale' : 'hover:bg-black'}`}
                                 >
                                     Continue →
                                 </button>
@@ -361,11 +363,11 @@ const Register: React.FC = () => {
                                 <button
                                     type="submit"
                                     disabled={isLoading || !formData.agreedToTerms || allowRegistrations === false}
-                                    className="flex-[2] py-4 px-6 rounded-2xl bg-[var(--brand-primary)] text-white font-bold hover:brightness-110 shadow-xl shadow-[var(--brand-primary)]/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:grayscale"
+                                    className="flex-[2] py-4 px-6 rounded-2xl bg-[#007AFF] text-white font-black hover:brightness-110 shadow-xl shadow-blue-500/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:grayscale uppercase tracking-widest text-xs"
                                 >
                                     {isLoading ? (
                                         <>
-                                            <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                                            <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
                                             Processing...
                                         </>
                                     ) : (

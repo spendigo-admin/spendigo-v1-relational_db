@@ -14,7 +14,7 @@ import { doc, onSnapshot } from 'firebase/firestore';
 const ConsumerLayout: React.FC = () => {
     const { itemCount, notification, clearNotification } = useCart();
     const { user, logout } = useAuth();
-    const { unreadCount, toast, setToast } = useNotifications();
+    const { unreadCount, toast, setToast, markAsRead } = useNotifications();
     const navigate = useNavigate();
     const [searchQuery, setSearchQuery] = useState('');
     const location = useLocation();
@@ -53,343 +53,248 @@ const ConsumerLayout: React.FC = () => {
         }
     };
 
-    // STRICT ACCESS CONTROL: Redirect merchants/admins to their dashboards
-    // They are not allowed to view the shopper UI.
-    React.useEffect(() => {
-        if (user?.role === 'merchant') {
-            navigate('/merchant/dashboard', { replace: true });
-        } else if (user?.role === 'admin') {
-            navigate('/admin/dashboard', { replace: true });
+    const handleToastClick = () => {
+        if (!toast) return;
+        if (toast.id) markAsRead(toast.id);
+        setToast(null);
+        if (toast.link) {
+            navigate(toast.link);
+        } else {
+            navigate('/notifications');
         }
-    }, [user, navigate]);
+    };
 
     return (
         <div className="min-h-screen bg-gray-50/30 relative flex flex-col">
             {/* TOP NAVIGATION BAR */}
-            <header className="fixed top-0 left-0 right-0 h-[calc(4rem+var(--safe-area-top))] pt-safe bg-white border-b-2 border-gray-200 z-50 px-4 flex items-center justify-between gap-4 shadow-sm">
-                {/* LEFT: Logo + Search */}
-                <div className="flex items-center gap-8 flex-1 max-w-4xl">
-                    {/* PREMIUM RETAIL LOGO */}
+            <header className="fixed top-0 left-0 right-0 h-[calc(4.5rem+var(--safe-area-top))] pt-safe bg-white border-b border-gray-100 z-50 px-6 md:px-12 flex items-center justify-between shadow-sm">
+                {/* LEFT: Logo with Bag Icon */}
+                <div className="flex items-center gap-12">
                     <Link to="/" className="flex items-center gap-3 group shrink-0">
-                        <img src="/app-icon.png" alt="Spendigo Logo" style={{width: 40, height: 40, borderRadius: 8}} className="group-hover:scale-105 transition-transform" />
-                        <div className="flex flex-col leading-none">
-                            <span className="text-2xl font-black text-gray-900 italic tracking-tighter group-hover:text-blue-600 transition-colors">Spendigo</span>
-                            <span className="text-[10px] font-semibold text-gray-500 tracking-widest mt-1">SmartCart AI</span>
+                        <div className="w-10 h-10 bg-[var(--brand-primary)] rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20 group-hover:scale-105 transition-transform">
+                            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                            </svg>
+                        </div>
+                        <div className="flex flex-col">
+                            <span className="text-2xl font-black text-[var(--brand-navy)] tracking-tighter group-hover:text-[var(--brand-primary)] transition-colors leading-none italic">Spendigo</span>
+                            <span className="text-[7px] font-black uppercase tracking-[0.3em] text-[var(--brand-primary)] mt-1">SmartCart AI</span>
                         </div>
                     </Link>
 
-                    {/* Expanded Retail Search Bar */}
-                    {location.pathname !== '/search' && (
-                        <form onSubmit={handleSearch} className="hidden md:flex flex-1 relative group max-w-lg">
-                            <input
-                                type="text"
-                                placeholder="Search marketplace..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                className="w-full h-10 pl-12 pr-4 bg-gray-100 border-2 border-transparent text-sm text-gray-900 font-medium placeholder-gray-400 rounded-full focus:bg-white focus:border-blue-600 transition-all outline-none"
-                            />
-                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-hover:text-blue-600 transition-colors text-sm">🔍</span>
-                        </form>
-                    )}
+                    {/* DESKTOP NAV LINKS */}
+                    <nav className="hidden lg:flex items-center gap-8">
+                        {['Stores', 'Flyers', 'Deals', 'Compare', 'SmartCart']
+                            .filter(item => item !== 'Compare' || flyerIngestionEnabled)
+                            .map(item => (
+                                <Link 
+                                    key={item} 
+                                    to={item === 'Compare' ? '/compare' : `/${item.toLowerCase()}`} 
+                                    className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] hover:text-[var(--brand-primary)] transition-colors"
+                                >
+                                    {item}
+                                </Link>
+                            ))}
+                    </nav>
                 </div>
 
-                {/* RIGHT: Actions (Optimizer, Cart, Notifications, Profile) */}
-                <div className="flex items-center gap-3 shrink-0">
-                    {/* Compare Tool */}
-                    {flyerIngestionEnabled && (
-                        <NavLink to="/compare" className={({ isActive }) => `hidden lg:flex items-center gap-2 px-4 py-2 text-[10px] font-black tracking-widest transition-all skew-x-[-12deg] border-2 ${isActive ? 'bg-gray-100 text-black border-black shadow-sm' : 'text-gray-500 border-gray-200 hover:text-black hover:border-gray-400'}`}>
-                            <span className="skew-x-[12deg] text-xs">⚖️</span>
-                            <span className="skew-x-[12deg]">Compare</span>
-                        </NavLink>
-                    )}
-
-                    {/* SmartCart Optimizer Tool */}
-                    <NavLink to="/smartcart" className={({ isActive }) => `hidden lg:flex items-center gap-2 px-4 py-2 text-[10px] font-black tracking-widest transition-all skew-x-[-12deg] border-2 ${isActive ? 'bg-gray-100 text-black border-black shadow-sm' : 'text-gray-500 border-gray-200 hover:text-black hover:border-gray-400'}`}>
-                        <span className="skew-x-[12deg] text-xs">✨</span>
-                        <span className="skew-x-[12deg]">Optimizer</span>
-                    </NavLink>
-
-                    <div className="hidden md:block w-px h-8 bg-gray-200 mx-2"></div>
-
-                    {/* Desktop Cart */}
-                    <NavLink to="/cart" className={({ isActive }) => `hidden md:flex items-center gap-2 px-5 py-2 text-[10px] font-black tracking-widest transition-all border-2 skew-x-[-12deg] ${isActive ? 'bg-blue-600 text-white border-blue-600 shadow-md' : 'bg-white text-gray-900 border-gray-200 hover:border-blue-600'}`}>
-                        <div className="skew-x-[12deg] flex items-center gap-2 relative">
-                            <span className="text-sm">🛒</span>
-                            <span>{t('cart')}</span>
-                            {itemCount > 0 && (
-                                <span className="absolute -top-3 -right-6 bg-blue-600 text-white border-2 border-white text-[9px] px-1.5 py-0.5 rounded-full font-black animate-pulse">
-                                    {itemCount}
-                                </span>
-                            )}
+                {/* CENTER: Desktop Search */}
+                <div className="hidden lg:flex flex-1 max-w-xl mx-12">
+                    <form onSubmit={handleSearch} className="relative w-full group">
+                        <input 
+                            type="text" 
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            placeholder="Search neighborhood inventory..."
+                            className="w-full bg-gray-50 border border-transparent rounded-2xl py-3 pl-12 pr-4 text-sm font-bold focus:bg-white focus:border-[#007AFF]/20 transition-all outline-none"
+                        />
+                        <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-gray-300">
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
                         </div>
-                    </NavLink>
+                    </form>
+                </div>
 
-                    {/* Context Links (Authorized Only) */}
-                    {user?.role === 'merchant' && (
-                        <Link to="/merchant/dashboard" className="hidden lg:flex items-center gap-1 text-[10px] font-black text-black bg-gray-100 border border-gray-200 px-4 py-2 tracking-widest hover:bg-gray-200 transition-colors skew-x-[-12deg]">
-                            <span className="skew-x-[12deg]">💼 Merchant</span>
-                        </Link>
-                    )}
-                    {user?.role === 'admin' && (
-                        <Link to="/admin/dashboard" className="hidden lg:flex items-center gap-1 text-[10px] font-black text-white bg-purple-600 px-4 py-2 tracking-widest hover:bg-purple-700 transition-colors skew-x-[-12deg] shadow-md">
-                            <span className="skew-x-[12deg]">🛡️ System</span>
-                        </Link>
-                    )}
-
-                    {/* Notifications Popover */}
-                    <div className="hidden sm:block">
-                        <NotificationPopover />
-                    </div>
-
-                    {/* Mobile Inbox Link */}
-                    <Link to="/notifications" className="sm:hidden relative w-10 h-10 flex items-center justify-center transition-all">
-                        <span className={`text-2xl transition-opacity ${location.pathname === '/notifications' ? 'opacity-100' : 'opacity-70'}`}>🔔</span>
-                        {unreadCount > 0 && (
-                            <span className="absolute top-1 right-1 w-2.5 h-2.5 rounded-full border-2 border-white bg-blue-600 shadow-sm animate-pulse"></span>
-                        )}
-                    </Link>
-
-                    <div className="hidden sm:block">
-                        <LanguageSwitcher />
-                    </div>
-
-                    {/* Profile / Auth */}
-                    {user ? (
-                        <div className="hidden md:block relative group ml-2">
-                            <Link
-                                to="/profile"
-                                className="flex items-center gap-3 px-3 py-1.5 hover:bg-gray-50 transition-colors border border-transparent hover:border-gray-200"
-                                title={user.name}
-                            >
-                                <span className="hidden lg:block text-xs font-semibold text-gray-900 tracking-wide text-right">
-                                    {user.name.split(' ')[0]}<br/><span className="text-gray-500 text-[10px] font-medium">Shopper</span>
-                                </span>
-                                <div className="w-8 h-8 bg-gray-900 text-white flex items-center justify-center text-xs font-black shadow-sm">
-                                    <span>{user.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}</span>
-                                </div>
-                            </Link>
-
-                            {/* Dropdown Menu (hidden on mobile, accessible on desktop) */}
-                            <div className="hidden sm:block absolute right-0 top-12 w-56 bg-white border-2 border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 shadow-xl">
-                                <div className="p-4 border-b border-gray-100 bg-gray-50">
-                                <p className="text-xs font-semibold text-gray-900 tracking-wide truncate">{user.name}</p>
-                                    <p className="text-[10px] text-gray-500 font-medium tracking-wide truncate mt-1">{user.email}</p>
-                                </div>
-                                <div>
-                                    <Link
-                                        to="/profile"
-                                        className="block px-5 py-3 text-xs font-medium text-gray-700 tracking-wide hover:bg-blue-50 hover:text-blue-700 transition-colors"
-                                    >
-                                        → {t('myProfile')}
-                                    </Link>
-                                    <Link
-                                        to="/profile"
-                                        state={{ activeTab: 'orders' }}
-                                        className="block px-5 py-3 text-xs font-medium text-gray-700 tracking-wide hover:bg-blue-50 hover:text-blue-700 transition-colors"
-                                    >
-                                        → {t('orderHistory')}
-                                    </Link>
-                                    <button
-                                        onClick={logout}
-                                        className="w-full text-left px-5 py-3 text-xs font-medium text-blue-600 tracking-wide hover:bg-blue-50 transition-colors border-t border-gray-100"
-                                    >
-                                        × {t('signOut')}
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    ) : (
-                        <Link to="/login" className="hidden sm:inline-flex items-center justify-center px-6 py-2.5 bg-blue-600 text-white text-[10px] font-black tracking-widest shadow-md hover:bg-blue-700 transition-all ml-2">
-                            <span>{t('signIn')}</span>
-                        </Link>
-                    )}
-
-                    {/* Mobile Cart Icon */}
-                    <Link to="/cart" className="md:hidden relative w-10 h-10 flex items-center justify-center transition-all">
-                        <span className={`text-2xl transition-opacity ${location.pathname === '/cart' ? 'opacity-100' : 'opacity-70'}`}>🛒</span>
+                {/* RIGHT: Actions */}
+                <div className="flex items-center gap-3 md:gap-4">
+                    <NotificationPopover />
+                    
+                    {/* CONSISTENT CART ICON */}
+                    <Link to="/cart" className="p-2.5 bg-white border border-[var(--glass-border)] text-[var(--brand-navy)] rounded-xl shadow-sm hover:border-[var(--brand-primary)] hover:text-[var(--brand-primary)] transition-all relative active:scale-95 group">
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                        </svg>
                         {itemCount > 0 && (
-                            <span className="absolute top-0 right-0 min-w-[18px] h-[18px] px-1 bg-blue-600 text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-white shadow-sm animate-pulse">
+                            <span className="absolute top-2 right-2 w-4 h-4 bg-[var(--brand-primary)] text-white text-[9px] font-black flex items-center justify-center rounded-full border-2 border-white shadow-md shadow-blue-500/20">
                                 {itemCount}
                             </span>
                         )}
+                    </Link>
+                    
+                    {/* CONSISTENT PROFILE ICON */}
+                    <Link to="/profile" className="hidden md:flex p-2.5 bg-white border border-[var(--glass-border)] text-[var(--brand-navy)] rounded-xl shadow-sm hover:border-[var(--brand-primary)] hover:text-[var(--brand-primary)] transition-all relative active:scale-95 group">
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
                     </Link>
                 </div>
             </header>
 
             {/* MAIN CONTENT AREA */}
-            <main className="pt-[calc(4rem+var(--safe-area-top))] min-h-[calc(100vh-16rem)] pb-8 flex-1 animate-fade-in">
+            <main className="pt-[calc(4.5rem+var(--safe-area-top))] min-h-screen pb-32 animate-fade-in">
                 <Outlet />
             </main>
 
-            {/* GLOBAL RETAIL FOOTER */}
-            <footer className="bg-white border-t-2 border-gray-200 pb-[calc(5rem+var(--safe-area-bottom))] md:pb-4 pt-6 px-4">
-                <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center md:items-start justify-between gap-4 text-center md:text-left">
-                    <div className="max-w-xs">
-                        <div className="flex items-center gap-2 justify-center md:justify-start mb-2">
-                            <img src="/app-icon.png" alt="Spendigo Logo" style={{width: 32, height: 32, borderRadius: 6}} />
-                            <span className="text-3xl font-black text-gray-900 italic tracking-tighter">Spendigo</span>
-                        </div>
-                        <p className="text-gray-500 text-xs font-medium tracking-wide leading-relaxed">
-                            The high-performance local marketplace. Powered by SmartCart AI.
-                        </p>
-                    </div>
+            {/* BOTTOM NAVIGATION - Mobile Only */}
+            <nav className="md:hidden fixed bottom-0 left-0 right-0 h-[calc(4rem+var(--safe-area-bottom))] bg-white/80 backdrop-blur-xl border-t border-gray-100 z-50 flex items-stretch shadow-[0_-4px_16px_rgba(0,0,0,0.03)] px-2">
+                <NavLink to="/" end className={({ isActive }) => `flex flex-col items-center justify-center flex-1 transition-colors duration-150 gap-1 ${isActive ? 'text-blue-600' : 'text-gray-400 hover:text-gray-900'}`}>
+                    <svg className="w-6 h-6" fill={location.pathname === '/' ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                    </svg>
+                    <span className="text-[10px] font-semibold tracking-tight">Home</span>
+                </NavLink>
 
-                    <div className="flex flex-wrap justify-center md:justify-end gap-x-12 gap-y-4">
-                        <div className="flex flex-col gap-2">
-                    <span className="hidden md:inline text-[10px] font-black text-gray-900 tracking-widest mb-1 border-b border-gray-200 pb-1 inline-block">Platform</span>
-                            <Link to="/how-it-works" className="text-xs text-gray-500 font-bold hover:text-gray-900 tracking-wide transition-colors">How it Works</Link>
-                            <Link to="/careers" className="text-xs text-gray-500 font-bold hover:text-gray-900 tracking-wide transition-colors">Careers</Link>
-                            <Link to="/partner" className="text-xs text-gray-500 font-bold hover:text-blue-600 tracking-wide transition-colors">Partner with Us →</Link>
-                        </div>
-                        <div className="flex flex-col gap-2">
-                            <span className="hidden md:inline text-[10px] font-black text-gray-900 tracking-widest mb-1 border-b border-gray-200 pb-1 inline-block">Legal</span>
-                            <Link to="/privacy" className="text-xs text-gray-500 font-bold hover:text-gray-900 tracking-wide transition-colors">Privacy Policy</Link>
-                            <Link to="/terms" className="text-xs text-gray-500 font-bold hover:text-gray-900 tracking-wide transition-colors">Terms of Service</Link>
-                        </div>
+                <NavLink to="/search" className={({ isActive }) => `flex flex-col items-center justify-center flex-1 transition-colors duration-150 gap-1 ${isActive ? 'text-blue-600' : 'text-gray-400 hover:text-gray-900'}`}>
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    <span className="text-[10px] font-semibold tracking-tight">Search</span>
+                </NavLink>
+
+                {flyerIngestionEnabled && (
+                    <NavLink to="/compare" className={({ isActive }) => `flex flex-col items-center justify-center flex-1 transition-colors duration-150 gap-1 ${isActive ? 'text-blue-600' : 'text-gray-400 hover:text-gray-900'}`}>
+                        <svg className="w-6 h-6" fill={location.pathname === '/compare' ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        </svg>
+                        <span className="text-[10px] font-semibold tracking-tight">Compare</span>
+                    </NavLink>
+                )}
+
+                <NavLink to="/smartcart" className={({ isActive }) => `flex flex-col items-center justify-center flex-1 transition-colors duration-150 gap-1 relative ${isActive ? 'text-blue-600' : 'text-gray-400 hover:text-gray-900'}`}>
+                    <div className="relative">
+                        <svg className="w-6 h-6" fill={location.pathname === '/smartcart' ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                        </svg>
+                        <span className="absolute -top-1 -right-1 text-[10px] animate-pulse">✨</span>
                     </div>
-                </div>
-                
-                <div className="max-w-7xl mx-auto mt-6 pt-3 border-t border-gray-100 text-center md:text-left flex flex-col md:flex-row items-center justify-between gap-3">
-                    <p className="text-[10px] font-medium text-gray-400 tracking-wide">&copy; {new Date().getFullYear()} Spendigo Inc. All rights reserved.</p>
-                    <div className="flex items-center gap-4 text-2xl hover:scale-110 transition-transform cursor-default">
-                        🍁
+                    <span className="text-[10px] font-semibold tracking-tight">SmartCart</span>
+                    {itemCount > 0 && (
+                        <span className="absolute top-2 right-1 w-4 h-4 bg-blue-600 text-white text-[9px] font-bold flex items-center justify-center rounded-full border-2 border-white">
+                            {itemCount}
+                        </span>
+                    )}
+                </NavLink>
+
+                <NavLink to="/profile" className={({ isActive }) => `flex flex-col items-center justify-center flex-1 transition-colors duration-150 gap-1 ${isActive ? 'text-blue-600' : 'text-gray-400 hover:text-gray-900'}`}>
+                    <svg className="w-6 h-6" fill={location.pathname === '/profile' ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                    <span className="text-[10px] font-semibold tracking-tight">Profile</span>
+                </NavLink>
+            </nav>
+
+            {/* GLOBAL ULTRA-COMPACT PREMIUM FOOTER */}
+            <footer className="bg-white border-t border-gray-100 pb-[calc(4rem+var(--safe-area-bottom))] md:pb-6 pt-6 px-6 md:px-12 mt-auto">
+                <div className="max-w-7xl mx-auto">
+                    <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 mb-6">
+                        <div className="flex items-center gap-4">
+                            <Link to="/" className="flex items-center gap-2 group">
+                                <div className="w-8 h-8 bg-[var(--brand-primary)] rounded-lg flex items-center justify-center shadow-lg shadow-blue-500/20">
+                                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                                    </svg>
+                                </div>
+                                <span className="text-lg font-black text-[var(--brand-navy)] tracking-tighter italic">Spendigo</span>
+                            </Link>
+                            <span className="hidden md:block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest italic border-l border-gray-100 pl-4 opacity-50">
+                                Shop Local. Save Smarter.
+                            </span>
+                        </div>
+ 
+                        <nav className="flex flex-wrap items-center gap-x-6 gap-y-2">
+                            {[
+                                { to: '/how-it-works', label: 'How It Works' },
+                                { to: '/careers', label: 'Careers' },
+                                { to: '/partner', label: 'Partner with Us' },
+                                { to: '/privacy', label: 'Privacy' },
+                                { to: '/terms', label: 'Terms' }
+                            ].map(link => (
+                                <Link key={link.to} to={link.to} className="text-[10px] font-black text-[var(--text-muted)] hover:text-[var(--brand-primary)] transition-colors uppercase tracking-[0.2em]">
+                                    {link.label}
+                                </Link>
+                            ))}
+                        </nav>
+                    </div>
+ 
+                    <div className="pt-6 border-t border-gray-100 flex flex-row items-center justify-between">
+                        <div className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] flex items-center gap-2 opacity-50">
+                            <span>Spendigo Inc. © 2026</span>
+                            <span className="opacity-40">•</span>
+                            <span className="hidden sm:inline">Made with ♥ for local shops</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <span className="text-xl flex items-center gap-1.5" title="Proudly Canadian">
+                                <span>🍁</span>
+                                <span>🇨🇦</span>
+                            </span>
+                        </div>
                     </div>
                 </div>
             </footer>
 
-            {/* HIGH-IMPACT MOBILE BOTTOM TAB BAR */}
-            <nav className="md:hidden fixed bottom-0 left-0 right-0 h-20 bg-white border-t border-[var(--glass-border)] z-50 flex items-stretch shadow-[0_-4px_16px_rgba(0,0,0,0.06)]">
-                <NavLink to="/" end className={({ isActive }) => `flex flex-col items-center justify-center flex-1 transition-colors duration-150 gap-0.5 ${isActive ? 'text-[var(--brand-primary)]' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}`}>
-                    {({ isActive }: any) => (
-                        <React.Fragment>
-                            <div className={`w-10 h-7 flex items-center justify-center rounded-xl transition-colors duration-150 ${isActive ? 'bg-[var(--brand-primary-light)]' : ''}`}>
-                                <span className="text-lg">🏠</span>
-                            </div>
-                            <span className="text-[11px] font-medium">{t('homeNav')}</span>
-                        </React.Fragment>
-                    )}
-                </NavLink>
-
-                <NavLink to="/search" className={({ isActive }) => `flex flex-col items-center justify-center flex-1 transition-colors duration-150 gap-0.5 ${isActive ? 'text-[var(--brand-primary)]' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}`}>
-                    {({ isActive }: any) => (
-                        <React.Fragment>
-                            <div className={`w-10 h-7 flex items-center justify-center rounded-xl transition-colors duration-150 ${isActive ? 'bg-[var(--brand-primary-light)]' : ''}`}>
-                                <span className="text-lg">🔍</span>
-                            </div>
-                            <span className="text-[11px] font-medium">{t('searchNav')}</span>
-                        </React.Fragment>
-                    )}
-                </NavLink>
-
-                <NavLink to="/smartcart" className={({ isActive }) => `flex flex-col items-center justify-center flex-1 transition-colors duration-150 gap-0.5 relative ${isActive ? 'text-[var(--brand-primary)]' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}`}>
-                    {({ isActive }: any) => (
-                        <React.Fragment>
-                            <div className={`w-10 h-7 flex items-center justify-center rounded-xl transition-colors duration-150 ${isActive ? 'bg-[var(--brand-primary-light)]' : ''}`}>
-                                <span className={`text-lg ${isActive ? 'animate-pulse' : ''}`}>✨</span>
-                            </div>
-                            <span className="text-[11px] font-medium">{t('smartCartNav')}</span>
-                        </React.Fragment>
-                    )}
-                </NavLink>
-
-                {flyerIngestionEnabled && (
-                    <NavLink to="/compare" className={({ isActive }) => `flex flex-col items-center justify-center flex-1 transition-colors duration-150 gap-0.5 ${isActive ? 'text-[var(--brand-primary)]' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}`}>
-                        {({ isActive }: any) => (
-                            <React.Fragment>
-                                <div className={`w-10 h-7 flex items-center justify-center rounded-xl transition-colors duration-150 ${isActive ? 'bg-[var(--brand-primary-light)]' : ''}`}>
-                                    <span className="text-lg">⚖️</span>
-                                </div>
-                                <span className="text-[11px] font-medium">Compare</span>
-                            </React.Fragment>
-                        )}
-                    </NavLink>
-                )}
-
-
-
-                <NavLink to="/profile" className={({ isActive }) => `flex flex-col items-center justify-center flex-1 transition-colors duration-150 gap-0.5 ${isActive ? 'text-[var(--brand-primary)]' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}`}>
-                    {({ isActive }: any) => (
-                        <React.Fragment>
-                            <div className={`w-10 h-7 flex items-center justify-center rounded-xl transition-colors duration-150 ${isActive ? 'bg-[var(--brand-primary-light)]' : ''}`}>
-                                <span className="text-lg">👤</span>
-                            </div>
-                            <span className="text-[11px] font-medium">{t('profileNav')}</span>
-                        </React.Fragment>
-                    )}
-                </NavLink>
-            </nav>
-
-            {/* Bottom padding for mobile nav */}
-            <div className="md:hidden h-20"></div>
-
-            {/* GLOBAL NOTIFICATION TOAST (Cart) */}
-            {notification && (
-                <div className="fixed bottom-24 left-4 right-4 md:bottom-8 md:left-auto md:right-8 z-[100] animate-slide-up pointer-events-none md:max-w-md w-full">
-                    <div className={`p-5 shadow-2xl flex items-center justify-between border-b-4 pointer-events-auto skew-x-[-2deg] ${notification.type === 'success' ? 'bg-gray-900 border-green-500 text-white' : 'bg-gray-900 border-red-600 text-white'
-                        }`}>
-                        <div className="flex-1 mr-4 skew-x-[2deg]">
-                            <div className="flex items-start gap-4 mb-1">
-                                <span className="text-2xl mt-1">
-                                    {notification.type === 'success' ? '✅' : '🗑️'}
-                                </span>
-                                <div>
-                                    <p className={`font-black text-sm tracking-widest ${notification.type === 'success' ? 'text-white' : 'text-red-400'}`}>{notification.message}</p>
-                                    
-                                    {/* Savings Info */}
-                                    {notification.savings && notification.savings > 0 && (
-                                        <div className="text-[10px] bg-green-500 text-black px-2 py-1 mt-2 inline-flex items-center gap-2 font-black tracking-widest shadow-inner">
-                                            <span className="animate-pulse">🔥</span>
-                                            <span>Saved ${notification.savings}</span>
-                                            <span className="opacity-70 truncate max-w-[120px]">vs {notification.competitor?.name}</span>
-                                        </div>
-                                    )}
-
-                                    {/* Competitor Warning */}
-                                    {!notification.savings && notification.competitor && notification.type === 'success' && (
-                                        <div className="text-[10px] text-white/70 mt-2 flex justify-start items-center gap-2 tracking-widest font-bold">
-                                            <span>💡 Available for ${notification.competitor.price} at {notification.competitor.name}</span>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-                        <button
-                            onClick={clearNotification}
-                            className={`p-2 text-white transition-all shrink-0 skew-x-[2deg] hover:scale-110 active:scale-95 ${notification.type === 'success' ? 'bg-white/10 hover:bg-green-600' : 'bg-white/10 hover:bg-red-600'}`}
-                        >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                        </button>
-                    </div>
-                </div>
-            )}
-
-            {/* SYSTEM TOAST (Notification Context) */}
-            {toast && (
+            {/* GLOBAL NOTIFICATION TOAST (Cart/System) */}
+            {(notification || toast) && (
                 <div className="fixed bottom-24 left-4 right-4 md:bottom-8 md:left-auto md:right-8 z-[110] animate-slide-up pointer-events-none md:max-w-md w-full">
-                    <div className={`p-4 text-white shadow-2xl flex items-center justify-between border-l-4 pointer-events-auto ${toast.type === 'alert' ? 'bg-gray-900 border-red-600' : 'bg-gray-900 border-white'
-                        }`}>
-                        <div className="flex-1 mr-4">
-                            <div className="flex items-center gap-3">
-                                <span className={toast.type === 'alert' ? 'text-red-500 text-2xl animate-pulse' : 'text-white text-2xl'}>
-                                    {toast.type === 'alert' ? '🚨' : '🔔'}
-                                </span>
-                                <div>
-                                    <p className="font-black text-xs tracking-widest text-white">{toast.title}</p>
-                                    <p className="text-[10px] text-gray-400 font-bold tracking-wide mt-1">{toast.message}</p>
+                    {/* CART TOAST */}
+                    {notification && (
+                        <div className={`p-4 shadow-2xl flex flex-col pointer-events-auto rounded-2xl bg-white border-l-4 mb-4 ${notification.type === 'success' ? 'border-green-500' : 'border-red-500'}`}>
+                            <div className="flex items-center justify-between">
+                                <div className="flex-1 mr-4">
+                                    <p className="text-sm font-bold text-gray-900">{notification.message}</p>
+                                    {notification.description && (
+                                        <p className="text-xs text-gray-500 mt-1">{notification.description}</p>
+                                    )}
                                 </div>
+                                <button
+                                    onClick={clearNotification}
+                                    className="p-2 text-gray-400 hover:text-gray-900 transition-all shrink-0"
+                                >
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
                             </div>
                         </div>
-                        <button
-                            onClick={() => setToast(null)}
-                            className="bg-gray-800 hover:bg-black p-2 text-gray-400 hover:text-white transition-all shrink-0 active:scale-95 border border-gray-700"
+                    )}
+
+                    {/* SYSTEM NOTIFICATION TOAST */}
+                    {toast && (
+                        <div 
+                            onClick={handleToastClick}
+                            className="p-4 bg-white border border-gray-100 shadow-2xl rounded-2xl flex items-center justify-between pointer-events-auto cursor-pointer hover:bg-gray-50 transition-colors group"
                         >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                        </button>
-                    </div>
+                            <div className="flex-1 mr-4">
+                                <div className="flex items-center gap-3">
+                                    <span className={toast.type === 'alert' ? 'text-red-500 text-xl' : 'text-blue-500 text-xl'}>
+                                        {toast.type === 'alert' ? '🚨' : '🔔'}
+                                    </span>
+                                    <div>
+                                        <p className="font-bold text-sm text-gray-900 group-hover:text-blue-600 transition-colors">{toast.title}</p>
+                                        <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{toast.message}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <button
+                                onClick={(e) => { e.stopPropagation(); setToast(null); }}
+                                className="bg-gray-800 hover:bg-black p-2 text-gray-400 hover:text-white transition-all shrink-0 active:scale-95 border border-gray-700 rounded-lg"
+                            >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+                    )}
                 </div>
             )}
         </div>

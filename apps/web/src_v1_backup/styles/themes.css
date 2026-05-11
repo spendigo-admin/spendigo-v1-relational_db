@@ -1,0 +1,157 @@
+/* THEME OVERLAYS */
+
+/* Theme 1: Night Navigator (Dark Mode) */
+.theme-night {
+    --brand-primary: hsl(220, 100%, 65%);
+    --brand-primary-dark: hsl(220, 100%, 55%);
+    --brand-primary-light: hsl(220, 100%, 20%);
+    
+    --brand-secondary: hsl(280, 80%, 65%); /* Neon Purple */
+    --brand-secondary-hover: hsl(280, 80%, 55%);
+    
+    --surface-0: hsl(220, 30%, 7%); /* Deep OLED Blue-Black */
+    --surface-1: hsl(220, 25%, 12%);
+    --surface-2: hsl(220, 20%, 16%);
+    --surface-3: hsl(220, 20%, 22%);
+    
+    --text-main: hsl(0, 0%, 98%);
+    --text-muted: hsl(220, 20%, 70%);
+    --text-inverse: hsl(220, 30%, 7%);
+    
+    --glass-bg: rgba(30, 41, 59, 0.7); /* slate-800 with opacity */
+    --glass-border: rgba(255, 255, 255, 0.1);
+    --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    
+    --font-sans: 'Outfit', 'Inter', system-ui, -apple-system, sans-serif;
+    --font-weight-regular: 300;
+    --font-weight-medium: 400;
+    --font-weight-bold: 500;
+}
+
+.theme-night .glass-panel {
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--glass-border);
+}
+
+.theme-night .glass-panel:hover {
+    box-shadow: 0 0 20px rgba(96, 165, 250, 0.15), 0 8px 32px rgba(0, 0, 0, 0.5); /* soft neon glow */
+    border-color: rgba(96, 165, 250, 0.3);
+}
+
+/* Theme 2: Eco-Minimalist (Organic & Calm) */
+.theme-eco {
+    --brand-primary: hsl(150, 35%, 35%);
+    --brand-primary-dark: hsl(150, 40%, 25%);
+    --brand-primary-light: hsl(150, 30%, 90%);
+    
+    --brand-secondary: hsl(30, 60%, 45%);
+    --brand-secondary-hover: hsl(30, 60%, 35%);
+    
+    --surface-0: hsl(40, 30%, 97%); /* Warm off-white */
+    --surface-1: hsl(40, 25%, 94%);
+    --surface-2: hsl(40, 20%, 90%);
+    --surface-3: hsl(40, 15%, 85%);
+    
+    --text-main: hsl(30, 30%, 20%);
+    --text-muted: hsl(30, 20%, 45%);
+    --text-inverse: hsl(40, 30%, 97%);
+    
+    --glass-bg: rgba(245, 242, 235, 0.8);
+    --glass-border: rgba(180, 190, 180, 0.4);
+    --glass-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    
+    /* Using serif for slightly more premium, organic feel */
+    --font-sans: 'Lora', 'Merriweather', 'Inter', serif;
+    --font-weight-regular: 400;
+    --font-weight-medium: 500;
+    --font-weight-bold: 600;
+
+    --radius-sm: 12px;
+    --radius-md: 16px;
+    --radius-lg: 24px;
+}
+
+.theme-eco .glass-panel {
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-width: 1px;
+}
+
+.theme-eco .glass-panel:hover {
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+    border-color: hsl(150, 30%, 75%);
+}
+
+/* Theme 3: High-Velocity Deal Finder (Vibrant & Punchy) */
+.theme-deal {
+    --brand-primary: hsl(320, 100%, 55%); /* Cyber Pink */
+    --brand-primary-dark: hsl(320, 100%, 45%);
+    --brand-primary-light: hsl(320, 100%, 90%);
+    
+    --brand-secondary: hsl(50, 100%, 50%); /* Bright Yellow */
+    --brand-secondary-hover: hsl(50, 100%, 40%);
+    
+    --surface-0: hsl(240, 5%, 96%); /* Very light grey */
+    --surface-1: hsl(0, 0%, 100%);
+    --surface-2: hsl(240, 10%, 90%);
+    --surface-3: hsl(0, 0%, 0%); /* Hard borders */
+    
+    --text-main: hsl(0, 0%, 0%);
+    --text-muted: hsl(0, 0%, 30%);
+    --text-inverse: hsl(0, 0%, 100%);
+    
+    --glass-bg: hsl(0, 0%, 100%);
+    --glass-border: hsl(0, 0%, 0%);
+    --glass-shadow: 6px 6px 0px rgba(0, 0, 0, 1);
+    
+    --font-sans: 'Outfit', 'Inter', system-ui, sans-serif;
+    --font-weight-regular: 500;
+    --font-weight-medium: 600;
+    --font-weight-bold: 800;
+    
+    --radius-sm: 0px;
+    --radius-md: 0px;
+    --radius-lg: 0px;
+}
+
+.theme-deal .glass-panel {
+    border: 3px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+    transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.theme-deal .glass-panel:hover {
+    transform: translate(-4px, -4px);
+    box-shadow: 10px 10px 0px rgba(0, 0, 0, 1);
+}
+
+.theme-deal .glass-panel:active {
+    transform: translate(2px, 2px);
+    box-shadow: 4px 4px 0px rgba(0, 0, 0, 1);
+}
+
+.theme-deal h1, .theme-deal h2, .theme-deal h3 {
+    text-transform: uppercase;
+    letter-spacing: -0.04em;
+}
+
+.theme-deal .btn-primary {
+    border-radius: 0;
+    border: 3px solid #000;
+    box-shadow: 4px 4px 0px rgba(0, 0, 0, 1);
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.theme-deal .btn-primary:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 6px 6px 0px rgba(0, 0, 0, 1);
+}
+
+.theme-deal .btn-primary:active {
+    transform: translate(2px, 2px);
+    box-shadow: 2px 2px 0px rgba(0, 0, 0, 1);
+}
+
