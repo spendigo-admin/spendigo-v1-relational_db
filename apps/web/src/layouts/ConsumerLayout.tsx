@@ -204,7 +204,7 @@ const ConsumerLayout: React.FC = () => {
                                 <span className="text-lg font-black text-[var(--brand-navy)] tracking-tighter italic">Spendigo</span>
                             </Link>
                             <span className="hidden md:block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest italic border-l border-gray-100 pl-4 opacity-50">
-                                Shop Local. Save Smarter.
+                                Shop Local. Shop Smart.
                             </span>
                         </div>
  

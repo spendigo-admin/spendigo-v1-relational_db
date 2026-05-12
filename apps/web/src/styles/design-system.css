@@ -67,7 +67,7 @@
 }
 
 /* Base Styles */
-body {
+html, body {
     background-color: var(--bg-app, #f8fafc);
     color: var(--text-main);
     font-family: var(--font-sans);

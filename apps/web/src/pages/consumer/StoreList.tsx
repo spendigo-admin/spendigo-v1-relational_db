@@ -178,9 +178,9 @@ const StoreList: React.FC = () => {
                                 Hyper-Local Shopping Intelligence
                             </span>
                             <h1 className="text-3xl md:text-5xl font-black leading-[1.05] tracking-tighter text-[var(--brand-navy)] mb-4">
-                                <span className="text-[var(--brand-primary)]">Shop Local.</span><br className="hidden md:block" /> Save Smarter.
+                                <span className="text-[var(--brand-primary)]">Shop Local.</span><br className="hidden md:block" /> Shop Smart.
                             </h1>
-                            <p className="text-[var(--text-muted)] text-sm md:text-base font-bold max-w-xl mx-auto lg:mx-0 mb-6 leading-relaxed">
+                            <p className="text-[var(--text-muted)] text-xs md:text-sm font-medium max-w-xl mx-auto lg:mx-0 mb-6 leading-relaxed">
                                 Spendigo connects you with the heartbeat of your neighborhood. Find real-time inventory, exclusive local deals, and optimize your spending with AI-powered insights.
                             </p>
                             
@@ -247,13 +247,13 @@ const StoreList: React.FC = () => {
 
             {/* STATS STRIP - ONE FRAME ON MOBILE PER USER REQUEST */}
             <section className="max-w-7xl mx-auto px-6 md:px-12 -mt-10 md:-mt-12 relative z-20">
-                <div className="bg-[var(--brand-navy)] rounded-3xl p-2 md:p-0 md:bg-transparent shadow-2xl shadow-[var(--brand-navy)]/20">
+                <div className="bg-white rounded-3xl p-2 md:p-0 md:bg-transparent shadow-2xl shadow-gray-200/50">
                     <div className="flex md:grid md:grid-cols-4 gap-1.5 md:gap-6">
                         {[
-                            { label: 'STORES', labelColor: 'text-emerald-400', value: stats.totalStores || '0', badge: 'VERIFIED', badgeColor: 'bg-emerald-500 text-white shadow-[0_0_20px_rgba(16,185,129,0.3)]', bgColor: 'bg-[#0a1122]' },
-                            { label: 'FLYERS', labelColor: 'text-indigo-200', value: stats.totalFlyers || '0', badge: 'LIVE', badgeColor: 'bg-white text-[#3730a3] shadow-[0_0_20px_rgba(255,255,255,0.3)]', bgColor: 'bg-[#3730a3]' },
-                            { label: 'DEALS', labelColor: 'text-blue-200', value: stats.totalDeals.toLocaleString() || '0', badge: 'LIMITED', badgeColor: 'bg-orange-500 text-white shadow-[0_0_20px_rgba(249,115,22,0.3)]', bgColor: 'bg-[#1e40af]' },
-                            { label: 'ITEMS', labelColor: 'text-white', value: stats.totalProducts > 1000 ? `${(stats.totalProducts / 1000).toFixed(0)}k` : stats.totalProducts || '0', badge: 'AVAILABLE', badgeColor: 'bg-slate-700 text-white border border-white/20', bgColor: 'bg-[#1f2937]' }
+                            { label: 'STORES', labelColor: 'text-emerald-400', value: stats.totalStores || '0', badge: 'VERIFIED', badgeColor: 'bg-emerald-500 text-white shadow-[0_0_20px_rgba(16,185,129,0.3)]', bgColor: 'bg-slate-700' },
+                            { label: 'FLYERS', labelColor: 'text-indigo-200', value: stats.totalFlyers || '0', badge: 'LIVE', badgeColor: 'bg-white text-[#3730a3] shadow-[0_0_20px_rgba(255,255,255,0.3)]', bgColor: 'bg-indigo-600' },
+                            { label: 'DEALS', labelColor: 'text-blue-200', value: stats.totalDeals.toLocaleString() || '0', badge: 'LIMITED', badgeColor: 'bg-orange-500 text-white shadow-[0_0_20px_rgba(249,115,22,0.3)]', bgColor: 'bg-blue-600' },
+                            { label: 'ITEMS', labelColor: 'text-white', value: stats.totalProducts > 1000 ? `${(stats.totalProducts / 1000).toFixed(0)}k` : stats.totalProducts || '0', badge: 'AVAILABLE', badgeColor: 'bg-slate-700 text-white border border-white/20', bgColor: 'bg-slate-600' }
                         ].map((stat, i) => (
                             <div key={i} className={`flex-1 md:flex-none ${stat.bgColor} rounded-2xl p-3 md:p-8 flex flex-col justify-between h-24 md:h-auto lg:aspect-auto transition-transform hover:-translate-y-1 md:hover:-translate-y-2 border border-white/5 md:border-none shadow-xl shadow-black/20`}>
                                 <div>
@@ -325,7 +325,7 @@ const StoreList: React.FC = () => {
                             <h2 className="text-lg md:text-5xl font-black text-[var(--brand-navy)] tracking-tight italic">Flash</h2>
                             <span className="bg-orange-500 text-white text-[9px] md:text-xs font-black px-4 py-1.5 rounded-full uppercase tracking-[0.2em] animate-pulse">Ending Soon</span>
                         </div>
-                        <Link to="/search" className="text-[var(--brand-primary)] text-xs md:text-sm font-black tracking-[0.2em] uppercase hover:translate-x-2 transition-transform inline-flex items-center gap-2">
+                        <Link to="/deals" className="text-[var(--brand-primary)] text-xs md:text-sm font-black tracking-[0.2em] uppercase hover:translate-x-2 transition-transform inline-flex items-center gap-2">
                             See All <span className="text-lg">›</span>
                         </Link>
                     </div>
@@ -338,7 +338,7 @@ const StoreList: React.FC = () => {
                                 <div key={i} onClick={() => navigate(`/store/${item.storeId}`)} className="flex-shrink-0 w-[78px] md:w-[220px] lg:w-auto bg-white rounded-[0.75rem] md:rounded-[2.5rem] border border-gray-100 overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500 group cursor-pointer">
                                     <div className="aspect-square relative flex items-center justify-center p-1 md:p-8 bg-gray-50">
                                         {discount > 0 && (
-                                            <div className="absolute top-4 left-4 bg-red-600 text-white text-[9px] font-black px-3 py-1.5 rounded-xl">
+                                            <div className="absolute top-1 left-1 md:top-4 md:left-4 bg-red-600 text-white text-[6px] md:text-[9px] font-black px-1.5 py-0.5 md:px-3 md:py-1.5 rounded-md md:rounded-xl">
                                                 -{discount}%
                                             </div>
                                         )}
