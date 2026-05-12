@@ -60,7 +60,7 @@ const NotificationPopover: React.FC = () => {
             </button>
 
             {isOpen && (
-                <div className="absolute right-0 mt-3 w-[22rem] bg-white rounded-[2rem] shadow-2xl border border-gray-100 z-50 animate-fade-in origin-top-right overflow-hidden">
+                <div className="fixed md:absolute inset-x-4 md:inset-x-auto md:right-0 top-[5.5rem] md:top-auto md:mt-3 md:w-[22rem] bg-white rounded-[2rem] shadow-2xl border border-gray-100 z-50 animate-fade-in origin-top md:origin-top-right overflow-hidden">
                     <div className="p-6 border-b border-gray-50 flex justify-between items-center bg-gray-50/50">
                         <span className="font-black text-xs uppercase tracking-widest text-[#112244]">Inbox</span>
                         <div className="flex gap-4">

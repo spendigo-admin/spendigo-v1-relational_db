@@ -253,6 +253,10 @@ function App() {
                                                                     <Route path="/admin/notifications" element={<AdminNotifications />} />
                                                                 </Route>
 
+                                                                    {/* Base Redirects */}
+                                                                    <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
+                                                                    <Route path="/merchant" element={<Navigate to="/merchant/dashboard" replace />} />
+
                                                                     {/* 404 Catch All */}
                                                                 <Route path="*" element={<NotFound />} />
                                                             </Routes>

@@ -207,7 +207,7 @@ const Search: React.FC = () => {
                                                         </div>
                                                     </div>
                                                     <button onClick={(e) => { e.stopPropagation(); handleQuickAdd(product); }} 
-                                                        className="w-full md:w-auto px-5 py-2.5 bg-[#112244] text-white text-[10px] font-black uppercase tracking-widest rounded-xl transform active:scale-95 hover:bg-black hover:shadow-lg shadow-blue-500/10 transition-all duration-300"
+                                                        className="w-full md:w-auto px-5 py-3 md:py-2.5 bg-[#112244] text-white text-xs font-black uppercase tracking-widest rounded-xl transform active:scale-95 hover:bg-black hover:shadow-lg shadow-blue-500/10 transition-all duration-300"
                                                     >
                                                         Add
                                                     </button>

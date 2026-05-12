@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useAuth } from '../../context/AuthContext';
 import '../../styles/design-system.css';
 import SEO from '../../components/SEO';
 
 const HowItWorks: React.FC = () => {
     const { t } = useTranslation();
+    const { user } = useAuth();
     const [openFaq, setOpenFaq] = useState<number | null>(null);
 
     // SEO: JSON-LD Structured Data
@@ -328,7 +330,7 @@ const HowItWorks: React.FC = () => {
                         </div>
                         
                         <div className="shrink-0 w-full lg:w-auto">
-                            <Link to="/register" className="group relative inline-flex items-center justify-center w-full lg:w-auto px-12 py-5 bg-white text-[#112244] font-black rounded-2xl md:rounded-[2rem] hover:scale-105 transition-all shadow-[0_20px_50px_rgba(255,255,255,0.2)] text-xl uppercase tracking-widest overflow-hidden">
+                            <Link to={user?.role === 'merchant' ? '/merchant/dashboard' : '/register/business'} className="group relative inline-flex items-center justify-center w-full lg:w-auto px-12 py-5 bg-white text-[#112244] font-black rounded-2xl md:rounded-[2rem] hover:scale-105 transition-all shadow-[0_20px_50px_rgba(255,255,255,0.2)] text-xl uppercase tracking-widest overflow-hidden">
                                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
                                 <span className="relative z-10">{t('hiwJoinFree')} →</span>
                             </Link>

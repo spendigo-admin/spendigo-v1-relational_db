@@ -258,7 +258,7 @@ const Profile: React.FC = () => {
                             </div>
                         </div>
                         <div>
-                            <div className="flex items-center gap-3 mb-2">
+                            <div className="flex flex-col items-start gap-1.5 mb-2">
                                 <span className="text-[9px] font-black bg-[var(--brand-primary)] text-white px-2 py-0.5 rounded tracking-widest uppercase shadow-lg">Premium Member</span>
                                 <span className="text-[9px] font-black bg-white shadow-sm text-[var(--text-muted)] px-2 py-0.5 rounded border border-gray-100 tracking-widest uppercase">Since 2024</span>
                             </div>

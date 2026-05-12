@@ -81,10 +81,10 @@ const Cart: React.FC = () => {
                     <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl"></div>
                     <div className="text-4xl relative z-10">🎉</div>
                     <div className="flex-1 relative z-10">
-                        <p className="font-black text-lg md:text-xl tracking-tight">
+                        <p className="font-black text-lg md:text-xl tracking-tight text-white drop-shadow-md">
                             You're saving ~${estimatedSavings} by shopping smart!
                         </p>
-                        <p className="text-sm font-medium text-white/70">
+                        <p className="text-sm font-bold text-white/95 mt-1">
                             Spendigo's AI optimized your order across local merchants.
                         </p>
                     </div>
@@ -133,20 +133,20 @@ const Cart: React.FC = () => {
                                                     <div className="flex items-center gap-2 mt-2">
                                                         <button
                                                             onClick={() => updateQuantity(item.id, -1)}
-                                                            className="w-8 h-8 rounded-full bg-[var(--surface-2)] flex items-center justify-center text-sm hover:bg-[var(--surface-1)] transition-colors"
+                                                            className="w-10 h-10 md:w-8 md:h-8 rounded-full bg-[var(--surface-2)] flex items-center justify-center text-base md:text-sm hover:bg-[var(--surface-1)] transition-colors"
                                                         >
                                                             −
                                                         </button>
                                                         <span className="w-8 text-center font-mono">{item.quantity}</span>
                                                         <button
                                                             onClick={() => updateQuantity(item.id, 1)}
-                                                            className="w-8 h-8 rounded-full bg-[var(--surface-2)] flex items-center justify-center text-sm hover:bg-[var(--surface-1)] transition-colors"
+                                                            className="w-10 h-10 md:w-8 md:h-8 rounded-full bg-[var(--surface-2)] flex items-center justify-center text-base md:text-sm hover:bg-[var(--surface-1)] transition-colors"
                                                         >
                                                             +
                                                         </button>
                                                         <button
                                                             onClick={() => removeFromCart(item.id)}
-                                                            className="ml-auto text-[var(--status-error)] text-sm hover:underline"
+                                                            className="ml-auto text-[var(--status-error)] text-sm font-bold py-2 px-3 hover:bg-red-50 rounded-lg transition-colors"
                                                         >
                                                             Remove
                                                         </button>

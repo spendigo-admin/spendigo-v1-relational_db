@@ -6,6 +6,7 @@ import { useMarketplace } from '../../context/MarketplaceContext';
 import { useLocation } from '../../context/LocationContext';
 import { Skeleton } from '../../components/ui/Skeleton';
 import { filterActiveDeals } from '../../utils/date-helpers';
+import { useAuth } from '../../context/AuthContext';
 
 const StoreCardSkeleton = () => (
     <div className="bg-white rounded-3xl overflow-hidden shadow-sm border border-gray-100 p-4">
@@ -18,6 +19,7 @@ const StoreCardSkeleton = () => (
 const StoreList: React.FC = () => {
     const navigate = useNavigate();
     const { allStores, loading } = useMarketplace();
+    const { user } = useAuth();
     const { 
         address, 
         setAddress, 
@@ -168,29 +170,21 @@ const StoreList: React.FC = () => {
     return (
         <div className="min-h-screen bg-white">
             {/* HERO SECTION */}
-            <section className="relative pt-12 md:pt-24 pb-12 md:pb-32 overflow-hidden bg-gradient-to-b from-[#F5F3FF]/50 to-white">
+            <section className="relative pt-6 md:pt-10 pb-6 md:pb-12 overflow-hidden bg-gradient-to-b from-[#F5F3FF]/50 to-white">
                 <div className="max-w-7xl mx-auto px-6 md:px-12">
-                    <div className="flex flex-col lg:flex-row items-center gap-16">
+                    <div className="flex flex-col lg:flex-row items-center gap-8 md:gap-12">
                         <div className="flex-1 text-center lg:text-left">
-                            <span className="inline-block bg-[#F5F3FF] text-[#007AFF] px-4 py-1.5 rounded-full text-[10px] md:text-xs font-black uppercase tracking-[0.2em] mb-8">
+                            <span className="inline-block bg-[#F5F3FF] text-[#007AFF] px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-[0.2em] mb-4">
                                 Hyper-Local Shopping Intelligence
                             </span>
-                            <h1 className="text-4xl md:text-7xl font-black leading-[1.05] tracking-tighter text-[var(--brand-navy)] mb-8">
+                            <h1 className="text-3xl md:text-5xl font-black leading-[1.05] tracking-tighter text-[var(--brand-navy)] mb-4">
                                 <span className="text-[var(--brand-primary)]">Shop Local.</span><br className="hidden md:block" /> Save Smarter.
                             </h1>
-                            <p className="text-[var(--text-muted)] text-lg md:text-xl font-bold max-w-xl mx-auto lg:mx-0 mb-12 leading-relaxed">
+                            <p className="text-[var(--text-muted)] text-sm md:text-base font-bold max-w-xl mx-auto lg:mx-0 mb-6 leading-relaxed">
                                 Spendigo connects you with the heartbeat of your neighborhood. Find real-time inventory, exclusive local deals, and optimize your spending with AI-powered insights.
                             </p>
                             
-                            {/* CTA BUTTONS */}
-                            <div className="flex items-center justify-center lg:justify-start gap-3 md:gap-6">
-                                <Link to="/register" className="flex-1 md:flex-none bg-[var(--brand-navy)] text-white px-4 md:px-10 py-4 md:py-5 rounded-2xl font-black text-[10px] md:text-sm tracking-widest hover:bg-[var(--brand-primary)] transition-all shadow-xl shadow-blue-200 text-center uppercase whitespace-nowrap">
-                                    Start Saving Locally
-                                </Link>
-                                <Link to="/how-it-works" className="flex-1 md:flex-none bg-white text-[var(--brand-navy)] border-2 border-[var(--surface-2)] px-4 md:px-10 py-4 md:py-5 rounded-2xl font-black text-[10px] md:text-sm tracking-widest hover:border-[var(--brand-primary)] transition-all text-center uppercase whitespace-nowrap">
-                                    How It Works
-                                </Link>
-                            </div>
+
                         </div>
 
                         {/* RIGHT SIDE PICTURE / AD CAROUSEL */}
@@ -276,7 +270,7 @@ const StoreList: React.FC = () => {
             </section>
 
             {/* LOCATION SEARCH BAR */}
-            <section className="max-w-7xl mx-auto px-6 md:px-12 mt-16 md:mt-24">
+            <section className="max-w-7xl mx-auto px-6 md:px-12 mt-8 md:mt-24">
                 <div className="bg-white border border-gray-100 rounded-full py-1 pl-4 pr-1 flex flex-row items-center justify-between shadow-2xl shadow-gray-100 gap-2">
                     <div className="flex items-center gap-2 flex-1">
                         <button 
@@ -325,10 +319,10 @@ const StoreList: React.FC = () => {
 
             {/* FLASH INVENTORY */}
             {flashInventory.length > 0 && (
-                <section className="max-w-7xl mx-auto px-6 md:px-12 mt-24 md:mt-32">
-                    <div className="flex items-center justify-between mb-12">
+                <section className="max-w-7xl mx-auto px-6 md:px-12 mt-4 md:mt-32">
+                    <div className="flex items-center justify-between mb-6 md:mb-12">
                         <div className="flex items-center gap-4">
-                            <h2 className="text-3xl md:text-5xl font-black text-[var(--brand-navy)] tracking-tight italic">Flash Inventory</h2>
+                            <h2 className="text-lg md:text-5xl font-black text-[var(--brand-navy)] tracking-tight italic">Flash</h2>
                             <span className="bg-orange-500 text-white text-[9px] md:text-xs font-black px-4 py-1.5 rounded-full uppercase tracking-[0.2em] animate-pulse">Ending Soon</span>
                         </div>
                         <Link to="/search" className="text-[var(--brand-primary)] text-xs md:text-sm font-black tracking-[0.2em] uppercase hover:translate-x-2 transition-transform inline-flex items-center gap-2">
@@ -336,13 +330,13 @@ const StoreList: React.FC = () => {
                         </Link>
                     </div>
 
-                    <div className="flex lg:grid lg:grid-cols-5 gap-3 md:gap-6 overflow-x-auto lg:overflow-visible pb-8 lg:pb-0 scrollbar-hide -mx-6 px-6 lg:mx-0 lg:px-0">
+                    <div className="flex lg:grid lg:grid-cols-5 gap-2 md:gap-6 overflow-x-auto lg:overflow-visible pb-8 lg:pb-0 scrollbar-hide -mx-6 px-6 lg:mx-0 lg:px-0">
                         {flashInventory.map((item, i) => {
                             const effectivePrice = item.salePrice || item.price || 0;
                             const discount = item.originalPrice ? Math.round(((item.originalPrice - effectivePrice) / item.originalPrice) * 100) : 0;
                             return (
-                                <div key={i} onClick={() => navigate(`/store/${item.storeId}`)} className="flex-shrink-0 w-[160px] md:w-[220px] lg:w-auto bg-white rounded-[1.5rem] md:rounded-[2.5rem] border border-gray-100 overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500 group cursor-pointer">
-                                    <div className="aspect-square relative flex items-center justify-center p-4 md:p-8 bg-gray-50">
+                                <div key={i} onClick={() => navigate(`/store/${item.storeId}`)} className="flex-shrink-0 w-[78px] md:w-[220px] lg:w-auto bg-white rounded-[0.75rem] md:rounded-[2.5rem] border border-gray-100 overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500 group cursor-pointer">
+                                    <div className="aspect-square relative flex items-center justify-center p-1 md:p-8 bg-gray-50">
                                         {discount > 0 && (
                                             <div className="absolute top-4 left-4 bg-red-600 text-white text-[9px] font-black px-3 py-1.5 rounded-xl">
                                                 -{discount}%
@@ -350,12 +344,12 @@ const StoreList: React.FC = () => {
                                         )}
                                         <img src={item.productImage || item.image} alt={item.name} className="w-full h-full object-contain group-hover:scale-110 transition-transform" />
                                     </div>
-                                    <div className="p-3 md:p-6">
-                                        <p className="text-[8px] font-black text-[var(--brand-primary)] uppercase tracking-widest mb-1">{item.storeName}</p>
-                                        <h3 className="font-bold text-xs md:text-base text-[var(--brand-navy)] mb-2 md:mb-3 truncate group-hover:text-[var(--brand-primary)] transition-colors">{item.productName || item.name}</h3>
-                                        <div className="flex items-center gap-2 md:gap-3">
-                                            <span className="text-red-500 font-black text-sm md:text-lg">${effectivePrice.toFixed(2)}</span>
-                                            {item.originalPrice && <span className="text-gray-300 font-medium text-[10px] md:text-xs line-through">${item.originalPrice.toFixed(2)}</span>}
+                                    <div className="p-1.5 md:p-6">
+                                        <p className="text-[7px] font-black text-[var(--brand-primary)] uppercase tracking-widest mb-0.5">{item.storeName}</p>
+                                        <h3 className="font-bold text-[10px] md:text-base text-[var(--brand-navy)] mb-1 md:mb-3 truncate group-hover:text-[var(--brand-primary)] transition-colors">{item.productName || item.name}</h3>
+                                        <div className="flex items-center gap-1.5 md:gap-3">
+                                            <span className="text-red-500 font-black text-xs md:text-lg">${effectivePrice.toFixed(2)}</span>
+                                            {item.originalPrice && <span className="text-gray-300 font-medium text-[8px] md:text-xs line-through">${item.originalPrice.toFixed(2)}</span>}
                                         </div>
                                     </div>
                                 </div>
@@ -366,19 +360,19 @@ const StoreList: React.FC = () => {
             )}
 
             {/* LOCAL MERCHANTS */}
-            <section className="max-w-7xl mx-auto px-6 md:px-12 mt-24 md:mt-32">
-                <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-12">
+            <section className="max-w-7xl mx-auto px-6 md:px-12 mt-12 md:mt-32">
+                <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-6 md:mb-12">
                     <div>
                         <h2 className="text-3xl md:text-5xl font-black text-[#112244] tracking-tight mb-2">Local Merchants</h2>
                         <p className="text-gray-400 font-medium">Trusted neighbors, verified community favorites.</p>
                     </div>
                     
-                    <div className="flex gap-2 overflow-x-auto scrollbar-hide bg-gray-50 p-2 rounded-3xl">
+                    <div className="grid grid-cols-5 md:flex gap-1 md:gap-2 bg-gray-50 p-1 md:p-2 rounded-[1.5rem] md:rounded-3xl w-full md:w-auto">
                         {['All', 'Top Rated', 'Fastest', 'Offers', 'Flyers'].map(cat => (
                             <button
                                 key={cat}
                                 onClick={() => setActiveCategory(cat)}
-                                className={`px-8 py-3 rounded-2xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap ${activeCategory === cat
+                                className={`px-1 md:px-8 py-2.5 md:py-3 rounded-xl md:rounded-2xl text-[8px] md:text-xs font-black uppercase tracking-tighter md:tracking-widest transition-all whitespace-nowrap flex items-center justify-center ${activeCategory === cat
                                     ? 'bg-[var(--brand-navy)] text-white shadow-lg shadow-[var(--brand-navy)]/20'
                                     : 'text-gray-400 hover:text-[var(--brand-navy)]'}`}
                             >
@@ -388,7 +382,7 @@ const StoreList: React.FC = () => {
                     </div>
                 </div>
 
-                <div className="grid grid-cols-2 lg:grid-cols-2 gap-3 md:gap-8">
+                <div className="grid grid-cols-2 md:grid-cols-2 gap-2 md:gap-8">
                     {loading ? (
                         [1, 2, 3, 4].map(i => <StoreCardSkeleton key={i} />)
                     ) : filteredStores.length === 0 ? (
@@ -409,7 +403,7 @@ const StoreList: React.FC = () => {
                                         navigate(`/store/${store.id}`);
                                     }
                                 }} 
-                                className="bg-white rounded-[1.5rem] md:rounded-[2.5rem] border border-gray-100 p-3 md:p-4 flex flex-col md:flex-row items-center gap-3 md:gap-6 shadow-sm hover:shadow-2xl transition-all duration-500 cursor-pointer group relative overflow-hidden"
+                                className="bg-white rounded-[1.5rem] md:rounded-[2.5rem] border border-gray-100 p-2 md:p-4 flex flex-col md:flex-row items-center gap-2 md:gap-6 shadow-sm hover:shadow-2xl transition-all duration-500 cursor-pointer group relative overflow-hidden"
                             >
                                 {activeCategory === 'Flyers' && (
                                     <div className="absolute top-4 right-4 z-10">
@@ -427,7 +421,7 @@ const StoreList: React.FC = () => {
                                     )}
                                 </div>
                                 <div className="flex-1 text-center md:text-left min-w-0 w-full">
-                                    <h3 className="font-bold text-sm md:text-2xl text-[var(--brand-navy)] mb-1 md:mb-2 group-hover:text-[var(--brand-primary)] transition-colors truncate">{store.name}</h3>
+                                    <h3 className="font-bold text-xs sm:text-sm md:text-2xl text-[var(--brand-navy)] mb-1 md:mb-2 group-hover:text-[var(--brand-primary)] transition-colors truncate">{store.name}</h3>
                                     
                                     {activeCategory === 'Offers' ? (
                                         <div className="mb-4">
@@ -447,7 +441,7 @@ const StoreList: React.FC = () => {
                                             })()}
                                         </div>
                                     ) : (
-                                        <div className="flex items-center justify-center md:justify-start flex-wrap gap-2 md:gap-3 text-[9px] md:text-xs font-black text-gray-400 mb-3 md:mb-6">
+                                        <div className="flex items-center justify-center md:justify-start flex-wrap gap-1 md:gap-3 text-[8px] sm:text-[9px] md:text-xs font-black text-gray-400 mb-2 md:mb-6">
                                             <span className="text-yellow-500 text-[10px] md:text-sm">★</span> {store.rating || 'New'} 
                                             <span className="w-1 h-1 md:w-1.5 md:h-1.5 bg-gray-200 rounded-full"></span> 
                                             {store.deliveryTime || '25-45'} min
@@ -465,7 +459,7 @@ const StoreList: React.FC = () => {
                                         </div>
                                     )}
                                     
-                                    <span className="bg-[var(--brand-primary-light)] text-[var(--brand-primary)] px-3 md:px-6 py-1 md:py-2 rounded-full text-[8px] md:text-[10px] font-black uppercase tracking-[0.2em]">
+                                    <span className="bg-[var(--brand-primary-light)] text-[var(--brand-primary)] px-2 sm:px-3 md:px-6 py-1 md:py-2 rounded-full text-[7px] sm:text-[8px] md:text-[10px] font-black uppercase tracking-[0.2em] whitespace-nowrap">
                                         {activeCategory === 'Offers' ? 'Featured Offer' : (store.business_category || store.category || 'Local Shop')}
                                     </span>
                                 </div>
@@ -504,9 +498,11 @@ const StoreList: React.FC = () => {
                                 <Link to="/smartcart" className="bg-gradient-to-r from-[var(--brand-primary)] to-[#5856D6] text-white px-8 py-4 rounded-xl font-black text-[10px] md:text-xs tracking-[0.2em] shadow-xl shadow-blue-500/40 hover:scale-105 transition-all uppercase">
                                     Activate Optimizer
                                 </Link>
-                                <Link to="/register" className="bg-white text-[var(--brand-navy)] px-8 py-4 rounded-xl font-black text-[10px] md:text-xs tracking-widest hover:bg-gray-50 transition-all uppercase">
-                                    Join Marketplace
-                                </Link>
+                                {!user && (
+                                    <Link to="/register" className="bg-white text-[var(--brand-navy)] px-8 py-4 rounded-xl font-black text-[10px] md:text-xs tracking-widest hover:bg-gray-50 transition-all uppercase">
+                                        Join Marketplace
+                                    </Link>
+                                )}
                             </div>
                         </div>
 

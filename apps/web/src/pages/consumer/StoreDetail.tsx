@@ -139,7 +139,7 @@ const FlyerTab: React.FC<{ storeId: string; storeName: string; summary: any; vie
                                 </div>
                                 <button
                                     onClick={() => handleAdd(item)}
-                                    className="px-4 py-2 bg-[#007AFF] text-white text-xs font-black rounded tracking-widest hover:bg-[#112244] active:scale-95 transition-all shadow-md"
+                                    className="px-4 py-3 bg-[#007AFF] text-white text-xs font-black rounded tracking-widest hover:bg-[#112244] active:scale-95 transition-all shadow-md"
                                 >
                                     + ADD
                                 </button>
@@ -209,7 +209,7 @@ const FlyerTab: React.FC<{ storeId: string; storeName: string; summary: any; vie
 
                                             <button
                                                 onClick={() => handleAdd(item)}
-                                                className="w-full mt-2 py-2 md:py-3 bg-[#007AFF] text-white text-[10px] md:text-xs font-black rounded tracking-widest hover:bg-[#112244] transition-colors shadow-md active:translate-y-0.5"
+                                                className="w-full mt-2 py-3 bg-[#007AFF] text-white text-[11px] md:text-xs font-black rounded tracking-widest hover:bg-[#112244] transition-colors shadow-md active:translate-y-0.5"
                                             >
                                                 + Add To Cart
                                             </button>
@@ -354,7 +354,7 @@ const OffersTab: React.FC<{ storeId: string, storeName: string; viewMode: 'grid'
                                                 {offer.originalPrice && <span className="text-[10px] text-gray-500 line-through">Reg ${offer.originalPrice.toFixed(2)}</span>}
                                             </div>
                                         </div>
-                                        <button onClick={() => handleQuickAdd(offer)} className="px-4 py-2 bg-orange-600 text-white text-xs font-black rounded tracking-widest shadow-md">
+                                        <button onClick={() => handleQuickAdd(offer)} className="px-4 py-3 bg-orange-600 text-white text-xs font-black rounded tracking-widest shadow-md">
                                             + ADD
                                         </button>
                                     </div>
@@ -399,7 +399,7 @@ const OffersTab: React.FC<{ storeId: string, storeName: string; viewMode: 'grid'
                                                 <p className={`${isFeatured ? 'text-sm md:text-base' : 'text-xs'} font-black text-gray-800 leading-snug grow`}>
                                                     {offer.productName || offer.name}
                                                 </p>
-                                                <button onClick={() => handleQuickAdd(offer)} className="w-full mt-2 py-2 bg-orange-600 text-white text-[10px] font-black rounded tracking-widest hover:bg-black transition-all shadow-md">
+                                                <button onClick={() => handleQuickAdd(offer)} className="w-full mt-2 py-3 bg-orange-600 text-white text-[11px] md:text-xs font-black rounded tracking-widest hover:bg-black transition-all shadow-md">
                                                     + QUICK ADD
                                                 </button>
                                             </div>
@@ -443,7 +443,7 @@ const OffersTab: React.FC<{ storeId: string, storeName: string; viewMode: 'grid'
                                                 {item.originalPrice && <span className="text-[10px] text-gray-500 line-through">Reg ${item.originalPrice.toFixed(2)}</span>}
                                             </div>
                                         </div>
-                                        <button onClick={() => handleQuickAdd(item)} className="px-4 py-2 bg-[#007AFF] text-white text-xs font-black rounded tracking-widest shadow-md">
+                                        <button onClick={() => handleQuickAdd(item)} className="px-4 py-3 bg-[#007AFF] text-white text-xs font-black rounded tracking-widest shadow-md">
                                             + ADD
                                         </button>
                                     </div>
@@ -484,7 +484,7 @@ const OffersTab: React.FC<{ storeId: string, storeName: string; viewMode: 'grid'
                                                 <p className={`${isFeatured ? 'text-sm md:text-lg' : 'text-xs md:text-sm'} font-black text-gray-800 leading-snug grow`}>
                                                     {item.productName || item.name}
                                                 </p>
-                                                <button onClick={() => handleQuickAdd(item)} className="w-full mt-2 py-2 md:py-3 bg-[#007AFF] text-white text-[10px] md:text-xs font-black rounded tracking-widest hover:bg-[#112244] transition-all shadow-md">
+                                                <button onClick={() => handleQuickAdd(item)} className="w-full mt-2 py-3 bg-[#007AFF] text-white text-[11px] md:text-xs font-black rounded tracking-widest hover:bg-[#112244] transition-all shadow-md">
                                                     + ADD TO CART
                                                 </button>
                                             </div>
@@ -655,36 +655,36 @@ const StoreDetail: React.FC = () => {
             <div className="max-w-7xl mx-auto px-4 -mt-10 relative z-30">
                 <div className="bg-white rounded-3xl shadow-2xl border border-gray-100 p-1 md:p-3 flex flex-nowrap items-stretch gap-1">
                     <div className="flex-1 min-w-0 bg-gray-50/50 p-2 md:p-4 rounded-xl border border-gray-50 flex flex-col items-center justify-center text-center group hover:bg-[var(--brand-navy)] hover:shadow-lg transition-all">
-                        <span className="text-[7px] md:text-[9px] font-black text-gray-600 tracking-widest mb-0.5 md:mb-1 group-hover:text-white/70 transition-colors uppercase">Store Rating</span>
+                        <span className="text-[10px] md:text-xs font-black text-gray-600 tracking-widest mb-0.5 md:mb-1 group-hover:text-white/70 transition-colors uppercase">Store Rating</span>
                         <div className="flex items-center gap-0.5 md:gap-2">
-                            <span className="text-xs md:text-xl font-black text-[var(--brand-navy)] group-hover:text-white transition-colors">
+                            <span className="text-sm md:text-xl font-black text-[var(--brand-navy)] group-hover:text-white transition-colors">
                                 {reviews.length > 0 
                                     ? (reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length).toFixed(1) 
                                     : store.rating}
                             </span>
-                            <span className="text-yellow-400 text-[10px] md:text-lg group-hover:scale-125 transition-transform">★</span>
+                            <span className="text-yellow-400 text-xs md:text-lg group-hover:scale-125 transition-transform">★</span>
                         </div>
                     </div>
                     <div className="w-px bg-gray-100 hidden md:block my-2"></div>
                     <div className="flex-1 min-w-0 bg-gray-50/50 p-2 md:p-4 rounded-xl border border-gray-50 flex flex-col items-center justify-center text-center group hover:bg-black hover:shadow-lg transition-all">
-                        <span className="text-[7px] md:text-[9px] font-black text-gray-600 tracking-widest mb-0.5 md:mb-1 group-hover:text-white/70 transition-colors truncate w-full px-1">Delivery</span>
+                        <span className="text-[10px] md:text-xs font-black text-gray-600 tracking-widest mb-0.5 md:mb-1 group-hover:text-white/70 transition-colors truncate w-full px-1">Delivery</span>
                         <div className="flex items-center gap-0.5 md:gap-2">
-                            <span className="text-xs md:text-xl font-black text-gray-900 group-hover:text-white transition-colors line-clamp-1 truncate px-1 max-w-full">{store.deliveryTime?.replace('MIN', '') || '25-45'}</span>
-                            <span className="text-orange-500 text-[10px] md:text-lg group-hover:animate-pulse">⚡</span>
+                            <span className="text-sm md:text-xl font-black text-gray-900 group-hover:text-white transition-colors line-clamp-1 truncate px-1 max-w-full">{store.deliveryTime?.replace('MIN', '') || '25-45'}</span>
+                            <span className="text-orange-500 text-xs md:text-lg group-hover:animate-pulse">⚡</span>
                         </div>
                     </div>
                     <div className="w-px bg-gray-100 hidden md:block my-2"></div>
                     <div className="flex-1 min-w-0 bg-gray-50/50 p-2 md:p-4 rounded-xl border border-gray-50 flex flex-col items-center justify-center text-center group hover:bg-black hover:shadow-lg transition-all">
-                        <span className="text-[7px] md:text-[9px] font-black text-gray-600 tracking-widest mb-0.5 md:mb-1 group-hover:text-white/70 transition-colors">Fee</span>
+                        <span className="text-[10px] md:text-xs font-black text-gray-600 tracking-widest mb-0.5 md:mb-1 group-hover:text-white/70 transition-colors">Fee</span>
                         <div className="flex items-center gap-0.5 md:gap-2">
-                            <span className="text-xs md:text-xl font-black text-gray-900 group-hover:text-white transition-colors">{store.deliveryFee || 'FREE'}</span>
-                            <span className="text-green-500 text-[10px] md:text-lg group-hover:rotate-12 transition-transform">💰</span>
+                            <span className="text-sm md:text-xl font-black text-gray-900 group-hover:text-white transition-colors">{store.deliveryFee || 'FREE'}</span>
+                            <span className="text-green-500 text-xs md:text-lg group-hover:rotate-12 transition-transform">💰</span>
                         </div>
                     </div>
                     <div className="w-px bg-gray-100 hidden md:block my-2"></div>
                     <div className="flex-1 min-w-0 bg-[#112244] p-2 md:p-4 rounded-xl flex flex-col items-center justify-center text-center shadow-lg group hover:bg-black transition-all cursor-help" title="Quality Guaranteed by Spendigo">
-                        <span className="text-[7px] md:text-[9px] font-black text-white/70 tracking-widest mb-0.5 md:mb-1 leading-tight">Certified By</span>
-                        <span className="text-[10px] md:text-lg font-black text-white italic tracking-tighter truncate max-w-[90%]">Spendigo🍁</span>
+                        <span className="text-[10px] md:text-xs font-black text-white/70 tracking-widest mb-0.5 md:mb-1 leading-tight">Certified By</span>
+                        <span className="text-xs md:text-lg font-black text-white italic tracking-tighter truncate max-w-[90%]">Spendigo🍁</span>
                     </div>
                 </div>
             </div>
