@@ -164,10 +164,14 @@ const ConsumerLayout: React.FC = () => {
 
                 <NavLink to="/smartcart" className={({ isActive }) => `flex flex-col items-center justify-center flex-1 transition-colors duration-150 gap-1 relative ${isActive ? 'text-blue-600' : 'text-gray-400 hover:text-gray-900'}`}>
                     <div className="relative">
-                        <svg className="w-6 h-6" fill={location.pathname === '/smartcart' ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                            <path d="M12 2l7 4v8l-7 4-7-4V6l7-4z" />
+                            <circle cx="12" cy="10" r="2.5" fill="currentColor" />
+                            <path d="M12 14v2M12 6V4" />
+                            <circle cx="8" cy="21" r="1.5" />
+                            <circle cx="16" cy="21" r="1.5" />
                         </svg>
-                        <span className="absolute -top-1 -right-1 text-[10px] animate-pulse">✨</span>
+                        <span className="absolute -top-1.5 -right-1.5 text-[10px] animate-pulse">✨</span>
                     </div>
                     <span className="text-[10px] font-semibold tracking-tight">SmartCart</span>
                     {itemCount > 0 && (

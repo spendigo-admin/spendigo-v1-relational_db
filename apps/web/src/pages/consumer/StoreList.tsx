@@ -381,7 +381,7 @@ const StoreList: React.FC = () => {
                             <button
                                 key={cat}
                                 onClick={() => setActiveCategory(cat)}
-                                className={`px-1 md:px-8 py-2.5 md:py-3 rounded-xl md:rounded-2xl text-[8px] md:text-xs font-black uppercase tracking-tighter md:tracking-widest transition-all whitespace-nowrap flex items-center justify-center ${activeCategory === cat
+                                className={`px-1 md:px-8 py-2.5 md:py-3 rounded-xl md:rounded-2xl text-[10px] md:text-xs font-black uppercase tracking-tighter md:tracking-widest transition-all whitespace-nowrap flex items-center justify-center ${activeCategory === cat
                                     ? 'bg-[var(--brand-navy)] text-white shadow-lg shadow-[var(--brand-navy)]/20'
                                     : 'text-gray-400 hover:text-[var(--brand-navy)]'}`}
                             >
