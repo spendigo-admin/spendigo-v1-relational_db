@@ -20,13 +20,13 @@ const StoreList: React.FC = () => {
     const navigate = useNavigate();
     const { allStores, loading } = useMarketplace();
     const { user } = useAuth();
-    const { 
+    const {
         userCoords,
         calculateDistance,
     } = useLocation();
-    
+
     const [activeCategory, setActiveCategory] = useState('All');
-    
+
     // BACKEND AD CAROUSEL STATE
     const [ads, setAds] = useState<any[]>([]);
     const [currentAdIndex, setCurrentAdIndex] = useState(0);
@@ -58,7 +58,7 @@ const StoreList: React.FC = () => {
                         return true;
                     })
                     .sort((a: any, b: any) => (b.priority || 0) - (a.priority || 0));
-                
+
                 setAds(validAds);
             } catch (err) {
                 console.error("Ad fetch failed:", err);
@@ -164,15 +164,15 @@ const StoreList: React.FC = () => {
                             <p className="text-[var(--text-muted)] text-xs md:text-sm font-medium max-w-xl mx-auto lg:mx-0 mb-6 leading-relaxed">
                                 Spendigo connects you with the heartbeat of your neighborhood. Find real-time inventory, exclusive local deals, and optimize your spending with AI-powered insights.
                             </p>
-                            
+
 
                         </div>
 
                         {/* RIGHT SIDE PICTURE / AD CAROUSEL */}
                         <div className="hidden lg:block flex-1 relative group">
                             <div className="absolute -inset-10 bg-blue-100 rounded-[5rem] blur-3xl opacity-20 group-hover:opacity-30 transition-opacity"></div>
-                            <div 
-                                className="relative aspect-[4/3] rounded-[3rem] overflow-hidden shadow-2xl border-[12px] border-white/50 bg-gray-50 cursor-pointer" 
+                            <div
+                                className="relative aspect-[4/3] rounded-[3rem] overflow-hidden shadow-2xl border-[12px] border-white/50 bg-gray-50 cursor-pointer"
                                 onClick={() => ads.length > 0 && handleAdInteraction(ads[currentAdIndex])}
                             >
                                 {ads.length > 0 ? (
@@ -181,23 +181,23 @@ const StoreList: React.FC = () => {
                                             const isActive = idx === currentAdIndex;
                                             const isVid = isVideo(ad.imageUrl);
                                             return (
-                                                <div 
-                                                    key={ad.id} 
+                                                <div
+                                                    key={ad.id}
                                                     className={`absolute inset-0 transition-opacity duration-1000 ${isActive ? 'opacity-100 z-10' : 'opacity-0 z-0'}`}
                                                 >
                                                     {isVid ? (
-                                                        <video 
-                                                            src={ad.imageUrl} 
-                                                            className="w-full h-full object-cover" 
-                                                            autoPlay 
-                                                            muted 
-                                                            loop 
+                                                        <video
+                                                            src={ad.imageUrl}
+                                                            className="w-full h-full object-cover"
+                                                            autoPlay
+                                                            muted
+                                                            loop
                                                             playsInline
                                                         />
                                                     ) : (
-                                                        <img 
-                                                            src={ad.imageUrl} 
-                                                            alt={ad.title} 
+                                                        <img
+                                                            src={ad.imageUrl}
+                                                            alt={ad.title}
                                                             className="w-full h-full object-cover"
                                                         />
                                                     )}
@@ -214,9 +214,9 @@ const StoreList: React.FC = () => {
                                         )}
                                     </div>
                                 ) : (
-                                    <img 
-                                        src="/grocery_shelf_desktop_hero_1778380928026.png" 
-                                        alt="Spendigo Marketplace" 
+                                    <img
+                                        src="/grocery_shelf_desktop_hero_1778380928026.png"
+                                        alt="Spendigo Marketplace"
                                         className="w-full h-full object-cover"
                                     />
                                 )}
@@ -227,62 +227,70 @@ const StoreList: React.FC = () => {
             </section>
 
             {/* MARKET INTELLIGENCE DASHBOARD */}
-            <section className="max-w-7xl mx-auto px-6 md:px-12 -mt-12 md:-mt-16 relative z-20">
-                <h2 className="text-xl md:text-4xl font-black text-[#112244] mb-6 tracking-tighter">Market Intelligence</h2>
-                <div className="bg-white md:bg-transparent rounded-3xl p-1.5 md:p-0 shadow-2xl shadow-gray-200/50 md:shadow-none">
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6">
+            <section className="max-w-7xl mx-auto px-6 md:px-12 -mt-6 md:-mt-10 relative z-20">
+                <h2 className="text-2xl md:text-5xl font-black text-[#112244] mb-6 tracking-tighter">Market Intelligence</h2>
+                <div className="md:bg-transparent rounded-3xl md:p-0">
+                    <div className="grid grid-cols-4 gap-1.5 md:gap-6">
                         {[
-                            { 
-                                label: 'Local Stores', 
-                                value: stats.totalStores || '0', 
-                                badge: '• Active', 
-                                badgeStyles: 'bg-emerald-100/50 text-emerald-700',
-                                cardBg: 'bg-[#F0F7FF]',
-                                iconStyles: 'bg-white text-blue-600 shadow-sm',
-                                icon: <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+                            {
+                                label: 'Stores',
+                                value: stats.totalStores || '0',
+                                badge: '• Active',
+                                badgeStyles: 'bg-emerald-600 text-white',
+                                cardBg: 'bg-white',
+                                textColor: 'text-[#112244]',
+                                labelColor: 'text-[#007AFF]',
+                                iconStyles: 'bg-emerald-50 text-emerald-600',
+                                icon: <svg className="w-3 h-3 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
                             },
-                            { 
-                                label: 'New Flyers', 
-                                value: stats.totalFlyers || '0', 
-                                badge: 'Updated Today', 
-                                badgeStyles: 'bg-orange-100/50 text-orange-700',
-                                cardBg: 'bg-[#FFF9F2]',
-                                iconStyles: 'bg-white text-orange-600 shadow-sm',
-                                icon: <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
+                            {
+                                label: 'Flyers',
+                                value: stats.totalFlyers || '0',
+                                badge: 'Live',
+                                badgeStyles: 'bg-orange-500 text-white',
+                                cardBg: 'bg-white',
+                                textColor: 'text-[#112244]',
+                                labelColor: 'text-[#007AFF]',
+                                iconStyles: 'bg-orange-50 text-orange-600',
+                                icon: <svg className="w-3 h-3 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
                             },
-                            { 
-                                label: 'Flash Deals', 
-                                value: stats.totalDeals.toLocaleString() || '0', 
-                                badge: 'Live', 
-                                badgeStyles: 'bg-red-100/50 text-red-700',
-                                cardBg: 'bg-[#FFF5F5]',
-                                iconStyles: 'bg-white text-red-600 shadow-sm',
-                                icon: <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.99 7.99 0 0120 13a7.98 7.98 0 01-2.343 5.657z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9.879 16.121A3 3 0 1012.015 11L11 14l2.828.828" /></svg>
+                            {
+                                label: 'Deals',
+                                value: stats.totalDeals.toLocaleString() || '0',
+                                badge: 'Hot',
+                                badgeStyles: 'bg-red-500 text-white',
+                                cardBg: 'bg-white',
+                                textColor: 'text-[#112244]',
+                                labelColor: 'text-[#007AFF]',
+                                iconStyles: 'bg-red-50 text-red-600',
+                                icon: <svg className="w-3 h-3 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.99 7.99 0 0120 13a7.98 7.98 0 01-2.343 5.657z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9.879 16.121A3 3 0 1012.015 11L11 14l2.828.828" /></svg>
                             },
-                            { 
-                                label: 'Tracked Items', 
-                                value: stats.totalProducts > 1000 ? `${(stats.totalProducts / 1000).toFixed(1)}k` : stats.totalProducts || '0', 
-                                badge: 'Market Safe', 
+                            {
+                                label: 'Items',
+                                value: stats.totalProducts > 1000 ? `${(stats.totalProducts / 1000).toFixed(1)}k` : stats.totalProducts || '0',
+                                badge: 'Safe',
                                 badgeStyles: 'bg-gray-100 text-gray-600',
-                                cardBg: 'bg-gray-50',
-                                iconStyles: 'bg-white text-gray-600 shadow-sm',
-                                icon: <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
+                                cardBg: 'bg-white',
+                                textColor: 'text-[#112244]',
+                                labelColor: 'text-[#007AFF]',
+                                iconStyles: 'bg-gray-50 text-gray-500',
+                                icon: <svg className="w-3 h-3 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
                             }
                         ].map((stat, i) => (
-                            <div key={i} className={`${stat.cardBg} rounded-[2.5rem] p-5 md:p-8 flex flex-col border border-white/50 shadow-sm hover:shadow-2xl transition-all duration-500 hover:-translate-y-1`}>
-                                <div className="flex items-start justify-between mb-6 md:mb-10">
-                                    <div className={`w-10 h-10 md:w-14 md:h-14 rounded-2xl flex items-center justify-center ${stat.iconStyles}`}>
+                            <div key={i} className={`${stat.cardBg} rounded-xl md:rounded-[2.5rem] p-2 md:p-8 flex flex-col border border-gray-100 shadow-sm hover:shadow-2xl transition-all duration-500 hover:-translate-y-1`}>
+                                <div className="flex items-start justify-between mb-2 md:mb-10">
+                                    <div className={`w-6 h-6 md:w-14 md:h-14 rounded-lg md:rounded-2xl flex items-center justify-center ${stat.iconStyles}`}>
                                         {stat.icon}
                                     </div>
                                     {stat.badge && (
-                                        <span className={`px-3 py-1 rounded-full text-[8px] md:text-[10px] font-black uppercase tracking-widest ${stat.badgeStyles}`}>
+                                        <span className={`px-1 py-0.5 md:px-3 md:py-1 rounded-full text-[5px] md:text-[10px] font-black uppercase tracking-widest ${stat.badgeStyles} truncate`}>
                                             {stat.badge}
                                         </span>
                                     )}
                                 </div>
                                 <div>
-                                    <p className="text-2xl md:text-5xl font-black text-[#112244] leading-none tracking-tighter mb-2">{stat.value}</p>
-                                    <p className="text-[10px] md:text-sm font-bold text-gray-400 uppercase tracking-widest">{stat.label}</p>
+                                    <p className={`text-sm md:text-5xl font-black ${stat.textColor} leading-none tracking-tighter mb-0.5 md:mb-2`}>{stat.value}</p>
+                                    <p className={`text-[6px] md:text-sm font-bold ${stat.labelColor} uppercase tracking-widest truncate`}>{stat.label}</p>
                                 </div>
                             </div>
                         ))}
@@ -295,13 +303,13 @@ const StoreList: React.FC = () => {
                 <section className="max-w-7xl mx-auto px-6 md:px-12 mt-4 md:mt-16">
                     <div className="flex items-center justify-between mb-6 md:mb-10">
                         <div className="flex items-center gap-4">
-                            <div className="w-8 h-8 md:w-14 md:h-14 bg-orange-500 rounded-xl md:rounded-2xl flex items-center justify-center shadow-lg shadow-orange-500/20">
-                                <svg className="w-5 h-5 md:w-8 md:h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
+                            <div className="w-7 h-7 md:w-10 md:h-10 bg-red-600 rounded-lg md:rounded-xl flex items-center justify-center shadow-lg shadow-red-600/20">
+                                <svg className="w-4 h-4 md:w-6 md:h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
                                     <path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" />
                                 </svg>
                             </div>
-                            <h2 className="text-xl md:text-4xl font-black text-[#112244] tracking-tighter">Flash</h2>
-                            <span className="bg-orange-500 text-white text-[9px] md:text-xs font-black px-4 py-1.5 rounded-full uppercase tracking-[0.2em] animate-pulse">Ending Soon</span>
+                            <h2 className="text-2xl md:text-5xl font-black text-[#112244] tracking-tighter">Flash</h2>
+                            <span className="bg-red-600 text-white text-[9px] md:text-xs font-black px-4 py-1.5 rounded-full uppercase tracking-[0.2em] animate-pulse">Ending Soon</span>
                         </div>
                         <Link to="/deals" className="text-[var(--brand-primary)] text-xs md:text-sm font-black tracking-[0.2em] uppercase hover:translate-x-2 transition-transform inline-flex items-center gap-2">
                             See All <span className="text-lg">›</span>
@@ -341,10 +349,10 @@ const StoreList: React.FC = () => {
             <section className="max-w-7xl mx-auto px-6 md:px-12 mt-8 md:mt-20">
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-6 md:mb-12">
                     <div>
-                        <h2 className="text-3xl md:text-5xl font-black text-[#112244] tracking-tight mb-2">Local Merchants</h2>
+                        <h2 className="text-2xl md:text-5xl font-black text-[#112244] tracking-tighter mb-2">Local Merchants</h2>
                         <p className="text-gray-400 font-medium">Trusted neighbors, verified community favorites.</p>
                     </div>
-                    
+
                     <div className="grid grid-cols-5 md:flex gap-1 md:gap-2 bg-gray-50 p-1 md:p-2 rounded-[1.5rem] md:rounded-3xl w-full md:w-auto">
                         {['All', 'Top Rated', 'Fastest', 'Offers', 'Flyers'].map(cat => (
                             <button
@@ -370,8 +378,8 @@ const StoreList: React.FC = () => {
                         </div>
                     ) : (
                         filteredStores.map(store => (
-                            <div 
-                                key={store.id} 
+                            <div
+                                key={store.id}
                                 onClick={() => {
                                     if (activeCategory === 'Flyers') {
                                         navigate(`/store/${store.id}`, { state: { initialTab: 'flyer' } });
@@ -380,7 +388,7 @@ const StoreList: React.FC = () => {
                                     } else {
                                         navigate(`/store/${store.id}`);
                                     }
-                                }} 
+                                }}
                                 className="bg-white rounded-[1.5rem] md:rounded-[2.5rem] border border-gray-100 p-2 md:p-4 flex flex-col md:flex-row items-center gap-2 md:gap-6 shadow-sm hover:shadow-2xl transition-all duration-500 cursor-pointer group relative overflow-hidden"
                             >
                                 {activeCategory === 'Flyers' && (
@@ -389,10 +397,10 @@ const StoreList: React.FC = () => {
                                     </div>
                                 )}
                                 <div className="w-full md:w-32 lg:w-40 aspect-square md:aspect-auto md:h-32 lg:h-40 rounded-xl md:rounded-[2rem] bg-gray-50 overflow-hidden shrink-0 relative">
-                                    <img 
-                                        src={activeCategory === 'Flyers' && store.flyer?.image ? store.flyer.image : (activeCategory === 'Offers' && [...(store.oneDayOffers || []), ...(store.saleItems || [])][0]?.productImage) || store.image} 
-                                        alt={store.name} 
-                                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" 
+                                    <img
+                                        src={activeCategory === 'Flyers' && store.flyer?.image ? store.flyer.image : (activeCategory === 'Offers' && [...(store.oneDayOffers || []), ...(store.saleItems || [])][0]?.productImage) || store.image}
+                                        alt={store.name}
+                                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                                     />
                                     {(activeCategory === 'Flyers' || activeCategory === 'Offers') && (
                                         <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors" />
@@ -400,7 +408,7 @@ const StoreList: React.FC = () => {
                                 </div>
                                 <div className="flex-1 text-center md:text-left min-w-0 w-full">
                                     <h3 className="font-bold text-xs sm:text-sm md:text-2xl text-[var(--brand-navy)] mb-1 md:mb-2 group-hover:text-[var(--brand-primary)] transition-colors truncate">{store.name}</h3>
-                                    
+
                                     {activeCategory === 'Offers' ? (
                                         <div className="mb-4">
                                             {(() => {
@@ -420,9 +428,9 @@ const StoreList: React.FC = () => {
                                         </div>
                                     ) : (
                                         <div className="flex items-center justify-center md:justify-start flex-wrap gap-1 md:gap-3 text-[8px] sm:text-[9px] md:text-xs font-black text-gray-400 mb-2 md:mb-6">
-                                            <span className="text-yellow-500 text-[10px] md:text-sm">★</span> {store.rating || 'New'} 
-                                            <span className="w-1 h-1 md:w-1.5 md:h-1.5 bg-gray-200 rounded-full"></span> 
-                                            {store.deliveryTime || '25-45'} min
+                                            <span className="text-yellow-500 text-[10px] md:text-sm">★</span> {store.rating || 'New'}
+                                            <span className="w-1 h-1 md:w-1.5 md:h-1.5 bg-gray-200 rounded-full"></span>
+                                            {(store.deliveryTime || '25-45').toString().replace(' min', '')} min
                                             {userCoords && store.coordinates && (
                                                 <>
                                                     <span className="w-1 h-1 md:w-1.5 md:h-1.5 bg-gray-200 rounded-full"></span>
@@ -436,8 +444,8 @@ const StoreList: React.FC = () => {
                                             )}
                                         </div>
                                     )}
-                                    
-                                    <span className="bg-[var(--brand-primary-light)] text-[var(--brand-primary)] px-2 sm:px-3 md:px-6 py-1 md:py-2 rounded-full text-[7px] sm:text-[8px] md:text-[10px] font-black uppercase tracking-[0.2em] whitespace-nowrap">
+
+                                    <span className="bg-[#112244] text-white px-2 sm:px-3 md:px-6 py-1 md:py-2 rounded-full text-[7px] sm:text-[8px] md:text-[10px] font-black uppercase tracking-[0.2em] whitespace-nowrap">
                                         {activeCategory === 'Offers' ? 'Featured Offer' : (store.business_category || store.category || 'Local Shop')}
                                     </span>
                                 </div>
@@ -460,7 +468,7 @@ const StoreList: React.FC = () => {
                     <div className="absolute top-0 right-0 w-64 h-64 bg-white/20 rounded-full -mr-32 -mt-32 blur-[80px]"></div>
                     <div className="relative z-10 flex flex-col lg:flex-row items-center gap-10">
                         <div className="flex-1 text-center lg:text-left">
-                             <div className="flex items-center justify-center lg:justify-start gap-3 mb-6">
+                            <div className="flex items-center justify-center lg:justify-start gap-3 mb-6">
                                 <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-xl">
                                     <svg className="w-6 h-6 text-[var(--brand-primary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M13 10V3L4 14h7v7l9-11h-7z" />
