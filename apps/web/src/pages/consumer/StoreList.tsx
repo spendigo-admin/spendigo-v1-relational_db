@@ -26,6 +26,25 @@ const StoreList: React.FC = () => {
     } = useLocation();
 
     const [activeCategory, setActiveCategory] = useState('All');
+    const carouselRef = useRef<HTMLDivElement>(null);
+    const [activeStatIndex, setActiveStatIndex] = useState(0);
+
+    // Auto-swipe for Market Intelligence Carousel
+    useEffect(() => {
+        const interval = setInterval(() => {
+            if (window.innerWidth < 768 && carouselRef.current) {
+                const nextIndex = (activeStatIndex + 1) % 4;
+                const scrollAmount = nextIndex * (window.innerWidth - 48 + 16); // width + gap
+                carouselRef.current.scrollTo({
+                    left: scrollAmount,
+                    behavior: 'smooth'
+                });
+                setActiveStatIndex(nextIndex);
+            }
+        }, 5000);
+
+        return () => clearInterval(interval);
+    }, [activeStatIndex]);
 
     // BACKEND AD CAROUSEL STATE
     const [ads, setAds] = useState<any[]>([]);
@@ -230,67 +249,71 @@ const StoreList: React.FC = () => {
             <section className="max-w-7xl mx-auto px-6 md:px-12 -mt-6 md:-mt-10 relative z-20">
                 <h2 className="text-2xl md:text-5xl font-black text-[#112244] mb-6 tracking-tighter">Market Intelligence</h2>
                 <div className="md:bg-transparent rounded-3xl md:p-0">
-                    <div className="grid grid-cols-4 gap-1.5 md:gap-6">
+                    <div 
+                        ref={carouselRef}
+                        id="market-stats-carousel"
+                        className="flex md:grid md:grid-cols-4 gap-4 md:gap-6 overflow-x-auto md:overflow-visible pb-6 md:pb-0 scrollbar-hide snap-x snap-mandatory -mx-6 px-6 md:mx-0 md:px-0"
+                    >
                         {[
-                            {
-                                label: 'Stores',
-                                value: stats.totalStores || '0',
-                                badge: '• Active',
-                                badgeStyles: 'bg-emerald-600 text-white',
-                                cardBg: 'bg-white',
+                            { 
+                                label: 'Local Stores', 
+                                value: stats.totalStores || '0', 
+                                badge: 'Active', 
+                                badgeStyles: 'bg-emerald-700 text-white',
+                                cardBg: 'bg-[#F0F7FF]',
                                 textColor: 'text-[#112244]',
                                 labelColor: 'text-[#007AFF]',
-                                iconStyles: 'bg-emerald-50 text-emerald-600',
-                                icon: <svg className="w-3 h-3 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+                                iconStyles: 'bg-white text-blue-600 shadow-sm',
+                                icon: <svg className="w-6 h-6 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
                             },
-                            {
-                                label: 'Flyers',
-                                value: stats.totalFlyers || '0',
-                                badge: 'Live',
-                                badgeStyles: 'bg-orange-500 text-white',
-                                cardBg: 'bg-white',
+                            { 
+                                label: 'New Flyers', 
+                                value: stats.totalFlyers || '0', 
+                                badge: 'Live', 
+                                badgeStyles: 'bg-orange-600 text-white',
+                                cardBg: 'bg-[#FFF9F2]',
                                 textColor: 'text-[#112244]',
                                 labelColor: 'text-[#007AFF]',
-                                iconStyles: 'bg-orange-50 text-orange-600',
-                                icon: <svg className="w-3 h-3 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
+                                iconStyles: 'bg-white text-orange-600 shadow-sm',
+                                icon: <svg className="w-6 h-6 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
                             },
-                            {
-                                label: 'Deals',
-                                value: stats.totalDeals.toLocaleString() || '0',
-                                badge: 'Hot',
-                                badgeStyles: 'bg-red-500 text-white',
-                                cardBg: 'bg-white',
+                            { 
+                                label: 'Flash Deals', 
+                                value: stats.totalDeals.toLocaleString() || '0', 
+                                badge: 'Hot', 
+                                badgeStyles: 'bg-red-600 text-white',
+                                cardBg: 'bg-[#FFF5F5]',
                                 textColor: 'text-[#112244]',
                                 labelColor: 'text-[#007AFF]',
-                                iconStyles: 'bg-red-50 text-red-600',
-                                icon: <svg className="w-3 h-3 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.99 7.99 0 0120 13a7.98 7.98 0 01-2.343 5.657z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9.879 16.121A3 3 0 1012.015 11L11 14l2.828.828" /></svg>
+                                iconStyles: 'bg-white text-red-600 shadow-sm',
+                                icon: <svg className="w-6 h-6 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.99 7.99 0 0120 13a7.98 7.98 0 01-2.343 5.657z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9.879 16.121A3 3 0 1012.015 11L11 14l2.828.828" /></svg>
                             },
-                            {
-                                label: 'Items',
-                                value: stats.totalProducts > 1000 ? `${(stats.totalProducts / 1000).toFixed(1)}k` : stats.totalProducts || '0',
-                                badge: 'Safe',
-                                badgeStyles: 'bg-gray-100 text-gray-600',
-                                cardBg: 'bg-white',
+                            { 
+                                label: 'Tracked Items', 
+                                value: stats.totalProducts > 1000 ? `${(stats.totalProducts / 1000).toFixed(1)}k` : stats.totalProducts || '0', 
+                                badge: 'Market Safe', 
+                                badgeStyles: 'bg-gray-600 text-white',
+                                cardBg: 'bg-gray-50',
                                 textColor: 'text-[#112244]',
                                 labelColor: 'text-[#007AFF]',
-                                iconStyles: 'bg-gray-50 text-gray-500',
-                                icon: <svg className="w-3 h-3 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
+                                iconStyles: 'bg-white text-gray-500 shadow-sm',
+                                icon: <svg className="w-6 h-6 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
                             }
                         ].map((stat, i) => (
-                            <div key={i} className={`${stat.cardBg} rounded-xl md:rounded-[2.5rem] p-2 md:p-8 flex flex-col border border-gray-100 shadow-sm hover:shadow-2xl transition-all duration-500 hover:-translate-y-1`}>
-                                <div className="flex items-start justify-between mb-2 md:mb-10">
-                                    <div className={`w-6 h-6 md:w-14 md:h-14 rounded-lg md:rounded-2xl flex items-center justify-center ${stat.iconStyles}`}>
+                            <div key={i} className={`${stat.cardBg} flex-shrink-0 w-[calc(100vw-48px)] md:w-auto snap-start rounded-[2.5rem] p-8 md:p-8 flex flex-col border border-white shadow-sm hover:shadow-2xl transition-all duration-500 hover:-translate-y-1`}>
+                                <div className="flex items-start justify-between mb-10">
+                                    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${stat.iconStyles}`}>
                                         {stat.icon}
                                     </div>
                                     {stat.badge && (
-                                        <span className={`px-1 py-0.5 md:px-3 md:py-1 rounded-full text-[5px] md:text-[10px] font-black uppercase tracking-widest ${stat.badgeStyles} truncate`}>
+                                        <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${stat.badgeStyles}`}>
                                             {stat.badge}
                                         </span>
                                     )}
                                 </div>
                                 <div>
-                                    <p className={`text-sm md:text-5xl font-black ${stat.textColor} leading-none tracking-tighter mb-0.5 md:mb-2`}>{stat.value}</p>
-                                    <p className={`text-[6px] md:text-sm font-bold ${stat.labelColor} uppercase tracking-widest truncate`}>{stat.label}</p>
+                                    <p className={`text-5xl font-black ${stat.textColor} leading-none tracking-tighter mb-2`}>{stat.value}</p>
+                                    <p className={`text-sm font-bold ${stat.labelColor} uppercase tracking-widest`}>{stat.label}</p>
                                 </div>
                             </div>
                         ))}
@@ -330,11 +353,11 @@ const StoreList: React.FC = () => {
                                         )}
                                         <img src={item.productImage || item.image} alt={item.name} className="w-full h-full object-contain group-hover:scale-110 transition-transform" />
                                     </div>
-                                    <div className="p-1.5 md:p-6">
-                                        <p className="text-[7px] font-black text-[var(--brand-primary)] uppercase tracking-widest mb-0.5">{item.storeName}</p>
-                                        <h3 className="font-bold text-[10px] md:text-base text-[var(--brand-navy)] mb-1 md:mb-3 truncate group-hover:text-[var(--brand-primary)] transition-colors">{item.productName || item.name}</h3>
+                                    <div className="p-2 md:p-6">
+                                        <p className="text-[9px] font-black text-[var(--brand-primary)] uppercase tracking-widest mb-0.5">{item.storeName}</p>
+                                        <h3 className="font-bold text-xs md:text-base text-[var(--brand-navy)] mb-1 md:mb-3 truncate group-hover:text-[var(--brand-primary)] transition-colors">{item.productName || item.name}</h3>
                                         <div className="flex items-center gap-1.5 md:gap-3">
-                                            <span className="text-red-500 font-black text-xs md:text-lg">${effectivePrice.toFixed(2)}</span>
+                                            <span className="text-red-500 font-black text-sm md:text-lg">${effectivePrice.toFixed(2)}</span>
                                             {item.originalPrice && <span className="text-gray-300 font-medium text-[8px] md:text-xs line-through">${item.originalPrice.toFixed(2)}</span>}
                                         </div>
                                     </div>
@@ -407,7 +430,7 @@ const StoreList: React.FC = () => {
                                     )}
                                 </div>
                                 <div className="flex-1 text-center md:text-left min-w-0 w-full">
-                                    <h3 className="font-bold text-xs sm:text-sm md:text-2xl text-[var(--brand-navy)] mb-1 md:mb-2 group-hover:text-[var(--brand-primary)] transition-colors truncate">{store.name}</h3>
+                                    <h3 className="font-bold text-base sm:text-lg md:text-2xl text-[var(--brand-navy)] mb-1 md:mb-2 group-hover:text-[var(--brand-primary)] transition-colors truncate">{store.name}</h3>
 
                                     {activeCategory === 'Offers' ? (
                                         <div className="mb-4">
@@ -427,7 +450,7 @@ const StoreList: React.FC = () => {
                                             })()}
                                         </div>
                                     ) : (
-                                        <div className="flex items-center justify-center md:justify-start flex-wrap gap-1 md:gap-3 text-[8px] sm:text-[9px] md:text-xs font-black text-gray-400 mb-2 md:mb-6">
+                                        <div className="flex items-center justify-center md:justify-start flex-wrap gap-1.5 md:gap-3 text-[10px] sm:text-[11px] md:text-xs font-black text-gray-400 mb-2 md:mb-6">
                                             <span className="text-yellow-500 text-[10px] md:text-sm">★</span> {store.rating || 'New'}
                                             <span className="w-1 h-1 md:w-1.5 md:h-1.5 bg-gray-200 rounded-full"></span>
                                             {(store.deliveryTime || '25-45').toString().replace(' min', '')} min
@@ -445,7 +468,7 @@ const StoreList: React.FC = () => {
                                         </div>
                                     )}
 
-                                    <span className="bg-[#112244] text-white px-2 sm:px-3 md:px-6 py-1 md:py-2 rounded-full text-[7px] sm:text-[8px] md:text-[10px] font-black uppercase tracking-[0.2em] whitespace-nowrap">
+                                    <span className="bg-[#112244] text-white px-2 sm:px-3 md:px-6 py-1 md:py-2 rounded-full text-[9px] sm:text-[10px] md:text-[10px] font-black uppercase tracking-[0.2em] whitespace-nowrap">
                                         {activeCategory === 'Offers' ? 'Featured Offer' : (store.business_category || store.category || 'Local Shop')}
                                     </span>
                                 </div>
