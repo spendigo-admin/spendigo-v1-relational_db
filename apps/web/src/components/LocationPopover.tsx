@@ -46,17 +46,25 @@ const LocationPopover: React.FC = () => {
                 <img src="/logo-app.png" alt="Spendigo Logo" className="w-10 h-10 rounded-xl shadow-lg shadow-blue-500/20" />
             </Link>
 
-            {/* TRIGGER: LOCATION TEXT */}
-            <div 
-                onClick={() => setIsOpen(!isOpen)}
-                className="flex flex-col cursor-pointer group"
-            >
-                <span className="text-2xl font-black text-[var(--brand-navy)] tracking-tighter group-hover:text-[var(--brand-primary)] transition-colors leading-none italic">Spendigo</span>
-                <div className="flex items-center gap-1 mt-1">
-                    <svg className="w-2.5 h-2.5 text-[#007AFF]" fill="currentColor" viewBox="0 0 20 20">
+            {/* BRAND & LOCATION TRIGGER */}
+            <div className="flex flex-col">
+                {/* BRAND: HOME LINK */}
+                <Link 
+                    to="/" 
+                    className="text-2xl font-black text-[var(--brand-navy)] tracking-tighter hover:text-[var(--brand-primary)] transition-colors leading-none italic cursor-pointer"
+                >
+                    Spendigo
+                </Link>
+
+                {/* TRIGGER: LOCATION TEXT */}
+                <div 
+                    onClick={() => setIsOpen(!isOpen)}
+                    className="flex items-center gap-1 mt-1 cursor-pointer group w-fit"
+                >
+                    <svg className="w-2.5 h-2.5 text-[#007AFF] group-hover:scale-110 transition-transform" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
                     </svg>
-                    <span className="text-[10px] font-bold text-[#007AFF] truncate max-w-[120px]">{address || 'Quebec, QC'}</span>
+                    <span className="text-[10px] font-bold text-[#007AFF] truncate max-w-[120px] group-hover:underline underline-offset-2 transition-all">{address || 'Quebec, QC'}</span>
                     <svg className={`w-2 h-2 text-[#007AFF] transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M19 9l-7 7-7-7" />
                     </svg>
