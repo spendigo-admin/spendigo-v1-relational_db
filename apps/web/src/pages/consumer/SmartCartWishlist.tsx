@@ -137,20 +137,20 @@ const SmartCartWishlist: React.FC = () => {
 
                 <div className="max-w-7xl mx-auto relative z-10">
                     <div className="flex flex-col md:flex-row md:items-end justify-between gap-8">
-                        <div className="max-w-2xl">
-                            <div className="inline-flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 rounded-full bg-white shadow-sm border border-gray-100 mb-6 animate-fade-in">
+                        <div className="max-w-2xl text-center md:text-left">
+                            <div className="inline-flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 rounded-full bg-white shadow-sm border border-gray-100 mb-6 animate-fade-in mx-auto md:mx-0">
                                 <span className="flex h-2 w-2 rounded-full bg-[#007AFF] animate-ping" />
                                 <span className="text-[10px] md:text-xs font-black uppercase tracking-[0.2em] text-[var(--text-muted)]">
                                     AI-Powered Savings
                                 </span>
                             </div>
-                            <h1 className="text-3xl md:text-5xl font-black text-[#112244] mb-4 leading-[1.05] tracking-tighter italic">
+                            <h1 className="text-2xl md:text-4xl font-black text-[#112244] mb-4 leading-[1.05] tracking-tighter italic">
                                 SmartCart<br />
                                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#112244] to-[#007AFF]">
                                     Optimizer
                                 </span>
                             </h1>
-                            <p className="text-[var(--text-muted)] text-sm md:text-lg font-bold leading-relaxed">
+                            <p className="text-[var(--text-muted)] text-xs md:text-sm font-medium leading-relaxed max-w-xl mx-auto md:mx-0">
                                 Build your list and we'll find the absolute lowest total across all local stores. 
                                 <span className="text-[#007AFF]"> Real-time price matching, automatically.</span>
                             </p>
