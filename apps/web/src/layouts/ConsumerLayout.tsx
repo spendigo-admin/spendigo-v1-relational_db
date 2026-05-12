@@ -4,6 +4,7 @@ import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationContext';
 import NotificationPopover from '../components/NotificationPopover';
+import LocationPopover from '../components/LocationPopover';
 import { LanguageSwitcher } from '../components/LanguageSwitcher';
 import { useTranslation } from 'react-i18next';
 import '../styles/design-system.css';
@@ -70,13 +71,7 @@ const ConsumerLayout: React.FC = () => {
             <header className="fixed top-0 left-0 right-0 h-[calc(4.5rem+var(--safe-area-top))] pt-safe bg-white border-b border-gray-100 z-50 px-6 md:px-12 flex items-center justify-between shadow-sm">
                 {/* LEFT: Logo with Bag Icon */}
                 <div className="flex items-center gap-12">
-                    <Link to="/" className="flex items-center gap-3 group shrink-0">
-                        <img src="/logo-app.png" alt="Spendigo Logo" className="w-10 h-10 rounded-xl shadow-lg shadow-blue-500/20 group-hover:scale-105 transition-transform" />
-                        <div className="flex flex-col">
-                            <span className="text-2xl font-black text-[var(--brand-navy)] tracking-tighter group-hover:text-[var(--brand-primary)] transition-colors leading-none italic">Spendigo</span>
-                            <span className="text-[7px] font-black uppercase tracking-[0.3em] text-[var(--brand-primary)] mt-1">SmartCart AI</span>
-                        </div>
-                    </Link>
+                    <LocationPopover />
 
                     {/* DESKTOP NAV LINKS */}
                     <nav className="hidden lg:flex items-center gap-8">

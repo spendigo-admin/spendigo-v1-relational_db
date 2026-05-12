@@ -21,29 +21,18 @@ const StoreList: React.FC = () => {
     const { allStores, loading } = useMarketplace();
     const { user } = useAuth();
     const { 
-        address, 
-        setAddress, 
-        handleSearch, 
-        isLocating, 
-        searchDistance, 
-        setSearchDistance,
         userCoords,
         calculateDistance,
-        handleLocateMe
     } = useLocation();
     
     const [activeCategory, setActiveCategory] = useState('All');
-    const [localSearch, setLocalSearch] = useState(address || 'San Francisco, California');
     
     // BACKEND AD CAROUSEL STATE
     const [ads, setAds] = useState<any[]>([]);
     const [currentAdIndex, setCurrentAdIndex] = useState(0);
     const adTimerRef = useRef<any>(null);
 
-    // Sync local search
-    useEffect(() => {
-        if (address) setLocalSearch(address);
-    }, [address]);
+
 
     const isVideo = (url?: string) => {
         if (!url) return false;
@@ -143,10 +132,7 @@ const StoreList: React.FC = () => {
         return allDeals.slice(0, 5);
     }, [allStores]);
 
-    const onGoClick = async () => {
-        setAddress(localSearch);
-        await handleSearch(localSearch);
-    };
+
 
     const handleAdInteraction = async (ad: any) => {
         try {
@@ -160,17 +146,12 @@ const StoreList: React.FC = () => {
         }
     };
 
-    const cycleDistance = () => {
-        const distances = [5, 10, 25, 50];
-        const currentIndex = distances.indexOf(searchDistance);
-        const nextIndex = (currentIndex + 1) % distances.length;
-        setSearchDistance(distances[nextIndex]);
-    };
+
 
     return (
         <div className="min-h-screen bg-white">
             {/* HERO SECTION */}
-            <section className="relative pt-6 md:pt-10 pb-6 md:pb-12 overflow-hidden bg-gradient-to-b from-[#F5F3FF]/50 to-white">
+            <section className="relative pt-6 md:pt-10 pb-4 md:pb-8 overflow-hidden bg-gradient-to-b from-[#F5F3FF]/50 to-white">
                 <div className="max-w-7xl mx-auto px-6 md:px-12">
                     <div className="flex flex-col lg:flex-row items-center gap-8 md:gap-12">
                         <div className="flex-1 text-center lg:text-left">
@@ -245,23 +226,63 @@ const StoreList: React.FC = () => {
                 </div>
             </section>
 
-            {/* STATS STRIP - ONE FRAME ON MOBILE PER USER REQUEST */}
-            <section className="max-w-7xl mx-auto px-6 md:px-12 -mt-10 md:-mt-12 relative z-20">
-                <div className="bg-white rounded-3xl p-2 md:p-0 md:bg-transparent shadow-2xl shadow-gray-200/50">
-                    <div className="flex md:grid md:grid-cols-4 gap-1.5 md:gap-6">
+            {/* MARKET INTELLIGENCE DASHBOARD */}
+            <section className="max-w-7xl mx-auto px-6 md:px-12 -mt-12 md:-mt-16 relative z-20">
+                <h2 className="text-xl md:text-4xl font-black text-[#112244] mb-6 tracking-tighter">Market Intelligence</h2>
+                <div className="bg-white md:bg-transparent rounded-3xl p-1.5 md:p-0 shadow-2xl shadow-gray-200/50 md:shadow-none">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6">
                         {[
-                            { label: 'STORES', labelColor: 'text-emerald-400', value: stats.totalStores || '0', badge: 'VERIFIED', badgeColor: 'bg-emerald-500 text-white shadow-[0_0_20px_rgba(16,185,129,0.3)]', bgColor: 'bg-slate-700' },
-                            { label: 'FLYERS', labelColor: 'text-indigo-200', value: stats.totalFlyers || '0', badge: 'LIVE', badgeColor: 'bg-white text-[#3730a3] shadow-[0_0_20px_rgba(255,255,255,0.3)]', bgColor: 'bg-indigo-600' },
-                            { label: 'DEALS', labelColor: 'text-blue-200', value: stats.totalDeals.toLocaleString() || '0', badge: 'LIMITED', badgeColor: 'bg-orange-500 text-white shadow-[0_0_20px_rgba(249,115,22,0.3)]', bgColor: 'bg-blue-600' },
-                            { label: 'ITEMS', labelColor: 'text-white', value: stats.totalProducts > 1000 ? `${(stats.totalProducts / 1000).toFixed(0)}k` : stats.totalProducts || '0', badge: 'AVAILABLE', badgeColor: 'bg-slate-700 text-white border border-white/20', bgColor: 'bg-slate-600' }
+                            { 
+                                label: 'Local Stores', 
+                                value: stats.totalStores || '0', 
+                                badge: '• Active', 
+                                badgeStyles: 'bg-emerald-100/50 text-emerald-700',
+                                cardBg: 'bg-[#F0F7FF]',
+                                iconStyles: 'bg-white text-blue-600 shadow-sm',
+                                icon: <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+                            },
+                            { 
+                                label: 'New Flyers', 
+                                value: stats.totalFlyers || '0', 
+                                badge: 'Updated Today', 
+                                badgeStyles: 'bg-orange-100/50 text-orange-700',
+                                cardBg: 'bg-[#FFF9F2]',
+                                iconStyles: 'bg-white text-orange-600 shadow-sm',
+                                icon: <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
+                            },
+                            { 
+                                label: 'Flash Deals', 
+                                value: stats.totalDeals.toLocaleString() || '0', 
+                                badge: 'Live', 
+                                badgeStyles: 'bg-red-100/50 text-red-700',
+                                cardBg: 'bg-[#FFF5F5]',
+                                iconStyles: 'bg-white text-red-600 shadow-sm',
+                                icon: <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.99 7.99 0 0120 13a7.98 7.98 0 01-2.343 5.657z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9.879 16.121A3 3 0 1012.015 11L11 14l2.828.828" /></svg>
+                            },
+                            { 
+                                label: 'Tracked Items', 
+                                value: stats.totalProducts > 1000 ? `${(stats.totalProducts / 1000).toFixed(1)}k` : stats.totalProducts || '0', 
+                                badge: 'Market Safe', 
+                                badgeStyles: 'bg-gray-100 text-gray-600',
+                                cardBg: 'bg-gray-50',
+                                iconStyles: 'bg-white text-gray-600 shadow-sm',
+                                icon: <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
+                            }
                         ].map((stat, i) => (
-                            <div key={i} className={`flex-1 md:flex-none ${stat.bgColor} rounded-2xl p-3 md:p-8 flex flex-col justify-between h-24 md:h-auto lg:aspect-auto transition-transform hover:-translate-y-1 md:hover:-translate-y-2 border border-white/5 md:border-none shadow-xl shadow-black/20`}>
-                                <div>
-                                    <p className={`text-[8px] md:text-sm font-black ${stat.labelColor} tracking-[0.1em] md:tracking-[0.2em] mb-0.5 md:mb-1`}>{stat.label}</p>
-                                    <p className="text-xl md:text-5xl font-black text-white leading-none tracking-tighter">{stat.value}</p>
+                            <div key={i} className={`${stat.cardBg} rounded-[2.5rem] p-5 md:p-8 flex flex-col border border-white/50 shadow-sm hover:shadow-2xl transition-all duration-500 hover:-translate-y-1`}>
+                                <div className="flex items-start justify-between mb-6 md:mb-10">
+                                    <div className={`w-10 h-10 md:w-14 md:h-14 rounded-2xl flex items-center justify-center ${stat.iconStyles}`}>
+                                        {stat.icon}
+                                    </div>
+                                    {stat.badge && (
+                                        <span className={`px-3 py-1 rounded-full text-[8px] md:text-[10px] font-black uppercase tracking-widest ${stat.badgeStyles}`}>
+                                            {stat.badge}
+                                        </span>
+                                    )}
                                 </div>
-                                <div className={`mt-auto inline-flex items-center px-1.5 py-0.5 md:px-3 md:py-1.5 rounded-[4px] md:rounded-lg text-[7px] md:text-xs font-black w-fit tracking-[0.1em] md:tracking-[0.2em] shadow-sm ${stat.badgeColor}`}>
-                                    {stat.badge}
+                                <div>
+                                    <p className="text-2xl md:text-5xl font-black text-[#112244] leading-none tracking-tighter mb-2">{stat.value}</p>
+                                    <p className="text-[10px] md:text-sm font-bold text-gray-400 uppercase tracking-widest">{stat.label}</p>
                                 </div>
                             </div>
                         ))}
@@ -269,60 +290,17 @@ const StoreList: React.FC = () => {
                 </div>
             </section>
 
-            {/* LOCATION SEARCH BAR */}
-            <section className="max-w-7xl mx-auto px-6 md:px-12 mt-8 md:mt-24">
-                <div className="bg-white border border-gray-100 rounded-full py-1 pl-4 pr-1 flex flex-row items-center justify-between shadow-2xl shadow-gray-100 gap-2">
-                    <div className="flex items-center gap-2 flex-1">
-                        <button 
-                            onClick={handleLocateMe}
-                            className="hover:scale-110 transition-transform active:scale-95 shrink-0"
-                        >
-                            <svg className={`w-5 h-5 ${isLocating ? 'text-gray-300 animate-spin' : 'text-[#007AFF]'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                            </svg>
-                        </button>
-                        <input 
-                            type="text" 
-                            value={localSearch}
-                            onChange={(e) => setLocalSearch(e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && onGoClick()}
-                            placeholder="Current Location..."
-                            className="text-[10px] md:text-base font-bold text-[var(--brand-navy)] outline-none bg-transparent w-full placeholder:text-gray-300 truncate"
-                        />
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                        {/* CYCLE DISTANCE BADGE & DOTS */}
-                        <button 
-                            onClick={cycleDistance}
-                            className="flex items-center gap-2 bg-[#EBF5FF] hover:bg-[#D6E9FF] px-3 py-1.5 rounded-full transition-all active:scale-95 group"
-                        >
-                            <span className="text-[8px] md:text-[10px] font-black text-[#007AFF] tracking-widest uppercase">{searchDistance}KM</span>
-                            <div className="flex items-center gap-1">
-                                {[5, 10, 25, 50].map(dist => (
-                                    <div 
-                                        key={dist} 
-                                        className={`rounded-full transition-all duration-500 ${searchDistance === dist ? 'bg-[#007AFF] w-1.5 h-1.5 scale-110' : 'bg-[#007AFF]/20 w-1 h-1'}`} 
-                                    />
-                                ))}
-                            </div>
-                        </button>
-                        <button 
-                            onClick={onGoClick}
-                            disabled={isLocating}
-                            className="bg-[var(--brand-navy)] text-white px-4 md:px-10 py-2.5 md:py-3.5 rounded-full text-[10px] md:text-sm font-black tracking-widest hover:bg-[var(--brand-primary)] transition-all disabled:opacity-50"
-                        >
-                            {isLocating ? '...' : 'GO'}
-                        </button>
-                    </div>
-                </div>
-            </section>
-
             {/* FLASH INVENTORY */}
             {flashInventory.length > 0 && (
-                <section className="max-w-7xl mx-auto px-6 md:px-12 mt-4 md:mt-32">
-                    <div className="flex items-center justify-between mb-6 md:mb-12">
+                <section className="max-w-7xl mx-auto px-6 md:px-12 mt-4 md:mt-16">
+                    <div className="flex items-center justify-between mb-6 md:mb-10">
                         <div className="flex items-center gap-4">
-                            <h2 className="text-lg md:text-5xl font-black text-[var(--brand-navy)] tracking-tight italic">Flash</h2>
+                            <div className="w-8 h-8 md:w-14 md:h-14 bg-orange-500 rounded-xl md:rounded-2xl flex items-center justify-center shadow-lg shadow-orange-500/20">
+                                <svg className="w-5 h-5 md:w-8 md:h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" />
+                                </svg>
+                            </div>
+                            <h2 className="text-xl md:text-4xl font-black text-[#112244] tracking-tighter">Flash</h2>
                             <span className="bg-orange-500 text-white text-[9px] md:text-xs font-black px-4 py-1.5 rounded-full uppercase tracking-[0.2em] animate-pulse">Ending Soon</span>
                         </div>
                         <Link to="/deals" className="text-[var(--brand-primary)] text-xs md:text-sm font-black tracking-[0.2em] uppercase hover:translate-x-2 transition-transform inline-flex items-center gap-2">
@@ -360,7 +338,7 @@ const StoreList: React.FC = () => {
             )}
 
             {/* LOCAL MERCHANTS */}
-            <section className="max-w-7xl mx-auto px-6 md:px-12 mt-12 md:mt-32">
+            <section className="max-w-7xl mx-auto px-6 md:px-12 mt-8 md:mt-20">
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-6 md:mb-12">
                     <div>
                         <h2 className="text-3xl md:text-5xl font-black text-[#112244] tracking-tight mb-2">Local Merchants</h2>
