@@ -163,18 +163,18 @@ const PriceCompare = () => {
 
                 <div className="max-w-7xl mx-auto relative z-10">
                     <div className="flex flex-col md:flex-row md:items-end justify-between gap-8">
-                        <div className="flex-1 max-w-2xl">
+                        <div className="flex-1 max-w-2xl text-center md:text-left">
                             <div className="inline-flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 rounded-full bg-white shadow-sm border border-gray-100 mb-6 animate-fade-in">
                                 <span className="flex h-2 w-2 rounded-full bg-[var(--brand-primary)] animate-ping" />
                                 <span className="text-[10px] md:text-xs font-black uppercase tracking-[0.4em] text-[var(--text-muted)]">
                                     Flyer Price Analysis
                                 </span>
                             </div>
-                            <h1 className="text-3xl md:text-5xl font-black italic tracking-tighter mb-4 leading-[1.05] text-[var(--brand-navy)]">
+                            <h1 className="text-4xl md:text-5xl font-black italic tracking-tighter mb-4 leading-[1.05] text-[var(--brand-navy)]">
                                 Price<br />
                                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#112244] to-[#007AFF]">Comparison.</span>
                             </h1>
-                            <p className="text-lg md:text-xl font-bold text-[var(--text-muted)] max-w-xl leading-relaxed">
+                            <p className="text-xs md:text-sm font-medium text-[var(--text-muted)] max-w-xl mx-auto md:mx-0 leading-relaxed">
                                 We've analyzed the latest grocery flyers to find matches for your wishlist. 
                                 <span className="text-[var(--brand-primary)]"> Real-time savings across all major retailers.</span>
                             </p>
