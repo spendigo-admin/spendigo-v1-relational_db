@@ -80,7 +80,7 @@ const ConsumerLayout: React.FC = () => {
                             .map(item => (
                                 <Link 
                                     key={item} 
-                                    to={item === 'Compare' ? '/compare' : `/${item.toLowerCase()}`} 
+                                    to={item === 'Stores' ? '/#local-merchants' : (item === 'Compare' ? '/compare' : `/${item.toLowerCase()}`)} 
                                     className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] hover:text-[var(--brand-primary)] transition-colors"
                                 >
                                     {item}

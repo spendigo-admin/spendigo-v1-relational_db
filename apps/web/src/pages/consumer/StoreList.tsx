@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation as useRouterLocation } from 'react-router-dom';
 import { collection, query, where, getDocs, doc, updateDoc, increment } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { useMarketplace } from '../../context/MarketplaceContext';
@@ -45,6 +45,20 @@ const StoreList: React.FC = () => {
 
         return () => clearInterval(interval);
     }, [activeStatIndex]);
+
+    // Handle Hash Scrolling (e.g., for #local-merchants)
+    const routerLocation = useRouterLocation();
+    useEffect(() => {
+        if (window.location.hash) {
+            const id = window.location.hash.substring(1);
+            const element = document.getElementById(id);
+            if (element) {
+                setTimeout(() => {
+                    element.scrollIntoView({ behavior: 'smooth' });
+                }, 100);
+            }
+        }
+    }, [routerLocation]);
 
     // BACKEND AD CAROUSEL STATE
     const [ads, setAds] = useState<any[]>([]);
@@ -369,7 +383,7 @@ const StoreList: React.FC = () => {
             )}
 
             {/* LOCAL MERCHANTS */}
-            <section className="max-w-7xl mx-auto px-6 md:px-12 mt-8 md:mt-20">
+            <section id="local-merchants" className="max-w-7xl mx-auto px-6 md:px-12 mt-8 md:mt-20">
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-6 md:mb-12">
                     <div>
                         <h2 className="text-2xl md:text-5xl font-black text-[#112244] tracking-tighter mb-2">Local Merchants</h2>
