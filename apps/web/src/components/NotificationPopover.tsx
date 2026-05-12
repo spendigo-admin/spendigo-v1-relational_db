@@ -1,10 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useNotifications, AppNotification } from '../context/NotificationContext';
+import { useAuth } from '../context/AuthContext';
 import { formatNotificationTime } from '../utils/date-helpers';
 
 const NotificationPopover: React.FC = () => {
     const { notifications, unreadCount, markAsRead, markAllAsRead, clearAll } = useNotifications();
+    const { user } = useAuth();
     const [isOpen, setIsOpen] = useState(false);
     const popoverRef = useRef<HTMLDivElement>(null);
     const navigate = useNavigate();
@@ -155,7 +157,13 @@ const NotificationPopover: React.FC = () => {
                     {notifications.length > 0 && (
                         <div className="p-4 bg-gray-50/50 text-center">
                             <button 
-                                onClick={() => { setIsOpen(false); navigate('/notifications'); }}
+                                onClick={() => { 
+                                    setIsOpen(false); 
+                                    const path = user?.role === 'admin' ? '/admin/notifications' 
+                                               : user?.role === 'merchant' ? '/merchant/notifications' 
+                                               : '/notifications';
+                                    navigate(path); 
+                                }}
                                 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 hover:text-[#007AFF] transition-colors"
                             >
                                 View All Notifications
