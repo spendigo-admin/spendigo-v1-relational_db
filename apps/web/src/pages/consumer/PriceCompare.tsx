@@ -170,7 +170,7 @@ const PriceCompare = () => {
                                     Flyer Price Analysis
                                 </span>
                             </div>
-                            <h1 className="text-4xl md:text-5xl font-black italic tracking-tighter mb-4 leading-[1.05] text-[var(--brand-navy)]">
+                            <h1 className="text-2xl md:text-4xl font-black italic tracking-tighter mb-4 leading-[1.05] text-[var(--brand-navy)]">
                                 Price<br />
                                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#112244] to-[#007AFF]">Comparison.</span>
                             </h1>
