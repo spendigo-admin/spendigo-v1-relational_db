@@ -71,11 +71,7 @@ const ConsumerLayout: React.FC = () => {
                 {/* LEFT: Logo with Bag Icon */}
                 <div className="flex items-center gap-12">
                     <Link to="/" className="flex items-center gap-3 group shrink-0">
-                        <div className="w-10 h-10 bg-[var(--brand-primary)] rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20 group-hover:scale-105 transition-transform">
-                            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-                            </svg>
-                        </div>
+                        <img src="/logo-app.png" alt="Spendigo Logo" className="w-10 h-10 rounded-xl shadow-lg shadow-blue-500/20 group-hover:scale-105 transition-transform" />
                         <div className="flex flex-col">
                             <span className="text-2xl font-black text-[var(--brand-navy)] tracking-tighter group-hover:text-[var(--brand-primary)] transition-colors leading-none italic">Spendigo</span>
                             <span className="text-[7px] font-black uppercase tracking-[0.3em] text-[var(--brand-primary)] mt-1">SmartCart AI</span>
