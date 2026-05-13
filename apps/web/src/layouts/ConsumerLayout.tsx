@@ -14,7 +14,7 @@ import { doc, onSnapshot } from 'firebase/firestore';
 
 const ConsumerLayout: React.FC = () => {
     const { itemCount, notification, clearNotification } = useCart();
-    const { user, logout } = useAuth();
+    const { user, logout, loading } = useAuth();
     const { unreadCount, toast, setToast, markAsRead } = useNotifications();
     const navigate = useNavigate();
     const [searchQuery, setSearchQuery] = useState('');
@@ -46,6 +46,17 @@ const ConsumerLayout: React.FC = () => {
         return () => unsubSettings();
     }, [location]);
 
+    // STRICT SECURITY CHECK: Redirect Admin/Merchant away from Shopper UI
+    React.useEffect(() => {
+        if (user) {
+            if (user.role === 'admin') {
+                navigate('/admin/dashboard', { replace: true });
+            } else if (user.role === 'merchant') {
+                navigate('/merchant/dashboard', { replace: true });
+            }
+        }
+    }, [user, navigate]);
+
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
         if (searchQuery.trim()) {
@@ -64,6 +75,11 @@ const ConsumerLayout: React.FC = () => {
             navigate('/notifications');
         }
     };
+
+    // Don't render shopper UI if auth is still loading or if user is admin/merchant (Redirection handled by useEffect)
+    if (loading || (user && user.role !== 'consumer')) {
+        return null;
+    }
 
     return (
         <div className="min-h-screen bg-gray-50/30 relative flex flex-col">
