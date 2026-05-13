@@ -51,6 +51,7 @@ firebase deploy                    # Deploy hosting + functions + Firestore rule
 Capacitor config in `apps/web/capacitor.config.ts`: app ID `com.spendigo.smartcart`, web dir `dist`. Plugins: StatusBar (dark, overlays), SplashScreen (2 s, immersive), Keyboard (resize body, scroll to input), GoogleAuth (scopes: profile/email; `iosClientId` + `serverClientId` both configured). Android uses HTTPS scheme.
 
 ```bash
+npm run build        # Must run first — cap sync copies from apps/web/dist/
 npx cap sync         # Sync web build to native projects
 npx cap open ios     # Open Xcode
 npx cap open android # Open Android Studio
@@ -172,7 +173,15 @@ Firebase Cloud Functions v4 (v1 API). Organized by domain:
 
 **Note:** `services/functions/` and `services/smartcart_optimizer/` are legacy/experimental — all active Cloud Functions are in `services/api/`.
 
-Stripe webhook secret stored in Firebase Runtime Config: `stripe.webhook_secret`. Local testing uses `services/api/.runtimeconfig.json`.
+Stripe webhook secret stored in Firebase Runtime Config: `stripe.webhook_secret`. Local testing uses `services/api/.runtimeconfig.json`:
+```json
+{
+  "stripe": {
+    "webhook_secret": "whsec_...",
+    "secret_key": "sk_test_..."
+  }
+}
+```
 
 ### Firebase / Infrastructure
 
@@ -269,7 +278,7 @@ Seeded QA account emails and role-by-role test workflows are documented in `docs
 
 ## Documentation
 
-Architecture docs in `docs/` (28 files): `ARCHITECTURE.md`, `SCHEMA.md` (Firestore schema), `SITEMAP.md` (full route map), `OPENAPI.yaml` (REST API spec), `AUDIT_IMPLEMENTATION.md` (SHA-256 ledger), `SEARCH_IMPLEMENTATION.md`, `SMARTCART_INTERFACE_DESIGN.md`, `SMARTCART_ALGORITHM_FLOW.md`, `MERCHANT_BILLING.md`, `SECURITY_VERIFICATION.md`, `EMAIL_SETUP_GUIDE.md`, `MASTER_CATALOG_PLAN.md`, `MOBILE_DEPLOYMENT.md`, `GAP_ANALYSIS.md`, `DEPLOYMENT_GUIDE.md`, `PROCESS_LIFECYCLES.md` (step-by-step flows for 17 major processes — order placement, store deletion, team invites, payments, subscriptions, etc.; includes error paths, async gaps, and known race conditions — consult before touching any multi-step workflow), and more. Terraform infra config in `infra/` (`main.tf`, `variables.tf`).
+Architecture docs in `docs/` (28 files): `ARCHITECTURE.md`, `SCHEMA.md` (Firestore schema), `SITEMAP.md` (full route map), `OPENAPI.yaml` (REST API spec), `AUDIT_IMPLEMENTATION.md` (SHA-256 ledger), `SEARCH_IMPLEMENTATION.md`, `ALGOLIA_SETUP.md`, `FUZZY_MATCHING_IMPLEMENTATION.md`, `SMARTCART_INTERFACE_DESIGN.md`, `SMARTCART_ALGORITHM_FLOW.md`, `MERCHANT_BILLING.md`, `SECURITY_VERIFICATION.md`, `EMAIL_SETUP_GUIDE.md`, `EMAIL_NOTIFICATIONS.md`, `MASTER_CATALOG_PLAN.md`, `MOBILE_DEPLOYMENT.md`, `GAP_ANALYSIS.md`, `PRODUCTION_REMAINING_TASKS.md`, `DEPLOYMENT_GUIDE.md`, `CI_CD_SETUP.md`, `COST_OPTIMIZATION.md`, `ACCESSIBILITY.md`, `TECH_STACK.md`, `SPONSORED_LISTINGS.md`, `WIREFRAMES.md`, `DEMO_CREDENTIALS.md`, `PROCESS_LIFECYCLES.md` (step-by-step flows for 17 major processes — order placement, store deletion, team invites, payments, subscriptions, etc.; includes error paths, async gaps, and known race conditions — consult before touching any multi-step workflow), and more. Terraform infra config in `infra/` (`main.tf`, `variables.tf`).
 
 ## Page Routes
 
@@ -319,6 +328,8 @@ Non-obvious keys used across the app:
 ## Troubleshooting
 
 **Port 443 in use**: `sudo lsof -ti:443 | xargs sudo kill -9` then restart `npm run dev`.
+
+**`/etc/hosts` entry missing**: Dev server binds to `spendigo.ca:443`. Add `127.0.0.1 spendigo.ca` to `/etc/hosts` if the browser can't reach the dev server.
 
 **SSL cert not trusted**: Dev server uses self-signed cert via `@vitejs/plugin-basic-ssl`. On macOS, trust it: `sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain apps/web/.certs/cert.pem`.
 

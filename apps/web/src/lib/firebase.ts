@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { initializeAuth, indexedDBLocalPersistence } from 'firebase/auth';
+import { initializeAuth, indexedDBLocalPersistence, browserPopupRedirectResolver } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 import { getFunctions, connectFunctionsEmulator } from 'firebase/functions';
@@ -35,10 +35,12 @@ if (typeof window !== 'undefined' && !import.meta.env.DEV && !Capacitor.isNative
 
 // Export Services
 // initializeAuth with indexedDBLocalPersistence bypasses the __/auth/iframe handshake
-// that hangs in Capacitor WKWebView when capacitor://localhost isn't an authorized domain
-export const auth = initializeAuth(app, {
-    persistence: indexedDBLocalPersistence
-});
+// that hangs in Capacitor WKWebView when capacitor://localhost isn't an authorized domain.
+// browserPopupRedirectResolver is required for signInWithPopup on web; omitted on native
+// because WKWebView has no popup support and GoogleAuth plugin bypasses it entirely.
+export const auth = Capacitor.isNativePlatform()
+    ? initializeAuth(app, { persistence: indexedDBLocalPersistence })
+    : initializeAuth(app, { persistence: indexedDBLocalPersistence, popupRedirectResolver: browserPopupRedirectResolver });
 export const db = getFirestore(app);
 export const storage = getStorage(app);
 export const functions = getFunctions(app);
