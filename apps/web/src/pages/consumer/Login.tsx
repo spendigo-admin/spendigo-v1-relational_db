@@ -109,6 +109,7 @@ const Login = () => {
         } catch (err: any) {
             console.error(err);
             setError('Invalid SMS code.');
+        } finally {
             setIsLoading(false);
         }
     };
@@ -203,11 +204,11 @@ const Login = () => {
                         onClick={async () => {
                             setIsLoading(true);
                             try {
-                                const success = await loginWithGoogle();
-                                if (!success) setIsLoading(false);
+                                await loginWithGoogle();
                                 // Navigation handled by useEffect
                             } catch (e) {
                                 console.error(e);
+                            } finally {
                                 setIsLoading(false);
                             }
                         }}
@@ -233,6 +234,7 @@ const Login = () => {
                                 await loginWithFacebook();
                             } catch (e) {
                                 console.error(e);
+                            } finally {
                                 setIsLoading(false);
                             }
                         }}
