@@ -314,20 +314,20 @@ const StoreList: React.FC = () => {
                                 icon: <svg className="w-6 h-6 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
                             }
                         ].map((stat, i) => (
-                            <div key={i} className={`${stat.cardBg} flex-shrink-0 w-[calc(100vw-40px)] md:w-auto snap-start rounded-[2rem] md:rounded-[2.5rem] p-5 md:p-8 flex flex-col border border-white shadow-sm hover:shadow-2xl transition-all duration-500 hover:-translate-y-1`}>
-                                <div className="flex items-start justify-between mb-4 md:mb-10">
-                                    <div className="w-10 h-10 md:w-14 md:h-14 rounded-xl md:rounded-2xl flex items-center justify-center bg-white text-blue-600 shadow-sm">
-                                        {stat.icon}
+                            <div key={i} className={`${stat.cardBg} flex-shrink-0 w-[calc(50vw-28px)] md:w-auto snap-start rounded-[1.5rem] md:rounded-[2.5rem] p-4 md:p-8 flex flex-col border border-white shadow-sm hover:shadow-2xl transition-all duration-500 hover:-translate-y-1`}>
+                                <div className="flex items-start justify-between mb-3 md:mb-10">
+                                    <div className="w-8 h-8 md:w-14 md:h-14 rounded-lg md:rounded-2xl flex items-center justify-center bg-white text-blue-600 shadow-sm">
+                                        <div className="scale-75 md:scale-100">{stat.icon}</div>
                                     </div>
                                     {stat.badge && (
-                                        <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${stat.badgeStyles}`}>
+                                        <span className={`px-2 py-0.5 rounded-full text-[8px] md:text-[10px] font-black uppercase tracking-widest ${stat.badgeStyles}`}>
                                             {stat.badge}
                                         </span>
                                     )}
                                 </div>
                                 <div>
-                                    <p className={`text-3xl md:text-5xl font-black ${stat.textColor} leading-none tracking-tighter mb-2`}>{stat.value}</p>
-                                    <p className={`text-xs md:text-sm font-bold ${stat.labelColor} uppercase tracking-widest`}>{stat.label}</p>
+                                    <p className={`text-2xl md:text-5xl font-black ${stat.textColor} leading-none tracking-tighter mb-1`}>{stat.value}</p>
+                                    <p className={`text-[10px] md:text-sm font-bold ${stat.labelColor} uppercase tracking-[0.1em] truncate`}>{stat.label}</p>
                                 </div>
                             </div>
                         ))}
