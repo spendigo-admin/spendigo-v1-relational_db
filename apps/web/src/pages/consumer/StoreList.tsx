@@ -182,9 +182,9 @@ const StoreList: React.FC = () => {
 
 
     return (
-        <div className="min-h-screen bg-white">
+        <div className="min-h-screen bg-transparent">
             {/* HERO SECTION */}
-            <section className="relative pt-6 md:pt-10 pb-4 md:pb-8 overflow-hidden bg-gradient-to-b from-[#F5F3FF]/50 to-white">
+            <section className="relative pt-6 md:pt-10 pb-4 md:pb-8 overflow-hidden bg-gradient-to-b from-[#F5F3FF]/50 to-transparent">
                 <div className="max-w-7xl mx-auto px-6 md:px-12">
                     <div className="flex flex-col lg:flex-row items-center gap-8 md:gap-12">
                         <div className="flex-1 text-center lg:text-left">
@@ -192,10 +192,10 @@ const StoreList: React.FC = () => {
                                 Hyper-Local Shopping Intelligence
                             </span>
                             <h1 className="text-3xl md:text-5xl font-black leading-[1.05] tracking-tighter text-[var(--brand-navy)] mb-4">
-                                <span className="text-[var(--brand-primary)]">Shop Local.</span><br className="hidden md:block" /> Shop Smart.
+                                <span className="text-[var(--brand-primary)]">Shop Local.</span><br className="hidden md:block" /> Think AI.
                             </h1>
                             <p className="text-[var(--text-muted)] text-xs md:text-sm font-medium max-w-xl mx-auto lg:mx-0 mb-6 leading-relaxed">
-                                Spendigo connects you with the heartbeat of your neighborhood. Find real-time inventory, exclusive local deals, and optimize your spending with AI-powered insights.
+                                Spendigo connects you with the heartbeat of your neighborhood through a smarter lens. Discover real-time inventory and exclusive local deals while optimizing your spending with AI-powered precision.
                             </p>
 
 
@@ -314,19 +314,19 @@ const StoreList: React.FC = () => {
                                 icon: <svg className="w-6 h-6 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
                             }
                         ].map((stat, i) => (
-                            <div key={i} className={`${stat.cardBg} flex-shrink-0 w-[calc(100vw-40px)] md:w-auto snap-start rounded-[2rem] md:rounded-[2.5rem] p-6 md:p-8 flex flex-col border border-white shadow-sm hover:shadow-2xl transition-all duration-500 hover:-translate-y-1`}>
-                                <div className="flex items-start justify-between mb-6 md:mb-10">
-                                    <div className="w-12 h-12 md:w-14 md:h-14 rounded-xl md:rounded-2xl flex items-center justify-center bg-white text-blue-600 shadow-sm">
+                            <div key={i} className={`${stat.cardBg} flex-shrink-0 w-[calc(100vw-40px)] md:w-auto snap-start rounded-[2rem] md:rounded-[2.5rem] p-5 md:p-8 flex flex-col border border-white shadow-sm hover:shadow-2xl transition-all duration-500 hover:-translate-y-1`}>
+                                <div className="flex items-start justify-between mb-4 md:mb-10">
+                                    <div className="w-10 h-10 md:w-14 md:h-14 rounded-xl md:rounded-2xl flex items-center justify-center bg-white text-blue-600 shadow-sm">
                                         {stat.icon}
                                     </div>
                                     {stat.badge && (
-                                        <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${stat.badgeStyles}`}>
+                                        <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${stat.badgeStyles}`}>
                                             {stat.badge}
                                         </span>
                                     )}
                                 </div>
                                 <div>
-                                    <p className={`text-4xl md:text-5xl font-black ${stat.textColor} leading-none tracking-tighter mb-2`}>{stat.value}</p>
+                                    <p className={`text-3xl md:text-5xl font-black ${stat.textColor} leading-none tracking-tighter mb-2`}>{stat.value}</p>
                                     <p className={`text-xs md:text-sm font-bold ${stat.labelColor} uppercase tracking-widest`}>{stat.label}</p>
                                 </div>
                             </div>
@@ -358,8 +358,8 @@ const StoreList: React.FC = () => {
                             const effectivePrice = item.salePrice || item.price || 0;
                             const discount = item.originalPrice ? Math.round(((item.originalPrice - effectivePrice) / item.originalPrice) * 100) : 0;
                             return (
-                                <div key={i} onClick={() => navigate(`/store/${item.storeId}`)} className="flex-shrink-0 w-[78px] md:w-[220px] lg:w-auto bg-white rounded-[0.75rem] md:rounded-[2.5rem] border border-gray-100 overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500 group cursor-pointer">
-                                    <div className="aspect-square relative flex items-center justify-center p-1 md:p-8 bg-gray-50">
+                                <div key={i} onClick={() => navigate(`/store/${item.storeId}`)} className="flex-shrink-0 w-[105px] md:w-[220px] lg:w-auto bg-white rounded-[0.75rem] md:rounded-[2.5rem] border border-gray-100 overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500 group cursor-pointer">
+                                    <div className="aspect-square relative flex items-center justify-center p-2 md:p-8 bg-gray-50">
                                         {discount > 0 && (
                                             <div className="absolute top-1 left-1 md:top-4 md:left-4 bg-red-600 text-white text-[6px] md:text-[9px] font-black px-1.5 py-0.5 md:px-3 md:py-1.5 rounded-md md:rounded-xl">
                                                 -{discount}%
@@ -367,7 +367,7 @@ const StoreList: React.FC = () => {
                                         )}
                                         <img src={item.productImage || item.image} alt={item.name} className="w-full h-full object-contain group-hover:scale-110 transition-transform" />
                                     </div>
-                                    <div className="p-2 md:p-6">
+                                    <div className="p-3 md:p-6">
                                         <p className="text-[9px] font-black text-[var(--brand-primary)] uppercase tracking-widest mb-0.5">{item.storeName}</p>
                                         <h3 className="font-bold text-xs md:text-base text-[var(--brand-navy)] mb-1 md:mb-3 truncate group-hover:text-[var(--brand-primary)] transition-colors">{item.productName || item.name}</h3>
                                         <div className="flex items-center gap-1.5 md:gap-3">
