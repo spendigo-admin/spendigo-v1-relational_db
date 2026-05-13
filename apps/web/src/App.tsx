@@ -116,22 +116,28 @@ const PageLoader = () => (
 );
 
 function MaintenanceGuard({ children }: { children: React.ReactNode }) {
-    const { user, loading: authLoading } = useAuth();
+    const { user } = useAuth();
     const [maintenanceMode, setMaintenanceMode] = useState(false);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        // 3-second fallback: Firestore cold-start on iOS WKWebView can hang indefinitely
+        const timeout = setTimeout(() => setLoading(false), 3000);
+
         const unsubscribe = onSnapshot(doc(db, 'settings', 'platform'), (doc) => {
+            clearTimeout(timeout);
             setMaintenanceMode(doc.data()?.maintenanceMode || false);
             setLoading(false);
         }, (error) => {
+            clearTimeout(timeout);
             console.error("Maintenance check failed:", error);
             setLoading(false);
         });
-        return () => unsubscribe();
+        return () => { clearTimeout(timeout); unsubscribe(); };
     }, []);
 
-    if (loading || authLoading) return <PageLoader />;
+    // Only block on the Firestore maintenance check — auth loading is handled by each layout
+    if (loading) return <PageLoader />;
 
     // Admin Bypass
     if (user?.role === 'admin') return <>{children}</>;

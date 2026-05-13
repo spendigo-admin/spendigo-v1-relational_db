@@ -45,5 +45,18 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Spendigo uses your location to find nearby stores and deals.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Spendigo uses your location to find nearby stores and deals.</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.1012948918368-4rj59baf5id95r7t6ob5pcinrcb14j35</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

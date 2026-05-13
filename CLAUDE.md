@@ -48,7 +48,7 @@ firebase deploy                    # Deploy hosting + functions + Firestore rule
 
 ### Mobile (Capacitor)
 
-Capacitor config in `apps/web/capacitor.config.ts`: app ID `com.spendigo.smartcart`, web dir `dist`. Plugins: StatusBar (dark, overlays), SplashScreen (2 s, immersive), Keyboard (resize body, scroll to input). Android uses HTTPS scheme.
+Capacitor config in `apps/web/capacitor.config.ts`: app ID `com.spendigo.smartcart`, web dir `dist`. Plugins: StatusBar (dark, overlays), SplashScreen (2 s, immersive), Keyboard (resize body, scroll to input), GoogleAuth (scopes: profile/email; `iosClientId` + `serverClientId` both configured). Android uses HTTPS scheme.
 
 ```bash
 npx cap sync         # Sync web build to native projects
@@ -72,7 +72,7 @@ This is a **Turbo monorepo** with npm workspaces:
 
 ### Frontend (`apps/web/src/`)
 
-**Role-based routing** in [App.tsx](apps/web/src/App.tsx): Three layout wrappers (`ConsumerLayout`, `MerchantLayout`, `AdminLayout`) enforce authentication at the layout level. `MerchantLayout` and `AdminLayout` do hard redirects if the user lacks the correct role. `MaintenanceGuard` (inline in App.tsx) blocks all traffic except admins and `/login`/`/admin` paths when `settings/platform.maintenanceMode` is `true` in Firestore. React Router uses `future={{ v7_startTransition: true, v7_relativeSplatPath: true }}` for concurrent rendering compatibility.
+**Role-based routing** in [App.tsx](apps/web/src/App.tsx): Three layout wrappers (`ConsumerLayout`, `MerchantLayout`, `AdminLayout`) enforce authentication at the layout level. `MerchantLayout` and `AdminLayout` do hard redirects if the user lacks the correct role. `MaintenanceGuard` (inline in App.tsx) blocks all traffic except admins and `/login`/`/admin` paths when `settings/platform.maintenanceMode` is `true` in Firestore. It has a 3-second `setTimeout` fallback that sets `loading=false` in case the Firestore `onSnapshot` never fires — prevents an infinite "Loading…" hang on iOS WKWebView cold-start. React Router uses `future={{ v7_startTransition: true, v7_relativeSplatPath: true }}` for concurrent rendering compatibility.
 
 **Context providers** (wrap order in App.tsx matters):
 ```
@@ -132,7 +132,7 @@ Admin sub-roles: SUPER_ADMIN (admin:all), MODERATOR (admin:users, admin:stores),
 
 **`lazyWithRetry` pattern** (App.tsx): All non-auth page routes use this wrapper instead of bare `lazy()`. On a dynamic import failure (stale chunks after deploy), it forces a single page reload via `sessionStorage` guard before re-throwing. `ErrorFallback` component detects stale chunk errors specifically and prompts the user to reload.
 
-**AppCheck**: ReCaptchaV3 enabled in production only (skipped in dev). Configured in `firebase.ts`.
+**AppCheck**: ReCaptcha Enterprise enabled in production only — skipped in dev and on native Capacitor platforms (`!Capacitor.isNativePlatform()`), because `ReCaptchaEnterpriseProvider` requires `window.grecaptcha` which is absent in WKWebView. `getMessaging()` and `getAnalytics()` are also gated behind `!Capacitor.isNativePlatform()` — Firebase Messaging calls `navigator.serviceWorker.addEventListener` which throws in WKWebView (no Service Worker support). Configured in `firebase.ts`.
 
 ### SmartCart Module (`apps/web/src/smartcart/`)
 
@@ -238,7 +238,7 @@ VITE_ALGOLIA_INDEX_NAME=   # optional, defaults to 'master_products'
 VITE_FIREBASE_VAPID_KEY=   # FCM VAPID key for push notifications (Web Push Certificates in Firebase Console)
 VITE_GEMINI_API_KEY=       # Gemini API key for SmartInsights feature
 VITE_STRIPE_PUBLISHABLE_KEY=  # Stripe publishable key for Checkout + Elements
-VITE_FIREBASE_APP_CHECK_KEY=  # ReCaptchaV3 site key (production only — skipped in dev)
+VITE_FIREBASE_APP_CHECK_KEY=  # ReCaptcha Enterprise site key (production web only — skipped in dev and on native Capacitor platforms)
 VITE_SENTRY_DSN=           # Sentry DSN for error tracking (optional, no-ops if missing)
 ```
 

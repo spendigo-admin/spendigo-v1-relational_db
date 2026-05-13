@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
 import { useAuth } from './AuthContext';
 import { useOrders } from './OrderContext';
 import { useNotifications } from './NotificationContext';
@@ -77,6 +77,7 @@ export const LocationProvider: React.FC<{ children: ReactNode }> = ({ children }
         else sessionStorage.removeItem('spendigo_user_address');
     }, [address]);
     const [isLocating, setIsLocating] = useState(false);
+    const locationDetectedRef = useRef(false);
 
     // Calculate distance between two points in km
     const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
@@ -94,10 +95,12 @@ export const LocationProvider: React.FC<{ children: ReactNode }> = ({ children }
     // Auto-detect location from profile or use saved coordinates
     useEffect(() => {
         const detectProfileLocation = async () => {
-            if (authLoading) return; // Wait until auth state resolves
+            if (authLoading) return;
+            if (locationDetectedRef.current) return; // Already running or completed
 
             // Priority 1: Use saved coordinates from User Profile (set during registration)
             if (user?.coordinates) {
+                locationDetectedRef.current = true;
                 setUserCoords(user.coordinates);
                 if (user.postalCode) setUserPostalCode(user.postalCode);
                 else if (user.address && typeof user.address === 'string') {
@@ -112,6 +115,7 @@ export const LocationProvider: React.FC<{ children: ReactNode }> = ({ children }
 
             // Priority 2: Geocode address from Profile Addresses list
             if (user && profile?.addresses?.length > 0) {
+                locationDetectedRef.current = true;
                 const defaultAddr = profile.addresses.find((a: any) => a.isDefault) || profile.addresses[0];
                 const addrStr = `${defaultAddr.street}, ${defaultAddr.city}, ${defaultAddr.province}, ${defaultAddr.postalCode}`;
 
@@ -126,7 +130,7 @@ export const LocationProvider: React.FC<{ children: ReactNode }> = ({ children }
                             lat: parseFloat(data[0].lat),
                             lng: parseFloat(data[0].lon)
                         });
-                        return; // Successfully got location from profile address
+                        return;
                     }
                 } catch (e) {
                     console.error("Failed to geocode profile address", e);
@@ -134,6 +138,7 @@ export const LocationProvider: React.FC<{ children: ReactNode }> = ({ children }
             }
 
             // Priority 3: Fallback to IP geolocation for visitors or users without location
+            locationDetectedRef.current = true;
             try {
                 const response = await fetch('https://get.geojs.io/v1/ip/geo.json');
                 const data = await response.json();
