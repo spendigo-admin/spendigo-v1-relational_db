@@ -4,9 +4,26 @@ import { indexFlyerDeals } from '../admin/indexFlyerDeals';
 
 const FLYERS_URL = 'https://flyers-ng.flippback.com/api/flipp/data?locale=en&postal_code={}&sid={}';
 const FLYER_ITEMS_URL = 'https://flyers-ng.flippback.com/api/flipp/flyers/{}/flyer_items?locale=en&sid={}';
-const GROCERY_STORES = new Set([
-    'No Frills', 'FreshCo', 'Walmart', 'Loblaws', 'Real Canadian Superstore', 'Sobeys', 'Metro', 'Food Basics', 'Your Independent Grocer', 'Independent Grocers'
-]);
+// Stores to ingest per Flipp category. Add new categories here as they become active.
+// Only 'Groceries' is active for analytics today; other categories are ready to enable.
+const CATEGORY_STORES: Record<string, string[]> = {
+    'Groceries': [
+        'No Frills', 'FreshCo', 'Walmart', 'Loblaws', 'Real Canadian Superstore',
+        'Sobeys', 'Metro', 'Food Basics', 'Your Independent Grocer', 'Independent Grocers',
+        'Giant Tiger', 'Farm Boy', 'Wholesale Club',
+    ],
+    // 'Home & Garden': ['Canadian Tire', 'Home Depot', 'Rona', 'Home Hardware', 'IKEA'],
+    // 'Electronics':   ['Best Buy', 'Staples', 'The Source', 'London Drugs'],
+    // 'Pets':          ['PetSmart', 'Pet Valu', "Ren's Pets"],
+    // 'Fashion':       ["Mark's", 'Sport Chek', 'Old Navy', 'H&M', 'Gap'],
+};
+
+// Derived lookup: store name → which category it belongs to (for tagging ingested deals)
+const STORE_TO_CATEGORY = new Map<string, string>(
+    Object.entries(CATEGORY_STORES).flatMap(([cat, stores]) =>
+        stores.map(s => [s, cat] as [string, string])
+    )
+);
 
 function generateSid(): string {
     return Array.from({ length: 16 }, () => Math.floor(Math.random() * 10)).join('');
@@ -71,7 +88,8 @@ export async function runIngestion(postalCode: string, resetData: boolean = fals
             if (typeof categories === 'string') {
                 categories = categories.split(',').map((c: string) => c.trim());
             }
-            return GROCERY_STORES.has(merchant) && categories.includes('Groceries');
+            const assignedCategory = STORE_TO_CATEGORY.get(merchant);
+            return assignedCategory !== undefined && categories.includes(assignedCategory);
         });
 
         if (groceryFlyers.length === 0) {
@@ -118,6 +136,7 @@ export async function runIngestion(postalCode: string, resetData: boolean = fals
                             id: dealId,
                             flyerId: flyerId,
                             retailer: flyer.merchant,
+                            category: STORE_TO_CATEGORY.get(flyer.merchant) ?? 'Groceries',
                             name: item.name,
                             description: item.description || null,
                             brand: item.brand || null,

@@ -39,9 +39,21 @@ const firebase_functions_1 = require("firebase-functions");
 const indexFlyerDeals_1 = require("../admin/indexFlyerDeals");
 const FLYERS_URL = 'https://flyers-ng.flippback.com/api/flipp/data?locale=en&postal_code={}&sid={}';
 const FLYER_ITEMS_URL = 'https://flyers-ng.flippback.com/api/flipp/flyers/{}/flyer_items?locale=en&sid={}';
-const GROCERY_STORES = new Set([
-    'No Frills', 'FreshCo', 'Walmart', 'Loblaws', 'Real Canadian Superstore', 'Sobeys', 'Metro', 'Food Basics', 'Your Independent Grocer', 'Independent Grocers'
-]);
+// Stores to ingest per Flipp category. Add new categories here as they become active.
+// Only 'Groceries' is active for analytics today; other categories are ready to enable.
+const CATEGORY_STORES = {
+    'Groceries': [
+        'No Frills', 'FreshCo', 'Walmart', 'Loblaws', 'Real Canadian Superstore',
+        'Sobeys', 'Metro', 'Food Basics', 'Your Independent Grocer', 'Independent Grocers',
+        'Giant Tiger', 'Farm Boy', 'Wholesale Club',
+    ],
+    // 'Home & Garden': ['Canadian Tire', 'Home Depot', 'Rona', 'Home Hardware', 'IKEA'],
+    // 'Electronics':   ['Best Buy', 'Staples', 'The Source', 'London Drugs'],
+    // 'Pets':          ['PetSmart', 'Pet Valu', "Ren's Pets"],
+    // 'Fashion':       ["Mark's", 'Sport Chek', 'Old Navy', 'H&M', 'Gap'],
+};
+// Derived lookup: store name → which category it belongs to (for tagging ingested deals)
+const STORE_TO_CATEGORY = new Map(Object.entries(CATEGORY_STORES).flatMap(([cat, stores]) => stores.map(s => [s, cat])));
 function generateSid() {
     return Array.from({ length: 16 }, () => Math.floor(Math.random() * 10)).join('');
 }
@@ -96,7 +108,8 @@ async function runIngestion(postalCode, resetData = false) {
             if (typeof categories === 'string') {
                 categories = categories.split(',').map((c) => c.trim());
             }
-            return GROCERY_STORES.has(merchant) && categories.includes('Groceries');
+            const assignedCategory = STORE_TO_CATEGORY.get(merchant);
+            return assignedCategory !== undefined && categories.includes(assignedCategory);
         });
         if (groceryFlyers.length === 0) {
             return { success: true, processedFlyers: 0, totalDealsSaved: 0, summaryData: [] };
@@ -128,6 +141,7 @@ async function runIngestion(postalCode, resetData = false) {
             const dealsToWrite = itemsData
                 .filter((item) => item.name)
                 .map((item) => {
+                var _a;
                 const dealId = item.id ? item.id.toString() : Math.random().toString(36).substring(7);
                 const dealRef = flyerRef.collection('deals').doc(dealId);
                 return {
@@ -136,6 +150,7 @@ async function runIngestion(postalCode, resetData = false) {
                         id: dealId,
                         flyerId: flyerId,
                         retailer: flyer.merchant,
+                        category: (_a = STORE_TO_CATEGORY.get(flyer.merchant)) !== null && _a !== void 0 ? _a : 'Groceries',
                         name: item.name,
                         description: item.description || null,
                         brand: item.brand || null,
