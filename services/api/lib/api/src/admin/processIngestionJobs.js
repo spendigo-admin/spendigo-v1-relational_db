@@ -37,7 +37,7 @@ exports.processIngestionJobs = void 0;
 const functions = __importStar(require("firebase-functions"));
 const admin = __importStar(require("firebase-admin"));
 const flippScraper_1 = require("../utils/flippScraper");
-exports.processIngestionJobs = functions.pubsub.schedule('every 10 minutes').onRun(async (context) => {
+exports.processIngestionJobs = functions.pubsub.schedule('every 10 minutes').onRun(async (_context) => {
     const db = admin.firestore();
     const now = new Date();
     const currentDay = now.getDay(); // 0-6

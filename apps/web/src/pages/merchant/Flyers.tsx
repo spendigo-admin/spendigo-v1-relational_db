@@ -186,7 +186,7 @@ const MerchantFlyers: React.FC = () => {
             return;
         }
 
-        let status: Flyer['status'] = publish ? getEffectiveStatus(formData) : 'draft';
+        const status: Flyer['status'] = publish ? getEffectiveStatus(formData) : 'draft';
 
         const newFlyer: Flyer = {
             id: activeFlyerId || `f${Date.now()}`,

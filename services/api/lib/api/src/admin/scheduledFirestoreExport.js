@@ -64,7 +64,7 @@ exports.scheduledFirestoreExport = functions
         return null;
     }
     // @google-cloud/firestore is a transitive dependency of firebase-admin — no extra install needed
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
     const { v1: FirestoreAdmin } = require('@google-cloud/firestore');
     const client = new FirestoreAdmin.FirestoreAdminClient();
     const projectId = process.env.GCLOUD_PROJECT || admin.instanceId().app.options.projectId || 'spendigo-smartcart-prod';
@@ -127,7 +127,7 @@ exports.triggerManualExport = functions
         throw new functions.https.HttpsError('permission-denied', 'Admin only.');
     }
     // Re-use the same export logic via a direct call
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
     const { v1: FirestoreAdmin } = require('@google-cloud/firestore');
     const client = new FirestoreAdmin.FirestoreAdminClient();
     const projectId = process.env.GCLOUD_PROJECT || admin.instanceId().app.options.projectId || 'spendigo-smartcart-prod';

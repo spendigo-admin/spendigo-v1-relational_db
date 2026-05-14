@@ -2,7 +2,7 @@ import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import { runIngestion } from '../utils/flippScraper';
 
-export const processIngestionJobs = functions.pubsub.schedule('every 10 minutes').onRun(async (context) => {
+export const processIngestionJobs = functions.pubsub.schedule('every 10 minutes').onRun(async (_context) => {
     const db = admin.firestore();
     const now = new Date();
     const currentDay = now.getDay(); // 0-6

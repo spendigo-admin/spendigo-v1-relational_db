@@ -41,14 +41,14 @@ const admin = __importStar(require("firebase-admin"));
 let cachedDeals = [];
 let lastFetchTime = 0;
 const CACHE_TTL_MS = 1000 * 60 * 60; // 1 hour TTL
-exports.searchPublicDeals = functions.https.onCall(async (data, context) => {
+exports.searchPublicDeals = functions.https.onCall(async (data, _context) => {
     const db = admin.firestore();
     const now = Date.now();
     // Refresh cache if it's empty or TTL has expired
     if (!cachedDeals.length || (now - lastFetchTime) > CACHE_TTL_MS) {
         try {
             const flyersSnapshot = await db.collection('public_flyers').get();
-            let allDeals = [];
+            const allDeals = [];
             // Note: This reads all flyer deals, but only ONCE per instance lifecycle.
             for (const flyerDoc of flyersSnapshot.docs) {
                 const dealsSnapshot = await db.collection('public_flyers').doc(flyerDoc.id).collection('deals').get();

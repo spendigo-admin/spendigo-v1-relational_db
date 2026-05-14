@@ -7,7 +7,7 @@ let cachedDeals: any[] = [];
 let lastFetchTime = 0;
 const CACHE_TTL_MS = 1000 * 60 * 60; // 1 hour TTL
 
-export const searchPublicDeals = functions.https.onCall(async (data, context) => {
+export const searchPublicDeals = functions.https.onCall(async (data, _context) => {
     const db = admin.firestore();
     const now = Date.now();
     
@@ -15,7 +15,7 @@ export const searchPublicDeals = functions.https.onCall(async (data, context) =>
     if (!cachedDeals.length || (now - lastFetchTime) > CACHE_TTL_MS) {
         try {
             const flyersSnapshot = await db.collection('public_flyers').get();
-            let allDeals: any[] = [];
+            const allDeals: any[] = [];
             
             // Note: This reads all flyer deals, but only ONCE per instance lifecycle.
             for (const flyerDoc of flyersSnapshot.docs) {

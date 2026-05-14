@@ -79,6 +79,7 @@ exports.placeOrder = functions.runWith({ timeoutSeconds: 120, memory: '256MB' })
         return { orderIds, success: true };
     }
     try {
+        const auditEntries = [];
         await db.runTransaction(async (transaction) => {
             var _a, _b, _c, _d, _e;
             // PHASE 1: READS (Collect all product snapshots)
@@ -172,15 +173,21 @@ exports.placeOrder = functions.runWith({ timeoutSeconds: 120, memory: '256MB' })
                     date: new Date().toISOString()
                 };
                 transaction.set(newOrderRef, finalOrder);
-                // Audit: Order Placed
-                await (0, audit_1.logEvent)('ORDER_PLACED', { id: ((_d = context.auth) === null || _d === void 0 ? void 0 : _d.uid) || 'unknown', email: ((_e = context.auth) === null || _e === void 0 ? void 0 : _e.token.email) || 'unknown', ip: context.rawRequest.ip || '0.0.0.0' }, {
+                auditEntries.push({
+                    actor: { id: ((_d = context.auth) === null || _d === void 0 ? void 0 : _d.uid) || 'unknown', email: ((_e = context.auth) === null || _e === void 0 ? void 0 : _e.token.email) || 'unknown', ip: context.rawRequest.ip || '0.0.0.0' },
                     orderId: newOrderRef.id,
-                    total: orderData.total,
+                    total: orderData._serverTotal,
                     storeId: orderData.storeId,
                     itemCount: orderData.items.length
-                }, newOrderRef.id, transaction);
+                });
             }
         });
+        // Audit logging runs after the transaction commits so logEvent's META_REF
+        // read doesn't violate Firestore's "reads before writes" constraint.
+        // Fire-and-forget: an audit failure must never roll back a committed order.
+        for (const entry of auditEntries) {
+            await (0, audit_1.logEvent)('ORDER_PLACED', entry.actor, { orderId: entry.orderId, total: entry.total, storeId: entry.storeId, itemCount: entry.itemCount }, entry.orderId).catch((e) => functions.logger.error('Audit log failed for order', entry.orderId, e));
+        }
         return { orderIds, success: true };
     }
     catch (error) {

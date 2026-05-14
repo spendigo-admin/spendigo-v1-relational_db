@@ -62,7 +62,7 @@ export function tokenizeProduct(name: string): string[] {
     // Split by common delimiters but preserve brand names
     const tokens = name
         .toLowerCase()
-        .replace(/[\d\.\-]/g, ' ') // Normalize numbers/dots
+        .replace(/[\d.-]/g, ' ') // Normalize numbers/dots
         .split(/\s+/)
         .filter(token => token.length > 0);
 

@@ -76,7 +76,7 @@ const Game2048: React.FC = () => {
         if (gameOver) return;
 
         setTiles(prevTiles => {
-            let currentTiles = prevTiles.map(t => ({ ...t, isNew: false, mergedFrom: undefined }));
+            const currentTiles = prevTiles.map(t => ({ ...t, isNew: false, mergedFrom: undefined }));
             let moved = false;
             let newScore = score;
 
@@ -95,14 +95,15 @@ const Game2048: React.FC = () => {
             const mergedIds = new Set<number>();
 
             for (const tile of currentTiles) {
-                let { x, y } = tile;
+                const { x, y } = tile;
                 let nextX = x;
                 let nextY = y;
 
                 // Find the furthest possible position
+                // eslint-disable-next-line no-constant-condition
                 while (true) {
-                    let testX = nextX + (direction === 'LEFT' ? -1 : direction === 'RIGHT' ? 1 : 0);
-                    let testY = nextY + (direction === 'UP' ? -1 : direction === 'DOWN' ? 1 : 0);
+                    const testX = nextX + (direction === 'LEFT' ? -1 : direction === 'RIGHT' ? 1 : 0);
+                    const testY = nextY + (direction === 'UP' ? -1 : direction === 'DOWN' ? 1 : 0);
 
                     if (testX < 0 || testX >= GRID_SIZE || testY < 0 || testY >= GRID_SIZE) break;
 

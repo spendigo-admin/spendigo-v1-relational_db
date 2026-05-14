@@ -66,13 +66,14 @@ exports.onOrderStatusUpdated = functions.firestore
             title = 'Order Accepted! ✅';
             body = `Store is now preparing your items.`;
             break;
-        case 'out_for_delivery':
+        case 'out_for_delivery': {
             const isDelivery = !!afterData.deliveryAddress;
             title = isDelivery ? 'Out for Delivery 🚚' : 'Ready for Pickup! 🛍️';
             body = isDelivery
                 ? `Your order #${orderId.slice(-5)} is on its way!`
                 : `Your items are ready. Visit the store to collect your order.`;
             break;
+        }
         case 'delivered':
             title = 'Order Completed! ✨';
             body = `Your order #${orderId.slice(-5)} has been completed. Enjoy!`;

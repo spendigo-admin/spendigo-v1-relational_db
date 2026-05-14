@@ -28,7 +28,7 @@ async function backfill() {
   console.log(`Starting backfill to Algolia index: ${ALGOLIA_INDEX_NAME}`);
   
   const merchantProductsRef = db.collection('merchant_products');
-  let snapshot = await merchantProductsRef.get();
+  const snapshot = await merchantProductsRef.get();
   
   if (snapshot.empty) {
     console.log('No merchant products found to backfill.');

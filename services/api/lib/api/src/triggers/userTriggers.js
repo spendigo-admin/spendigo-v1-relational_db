@@ -44,7 +44,7 @@ const db = admin.firestore();
  */
 exports.onUserUpdate = functions.firestore
     .document('users/{userId}')
-    .onUpdate(async (change, context) => {
+    .onUpdate(async (change, _context) => {
     const newData = change.after.data();
     const previousData = change.before.data();
     // Critical fields to monitor

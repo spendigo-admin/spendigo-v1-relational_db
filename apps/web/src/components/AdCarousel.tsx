@@ -115,7 +115,7 @@ const AdCarousel: React.FC = () => {
                     .filter(ad => {
                         // If ad points to a specific store, verify that store is active
                         if (!ad.linkUrl) return true;
-                        const storeIdMatch = ad.linkUrl.match(/\/store\/([^\/\?]+)/);
+                        const storeIdMatch = ad.linkUrl.match(/\/store\/([^/?]+)/);
                         if (storeIdMatch) {
                             const sid = storeIdMatch[1];
                             const linkedStore = stores[sid];

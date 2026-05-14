@@ -1,0 +1,24 @@
+# Service worker uses CDN importScripts and Firebase compat globals — not an ES module
+apps/web/public/firebase-messaging-sw.js
+
+# Native Capacitor build output
+apps/web/android/
+apps/web/ios/
+
+# Compiled Cloud Functions output
+services/api/lib/
+services/functions/lib/
+
+# Snapshot backup — not active source
+apps/web/src_v1_backup/
+
+# One-off scripts and scratch files — not application code
+scripts/
+scratch/
+fix_profile.js
+services/api/migrate_flyers.js
+services/api/scanOrphans.js
+services/api/set-cors.js
+services/api/test-storage.js
+services/api/test_monitoring.js
+services/api/.eslintrc.js

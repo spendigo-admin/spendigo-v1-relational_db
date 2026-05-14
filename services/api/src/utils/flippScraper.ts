@@ -151,7 +151,7 @@ export async function runIngestion(postalCode: string, resetData: boolean = fals
         // Generate static JSON export of all active deals for zero-read client comparison
         logger.info("Generating static JSON export of all active deals...");
         const flyersSnapshot = await db.collection('public_flyers').get();
-        let allDeals: any[] = [];
+        const allDeals: any[] = [];
         for (const flyerDoc of flyersSnapshot.docs) {
             const dealsSnapshot = await flyerDoc.ref.collection('deals').get();
             dealsSnapshot.forEach(doc => {

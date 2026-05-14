@@ -88,7 +88,7 @@ const AdminDashboard: React.FC = () => {
         });
 
         return () => unsubscribes.forEach(u => u());
-    }, [Object.keys(stores).join(',')]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [Object.keys(stores).join(',')]);
 
     const [trafficRange, setTrafficRange] = useState<'24h' | '7d' | '30d' | '365d'>('24h');
 

@@ -52,6 +52,14 @@ export const placeOrder = functions.runWith({ timeoutSeconds: 120, memory: '256M
     }
 
     try {
+        const auditEntries: Array<{
+            actor: { id: string; email: string; ip: string };
+            orderId: string;
+            total: number;
+            storeId: string;
+            itemCount: number;
+        }> = [];
+
         await db.runTransaction(async (transaction) => {
             // PHASE 1: READS (Collect all product snapshots)
             const productChecks: {
@@ -162,21 +170,27 @@ export const placeOrder = functions.runWith({ timeoutSeconds: 120, memory: '256M
 
                 transaction.set(newOrderRef, finalOrder);
 
-                // Audit: Order Placed
-                await logEvent(
-                    'ORDER_PLACED',
-                    { id: context.auth?.uid || 'unknown', email: context.auth?.token.email || 'unknown', ip: context.rawRequest.ip || '0.0.0.0' },
-                    {
-                        orderId: newOrderRef.id,
-                        total: orderData.total,
-                        storeId: orderData.storeId,
-                        itemCount: orderData.items.length
-                    },
-                    newOrderRef.id,
-                    transaction
-                );
+                auditEntries.push({
+                    actor: { id: context.auth?.uid || 'unknown', email: context.auth?.token.email || 'unknown', ip: context.rawRequest.ip || '0.0.0.0' },
+                    orderId: newOrderRef.id,
+                    total: orderData._serverTotal,
+                    storeId: orderData.storeId,
+                    itemCount: orderData.items.length
+                });
             }
         });
+
+        // Audit logging runs after the transaction commits so logEvent's META_REF
+        // read doesn't violate Firestore's "reads before writes" constraint.
+        // Fire-and-forget: an audit failure must never roll back a committed order.
+        for (const entry of auditEntries) {
+            await logEvent(
+                'ORDER_PLACED',
+                entry.actor,
+                { orderId: entry.orderId, total: entry.total, storeId: entry.storeId, itemCount: entry.itemCount },
+                entry.orderId
+            ).catch((e) => functions.logger.error('Audit log failed for order', entry.orderId, e));
+        }
 
         return { orderIds, success: true };
 

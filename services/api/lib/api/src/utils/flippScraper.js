@@ -166,7 +166,7 @@ async function runIngestion(postalCode, resetData = false) {
         // Generate static JSON export of all active deals for zero-read client comparison
         firebase_functions_1.logger.info("Generating static JSON export of all active deals...");
         const flyersSnapshot = await db.collection('public_flyers').get();
-        let allDeals = [];
+        const allDeals = [];
         for (const flyerDoc of flyersSnapshot.docs) {
             const dealsSnapshot = await flyerDoc.ref.collection('deals').get();
             dealsSnapshot.forEach(doc => {

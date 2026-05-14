@@ -63,7 +63,7 @@ const AuditLogs: React.FC = () => {
     const filteredLogs = useMemo(() => {
         const query = search.toLowerCase();
         
-        let processed = logs.filter(log => {
+        const processed = logs.filter(log => {
             // 1. Text Search
             const matchesSearch = 
                 log.action.toLowerCase().includes(query) ||
