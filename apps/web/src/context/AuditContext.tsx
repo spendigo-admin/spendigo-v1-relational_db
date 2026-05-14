@@ -25,8 +25,9 @@ interface AuditContextType {
     logs: AuditLog[];
     logEvent: (action: string, metadata?: Record<string, any>, resource?: string) => Promise<void>;
     testLog: () => Promise<void>;
-    verifyIntegrity: () => Promise<{ isValid: boolean; breakAt?: string }>;
+    verifyIntegrity: () => Promise<{ isValid: boolean; breakAt?: string; isPartialChain?: boolean }>;
     isVerified: boolean | null;
+    isPartialChain: boolean;
     errorLogId: string | null;
 }
 
@@ -75,6 +76,7 @@ export const AuditProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     const [logs, setLogs] = useState<AuditLog[]>([]);
     const [isVerified, setIsVerified] = useState<boolean | null>(null);
     const [errorLogId, setErrorLogId] = useState<string | null>(null);
+    const [isPartialChain, setIsPartialChain] = useState<boolean>(false);
 
     // 1. Snapshot Listener: Sync logs (Admin Only)
     useEffect(() => {
@@ -118,18 +120,26 @@ export const AuditProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }, []); // Run once on mount to ensure early events (like login) are caught
 
     // Verify Integrity Chain
-    const verifyIntegrity = async (): Promise<{ isValid: boolean; breakAt?: string }> => {
+    const verifyIntegrity = async (): Promise<{ isValid: boolean; breakAt?: string; isPartialChain?: boolean }> => {
         setIsVerified(null); // validating...
         setErrorLogId(null);
 
         if (logs.length === 0) {
             setIsVerified(true);
+            setIsPartialChain(false);
             return { isValid: true };
         }
 
         let isValid = true;
         let breakAtId: string | undefined;
-        let previousHash = GENESIS_HASH;
+
+        // Verify relative linkage among the fetched logs only.
+        // We cannot guarantee the chain starts at genesis unless we have every log ever written
+        // (e.g. older logs outside the current window). Starting from logs[0].prevHash means the
+        // first log always passes the linkage check; subsequent logs must each reference the
+        // exact hash of the entry before them. Any tampering in the visible window still breaks.
+        const startsFromGenesis = logs[0].prevHash === GENESIS_HASH;
+        let previousHash = logs[0].prevHash;
 
         // Note: logs are ordered by timestamp asc from firestore query
         for (const log of logs) {
@@ -155,8 +165,9 @@ export const AuditProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         }
 
         setIsVerified(isValid);
+        setIsPartialChain(!startsFromGenesis);
         if (!isValid) setErrorLogId(breakAtId || 'unknown');
-        return { isValid, breakAt: breakAtId };
+        return { isValid, breakAt: breakAtId, isPartialChain: !startsFromGenesis };
     };
 
     // Auto-verify on load if logs exist
@@ -190,7 +201,7 @@ export const AuditProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     };
 
     return (
-        <AuditContext.Provider value={{ logs, logEvent, testLog, verifyIntegrity, isVerified, errorLogId }}>
+        <AuditContext.Provider value={{ logs, logEvent, testLog, verifyIntegrity, isVerified, isPartialChain, errorLogId }}>
             {children}
         </AuditContext.Provider>
     );

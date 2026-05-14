@@ -32,7 +32,7 @@ const getSeverityBadge = (action: string) => {
 
 const AuditLogs: React.FC = () => {
     const { user } = useAuth();
-    const { logs, verifyIntegrity, isVerified, testLog, errorLogId } = useAudit();
+    const { logs, verifyIntegrity, isVerified, isPartialChain, testLog, errorLogId } = useAudit();
     const [isLiveView, setIsLiveView] = useState(true);
     const [lastFetchTime, setLastFetchTime] = useState<number>(Date.now());
     const [search, setSearch] = useState('');
@@ -184,17 +184,26 @@ const AuditLogs: React.FC = () => {
                             <button
                                 onClick={() => verifyIntegrity()}
                                 className={`px-4 py-2 rounded-xl text-xs font-bold border flex items-center gap-2 transition-all shadow-sm ${
-                                    isVerified === true 
-                                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200 ring-2 ring-emerald-100' 
-                                    : isVerified === false 
-                                    ? 'bg-red-50 text-red-700 border-red-200 animate-bounce' 
+                                    isVerified === true
+                                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200 ring-2 ring-emerald-100'
+                                    : isVerified === false
+                                    ? 'bg-red-50 text-red-700 border-red-200 animate-bounce'
                                     : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
                                 }`}
                             >
                                 {isVerified === null ? (
                                     <><span className="animate-spin">↻</span> Verifying...</>
                                 ) : isVerified === true ? (
-                                    <><span className="text-emerald-500">✓</span> Integrity Chain Valid</>
+                                    isPartialChain ? (
+                                        <div className="flex flex-col items-end">
+                                            <div className="flex items-center gap-2 text-emerald-600">
+                                                <span>✓</span> Chain Valid (partial)
+                                            </div>
+                                            <span className="text-[9px] font-mono opacity-60">Starts mid-sequence — older logs exist</span>
+                                        </div>
+                                    ) : (
+                                        <><span className="text-emerald-500">✓</span> Integrity Chain Valid</>
+                                    )
                                 ) : (
                                     <div className="flex flex-col items-end">
                                         <div className="flex items-center gap-2 text-red-500">
