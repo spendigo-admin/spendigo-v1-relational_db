@@ -7,6 +7,7 @@ import { useLocation } from '../../context/LocationContext';
 import { Skeleton } from '../../components/ui/Skeleton';
 import { filterActiveDeals } from '../../utils/date-helpers';
 import { useAuth } from '../../context/AuthContext';
+import SEO from '../../components/SEO';
 
 const StoreCardSkeleton = () => (
     <div className="bg-white rounded-3xl overflow-hidden shadow-sm border border-gray-100 p-4">
@@ -183,6 +184,7 @@ const StoreList: React.FC = () => {
 
     return (
         <div className="min-h-screen bg-transparent">
+            <SEO title="Home" path="/" />
             {/* HERO SECTION */}
             <section className="relative pt-6 md:pt-10 pb-4 md:pb-8 overflow-hidden bg-gradient-to-b from-[#F5F3FF]/50 to-transparent">
                 <div className="max-w-7xl mx-auto px-6 md:px-12">

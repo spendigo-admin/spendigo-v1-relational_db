@@ -7,6 +7,7 @@ import { Order, useOrders } from '../../context/OrderContext';
 import { useNotifications } from '../../context/NotificationContext';
 import NotificationPopover from '../../components/NotificationPopover';
 import { formatNotificationTime } from '../../utils/date-helpers';
+import SEO from '../../components/SEO';
 
 type TimePeriod = 'daily' | 'weekly' | 'monthly';
 
@@ -288,6 +289,7 @@ const MerchantDashboard: React.FC = () => {
 
     return (
         <div className="p-4 md:p-6 animate-fade-in pb-20 space-y-6">
+            <SEO title="Merchant Dashboard" noIndex path="/merchant/dashboard" />
             {/* Suspension Alert */}
             {store?.status === 'suspended' && (
                 <div className="bg-red-50 border-2 border-red-200 rounded-2xl p-6 flex flex-col md:flex-row items-center gap-6 animate-pulse-subtle shadow-lg">

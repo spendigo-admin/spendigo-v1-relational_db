@@ -10,6 +10,7 @@ import { useConfirmation } from '../../context/ConfirmationContext';
 
 import { useAuth } from '../../context/AuthContext';
 import { useTrafficStats } from '../../hooks/useTrafficStats';
+import SEO from '../../components/SEO';
 import { Link } from 'react-router-dom';
 
 const RecentActivityFeed: React.FC = () => {
@@ -164,6 +165,7 @@ const AdminDashboard: React.FC = () => {
 
     return (
         <div className="p-4 md:p-6 animate-fade-in pb-20">
+            <SEO title="Admin Dashboard" noIndex path="/admin/dashboard" />
             {/* Platform Hero - Ultra Slim Redesign */}
             <div className="mb-6 relative overflow-hidden rounded-xl bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-primary-dark)] p-3 md:p-4 text-white shadow-md group transition-all duration-300 hover:shadow-lg">
                 {/* Subtle Decorative Blobs - Scaled Down */}
