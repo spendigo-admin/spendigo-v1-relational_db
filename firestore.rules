@@ -183,11 +183,23 @@ service cloud.firestore {
     match /public_flyers/{flyerId} {
       allow read: if true;
       allow write: if isAdmin();
-      
+
       match /deals/{dealId} {
         allow read: if true;
         allow write: if isAdmin();
       }
+    }
+
+    // FLYER DEAL INDEX (Flat time-series index for predictive analytics — written by Cloud Functions)
+    match /flyer_deal_index/{docId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // FLYER ANALYTICS (Pre-computed deal quality stats — written by Cloud Functions)
+    match /flyer_analytics/{docId} {
+      allow read: if true;
+      allow write: if false;
     }
 
     // ORDERS

@@ -64,6 +64,23 @@
                 { "fieldPath": "status", "order": "ASCENDING" },
                 { "fieldPath": "scheduledAt", "order": "ASCENDING" }
             ]
+        },
+        {
+            "collectionGroup": "flyer_deal_index",
+            "queryScope": "COLLECTION",
+            "fields": [
+                { "fieldPath": "normalizedKey", "order": "ASCENDING" },
+                { "fieldPath": "retailer", "order": "ASCENDING" },
+                { "fieldPath": "validFrom", "order": "DESCENDING" }
+            ]
+        },
+        {
+            "collectionGroup": "flyer_deal_index",
+            "queryScope": "COLLECTION",
+            "fields": [
+                { "fieldPath": "normalizedKey", "order": "ASCENDING" },
+                { "fieldPath": "validFrom", "order": "DESCENDING" }
+            ]
         }
     ],
     "fieldOverrides": [

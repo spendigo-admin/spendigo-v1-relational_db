@@ -36,6 +36,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.runIngestion = runIngestion;
 const admin = __importStar(require("firebase-admin"));
 const firebase_functions_1 = require("firebase-functions");
+const indexFlyerDeals_1 = require("../admin/indexFlyerDeals");
 const FLYERS_URL = 'https://flyers-ng.flippback.com/api/flipp/data?locale=en&postal_code={}&sid={}';
 const FLYER_ITEMS_URL = 'https://flyers-ng.flippback.com/api/flipp/flyers/{}/flyer_items?locale=en&sid={}';
 const GROCERY_STORES = new Set([
@@ -162,6 +163,8 @@ async function runIngestion(postalCode, resetData = false) {
             processedFlyers++;
             totalDealsSaved += dealsToWrite.length;
             summaryData.push({ retailer: flyer.merchant, dealsCount: dealsToWrite.length });
+            // Fire-and-forget: index deals into flat time-series collection for predictive analytics
+            (0, indexFlyerDeals_1.indexFlyerDeals)(flyerId).catch(err => firebase_functions_1.logger.error(`[indexFlyerDeals] Failed for flyer ${flyerId}:`, err));
         }
         // Generate static JSON export of all active deals for zero-read client comparison
         firebase_functions_1.logger.info("Generating static JSON export of all active deals...");

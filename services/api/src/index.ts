@@ -45,3 +45,4 @@ export { exportMerchantData } from './admin/exportMerchantData';
 export { processPendingStoreDeletions } from './admin/processPendingStoreDeletions';
 export { forceDeleteStore } from './admin/forceDeleteStore';
 export { sendCampaign } from './marketing/sendCampaign';
+export { aggregateFlyerAnalytics, triggerAnalyticsAggregation } from './admin/aggregateFlyerAnalytics';

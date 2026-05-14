@@ -1,5 +1,6 @@
 import * as admin from 'firebase-admin';
 import { logger } from 'firebase-functions';
+import { indexFlyerDeals } from '../admin/indexFlyerDeals';
 
 const FLYERS_URL = 'https://flyers-ng.flippback.com/api/flipp/data?locale=en&postal_code={}&sid={}';
 const FLYER_ITEMS_URL = 'https://flyers-ng.flippback.com/api/flipp/flyers/{}/flyer_items?locale=en&sid={}';
@@ -146,6 +147,11 @@ export async function runIngestion(postalCode: string, resetData: boolean = fals
             processedFlyers++;
             totalDealsSaved += dealsToWrite.length;
             summaryData.push({ retailer: flyer.merchant, dealsCount: dealsToWrite.length });
+
+            // Fire-and-forget: index deals into flat time-series collection for predictive analytics
+            indexFlyerDeals(flyerId).catch(err =>
+                logger.error(`[indexFlyerDeals] Failed for flyer ${flyerId}:`, err)
+            );
         }
 
         // Generate static JSON export of all active deals for zero-read client comparison

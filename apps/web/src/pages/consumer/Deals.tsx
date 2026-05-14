@@ -7,8 +7,90 @@ import SEO from '../../components/SEO';
 import { filterActiveDeals } from '../../utils/date-helpers';
 import { useTranslation } from 'react-i18next';
 import { EmptyState } from '../../components/ui/EmptyState';
+import { useDealQuality, DealQualityBadge } from '../../hooks/useDealQuality';
 
 const FILTERS = ['All', 'Flash Sales', 'Sale Items', 'Percentage Off', 'Fixed Price'];
+
+const BADGE_STYLES: Record<DealQualityBadge, { bg: string; text: string }> = {
+    historic_low:      { bg: 'bg-green-100', text: 'text-green-700' },
+    great_deal:        { bg: 'bg-emerald-50', text: 'text-emerald-600' },
+    average:           { bg: 'bg-gray-100', text: 'text-gray-500' },
+    above_average:     { bg: 'bg-orange-50', text: 'text-orange-500' },
+    high_price:        { bg: 'bg-red-50', text: 'text-red-400' },
+    insufficient_data: { bg: '', text: '' },
+};
+
+interface DealCardProps {
+    deal: any;
+    onNavigate: (storeId: string) => void;
+}
+
+const DealCard: React.FC<DealCardProps> = ({ deal, onNavigate }) => {
+    const discount =
+        deal.type === 'percentage'
+            ? `${deal.value}% OFF`
+            : deal.type === 'fixed'
+            ? `$${deal.value} OFF`
+            : 'BOGO';
+
+    const productName = deal.productName || deal.name || 'Product';
+    const productImage = deal.productImage || deal.image;
+    const salePrice = deal.salePrice ?? deal.price;
+    const originalPrice = deal.originalPrice;
+    const savings =
+        originalPrice && salePrice ? (originalPrice - salePrice).toFixed(2) : null;
+
+    // Compare against cross-chain Flipp market baseline (retailer='ALL')
+    const quality = useDealQuality(productName, 'ALL', salePrice);
+    const badgeStyle = quality && quality.badge !== 'insufficient_data'
+        ? BADGE_STYLES[quality.badge]
+        : null;
+
+    return (
+        <div
+            onClick={() => onNavigate(deal.storeId)}
+            className="min-w-[180px] max-w-[180px] bg-white rounded-2xl border border-[var(--glass-border)] shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer overflow-hidden flex-shrink-0 group snap-start"
+        >
+            <div className="relative h-32 bg-[var(--surface-2)]">
+                {productImage ? (
+                    <img
+                        src={productImage}
+                        alt={productName}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                ) : (
+                    <div className="w-full h-full flex items-center justify-center text-5xl opacity-40">🏷️</div>
+                )}
+                <div className="absolute top-2 left-2">
+                    <span className="badge-best">{discount}</span>
+                </div>
+                {deal.isFlashSale && (
+                    <div className="absolute top-2 right-2">
+                        <span className="badge-deal animate-pulse">⚡ Flash</span>
+                    </div>
+                )}
+            </div>
+
+            <div className="p-4">
+                <p className="text-xs font-black text-[var(--brand-navy)] leading-tight line-clamp-2 h-8 group-hover:text-[var(--brand-primary)] transition-colors mb-3 uppercase tracking-tight">{productName}</p>
+                <div className="flex items-center gap-2">
+                    <span className="text-xl font-black text-[var(--brand-primary)]">${salePrice?.toFixed(2)}</span>
+                    {originalPrice && (
+                        <span className="text-[10px] font-bold text-[var(--text-muted)] line-through tracking-tighter">${originalPrice.toFixed(2)}</span>
+                    )}
+                </div>
+                {savings && savings !== '0.00' && (
+                    <p className="text-[9px] font-black text-green-600 mt-2 uppercase tracking-[0.1em] italic">You Save ${savings}</p>
+                )}
+                {badgeStyle && quality && (
+                    <span className={`inline-block mt-2 text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full ${badgeStyle.bg} ${badgeStyle.text}`}>
+                        {quality.label}
+                    </span>
+                )}
+            </div>
+        </div>
+    );
+};
 
 const Deals: React.FC = () => {
     const { t } = useTranslation();
@@ -147,64 +229,13 @@ const Deals: React.FC = () => {
                                 </div>
 
                                 <div className="flex gap-4 overflow-x-auto pb-4 px-4 scrollbar-hide snap-x">
-                                    {store.deals.map((deal: any) => {
-                                        const discount = deal.type === 'percentage'
-                                            ? `${deal.value}% OFF`
-                                            : deal.type === 'fixed'
-                                            ? `$${deal.value} OFF`
-                                            : 'BOGO';
-                                        
-                                        // Robust data mapping
-                                        const productName = deal.productName || deal.name || 'Product';
-                                        const productImage = deal.productImage || deal.image;
-                                        const salePrice = deal.salePrice ?? deal.price;
-                                        const originalPrice = deal.originalPrice;
-                                        
-                                        const savings = originalPrice && salePrice
-                                            ? (originalPrice - salePrice).toFixed(2)
-                                            : null;
-
-                                        return (
-                                            <div
-                                                key={`${deal.storeId}-${deal.id}`}
-                                                onClick={() => navigate(`/store/${deal.storeId}`, { state: { initialTab: 'offers' } })}
-                                                className="min-w-[180px] max-w-[180px] bg-white rounded-2xl border border-[var(--glass-border)] shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer overflow-hidden flex-shrink-0 group snap-start"
-                                            >
-                                                <div className="relative h-32 bg-[var(--surface-2)]">
-                                                    {productImage ? (
-                                                        <img
-                                                            src={productImage}
-                                                            alt={productName}
-                                                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                                                        />
-                                                    ) : (
-                                                        <div className="w-full h-full flex items-center justify-center text-5xl opacity-40">🏷️</div>
-                                                    )}
-                                                    <div className="absolute top-2 left-2">
-                                                        <span className="badge-best">{discount}</span>
-                                                    </div>
-                                                    {deal.isFlashSale && (
-                                                        <div className="absolute top-2 right-2">
-                                                            <span className="badge-deal animate-pulse">⚡ Flash</span>
-                                                        </div>
-                                                    )}
-                                                </div>
-
-                                                <div className="p-4">
-                                                    <p className="text-xs font-black text-[var(--brand-navy)] leading-tight line-clamp-2 h-8 group-hover:text-[var(--brand-primary)] transition-colors mb-3 uppercase tracking-tight">{productName}</p>
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="text-xl font-black text-[var(--brand-primary)]">${salePrice?.toFixed(2)}</span>
-                                                        {originalPrice && (
-                                                            <span className="text-[10px] font-bold text-[var(--text-muted)] line-through tracking-tighter">${originalPrice.toFixed(2)}</span>
-                                                        )}
-                                                    </div>
-                                                    {savings && savings !== '0.00' && (
-                                                        <p className="text-[9px] font-black text-green-600 mt-2 uppercase tracking-[0.1em] italic">You Save ${savings}</p>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
+                                    {store.deals.map((deal: any) => (
+                                        <DealCard
+                                            key={`${deal.storeId}-${deal.id}`}
+                                            deal={deal}
+                                            onNavigate={(storeId) => navigate(`/store/${storeId}`, { state: { initialTab: 'offers' } })}
+                                        />
+                                    ))}
                                     {/* Visual spacer at end of scroller */}
                                     <div className="min-w-[20px] h-1 flex-shrink-0" />
                                 </div>
