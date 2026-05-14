@@ -32,7 +32,7 @@ const getSeverityBadge = (action: string) => {
 
 const AuditLogs: React.FC = () => {
     const { user } = useAuth();
-    const { logs, verifyIntegrity, isVerified, isPartialChain, testLog, errorLogId } = useAudit();
+    const { logs, verifyIntegrity, isVerified, isPartialChain, testLog, errorLogId, logIntegrityMap } = useAudit();
     const [isLiveView, setIsLiveView] = useState(true);
     const [lastFetchTime, setLastFetchTime] = useState<number>(Date.now());
     const [search, setSearch] = useState('');
@@ -399,8 +399,28 @@ const AuditLogs: React.FC = () => {
                                             <span className="font-medium">{redactString(log.actor.email)}</span>
                                             <span className="text-[var(--text-muted)] text-xs ml-2">({redactString(log.actor.ip)})</span>
                                         </td>
-                                        <td className="p-4 text-xs font-mono text-green-600 truncate max-w-[100px]" title={log.hash}>
-                                            {log.hash.substring(0, 8)}...
+                                        <td className="p-4">
+                                            {(() => {
+                                                const s = logIntegrityMap.get(log.id);
+                                                if (!s) return (
+                                                    <span className="text-[10px] font-mono text-gray-400 tracking-widest">···</span>
+                                                );
+                                                if (s.hashValid && s.chainValid) return (
+                                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold uppercase">
+                                                        🔒 Valid
+                                                    </span>
+                                                );
+                                                if (!s.hashValid) return (
+                                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-50 text-red-700 border border-red-200 text-[10px] font-bold uppercase" title="Log content was modified after creation">
+                                                        ⚠ Tampered
+                                                    </span>
+                                                );
+                                                return (
+                                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 text-[10px] font-bold uppercase" title="Log was inserted, deleted, or reordered in the chain">
+                                                        ⛓ Chain break
+                                                    </span>
+                                                );
+                                            })()}
                                         </td>
                                         <td className="p-4 text-right text-[var(--text-muted)] text-xs">
                                             <div className={`transition-transform duration-200 ${expandedLogId === log.id ? 'rotate-180' : ''}`}>
@@ -437,10 +457,28 @@ const AuditLogs: React.FC = () => {
                                                             </div>
                                                             <div className="mt-2">
                                                                 <span className="block mb-1">Integrity Hash (SHA-256):</span>
-                                                                <div className="p-2 bg-slate-800 break-all text-[10px] text-slate-400 border-l-2 border-green-500">
+                                                                <div className={`p-2 bg-slate-800 break-all text-[10px] border-l-2 ${
+                                                                    logIntegrityMap.get(log.id)?.hashValid === false
+                                                                        ? 'border-red-500 text-red-400'
+                                                                        : 'border-green-500 text-slate-400'
+                                                                }`}>
                                                                     {log.hash}
                                                                 </div>
                                                             </div>
+                                                            {(() => {
+                                                                const s = logIntegrityMap.get(log.id);
+                                                                if (!s) return null;
+                                                                return (
+                                                                    <div className="mt-3 space-y-1.5">
+                                                                        <div className={`flex items-center gap-2 text-[10px] font-bold ${s.hashValid ? 'text-emerald-400' : 'text-red-400'}`}>
+                                                                            {s.hashValid ? '✓' : '✗'} Content hash {s.hashValid ? 'matches' : 'MISMATCH — data was modified after creation'}
+                                                                        </div>
+                                                                        <div className={`flex items-center gap-2 text-[10px] font-bold ${s.chainValid ? 'text-emerald-400' : 'text-amber-400'}`}>
+                                                                            {s.chainValid ? '✓' : '✗'} Chain linkage {s.chainValid ? 'valid' : 'BROKEN — a preceding log was inserted, deleted, or reordered'}
+                                                                        </div>
+                                                                    </div>
+                                                                );
+                                                            })()}
                                                         </div>
                                                     </div>
                                                 </div>

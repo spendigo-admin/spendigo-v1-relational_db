@@ -29,6 +29,7 @@ interface AuditContextType {
     isVerified: boolean | null;
     isPartialChain: boolean;
     errorLogId: string | null;
+    logIntegrityMap: Map<string, { hashValid: boolean; chainValid: boolean }>;
 }
 
 const AuditContext = createContext<AuditContextType | undefined>(undefined);
@@ -77,6 +78,7 @@ export const AuditProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     const [isVerified, setIsVerified] = useState<boolean | null>(null);
     const [errorLogId, setErrorLogId] = useState<string | null>(null);
     const [isPartialChain, setIsPartialChain] = useState<boolean>(false);
+    const [logIntegrityMap, setLogIntegrityMap] = useState<Map<string, { hashValid: boolean; chainValid: boolean }>>(new Map());
 
     // 1. Snapshot Listener: Sync logs (Admin Only)
     useEffect(() => {
@@ -127,11 +129,13 @@ export const AuditProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         if (logs.length === 0) {
             setIsVerified(true);
             setIsPartialChain(false);
+            setLogIntegrityMap(new Map());
             return { isValid: true };
         }
 
         let isValid = true;
         let breakAtId: string | undefined;
+        const map = new Map<string, { hashValid: boolean; chainValid: boolean }>();
 
         // Verify relative linkage among the fetched logs only.
         // We cannot guarantee the chain starts at genesis unless we have every log ever written
@@ -144,28 +148,31 @@ export const AuditProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         // Note: logs are ordered by timestamp asc from firestore query
         for (const log of logs) {
             // 1. Check Linkage
-            if (log.prevHash !== previousHash) {
+            const chainValid = log.prevHash === previousHash;
+            if (!chainValid && !breakAtId) {
                 console.error(`Broken Chain at ${log.id}: prevHash mismatch. Expected ${previousHash}, got ${log.prevHash}`);
-                isValid = false;
                 breakAtId = log.id;
-                break;
+                isValid = false;
             }
 
             // 2. Check Data Integrity (Re-hash content)
             const calculated = await sha256(canonicalize(log));
-
-            if (calculated !== log.hash) {
+            const hashValid = calculated === log.hash;
+            if (!hashValid && !breakAtId) {
                 console.error(`Tampered Data at ${log.id}: hash mismatch`);
-                isValid = false;
                 breakAtId = log.id;
-                break;
+                isValid = false;
             }
 
+            map.set(log.id, { hashValid, chainValid });
+
+            // Advance using the stored hash so subsequent chain checks reflect actual Firestore state
             previousHash = log.hash;
         }
 
         setIsVerified(isValid);
         setIsPartialChain(!startsFromGenesis);
+        setLogIntegrityMap(map);
         if (!isValid) setErrorLogId(breakAtId || 'unknown');
         return { isValid, breakAt: breakAtId, isPartialChain: !startsFromGenesis };
     };
@@ -201,7 +208,7 @@ export const AuditProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     };
 
     return (
-        <AuditContext.Provider value={{ logs, logEvent, testLog, verifyIntegrity, isVerified, isPartialChain, errorLogId }}>
+        <AuditContext.Provider value={{ logs, logEvent, testLog, verifyIntegrity, isVerified, isPartialChain, errorLogId, logIntegrityMap }}>
             {children}
         </AuditContext.Provider>
     );
