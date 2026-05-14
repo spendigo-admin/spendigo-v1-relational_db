@@ -2,10 +2,9 @@ import React, { useState } from 'react';
 import { useCatalog } from '../../hooks/useCatalog';
 import { useNotifications } from '../../context/NotificationContext';
 import { useConfirmation } from '../../context/ConfirmationContext';
-import { collection, getDocs, query, where, writeBatch, doc, getCountFromServer, getDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, getDocs, query, where, writeBatch, doc, getCountFromServer, getDoc } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
 import { db, functions } from '../../lib/firebase';
-import { jobs as staticJobs } from '../../data/careers';
 import { auditBridge } from '../../utils/auditBridge';
 
 const SystemTools = () => {
@@ -276,66 +275,6 @@ const SystemTools = () => {
                     } catch (e: any) {
                         throw new Error(e.message || 'Error occurred while cleaning up store data.');
                     }
-                }
-            }
-        },
-        {
-            id: 'seed-careers',
-            title: 'Seed Careers Data',
-            description: 'Migrates static job listings from code files to Firestore for dynamic management.',
-            icon: '💼',
-            action: async () => {
-                if (await confirm({
-                    title: 'Seed Careers?',
-                    message: `This will copy ${staticJobs.length} static job roles into the database. Existing database entries with matching IDs will be refreshed. Proceed?`,
-                    confirmText: 'Start Seeding'
-                })) {
-                    if (!staticJobs || staticJobs.length === 0) {
-                        throw new Error('No static job data found in careers.ts to migrate.');
-                    }
-
-                    console.log('Seeding Careers...', staticJobs);
-                    const batch = writeBatch(db);
-                    let count = 0;
-
-                    for (const job of staticJobs) {
-                        try {
-                            const jobId = job.id ? job.id.toString() : `job_${Date.now()}_${count}`;
-                            const jobRef = doc(db, 'careers', jobId);
-                            
-                            // Prepare data, removing any local UI-only props if any
-                            const jobData = {
-                                title: job.title,
-                                location: job.location,
-                                team: job.team,
-                                type: job.type,
-                                description: job.description,
-                                requirements: job.requirements || [],
-                                responsibilities: job.responsibilities || [],
-                                isVisible: true,
-                                updatedAt: serverTimestamp()
-                            };
-
-                            // Add createdAt only if it's a new document
-                            // For batch.set we don't easily know if it exists without reading first
-                            // but for seeding static data, overwriting is fine
-                            batch.set(jobRef, {
-                                ...jobData,
-                                createdAt: serverTimestamp() // Simplified for now
-                            }, { merge: true });
-                            
-                            count++;
-                        } catch (itemErr) {
-                            console.warn(`Failed to process job ${job.id}:`, itemErr);
-                        }
-                    }
-
-                    await batch.commit();
-                    addNotification({ 
-                        type: 'system', 
-                        title: 'Seeding Complete', 
-                        message: `Successfully processed ${count} job roles. Please refresh the careers management page.` 
-                    });
                 }
             }
         }

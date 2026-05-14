@@ -6,7 +6,7 @@ import { db, storage } from '../../lib/firebase';
 import { collection, addDoc, serverTimestamp, doc, onSnapshot, query, where } from 'firebase/firestore';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 
-import { jobs, values, benefits, Job } from '../../data/careers';
+import { values, benefits, Job } from '../../data/careers';
 
 const Careers: React.FC = () => {
     const { t } = useTranslation();

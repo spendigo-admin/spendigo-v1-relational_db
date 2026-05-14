@@ -37,6 +37,7 @@ exports.forceDeleteStore = void 0;
 const functions = __importStar(require("firebase-functions"));
 const admin = __importStar(require("firebase-admin"));
 const storeCleanupUtils_1 = require("./storeCleanupUtils");
+const errors_1 = require("../utils/errors");
 exports.forceDeleteStore = functions
     .runWith({ timeoutSeconds: 540, memory: '256MB' })
     .https.onCall(async (data, context) => {
@@ -75,7 +76,7 @@ exports.forceDeleteStore = functions
     catch (err) {
         functions.logger.error(`[ForceDelete] Failed to force-delete store ${storeId}:`, err);
         await storeRef.update({ status: 'deletion_failed', deletionError: String(err) });
-        throw new functions.https.HttpsError('internal', `Force deletion failed: ${String(err)}`);
+        (0, errors_1.toHttpsError)(err, 'Force deletion failed.');
     }
 });
 //# sourceMappingURL=forceDeleteStore.js.map
