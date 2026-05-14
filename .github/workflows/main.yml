@@ -54,7 +54,7 @@ jobs:
       - name: E2E Tests
         run: |
           npx playwright install --with-deps chromium
-          npx serve apps/web/dist -l 3000 &
+          npx serve apps/web/dist -l 3000 --single &
           sleep 3
           npm run test:e2e
         env:

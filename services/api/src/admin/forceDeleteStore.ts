@@ -1,6 +1,7 @@
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import { cascadeDeleteStore } from './storeCleanupUtils';
+import { toHttpsError } from '../utils/errors';
 
 export const forceDeleteStore = functions
     .runWith({ timeoutSeconds: 540, memory: '256MB' })
@@ -48,6 +49,6 @@ export const forceDeleteStore = functions
         } catch (err) {
             functions.logger.error(`[ForceDelete] Failed to force-delete store ${storeId}:`, err);
             await storeRef.update({ status: 'deletion_failed', deletionError: String(err) });
-            throw new functions.https.HttpsError('internal', `Force deletion failed: ${String(err)}`);
+            toHttpsError(err, 'Force deletion failed.');
         }
     });
