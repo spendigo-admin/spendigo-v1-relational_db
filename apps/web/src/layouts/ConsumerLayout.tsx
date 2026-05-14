@@ -235,6 +235,7 @@ const ConsumerLayout: React.FC = () => {
                                     {link.label}
                                 </Link>
                             ))}
+                            <LanguageSwitcher />
                         </nav>
                     </div>
  

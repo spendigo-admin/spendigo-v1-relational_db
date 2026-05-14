@@ -3,25 +3,26 @@ import { useTranslation } from 'react-i18next';
 
 export const LanguageSwitcher: React.FC = () => {
   const { i18n } = useTranslation();
+  const isFr = i18n.language?.startsWith('fr');
 
-  const handleLanguageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    i18n.changeLanguage(e.target.value);
-  };
-
-  const currentLang = i18n.language?.startsWith('fr') ? 'fr' : 'en';
+  const toggle = () => i18n.changeLanguage(isFr ? 'en' : 'fr');
 
   return (
-    <div className="flex items-center">
-      <select
-        value={currentLang}
-        onChange={handleLanguageChange}
-        className="px-2 py-1.5 bg-transparent hover:bg-[var(--surface-2)] border border-transparent hover:border-[var(--glass-border)] rounded-lg text-sm font-medium text-[var(--text-main)] outline-none cursor-pointer transition-all focus:ring-2 focus:ring-[var(--brand-primary)]/20 appearance-none pr-6 relative"
-        aria-label="Select language"
-        style={{ backgroundImage: `url("data:image/svg+xml;charset=US-ASCII,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.25rem center', backgroundSize: '0.8em', MozAppearance: 'none', WebkitAppearance: 'none' }}
+    <button
+      onClick={toggle}
+      aria-label={isFr ? 'Switch to English' : 'Passer au français'}
+      className="relative flex items-center w-[72px] h-8 rounded-full bg-gray-100 border border-gray-200 p-0.5 transition-colors duration-300 cursor-pointer hover:border-[var(--brand-primary)]/40 focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)]/20"
+    >
+      {/* Track labels */}
+      <span className={`absolute left-2 text-[11px] font-black transition-opacity duration-200 ${isFr ? 'opacity-40' : 'opacity-0'}`}>🇨🇦</span>
+      <span className={`absolute right-2 text-[11px] font-black transition-opacity duration-200 ${!isFr ? 'opacity-40' : 'opacity-0'}`}>🇨🇦</span>
+
+      {/* Sliding thumb */}
+      <span
+        className={`relative z-10 flex items-center justify-center w-[30px] h-[26px] rounded-full bg-white shadow-sm border border-gray-200 text-[13px] transition-transform duration-300 ease-in-out ${isFr ? 'translate-x-[36px]' : 'translate-x-0'}`}
       >
-        <option value="en" className="text-gray-900 bg-white">🇨🇦 En</option>
-        <option value="fr" className="text-gray-900 bg-white">🇨🇦 Fr</option>
-      </select>
-    </div>
+        {isFr ? '🇫🇷' : '🇬🇧'}
+      </span>
+    </button>
   );
 };
