@@ -1,7 +1,7 @@
 # Spendigo SmartCart
 
 **Status**: Production-Ready (v1.0)  
-**Last Updated**: 2026-05-07
+**Last Updated**: 2026-05-14
 
 Spendigo SmartCart is a Canada-first **Marketplace Facilitator** platform connecting independent convenience stores with local consumers. It features smart basket optimization, real-time order management, digital flyer integration, robust subscription management, and production-grade security.
 
@@ -247,6 +247,8 @@ npx cap open android
 - [x] **Native Mobile Parity**: Full iOS/Android support via Capacitor 6
 - [x] **Premium Theming**: Midnight Navigator (Dark Mode) global integration
 - [x] **Data Recovery**: Firestore PITR & Backup Strategy documentation
+- [x] **Store Compliance**: Merchant suspension and lockout workflows
+- [x] **Flyer Analytics**: Zero-read architecture and optimized wishlist matching
 
 ### 🔜 Upcoming
 - [ ] Automated CI/CD performance benchmarking
