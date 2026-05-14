@@ -4,6 +4,7 @@ import { doc, updateDoc, arrayUnion, getDoc, arrayRemove } from 'firebase/firest
 import { messaging, db } from '../lib/firebase';
 import { Capacitor } from '@capacitor/core';
 import { PushNotifications } from '@capacitor/push-notifications';
+import * as Sentry from '@sentry/react';
 
 const MAX_FCM_TOKENS = 5;
 
@@ -200,7 +201,7 @@ export function usePushNotifications(userId?: string) {
                 .then((refreshedToken) => {
                     if (refreshedToken) {
                         setToken(refreshedToken);
-                        persistToken(userId, refreshedToken).catch(console.error);
+                        persistToken(userId, refreshedToken).catch((err) => { console.error(err); Sentry.captureException(err); });
                     }
                 })
                 .catch(() => {});

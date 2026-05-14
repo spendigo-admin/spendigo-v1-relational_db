@@ -4,10 +4,11 @@ import { FieldValue, DocumentReference, DocumentSnapshot } from 'firebase-admin/
 import { checkRateLimit } from '../utils/rateLimiter';
 import { stripe } from '../config/stripe';
 import { logEvent } from '../utils/audit';
+import { toHttpsError } from '../utils/errors';
 
 const db = admin.firestore();
 
-export const placeOrder = functions.https.onCall(async (data, context) => {
+export const placeOrder = functions.runWith({ timeoutSeconds: 120, memory: '256MB' }).https.onCall(async (data, context) => {
     // 1. Security Check
     if (!context.app && process.env.FUNCTIONS_EMULATOR !== 'true') {
         throw new functions.https.HttpsError('failed-precondition', 'The function must be called from an App Check verified app.');
@@ -30,13 +31,28 @@ export const placeOrder = functions.https.onCall(async (data, context) => {
 
     const orderIds: string[] = [];
 
+    // Idempotency: skip orders whose paymentIntentId already has a committed order.
+    // A network timeout after Stripe succeeds can cause the client to retry, which would
+    // otherwise decrement stock and create a duplicate order against the same payment.
+    const ordersToProcess: any[] = [];
+    for (const orderData of orders) {
+        if (orderData.paymentIntentId) {
+            const existing = await db.collection('orders')
+                .where('paymentIntentId', '==', orderData.paymentIntentId).limit(1).get();
+            if (!existing.empty) {
+                orderIds.push(existing.docs[0].id);
+                continue;
+            }
+        }
+        ordersToProcess.push(orderData);
+    }
+
+    if (ordersToProcess.length === 0) {
+        return { orderIds, success: true };
+    }
+
     try {
         await db.runTransaction(async (transaction) => {
-            // PHASE 0: FORENSIC AUDIT PRE-FETCH (Must be done before any writes)
-            const auditQ = db.collection('audit_logs').orderBy('timestamp', 'desc').orderBy('id', 'desc').limit(1);
-            const lastLogSnap = await transaction.get(auditQ);
-            const prevHash = !lastLogSnap.empty ? lastLogSnap.docs[0].data().hash : '0000000000000000000000000000000000000000000000000000000000000000';
-
             // PHASE 1: READS (Collect all product snapshots)
             const productChecks: {
                 ref: DocumentReference,
@@ -45,7 +61,7 @@ export const placeOrder = functions.https.onCall(async (data, context) => {
                 storeId: string
             }[] = [];
 
-            for (const order of orders) {
+            for (const order of ordersToProcess) {
                 if (!order.storeId) throw new functions.https.HttpsError('invalid-argument', 'Order missing storeId');
 
                 for (const item of order.items) {
@@ -76,12 +92,39 @@ export const placeOrder = functions.https.onCall(async (data, context) => {
                 }
 
                 transaction.update(ref, {
-                    available_quantity: FieldValue.increment(-item.quantity)
+                    available_quantity: currentStock - item.quantity
                 });
             }
 
+            // PHASE 2.5: SERVER-SIDE PRICE VALIDATION
+            // Client-supplied totals cannot be trusted — compute from authoritative snapshots.
+            const TAX_RATE = 0.13; // Ontario HST — replace with settings/platform lookup later
+            for (const orderData of ordersToProcess) {
+                // Gather the product checks that belong to this order
+                const orderChecks = productChecks.filter(pc => pc.storeId === orderData.storeId);
+                const serverSubtotal = parseFloat(
+                    orderChecks.reduce((sum, { snap, item }) =>
+                        sum + (snap.exists ? (snap.data()?.price ?? 0) * item.quantity : 0), 0
+                    ).toFixed(2)
+                );
+                const serverTax = parseFloat((serverSubtotal * TAX_RATE).toFixed(2));
+                const deliveryFee = orderData.deliveryFee ?? 0;
+                if (typeof deliveryFee !== 'number' || deliveryFee < 0 || deliveryFee > 25) {
+                    throw new functions.https.HttpsError('invalid-argument', 'Invalid delivery fee.');
+                }
+                const serverTotal = parseFloat((serverSubtotal + serverTax + deliveryFee).toFixed(2));
+                if (Math.abs(serverTotal - (orderData.total ?? 0)) > 0.02) {
+                    throw new functions.https.HttpsError('invalid-argument', 'Price mismatch. Please refresh and retry.');
+                }
+                // Attach server-computed values so Phase 3 can use them
+                orderData._serverSubtotal = serverSubtotal;
+                orderData._serverTax = serverTax;
+                orderData._serverTotal = serverTotal;
+                orderData._serverDeliveryFee = deliveryFee;
+            }
+
             // PHASE 3: CREATE ORDERS
-            for (const orderData of orders) {
+            for (const orderData of ordersToProcess) {
                 const newOrderRef = db.collection('orders').doc();
                 orderIds.push(newOrderRef.id);
 
@@ -101,10 +144,10 @@ export const placeOrder = functions.https.onCall(async (data, context) => {
                     storeId: orderData.storeId,
                     storeName: orderData.storeName,
                     items: orderData.items,
-                    subtotal: orderData.subtotal,
-                    deliveryFee: orderData.deliveryFee,
-                    tax: orderData.tax,
-                    total: orderData.total,
+                    subtotal: orderData._serverSubtotal,
+                    deliveryFee: orderData._serverDeliveryFee,
+                    tax: orderData._serverTax,
+                    total: orderData._serverTotal,
                     paymentMethod: orderData.paymentMethod || 'card',
                     deliveryAddress: orderData.deliveryAddress,
                     customerId: userId,
@@ -123,15 +166,14 @@ export const placeOrder = functions.https.onCall(async (data, context) => {
                 await logEvent(
                     'ORDER_PLACED',
                     { id: context.auth?.uid || 'unknown', email: context.auth?.token.email || 'unknown', ip: context.rawRequest.ip || '0.0.0.0' },
-                    { 
+                    {
                         orderId: newOrderRef.id,
                         total: orderData.total,
                         storeId: orderData.storeId,
                         itemCount: orderData.items.length
                     },
                     newOrderRef.id,
-                    transaction,
-                    prevHash
+                    transaction
                 );
             }
         });
@@ -139,10 +181,6 @@ export const placeOrder = functions.https.onCall(async (data, context) => {
         return { orderIds, success: true };
 
     } catch (error: any) {
-        functions.logger.error('Place Order Transaction Failed:', error);
-        if (error instanceof functions.https.HttpsError) {
-            throw error;
-        }
-        throw new functions.https.HttpsError('aborted', error.message || 'Transaction failed');
+        toHttpsError(error, 'Transaction failed.', 'aborted');
     }
 });

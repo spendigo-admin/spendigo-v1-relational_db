@@ -2,6 +2,8 @@ import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import * as crypto from 'crypto';
 import PDFDocument from 'pdfkit';
+import { toHttpsError } from '../utils/errors';
+import { checkRateLimit } from '../utils/rateLimiter';
 
 const db = admin.firestore();
 
@@ -10,11 +12,16 @@ const db = admin.firestore();
  * Uses the Firebase Download Token strategy to avoid the 'client_email' signing issues
  * common in dev/local environments.
  */
-export const downloadReceipt = functions.https.onCall(async (data, context) => {
+export const downloadReceipt = functions.runWith({ timeoutSeconds: 120, memory: '512MB' }).https.onCall(async (data, context) => {
     // 1. Authentication Check
     if (!context.auth) {
         throw new functions.https.HttpsError('unauthenticated', 'User must be logged in.');
     }
+    if (!context.app && process.env.FUNCTIONS_EMULATOR !== 'true') {
+        throw new functions.https.HttpsError('failed-precondition', 'App Check verification required.');
+    }
+
+    await checkRateLimit(context.auth.uid, 'downloadReceipt', 10, 60 * 1000);
 
     const { orderId } = data;
     if (!orderId) {
@@ -151,7 +158,6 @@ export const downloadReceipt = functions.https.onCall(async (data, context) => {
         return { url };
 
     } catch (error: any) {
-        functions.logger.error('Download Receipt Error:', error);
-        throw new functions.https.HttpsError('internal', error.message || 'Failed to generate receipt.');
+        toHttpsError(error, 'Failed to generate receipt.');
     }
 });

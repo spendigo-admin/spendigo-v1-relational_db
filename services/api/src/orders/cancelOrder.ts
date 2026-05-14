@@ -3,6 +3,7 @@ import * as admin from 'firebase-admin';
 import { FieldValue, DocumentReference } from 'firebase-admin/firestore';
 import { checkRateLimit } from '../utils/rateLimiter';
 import { logEvent } from '../utils/audit';
+import { toHttpsError } from '../utils/errors';
 
 const db = admin.firestore();
 
@@ -100,7 +101,6 @@ export const cancelOrder = functions.https.onCall(async (data, context) => {
         return { success: true };
 
     } catch (error: any) {
-        functions.logger.error('Cancel Order Error:', error);
-        throw new functions.https.HttpsError('internal', error.message);
+        toHttpsError(error, 'Failed to cancel order.');
     }
 });

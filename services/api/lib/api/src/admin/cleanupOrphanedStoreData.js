@@ -36,6 +36,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.cleanupOrphanedStoreData = void 0;
 const functions = __importStar(require("firebase-functions"));
 const admin = __importStar(require("firebase-admin"));
+const errors_1 = require("../utils/errors");
 /**
  * Cleanup Orphaned Store Data
  *
@@ -132,8 +133,7 @@ exports.cleanupOrphanedStoreData = functions.https.onCall(async (data, context) 
         };
     }
     catch (error) {
-        functions.logger.error("Cleanup failed:", error);
-        throw new functions.https.HttpsError('internal', `Cleanup failed: ${error.message}`);
+        (0, errors_1.toHttpsError)(error, 'Cleanup failed.');
     }
 });
 //# sourceMappingURL=cleanupOrphanedStoreData.js.map

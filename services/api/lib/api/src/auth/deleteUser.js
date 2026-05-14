@@ -37,6 +37,8 @@ exports.deleteUser = void 0;
 const functions = __importStar(require("firebase-functions"));
 const admin = __importStar(require("firebase-admin"));
 const audit_1 = require("../utils/audit");
+const errors_1 = require("../utils/errors");
+const rateLimiter_1 = require("../utils/rateLimiter");
 /**
  * Delete User Function (Admin Only)
  * Deletes a user from Firebase Authentication and Firestore.
@@ -50,6 +52,7 @@ exports.deleteUser = functions.https.onCall(async (data, context) => {
     if (!context.auth) {
         throw new functions.https.HttpsError('unauthenticated', 'The function must be called while authenticated.');
     }
+    await (0, rateLimiter_1.checkRateLimit)(context.auth.uid, 'deleteUser', 3, 15 * 60 * 1000);
     // Check if the caller is an admin
     const callerUid = context.auth.uid;
     const callerDoc = await admin.firestore().collection('users').doc(callerUid).get();
@@ -89,8 +92,7 @@ exports.deleteUser = functions.https.onCall(async (data, context) => {
         return { success: true, message: `User ${targetUid} deleted successfully.` };
     }
     catch (error) {
-        functions.logger.error('Error deleting user:', error);
-        throw new functions.https.HttpsError('internal', `Failed to delete user: ${error.message}`);
+        (0, errors_1.toHttpsError)(error, 'Failed to delete user.');
     }
 });
 //# sourceMappingURL=deleteUser.js.map

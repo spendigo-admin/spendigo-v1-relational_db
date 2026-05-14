@@ -41,17 +41,23 @@ const functions = __importStar(require("firebase-functions"));
 const admin = __importStar(require("firebase-admin"));
 const crypto = __importStar(require("crypto"));
 const pdfkit_1 = __importDefault(require("pdfkit"));
+const errors_1 = require("../utils/errors");
+const rateLimiter_1 = require("../utils/rateLimiter");
 const db = admin.firestore();
 /**
  * Generates a professional PDF receipt for a given order and returns a download URL.
  * Uses the Firebase Download Token strategy to avoid the 'client_email' signing issues
  * common in dev/local environments.
  */
-exports.downloadReceipt = functions.https.onCall(async (data, context) => {
+exports.downloadReceipt = functions.runWith({ timeoutSeconds: 120, memory: '512MB' }).https.onCall(async (data, context) => {
     // 1. Authentication Check
     if (!context.auth) {
         throw new functions.https.HttpsError('unauthenticated', 'User must be logged in.');
     }
+    if (!context.app && process.env.FUNCTIONS_EMULATOR !== 'true') {
+        throw new functions.https.HttpsError('failed-precondition', 'App Check verification required.');
+    }
+    await (0, rateLimiter_1.checkRateLimit)(context.auth.uid, 'downloadReceipt', 10, 60 * 1000);
     const { orderId } = data;
     if (!orderId) {
         throw new functions.https.HttpsError('invalid-argument', 'Order ID is required.');
@@ -162,8 +168,7 @@ exports.downloadReceipt = functions.https.onCall(async (data, context) => {
         return { url };
     }
     catch (error) {
-        functions.logger.error('Download Receipt Error:', error);
-        throw new functions.https.HttpsError('internal', error.message || 'Failed to generate receipt.');
+        (0, errors_1.toHttpsError)(error, 'Failed to generate receipt.');
     }
 });
 //# sourceMappingURL=downloadReceipt.js.map

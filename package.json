@@ -16,9 +16,11 @@
     "benchmark:smartcart": "npm --prefix services/api run build && node --expose-gc scripts/benchmark-smartcart.mjs",
     "stripe:listen": "stripe listen --forward-to localhost:5001/spendigo-8540c/us-central1/stripeWebhook",
     "format": "prettier --write .",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:rules": "vitest run tests/rules"
   },
   "devDependencies": {
+    "@firebase/rules-unit-testing": "^5.0.1",
     "@playwright/test": "^1.58.2",
     "eslint": "^8.0.0",
     "prettier": "^3.0.0",

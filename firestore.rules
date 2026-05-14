@@ -310,7 +310,7 @@ service cloud.firestore {
     // JOB APPLICATIONS
     match /job_applications/{applicationId} {
       allow read: if isAdmin();
-      allow create: if true;
+      allow create: if isAuthenticated();
       allow update, delete: if isAdmin();
     }
 

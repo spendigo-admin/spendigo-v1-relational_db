@@ -8,6 +8,7 @@ export default defineConfig({
       '**/cypress/**',
       '**/.{idea,git,cache,output,temp}/**',
       'tests/e2e/**',
+      'tests/rules/**',
     ],
   },
 });

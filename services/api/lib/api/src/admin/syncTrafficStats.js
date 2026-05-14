@@ -37,6 +37,7 @@ exports.syncTrafficStats = void 0;
 const functions = __importStar(require("firebase-functions"));
 const admin = __importStar(require("firebase-admin"));
 const data_1 = require("@google-analytics/data");
+const errors_1 = require("../utils/errors");
 const analyticsDataClient = new data_1.BetaAnalyticsDataClient();
 /**
  * Cloud Function to sync GA4 statistics into Firestore.
@@ -91,7 +92,7 @@ exports.syncTrafficStats = functions.https.onCall(async (data, context) => {
             last_synced: admin.firestore.FieldValue.serverTimestamp(),
             source: 'Google Analytics'
         }, { merge: true });
-        console.log(`[Admin] Successfully synced GA4 stats for property ${propertyId}`);
+        functions.logger.info(`[Admin] Successfully synced GA4 stats for property ${propertyId}`);
         return {
             success: true,
             message: 'Dashboard stats updated from Google Analytics.',
@@ -99,8 +100,7 @@ exports.syncTrafficStats = functions.https.onCall(async (data, context) => {
         };
     }
     catch (error) {
-        console.error(`[Admin] GA4 Sync Error: ${error.message}`);
-        throw new functions.https.HttpsError('internal', `Failed to sync from Google Analytics: ${error.message}`);
+        (0, errors_1.toHttpsError)(error, 'Failed to sync from Google Analytics.');
     }
 });
 //# sourceMappingURL=syncTrafficStats.js.map

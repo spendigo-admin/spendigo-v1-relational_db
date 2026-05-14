@@ -2,6 +2,7 @@ import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import { stripe } from '../config/stripe';
 import { logEvent, buildActorFromContext } from '../utils/audit';
+import { toHttpsError } from '../utils/errors';
 
 const db = admin.firestore();
 
@@ -101,7 +102,6 @@ export const updateSubscriptionPlan = functions.https.onCall(async (data, contex
         return { success: true, message: isUpgrade ? 'Plan upgraded.' : 'Plan downgraded (effective next cycle).' };
 
     } catch (error: any) {
-        console.error('Update Subscription Error:', error);
-        throw new functions.https.HttpsError('internal', error.message);
+        toHttpsError(error, 'Failed to update subscription plan.');
     }
 });

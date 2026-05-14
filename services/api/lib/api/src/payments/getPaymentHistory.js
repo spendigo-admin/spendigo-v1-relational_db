@@ -37,6 +37,7 @@ exports.getPaymentHistory = void 0;
 const functions = __importStar(require("firebase-functions"));
 const admin = __importStar(require("firebase-admin"));
 const stripe_1 = require("../config/stripe");
+const errors_1 = require("../utils/errors");
 const db = admin.firestore();
 exports.getPaymentHistory = functions.https.onCall(async (data, context) => {
     // 1. Security Check
@@ -79,8 +80,7 @@ exports.getPaymentHistory = functions.https.onCall(async (data, context) => {
         return { payments };
     }
     catch (error) {
-        console.error('Stripe History Error:', error);
-        throw new functions.https.HttpsError('internal', error.message);
+        (0, errors_1.toHttpsError)(error, 'Failed to get payment history.');
     }
 });
 //# sourceMappingURL=getPaymentHistory.js.map

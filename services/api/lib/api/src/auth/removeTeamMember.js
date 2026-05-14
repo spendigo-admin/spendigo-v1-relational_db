@@ -37,6 +37,7 @@ exports.removeTeamMember = void 0;
 const functions = __importStar(require("firebase-functions"));
 const admin = __importStar(require("firebase-admin"));
 const audit_1 = require("../utils/audit");
+const rateLimiter_1 = require("../utils/rateLimiter");
 /**
  * Callable HTTPS Cloud Function to remove a team member
  * Removes the storeId and merchantRole from the target user
@@ -50,6 +51,7 @@ exports.removeTeamMember = functions.https.onCall(async (data, context) => {
     if (!context.auth) {
         throw new functions.https.HttpsError('unauthenticated', 'Must be authenticated');
     }
+    await (0, rateLimiter_1.checkRateLimit)(context.auth.uid, 'removeTeamMember', 10, 15 * 60 * 1000);
     const { targetUserId, storeId } = data;
     if (!targetUserId || !storeId) {
         throw new functions.https.HttpsError('invalid-argument', 'Missing fields');

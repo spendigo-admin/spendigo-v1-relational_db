@@ -37,6 +37,7 @@ exports.checkStripeAccountStatus = void 0;
 const functions = __importStar(require("firebase-functions"));
 const admin = __importStar(require("firebase-admin"));
 const stripe_1 = require("../config/stripe");
+const errors_1 = require("../utils/errors");
 const db = admin.firestore();
 /**
  * Checks the status of a Stripe Connect account.
@@ -47,6 +48,9 @@ exports.checkStripeAccountStatus = functions.https.onCall(async (data, context) 
     // 1. Authentication Check
     if (!context.auth) {
         throw new functions.https.HttpsError('unauthenticated', 'User must be logged in.');
+    }
+    if (!context.app && process.env.FUNCTIONS_EMULATOR !== 'true') {
+        throw new functions.https.HttpsError('failed-precondition', 'App Check verification required.');
     }
     const { storeId } = data;
     if (!storeId) {
@@ -90,8 +94,7 @@ exports.checkStripeAccountStatus = functions.https.onCall(async (data, context) 
         };
     }
     catch (error) {
-        functions.logger.error('Check Stripe Status Error:', error);
-        throw new functions.https.HttpsError('internal', error.message || 'Failed to check Stripe account status.');
+        (0, errors_1.toHttpsError)(error, 'Failed to check Stripe account status.');
     }
 });
 //# sourceMappingURL=checkStripeStatus.js.map

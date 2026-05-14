@@ -1,4 +1,5 @@
 import * as admin from 'firebase-admin';
+import { logger } from 'firebase-functions';
 
 const FLYERS_URL = 'https://flyers-ng.flippback.com/api/flipp/data?locale=en&postal_code={}&sid={}';
 const FLYER_ITEMS_URL = 'https://flyers-ng.flippback.com/api/flipp/flyers/{}/flyer_items?locale=en&sid={}';
@@ -45,7 +46,7 @@ export async function runIngestion(postalCode: string, resetData: boolean = fals
     const cleanPostalCode = postalCode.replace(/\s+/g, '').toUpperCase();
 
     if (resetData) {
-        console.log("Resetting existing flyer data...");
+        logger.info("Resetting existing flyer data...");
         await clearFlyerData(db);
     }
 
@@ -86,7 +87,7 @@ export async function runIngestion(postalCode: string, resetData: boolean = fals
             const itemsResponse = await fetch(itemsUrl);
             
             if (!itemsResponse.ok) {
-                console.warn(`Failed to fetch items for flyer ${flyerId}`);
+                logger.warn(`Failed to fetch items for flyer ${flyerId}`);
                 continue;
             }
             
@@ -148,7 +149,7 @@ export async function runIngestion(postalCode: string, resetData: boolean = fals
         }
 
         // Generate static JSON export of all active deals for zero-read client comparison
-        console.log("Generating static JSON export of all active deals...");
+        logger.info("Generating static JSON export of all active deals...");
         const flyersSnapshot = await db.collection('public_flyers').get();
         let allDeals: any[] = [];
         for (const flyerDoc of flyersSnapshot.docs) {
@@ -168,9 +169,9 @@ export async function runIngestion(postalCode: string, resetData: boolean = fals
                 }
             });
             await file.makePublic();
-            console.log(`Successfully exported ${allDeals.length} deals to Storage.`);
+            logger.info(`Successfully exported ${allDeals.length} deals to Storage.`);
         } catch (storageError) {
-            console.error("Failed to upload active_deals.json to storage:", storageError);
+            logger.error("Failed to upload active_deals.json to storage:", storageError);
             // Non-fatal error, we still want to return success for ingestion
         }
 
@@ -182,7 +183,7 @@ export async function runIngestion(postalCode: string, resetData: boolean = fals
         };
 
     } catch (error: any) {
-        console.error('Error in runIngestion:', error);
+        logger.error('Error in runIngestion:', error);
         throw error;
     }
 }

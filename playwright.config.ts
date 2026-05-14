@@ -31,7 +31,7 @@ export default defineConfig({
 
     /* Shared settings for all projects */
     use: {
-        baseURL: 'https://localhost',
+        baseURL: process.env.PLAYWRIGHT_BASE_URL || 'https://localhost',
         
         /* Self-signed SSL cert from Vite */
         ignoreHTTPSErrors: true,

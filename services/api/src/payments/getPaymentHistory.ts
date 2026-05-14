@@ -1,6 +1,7 @@
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import { stripe } from '../config/stripe';
+import { toHttpsError } from '../utils/errors';
 
 const db = admin.firestore();
 
@@ -48,7 +49,6 @@ export const getPaymentHistory = functions.https.onCall(async (data, context) =>
         return { payments };
 
     } catch (error: any) {
-        console.error('Stripe History Error:', error);
-        throw new functions.https.HttpsError('internal', error.message);
+        toHttpsError(error, 'Failed to get payment history.');
     }
 });

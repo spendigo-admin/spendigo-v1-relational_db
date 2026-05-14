@@ -1,6 +1,8 @@
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import { logEvent, buildActorFromContext } from '../utils/audit';
+import { toHttpsError } from '../utils/errors';
+import { checkRateLimit } from '../utils/rateLimiter';
 
 /**
  * DSAR: Request Account Deletion (Self-Service)
@@ -22,6 +24,8 @@ export const requestAccountDeletion = functions.https.onCall(async (data, contex
     if (!context.auth) {
         throw new functions.https.HttpsError('unauthenticated', 'You must be signed in to delete your account.');
     }
+
+    await checkRateLimit(context.auth.uid, 'requestAccountDeletion', 3, 15 * 60 * 1000);
 
     const uid = context.auth.uid;
 
@@ -87,7 +91,6 @@ export const requestAccountDeletion = functions.https.onCall(async (data, contex
 
         return { success: true, message: 'Your account has been permanently deleted.' };
     } catch (error: any) {
-        functions.logger.error('DSAR deletion error:', error);
-        throw new functions.https.HttpsError('internal', `Account deletion failed: ${error.message}`);
+        toHttpsError(error, 'Account deletion request failed.');
     }
 });

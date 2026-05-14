@@ -36,11 +36,11 @@ export default defineConfig(({ command }) => ({
                 }
             }
         },
-        // Strip debugger statements in production builds
-        // Note: console.* is kept for Sentry breadcrumb capture
+        // Strip debugger statements and console calls in production builds.
+        // Sentry breadcrumbs use their own instrumentation — not console.log.
         minify: 'esbuild',
         esbuildOptions: {
-            drop: ['debugger'],
+            drop: ['debugger', 'console'],
         }
     }
 }))

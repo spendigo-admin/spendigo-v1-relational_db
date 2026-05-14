@@ -1,6 +1,7 @@
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import { stripe } from '../config/stripe';
+import { toHttpsError } from '../utils/errors';
 
 const db = admin.firestore();
 
@@ -12,6 +13,9 @@ export const checkStripeAccountStatus = functions.https.onCall(async (data, cont
     // 1. Authentication Check
     if (!context.auth) {
         throw new functions.https.HttpsError('unauthenticated', 'User must be logged in.');
+    }
+    if (!context.app && process.env.FUNCTIONS_EMULATOR !== 'true') {
+        throw new functions.https.HttpsError('failed-precondition', 'App Check verification required.');
     }
 
     const { storeId } = data;
@@ -63,7 +67,6 @@ export const checkStripeAccountStatus = functions.https.onCall(async (data, cont
         };
 
     } catch (error: any) {
-        functions.logger.error('Check Stripe Status Error:', error);
-        throw new functions.https.HttpsError('internal', error.message || 'Failed to check Stripe account status.');
+        toHttpsError(error, 'Failed to check Stripe account status.');
     }
 });

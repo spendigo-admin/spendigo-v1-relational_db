@@ -36,14 +36,18 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.smartcartOptimize = void 0;
 const functions = __importStar(require("firebase-functions"));
 const optimizeSmartCart_1 = require("./optimizeSmartCart");
-function setCorsHeaders(res) {
-    res.set('Access-Control-Allow-Origin', '*');
+const ALLOWED_ORIGINS = ['https://spendigo.ca', 'https://www.spendigo.ca'];
+function setCorsHeaders(req, res) {
+    const origin = req.headers.origin || '';
+    if (ALLOWED_ORIGINS.includes(origin) || process.env.FUNCTIONS_EMULATOR === 'true') {
+        res.set('Access-Control-Allow-Origin', origin);
+    }
     res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 }
-exports.smartcartOptimize = functions.https.onRequest(async (req, res) => {
+exports.smartcartOptimize = functions.runWith({ timeoutSeconds: 120, memory: '512MB' }).https.onRequest(async (req, res) => {
     var _a;
-    setCorsHeaders(res);
+    setCorsHeaders(req, res);
     if (req.method === 'OPTIONS') {
         res.status(204).send('');
         return;

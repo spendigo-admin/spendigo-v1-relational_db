@@ -35,6 +35,7 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.runIngestion = runIngestion;
 const admin = __importStar(require("firebase-admin"));
+const firebase_functions_1 = require("firebase-functions");
 const FLYERS_URL = 'https://flyers-ng.flippback.com/api/flipp/data?locale=en&postal_code={}&sid={}';
 const FLYER_ITEMS_URL = 'https://flyers-ng.flippback.com/api/flipp/flyers/{}/flyer_items?locale=en&sid={}';
 const GROCERY_STORES = new Set([
@@ -74,7 +75,7 @@ async function runIngestion(postalCode, resetData = false) {
     const db = admin.firestore();
     const cleanPostalCode = postalCode.replace(/\s+/g, '').toUpperCase();
     if (resetData) {
-        console.log("Resetting existing flyer data...");
+        firebase_functions_1.logger.info("Resetting existing flyer data...");
         await clearFlyerData(db);
     }
     try {
@@ -107,7 +108,7 @@ async function runIngestion(postalCode, resetData = false) {
             const itemsUrl = FLYER_ITEMS_URL.replace('{}', flyerId).replace('{}', generateSid());
             const itemsResponse = await fetch(itemsUrl);
             if (!itemsResponse.ok) {
-                console.warn(`Failed to fetch items for flyer ${flyerId}`);
+                firebase_functions_1.logger.warn(`Failed to fetch items for flyer ${flyerId}`);
                 continue;
             }
             const itemsData = await itemsResponse.json();
@@ -163,7 +164,7 @@ async function runIngestion(postalCode, resetData = false) {
             summaryData.push({ retailer: flyer.merchant, dealsCount: dealsToWrite.length });
         }
         // Generate static JSON export of all active deals for zero-read client comparison
-        console.log("Generating static JSON export of all active deals...");
+        firebase_functions_1.logger.info("Generating static JSON export of all active deals...");
         const flyersSnapshot = await db.collection('public_flyers').get();
         let allDeals = [];
         for (const flyerDoc of flyersSnapshot.docs) {
@@ -182,10 +183,10 @@ async function runIngestion(postalCode, resetData = false) {
                 }
             });
             await file.makePublic();
-            console.log(`Successfully exported ${allDeals.length} deals to Storage.`);
+            firebase_functions_1.logger.info(`Successfully exported ${allDeals.length} deals to Storage.`);
         }
         catch (storageError) {
-            console.error("Failed to upload active_deals.json to storage:", storageError);
+            firebase_functions_1.logger.error("Failed to upload active_deals.json to storage:", storageError);
             // Non-fatal error, we still want to return success for ingestion
         }
         return {
@@ -196,7 +197,7 @@ async function runIngestion(postalCode, resetData = false) {
         };
     }
     catch (error) {
-        console.error('Error in runIngestion:', error);
+        firebase_functions_1.logger.error('Error in runIngestion:', error);
         throw error;
     }
 }

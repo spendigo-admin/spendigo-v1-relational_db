@@ -248,7 +248,12 @@ export const useOptimizedWishlist = () => {
     useEffect(() => {
         if (inventoryLoading) return;
         
-        const storeIds = Array.from(new Set(merchantInventory.map(p => p.merchant_id).filter(Boolean)));
+        const wishlistMasterIds = new Set(wishlistItems.map(w => w.id));
+        const storeIds = Array.from(new Set(
+            merchantInventory
+                .filter(p => wishlistMasterIds.has(p.master_product_id))
+                .map(p => p.merchant_id).filter(Boolean)
+        )).slice(0, 30);
         console.log(`[useOptimizedWishlist] Setting up deals listeners for ${storeIds.length} stores:`, storeIds);
         
         const unsubscribes: (() => void)[] = [];
@@ -295,7 +300,7 @@ export const useOptimizedWishlist = () => {
         });
 
         return () => unsubscribes.forEach(un => un());
-    }, [merchantInventory, inventoryLoading]);
+    }, [merchantInventory, inventoryLoading, wishlistItems]);
 
     // Price trend tracking: fetch recent price history for merchant products in wishlist
     const [priceTrends, setPriceTrends] = useState<Record<string, { trend: 'up' | 'down' | 'stable'; previousPrice: number }>>({});

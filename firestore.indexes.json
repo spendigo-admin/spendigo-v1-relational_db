@@ -39,6 +39,31 @@
                 { "fieldPath": "storeId", "order": "ASCENDING" },
                 { "fieldPath": "timestamp", "order": "DESCENDING" }
             ]
+        },
+        {
+            "collectionGroup": "stores",
+            "queryScope": "COLLECTION",
+            "fields": [
+                { "fieldPath": "status", "order": "ASCENDING" },
+                { "fieldPath": "deletionApprovedAt", "order": "ASCENDING" }
+            ]
+        },
+        {
+            "collectionGroup": "users",
+            "queryScope": "COLLECTION",
+            "fields": [
+                { "fieldPath": "storeId", "order": "ASCENDING" },
+                { "fieldPath": "role", "order": "ASCENDING" }
+            ]
+        },
+        {
+            "collectionGroup": "scheduled_ingestion",
+            "queryScope": "COLLECTION",
+            "fields": [
+                { "fieldPath": "type", "order": "ASCENDING" },
+                { "fieldPath": "status", "order": "ASCENDING" },
+                { "fieldPath": "scheduledAt", "order": "ASCENDING" }
+            ]
         }
     ],
     "fieldOverrides": [

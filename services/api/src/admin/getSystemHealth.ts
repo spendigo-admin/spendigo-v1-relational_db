@@ -1,6 +1,7 @@
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import { MetricServiceClient } from '@google-cloud/monitoring';
+import { toHttpsError } from '../utils/errors';
 
 const client = new MetricServiceClient();
 
@@ -16,17 +17,17 @@ export const getSystemHealth = functions.https.onCall(async (data, context) => {
         throw new functions.https.HttpsError('failed-precondition', 'The function must be called from an App Check verified app.');
     }
     const projectId = process.env.GCLOUD_PROJECT || admin.instanceId().app.options.projectId;
-    console.log(`[SystemHealth] Fetching stats for project: ${projectId}`);
+    functions.logger.info(`[SystemHealth] Fetching stats for project: ${projectId}`);
 
     if (!context.auth || !context.auth.uid) {
-        console.warn("[SystemHealth] No auth context found.");
+        functions.logger.warn("[SystemHealth] No auth context found.");
         throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated.');
     }
 
     // Verify admin role via Firestore since custom claims aren't set
     const userDoc = await admin.firestore().collection('users').doc(context.auth.uid).get();
     if (!userDoc.exists || userDoc.data()?.role !== 'admin') {
-        console.warn(`[SystemHealth] User ${context.auth.uid} is not an admin.`);
+        functions.logger.warn(`[SystemHealth] User ${context.auth.uid} is not an admin.`);
         throw new functions.https.HttpsError('permission-denied', 'Only admins can access system health.');
     }
 
@@ -78,7 +79,7 @@ export const getSystemHealth = functions.https.onCall(async (data, context) => {
 
             return total;
         } catch (error: any) {
-            console.error(`Error fetching metric ${metricType}:`, error);
+            functions.logger.error(`Error fetching metric ${metricType}:`, error);
             return 0;
         }
     };
@@ -140,7 +141,6 @@ export const getSystemHealth = functions.https.onCall(async (data, context) => {
 
 
     } catch (error: any) {
-        console.error("System Health fetch failed:", error);
-        throw new functions.https.HttpsError('internal', `Failed to fetch system health: ${error.message}`);
+        toHttpsError(error, 'Failed to fetch system health.');
     }
 });

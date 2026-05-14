@@ -1,6 +1,7 @@
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import { logEvent } from '../utils/audit';
+import { toHttpsError } from '../utils/errors';
 
 const CRITICAL_COLLECTIONS = [
     'orders',
@@ -166,6 +167,6 @@ export const triggerManualExport = functions
                 { date, outputUriPrefix: outputBase, errorMessage: error.message },
                 'backups/firestore-manual'
             );
-            throw new functions.https.HttpsError('internal', `Export failed: ${error.message}`);
+            toHttpsError(error, 'Export failed.');
         }
     });

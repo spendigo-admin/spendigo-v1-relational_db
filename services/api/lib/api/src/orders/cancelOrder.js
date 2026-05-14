@@ -39,6 +39,7 @@ const admin = __importStar(require("firebase-admin"));
 const firestore_1 = require("firebase-admin/firestore");
 const rateLimiter_1 = require("../utils/rateLimiter");
 const audit_1 = require("../utils/audit");
+const errors_1 = require("../utils/errors");
 const db = admin.firestore();
 exports.cancelOrder = functions.https.onCall(async (data, context) => {
     if (!context.app && process.env.FUNCTIONS_EMULATOR !== 'true') {
@@ -113,8 +114,7 @@ exports.cancelOrder = functions.https.onCall(async (data, context) => {
         return { success: true };
     }
     catch (error) {
-        functions.logger.error('Cancel Order Error:', error);
-        throw new functions.https.HttpsError('internal', error.message);
+        (0, errors_1.toHttpsError)(error, 'Failed to cancel order.');
     }
 });
 //# sourceMappingURL=cancelOrder.js.map

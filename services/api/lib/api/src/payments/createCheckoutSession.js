@@ -39,6 +39,7 @@ const functions = __importStar(require("firebase-functions"));
 const admin = __importStar(require("firebase-admin"));
 const stripe_1 = require("../config/stripe");
 const rateLimiter_1 = require("../utils/rateLimiter");
+const errors_1 = require("../utils/errors");
 const db = admin.firestore();
 // MAP YOUR STRIPE PRICE IDs HERE (From your Stripe Dashboard)
 // Run `firebase functions:config:set stripe.price_core="price_..." stripe.price_growth="price_..."`
@@ -123,8 +124,7 @@ exports.createCheckoutSession = functions.https.onCall(async (data, context) => 
         return { url: session.url };
     }
     catch (error) {
-        console.error('Stripe Checkout Error:', error);
-        throw new functions.https.HttpsError('internal', error.message);
+        (0, errors_1.toHttpsError)(error, 'Failed to create checkout session.');
     }
 });
 //# sourceMappingURL=createCheckoutSession.js.map

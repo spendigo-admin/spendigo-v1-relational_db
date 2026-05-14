@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { collection, query, where, getDocs, updateDoc, doc, increment } from 'firebase/firestore';
 import { db } from '../lib/firebase';
+import * as Sentry from '@sentry/react';
 import { useTranslation } from 'react-i18next';
 import { useLocation } from '../context/LocationContext';
 import { useMarketplace } from '../context/MarketplaceContext';
@@ -153,7 +154,7 @@ const AdCarousel: React.FC = () => {
             const ad = ads[currentIndex];
             updateDoc(doc(db, 'ads', ad.id), {
                 views: increment(1)
-            }).catch(console.error);
+            }).catch((err) => { console.error(err); Sentry.captureException(err); });
         }
     }, [currentIndex, ads, mediaLoaded]);
 

@@ -38,6 +38,7 @@ const functions = __importStar(require("firebase-functions"));
 const admin = __importStar(require("firebase-admin"));
 const rateLimiter_1 = require("../utils/rateLimiter");
 const audit_1 = require("../utils/audit");
+const errors_1 = require("../utils/errors");
 exports.exportMerchantData = functions
     .runWith({ timeoutSeconds: 300, memory: '512MB' })
     .https.onCall(async (_data, context) => {
@@ -104,8 +105,7 @@ exports.exportMerchantData = functions
         return { success: true, data: exportData };
     }
     catch (error) {
-        functions.logger.error('[MerchantExport] Export failed:', error);
-        throw new functions.https.HttpsError('internal', `Export failed: ${error.message}`);
+        (0, errors_1.toHttpsError)(error, 'Export failed.');
     }
 });
 //# sourceMappingURL=exportMerchantData.js.map

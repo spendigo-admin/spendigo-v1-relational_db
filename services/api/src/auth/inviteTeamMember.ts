@@ -1,5 +1,6 @@
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
+import * as crypto from 'crypto';
 import { checkRateLimit } from '../utils/rateLimiter';
 import { logEvent, buildActorFromContext } from '../utils/audit';
 
@@ -8,7 +9,6 @@ interface InviteData {
     name: string;
     merchantRole: 'OWNER' | 'MANAGER' | 'STAFF' | 'MARKETING';
     storeId: string;
-    tempPassword: string;
 }
 
 /**
@@ -35,9 +35,9 @@ export const inviteTeamMember = functions.https.onCall(
         await checkRateLimit(context.auth.uid, 'inviteTeamMember', 10, 15 * 60 * 1000);
 
         // 2. Validate input
-        const { email, name, merchantRole, storeId, tempPassword } = data;
+        const { email, name, merchantRole, storeId } = data;
 
-        if (!email || !name || !merchantRole || !storeId || !tempPassword) {
+        if (!email || !name || !merchantRole || !storeId) {
             throw new functions.https.HttpsError(
                 'invalid-argument',
                 'Missing required fields'
@@ -87,10 +87,11 @@ export const inviteTeamMember = functions.https.onCall(
         }
 
         try {
-            // 6. Create Firebase Auth user with temporary password
+            // 6. Create Firebase Auth user with a server-generated random password (never exposed).
+            // The invited user sets their own password via the reset link sent in the email below.
             const authUser = await admin.auth().createUser({
                 email: email,
-                password: tempPassword,
+                password: crypto.randomBytes(32).toString('hex'),
                 displayName: name,
                 emailVerified: false,
             });
@@ -113,8 +114,8 @@ export const inviteTeamMember = functions.https.onCall(
 
             functions.logger.info(`Created Firestore user doc for ${email}`);
 
-            // 8. Generate Email Verification Link and Add to Mail Collection
-            const verificationLink = await admin.auth().generateEmailVerificationLink(email);
+            // 8. Generate a password-reset link — the invited user clicks this to set their own password.
+            const signInLink = await admin.auth().generatePasswordResetLink(email);
             
             const htmlContent = `
 <!DOCTYPE html>
@@ -127,18 +128,15 @@ export const inviteTeamMember = functions.https.onCall(
     
     <div style="padding: 30px; background: white; border: 1px solid #e5e7eb; margin-top: 20px; border-radius: 10px;">
         <p>Hi ${name},</p>
-        <p>You have been invited to join the team for your store on Spendigo. Here are your login details:</p>
-        
+        <p>You have been invited to join the team for your store on Spendigo. Click the button below to set your password and get started.</p>
+
         <div style="background: #f9fafb; padding: 20px; border-radius: 8px; margin: 20px 0;">
             <p style="margin: 0;"><strong>Role:</strong> ${merchantRole}</p>
             <p style="margin: 10px 0 0 0;"><strong>Email:</strong> ${email}</p>
-            <p style="margin: 10px 0 0 0;"><strong>Temporary Password:</strong> <code style="background: #e5e7eb; padding: 2px 6px; border-radius: 4px;">${tempPassword}</code></p>
         </div>
-        
-        <p style="color: #ef4444; font-weight: bold;">Please verify your email and change your password immediately after logging in.</p>
-        
+
         <div style="text-align: center; margin-top: 30px;">
-            <a href="${verificationLink}" style="display: inline-block; background: #6366f1; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px;">Verify Email & Login</a>
+            <a href="${signInLink}" style="display: inline-block; background: #6366f1; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px;">Set Your Password &amp; Get Started</a>
         </div>
     </div>
 </body>

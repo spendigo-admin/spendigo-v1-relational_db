@@ -2,6 +2,7 @@
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import { BetaAnalyticsDataClient } from '@google-analytics/data';
+import { toHttpsError } from '../utils/errors';
 
 const analyticsDataClient = new BetaAnalyticsDataClient();
 
@@ -65,7 +66,7 @@ export const syncTrafficStats = functions.https.onCall(async (data, context) => 
             source: 'Google Analytics'
         }, { merge: true });
 
-        console.log(`[Admin] Successfully synced GA4 stats for property ${propertyId}`);
+        functions.logger.info(`[Admin] Successfully synced GA4 stats for property ${propertyId}`);
         
         return { 
             success: true, 
@@ -73,7 +74,6 @@ export const syncTrafficStats = functions.https.onCall(async (data, context) => 
             synced_dates: Object.keys(dailyVisits)
         };
     } catch (error: any) {
-        console.error(`[Admin] GA4 Sync Error: ${error.message}`);
-        throw new functions.https.HttpsError('internal', `Failed to sync from Google Analytics: ${error.message}`);
+        toHttpsError(error, 'Failed to sync from Google Analytics.');
     }
 });

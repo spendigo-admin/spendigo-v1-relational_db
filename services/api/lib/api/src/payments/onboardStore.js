@@ -37,6 +37,7 @@ exports.onboardStore = void 0;
 const functions = __importStar(require("firebase-functions"));
 const admin = __importStar(require("firebase-admin"));
 const stripe_1 = require("../config/stripe");
+const errors_1 = require("../utils/errors");
 const db = admin.firestore();
 /**
  * Creates a Stripe Connect account for a merchant store
@@ -46,6 +47,9 @@ exports.onboardStore = functions.https.onCall(async (data, context) => {
     // 1. Authentication Check
     if (!context.auth) {
         throw new functions.https.HttpsError('unauthenticated', 'User must be logged in.');
+    }
+    if (!context.app && process.env.FUNCTIONS_EMULATOR !== 'true') {
+        throw new functions.https.HttpsError('failed-precondition', 'App Check verification required.');
     }
     const { storeId } = data;
     if (!storeId) {
@@ -58,9 +62,13 @@ exports.onboardStore = functions.https.onCall(async (data, context) => {
             throw new functions.https.HttpsError('not-found', 'Store not found.');
         }
         const storeData = storeSnap.data();
-        // Security check: Only the owner or an admin can onboard the store
-        // In a real app, we'd check if context.auth.uid is in storeData.team
-        // For now, we assume the frontend only calls this for the active store.
+        // 2b. Ownership check — only the store OWNER or an admin may attach a Stripe account.
+        // Any authenticated user who knows a storeId could otherwise hijack a competitor's payments.
+        const callerSnap = await db.collection('users').doc(context.auth.uid).get();
+        const caller = callerSnap.data();
+        if ((caller === null || caller === void 0 ? void 0 : caller.role) !== 'admin' && ((caller === null || caller === void 0 ? void 0 : caller.storeId) !== storeId || (caller === null || caller === void 0 ? void 0 : caller.merchantRole) !== 'OWNER')) {
+            throw new functions.https.HttpsError('permission-denied', 'Only the store owner may initiate Stripe onboarding.');
+        }
         // 3. Create or Retrieve Stripe Account ID
         let stripeAccountId = storeData === null || storeData === void 0 ? void 0 : storeData.stripeAccountId;
         if (!stripeAccountId) {
@@ -101,8 +109,7 @@ exports.onboardStore = functions.https.onCall(async (data, context) => {
         };
     }
     catch (error) {
-        functions.logger.error('Stripe Onboarding Error:', error);
-        throw new functions.https.HttpsError('internal', error.message || 'Failed to create Stripe onboarding link.');
+        (0, errors_1.toHttpsError)(error, 'Failed to create Stripe onboarding link.');
     }
 });
 //# sourceMappingURL=onboardStore.js.map

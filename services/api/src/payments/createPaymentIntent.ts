@@ -2,6 +2,7 @@ import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import { stripe } from '../config/stripe';
 import { checkRateLimit } from '../utils/rateLimiter';
+import { toHttpsError } from '../utils/errors';
 
 const db = admin.firestore();
 
@@ -76,7 +77,6 @@ export const createPaymentIntent = functions.https.onCall(async (data, context) 
         };
 
     } catch (error: any) {
-        functions.logger.error('Create PaymentIntent Error:', error);
-        throw new functions.https.HttpsError('internal', error.message || 'Failed to create payment intent.');
+        toHttpsError(error, 'Failed to create payment intent.');
     }
 });

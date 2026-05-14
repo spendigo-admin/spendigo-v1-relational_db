@@ -2,6 +2,7 @@ import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import { checkRateLimit } from '../utils/rateLimiter';
 import { logEvent } from '../utils/audit';
+import { toHttpsError } from '../utils/errors';
 
 interface MerchantExportResult {
     store: Record<string, unknown>;
@@ -99,7 +100,6 @@ export const exportMerchantData = functions
 
             return { success: true, data: exportData };
         } catch (error: any) {
-            functions.logger.error('[MerchantExport] Export failed:', error);
-            throw new functions.https.HttpsError('internal', `Export failed: ${error.message}`);
+            toHttpsError(error, 'Export failed.');
         }
     });

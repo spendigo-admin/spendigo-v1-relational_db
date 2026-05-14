@@ -37,6 +37,7 @@ exports.triggerManualExport = exports.scheduledFirestoreExport = void 0;
 const functions = __importStar(require("firebase-functions"));
 const admin = __importStar(require("firebase-admin"));
 const audit_1 = require("../utils/audit");
+const errors_1 = require("../utils/errors");
 const CRITICAL_COLLECTIONS = [
     'orders',
     'audit_logs',
@@ -167,7 +168,7 @@ exports.triggerManualExport = functions
             triggeredBy: context.auth.uid,
         });
         await (0, audit_1.logEvent)('MANUAL_FIRESTORE_EXPORT_FAILED', { id: context.auth.uid, email: context.auth.token.email || '', ip: ((_c = context.rawRequest) === null || _c === void 0 ? void 0 : _c.ip) || '' }, { date, outputUriPrefix: outputBase, errorMessage: error.message }, 'backups/firestore-manual');
-        throw new functions.https.HttpsError('internal', `Export failed: ${error.message}`);
+        (0, errors_1.toHttpsError)(error, 'Export failed.');
     }
 });
 //# sourceMappingURL=scheduledFirestoreExport.js.map

@@ -37,6 +37,8 @@ exports.requestAccountDeletion = void 0;
 const functions = __importStar(require("firebase-functions"));
 const admin = __importStar(require("firebase-admin"));
 const audit_1 = require("../utils/audit");
+const errors_1 = require("../utils/errors");
+const rateLimiter_1 = require("../utils/rateLimiter");
 /**
  * DSAR: Request Account Deletion (Self-Service)
  * Allows an authenticated user to permanently delete their own account.
@@ -57,6 +59,7 @@ exports.requestAccountDeletion = functions.https.onCall(async (data, context) =>
     if (!context.auth) {
         throw new functions.https.HttpsError('unauthenticated', 'You must be signed in to delete your account.');
     }
+    await (0, rateLimiter_1.checkRateLimit)(context.auth.uid, 'requestAccountDeletion', 3, 15 * 60 * 1000);
     const uid = context.auth.uid;
     try {
         functions.logger.info(`DSAR: User ${uid} requested account deletion.`);
@@ -107,8 +110,7 @@ exports.requestAccountDeletion = functions.https.onCall(async (data, context) =>
         return { success: true, message: 'Your account has been permanently deleted.' };
     }
     catch (error) {
-        functions.logger.error('DSAR deletion error:', error);
-        throw new functions.https.HttpsError('internal', `Account deletion failed: ${error.message}`);
+        (0, errors_1.toHttpsError)(error, 'Account deletion request failed.');
     }
 });
 //# sourceMappingURL=requestAccountDeletion.js.map

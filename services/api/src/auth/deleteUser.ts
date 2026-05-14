@@ -1,6 +1,8 @@
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import { logEvent, buildActorFromContext } from '../utils/audit';
+import { toHttpsError } from '../utils/errors';
+import { checkRateLimit } from '../utils/rateLimiter';
 
 /**
  * Delete User Function (Admin Only)
@@ -14,6 +16,8 @@ export const deleteUser = functions.https.onCall(async (data, context) => {
     if (!context.auth) {
         throw new functions.https.HttpsError('unauthenticated', 'The function must be called while authenticated.');
     }
+
+    await checkRateLimit(context.auth.uid, 'deleteUser', 3, 15 * 60 * 1000);
 
     // Check if the caller is an admin
     const callerUid = context.auth.uid;
@@ -69,7 +73,6 @@ export const deleteUser = functions.https.onCall(async (data, context) => {
 
         return { success: true, message: `User ${targetUid} deleted successfully.` };
     } catch (error: any) {
-        functions.logger.error('Error deleting user:', error);
-        throw new functions.https.HttpsError('internal', `Failed to delete user: ${error.message}`);
+        toHttpsError(error, 'Failed to delete user.');
     }
 });

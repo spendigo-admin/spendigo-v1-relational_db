@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import * as Sentry from '@sentry/react';
 import {
     signInWithEmailAndPassword,
     createUserWithEmailAndPassword,
@@ -99,9 +100,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             if (firebaseUser) {
                 // Set up real-time listener for the user profile
                 const { onSnapshot, doc } = await import('firebase/firestore');
-                unsubscribeProfile = onSnapshot(doc(db, 'users', firebaseUser.uid), async (userDoc) => {
+                unsubscribeProfile = onSnapshot(doc(db, 'users', firebaseUser.uid), (userDoc) => {
                     if (userDoc.exists()) {
-                        await processUserData(firebaseUser.uid, userDoc.data(), firebaseUser.emailVerified);
+                        processUserData(firebaseUser.uid, userDoc.data(), firebaseUser.emailVerified)
+                            .catch((err) => { Sentry.captureException(err); setLoading(false); });
                     } else {
                         // Only set user to null if we are NOT in the middle of a login action
                         // This prevents race conditions where the listener fires before setDoc completes
@@ -212,6 +214,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
             console.log('[AuthContext] Setting user state:', uid, finalRole);
             setUser(finalUserData);
+            Sentry.setUser({ id: finalUserData.id, email: finalUserData.email, role: finalUserData.role });
         } catch (error) {
             console.error('[AuthContext] Critical error in processUserData:', error);
             // Fallback: Set basic user data so app doesn't hang
@@ -342,6 +345,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         try {
             await signOut(auth);
             setUser(null); // Explicitly set user to null on logout
+            Sentry.setUser(null);
             await auditBridge.emit({ action: 'AUTH_LOGOUT', metadata: { email } });
             window.location.href = '/login';
         } catch (error) {

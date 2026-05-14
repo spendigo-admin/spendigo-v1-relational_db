@@ -2,14 +2,19 @@ import * as functions from 'firebase-functions';
 import { optimizeSmartCartService } from '../smartcart/optimizeSmartCart';
 import { SmartCartOptimizeRequestBody } from '../smartcart/types';
 
-function setCorsHeaders(res: functions.Response<any>) {
-    res.set('Access-Control-Allow-Origin', '*');
+const ALLOWED_ORIGINS = ['https://spendigo.ca', 'https://www.spendigo.ca'];
+
+function setCorsHeaders(req: functions.Request, res: functions.Response<any>) {
+    const origin = req.headers.origin || '';
+    if (ALLOWED_ORIGINS.includes(origin) || process.env.FUNCTIONS_EMULATOR === 'true') {
+        res.set('Access-Control-Allow-Origin', origin);
+    }
     res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 }
 
-export const cartOptimize = functions.https.onRequest(async (req, res) => {
-    setCorsHeaders(res);
+export const cartOptimize = functions.runWith({ timeoutSeconds: 120, memory: '512MB' }).https.onRequest(async (req, res) => {
+    setCorsHeaders(req, res);
 
     if (req.method === 'OPTIONS') {
         res.status(204).send('');

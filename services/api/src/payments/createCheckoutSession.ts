@@ -2,6 +2,7 @@ import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import { stripe } from '../config/stripe';
 import { checkRateLimit } from '../utils/rateLimiter';
+import { toHttpsError } from '../utils/errors';
 
 const db = admin.firestore();
 
@@ -97,7 +98,6 @@ export const createCheckoutSession = functions.https.onCall(async (data, context
         return { url: session.url };
 
     } catch (error: any) {
-        console.error('Stripe Checkout Error:', error);
-        throw new functions.https.HttpsError('internal', error.message);
+        toHttpsError(error, 'Failed to create checkout session.');
     }
 });

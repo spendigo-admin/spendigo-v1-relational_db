@@ -39,6 +39,7 @@ const functions = __importStar(require("firebase-functions"));
 const admin = __importStar(require("firebase-admin"));
 const stripe_1 = require("../config/stripe");
 const audit_1 = require("../utils/audit");
+const errors_1 = require("../utils/errors");
 const db = admin.firestore();
 const PRICE_IDS = {
     core: ((_a = functions.config().stripe) === null || _a === void 0 ? void 0 : _a.price_core) || 'price_123_test_core',
@@ -115,8 +116,7 @@ exports.updateSubscriptionPlan = functions.https.onCall(async (data, context) =>
         return { success: true, message: isUpgrade ? 'Plan upgraded.' : 'Plan downgraded (effective next cycle).' };
     }
     catch (error) {
-        console.error('Update Subscription Error:', error);
-        throw new functions.https.HttpsError('internal', error.message);
+        (0, errors_1.toHttpsError)(error, 'Failed to update subscription plan.');
     }
 });
 //# sourceMappingURL=updateSubscriptionPlan.js.map

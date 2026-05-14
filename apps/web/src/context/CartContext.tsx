@@ -3,6 +3,7 @@ import { doc, onSnapshot, setDoc, getDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { STORE_DATA } from '../data/productData';
 import { useAuth } from './AuthContext';
+import * as Sentry from '@sentry/react';
 
 export interface CartItem {
     id: string;
@@ -62,7 +63,10 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 if (guestCartJson) {
                     try {
                         guestItems = JSON.parse(guestCartJson);
-                    } catch (e) { console.error(e); }
+                    } catch (e) {
+                        Sentry.captureException(e, { tags: { context: 'CartContext.guestCartParse' } });
+                        localStorage.removeItem(GUEST_KEY);
+                    }
                 }
 
                 if (guestItems.length > 0) {

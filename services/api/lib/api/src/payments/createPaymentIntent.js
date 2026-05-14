@@ -38,6 +38,7 @@ const functions = __importStar(require("firebase-functions"));
 const admin = __importStar(require("firebase-admin"));
 const stripe_1 = require("../config/stripe");
 const rateLimiter_1 = require("../utils/rateLimiter");
+const errors_1 = require("../utils/errors");
 const db = admin.firestore();
 /**
  * Creates a Stripe PaymentIntent for a specific order (or batch of orders).
@@ -96,8 +97,7 @@ exports.createPaymentIntent = functions.https.onCall(async (data, context) => {
         };
     }
     catch (error) {
-        functions.logger.error('Create PaymentIntent Error:', error);
-        throw new functions.https.HttpsError('internal', error.message || 'Failed to create payment intent.');
+        (0, errors_1.toHttpsError)(error, 'Failed to create payment intent.');
     }
 });
 //# sourceMappingURL=createPaymentIntent.js.map

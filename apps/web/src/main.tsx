@@ -1,5 +1,10 @@
 import { initSentry } from './lib/sentry'
+import * as Sentry from '@sentry/react'
 initSentry();
+
+window.addEventListener('unhandledrejection', (event) => {
+    Sentry.captureException(event.reason, { tags: { source: 'unhandledrejection' } });
+});
 
 import React from 'react'
 import ReactDOM from 'react-dom/client'

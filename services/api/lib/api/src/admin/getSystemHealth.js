@@ -37,6 +37,7 @@ exports.getSystemHealth = void 0;
 const functions = __importStar(require("firebase-functions"));
 const admin = __importStar(require("firebase-admin"));
 const monitoring_1 = require("@google-cloud/monitoring");
+const errors_1 = require("../utils/errors");
 const client = new monitoring_1.MetricServiceClient();
 /**
  * Fetch real Firebase consumption metrics from Google Cloud Monitoring.
@@ -51,15 +52,15 @@ exports.getSystemHealth = functions.https.onCall(async (data, context) => {
         throw new functions.https.HttpsError('failed-precondition', 'The function must be called from an App Check verified app.');
     }
     const projectId = process.env.GCLOUD_PROJECT || admin.instanceId().app.options.projectId;
-    console.log(`[SystemHealth] Fetching stats for project: ${projectId}`);
+    functions.logger.info(`[SystemHealth] Fetching stats for project: ${projectId}`);
     if (!context.auth || !context.auth.uid) {
-        console.warn("[SystemHealth] No auth context found.");
+        functions.logger.warn("[SystemHealth] No auth context found.");
         throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated.');
     }
     // Verify admin role via Firestore since custom claims aren't set
     const userDoc = await admin.firestore().collection('users').doc(context.auth.uid).get();
     if (!userDoc.exists || ((_a = userDoc.data()) === null || _a === void 0 ? void 0 : _a.role) !== 'admin') {
-        console.warn(`[SystemHealth] User ${context.auth.uid} is not an admin.`);
+        functions.logger.warn(`[SystemHealth] User ${context.auth.uid} is not an admin.`);
         throw new functions.https.HttpsError('permission-denied', 'Only admins can access system health.');
     }
     if (!projectId) {
@@ -106,7 +107,7 @@ exports.getSystemHealth = functions.https.onCall(async (data, context) => {
             return total;
         }
         catch (error) {
-            console.error(`Error fetching metric ${metricType}:`, error);
+            functions.logger.error(`Error fetching metric ${metricType}:`, error);
             return 0;
         }
     };
@@ -158,8 +159,7 @@ exports.getSystemHealth = functions.https.onCall(async (data, context) => {
         };
     }
     catch (error) {
-        console.error("System Health fetch failed:", error);
-        throw new functions.https.HttpsError('internal', `Failed to fetch system health: ${error.message}`);
+        (0, errors_1.toHttpsError)(error, 'Failed to fetch system health.');
     }
 });
 //# sourceMappingURL=getSystemHealth.js.map

@@ -2,6 +2,8 @@ import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import { stripe } from '../config/stripe';
 import { logEvent, buildActorFromContext } from '../utils/audit';
+import { toHttpsError } from '../utils/errors';
+import { checkRateLimit } from '../utils/rateLimiter';
 
 const db = admin.firestore();
 
@@ -14,6 +16,11 @@ export const refundOrder = functions.https.onCall(async (data, context) => {
     if (!context.auth) {
         throw new functions.https.HttpsError('unauthenticated', 'User must be logged in.');
     }
+    if (!context.app && process.env.FUNCTIONS_EMULATOR !== 'true') {
+        throw new functions.https.HttpsError('failed-precondition', 'App Check verification required.');
+    }
+
+    await checkRateLimit(context.auth.uid, 'refundOrder', 5, 5 * 60 * 1000);
 
     const { orderId, reason } = data;
     if (!orderId) {
@@ -80,7 +87,6 @@ export const refundOrder = functions.https.onCall(async (data, context) => {
         };
 
     } catch (error: any) {
-        functions.logger.error('Refund Error:', error);
-        throw new functions.https.HttpsError('internal', error.message || 'Failed to process refund.');
+        toHttpsError(error, 'Failed to process refund.');
     }
 });

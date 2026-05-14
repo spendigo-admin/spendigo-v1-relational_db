@@ -41,11 +41,11 @@ export const processIngestionJobs = functions.pubsub.schedule('every 10 minutes'
     });
 
     if (jobsToRun.length === 0) {
-        console.log("No ingestion jobs due at this time.");
+        functions.logger.info("No ingestion jobs due at this time.");
         return null;
     }
 
-    console.log(`Processing ${jobsToRun.length} due ingestion jobs...`);
+    functions.logger.info(`Processing ${jobsToRun.length} due ingestion jobs...`);
 
     for (const jobDoc of jobsToRun) {
         const jobData = jobDoc.data();
@@ -65,7 +65,7 @@ export const processIngestionJobs = functions.pubsub.schedule('every 10 minutes'
 
             await jobDoc.ref.update(updateData);
 
-            console.log(`Running ${jobData.type} job for ${jobData.postalCode} (reset=${jobData.shouldReset})...`);
+            functions.logger.info(`Running ${jobData.type} job for ${jobData.postalCode} (reset=${jobData.shouldReset})...`);
             
             const result = await runIngestion(jobData.postalCode, !!jobData.shouldReset);
 
@@ -84,10 +84,10 @@ export const processIngestionJobs = functions.pubsub.schedule('every 10 minutes'
             }
 
             await jobDoc.ref.update(finalUpdate);
-            console.log(`Job for ${jobData.postalCode} finished successfully.`);
+            functions.logger.info(`Job for ${jobData.postalCode} finished successfully.`);
 
         } catch (error: any) {
-            console.error(`Error processing job ${jobDoc.id}:`, error);
+            functions.logger.error(`Error processing job ${jobDoc.id}:`, error);
             
             const errorUpdate: any = {
                 error: error.message || 'Unknown error',

@@ -1,6 +1,7 @@
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import { logEvent, buildActorFromContext } from '../utils/audit';
+import { checkRateLimit } from '../utils/rateLimiter';
 
 /**
  * Callable HTTPS Cloud Function to remove a team member
@@ -14,6 +15,8 @@ export const removeTeamMember = functions.https.onCall(async (data, context) => 
     if (!context.auth) {
         throw new functions.https.HttpsError('unauthenticated', 'Must be authenticated');
     }
+
+    await checkRateLimit(context.auth.uid, 'removeTeamMember', 10, 15 * 60 * 1000);
 
     const { targetUserId, storeId } = data;
 

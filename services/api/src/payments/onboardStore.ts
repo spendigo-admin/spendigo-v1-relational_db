@@ -1,6 +1,7 @@
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import { stripe } from '../config/stripe';
+import { toHttpsError } from '../utils/errors';
 
 const db = admin.firestore();
 
@@ -12,6 +13,9 @@ export const onboardStore = functions.https.onCall(async (data, context) => {
     // 1. Authentication Check
     if (!context.auth) {
         throw new functions.https.HttpsError('unauthenticated', 'User must be logged in.');
+    }
+    if (!context.app && process.env.FUNCTIONS_EMULATOR !== 'true') {
+        throw new functions.https.HttpsError('failed-precondition', 'App Check verification required.');
     }
 
     const { storeId } = data;
@@ -27,11 +31,15 @@ export const onboardStore = functions.https.onCall(async (data, context) => {
         }
 
         const storeData = storeSnap.data();
-        
-        // Security check: Only the owner or an admin can onboard the store
-        // In a real app, we'd check if context.auth.uid is in storeData.team
-        // For now, we assume the frontend only calls this for the active store.
-        
+
+        // 2b. Ownership check — only the store OWNER or an admin may attach a Stripe account.
+        // Any authenticated user who knows a storeId could otherwise hijack a competitor's payments.
+        const callerSnap = await db.collection('users').doc(context.auth.uid).get();
+        const caller = callerSnap.data();
+        if (caller?.role !== 'admin' && (caller?.storeId !== storeId || caller?.merchantRole !== 'OWNER')) {
+            throw new functions.https.HttpsError('permission-denied', 'Only the store owner may initiate Stripe onboarding.');
+        }
+
         // 3. Create or Retrieve Stripe Account ID
         let stripeAccountId = storeData?.stripeAccountId;
 
@@ -78,7 +86,6 @@ export const onboardStore = functions.https.onCall(async (data, context) => {
         };
 
     } catch (error: any) {
-        functions.logger.error('Stripe Onboarding Error:', error);
-        throw new functions.https.HttpsError('internal', error.message || 'Failed to create Stripe onboarding link.');
+        toHttpsError(error, 'Failed to create Stripe onboarding link.');
     }
 });

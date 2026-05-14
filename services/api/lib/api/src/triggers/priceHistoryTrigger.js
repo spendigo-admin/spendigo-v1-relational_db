@@ -88,19 +88,19 @@ exports.onMerchantProductPriceChange = functions.firestore
     const isSale = after.on_sale === true ||
         (after.sale_price && after.sale_price < after.price) ||
         (after.original_price && after.original_price > after.price);
-    console.log(`[NotificationTrigger] Item: ${after.name}, isNew: ${isNew}, Price: ${newPrice}, Old: ${oldPrice}, isSale: ${isSale}, isPriceDrop: ${isPriceDrop}`);
+    functions.logger.info(`[NotificationTrigger] Item: ${after.name}, isNew: ${isNew}, Price: ${newPrice}, Old: ${oldPrice}, isSale: ${isSale}, isPriceDrop: ${isPriceDrop}`);
     if (isPriceDrop || (isNew && isSale)) {
-        console.log(`[NotificationTrigger] Deal detected for ${after.name}. ID: ${productId}`);
+        functions.logger.info(`[NotificationTrigger] Deal detected for ${after.name}. ID: ${productId}`);
         // Get Merchant Data
         const merchantSnap = await db.collection('stores').doc(after.merchant_id).get();
         const merchant = merchantSnap.data();
         if (!merchant || !merchant.coordinates) {
-            console.log(`[NotificationTrigger] Merchant ${after.merchant_id} coordinates missing. Skipping alert.`);
+            functions.logger.info(`[NotificationTrigger] Merchant ${after.merchant_id} coordinates missing. Skipping alert.`);
             return;
         }
         const merchantLat = merchant.coordinates.lat;
         const merchantLng = merchant.coordinates.lng;
-        console.log(`[NotificationTrigger] Merchant Location: ${merchantLat}, ${merchantLng}`);
+        functions.logger.info(`[NotificationTrigger] Merchant Location: ${merchantLat}, ${merchantLng}`);
         // Query all users — filtering by fcmTokens array inequality is unreliable in Firestore.
         // Users without tokens are cheaply skipped below.
         const notifications = [];
@@ -129,7 +129,7 @@ exports.onMerchantProductPriceChange = functions.firestore
                 const wantsPromotions = prefs.promotions !== false;
                 const isRelevant = isPriceDrop ? wantsPriceDrop : wantsPromotions;
                 if (!isRelevant) {
-                    console.log(`[NotificationTrigger] User ${userId} has this alert type disabled.`);
+                    functions.logger.info(`[NotificationTrigger] User ${userId} has this alert type disabled.`);
                     return;
                 }
                 const maxDist = prefs.maxDistance || 10;
@@ -140,7 +140,7 @@ exports.onMerchantProductPriceChange = functions.firestore
                 const userLng = (_c = defaultAddr === null || defaultAddr === void 0 ? void 0 : defaultAddr.lng) !== null && _c !== void 0 ? _c : (_d = userData.coordinates) === null || _d === void 0 ? void 0 : _d.lng;
                 if (userLat && userLng) {
                     const dist = calculateDistance(merchantLat, merchantLng, userLat, userLng);
-                    console.log(`[NotificationTrigger] User ${userId} is ${dist.toFixed(2)}km away. (Max: ${maxDist}km)`);
+                    functions.logger.info(`[NotificationTrigger] User ${userId} is ${dist.toFixed(2)}km away. (Max: ${maxDist}km)`);
                     if (dist <= maxDist) {
                         const notifTitle = isPriceDrop ? 'Price Drop! 📉' : 'New Deal Alert! ✨';
                         const notifBody = `${after.name} is now $${newPrice} at ${merchant.name} (${dist.toFixed(1)}km away).`;
@@ -148,7 +148,7 @@ exports.onMerchantProductPriceChange = functions.firestore
                         const tokenList = userData.fcmTokens || [];
                         if (tokenList.length === 0)
                             return;
-                        console.log(`[NotificationTrigger] User ${userId} MATCHED! Sending to ${tokenList.length} tokens.`);
+                        functions.logger.info(`[NotificationTrigger] User ${userId} MATCHED! Sending to ${tokenList.length} tokens.`);
                         const message = {
                             notification: {
                                 title: isPriceDrop ? 'Price Drop! 📉' : 'New Deal Alert! ✨',
@@ -163,28 +163,28 @@ exports.onMerchantProductPriceChange = functions.firestore
                             tokens: tokenList
                         };
                         notifications.push(admin.messaging().sendEachForMulticast(message).then(async (res) => {
-                            console.log(`[NotificationTrigger] FCM Result for ${userId}: SUCCESS: ${res.successCount}, FAIL: ${res.failureCount}`);
+                            functions.logger.info(`[NotificationTrigger] FCM Result for ${userId}: SUCCESS: ${res.successCount}, FAIL: ${res.failureCount}`);
                             if (res.failureCount > 0) {
                                 await (0, fcm_1.removeStaleTokens)(userId, tokenList, res.responses);
                             }
                             return res;
                         }).catch(err => {
-                            console.error(`[NotificationTrigger] FCM Error for ${userId}:`, err);
+                            functions.logger.error(`[NotificationTrigger] FCM Error for ${userId}:`, err);
                         }));
                     }
                 }
                 else {
-                    console.log(`[NotificationTrigger] User ${userId} missing coordinates in default address.`);
+                    functions.logger.info(`[NotificationTrigger] User ${userId} missing coordinates in default address.`);
                 }
             });
         }
-        console.log(`[NotificationTrigger] Checked ${totalChecked} users for proximity.`);
+        functions.logger.info(`[NotificationTrigger] Checked ${totalChecked} users for proximity.`);
         if (notifications.length > 0) {
             await Promise.all(notifications);
-            console.log(`[NotificationTrigger] Finished processing proximity alerts.`);
+            functions.logger.info(`[NotificationTrigger] Finished processing proximity alerts.`);
         }
         else {
-            console.log('[NotificationTrigger] No matching users found in proximity.');
+            functions.logger.info('[NotificationTrigger] No matching users found in proximity.');
         }
         // Write in-app inbox notification for every matched user (with or without FCM token)
         if (matchedUsers.length > 0) {
@@ -208,11 +208,11 @@ exports.onMerchantProductPriceChange = functions.firestore
                 });
                 await batch.commit();
             }
-            console.log(`[NotificationTrigger] Wrote ${matchedUsers.length} inbox notifications.`);
+            functions.logger.info(`[NotificationTrigger] Wrote ${matchedUsers.length} inbox notifications.`);
         }
     }
     else {
-        console.log(`[NotificationTrigger] No deal criteria met for ${after.name}.`);
+        functions.logger.info(`[NotificationTrigger] No deal criteria met for ${after.name}.`);
     }
 });
 //# sourceMappingURL=priceHistoryTrigger.js.map

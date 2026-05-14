@@ -1,5 +1,6 @@
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
+import { toHttpsError } from '../utils/errors';
 
 /**
  * Cleanup Orphaned Store Data
@@ -106,7 +107,6 @@ export const cleanupOrphanedStoreData = functions.https.onCall(async (data, cont
         };
 
     } catch (error: any) {
-        functions.logger.error("Cleanup failed:", error);
-        throw new functions.https.HttpsError('internal', `Cleanup failed: ${error.message}`);
+        toHttpsError(error, 'Cleanup failed.');
     }
 });

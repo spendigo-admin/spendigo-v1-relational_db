@@ -33,33 +33,12 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.scrapeFlyer = void 0;
+exports.toHttpsError = toHttpsError;
 const functions = __importStar(require("firebase-functions"));
-const admin = __importStar(require("firebase-admin"));
-const flippScraper_1 = require("../utils/flippScraper");
-const errors_1 = require("../utils/errors");
-exports.scrapeFlyer = functions.https.onCall(async (data, context) => {
-    var _a;
-    // Basic Authentication Check
-    if (!context.auth) {
-        throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated.');
-    }
-    // Check Admin Role
-    const db = admin.firestore();
-    const userDoc = await db.collection('users').doc(context.auth.uid).get();
-    if (((_a = userDoc.data()) === null || _a === void 0 ? void 0 : _a.role) !== 'admin') {
-        throw new functions.https.HttpsError('permission-denied', 'Only admins can trigger ingestion.');
-    }
-    const { postalCode, resetData } = data;
-    if (!postalCode || typeof postalCode !== 'string') {
-        throw new functions.https.HttpsError('invalid-argument', 'Valid postal code is required.');
-    }
-    try {
-        const result = await (0, flippScraper_1.runIngestion)(postalCode, !!resetData);
-        return result;
-    }
-    catch (error) {
-        (0, errors_1.toHttpsError)(error, 'Failed to fetch flyers.');
-    }
-});
-//# sourceMappingURL=scrapeFlyer.js.map
+function toHttpsError(error, fallback, code = 'internal') {
+    functions.logger.error(fallback, { message: error === null || error === void 0 ? void 0 : error.message, stack: error === null || error === void 0 ? void 0 : error.stack });
+    if (error instanceof functions.https.HttpsError)
+        throw error;
+    throw new functions.https.HttpsError(code, fallback);
+}
+//# sourceMappingURL=errors.js.map

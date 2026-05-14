@@ -1,6 +1,7 @@
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import { runIngestion } from '../utils/flippScraper';
+import { toHttpsError } from '../utils/errors';
 
 export const scrapeFlyer = functions.https.onCall(async (data, context) => {
     // Basic Authentication Check
@@ -24,7 +25,6 @@ export const scrapeFlyer = functions.https.onCall(async (data, context) => {
         const result = await runIngestion(postalCode, !!resetData);
         return result;
     } catch (error: any) {
-        console.error('Error fetching flyers:', error);
-        throw new functions.https.HttpsError('internal', 'Failed to fetch flyers: ' + error.message);
+        toHttpsError(error, 'Failed to fetch flyers.');
     }
 });
