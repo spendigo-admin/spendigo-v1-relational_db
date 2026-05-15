@@ -48,6 +48,9 @@
 - [ ] **AI Auto-Moderation**: Implement Gemini-powered initial moderation for "Pending Products" submissions to reduce Admin manual workload.
 - [ ] **Historical Personalization**: Develop Algolia search boosting logic based on localized user purchase history.
 
+### Social Login
+- [ ] **Facebook Login**: Button exists in `Login.tsx:230` but is hardcoded `disabled={true}`. Requires Meta App Review approval and a valid `loginWithFacebook` OAuth flow in `AuthContext`. Apple Sign-In is also absent — would be required for App Store distribution (`apps/mobile/`).
+
 ---
 
 ## 4. Backlog & Technical Investigations
@@ -85,3 +88,15 @@ Currently, the public flyer ingestion relies on hotlinking images directly from 
 4. Update the admin catalog editor to allow uploading/reordering multiple images per product.
 
 **Cons**: Small schema migration; all existing products have only `primary_image_url` and would show a single-image gallery until backfilled.
+
+---
+
+### Cleanup: Legacy Service Directories
+
+**Status**: Identified / Low Priority
+**Description**:
+Two directories contain legacy/experimental code not connected to any active deployment:
+- `services/functions/src/` — superseded by `services/api/`; all active Cloud Functions live in `services/api/`
+- `services/smartcart_optimizer/index.ts` — early experimental optimizer; production logic is in `apps/web/src/smartcart/` and mirrored in `services/api/src/smartcart/`
+
+**Action**: Confirm nothing imports from these paths (`grep -r "services/functions\|services/smartcart_optimizer"`) and delete them to avoid confusion for new contributors.
