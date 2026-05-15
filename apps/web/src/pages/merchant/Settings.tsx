@@ -8,7 +8,7 @@ import { useConfirmation } from '../../context/ConfirmationContext';
 import { useFileUpload } from '../../hooks/useFileUpload';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { db } from '../../lib/firebase';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, arrayUnion } from 'firebase/firestore';
 import { auditBridge } from '../../utils/auditBridge';
 
 // --- TYPES ---
@@ -221,7 +221,7 @@ const MerchantSettings: React.FC = () => {
     const [uploadTarget, setUploadTarget] = useState<'logo' | 'cover' | null>(null);
 
     const [searchParams] = useSearchParams();
-    const [activeTab, setActiveTab] = useState<'profile' | 'operations' | 'team' | 'payments' | 'notifications'>((searchParams.get('tab') as any) || 'profile');
+    const [activeTab, setActiveTab] = useState<'profile' | 'operations' | 'team' | 'payments' | 'notifications' | 'verification'>((searchParams.get('tab') as any) || 'profile');
     const [isSaving, setIsSaving] = useState(false);
     const [isExporting, setIsExporting] = useState(false);
     const [showCloseStoreModal, setShowCloseStoreModal] = useState(false);
@@ -233,7 +233,8 @@ const MerchantSettings: React.FC = () => {
         { id: 'operations', label: 'Operations', icon: '⚙️', visible: hasSettingsAccess },
         { id: 'team', label: 'Team Roles', icon: '👥', visible: hasTeamAccess },
         { id: 'payments', label: 'Payments', icon: '💳', visible: hasSettingsAccess },
-        { id: 'notifications', label: 'Alerts', icon: '🔔', visible: true }
+        { id: 'notifications', label: 'Alerts', icon: '🔔', visible: true },
+        { id: 'verification', label: 'Verification', icon: '🪪', visible: true }
     ];
 
     // Scroll Sync for Settings Sections
@@ -280,7 +281,7 @@ const MerchantSettings: React.FC = () => {
 
     useEffect(() => {
         const tab = searchParams.get('tab');
-        if (tab && ['profile', 'operations', 'team', 'payments', 'notifications'].includes(tab)) {
+        if (tab && ['profile', 'operations', 'team', 'payments', 'notifications', 'verification'].includes(tab)) {
             setActiveTab(tab as any);
             setTimeout(() => scrollToSection(tab), 100);
         }
@@ -347,6 +348,20 @@ const MerchantSettings: React.FC = () => {
         marketingEmails: false,
         dailyReports: true
     });
+
+    // KYB State
+    type KybStatus = 'not_submitted' | 'pending_review' | 'approved' | 'rejected';
+    interface KybDocument {
+        type: 'business_license' | 'incorporation_certificate' | 'other';
+        url: string;
+        filename: string;
+        uploadedAt: string;
+    }
+    const [kybStatus, setKybStatus] = useState<KybStatus>('not_submitted');
+    const [kybDocuments, setKybDocuments] = useState<KybDocument[]>([]);
+    const [kybReviewNote, setKybReviewNote] = useState('');
+    const [kybDocType, setKybDocType] = useState<KybDocument['type']>('business_license');
+    const kybFileInputRef = useRef<HTMLInputElement>(null);
 
     const [isLocatingStatus, setIsLocatingStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
 
@@ -469,6 +484,10 @@ const MerchantSettings: React.FC = () => {
                     ...store.notificationPreferences
                 }));
             }
+
+            if (store.kybStatus) setKybStatus(store.kybStatus as KybStatus);
+            if (store.kybDocuments) setKybDocuments(store.kybDocuments as KybDocument[]);
+            if (store.kybReviewNote) setKybReviewNote(store.kybReviewNote);
         }
     }, [storeId, stores]);
 
@@ -1578,6 +1597,126 @@ const MerchantSettings: React.FC = () => {
         </div>
     );
 
+    const handleKybUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (!e.target.files || !e.target.files[0]) return;
+        const file = e.target.files[0];
+        const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+        const path = `stores/${storeId}/documents/${kybDocType}_${Date.now()}_${safeName}`;
+
+        const url = await uploadFile(file, path, 5, ['image/jpeg', 'image/png', 'application/pdf']);
+        if (!url) return;
+
+        const newDoc: KybDocument = {
+            type: kybDocType,
+            url,
+            filename: file.name,
+            uploadedAt: new Date().toISOString()
+        };
+
+        await updateStore(storeId, {
+            kybDocuments: arrayUnion(newDoc),
+            kybStatus: 'pending_review'
+        });
+
+        setKybDocuments(prev => [...prev, newDoc]);
+        setKybStatus('pending_review');
+        auditBridge.emit('KYB_DOCUMENT_UPLOADED', { storeId, docType: kybDocType }, `stores/${storeId}`);
+        addNotification({ type: 'system', title: 'Document Submitted', message: 'Your document has been submitted for review.' });
+
+        if (kybFileInputRef.current) kybFileInputRef.current.value = '';
+    };
+
+    const KYB_STATUS_CONFIG: Record<KybStatus, { label: string; color: string }> = {
+        not_submitted: { label: 'Not Submitted', color: 'bg-gray-100 text-gray-600 border-gray-200' },
+        pending_review: { label: 'Pending Review', color: 'bg-yellow-100 text-yellow-700 border-yellow-200' },
+        approved: { label: 'Verified', color: 'bg-green-100 text-green-700 border-green-200' },
+        rejected: { label: 'Action Required', color: 'bg-red-100 text-red-700 border-red-200' }
+    };
+
+    const DOC_TYPE_LABELS: Record<KybDocument['type'], string> = {
+        business_license: 'Business License',
+        incorporation_certificate: 'Certificate of Incorporation',
+        other: 'Other Document'
+    };
+
+    const renderVerification = () => (
+        <div className="space-y-6 animate-fade-in">
+            <section className="bg-white p-6 rounded-xl border border-[var(--glass-border)] shadow-sm">
+                <div className="flex items-center justify-between mb-4">
+                    <div>
+                        <h2 className="text-lg font-bold text-[var(--text-main)]">Business Verification (KYB)</h2>
+                        <p className="text-sm text-[var(--text-muted)] mt-1">Upload your business license or incorporation certificate so Spendigo can verify your store.</p>
+                    </div>
+                    <span className={`text-xs font-bold px-3 py-1 rounded-full border ${KYB_STATUS_CONFIG[kybStatus].color}`}>
+                        {KYB_STATUS_CONFIG[kybStatus].label}
+                    </span>
+                </div>
+
+                {kybStatus === 'rejected' && kybReviewNote && (
+                    <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">
+                        <p className="font-semibold mb-1">Review Note from Spendigo:</p>
+                        <p>{kybReviewNote}</p>
+                    </div>
+                )}
+
+                {kybStatus === 'approved' ? (
+                    <div className="p-4 bg-green-50 border border-green-200 rounded-xl text-sm text-green-700 font-medium">
+                        Your business has been verified. No further action is needed.
+                    </div>
+                ) : (
+                    <div className="space-y-4">
+                        <div>
+                            <label className="block text-sm font-medium text-[var(--text-main)] mb-1">Document Type</label>
+                            <select
+                                value={kybDocType}
+                                onChange={e => setKybDocType(e.target.value as KybDocument['type'])}
+                                className="w-full border border-[var(--glass-border)] rounded-xl px-4 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)]/30"
+                            >
+                                <option value="business_license">Business License</option>
+                                <option value="incorporation_certificate">Certificate of Incorporation</option>
+                                <option value="other">Other Document</option>
+                            </select>
+                        </div>
+
+                        <button
+                            onClick={() => kybFileInputRef.current?.click()}
+                            disabled={uploading}
+                            className="w-full border-2 border-dashed border-[var(--glass-border)] rounded-xl p-6 text-center hover:border-[var(--brand-primary)] hover:bg-[var(--brand-primary)]/5 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            <div className="text-3xl mb-2">📎</div>
+                            <p className="font-semibold text-[var(--text-main)]">{uploading ? 'Uploading...' : 'Upload Document'}</p>
+                            <p className="text-xs text-[var(--text-muted)] mt-1">PDF, JPEG, or PNG — max 5 MB</p>
+                        </button>
+
+                        <input
+                            ref={kybFileInputRef}
+                            type="file"
+                            accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
+                            className="hidden"
+                            onChange={handleKybUpload}
+                        />
+                    </div>
+                )}
+            </section>
+
+            {kybDocuments.length > 0 && (
+                <section className="bg-white p-6 rounded-xl border border-[var(--glass-border)] shadow-sm">
+                    <h3 className="text-sm font-bold text-[var(--text-main)] mb-4">Submitted Documents</h3>
+                    <div className="space-y-3">
+                        {kybDocuments.map((doc, i) => (
+                            <div key={i} className="flex items-center justify-between p-3 bg-[var(--surface-2)] rounded-xl border border-[var(--glass-border)]">
+                                <div className="min-w-0">
+                                    <p className="text-sm font-medium text-[var(--text-main)] truncate">{doc.filename}</p>
+                                    <p className="text-xs text-[var(--text-muted)]">{DOC_TYPE_LABELS[doc.type]} · {new Date(doc.uploadedAt).toLocaleDateString()}</p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </section>
+            )}
+        </div>
+    );
+
     return (
         <div className="p-6 animate-fade-in max-w-5xl mx-auto pb-24">
             {stores[storeId]?.status === 'pending_deletion' && (
@@ -1690,6 +1829,14 @@ const MerchantSettings: React.FC = () => {
                         Notification Preferences
                     </h2>
                     {renderNotifications()}
+                </div>
+
+                <div id="section-verification" className="scroll-mt-48">
+                    <h2 className="text-xl font-black text-[var(--brand-primary)] mb-6 flex items-center gap-3 bg-[var(--surface-2)] p-4 rounded-2xl border border-[var(--glass-border)]">
+                        <span className="text-2xl">🪪</span>
+                        Business Verification
+                    </h2>
+                    {renderVerification()}
                 </div>
             </div>
 

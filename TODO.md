@@ -12,7 +12,7 @@
 - [ ] **CSP `unsafe-inline` Removal**: `firebase.json` CSP includes `'unsafe-inline'` in both `script-src` and `style-src`, weakening XSS protection. Migrate inline styles/scripts or introduce per-request nonces.
 
 ### Data & Features
-- [ ] **Merchant KYB Storage Rules**: Deploy path-restricted Firebase Storage rules (`/stores/{storeId}/`) for secure business license uploads.
+- [x] **Merchant KYB Storage Rules**: Deploy path-restricted Firebase Storage rules (`/stores/{storeId}/`) for secure business license uploads.
 - [x] **Careers Application Email Notification**: CV upload and Firestore write are working. `onJobApplicationCreated` trigger added in `services/api/src/email/sendJobApplicationEmail.ts` — fires on `job_applications/{id}` onCreate, writes to `/mail` collection with resume download link and `replyTo` set to the candidate's email.
 - [x] **Master Catalog Seeding**: 754 real Canadian SKUs written to `master_products` via `scripts/bulkSeedMasterCatalog.ts` (queries Open Food Facts across 8 category tags with retry/dedup). Re-running is safe — deduplicates by barcode automatically.
 

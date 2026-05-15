@@ -39,6 +39,26 @@ service firebase.storage {
                    && firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
+    // Merchant branding assets (logos, cover images) — flat files at root of stores/{storeId}/
+    // Single-segment pattern intentionally excludes subdirectories like /documents/
+    match /stores/{storeId}/{filename} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null
+                   && firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.storeId == storeId
+                   && firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'merchant';
+    }
+
+    // KYB documents (business licenses, incorporation certificates)
+    // Restricted read: only the owning merchant or an admin may access these files
+    match /stores/{storeId}/documents/{allPaths=**} {
+      allow read: if request.auth != null
+                  && (firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.storeId == storeId
+                      || firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'admin');
+      allow write: if request.auth != null
+                   && firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.storeId == storeId
+                   && firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'merchant';
+    }
+
     // Default: deny everything else
     match /{allPaths=**} {
       allow read, write: if false;

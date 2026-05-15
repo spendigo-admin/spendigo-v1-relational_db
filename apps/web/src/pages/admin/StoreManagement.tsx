@@ -60,6 +60,8 @@ const StoreManagement: React.FC = () => {
     const [statusModalStore, setStatusModalStore] = useState<any>(null);
     const [statusReason, setStatusReason] = useState('');
     const [customReason, setCustomReason] = useState('');
+    const [kybReviewNote, setKybReviewNote] = useState('');
+    const [kybRejectMode, setKybRejectMode] = useState(false);
 
     const resetForm = () => {
         setFormData({
@@ -78,6 +80,8 @@ const StoreManagement: React.FC = () => {
         setEditingStoreId(null);
         setSelectedStoreLegal(null);
         setShowFullAgreement(false);
+        setKybReviewNote('');
+        setKybRejectMode(false);
     };
 
     const handleStatusUpdate = async (storeId: string, status: 'active' | 'suspended', reason?: string) => {
@@ -348,6 +352,37 @@ const StoreManagement: React.FC = () => {
         }
     };
 
+    const handleKybReview = async (storeId: string, decision: 'approved' | 'rejected') => {
+        try {
+            const updateData: any = {
+                kybStatus: decision,
+                kybReviewedAt: new Date().toISOString(),
+                kybReviewedBy: user?.id || ''
+            };
+            if (decision === 'approved') {
+                updateData.kybReviewNote = '';
+            } else {
+                updateData.kybReviewNote = kybReviewNote;
+            }
+            const storeRef = doc(db, 'stores', storeId);
+            await updateDoc(storeRef, updateData);
+            await logEvent(decision === 'approved' ? 'KYB_APPROVED' : 'KYB_REJECTED', {
+                storeId,
+                reviewNote: kybReviewNote || ''
+            }, `stores/${storeId}`);
+            addNotification({
+                type: 'system',
+                title: decision === 'approved' ? 'KYB Approved' : 'KYB Rejected',
+                message: `Business verification ${decision} for store.`
+            });
+            setKybRejectMode(false);
+            setKybReviewNote('');
+        } catch (e) {
+            console.error(e);
+            addNotification({ type: 'alert', title: 'Review Failed', message: 'Could not update KYB status.' });
+        }
+    };
+
     return (
         <div className="space-y-6 animate-fade-in relative">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -499,6 +534,14 @@ const StoreManagement: React.FC = () => {
                                                 {store.status === 'suspended' && store.statusReason && (
                                                     <div className="text-[10px] text-red-600 mt-1 font-medium bg-red-50 px-1.5 py-0.5 rounded border border-red-100 max-w-[150px] truncate" title={store.statusReason}>
                                                         Reason: {store.statusReason}
+                                                    </div>
+                                                )}
+                                                {store.kybStatus && store.kybStatus !== 'not_submitted' && (
+                                                    <div className={`text-[10px] font-bold mt-1 px-1.5 py-0.5 rounded border inline-flex items-center gap-0.5
+                                                        ${store.kybStatus === 'approved' ? 'bg-teal-50 text-teal-700 border-teal-200' :
+                                                        store.kybStatus === 'pending_review' ? 'bg-yellow-50 text-yellow-700 border-yellow-200' :
+                                                        'bg-red-50 text-red-600 border-red-200'}`}>
+                                                        kyb: {store.kybStatus === 'approved' ? '✓' : store.kybStatus === 'pending_review' ? '…' : '!'} {store.kybStatus.replace('_', ' ')}
                                                     </div>
                                                 )}
                                             </td>
@@ -1025,6 +1068,104 @@ const StoreManagement: React.FC = () => {
                                         </div>
                                     </div>
                                 </div>
+
+                                                {/* KYB Review Panel */}
+                                                {editingStoreId && (() => {
+                                                    const editingStore = stores[editingStoreId];
+                                                    const docs: any[] = editingStore?.kybDocuments || [];
+                                                    const kybSt: string = editingStore?.kybStatus || 'not_submitted';
+                                                    const DOC_LABELS: Record<string, string> = {
+                                                        business_license: 'Business License',
+                                                        incorporation_certificate: 'Certificate of Incorporation',
+                                                        other: 'Other'
+                                                    };
+                                                    return (
+                                                        <div className="mt-2 p-4 rounded-xl border border-[var(--glass-border)] bg-[var(--surface-2)] space-y-3">
+                                                            <div className="flex items-center justify-between">
+                                                                <h4 className="text-sm font-bold text-[var(--text-main)]">KYB / Business Verification</h4>
+                                                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border
+                                                                    ${kybSt === 'approved' ? 'bg-teal-100 text-teal-700 border-teal-200' :
+                                                                    kybSt === 'pending_review' ? 'bg-yellow-100 text-yellow-700 border-yellow-200' :
+                                                                    kybSt === 'rejected' ? 'bg-red-100 text-red-700 border-red-200' :
+                                                                    'bg-gray-100 text-gray-500 border-gray-200'}`}>
+                                                                    {kybSt.replace(/_/g, ' ')}
+                                                                </span>
+                                                            </div>
+
+                                                            {docs.length === 0 ? (
+                                                                <p className="text-xs text-[var(--text-muted)] italic">No documents submitted yet.</p>
+                                                            ) : (
+                                                                <div className="space-y-2">
+                                                                    {docs.map((d: any, i: number) => (
+                                                                        <div key={i} className="flex items-center justify-between p-2 bg-white rounded-lg border border-[var(--glass-border)]">
+                                                                            <div className="min-w-0">
+                                                                                <p className="text-xs font-medium truncate">{d.filename}</p>
+                                                                                <p className="text-[10px] text-[var(--text-muted)]">{DOC_LABELS[d.type] || d.type} · {new Date(d.uploadedAt).toLocaleDateString()}</p>
+                                                                            </div>
+                                                                            <a
+                                                                                href={d.url}
+                                                                                target="_blank"
+                                                                                rel="noopener noreferrer"
+                                                                                className="ml-2 text-[10px] font-bold text-blue-600 hover:text-blue-800 whitespace-nowrap"
+                                                                            >
+                                                                                View
+                                                                            </a>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            )}
+
+                                                            {docs.length > 0 && kybSt !== 'approved' && (
+                                                                <div className="space-y-2">
+                                                                    {kybRejectMode ? (
+                                                                        <div className="space-y-2">
+                                                                            <textarea
+                                                                                value={kybReviewNote}
+                                                                                onChange={e => setKybReviewNote(e.target.value)}
+                                                                                placeholder="Explain what the merchant needs to fix..."
+                                                                                rows={2}
+                                                                                className="w-full text-xs border border-red-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-300 resize-none"
+                                                                            />
+                                                                            <div className="flex gap-2">
+                                                                                <button
+                                                                                    type="button"
+                                                                                    onClick={() => handleKybReview(editingStoreId, 'rejected')}
+                                                                                    className="flex-1 py-1.5 bg-red-600 text-white text-xs font-bold rounded-lg hover:bg-red-700 transition-colors"
+                                                                                >
+                                                                                    Confirm Rejection
+                                                                                </button>
+                                                                                <button
+                                                                                    type="button"
+                                                                                    onClick={() => { setKybRejectMode(false); setKybReviewNote(''); }}
+                                                                                    className="py-1.5 px-3 border text-xs font-bold rounded-lg hover:bg-gray-50 transition-colors"
+                                                                                >
+                                                                                    Cancel
+                                                                                </button>
+                                                                            </div>
+                                                                        </div>
+                                                                    ) : (
+                                                                        <div className="flex gap-2">
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => handleKybReview(editingStoreId, 'approved')}
+                                                                                className="flex-1 py-1.5 bg-teal-600 text-white text-xs font-bold rounded-lg hover:bg-teal-700 transition-colors"
+                                                                            >
+                                                                                Approve
+                                                                            </button>
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => setKybRejectMode(true)}
+                                                                                className="flex-1 py-1.5 border border-red-300 text-red-600 text-xs font-bold rounded-lg hover:bg-red-50 transition-colors"
+                                                                            >
+                                                                                Reject
+                                                                            </button>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                })()}
 
                                 <div className="pt-4 flex gap-3 sticky bottom-0 bg-white border-t border-gray-100 pt-6">
                                     <button

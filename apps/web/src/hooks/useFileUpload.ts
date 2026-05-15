@@ -10,23 +10,27 @@ export const useFileUpload = () => {
     const uploadFile = async (
         file: File,
         path: string,
-        maxSizeMB: number = 2
+        maxSizeMB: number = 2,
+        acceptedMimeTypes: string[] = ['image/', 'video/']
     ): Promise<string | null> => {
         // Validation
         if (file.size > maxSizeMB * 1024 * 1024) {
             addNotification({
                 type: 'alert',
                 title: 'File Too Large',
-                message: `Image must be under ${maxSizeMB}MB.`
+                message: `File must be under ${maxSizeMB}MB.`
             });
             return null;
         }
 
-        if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) {
+        const isAccepted = acceptedMimeTypes.some(prefix =>
+            prefix.endsWith('/') ? file.type.startsWith(prefix) : file.type === prefix
+        );
+        if (!isAccepted) {
             addNotification({
                 type: 'alert',
                 title: 'Invalid File',
-                message: 'Please upload a valid image or video file.'
+                message: 'Please upload a valid image, video, or PDF file.'
             });
             return null;
         }
