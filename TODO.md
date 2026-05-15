@@ -4,12 +4,15 @@
 
 ### Infrastructure & Config
 - [ ] **Staging Environment**: Provision an isolated `spendigo-staging` Firebase project (or Preview Channels) for QA.
-- [ ] **Firebase Functions Upgrade**: Upgrade `firebase-functions` SDK from v4.9.0 to >=5.1.0 to support newest Firebase Extensions.
-- [ ] **Migrate functions.config()**: Convert deprecated Cloud Runtime Config (`functions.config()`) to the new `params` package before March 2027. Known remaining usage: `stripeWebhook.ts:14` reads `functions.config().stripe?.webhook_secret`. Grep for other occurrences: `grep -rn "functions.config" services/api/src/`.
+- [x] **Firebase Functions Upgrade**: Upgraded `firebase-functions` SDK from v4.9.0 to v6.6.0. All 50 source files migrated to `firebase-functions/v1` import path.
+- [x] **Migrate functions.config()**: All 6 `functions.config()` usages replaced with `process.env`. Values migrated to `services/api/.env` for the emulator. See affected files: `config/stripe.ts`, `payments/stripeWebhook.ts`, `payments/createCheckoutSession.ts`, `payments/updateSubscriptionPlan.ts`, `triggers/storeTriggers.ts`.
+- [ ] **Set Production Env Vars Before Next Deploy**: `functions.config()` is gone — before running `firebase deploy --only functions`, set these in the Firebase Console (Functions → each function → Environment variables) or via Secret Manager: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_CORE`, `STRIPE_PRICE_GROWTH`. Optional: `APP_URL` (defaults to `https://spendigo.ca`), `ADMIN_ALERT_EMAIL` (defaults to `ops@spendigo.ca`).
 
 ### Security
 - [x] **App Check Enforcement**
 - [ ] **CSP `unsafe-inline` Removal**: `firebase.json` CSP includes `'unsafe-inline'` in both `script-src` and `style-src`, weakening XSS protection. Migrate inline styles/scripts or introduce per-request nonces.
+- [ ] **HTML Injection in Team Invite Email**: `inviteTeamMember.ts:130–135` interpolates `${name}`, `${email}`, and `${merchantRole}` directly into an HTML string with no escaping. A store OWNER could craft a malicious `name` value containing HTML/script content that renders in the invitation email. Sanitize all three fields before inserting into the template (strip tags or use a plain-text fallback).
+- [ ] **`cancelOrder` Reason Field Unsanitized**: `cancelOrder.ts:21` accepts `reason` from the caller without a length cap or content check. The value is persisted to Firestore and displayed in the admin order UI. A long string causes a document bloat; a script-containing string is an XSS risk in any admin view that renders it unescaped. Add a max-length check (e.g. 500 chars) and trim the field.
 
 ---
 
@@ -19,6 +22,9 @@
 - [ ] **Context-Level Error Boundaries**: `App.tsx` has a single top-level `ErrorBoundary`. A crash in any context provider (CartProvider, OrderProvider, etc.) takes down the entire app. Wrap individual providers with isolated error boundaries.
 - [ ] **Cloud Functions Unhandled Rejection Handler**: No global `process.on('unhandledRejection')` handler exists in the functions runtime. Silent failures in fire-and-forget async calls (FCM multicast in `priceHistoryTrigger.ts`, audit writes) go undetected.
 - [ ] **Firestore Rules getUserData() Cost**: `getUserData()` is called in every rule evaluation that calls `isAdmin()` or `isMerchant()`, resulting in a Firestore read per rule check. Cache the result in a local variable or restructure rules to use custom claims to reduce reads and cost.
+- [ ] **Stripe `payments` Collection Never Reconciled**: `stripeWebhook.ts:59` writes a payment record with `orderId: null` when the webhook arrives before `placeOrder` commits (documented race condition). No background job ever reconciles these orphaned records against completed orders. Revenue gaps won't surface until a manual audit. Implement a reconciliation pass (scheduled function or on-demand) that matches orphaned `payments` docs to orders by `paymentIntentId`.
+- [ ] **`cancelOrder` Duplicate Audit Entries on Transaction Retry**: `cancelOrder.ts` calls `logEvent(...)` inside `db.runTransaction()`'s callback without passing the outer `transaction` object. If Firestore retries the outer transaction due to a contention conflict, `logEvent` runs its own separate inner transaction on each retry, writing a duplicate audit chain entry for the same cancellation. Pass the outer transaction to `logEvent` (the function supports `providedTransaction` + `preFetchedPrevHash` parameters) to make the audit write atomic with the cancellation.
+- [ ] **`priceHistoryTrigger` Full User Collection Scan**: `priceHistoryTrigger.ts:89` paginates through the entire `users` collection in 500-doc batches on every merchant product price change. At scale (100k+ users) this is 200+ Firestore reads per price event and risks trigger timeouts. Add a composite index on `(fcmTokens array-contains-any, coordinates)` or move proximity filtering upstream with a geohash query to limit reads to users near the store.
 
 ### Mobile
 - [ ] **Android `allowBackup` Disabled**: `apps/web/android/app/src/main/AndroidManifest.xml` line 4 sets `android:allowBackup="true"`. This allows Android backup services to export app data (including cached tokens and localStorage) to uncontrolled locations. Set to `false` or configure `android:fullBackupContent` rules.
