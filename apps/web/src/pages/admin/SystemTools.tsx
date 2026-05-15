@@ -86,77 +86,45 @@ const SystemTools = () => {
             }
         },
         {
-            id: 'cleanup-catalog',
-            title: 'Cleanup Master Catalog',
-            description: 'Deletes master products that are NOT currently listed in any merchant store ("orphaned products").',
-            icon: '🧹',
+            id: 'catalog-health',
+            title: 'Catalog Health Report',
+            description: 'Scans the master catalog for data quality issues: missing names, missing barcodes, and duplicate barcodes. Read-only — no data is modified.',
+            icon: '🔍',
             action: async () => {
-                if (await confirm({
-                    title: 'Cleanup Orphans?',
-                    message: 'This will DELETE all master products that are not currently sold by any store. This action is irreversible.',
-                    confirmText: 'Start Cleanup',
-                    type: 'danger'
-                })) {
-                    console.log('Starting Catalog Cleanup...');
-                    addNotification({ type: 'system', title: 'Analysis Started', message: 'Identifying orphaned products...' });
+                addNotification({ type: 'system', title: 'Scanning...', message: 'Reading master catalog...' });
 
-                    // 1. Identify all USED Master IDs
-                    const merchantProductsSnap = await getDocs(collection(db, 'merchant_products'));
-                    const usedMasterIds = new Set<string>();
+                const snap = await getDocs(collection(db, 'master_products'));
+                const total = snap.size;
 
-                    merchantProductsSnap.forEach(doc => {
-                        const data = doc.data();
-                        if (data.master_product_id) {
-                            usedMasterIds.add(data.master_product_id);
-                        }
-                    });
+                let missingName = 0;
+                let missingBarcode = 0;
+                const barcodeCounts: Record<string, number> = {};
 
-                    console.log(`Found ${usedMasterIds.size} used master products across ${merchantProductsSnap.size} inventory items.`);
-
-                    // 2. Identify ALL Master IDs
-                    const masterProductsSnap = await getDocs(collection(db, 'master_products'));
-                    console.log(`Found ${masterProductsSnap.size} total master products.`);
-
-                    // 3. Find Orphans
-                    const orphans: any[] = [];
-                    masterProductsSnap.forEach(doc => {
-                        if (!usedMasterIds.has(doc.id)) {
-                            orphans.push(doc.ref);
-                        }
-                    });
-
-                    if (orphans.length === 0) {
-                        addNotification({ type: 'system', title: 'Clean', message: 'No orphaned products found.' });
-                        return;
+                snap.forEach(docSnap => {
+                    const d = docSnap.data();
+                    if (!d.product_name) missingName++;
+                    const bc = ((d.upc_gtin as string) || (d.barcode as string) || '').trim();
+                    if (!bc) {
+                        missingBarcode++;
+                    } else {
+                        barcodeCounts[bc] = (barcodeCounts[bc] || 0) + 1;
                     }
+                });
 
-                    if (await confirm({
-                        title: `Delete ${orphans.length} Orphans?`,
-                        message: `Found ${orphans.length} orphaned products (out of ${masterProductsSnap.size}). Proceed with deletion?`,
-                        confirmText: 'Delete Orphans',
-                        type: 'danger'
-                    })) {
-                        // 4. Batch Delete
-                        let batch = writeBatch(db);
-                        let opCount = 0;
-                        let deletedCount = 0;
+                const duplicateBarcodes = Object.values(barcodeCounts).filter(c => c > 1).length;
 
-                        for (const ref of orphans) {
-                            batch.delete(ref);
-                            opCount++;
-                            deletedCount++;
+                const isHealthy = missingName === 0 && missingBarcode === 0 && duplicateBarcodes === 0;
+                const issues: string[] = [
+                    missingName > 0 ? `Missing name: ${missingName}` : '',
+                    missingBarcode > 0 ? `Missing barcode: ${missingBarcode}` : '',
+                    duplicateBarcodes > 0 ? `Duplicate barcodes: ${duplicateBarcodes}` : '',
+                ].filter(Boolean);
 
-                            if (opCount >= 400) {
-                                await batch.commit();
-                                batch = writeBatch(db);
-                                opCount = 0;
-                            }
-                        }
-                        if (opCount > 0) await batch.commit();
-
-                        addNotification({ type: 'system', title: 'Cleanup Complete', message: `Deleted ${deletedCount} orphaned products.` });
-                    }
-                }
+                addNotification({
+                    type: 'system',
+                    title: isHealthy ? 'Catalog is healthy' : `${issues.length} issue type(s) found`,
+                    message: `Total: ${total} products${issues.length > 0 ? ' · ' + issues.join(' · ') : ''}`,
+                });
             }
         },
         {

@@ -1334,12 +1334,20 @@ export const useCatalog = () => {
         setLoading(true);
         try {
             console.log("Starting Category Migration...");
-            const batch = (await import('firebase/firestore')).writeBatch(db);
+            const { writeBatch: wb } = await import('firebase/firestore');
+            let batch = wb(db);
             let operationCount = 0;
             const MAX_BATCH = 450;
             let batchCommits = 0;
 
-            // Helper to clean ID
+            const flushBatch = async () => {
+                if (operationCount === 0) return;
+                await batch.commit();
+                batch = wb(db);
+                operationCount = 0;
+                batchCommits++;
+            };
+
             const cleanId = (id: string) => {
                 if (!id) return 'General';
                 const map: Record<string, string> = {
@@ -1352,6 +1360,7 @@ export const useCatalog = () => {
                     'lait': 'Dairy',
                     'Dairy & Refrigerated': 'Dairy',
                     'Bakery & Grains': 'Bakery',
+                    'Meat & Seafood': 'Meat',
                     'Produce & Frozen': 'Produce',
                     'Snacks & Household': 'Snacks',
                     'Pantry Staples': 'Pantry',
@@ -1367,35 +1376,17 @@ export const useCatalog = () => {
                 const data = doc.data();
                 const current = data.category_id || '';
                 const newCat = cleanId(current);
-
                 if (newCat !== current) {
                     batch.update(doc.ref, { category_id: newCat });
                     operationCount++;
                 }
-
-                if (operationCount >= MAX_BATCH) {
-                    await batch.commit();
-                    operationCount = 0;
-                    batchCommits++;
-                    // Re-instantiate batch? The previous one is committed/closed.
-                    // We need a loop logic or just simple one-off. 
-                    // For safety in this environment, I'll restrict to one batch or assume small dataset. 
-                    // But to be safe: 
-                    // (Actually writeBatch reuse after commit is invalid).
-                    // This simple implementation assumes < 500 updates for now.
-                    // If more, user might need to run twice.
-                }
+                if (operationCount >= MAX_BATCH) await flushBatch();
             }
 
             // 2. Pending Products
             const pendingSnap = await getDocs(collection(db, 'pending_master_products'));
-            pendingSnap.forEach(doc => {
+            for (const doc of pendingSnap.docs) {
                 const data = doc.data();
-                const current = data.category || data.category_id || ''; // Pending might use loose schema
-                // Note: addPendingMasterProduct used category_id or category depending on source
-                // Let's check: OFF uses category_id. Request uses requested_category.
-
-                // If it has category_id
                 if (data.category_id) {
                     const newCat = cleanId(data.category_id);
                     if (newCat !== data.category_id) {
@@ -1403,12 +1394,11 @@ export const useCatalog = () => {
                         operationCount++;
                     }
                 }
-            });
-
-            if (operationCount > 0) {
-                await batch.commit();
+                if (operationCount >= MAX_BATCH) await flushBatch();
             }
-            console.log(`Migration Complete. Batches: ${batchCommits + (operationCount > 0 ? 1 : 0)}`);
+
+            await flushBatch();
+            console.log(`Migration Complete. Batches: ${batchCommits}`);
 
         } catch (e) {
             console.error("Migration failed", e);
