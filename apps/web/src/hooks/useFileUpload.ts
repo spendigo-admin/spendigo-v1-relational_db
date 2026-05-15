@@ -61,8 +61,10 @@ export const useFileUpload = () => {
                 storageBucket: storage.app.options.storageBucket
             });
 
-            let message = error.message || 'Could not upload image.';
-            if (error.code === 'storage/unauthorized') {
+            let message = error.message || 'Could not upload file.';
+            if (error.code === 'storage/unauthenticated') {
+                message = 'Session expired. Please sign out and sign back in, then try again.';
+            } else if (error.code === 'storage/unauthorized') {
                 message = 'Permission denied. Please check your account access.';
             } else if (error.code === 'storage/canceled') {
                 message = 'Upload cancelled.';

@@ -7,7 +7,7 @@ import { useNotifications } from '../../context/NotificationContext';
 import { useConfirmation } from '../../context/ConfirmationContext';
 import { useFileUpload } from '../../hooks/useFileUpload';
 import { getFunctions, httpsCallable } from 'firebase/functions';
-import { db } from '../../lib/firebase';
+import { db, auth } from '../../lib/firebase';
 import { collection, query, where, onSnapshot, arrayUnion } from 'firebase/firestore';
 import { auditBridge } from '../../utils/auditBridge';
 
@@ -1599,6 +1599,21 @@ const MerchantSettings: React.FC = () => {
 
     const handleKybUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (!e.target.files || !e.target.files[0]) return;
+
+        // Ensure auth token is fresh before hitting Storage — the SDK fetches it
+        // internally but silently returns null if the session hasn't settled yet,
+        // producing storage/unauthenticated even when the user appears logged in.
+        if (!auth.currentUser) {
+            addNotification({ type: 'alert', title: 'Session Expired', message: 'Please sign out and sign back in, then try again.' });
+            return;
+        }
+        try {
+            await auth.currentUser.getIdToken(true);
+        } catch {
+            addNotification({ type: 'alert', title: 'Session Error', message: 'Could not refresh your session. Please sign in again.' });
+            return;
+        }
+
         const file = e.target.files[0];
         const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
         const path = `stores/${storeId}/documents/${kybDocType}_${Date.now()}_${safeName}`;

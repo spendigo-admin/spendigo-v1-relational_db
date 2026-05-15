@@ -66,6 +66,7 @@
         "indexes": "firestore.indexes.json"
     },
     "storage": {
+        "bucket": "spendigo-8540c.firebasestorage.app",
         "rules": "storage.rules"
     }
 }
