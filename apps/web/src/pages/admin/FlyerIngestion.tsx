@@ -21,7 +21,8 @@ const FlyerIngestion = () => {
     const [isRecurring, setIsRecurring] = useState(false);
     const [upcomingJobs, setUpcomingJobs] = useState<any[]>([]);
     const [isScheduling, setIsScheduling] = useState(false);
-    
+    const [scheduledSuccess, setScheduledSuccess] = useState(false);
+
     const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
     useEffect(() => {
@@ -162,6 +163,8 @@ const FlyerIngestion = () => {
             setScheduledTime('');
             setRecurringDays([]);
             setErrorMessage('');
+            setScheduledSuccess(true);
+            setTimeout(() => setScheduledSuccess(false), 3000);
         } catch (e: any) {
             setErrorMessage('Failed to schedule job: ' + e.message);
         } finally {
@@ -307,7 +310,7 @@ const FlyerIngestion = () => {
                                 className="w-full bg-[var(--surface-1)] border-none rounded-xl px-4 py-3 text-[var(--text-main)] font-bold focus:ring-2 focus:ring-[var(--brand-primary)] outline-none"
                             />
                         </div>
-                        <button 
+                        <button
                             onClick={handleScheduleJob}
                             disabled={!postalCode || (!isRecurring && !scheduledDate) || (isRecurring && recurringDays.length === 0) || !scheduledTime || !flyerIngestionEnabled || isScheduling}
                             className="bg-white border-2 border-gray-200 text-gray-900 font-bold py-3 px-8 rounded-xl hover:bg-gray-50 active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
@@ -315,6 +318,12 @@ const FlyerIngestion = () => {
                             {isScheduling ? 'Scheduling...' : 'Schedule Job'}
                         </button>
                     </div>
+
+                    {scheduledSuccess && (
+                        <div className="mt-4 p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm font-bold flex items-center gap-2 animate-fade-in">
+                            <span>✅</span> Job scheduled — see the list below.
+                        </div>
+                    )}
                 </div>
 
                 {!flyerIngestionEnabled && (
@@ -417,62 +426,87 @@ const FlyerIngestion = () => {
                 </div>
             )}
 
-            {/* Upcoming Jobs Section */}
-            {upcomingJobs.length > 0 && (
-                <div className="animate-fade-in space-y-4">
-                    <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest ml-1">Recent & Upcoming Jobs 📡</h3>
-                    <div className="grid grid-cols-1 gap-4">
-                        {upcomingJobs.map(job => (
-                            <div key={job.id} className="bg-white rounded-2xl p-4 border border-[var(--glass-border)] flex items-center justify-between shadow-sm">
-                                <div className="flex items-center gap-4">
-                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg ${
-                                        job.status === 'completed' ? 'bg-emerald-50 text-emerald-600' :
-                                        job.status === 'failed' ? 'bg-red-50 text-red-600' :
-                                        job.status === 'processing' ? 'bg-blue-50 text-blue-600 animate-pulse' :
-                                        'bg-gray-50 text-gray-400'
-                                    }`}>
-                                        {job.status === 'completed' ? '✅' : job.status === 'failed' ? '❌' : job.status === 'processing' ? '⚙️' : '⏳'}
-                                    </div>
-                                    <div>
-                                        <div className="flex items-center gap-2">
-                                            <p className="font-black text-gray-900 text-sm tracking-tight">{job.postalCode}</p>
-                                            <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded-sm ${
-                                                job.status === 'completed' || job.status === 'active' ? 'bg-emerald-100 text-emerald-700' :
-                                                job.status === 'failed' ? 'bg-red-100 text-red-700' :
-                                                'bg-gray-100 text-gray-600'
-                                            }`}>
-                                                {job.status}
-                                            </span>
-                                            {job.type === 'recurring' && <span className="text-[8px] font-black bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-sm uppercase">Recurring</span>}
-                                            {job.shouldReset && <span className="text-[8px] font-black bg-red-100 text-red-600 px-1.5 py-0.5 rounded-sm uppercase">Full Reset</span>}
+            {/* Scheduled Jobs Section — always visible */}
+            <div className="animate-fade-in space-y-4">
+                <div className="flex items-center justify-between ml-1">
+                    <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest">Scheduled Jobs</h3>
+                    <span className="text-xs text-gray-400 font-bold">{upcomingJobs.length} job{upcomingJobs.length !== 1 ? 's' : ''}</span>
+                </div>
+                <div className="bg-white rounded-3xl border border-[var(--glass-border)] shadow-sm overflow-hidden">
+                    {upcomingJobs.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-12 px-6 text-center">
+                            <div className="w-12 h-12 rounded-2xl bg-gray-100 flex items-center justify-center text-2xl mb-3">🗓️</div>
+                            <p className="font-bold text-gray-500 text-sm">No scheduled jobs</p>
+                            <p className="text-xs text-gray-400 mt-1">Use the scheduler above to queue future ingestion runs.</p>
+                        </div>
+                    ) : (
+                        <div className="divide-y divide-[var(--glass-border)]">
+                            {upcomingJobs.map(job => (
+                                <div key={job.id} className="px-5 py-4 flex items-center justify-between gap-4">
+                                    <div className="flex items-center gap-4 min-w-0">
+                                        <div className={`w-9 h-9 shrink-0 rounded-full flex items-center justify-center text-base ${
+                                            job.status === 'completed' ? 'bg-emerald-50 text-emerald-600' :
+                                            job.status === 'failed' ? 'bg-red-50 text-red-600' :
+                                            job.status === 'processing' ? 'bg-blue-50 text-blue-600 animate-pulse' :
+                                            'bg-amber-50 text-amber-500'
+                                        }`}>
+                                            {job.status === 'completed' ? '✅' : job.status === 'failed' ? '❌' : job.status === 'processing' ? '⚙️' : '⏳'}
                                         </div>
-                                        <p className="text-[10px] text-gray-500 font-bold tracking-widest">
-                                            {job.type === 'recurring' 
-                                                ? `${job.days.map((d: number) => DAYS[d]).join(', ')} @ ${job.time}`
-                                                : new Date(job.scheduledAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })
-                                            }
-                                        </p>
+                                        <div className="min-w-0">
+                                            <div className="flex items-center gap-2 flex-wrap">
+                                                <p className="font-black text-gray-900 text-sm tracking-tight">{job.postalCode}</p>
+                                                <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded-sm ${
+                                                    job.status === 'completed' ? 'bg-emerald-100 text-emerald-700' :
+                                                    job.status === 'active' ? 'bg-blue-100 text-blue-700' :
+                                                    job.status === 'failed' ? 'bg-red-100 text-red-700' :
+                                                    job.status === 'processing' ? 'bg-blue-100 text-blue-700' :
+                                                    'bg-amber-100 text-amber-700'
+                                                }`}>
+                                                    {job.status}
+                                                </span>
+                                                {job.type === 'recurring' && <span className="text-[8px] font-black bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded-sm uppercase">Recurring</span>}
+                                                {job.shouldReset && <span className="text-[8px] font-black bg-red-100 text-red-600 px-1.5 py-0.5 rounded-sm uppercase">Full Reset</span>}
+                                            </div>
+                                            <p className="text-[10px] text-gray-500 font-bold tracking-wide mt-0.5">
+                                                {job.type === 'recurring'
+                                                    ? `Every ${job.days.map((d: number) => DAYS[d]).join(', ')} @ ${job.time}`
+                                                    : `Scheduled: ${new Date(job.scheduledAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}`
+                                                }
+                                                {job.lastRunAt && <span className="ml-2 opacity-60">· Last run: {new Date(job.lastRunAt).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}</span>}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center gap-3 shrink-0">
+                                        {job.status === 'completed' && job.result && (
+                                            <div className="text-right hidden sm:block">
+                                                <p className="text-[10px] font-black text-emerald-600">{job.result.totalDealsSaved} deals</p>
+                                                <p className="text-[8px] text-gray-400 font-bold">{job.result.processedFlyers} flyers</p>
+                                            </div>
+                                        )}
+                                        {(job.status === 'pending' || job.status === 'active') ? (
+                                            <button
+                                                onClick={() => cancelJob(job.id)}
+                                                className="text-[10px] font-black text-red-500 hover:text-red-700 uppercase tracking-widest px-3 py-1.5 hover:bg-red-50 rounded-lg transition-all"
+                                            >
+                                                Cancel
+                                            </button>
+                                        ) : (
+                                            <button
+                                                onClick={() => cancelJob(job.id)}
+                                                className="text-[10px] font-black text-gray-400 hover:text-red-500 uppercase tracking-widest px-3 py-1.5 hover:bg-red-50 rounded-lg transition-all"
+                                                title="Remove from list"
+                                            >
+                                                Delete
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
-                                
-                                {job.status === 'pending' || job.status === 'active' ? (
-                                    <button 
-                                        onClick={() => cancelJob(job.id)}
-                                        className="text-[10px] font-black text-red-500 hover:text-red-700 uppercase tracking-widest px-3 py-1.5 hover:bg-red-50 rounded-lg transition-all"
-                                    >
-                                        Cancel
-                                    </button>
-                                ) : job.status === 'completed' && job.result && (
-                                    <div className="text-right">
-                                        <p className="text-[10px] font-black text-emerald-600">{job.result.totalDealsSaved} deals</p>
-                                        <p className="text-[8px] text-gray-400 font-bold">{job.result.processedFlyers} flyers</p>
-                                    </div>
-                                )}
-                            </div>
-                        ))}
-                    </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
-            )}
+            </div>
         </div>
     );
 };

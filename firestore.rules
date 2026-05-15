@@ -179,6 +179,11 @@ service cloud.firestore {
       }
     }
 
+    // SCHEDULED INGESTION JOBS — admin-only read/write
+    match /scheduled_ingestion/{jobId} {
+      allow read, write: if isAdmin();
+    }
+
     // PUBLIC FLYERS (Ingested Grocery Deals)
     match /public_flyers/{flyerId} {
       allow read: if true;

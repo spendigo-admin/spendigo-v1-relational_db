@@ -13,6 +13,7 @@ export { createCheckoutSession } from './payments/createCheckoutSession';
 export { stripeWebhook } from './payments/stripeWebhook';
 export { getPaymentHistory } from './payments/getPaymentHistory';
 export { sendOrderConfirmation, sendOrderStatusUpdate } from './email/sendOrderEmails';
+export { onJobApplicationCreated } from './email/sendJobApplicationEmail';
 export { updateSubscriptionPlan } from './payments/updateSubscriptionPlan';
 export { placeOrder } from './orders/placeOrder';
 export { cancelOrder } from './orders/cancelOrder';
