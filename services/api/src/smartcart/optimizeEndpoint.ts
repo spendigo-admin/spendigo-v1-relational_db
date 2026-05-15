@@ -1,4 +1,5 @@
 import * as functions from 'firebase-functions';
+import * as admin from 'firebase-admin';
 import { optimizeSmartCartService } from './optimizeSmartCart';
 import { SmartCartOptimizeRequestBody } from './types';
 
@@ -10,7 +11,7 @@ function setCorsHeaders(req: functions.Request, res: functions.Response<any>) {
         res.set('Access-Control-Allow-Origin', origin);
     }
     res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Firebase-AppCheck');
 }
 
 export const smartcartOptimize = functions.runWith({ timeoutSeconds: 120, memory: '512MB' }).https.onRequest(async (req, res) => {
@@ -24,6 +25,20 @@ export const smartcartOptimize = functions.runWith({ timeoutSeconds: 120, memory
     if (req.method !== 'POST') {
         res.status(405).json({ error: 'Method Not Allowed' });
         return;
+    }
+
+    if (process.env.FUNCTIONS_EMULATOR !== 'true') {
+        const appCheckToken = req.header('X-Firebase-AppCheck');
+        if (!appCheckToken) {
+            res.status(401).json({ error: 'App Check token required.' });
+            return;
+        }
+        try {
+            await admin.appCheck().verifyToken(appCheckToken);
+        } catch {
+            res.status(401).json({ error: 'Invalid App Check token.' });
+            return;
+        }
     }
 
     try {

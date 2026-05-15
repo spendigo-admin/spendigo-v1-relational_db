@@ -64,6 +64,9 @@ exports.sendCampaign = functions.https.onCall(async (data, context) => {
     if (!context.auth) {
         throw new functions.https.HttpsError('unauthenticated', 'Authentication required.');
     }
+    if (!context.app && process.env.FUNCTIONS_EMULATOR !== 'true') {
+        throw new functions.https.HttpsError('failed-precondition', 'The function must be called from an App Check verified app.');
+    }
     const uid = context.auth.uid;
     const { storeId, segment, message, title, dealId } = data;
     if (!storeId || !segment || !message) {

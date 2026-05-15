@@ -35,6 +35,7 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.cartOptimize = void 0;
 const functions = __importStar(require("firebase-functions"));
+const admin = __importStar(require("firebase-admin"));
 const optimizeSmartCart_1 = require("../smartcart/optimizeSmartCart");
 const ALLOWED_ORIGINS = ['https://spendigo.ca', 'https://www.spendigo.ca'];
 function setCorsHeaders(req, res) {
@@ -43,7 +44,7 @@ function setCorsHeaders(req, res) {
         res.set('Access-Control-Allow-Origin', origin);
     }
     res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Firebase-AppCheck');
 }
 exports.cartOptimize = functions.runWith({ timeoutSeconds: 120, memory: '512MB' }).https.onRequest(async (req, res) => {
     var _a;
@@ -55,6 +56,20 @@ exports.cartOptimize = functions.runWith({ timeoutSeconds: 120, memory: '512MB' 
     if (req.method !== 'POST') {
         res.status(405).json({ error: 'Method Not Allowed' });
         return;
+    }
+    if (process.env.FUNCTIONS_EMULATOR !== 'true') {
+        const appCheckToken = req.header('X-Firebase-AppCheck');
+        if (!appCheckToken) {
+            res.status(401).json({ error: 'App Check token required.' });
+            return;
+        }
+        try {
+            await admin.appCheck().verifyToken(appCheckToken);
+        }
+        catch (_b) {
+            res.status(401).json({ error: 'Invalid App Check token.' });
+            return;
+        }
     }
     try {
         const body = req.body;

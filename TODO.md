@@ -8,13 +8,8 @@
 - [ ] **Migrate functions.config()**: Convert deprecated Cloud Runtime Config (`functions.config()`) to the new `params` package before March 2027. Known remaining usage: `stripeWebhook.ts:14` reads `functions.config().stripe?.webhook_secret`. Grep for other occurrences: `grep -rn "functions.config" services/api/src/`.
 
 ### Security
-- [ ] **App Check Enforcement**: Most callable functions now enforce App Check. Remaining gaps: `sendCampaign` (no check at all) and the two HTTP optimization endpoints (`/smartcartOptimize`, `/cartOptimize` — `onRequest`, called by browser clients). `stripeWebhook` is correctly excluded — it is `onRequest` called by Stripe's servers, not the app. **Also covers**: `firestore.rules` line 178 allows unauthenticated writes to `stores/{storeId}/analytics/{dateId}` (intentional — guest store views are real traffic). App Check is the chosen guard against bot inflation; do not require `isAuthenticated()` as that would drop guest view counts.
+- [x] **App Check Enforcement**: Most callable functions now enforce App Check. Remaining gaps: `sendCampaign` (no check at all) and the two HTTP optimization endpoints (`/smartcartOptimize`, `/cartOptimize` — `onRequest`, called by browser clients). `stripeWebhook` is correctly excluded — it is `onRequest` called by Stripe's servers, not the app. **Also covers**: `firestore.rules` line 178 allows unauthenticated writes to `stores/{storeId}/analytics/{dateId}` (intentional — guest store views are real traffic). App Check is the chosen guard against bot inflation; do not require `isAuthenticated()` as that would drop guest view counts.
 - [ ] **CSP `unsafe-inline` Removal**: `firebase.json` CSP includes `'unsafe-inline'` in both `script-src` and `style-src`, weakening XSS protection. Migrate inline styles/scripts or introduce per-request nonces.
-
-### Data & Features
-- [x] **Merchant KYB Storage Rules**: Deploy path-restricted Firebase Storage rules (`/stores/{storeId}/`) for secure business license uploads.
-- [x] **Careers Application Email Notification**: CV upload and Firestore write are working. `onJobApplicationCreated` trigger added in `services/api/src/email/sendJobApplicationEmail.ts` — fires on `job_applications/{id}` onCreate, writes to `/mail` collection with resume download link and `replyTo` set to the candidate's email.
-- [x] **Master Catalog Seeding**: 754 real Canadian SKUs written to `master_products` via `scripts/bulkSeedMasterCatalog.ts` (queries Open Food Facts across 8 category tags with retry/dedup). Re-running is safe — deduplicates by barcode automatically.
 
 ---
 
