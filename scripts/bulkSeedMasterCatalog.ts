@@ -16,31 +16,54 @@ const OFF_FIELDS = [
     'allergens_tags', 'labels_tags'
 ].join(',');
 
-// OFF category tag → our category_id
-const CATEGORY_QUERIES: Array<{ offTag: string; categoryId: string }> = [
-    { offTag: 'dairy-products',            categoryId: 'Dairy & Refrigerated' },
-    { offTag: 'breads',                    categoryId: 'Bakery & Grains' },
-    { offTag: 'meats',                     categoryId: 'Meat & Seafood' },
-    { offTag: 'beverages',                 categoryId: 'Breakfast & Beverages' },
-    { offTag: 'snacks',                    categoryId: 'Snacks & Household' },
-    { offTag: 'cereals-and-their-products', categoryId: 'Pantry Staples' },
-    { offTag: 'frozen-foods',              categoryId: 'Produce & Frozen' },
-    { offTag: 'condiments',                categoryId: 'Pantry Staples' },
+// OFF tag → our category_id (must match PRODUCT_CATEGORIES in apps/web/src/data/categories.ts)
+// tagType: 'categories' (default) or 'labels' for label-filtered queries (Halal, Vegetarian)
+const CATEGORY_QUERIES: Array<{ offTag: string; categoryId: string; tagType?: string }> = [
+    // Already seeded
+    { offTag: 'dairy-products',             categoryId: 'Dairy & Eggs' },
+    { offTag: 'breads',                     categoryId: 'Bakery' },
+    { offTag: 'meats',                      categoryId: 'Meat & Seafood' },
+    { offTag: 'beverages',                  categoryId: 'Beverages' },
+    { offTag: 'snacks',                     categoryId: 'Snacks' },
+    { offTag: 'cereals-and-their-products', categoryId: 'Pantry' },
+    { offTag: 'frozen-foods',               categoryId: 'Frozen' },
+    { offTag: 'condiments',                 categoryId: 'Pantry' },
+    // Missing categories
+    { offTag: 'fruits-and-vegetables',      categoryId: 'Produce' },
+    { offTag: 'fresh-vegetables',           categoryId: 'Produce' },
+    { offTag: 'fresh-fruits',               categoryId: 'Produce' },
+    { offTag: 'household-products',         categoryId: 'Household' },
+    { offTag: 'cleaning-products',          categoryId: 'Household' },
+    { offTag: 'personal-care',              categoryId: 'Personal Care' },
+    { offTag: 'beauty',                     categoryId: 'Personal Care' },
+    { offTag: 'dietary-supplements',        categoryId: 'Health & Medicine' },
+    { offTag: 'baby-foods',                 categoryId: 'Baby & Kids' },
+    { offTag: 'pet-food',                   categoryId: 'Pet Supplies' },
+    { offTag: 'asian-foods',                categoryId: 'International & Desi' },
+    { offTag: 'indian-cuisine',             categoryId: 'International & Desi' },
+    { offTag: 'en:halal',                   categoryId: 'Halal',      tagType: 'labels' },
+    { offTag: 'en:vegetarian',              categoryId: 'Vegetarian', tagType: 'labels' },
 ];
 
-// Keyword → category fallback (mirrors useCatalog.ts:1031–1038)
+// Keyword → category fallback (must match PRODUCT_CATEGORIES in apps/web/src/data/categories.ts)
 const KEYWORD_CATEGORY_MAP: Record<string, string> = {
-    'lait': 'Dairy & Refrigerated', 'milk': 'Dairy & Refrigerated',
-    'cream': 'Dairy & Refrigerated', 'yogourt': 'Dairy & Refrigerated',
-    'cheese': 'Dairy & Refrigerated', 'egg': 'Dairy & Refrigerated', 'oeuf': 'Dairy & Refrigerated',
-    'pain': 'Bakery & Grains', 'bread': 'Bakery & Grains',
-    'bun': 'Bakery & Grains', 'cookie': 'Bakery & Grains',
+    'lait': 'Dairy & Eggs', 'milk': 'Dairy & Eggs',
+    'cream': 'Dairy & Eggs', 'yogourt': 'Dairy & Eggs',
+    'cheese': 'Dairy & Eggs', 'egg': 'Dairy & Eggs', 'oeuf': 'Dairy & Eggs',
+    'pain': 'Bakery', 'bread': 'Bakery',
+    'bun': 'Bakery', 'cookie': 'Bakery',
     'poulet': 'Meat & Seafood', 'chicken': 'Meat & Seafood',
     'beef': 'Meat & Seafood', 'pork': 'Meat & Seafood', 'steak': 'Meat & Seafood',
-    'fruit': 'Produce & Frozen', 'legume': 'Produce & Frozen',
-    'apple': 'Produce & Frozen', 'banana': 'Produce & Frozen', 'tomato': 'Produce & Frozen',
-    'soda': 'Breakfast & Beverages', 'pop': 'Breakfast & Beverages',
-    'water': 'Breakfast & Beverages', 'juice': 'Breakfast & Beverages', 'drink': 'Breakfast & Beverages',
+    'fruit': 'Produce', 'legume': 'Produce',
+    'apple': 'Produce', 'banana': 'Produce', 'tomato': 'Produce',
+    'vegetable': 'Produce', 'carrot': 'Produce', 'potato': 'Produce',
+    'soda': 'Beverages', 'pop': 'Beverages',
+    'water': 'Beverages', 'juice': 'Beverages', 'drink': 'Beverages',
+    'shampoo': 'Personal Care', 'soap': 'Personal Care', 'toothpaste': 'Personal Care',
+    'detergent': 'Household', 'cleaner': 'Household', 'laundry': 'Household',
+    'vitamin': 'Health & Medicine', 'supplement': 'Health & Medicine',
+    'baby': 'Baby & Kids', 'infant': 'Baby & Kids',
+    'dog': 'Pet Supplies', 'cat': 'Pet Supplies', 'pet': 'Pet Supplies',
 };
 
 interface OFFProduct {
@@ -100,7 +123,7 @@ function mapToMasterProduct(p: OFFProduct, categoryId: string) {
         data_source: 'open_food_facts',
         status: 'active',
         verification_status: 'unverified',
-        is_sold_by_weight: categoryId === 'Meat & Seafood' || categoryId === 'Produce & Frozen',
+        is_sold_by_weight: categoryId === 'Meat & Seafood' || categoryId === 'Produce',
         tax_category_id: 'zero_rated_grocery',
         created_by: 'bulk_seed_script',
         created_at: FieldValue.serverTimestamp(),
@@ -110,12 +133,12 @@ function mapToMasterProduct(p: OFFProduct, categoryId: string) {
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-async function fetchOFFCategory(offTag: string, retries = 4): Promise<OFFProduct[]> {
+async function fetchOFFCategory(offTag: string, tagType = 'categories', retries = 4): Promise<OFFProduct[]> {
     const url =
         `https://world.openfoodfacts.org/cgi/search.pl` +
         `?action=process` +
         `&tagtype_0=countries&tag_contains_0=contains&tag_0=canada` +
-        `&tagtype_1=categories&tag_contains_1=contains&tag_1=${encodeURIComponent(offTag)}` +
+        `&tagtype_1=${tagType}&tag_contains_1=contains&tag_1=${encodeURIComponent(offTag)}` +
         `&json=true&page_size=${OFF_PAGE_SIZE}&fields=${encodeURIComponent(OFF_FIELDS)}`;
 
     for (let attempt = 1; attempt <= retries; attempt++) {
@@ -159,12 +182,12 @@ async function main() {
     const allProducts: Array<{ docId: string; data: ReturnType<typeof mapToMasterProduct> }> = [];
     const seenBarcodes = new Set<string>(existingBarcodes);
 
-    for (const { offTag, categoryId } of CATEGORY_QUERIES) {
+    for (const { offTag, categoryId, tagType } of CATEGORY_QUERIES) {
         process.stdout.write(`Fetching OFF category "${offTag}"... `);
         let products: OFFProduct[] = [];
 
         try {
-            products = await fetchOFFCategory(offTag);
+            products = await fetchOFFCategory(offTag, tagType);
         } catch (err) {
             console.error(`  ERROR: ${err}`);
             continue;

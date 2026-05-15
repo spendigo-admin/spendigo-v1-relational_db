@@ -1349,22 +1349,29 @@ export const useCatalog = () => {
             };
 
             const cleanId = (id: string) => {
-                if (!id) return 'General';
+                if (!id) return 'Other';
                 const map: Record<string, string> = {
-                    'cat-dairy': 'Dairy',
+                    // Legacy prefixed IDs
+                    'cat-dairy': 'Dairy & Eggs',
                     'cat-bakery': 'Bakery',
-                    'cat-meat': 'Meat',
+                    'cat-meat': 'Meat & Seafood',
                     'cat-produce': 'Produce',
                     'cat-beverages': 'Beverages',
-                    'cat-general': 'General',
-                    'lait': 'Dairy',
-                    'Dairy & Refrigerated': 'Dairy',
+                    'cat-general': 'Other',
+                    // French
+                    'lait': 'Dairy & Eggs',
+                    // Long-form names from bulk seed script
+                    'Dairy & Refrigerated': 'Dairy & Eggs',
                     'Bakery & Grains': 'Bakery',
-                    'Meat & Seafood': 'Meat',
                     'Produce & Frozen': 'Produce',
                     'Snacks & Household': 'Snacks',
                     'Pantry Staples': 'Pantry',
-                    'Breakfast & Beverages': 'Beverages'
+                    'Breakfast & Beverages': 'Beverages',
+                    'Meat & Seafood': 'Meat & Seafood',
+                    // Short-form names from a previous migration run
+                    'Dairy': 'Dairy & Eggs',
+                    'Meat': 'Meat & Seafood',
+                    'General': 'Other',
                 };
                 if (map[id]) return map[id];
                 return id.replace(/^cat-/, '').replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
