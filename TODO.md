@@ -5,10 +5,10 @@
 ### Infrastructure & Config
 - [ ] **Staging Environment**: Provision an isolated `spendigo-staging` Firebase project (or Preview Channels) for QA.
 - [ ] **Firebase Functions Upgrade**: Upgrade `firebase-functions` SDK from v4.9.0 to >=5.1.0 to support newest Firebase Extensions.
-- [ ] **Migrate functions.config()**: Convert deprecated Cloud Runtime Config (`functions.config()`) to the new `params` package before March 2027. Affects: `stripe.ts`, `createCheckoutSession.ts`, `updateSubscriptionPlan.ts`, `stripeWebhook.ts`, and 3+ other files.
+- [ ] **Migrate functions.config()**: Convert deprecated Cloud Runtime Config (`functions.config()`) to the new `params` package before March 2027. Known remaining usage: `stripeWebhook.ts:14` reads `functions.config().stripe?.webhook_secret`. Grep for other occurrences: `grep -rn "functions.config" services/api/src/`.
 
 ### Security
-- [ ] **App Check Enforcement**: Enforce Firebase App Check at the Firestore and Cloud Functions level to prevent unverified API requests. Currently inconsistent — `placeOrder` and `refundOrder` check it, but `sendCampaign` and admin functions do not. **Also covers**: `firestore.rules` line 178 allows unauthenticated writes to `stores/{storeId}/analytics/{dateId}` (intentional — guest store views are real traffic). App Check is the chosen guard against bot inflation; do not require `isAuthenticated()` as that would drop guest view counts.
+- [ ] **App Check Enforcement**: Most callable functions now enforce App Check. Remaining gaps: `sendCampaign` (no check at all) and the two HTTP optimization endpoints (`/smartcartOptimize`, `/cartOptimize` — `onRequest`, called by browser clients). `stripeWebhook` is correctly excluded — it is `onRequest` called by Stripe's servers, not the app. **Also covers**: `firestore.rules` line 178 allows unauthenticated writes to `stores/{storeId}/analytics/{dateId}` (intentional — guest store views are real traffic). App Check is the chosen guard against bot inflation; do not require `isAuthenticated()` as that would drop guest view counts.
 - [ ] **CSP `unsafe-inline` Removal**: `firebase.json` CSP includes `'unsafe-inline'` in both `script-src` and `style-src`, weakening XSS protection. Migrate inline styles/scripts or introduce per-request nonces.
 
 ### Data & Features
@@ -33,7 +33,7 @@
 ## 3. Future Enhancements (v1.1+)
 
 ### Developer Experience & Quality
-- [ ] **TypeScript Strictness**: Clean up the 500+ `npm run lint` warnings (primarily `@typescript-eslint/no-explicit-any`) to improve code safety.
+- [ ] **TypeScript Strictness**: Clean up the 532 lint problems (530 `@typescript-eslint/no-explicit-any` warnings + 2 errors) to improve code safety. Run `npm run lint` to see current state.
 - [ ] **Cloud Functions Test Coverage**: No unit or integration tests exist for Cloud Functions (payments, orders, auth). Add tests for `placeOrder`, `createCheckoutSession`, `stripeWebhook`, and `cancelOrder` — these are the highest-value paths.
 - [ ] **E2E Test Coverage Gaps**: Current Playwright specs cover basic auth, store browsing, checkout, and legal pages. Merchant flows (product CRUD, order management) and admin flows (user management, flyer ingestion) are unverified.
 
@@ -42,7 +42,7 @@
 - [ ] **i18n — Admin Portal**: All 16 admin pages (`/admin/*`) are untranslated. Lower priority than merchant portal but needed for completeness.
 
 ### Observability
-- [ ] **Sentry Context Enrichment**: `sentry.ts` initializes Sentry but does not attach user role, store ID, or subscription tier to error events. Enrich `Sentry.setUser()` with role metadata in `AuthContext` after login so errors are filterable by actor type.
+- [ ] **Sentry Context Enrichment**: `AuthContext.tsx:217` already calls `Sentry.setUser({ id, email, role })` — role is set. Still missing: `storeId` and `subscriptionTier`. Add these two fields to the `Sentry.setUser()` call so merchant errors are filterable by store and plan.
 
 ### AI & Personalization
 - [ ] **AI Auto-Moderation**: Implement Gemini-powered initial moderation for "Pending Products" submissions to reduce Admin manual workload.

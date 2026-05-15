@@ -196,7 +196,7 @@ const MasterCatalog: React.FC = () => {
         setSearchResults(null);
         fetchPage(undefined, filterCategory);
         fetchTotal(filterCategory);
-    }, [filterCategory, searchQuery]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [filterCategory, searchQuery]);
 
     // Debounced Algolia search
     useEffect(() => {
@@ -219,7 +219,7 @@ const MasterCatalog: React.FC = () => {
             }
         }, 400);
         return () => clearTimeout(timer);
-    }, [searchQuery]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [searchQuery]);
 
     // -------------------------------------------------------------------------
     // Pagination handlers
