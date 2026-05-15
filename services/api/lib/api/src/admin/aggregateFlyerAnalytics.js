@@ -35,8 +35,8 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.triggerAnalyticsAggregation = exports.aggregateFlyerAnalytics = void 0;
 const admin = __importStar(require("firebase-admin"));
-const functions = __importStar(require("firebase-functions"));
-const firebase_functions_1 = require("firebase-functions");
+const functions = __importStar(require("firebase-functions/v1"));
+const v1_1 = require("firebase-functions/v1");
 function percentile(sorted, p) {
     if (sorted.length === 0)
         return 0;
@@ -137,10 +137,10 @@ async function computeAndSave(db, normalizedKey, retailer, docs) {
 }
 async function runAggregation() {
     const db = admin.firestore();
-    firebase_functions_1.logger.info('[aggregateFlyerAnalytics] Starting aggregation...');
+    v1_1.logger.info('[aggregateFlyerAnalytics] Starting aggregation...');
     const snap = await db.collection('flyer_deal_index').get();
     if (snap.empty) {
-        firebase_functions_1.logger.info('[aggregateFlyerAnalytics] flyer_deal_index is empty, skipping.');
+        v1_1.logger.info('[aggregateFlyerAnalytics] flyer_deal_index is empty, skipping.');
         return;
     }
     // Group docs by (normalizedKey, retailer) AND by (normalizedKey, 'ALL')
@@ -159,7 +159,7 @@ async function runAggregation() {
             groups.set(allKey, []);
         groups.get(allKey).push(docSnap);
     }
-    firebase_functions_1.logger.info(`[aggregateFlyerAnalytics] Processing ${groups.size} groups...`);
+    v1_1.logger.info(`[aggregateFlyerAnalytics] Processing ${groups.size} groups...`);
     for (const [key, docs] of groups) {
         const sepIdx = key.indexOf('||');
         const normalizedKey = key.substring(0, sepIdx);
@@ -168,10 +168,10 @@ async function runAggregation() {
             await computeAndSave(db, normalizedKey, retailer, docs);
         }
         catch (err) {
-            firebase_functions_1.logger.error(`[aggregateFlyerAnalytics] Failed for "${key}":`, err);
+            v1_1.logger.error(`[aggregateFlyerAnalytics] Failed for "${key}":`, err);
         }
     }
-    firebase_functions_1.logger.info('[aggregateFlyerAnalytics] Aggregation complete.');
+    v1_1.logger.info('[aggregateFlyerAnalytics] Aggregation complete.');
 }
 /**
  * Scheduled daily aggregation — runs at 6am Toronto time, after overnight ingestion jobs.

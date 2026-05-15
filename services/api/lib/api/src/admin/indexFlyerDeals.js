@@ -36,7 +36,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.normalizeProductName = normalizeProductName;
 exports.indexFlyerDeals = indexFlyerDeals;
 const admin = __importStar(require("firebase-admin"));
-const firebase_functions_1 = require("firebase-functions");
+const v1_1 = require("firebase-functions/v1");
 /**
  * Normalize a product name to a canonical token-sorted key for cross-retailer matching.
  * "Natrel Milk 2% 2L" and "2% Milk Natrel 2L" both produce "2%_2l_milk_natrel".
@@ -102,6 +102,6 @@ async function indexFlyerDeals(flyerId) {
         }
         await batch.commit();
     }
-    firebase_functions_1.logger.info(`[indexFlyerDeals] Indexed ${docs.length} deals for flyer ${flyerId}`);
+    v1_1.logger.info(`[indexFlyerDeals] Indexed ${docs.length} deals for flyer ${flyerId}`);
 }
 //# sourceMappingURL=indexFlyerDeals.js.map

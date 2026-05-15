@@ -34,7 +34,7 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.onBackupJobResult = exports.onStoreUpdate = exports.onStoreCreate = exports.onStoreDelete = void 0;
-const functions = __importStar(require("firebase-functions"));
+const functions = __importStar(require("firebase-functions/v1"));
 const admin = __importStar(require("firebase-admin"));
 const stripe_1 = require("../config/stripe");
 /**
@@ -173,13 +173,12 @@ exports.onStoreUpdate = functions.firestore
 exports.onBackupJobResult = functions.firestore
     .document('system_backups/{backupId}')
     .onCreate(async (snap) => {
-    var _a;
     const data = snap.data();
     if ((data === null || data === void 0 ? void 0 : data.status) !== 'failed')
         return;
     try {
         await admin.firestore().collection('mail').add({
-            to: ((_a = functions.config().admin) === null || _a === void 0 ? void 0 : _a.alert_email) || 'ops@spendigo.ca',
+            to: process.env.ADMIN_ALERT_EMAIL || 'ops@spendigo.ca',
             message: {
                 subject: `ALERT: Spendigo backup job failed (${data.type})`,
                 text: `Backup job failed.\n\nType: ${data.type}\nDate: ${data.date}\nError: ${data.errorMessage || 'unknown'}\n\nCheck /admin/health in the Spendigo admin portal for details.`,

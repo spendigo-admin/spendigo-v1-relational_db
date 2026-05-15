@@ -32,28 +32,15 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
-var _a, _b;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.createCheckoutSession = void 0;
-const functions = __importStar(require("firebase-functions"));
+const functions = __importStar(require("firebase-functions/v1"));
 const admin = __importStar(require("firebase-admin"));
 const stripe_1 = require("../config/stripe");
 const rateLimiter_1 = require("../utils/rateLimiter");
 const errors_1 = require("../utils/errors");
 const db = admin.firestore();
-// MAP YOUR STRIPE PRICE IDs HERE (From your Stripe Dashboard)
-// Run `firebase functions:config:set stripe.price_core="price_..." stripe.price_growth="price_..."`
-const corePrice = (_a = functions.config().stripe) === null || _a === void 0 ? void 0 : _a.price_core;
-const growthPrice = (_b = functions.config().stripe) === null || _b === void 0 ? void 0 : _b.price_growth;
-if (!corePrice || !growthPrice) {
-    throw new Error('Missing Stripe price IDs in Firebase config. Run: firebase functions:config:set stripe.price_core="price_..." stripe.price_growth="price_..."');
-}
-const PRICE_IDS = {
-    core: corePrice,
-    growth: growthPrice,
-};
 exports.createCheckoutSession = functions.https.onCall(async (data, context) => {
-    var _a;
     // 1. Security Check
     if (!context.app && process.env.FUNCTIONS_EMULATOR !== 'true') {
         throw new functions.https.HttpsError('failed-precondition', 'The function must be called from an App Check verified app.');
@@ -68,6 +55,13 @@ exports.createCheckoutSession = functions.https.onCall(async (data, context) => 
     const userEmail = context.auth.token.email;
     if (!tier || !['core', 'growth'].includes(tier)) {
         throw new functions.https.HttpsError('invalid-argument', 'Invalid subscription tier.');
+    }
+    const PRICE_IDS = {
+        core: process.env.STRIPE_PRICE_CORE,
+        growth: process.env.STRIPE_PRICE_GROWTH,
+    };
+    if (!PRICE_IDS.core || !PRICE_IDS.growth) {
+        throw new functions.https.HttpsError('internal', 'Stripe price IDs not configured. Set STRIPE_PRICE_CORE and STRIPE_PRICE_GROWTH.');
     }
     try {
         // 2. Get or Create Stripe Customer
@@ -101,7 +95,7 @@ exports.createCheckoutSession = functions.https.onCall(async (data, context) => 
             }
         }
         // 3. Create Checkout Session
-        const appUrl = ((_a = functions.config().app) === null || _a === void 0 ? void 0 : _a.url) || 'https://spendigo.ca';
+        const appUrl = process.env.APP_URL || 'https://spendigo.ca';
         const session = await stripe_1.stripe.checkout.sessions.create({
             payment_method_types: ['card'],
             mode: 'subscription',

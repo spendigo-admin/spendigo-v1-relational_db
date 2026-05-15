@@ -1,5 +1,5 @@
 import * as admin from 'firebase-admin';
-import { logger } from 'firebase-functions';
+import { logger } from 'firebase-functions/v1';
 import { indexFlyerDeals } from '../admin/indexFlyerDeals';
 
 const FLYERS_URL = 'https://flyers-ng.flippback.com/api/flipp/data?locale=en&postal_code={}&sid={}';

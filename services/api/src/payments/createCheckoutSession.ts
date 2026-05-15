@@ -1,22 +1,10 @@
-import * as functions from 'firebase-functions';
+import * as functions from 'firebase-functions/v1';
 import * as admin from 'firebase-admin';
 import { stripe } from '../config/stripe';
 import { checkRateLimit } from '../utils/rateLimiter';
 import { toHttpsError } from '../utils/errors';
 
 const db = admin.firestore();
-
-// MAP YOUR STRIPE PRICE IDs HERE (From your Stripe Dashboard)
-// Run `firebase functions:config:set stripe.price_core="price_..." stripe.price_growth="price_..."`
-const corePrice = functions.config().stripe?.price_core;
-const growthPrice = functions.config().stripe?.price_growth;
-if (!corePrice || !growthPrice) {
-    throw new Error('Missing Stripe price IDs in Firebase config. Run: firebase functions:config:set stripe.price_core="price_..." stripe.price_growth="price_..."');
-}
-const PRICE_IDS = {
-    core: corePrice,
-    growth: growthPrice,
-};
 
 export const createCheckoutSession = functions.https.onCall(async (data, context) => {
     // 1. Security Check
@@ -36,6 +24,14 @@ export const createCheckoutSession = functions.https.onCall(async (data, context
 
     if (!tier || !['core', 'growth'].includes(tier)) {
         throw new functions.https.HttpsError('invalid-argument', 'Invalid subscription tier.');
+    }
+
+    const PRICE_IDS = {
+        core: process.env.STRIPE_PRICE_CORE,
+        growth: process.env.STRIPE_PRICE_GROWTH,
+    };
+    if (!PRICE_IDS.core || !PRICE_IDS.growth) {
+        throw new functions.https.HttpsError('internal', 'Stripe price IDs not configured. Set STRIPE_PRICE_CORE and STRIPE_PRICE_GROWTH.');
     }
 
     try {
@@ -74,7 +70,7 @@ export const createCheckoutSession = functions.https.onCall(async (data, context
         }
 
         // 3. Create Checkout Session
-        const appUrl = functions.config().app?.url || 'https://spendigo.ca';
+        const appUrl = process.env.APP_URL || 'https://spendigo.ca';
         const session = await stripe.checkout.sessions.create({
             payment_method_types: ['card'],
             mode: 'subscription',

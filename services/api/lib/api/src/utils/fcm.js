@@ -35,7 +35,7 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.removeStaleTokens = void 0;
 const admin = __importStar(require("firebase-admin"));
-const functions = __importStar(require("firebase-functions"));
+const functions = __importStar(require("firebase-functions/v1"));
 const STALE_TOKEN_ERRORS = new Set([
     'messaging/invalid-registration-token',
     'messaging/registration-token-not-registered',

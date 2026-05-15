@@ -34,7 +34,7 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.sendCampaign = void 0;
-const functions = __importStar(require("firebase-functions"));
+const functions = __importStar(require("firebase-functions/v1"));
 const admin = __importStar(require("firebase-admin"));
 const rateLimiter_1 = require("../utils/rateLimiter");
 const fcm_1 = require("../utils/fcm");
@@ -65,7 +65,7 @@ exports.sendCampaign = functions.https.onCall(async (data, context) => {
         throw new functions.https.HttpsError('unauthenticated', 'Authentication required.');
     }
     if (!context.app && process.env.FUNCTIONS_EMULATOR !== 'true') {
-        functions.logger.warn('[sendCampaign] App Check token missing — verify reCAPTCHA Enterprise config', { uid: context.auth.uid });
+        throw new functions.https.HttpsError('failed-precondition', 'The function must be called from an App Check verified app.');
     }
     const uid = context.auth.uid;
     const { storeId, segment, message, title, dealId } = data;

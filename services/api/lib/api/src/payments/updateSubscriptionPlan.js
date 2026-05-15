@@ -32,18 +32,17 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
-var _a, _b;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.updateSubscriptionPlan = void 0;
-const functions = __importStar(require("firebase-functions"));
+const functions = __importStar(require("firebase-functions/v1"));
 const admin = __importStar(require("firebase-admin"));
 const stripe_1 = require("../config/stripe");
 const audit_1 = require("../utils/audit");
 const errors_1 = require("../utils/errors");
 const db = admin.firestore();
 const PRICE_IDS = {
-    core: ((_a = functions.config().stripe) === null || _a === void 0 ? void 0 : _a.price_core) || 'price_123_test_core',
-    growth: ((_b = functions.config().stripe) === null || _b === void 0 ? void 0 : _b.price_growth) || 'price_456_test_growth',
+    core: process.env.STRIPE_PRICE_CORE || 'price_123_test_core',
+    growth: process.env.STRIPE_PRICE_GROWTH || 'price_456_test_growth',
 };
 exports.updateSubscriptionPlan = functions.https.onCall(async (data, context) => {
     // 1. Security & Validation

@@ -1,4 +1,4 @@
-import * as functions from 'firebase-functions';
+import * as functions from 'firebase-functions/v1';
 import * as admin from 'firebase-admin';
 import { checkRateLimit } from '../utils/rateLimiter';
 import { removeStaleTokens } from '../utils/fcm';
@@ -34,7 +34,7 @@ export const sendCampaign = functions.https.onCall(async (data, context) => {
         throw new functions.https.HttpsError('unauthenticated', 'Authentication required.');
     }
     if (!context.app && process.env.FUNCTIONS_EMULATOR !== 'true') {
-        functions.logger.warn('[sendCampaign] App Check token missing — verify reCAPTCHA Enterprise config', { uid: context.auth.uid });
+        throw new functions.https.HttpsError('failed-precondition', 'The function must be called from an App Check verified app.');
     }
 
     const uid = context.auth.uid;

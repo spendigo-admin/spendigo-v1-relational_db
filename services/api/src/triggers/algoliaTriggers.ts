@@ -1,4 +1,4 @@
-import * as functions from 'firebase-functions';
+import * as functions from 'firebase-functions/v1';
 import { algoliasearch } from 'algoliasearch';
 
 const ALGOLIA_APP_ID = process.env.ALGOLIA_APP_ID;

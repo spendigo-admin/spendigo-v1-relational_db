@@ -34,7 +34,7 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.syncMerchantProductToAlgolia = void 0;
-const functions = __importStar(require("firebase-functions"));
+const functions = __importStar(require("firebase-functions/v1"));
 const admin = __importStar(require("firebase-admin"));
 const algoliasearch_1 = require("algoliasearch");
 const ALGOLIA_APP_ID = process.env.ALGOLIA_APP_ID;

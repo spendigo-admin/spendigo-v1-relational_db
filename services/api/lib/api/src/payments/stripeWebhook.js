@@ -34,7 +34,7 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.stripeWebhook = void 0;
-const functions = __importStar(require("firebase-functions"));
+const functions = __importStar(require("firebase-functions/v1"));
 const admin = __importStar(require("firebase-admin"));
 const stripe_1 = require("../config/stripe");
 const db = admin.firestore();
@@ -43,10 +43,8 @@ const db = admin.firestore();
  * Listens for events from Stripe and updates Firestore accordingly.
  */
 exports.stripeWebhook = functions.https.onRequest(async (req, res) => {
-    var _a;
     const sig = req.headers['stripe-signature'];
-    // In production, set this using: firebase functions:config:set stripe.webhook_secret="..."
-    const webhookSecret = ((_a = functions.config().stripe) === null || _a === void 0 ? void 0 : _a.webhook_secret) || '';
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET || '';
     let event;
     try {
         if (!sig || !webhookSecret) {

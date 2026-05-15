@@ -35,7 +35,7 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.checkRateLimit = void 0;
 const admin = __importStar(require("firebase-admin"));
-const functions = __importStar(require("firebase-functions"));
+const functions = __importStar(require("firebase-functions/v1"));
 /**
  * Enforces a rate limit for a specific user and action using a Firestore Sliding Window.
  * Throws a 'resource-exhausted' HttpsError if the limit is exceeded.

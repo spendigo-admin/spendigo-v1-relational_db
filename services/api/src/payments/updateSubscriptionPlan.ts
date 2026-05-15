@@ -1,4 +1,4 @@
-import * as functions from 'firebase-functions';
+import * as functions from 'firebase-functions/v1';
 import * as admin from 'firebase-admin';
 import { stripe } from '../config/stripe';
 import { logEvent, buildActorFromContext } from '../utils/audit';
@@ -7,8 +7,8 @@ import { toHttpsError } from '../utils/errors';
 const db = admin.firestore();
 
 const PRICE_IDS = {
-    core: functions.config().stripe?.price_core || 'price_123_test_core',
-    growth: functions.config().stripe?.price_growth || 'price_456_test_growth',
+    core: process.env.STRIPE_PRICE_CORE || 'price_123_test_core',
+    growth: process.env.STRIPE_PRICE_GROWTH || 'price_456_test_growth',
 };
 
 export const updateSubscriptionPlan = functions.https.onCall(async (data, context) => {

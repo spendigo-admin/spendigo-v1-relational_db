@@ -1,4 +1,4 @@
-import * as functions from 'firebase-functions';
+import * as functions from 'firebase-functions/v1';
 import * as admin from 'firebase-admin';
 import { stripe } from '../config/stripe';
 
@@ -164,7 +164,7 @@ export const onBackupJobResult = functions.firestore
 
     try {
       await admin.firestore().collection('mail').add({
-        to: functions.config().admin?.alert_email || 'ops@spendigo.ca',
+        to: process.env.ADMIN_ALERT_EMAIL || 'ops@spendigo.ca',
         message: {
           subject: `ALERT: Spendigo backup job failed (${data.type})`,
           text: `Backup job failed.\n\nType: ${data.type}\nDate: ${data.date}\nError: ${data.errorMessage || 'unknown'}\n\nCheck /admin/health in the Spendigo admin portal for details.`,

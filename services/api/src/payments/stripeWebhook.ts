@@ -1,4 +1,4 @@
-import * as functions from 'firebase-functions';
+import * as functions from 'firebase-functions/v1';
 import * as admin from 'firebase-admin';
 import { stripe } from '../config/stripe';
 
@@ -10,8 +10,7 @@ const db = admin.firestore();
  */
 export const stripeWebhook = functions.https.onRequest(async (req, res) => {
     const sig = req.headers['stripe-signature'];
-    // In production, set this using: firebase functions:config:set stripe.webhook_secret="..."
-    const webhookSecret = functions.config().stripe?.webhook_secret || '';
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET || '';
 
     let event;
 

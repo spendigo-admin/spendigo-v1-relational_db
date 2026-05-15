@@ -1,6 +1,6 @@
 import * as admin from 'firebase-admin';
-import * as functions from 'firebase-functions';
-import { logger } from 'firebase-functions';
+import * as functions from 'firebase-functions/v1';
+import { logger } from 'firebase-functions/v1';
 
 function percentile(sorted: number[], p: number): number {
     if (sorted.length === 0) return 0;

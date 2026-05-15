@@ -35,7 +35,7 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.runIngestion = runIngestion;
 const admin = __importStar(require("firebase-admin"));
-const firebase_functions_1 = require("firebase-functions");
+const v1_1 = require("firebase-functions/v1");
 const indexFlyerDeals_1 = require("../admin/indexFlyerDeals");
 const FLYERS_URL = 'https://flyers-ng.flippback.com/api/flipp/data?locale=en&postal_code={}&sid={}';
 const FLYER_ITEMS_URL = 'https://flyers-ng.flippback.com/api/flipp/flyers/{}/flyer_items?locale=en&sid={}';
@@ -88,7 +88,7 @@ async function runIngestion(postalCode, resetData = false) {
     const db = admin.firestore();
     const cleanPostalCode = postalCode.replace(/\s+/g, '').toUpperCase();
     if (resetData) {
-        firebase_functions_1.logger.info("Resetting existing flyer data...");
+        v1_1.logger.info("Resetting existing flyer data...");
         await clearFlyerData(db);
     }
     try {
@@ -122,7 +122,7 @@ async function runIngestion(postalCode, resetData = false) {
             const itemsUrl = FLYER_ITEMS_URL.replace('{}', flyerId).replace('{}', generateSid());
             const itemsResponse = await fetch(itemsUrl);
             if (!itemsResponse.ok) {
-                firebase_functions_1.logger.warn(`Failed to fetch items for flyer ${flyerId}`);
+                v1_1.logger.warn(`Failed to fetch items for flyer ${flyerId}`);
                 continue;
             }
             const itemsData = await itemsResponse.json();
@@ -179,10 +179,10 @@ async function runIngestion(postalCode, resetData = false) {
             totalDealsSaved += dealsToWrite.length;
             summaryData.push({ retailer: flyer.merchant, dealsCount: dealsToWrite.length });
             // Fire-and-forget: index deals into flat time-series collection for predictive analytics
-            (0, indexFlyerDeals_1.indexFlyerDeals)(flyerId).catch(err => firebase_functions_1.logger.error(`[indexFlyerDeals] Failed for flyer ${flyerId}:`, err));
+            (0, indexFlyerDeals_1.indexFlyerDeals)(flyerId).catch(err => v1_1.logger.error(`[indexFlyerDeals] Failed for flyer ${flyerId}:`, err));
         }
         // Generate static JSON export of all active deals for zero-read client comparison
-        firebase_functions_1.logger.info("Generating static JSON export of all active deals...");
+        v1_1.logger.info("Generating static JSON export of all active deals...");
         const flyersSnapshot = await db.collection('public_flyers').get();
         const allDeals = [];
         for (const flyerDoc of flyersSnapshot.docs) {
@@ -201,10 +201,10 @@ async function runIngestion(postalCode, resetData = false) {
                 }
             });
             await file.makePublic();
-            firebase_functions_1.logger.info(`Successfully exported ${allDeals.length} deals to Storage.`);
+            v1_1.logger.info(`Successfully exported ${allDeals.length} deals to Storage.`);
         }
         catch (storageError) {
-            firebase_functions_1.logger.error("Failed to upload active_deals.json to storage:", storageError);
+            v1_1.logger.error("Failed to upload active_deals.json to storage:", storageError);
             // Non-fatal error, we still want to return success for ingestion
         }
         return {
@@ -215,7 +215,7 @@ async function runIngestion(postalCode, resetData = false) {
         };
     }
     catch (error) {
-        firebase_functions_1.logger.error('Error in runIngestion:', error);
+        v1_1.logger.error('Error in runIngestion:', error);
         throw error;
     }
 }

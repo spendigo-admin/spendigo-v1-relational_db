@@ -1,5 +1,5 @@
 import * as admin from 'firebase-admin';
-import { logger } from 'firebase-functions';
+import { logger } from 'firebase-functions/v1';
 
 /**
  * Normalize a product name to a canonical token-sorted key for cross-retailer matching.
