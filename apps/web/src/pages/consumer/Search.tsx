@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useCart } from '../../context/CartContext';
 import { useMarketplace } from '../../context/MarketplaceContext';
 import { useCatalog } from '../../hooks/useCatalog';
@@ -10,6 +11,7 @@ import { EmptyState } from '../../components/ui/EmptyState';
 
 const Search: React.FC = () => {
     const navigate = useNavigate();
+    const { t } = useTranslation();
     const [searchParams, setSearchParams] = useSearchParams();
     const { addToCart } = useCart();
     const { stores } = useMarketplace();
@@ -117,7 +119,7 @@ const Search: React.FC = () => {
 
     return (
         <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white pb-24">
-            <SEO title="Search Products" description="Search across all local grocery stores on Spendigo. Find the best prices and compare products." path="/search" />
+            <SEO title={t('searchPageTitle')} description="Search across all local grocery stores on Spendigo. Find the best prices and compare products." path="/search" />
             
             {/* Search Header - Sticky & Glassmorphic */}
             <div className="sticky top-14 z-30 bg-white/70 backdrop-blur-2xl border-b border-gray-200/50 p-4 shadow-[0_4px_30px_rgba(0,0,0,0.03)] transition-all duration-300">
@@ -127,7 +129,7 @@ const Search: React.FC = () => {
                             <svg className="w-5 h-5 text-[var(--brand-primary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
                             <input
                                 type="text"
-                                placeholder="Search fresh items, local brands..."
+                                placeholder={t('searchFreshItems')}
                                 className="bg-transparent border-none outline-none flex-1 text-sm font-bold text-[var(--brand-navy)] placeholder:text-[var(--text-muted)]"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -150,16 +152,16 @@ const Search: React.FC = () => {
 
             <div className="max-w-5xl mx-auto px-4 py-6 flex items-center justify-between">
                 <p className="text-sm font-bold text-[var(--text-muted)]">
-                    {filteredProducts.length} result{filteredProducts.length !== 1 ? 's' : ''}
+                    {filteredProducts.length} {filteredProducts.length !== 1 ? t('searchResults') : t('searchResult')}
                 </p>
                 <select
                     value={sortBy}
                     onChange={e => setSortBy(e.target.value as any)}
                     className="text-sm font-bold bg-transparent text-[var(--brand-navy)] border-none cursor-pointer outline-none"
                 >
-                    <option value="relevance">Relevance</option>
-                    <option value="price_low">Price: Low to High</option>
-                    <option value="price_high">Price: High to Low</option>
+                    <option value="relevance">{t('searchSortRelevance')}</option>
+                    <option value="price_low">{t('searchSortPriceLow')}</option>
+                    <option value="price_high">{t('searchSortPriceHigh')}</option>
                 </select>
             </div>
 
@@ -167,8 +169,8 @@ const Search: React.FC = () => {
                 {filteredProducts.length === 0 ? (
                     <EmptyState
                         icon="🔍"
-                        heading="No products found"
-                        subtext="We couldn't find anything matching your search."
+                        heading={t('searchNoProductsFound')}
+                        subtext={t('searchNoProductsHint')}
                     />
                 ) : (
                     Object.entries(groupedByStore).map(([storeName, products]) => (
@@ -192,7 +194,7 @@ const Search: React.FC = () => {
                                                 <p className="font-bold text-sm md:text-base text-[#112244] line-clamp-2 leading-tight group-hover:text-[#007AFF] transition-colors">{product.name}</p>
                                                 {product.is_canadian_local && (
                                                     <span className="inline-flex mt-2 px-2 py-0.5 bg-red-50 text-red-700 text-xs font-semibold rounded-md border border-red-100 items-center gap-1 w-max">
-                                                        <span>🍁</span> Local
+                                                        <span>🍁</span> {t('searchLocalBadge')}
                                                     </span>
                                                 )}
                                             </div>
@@ -206,10 +208,10 @@ const Search: React.FC = () => {
                                                             )}
                                                         </div>
                                                     </div>
-                                                    <button onClick={(e) => { e.stopPropagation(); handleQuickAdd(product); }} 
+                                                    <button onClick={(e) => { e.stopPropagation(); handleQuickAdd(product); }}
                                                         className="w-full md:w-auto px-5 py-3 md:py-2.5 bg-[#112244] text-white text-xs font-black uppercase tracking-widest rounded-xl transform active:scale-95 hover:bg-black hover:shadow-lg shadow-blue-500/10 transition-all duration-300"
                                                     >
-                                                        Add
+                                                        {t('searchAddButton')}
                                                     </button>
                                                 </div>
                                             </div>

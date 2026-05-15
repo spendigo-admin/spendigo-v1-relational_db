@@ -5,10 +5,12 @@ import { STORE_DATA } from '../../data/productData';
 import '../../styles/design-system.css';
 import SEO from '../../components/SEO';
 import { EmptyState } from '../../components/ui/EmptyState';
+import { useTranslation } from 'react-i18next';
 
 const Cart: React.FC = () => {
     const navigate = useNavigate();
     const { items, updateQuantity, removeFromCart, subtotal, clearCart } = useCart();
+    const { t } = useTranslation();
 
     // Group items by store
     const groupedItems = items.reduce((acc, item) => {
@@ -56,9 +58,9 @@ const Cart: React.FC = () => {
             <div className="animate-fade-in min-h-[60vh] flex items-center justify-center">
                 <EmptyState
                     icon="🛒"
-                    heading="Your cart is empty"
-                    subtext="Start shopping to add items to your cart."
-                    action={<Link to="/" className="btn-primary">Browse Stores</Link>}
+                    heading={t('cartEmpty')}
+                    subtext={t('cartEmptyHint')}
+                    action={<Link to="/" className="btn-primary">{t('browseStores')}</Link>}
                 />
             </div>
         );
@@ -70,7 +72,7 @@ const Cart: React.FC = () => {
             <div className="max-w-6xl mx-auto px-4 py-8">
                 {/* PAGE HEADER */}
                 <div className="mb-6">
-                    <h1 className="text-4xl md:text-5xl font-black text-[#112244] tracking-tighter italic mb-1">Your Cart</h1>
+                    <h1 className="text-4xl md:text-5xl font-black text-[#112244] tracking-tighter italic mb-1">{t('cartTitle')}</h1>
                     <p className="text-gray-400 font-bold tracking-widest uppercase text-xs">
                         {items.length} item{items.length !== 1 ? 's' : ''} from {storeCount} store{storeCount !== 1 ? 's' : ''}
                     </p>
@@ -82,10 +84,10 @@ const Cart: React.FC = () => {
                     <div className="text-4xl relative z-10">🎉</div>
                     <div className="flex-1 relative z-10">
                         <p className="font-black text-lg md:text-xl tracking-tight text-white drop-shadow-md">
-                            You're saving ~${estimatedSavings} by shopping smart!
+                            {t('cartSavings', { amount: estimatedSavings })}
                         </p>
                         <p className="text-sm font-bold text-white/95 mt-1">
-                            Spendigo's AI optimized your order across local merchants.
+                            {t('cartAIOptimized')}
                         </p>
                     </div>
                 </div>
@@ -148,7 +150,7 @@ const Cart: React.FC = () => {
                                                             onClick={() => removeFromCart(item.id)}
                                                             className="ml-auto text-[var(--status-error)] text-sm font-bold py-2 px-3 hover:bg-red-50 rounded-lg transition-colors"
                                                         >
-                                                            Remove
+                                                            {t('cartRemove')}
                                                         </button>
                                                     </div>
                                                 </div>
@@ -168,15 +170,15 @@ const Cart: React.FC = () => {
                     {/* RIGHT COLUMN: CHECKOUT SUMMARY (Span 4) */}
                     <div className="lg:col-span-4 mt-8 lg:mt-0">
                         <div className="glass-panel p-6 sticky top-8 border-[var(--glass-border)] shadow-xl bg-white/50 backdrop-blur-xl">
-                            <h2 className="text-xl font-bold text-[var(--text-main)] mb-4">Order Summary</h2>
+                            <h2 className="text-xl font-bold text-[var(--text-main)] mb-4">{t('orderSummaryTitle')}</h2>
 
                             <div className="flex items-center justify-between mb-2">
-                                <span className="text-[var(--text-muted)]">Subtotal</span>
+                                <span className="text-[var(--text-muted)]">{t('orderSubtotal')}</span>
                                 <span className="text-xl font-bold text-[var(--text-main)]">${subtotal.toFixed(2)}</span>
                             </div>
 
                             <div className="flex items-center justify-between mb-6 text-green-600 text-sm">
-                                <span>Total Savings</span>
+                                <span>{t('orderTotalSavings')}</span>
                                 <span>-${estimatedSavings}</span>
                             </div>
 
@@ -186,11 +188,11 @@ const Cart: React.FC = () => {
                                 onClick={() => navigate('/checkout')}
                                 className="w-full py-4 bg-[#112244] text-white font-black text-sm tracking-[0.2em] uppercase rounded-2xl hover:bg-[#007AFF] transition-all active:scale-95 shadow-xl shadow-blue-900/20 mb-3"
                             >
-                                Proceed to Checkout
+                                {t('proceedCheckout')}
                             </button>
 
                             <p className="text-xs text-[var(--text-muted)] text-center">
-                                Taxes and delivery fees calculated at checkout
+                                {t('taxNote')}
                             </p>
                         </div>
                     </div>

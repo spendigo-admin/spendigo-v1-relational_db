@@ -7,6 +7,7 @@ import { useLocation } from '../../context/LocationContext';
 import { Skeleton } from '../../components/ui/Skeleton';
 import { filterActiveDeals } from '../../utils/date-helpers';
 import { useAuth } from '../../context/AuthContext';
+import { useTranslation } from 'react-i18next';
 import SEO from '../../components/SEO';
 
 const StoreCardSkeleton = () => (
@@ -21,6 +22,7 @@ const StoreList: React.FC = () => {
     const navigate = useNavigate();
     const { allStores, loading } = useMarketplace();
     const { user } = useAuth();
+    const { t } = useTranslation();
     const {
         userCoords,
         calculateDistance,
@@ -191,13 +193,13 @@ const StoreList: React.FC = () => {
                     <div className="flex flex-col lg:flex-row items-center gap-8 md:gap-12">
                         <div className="flex-1 text-center lg:text-left">
                             <span className="inline-block bg-[#F5F3FF] text-[#007AFF] px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-[0.2em] mb-4">
-                                Hyper-Local Shopping Intelligence
+                                {t('heroTitle')}
                             </span>
                             <h1 className="text-3xl md:text-5xl font-black leading-[1.05] tracking-tighter text-[var(--brand-navy)] mb-4">
-                                <span className="text-[var(--brand-primary)]">Shop Local.</span><br className="hidden md:block" /> Think AI.
+                                <span className="text-[var(--brand-primary)]">{t('shopLocal')}</span><br className="hidden md:block" /> {t('heroThinkAI')}
                             </h1>
                             <p className="text-[var(--text-muted)] text-xs md:text-sm font-medium max-w-xl mx-auto lg:mx-0 mb-6 leading-relaxed">
-                                Spendigo connects you with the heartbeat of your neighborhood through a smarter lens. Discover real-time inventory and exclusive local deals while optimizing your spending with AI-powered precision.
+                                {t('heroDesc')}
                             </p>
 
 
@@ -263,7 +265,7 @@ const StoreList: React.FC = () => {
 
             {/* MARKET INTELLIGENCE DASHBOARD */}
             <section className="max-w-7xl mx-auto px-6 md:px-12 -mt-6 md:-mt-10 relative z-20">
-                <h2 className="text-2xl md:text-5xl font-black text-[#112244] mb-6 tracking-tighter">Market Intelligence</h2>
+                <h2 className="text-2xl md:text-5xl font-black text-[#112244] mb-6 tracking-tighter">{t('statMarketIntelligence')}</h2>
                 <div className="md:bg-transparent rounded-3xl md:p-0">
                     <div 
                         ref={carouselRef}
@@ -271,10 +273,10 @@ const StoreList: React.FC = () => {
                         className="flex md:grid md:grid-cols-4 gap-4 md:gap-6 overflow-x-auto md:overflow-visible pb-6 md:pb-0 scrollbar-hide snap-x snap-mandatory -mx-6 px-6 md:mx-0 md:px-0"
                     >
                         {[
-                            { 
-                                label: 'Local Stores', 
-                                value: stats.totalStores || '0', 
-                                badge: 'Active', 
+                            {
+                                label: t('statLocalStores'),
+                                value: stats.totalStores || '0',
+                                badge: t('statActive'),
                                 badgeStyles: 'bg-emerald-700 text-white',
                                 cardBg: 'bg-[#F0F7FF]',
                                 textColor: 'text-[#112244]',
@@ -282,10 +284,10 @@ const StoreList: React.FC = () => {
                                 iconStyles: 'bg-white text-blue-600 shadow-sm',
                                 icon: <svg className="w-6 h-6 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
                             },
-                            { 
-                                label: 'New Flyers', 
-                                value: stats.totalFlyers || '0', 
-                                badge: 'Live', 
+                            {
+                                label: t('statNewFlyers'),
+                                value: stats.totalFlyers || '0',
+                                badge: t('statLive'),
                                 badgeStyles: 'bg-orange-600 text-white',
                                 cardBg: 'bg-[#FFF9F2]',
                                 textColor: 'text-[#112244]',
@@ -293,10 +295,10 @@ const StoreList: React.FC = () => {
                                 iconStyles: 'bg-white text-orange-600 shadow-sm',
                                 icon: <svg className="w-6 h-6 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
                             },
-                            { 
-                                label: 'Flash Deals', 
-                                value: stats.totalDeals.toLocaleString() || '0', 
-                                badge: 'Hot', 
+                            {
+                                label: t('statFlashDeals'),
+                                value: stats.totalDeals.toLocaleString() || '0',
+                                badge: t('statHot'),
                                 badgeStyles: 'bg-red-600 text-white',
                                 cardBg: 'bg-[#FFF5F5]',
                                 textColor: 'text-[#112244]',
@@ -304,10 +306,10 @@ const StoreList: React.FC = () => {
                                 iconStyles: 'bg-white text-red-600 shadow-sm',
                                 icon: <svg className="w-6 h-6 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.99 7.99 0 0120 13a7.98 7.98 0 01-2.343 5.657z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9.879 16.121A3 3 0 1012.015 11L11 14l2.828.828" /></svg>
                             },
-                            { 
-                                label: 'Tracked Items', 
-                                value: stats.totalProducts > 1000 ? `${(stats.totalProducts / 1000).toFixed(1)}k` : stats.totalProducts || '0', 
-                                badge: 'Market Safe', 
+                            {
+                                label: t('statTrackedItems'),
+                                value: stats.totalProducts > 1000 ? `${(stats.totalProducts / 1000).toFixed(1)}k` : stats.totalProducts || '0',
+                                badge: t('statMarketSafe'),
                                 badgeStyles: 'bg-gray-600 text-white',
                                 cardBg: 'bg-gray-50',
                                 textColor: 'text-[#112244]',
@@ -347,8 +349,8 @@ const StoreList: React.FC = () => {
                                     <path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" />
                                 </svg>
                             </div>
-                            <h2 className="text-2xl md:text-5xl font-black text-[#112244] tracking-tighter">Flash</h2>
-                            <span className="bg-red-600 text-white text-[9px] md:text-xs font-black px-4 py-1.5 rounded-full uppercase tracking-[0.2em] animate-pulse">Ending Soon</span>
+                            <h2 className="text-2xl md:text-5xl font-black text-[#112244] tracking-tighter">{t('badgeFlash')}</h2>
+                            <span className="bg-red-600 text-white text-[9px] md:text-xs font-black px-4 py-1.5 rounded-full uppercase tracking-[0.2em] animate-pulse">{t('badgeEndingSoon')}</span>
                         </div>
                         <Link to="/deals" className="text-[var(--brand-primary)] text-xs md:text-sm font-black tracking-[0.2em] uppercase hover:translate-x-2 transition-transform inline-flex items-center gap-2">
                             See All <span className="text-lg">›</span>
@@ -388,20 +390,26 @@ const StoreList: React.FC = () => {
             <section id="local-merchants" className="max-w-7xl mx-auto px-6 md:px-12 mt-8 md:mt-20">
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-6 md:mb-12">
                     <div>
-                        <h2 className="text-2xl md:text-5xl font-black text-[#112244] tracking-tighter mb-2">Local Merchants</h2>
-                        <p className="text-gray-400 font-medium">Trusted neighbors, verified community favorites.</p>
+                        <h2 className="text-2xl md:text-5xl font-black text-[#112244] tracking-tighter mb-2">{t('localMerchantsTitle')}</h2>
+                        <p className="text-gray-400 font-medium">{t('localMerchantsSubtitle')}</p>
                     </div>
 
                     <div className="grid grid-cols-5 md:flex gap-1 md:gap-2 bg-gray-50 p-1 md:p-2 rounded-[1.5rem] md:rounded-3xl w-full md:w-auto">
-                        {['All', 'Top Rated', 'Fastest', 'Offers', 'Flyers'].map(cat => (
+                        {[
+                            { value: 'All', label: t('filterAll') },
+                            { value: 'Top Rated', label: t('filterTopRated') },
+                            { value: 'Fastest', label: t('filterFastest') },
+                            { value: 'Offers', label: t('filterOffers') },
+                            { value: 'Flyers', label: t('filterFlyers') },
+                        ].map(cat => (
                             <button
-                                key={cat}
-                                onClick={() => setActiveCategory(cat)}
-                                className={`px-1 md:px-8 py-2.5 md:py-3 rounded-xl md:rounded-2xl text-[10px] md:text-xs font-black uppercase tracking-tighter md:tracking-widest transition-all whitespace-nowrap flex items-center justify-center ${activeCategory === cat
+                                key={cat.value}
+                                onClick={() => setActiveCategory(cat.value)}
+                                className={`px-1 md:px-8 py-2.5 md:py-3 rounded-xl md:rounded-2xl text-[10px] md:text-xs font-black uppercase tracking-tighter md:tracking-widest transition-all whitespace-nowrap flex items-center justify-center ${activeCategory === cat.value
                                     ? 'bg-[var(--brand-navy)] text-white shadow-lg shadow-[var(--brand-navy)]/20'
                                     : 'text-gray-400 hover:text-[var(--brand-navy)]'}`}
                             >
-                                {cat}
+                                {cat.label}
                             </button>
                         ))}
                     </div>
@@ -412,8 +420,8 @@ const StoreList: React.FC = () => {
                         [1, 2, 3, 4].map(i => <StoreCardSkeleton key={i} />)
                     ) : filteredStores.length === 0 ? (
                         <div className="col-span-full py-20 text-center bg-gray-50 rounded-[3rem] border-2 border-dashed border-gray-100">
-                            <p className="text-xl font-bold text-[#112244] mb-2">No merchants found</p>
-                            <p className="text-gray-400">Try adjusting your filters or checking a different area.</p>
+                            <p className="text-xl font-bold text-[#112244] mb-2">{t('noMerchantsFound')}</p>
+                            <p className="text-gray-400">{t('noMerchantsHint')}</p>
                         </div>
                     ) : (
                         filteredStores.map(store => (
@@ -432,7 +440,7 @@ const StoreList: React.FC = () => {
                             >
                                 {activeCategory === 'Flyers' && (
                                     <div className="absolute top-4 right-4 z-10">
-                                        <span className="badge-deal text-[8px] uppercase tracking-widest px-3 py-1 animate-pulse">Weekly Flyer</span>
+                                        <span className="badge-deal text-[8px] uppercase tracking-widest px-3 py-1 animate-pulse">{t('badgeWeeklyFlyer')}</span>
                                     </div>
                                 )}
                                 <div className="w-full md:w-32 lg:w-40 aspect-square md:aspect-auto md:h-32 lg:h-40 rounded-xl md:rounded-[2rem] bg-gray-50 overflow-hidden shrink-0 relative">
@@ -485,7 +493,7 @@ const StoreList: React.FC = () => {
                                     )}
 
                                     <span className="bg-[#112244] text-white px-2 sm:px-3 md:px-6 py-1 md:py-2 rounded-full text-[9px] sm:text-[10px] md:text-[10px] font-black uppercase tracking-[0.2em] whitespace-nowrap">
-                                        {activeCategory === 'Offers' ? 'Featured Offer' : (store.business_category || store.category || 'Local Shop')}
+                                        {activeCategory === 'Offers' ? t('badgeFeaturedOffer') : (store.business_category || store.category || t('badgeLocalShop'))}
                                     </span>
                                 </div>
                                 <div className="hidden md:block pr-6">
@@ -515,17 +523,17 @@ const StoreList: React.FC = () => {
                                 </div>
                                 <span className="text-[10px] md:text-xs font-black text-[var(--brand-primary)] uppercase tracking-[0.3em] opacity-80">Powered by SmartCart AI</span>
                             </div>
-                            <h2 className="text-3xl md:text-5xl font-black text-[var(--brand-navy)] tracking-tighter mb-6">Why Pay Retail?</h2>
+                            <h2 className="text-3xl md:text-5xl font-black text-[var(--brand-navy)] tracking-tighter mb-6">{t('whyPayRetail')}</h2>
                             <p className="text-lg md:text-xl font-medium text-[var(--brand-navy)]/60 leading-relaxed mb-10 max-w-2xl">
                                 Our AI scans {stats.totalProducts > 0 ? stats.totalProducts.toLocaleString() : '25,000'}+ products in real-time to find you instant <span className="text-[var(--brand-primary)] font-black underline decoration-4 underline-offset-8">15% savings</span> at check-out.
                             </p>
                             <div className="flex flex-wrap items-center justify-center lg:justify-start gap-4">
                                 <Link to="/smartcart" className="bg-gradient-to-r from-[var(--brand-primary)] to-[#5856D6] text-white px-8 py-4 rounded-xl font-black text-[10px] md:text-xs tracking-[0.2em] shadow-xl shadow-blue-500/40 hover:scale-105 transition-all uppercase">
-                                    Activate Optimizer
+                                    {t('btnActivateOptimizer')}
                                 </Link>
                                 {!user && (
                                     <Link to="/register" className="bg-white text-[var(--brand-navy)] px-8 py-4 rounded-xl font-black text-[10px] md:text-xs tracking-widest hover:bg-gray-50 transition-all uppercase">
-                                        Join Marketplace
+                                        {t('btnJoinMarketplace')}
                                     </Link>
                                 )}
                             </div>

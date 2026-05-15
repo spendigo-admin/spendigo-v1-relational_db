@@ -5,10 +5,12 @@ import { sendEmailVerification } from 'firebase/auth';
 import { auth } from '../../lib/firebase';
 import '../../styles/design-system.css';
 import SEO from '../../components/SEO';
+import { useTranslation } from 'react-i18next';
 
 const VerifyEmail: React.FC = () => {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
+    const { t } = useTranslation();
     const [resending, setResending] = useState(false);
     const [message, setMessage] = useState('');
     const [countdown, setCountdown] = useState(60);
@@ -73,24 +75,24 @@ const VerifyEmail: React.FC = () => {
 
                 {/* Title */}
                 <h1 className="text-2xl font-bold mb-2 text-[var(--text-main)]">
-                    Verify Your Email
+                    {t('verifyEmailTitle')}
                 </h1>
 
                 {/* Email Display */}
                 <p className="text-[var(--text-muted)] mb-6">
-                    We've sent a verification link to<br />
+                    {t('verifyEmailSentTo')}<br />
                     <strong className="text-[var(--text-main)]">{user?.email}</strong>
                 </p>
 
                 {/* Instructions */}
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 text-left">
                     <p className="text-sm text-blue-900 mb-2">
-                        <strong>📋 Next Steps:</strong>
+                        <strong>📋 {t('verifyEmailNextSteps')}:</strong>
                     </p>
                     <ol className="text-sm text-blue-800 space-y-1 list-decimal list-inside">
-                        <li>Check your email inbox</li>
-                        <li>Click the verification link</li>
-                        <li>Return to this page (auto-refreshes)</li>
+                        <li>{t('verifyEmailStep1')}</li>
+                        <li>{t('verifyEmailStep2')}</li>
+                        <li>{t('verifyEmailStep3')}</li>
                     </ol>
                 </div>
 
@@ -111,16 +113,16 @@ const VerifyEmail: React.FC = () => {
                     className="w-full py-3 mb-3 bg-[var(--brand-primary)] text-white rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:brightness-110 transition-all shadow-lg shadow-[var(--brand-primary)]/20"
                 >
                     {resending
-                        ? 'Sending...'
+                        ? t('authSending')
                         : canResend
-                            ? 'Resend Verification Email'
-                            : `Resend in ${countdown}s`
+                            ? t('verifyEmailResendBtn')
+                            : t('verifyEmailResendIn', { seconds: countdown })
                     }
                 </button>
 
                 {/* Help Text */}
                 <p className="text-xs text-[var(--text-muted)] mb-4">
-                    Didn't receive the email? Check your spam folder or try resending.
+                    {t('verifyEmailNotReceived')}
                 </p>
 
                 {/* Divider */}
@@ -138,7 +140,7 @@ const VerifyEmail: React.FC = () => {
                     onClick={logout}
                     className="w-full py-3 border border-[var(--glass-border)] rounded-lg text-[var(--text-muted)] hover:bg-[var(--surface-1)] transition-colors"
                 >
-                    Sign Out
+                    {t('signOut').replace('🚪 ', '')}
                 </button>
 
                 {/* Footer Note */}

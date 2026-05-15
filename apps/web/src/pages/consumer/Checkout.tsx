@@ -14,6 +14,7 @@ import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { stripePromise } from '../../lib/stripe';
 import { getFunctions, httpsCallable } from 'firebase/functions';
+import { useTranslation } from 'react-i18next';
 
 const Checkout: React.FC = () => {
 
@@ -27,6 +28,7 @@ const Checkout: React.FC = () => {
     const { getStore } = useMarketplace(); // Moved up
     const { userCoords, calculateDistance } = useLocation();
     const navigate = useNavigate();
+    const { t } = useTranslation();
 
     // Helper to check if store is open
     const isStoreOpen = (store: any): boolean => {
@@ -430,14 +432,14 @@ const Checkout: React.FC = () => {
         <div className="animate-fade-in pb-40">
             <SEO title="Checkout" description="Complete your order and confirm reservations on Spendigo." path="/checkout" noIndex />
             <div className="max-w-3xl mx-auto px-4 py-6">
-                <h1 className="text-3xl font-bold text-[var(--text-main)] mb-6">Checkout</h1>
+                <h1 className="text-3xl font-bold text-[var(--text-main)] mb-6">{t('checkoutTitle')}</h1>
 
                 {/* Step progress indicator */}
                 <div className="flex items-center mb-12">
                     {[
-                        { step: 1, label: 'Cart', done: true },
-                        { step: 2, label: 'Fulfillment', done: false, active: true },
-                        { step: 3, label: 'Payment', done: false },
+                        { step: 1, label: t('stepCartLabel'), done: true },
+                        { step: 2, label: t('stepFulfillment'), done: false, active: true },
+                        { step: 3, label: t('stepPayment'), done: false },
                     ].map((s, i, arr) => (
                         <React.Fragment key={s.step}>
                             <div className="flex items-center gap-3 flex-shrink-0">
@@ -476,7 +478,7 @@ const Checkout: React.FC = () => {
                                                 <h2 className="font-black text-lg text-[var(--brand-navy)] mb-0">{storeName}</h2>
                                                 {groupedItems[storeId].acceptsOnlinePayment && (
                                                     <span className="text-[9px] font-black bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full border border-purple-200 uppercase tracking-widest">
-                                                        💳 Online Pay
+                                                        💳 {t('paymentOnline')}
                                                     </span>
                                                 )}
                                             </div>
@@ -485,17 +487,17 @@ const Checkout: React.FC = () => {
                                     </div>
                                     {(tier === 'free' || !groupedItems[storeId].deliveryEnabled) && !bothDisabled && (
                                         <span className="text-[10px] font-bold bg-gray-100 text-gray-500 px-2 py-1 rounded-full uppercase tracking-wider">
-                                            Store Pickup Only
+                                            {t('storePickupOnly')}
                                         </span>
                                     )}
                                     {bothDisabled && (
                                         <span className="text-[10px] font-bold bg-red-100 text-red-600 px-2 py-1 rounded-full uppercase tracking-wider">
-                                            ⛔ Ordering Disabled
+                                            ⛔ {t('orderingDisabled')}
                                         </span>
                                     )}
                                     {!isOpen && !bothDisabled && (
                                         <span className="text-[10px] font-bold bg-orange-100 text-orange-700 px-2 py-1 rounded-full uppercase tracking-wider">
-                                            🕒 Closed Now
+                                            🕒 {t('closedNow')}
                                         </span>
                                     )}
                                 </div>
@@ -510,8 +512,8 @@ const Checkout: React.FC = () => {
                                             : 'text-[var(--text-muted)] hover:text-[var(--text-main)] disabled:opacity-50 disabled:cursor-not-allowed'
                                             }`}
                                     >
-                                        🛍️ Pickup
-                                        {(!pickupEnabled) && <span className="text-[8px] border border-gray-300 px-1 rounded">UNAVAILABLE</span>}
+                                        🛍️ {t('pickupLabel')}
+                                        {(!pickupEnabled) && <span className="text-[8px] border border-gray-300 px-1 rounded">{t('unavailableLabel')}</span>}
                                     </button>
                                     <button
                                         onClick={() => toggleFulfillment(storeId, 'delivery')}
@@ -521,9 +523,9 @@ const Checkout: React.FC = () => {
                                             : 'text-[var(--text-muted)] hover:text-[var(--text-main)] disabled:opacity-50 disabled:cursor-not-allowed'
                                             }`}
                                     >
-                                        🚚 Delivery
-                                        {(!deliveryEnabled && groupedItems[storeId].distanceViolation) && <span className="text-[8px] bg-purple-100 text-purple-700 border border-purple-200 px-1 rounded">TOO FAR</span>}
-                                        {(tier === 'free' || (!deliveryEnabled && !groupedItems[storeId].distanceViolation)) && <span className="text-[8px] border border-gray-300 px-1 rounded">UNAVAILABLE</span>}
+                                        🚚 {t('deliveryLabel')}
+                                        {(!deliveryEnabled && groupedItems[storeId].distanceViolation) && <span className="text-[8px] bg-purple-100 text-purple-700 border border-purple-200 px-1 rounded">{t('tooFarLabel')}</span>}
+                                        {(tier === 'free' || (!deliveryEnabled && !groupedItems[storeId].distanceViolation)) && <span className="text-[8px] border border-gray-300 px-1 rounded">{t('unavailableLabel')}</span>}
                                     </button>
                                 </div>
 
@@ -560,7 +562,7 @@ const Checkout: React.FC = () => {
                 {/* Footer Summary */}
                 <div className="flex items-center gap-3 my-6">
                     <div className="flex-1 h-px bg-[var(--glass-border)]" />
-                    <span className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wide">Order Summary</span>
+                    <span className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wide">{t('orderSummaryTitle')}</span>
                     <div className="flex-1 h-px bg-[var(--glass-border)]" />
                 </div>
                 <div className="mt-8 glass-panel p-8 rounded-[2rem] border-gray-100 shadow-xl">
@@ -580,15 +582,15 @@ const Checkout: React.FC = () => {
                     </div>
                     <div>
                         <div className="flex justify-between text-sm text-[var(--text-muted)] mb-1">
-                            <span>Subtotal</span>
+                            <span>{t('orderSubtotal')}</span>
                             <span>${orderSubtotal.toFixed(2)}</span>
                         </div>
                         <div className="flex justify-between text-sm text-[var(--text-muted)] mb-3">
-                            <span>Delivery Fees</span>
+                            <span>{t('deliveryFees')}</span>
                             <span>${deliveryFees.toFixed(2)}</span>
                         </div>
                         <div className="flex justify-between text-sm text-[var(--text-muted)] mb-3 pb-3 border-b border-[var(--glass-border)]">
-                            <span>Estimated Tax <span className="text-[10px] bg-gray-100 px-1 rounded">VARIES BY PROVINCE</span></span>
+                            <span>{t('estimatedTax')} <span className="text-[10px] bg-gray-100 px-1 rounded">VARIES BY PROVINCE</span></span>
                             <span>${calculatedTax.toFixed(2)}</span>
                         </div>
                     </div>

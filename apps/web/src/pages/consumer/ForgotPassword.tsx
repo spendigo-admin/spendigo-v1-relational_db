@@ -3,9 +3,11 @@ import { useNavigate, Link } from 'react-router-dom';
 import '../../styles/design-system.css';
 import { useAuth } from '../../context/AuthContext';
 import SEO from '../../components/SEO';
+import { useTranslation } from 'react-i18next';
 
 const ForgotPassword = () => {
     const navigate = useNavigate();
+    const { t } = useTranslation();
     const { resetPassword } = useAuth();
     const [email, setEmail] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -57,8 +59,8 @@ const ForgotPassword = () => {
                     <Link to="/" className="inline-block text-4xl font-black tracking-tighter mb-4 gradient-text hover:opacity-80 transition-opacity">
                         spendigo
                     </Link>
-                    <h2 className="text-2xl font-bold text-[var(--text-main)]">Reset Password</h2>
-                    <p className="text-[var(--text-muted)] mt-2">Enter your email for the verification code.</p>
+                    <h2 className="text-2xl font-bold text-[var(--text-main)]">{t('authResetPassword')}</h2>
+                    <p className="text-[var(--text-muted)] mt-2">{t('authResetPasswordEnterEmail')}</p>
                 </div>
 
                 {/* Form Card */}
@@ -80,7 +82,7 @@ const ForgotPassword = () => {
 
                     <form onSubmit={handleSubmit} className="space-y-6">
                         <div>
-                            <label className="block text-sm font-medium mb-1.5 text-[var(--text-main)]">Email Address</label>
+                            <label className="block text-sm font-medium mb-1.5 text-[var(--text-main)]">{t('authEmailAddress')}</label>
                             <input
                                 type="email"
                                 value={email}
@@ -102,19 +104,19 @@ const ForgotPassword = () => {
                             {isSubmitting ? (
                                 <span className="flex items-center justify-center gap-2">
                                     <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                    Sending...
+                                    {t('authSending')}
                                 </span>
                             ) : message ? (
-                                'Email Sent'
+                                t('authEmailSent')
                             ) : (
-                                'Send Verification Code'
+                                t('authSendVerificationCode')
                             )}
                         </button>
                     </form>
 
                     <div className="mt-8 pt-6 border-t border-[var(--glass-border)] text-center">
                         <Link to="/login" className="text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--brand-primary)] transition-colors flex items-center justify-center gap-2">
-                            <span>←</span> Back to Login
+                            <span>←</span> {t('authBackToLogin')}
                         </Link>
                     </div>
                 </div>

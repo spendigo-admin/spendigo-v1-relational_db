@@ -7,6 +7,7 @@ import SEO from '../../components/SEO';
 import { isFlyerActive } from '../../utils/date-helpers';
 import { Skeleton } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
+import { useTranslation } from 'react-i18next';
 
 const getValidFlyerImage = (imageUrl?: string): string | undefined => {
     if (!imageUrl) return undefined;
@@ -23,6 +24,7 @@ const getValidFlyerImage = (imageUrl?: string): string | undefined => {
 
 const Flyers: React.FC = () => {
     const navigate = useNavigate();
+    const { t } = useTranslation();
     const { stores, loading } = useMarketplace();
     const { userCoords, userPostalCode, searchDistance, calculateDistance } = useLocation();
 
@@ -53,7 +55,7 @@ const Flyers: React.FC = () => {
             {/* Header */}
             <div className="bg-[var(--surface-0)] border-b border-[var(--glass-border)] sticky top-0 z-30 px-4 py-4">
                 <div className="max-w-5xl mx-auto flex items-center gap-4">
-                    <button 
+                    <button
                         onClick={() => navigate('/')}
                         className="w-10 h-10 rounded-full bg-[var(--surface-2)] flex items-center justify-center text-[var(--text-main)] hover:bg-[var(--surface-1)] transition-colors"
                     >
@@ -61,9 +63,9 @@ const Flyers: React.FC = () => {
                     </button>
                     <div>
                         <h1 className="text-xl font-bold text-[var(--text-main)] flex items-center gap-2">
-                            <span className="text-2xl">📰</span> All Weekly Flyers
+                            <span className="text-2xl">📰</span> {t('flyersAllWeekly')}
                         </h1>
-                        <p className="text-xs text-[var(--text-muted)]">{activeFlyerStores.length} flyers active this week</p>
+                        <p className="text-xs text-[var(--text-muted)]">{activeFlyerStores.length} {t('flyersActiveCount')}</p>
                     </div>
                 </div>
             </div>
@@ -84,11 +86,11 @@ const Flyers: React.FC = () => {
                 ) : activeFlyerStores.length === 0 ? (
                     <EmptyState
                         icon="📭"
-                        heading="No active flyers found"
-                        subtext="Check back later for new weekly deals!"
+                        heading={t('flyersNoFlyersFound')}
+                        subtext={t('flyersNoFlyersFoundHint')}
                         action={
                             <button onClick={() => navigate('/')} className="btn-primary">
-                                Back to Stores
+                                {t('flyersBackToStores')}
                             </button>
                         }
                     />
@@ -120,14 +122,14 @@ const Flyers: React.FC = () => {
                                             <div>
                                                 <h3 className="text-white font-bold drop-shadow-md">{store.name}</h3>
                                                 <p className="text-white/80 text-xs font-medium">
-                                                    Valid until {new Date(store.flyer.validUntil).toLocaleDateString()}
+                                                    {t('flyersValidUntil')} {new Date(store.flyer.validUntil).toLocaleDateString()}
                                                 </p>
                                             </div>
                                         </div>
                                     </div>
                                     
                                     <div className="absolute top-3 right-3">
-                                        <span className="badge-deal animate-pulse">Weekly Flyer</span>
+                                        <span className="badge-deal animate-pulse">{t('flyersWeeklyFlyerBadge')}</span>
                                     </div>
                                 </div>
                                 <div className="p-4 bg-white">
@@ -137,7 +139,7 @@ const Flyers: React.FC = () => {
                                             <span className="text-xs font-bold text-[var(--text-main)]">{store.rating || '0.0'}</span>
                                         </div>
                                         <button className="text-xs font-bold text-[var(--brand-primary)] group-hover:translate-x-1 transition-transform">
-                                            View Flyer →
+                                            {t('flyersViewFlyer')}
                                         </button>
                                     </div>
                                 </div>

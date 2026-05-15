@@ -159,7 +159,7 @@ const Deals: React.FC = () => {
                         <h1 className="text-xl font-black text-[var(--brand-navy)] flex items-center gap-2 italic tracking-tighter">
                             <span className="text-2xl">🔥</span> {t('activeDeals')}
                         </h1>
-                        <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest">{totalDealsCount} deal{totalDealsCount !== 1 ? 's' : ''} available nearby</p>
+                        <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest">{totalDealsCount} {t('dealsAvailableNearby')}</p>
                     </div>
                 </div>
 
@@ -196,11 +196,11 @@ const Deals: React.FC = () => {
                 ) : storesWithDeals.length === 0 ? (
                     <EmptyState
                         icon="🏷️"
-                        heading="No active deals found"
-                        subtext="We couldn't find any active deals matching your filters in your area. Try adjusting your radius or checking back later."
+                        heading={t('dealsNoDealsFound')}
+                        subtext={t('dealsNoDealsFoundHint')}
                         action={
                             <button onClick={() => navigate('/')} className="btn-primary">
-                                Back to Stores
+                                {t('dealsBackToStores')}
                             </button>
                         }
                     />
@@ -220,11 +220,11 @@ const Deals: React.FC = () => {
                                         {store.name}
                                         <span className="text-[10px] font-black text-[var(--brand-primary)] px-2.5 py-1 bg-[var(--brand-primary-light)] rounded-full uppercase tracking-widest">{store.deals.length} DEALS</span>
                                     </h3>
-                                    <button 
+                                    <button
                                         onClick={() => navigate(`/store/${store.id}`)}
                                         className="text-[10px] font-black text-[var(--brand-primary)] hover:underline uppercase tracking-[0.2em]"
                                     >
-                                        Visit Store →
+                                        {t('dealsVisitStore')}
                                     </button>
                                 </div>
 

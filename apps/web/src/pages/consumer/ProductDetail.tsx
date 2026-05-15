@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useCart } from '../../context/CartContext';
 import { STORE_DATA } from '../../data/productData';
 import { useCatalog } from '../../hooks/useCatalog';
@@ -10,6 +11,7 @@ import SEO from '../../components/SEO';
 const ProductDetail: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
+    const { t } = useTranslation();
     const { addToCart } = useCart();
 
     // Restore UI state
@@ -49,7 +51,7 @@ const ProductDetail: React.FC = () => {
     const store = getStore(displayProduct?.storeId || '');
     const isInactive = store && store.status && store.status !== 'active';
 
-    if (loading) return <div className="p-20 text-center">Loading product details...</div>;
+    if (loading) return <div className="p-20 text-center">{t('productLoadingDetails')}</div>;
 
     if (!displayProduct || isInactive) {
         return (
@@ -59,19 +61,19 @@ const ProductDetail: React.FC = () => {
                 </div>
                 <div className="max-w-md">
                     <h2 className="text-2xl font-black text-gray-900 mb-2">
-                        {isInactive ? 'Product Currently Unavailable' : 'Product Not Found'}
+                        {isInactive ? t('productUnavailable') : t('productNotFound')}
                     </h2>
                     <p className="text-gray-500 font-medium">
-                        {isInactive 
-                            ? "This product belongs to a store that is currently inactive or closed. We cannot process orders for this item at this time."
-                            : "We couldn't find the product you're looking for. It may have been removed or the link might be broken."}
+                        {isInactive
+                            ? t('productUnavailableDesc')
+                            : t('productNotFoundDesc')}
                     </p>
                 </div>
                 <button
                     onClick={() => navigate('/')}
                     className="px-8 py-3 bg-[var(--brand-primary)] text-white font-black rounded-2xl shadow-lg shadow-blue-500/20 hover:shadow-xl hover:-translate-y-0.5 transition-all"
                 >
-                    Back to Marketplace
+                    {t('productBackToMarketplace')}
                 </button>
             </div>
         );
@@ -98,7 +100,7 @@ const ProductDetail: React.FC = () => {
             <SEO title={displayProduct.name} description={`Buy ${displayProduct.name} from ${displayProduct.storeName} on Spendigo. ${displayProduct.description?.substring(0, 120) || ''}`} path={`/product/${displayProduct.id}`} />
             {/* BREADCRUMBS */}
             <nav className="px-4 py-3 text-sm text-[var(--text-muted)] overflow-x-auto whitespace-nowrap">
-                <Link to="/" className="hover:text-[var(--brand-primary)]">Home</Link>
+                <Link to="/" className="hover:text-[var(--brand-primary)]">{t('productBreadcrumbHome')}</Link>
                 <span className="mx-2">›</span>
                 <Link to={`/store/${displayProduct.storeId}`} className="hover:text-[var(--brand-primary)]">{displayProduct.storeName}</Link>
                 <span className="mx-2">›</span>
@@ -145,7 +147,7 @@ const ProductDetail: React.FC = () => {
                             {displayProduct.is_canadian_local && (
                                 <div className="mb-4">
                                     <span className="inline-flex px-3 py-1 bg-red-50 text-red-700 text-xs font-bold rounded-lg shadow-sm border border-red-100 uppercase items-center gap-1.5">
-                                        <span className="text-base">🍁</span> Canadian Local Product
+                                        <span className="text-base">🍁</span> {t('productCanadianLocal')}
                                     </span>
                                 </div>
                             )}
@@ -162,7 +164,7 @@ const ProductDetail: React.FC = () => {
                                 )}
                                 {displayProduct.originalPrice && (
                                     <span className="bg-[var(--brand-secondary)] text-white text-xs font-bold px-2 py-1 rounded">
-                                        SAVE ${(displayProduct.originalPrice - displayProduct.price).toFixed(2)}
+                                        {t('productSave')} ${(displayProduct.originalPrice - displayProduct.price).toFixed(2)}
                                     </span>
                                 )}
                             </div>
@@ -170,38 +172,38 @@ const ProductDetail: React.FC = () => {
 
                         {/* SOLD BY */}
                         <div className="glass-panel p-4 border-l-4 border-[#112244] bg-white shadow-sm rounded-xl">
-                            <p className="text-[10px] text-[#007AFF] font-black uppercase tracking-[0.2em] mb-1">Sold & Fulfilled By</p>
+                            <p className="text-[10px] text-[#007AFF] font-black uppercase tracking-[0.2em] mb-1">{t('productSoldBy')}</p>
                             <p className="font-black text-lg text-[#112244]">{displayProduct.storeName}</p>
                             <p className="text-sm text-gray-400 font-medium">{displayProduct.storeAddress}</p>
                         </div>
 
                         {/* Description */}
                         <div>
-                            <h3 className="font-bold text-[var(--text-main)] mb-2">Description</h3>
+                            <h3 className="font-bold text-[var(--text-main)] mb-2">{t('productDetailDescription')}</h3>
                             <p className="text-[var(--text-muted)] leading-relaxed">{displayProduct.description}</p>
                         </div>
 
                         {/* Specifications */}
                         <div className="bg-gray-50 rounded-lg p-4 text-sm space-y-2">
                             <div className="flex justify-between border-b pb-2 border-gray-200">
-                                <span className="text-gray-500">Brand</span>
-                                <span className="font-medium">{displayProduct.brand_name || 'Generic'}</span>
+                                <span className="text-gray-500">{t('productBrand')}</span>
+                                <span className="font-medium">{displayProduct.brand_name || t('productGeneric')}</span>
                             </div>
                             {(displayProduct.unit_size || displayProduct.net_quantity_value) && (
                                 <div className="flex justify-between border-b pb-2 border-gray-200">
-                                    <span className="text-gray-500">Format</span>
+                                    <span className="text-gray-500">{t('productFormat')}</span>
                                     <span className="font-medium">{displayProduct.unit_size || `${displayProduct.net_quantity_value} ${displayProduct.net_quantity_unit}`}</span>
                                 </div>
                             )}
                             {displayProduct.storage_type && (
                                 <div className="flex justify-between border-b pb-2 border-gray-200">
-                                    <span className="text-gray-500">Storage</span>
+                                    <span className="text-gray-500">{t('productStorage')}</span>
                                     <span className="font-medium capitalize">{displayProduct.storage_type}</span>
                                 </div>
                             )}
                             {displayProduct.dietary_tags?.length > 0 && (
                                 <div className="pt-2">
-                                    <span className="text-gray-500 block mb-1">Dietary</span>
+                                    <span className="text-gray-500 block mb-1">{t('productDietary')}</span>
                                     <div className="flex flex-wrap gap-2">
                                         {displayProduct.dietary_tags.map((tag: string) => (
                                             <span key={tag} className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs font-bold">{tag}</span>
@@ -214,7 +216,7 @@ const ProductDetail: React.FC = () => {
                         {/* Ingredients */}
                         {displayProduct.ingredients && (
                             <div>
-                                <h3 className="font-bold text-[var(--text-main)] mb-1">Ingredients</h3>
+                                <h3 className="font-bold text-[var(--text-main)] mb-1">{t('productIngredients')}</h3>
                                 <p className="text-sm text-[var(--text-muted)] italic leading-relaxed">{displayProduct.ingredients}</p>
                             </div>
                         )}
@@ -231,7 +233,7 @@ const ProductDetail: React.FC = () => {
 
                         {/* Quantity Selector */}
                         <div className="flex items-center gap-4">
-                            <span className="text-[var(--text-muted)]">Quantity:</span>
+                            <span className="text-[var(--text-muted)]">{t('productQuantity')}:</span>
                             <div className="flex items-center bg-[var(--surface-2)] rounded-full">
                                 <button
                                     onClick={() => setQuantity(Math.max(1, quantity - 1))}
@@ -262,7 +264,7 @@ const ProductDetail: React.FC = () => {
                             : 'bg-[#112244] text-white hover:bg-[#007AFF] shadow-blue-900/20'
                             }`}
                     >
-                        <span>{added ? '✓ Added to Cart!' : 'Add to Cart'}</span>
+                        <span>{added ? `✓ ${t('productAddedToCart')}` : t('productDetailAddToCart')}</span>
                         <span className="font-black">${(displayProduct.price * quantity).toFixed(2)}</span>
                     </button>
                 </div>

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { doc, setDoc, increment } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { useCart } from '../../context/CartContext';
@@ -22,6 +23,7 @@ import { useEffect } from 'react';
 const FlyerTab: React.FC<{ storeId: string; storeName: string; summary: any; viewMode: 'grid' | 'list' }> = ({ storeId, storeName, summary, viewMode }) => {
     const { subscribeToFlyers } = useMarketplace();
     const { addToCart } = useCart();
+    const { t } = useTranslation();
     const [flyer, setFlyer] = useState<any>(null);
     const [loading, setLoading] = useState(true);
 
@@ -65,7 +67,7 @@ const FlyerTab: React.FC<{ storeId: string; storeName: string; summary: any; vie
     );
 
     if (!flyer) return (
-        <EmptyState icon="📰" heading="No active flyer" subtext="Check back soon for this week's deals." />
+        <EmptyState icon="📰" heading={t('storeNoActiveFlyer')} subtext={t('storeFlyerCheckBack')} />
     );
 
     // Sort items by savings to feature the biggest deals
@@ -111,7 +113,7 @@ const FlyerTab: React.FC<{ storeId: string; storeName: string; summary: any; vie
                             VALID: {new Date(flyer.validFrom).toLocaleDateString()} - {new Date(flyer.validUntil).toLocaleDateString()}
                         </p>
                         <p className="text-[9px] md:text-[10px] font-black tracking-tighter bg-white/10 px-1.5 py-0.5 rounded mt-0.5 animate-pulse text-white">
-                            ⏰ {flyerDaysLeft} {flyerDaysLeft === 1 ? 'DAY' : 'DAYS'} LEFT
+                            ⏰ {flyerDaysLeft} {flyerDaysLeft === 1 ? t('storeDay') : t('storeDays')} {t('storeLeft')}
                         </p>
                     </div>
                 </div>
@@ -141,7 +143,7 @@ const FlyerTab: React.FC<{ storeId: string; storeName: string; summary: any; vie
                                     onClick={() => handleAdd(item)}
                                     className="px-4 py-3 bg-[#007AFF] text-white text-xs font-black rounded tracking-widest hover:bg-[#112244] active:scale-95 transition-all shadow-md"
                                 >
-                                    + ADD
+                                    + {t('storeAddButton')}
                                 </button>
                             </div>
                         ))}
@@ -211,7 +213,7 @@ const FlyerTab: React.FC<{ storeId: string; storeName: string; summary: any; vie
                                                 onClick={() => handleAdd(item)}
                                                 className="w-full mt-2 py-3 bg-[#007AFF] text-white text-[11px] md:text-xs font-black rounded tracking-widest hover:bg-[#112244] transition-colors shadow-md active:translate-y-0.5"
                                             >
-                                                + Add To Cart
+                                                + {t('storeAddToCart')}
                                             </button>
                                         </div>
                                 </div>
@@ -246,6 +248,7 @@ const FlyerTab: React.FC<{ storeId: string; storeName: string; summary: any; vie
 const OffersTab: React.FC<{ storeId: string, storeName: string; viewMode: 'grid' | 'list' }> = ({ storeId, storeName, viewMode }) => {
     const { subscribeToDeals } = useMarketplace();
     const { addToCart } = useCart();
+    const { t } = useTranslation();
     const [deals, setDeals] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -285,7 +288,7 @@ const OffersTab: React.FC<{ storeId: string, storeName: string; viewMode: 'grid'
     const saleItems = deals.filter(d => d.status === 'active' && !d.isFlashSale);
 
     if (oneDayOffers.length === 0 && saleItems.length === 0) {
-        return <EmptyState icon="🍂" heading="No special deals right now" subtext="Check back soon for flash sales and offers." />;
+        return <EmptyState icon="🍂" heading={t('storeNoDeals')} subtext={t('storeDealsCheckBack')} />;
     }
 
     // Sort items by savings for better impact
@@ -355,7 +358,7 @@ const OffersTab: React.FC<{ storeId: string, storeName: string; viewMode: 'grid'
                                             </div>
                                         </div>
                                         <button onClick={() => handleQuickAdd(offer)} className="px-4 py-3 bg-orange-600 text-white text-xs font-black rounded tracking-widest shadow-md">
-                                            + ADD
+                                            + {t('storeAddButton')}
                                         </button>
                                     </div>
                                 ))}
@@ -400,7 +403,7 @@ const OffersTab: React.FC<{ storeId: string, storeName: string; viewMode: 'grid'
                                                     {offer.productName || offer.name}
                                                 </p>
                                                 <button onClick={() => handleQuickAdd(offer)} className="w-full mt-2 py-3 bg-orange-600 text-white text-[11px] md:text-xs font-black rounded tracking-widest hover:bg-black transition-all shadow-md">
-                                                    + QUICK ADD
+                                                    + {t('storeQuickAdd')}
                                                 </button>
                                             </div>
                                         </div>
@@ -444,7 +447,7 @@ const OffersTab: React.FC<{ storeId: string, storeName: string; viewMode: 'grid'
                                             </div>
                                         </div>
                                         <button onClick={() => handleQuickAdd(item)} className="px-4 py-3 bg-[#007AFF] text-white text-xs font-black rounded tracking-widest shadow-md">
-                                            + ADD
+                                            + {t('storeAddButton')}
                                         </button>
                                     </div>
                                 ))}
@@ -485,7 +488,7 @@ const OffersTab: React.FC<{ storeId: string, storeName: string; viewMode: 'grid'
                                                     {item.productName || item.name}
                                                 </p>
                                                 <button onClick={() => handleQuickAdd(item)} className="w-full mt-2 py-3 bg-[#007AFF] text-white text-[11px] md:text-xs font-black rounded tracking-widest hover:bg-[#112244] transition-all shadow-md">
-                                                    + ADD TO CART
+                                                    + {t('storeAddToCart')}
                                                 </button>
                                             </div>
                                         </div>
@@ -517,6 +520,7 @@ const StoreDetail: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const location = useLocation(); // Add useLocation import
+    const { t } = useTranslation();
     const { addToCart } = useCart();
     const { getStore } = useMarketplace();
     const { reviews, fetchReviews } = useReviews();
@@ -550,18 +554,18 @@ const StoreDetail: React.FC = () => {
                         {isInactive ? '⏸️' : '🏪'}
                     </div>
                     <h2 className="text-2xl font-black text-gray-900 mb-2">
-                        {isInactive ? 'Store Currently Unavailable' : 'Store Not Found'}
+                        {isInactive ? t('storeUnavailable') : t('storeNotFound')}
                     </h2>
                     <p className="text-gray-500 mb-8 font-medium">
-                        {isInactive 
-                            ? "This store is temporarily inactive or has been closed. Please check back later or browse other shops nearby."
-                            : "We couldn't find the store you're looking for. It may have moved or the link might be incorrect."}
+                        {isInactive
+                            ? t('storeUnavailableDesc')
+                            : t('storeNotFoundDesc')}
                     </p>
-                    <button 
-                        onClick={() => navigate('/')} 
+                    <button
+                        onClick={() => navigate('/')}
                         className="px-8 py-3 bg-[var(--brand-primary)] text-white font-black rounded-2xl shadow-lg shadow-blue-500/20 hover:shadow-xl hover:-translate-y-0.5 transition-all"
                     >
-                        Return to Marketplace
+                        {t('storeReturnToMarketplace')}
                     </button>
                 </div>
             </div>
@@ -619,7 +623,7 @@ const StoreDetail: React.FC = () => {
                     className="absolute top-6 left-6 px-4 py-2 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white flex items-center gap-2 hover:bg-white/20 transition-all shadow-2xl z-50 group/back"
                 >
                     <span className="group-hover:-translate-x-1 transition-transform">←</span>
-                    <span className="text-[10px] font-black tracking-widest uppercase">Marketplace</span>
+                    <span className="text-[10px] font-black tracking-widest uppercase">{t('storeMarketplace')}</span>
                 </button>
 
                 {/* Floating Store Identity */}
@@ -639,8 +643,8 @@ const StoreDetail: React.FC = () => {
 
                         <div className="flex-1 pb-2">
                             <div className="flex flex-wrap items-center gap-3 mb-2">
-                                <span className="text-[9px] font-black bg-[var(--brand-primary)] text-white px-2 py-0.5 rounded skew-x-[-12deg] shadow-lg tracking-widest uppercase">Verified Store</span>
-                                <span className="text-[9px] font-black bg-white/10 backdrop-blur-md text-white px-2 py-0.5 rounded border border-white/20 tracking-widest uppercase">Open Now</span>
+                                <span className="text-[9px] font-black bg-[var(--brand-primary)] text-white px-2 py-0.5 rounded skew-x-[-12deg] shadow-lg tracking-widest uppercase">{t('storeVerified')}</span>
+                                <span className="text-[9px] font-black bg-white/10 backdrop-blur-md text-white px-2 py-0.5 rounded border border-white/20 tracking-widest uppercase">{t('storeOpenNow')}</span>
                             </div>
                             <h1 className="text-4xl md:text-6xl font-black text-white tracking-tighter leading-none mb-2 drop-shadow-2xl italic uppercase">
                                 {store.name}
@@ -655,7 +659,7 @@ const StoreDetail: React.FC = () => {
             <div className="max-w-7xl mx-auto px-4 -mt-10 relative z-30">
                 <div className="bg-white rounded-3xl shadow-2xl border border-gray-100 p-1 md:p-3 flex flex-nowrap items-stretch gap-1">
                     <div className="flex-1 min-w-0 bg-gray-50/50 p-2 md:p-4 rounded-xl border border-gray-50 flex flex-col items-center justify-center text-center group hover:bg-[var(--brand-navy)] hover:shadow-lg transition-all">
-                        <span className="text-[10px] md:text-xs font-black text-gray-600 tracking-widest mb-0.5 md:mb-1 group-hover:text-white/70 transition-colors uppercase">Store Rating</span>
+                        <span className="text-[10px] md:text-xs font-black text-gray-600 tracking-widest mb-0.5 md:mb-1 group-hover:text-white/70 transition-colors uppercase">{t('storeRating')}</span>
                         <div className="flex items-center gap-0.5 md:gap-2">
                             <span className="text-sm md:text-xl font-black text-[var(--brand-navy)] group-hover:text-white transition-colors">
                                 {reviews.length > 0 
@@ -667,7 +671,7 @@ const StoreDetail: React.FC = () => {
                     </div>
                     <div className="w-px bg-gray-100 hidden md:block my-2"></div>
                     <div className="flex-1 min-w-0 bg-gray-50/50 p-2 md:p-4 rounded-xl border border-gray-50 flex flex-col items-center justify-center text-center group hover:bg-black hover:shadow-lg transition-all">
-                        <span className="text-[10px] md:text-xs font-black text-gray-600 tracking-widest mb-0.5 md:mb-1 group-hover:text-white/70 transition-colors truncate w-full px-1">Delivery</span>
+                        <span className="text-[10px] md:text-xs font-black text-gray-600 tracking-widest mb-0.5 md:mb-1 group-hover:text-white/70 transition-colors truncate w-full px-1">{t('storeDelivery')}</span>
                         <div className="flex items-center gap-0.5 md:gap-2">
                             <span className="text-sm md:text-xl font-black text-gray-900 group-hover:text-white transition-colors line-clamp-1 truncate px-1 max-w-full">{store.deliveryTime?.replace('MIN', '') || '25-45'}</span>
                             <span className="text-orange-500 text-xs md:text-lg group-hover:animate-pulse">⚡</span>
@@ -675,7 +679,7 @@ const StoreDetail: React.FC = () => {
                     </div>
                     <div className="w-px bg-gray-100 hidden md:block my-2"></div>
                     <div className="flex-1 min-w-0 bg-gray-50/50 p-2 md:p-4 rounded-xl border border-gray-50 flex flex-col items-center justify-center text-center group hover:bg-black hover:shadow-lg transition-all">
-                        <span className="text-[10px] md:text-xs font-black text-gray-600 tracking-widest mb-0.5 md:mb-1 group-hover:text-white/70 transition-colors">Fee</span>
+                        <span className="text-[10px] md:text-xs font-black text-gray-600 tracking-widest mb-0.5 md:mb-1 group-hover:text-white/70 transition-colors">{t('storeFee')}</span>
                         <div className="flex items-center gap-0.5 md:gap-2">
                             <span className="text-sm md:text-xl font-black text-gray-900 group-hover:text-white transition-colors">{store.deliveryFee || 'FREE'}</span>
                             <span className="text-green-500 text-xs md:text-lg group-hover:rotate-12 transition-transform">💰</span>
@@ -694,11 +698,11 @@ const StoreDetail: React.FC = () => {
                 <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div className="flex gap-2 overflow-x-auto scrollbar-hide">
                         {[
-                            { id: 'products', label: 'Store Items', icon: '🛒' },
-                            { id: 'flyer', label: 'Weekly Flyer', icon: '📰', badge: isFlyerActive(store.flyer) },
-                            { id: 'offers', label: 'Flash Deals', icon: '🔥', badge: filterActiveDeals([...(store.oneDayOffers || []), ...(store.saleItems || [])]).length > 0 },
-                            { id: 'reviews', label: 'Shopper Voice', icon: '⭐' },
-                            { id: 'info', label: 'Store Info', icon: 'ℹ️' }
+                            { id: 'products', label: t('storeTabItems'), icon: '🛒' },
+                            { id: 'flyer', label: t('storeTabFlyer'), icon: '📰', badge: isFlyerActive(store.flyer) },
+                            { id: 'offers', label: t('storeTabDeals'), icon: '🔥', badge: filterActiveDeals([...(store.oneDayOffers || []), ...(store.saleItems || [])]).length > 0 },
+                            { id: 'reviews', label: t('storeTabReviews'), icon: '⭐' },
+                            { id: 'info', label: t('storeTabInfo'), icon: 'ℹ️' }
                         ].map(tab => (
                             <button
                                 key={tab.id}
@@ -750,7 +754,7 @@ const StoreDetail: React.FC = () => {
                 <div className="animate-fade-in">
                     {/* Premium Category Filters */}
                     <div className="px-4 py-4 bg-white border-b border-gray-100 flex items-center gap-4">
-                        <span className="text-[10px] font-black text-gray-600 tracking-widest whitespace-nowrap">Filter By:</span>
+                        <span className="text-[10px] font-black text-gray-600 tracking-widest whitespace-nowrap">{t('storeFilterBy')}:</span>
                         <div className="overflow-x-auto scrollbar-hide flex gap-2 pb-1">
                             {store.categories.map((cat: string) => (
                                 <button
@@ -769,7 +773,7 @@ const StoreDetail: React.FC = () => {
                     {/* Product Grid/List View */}
                     <div className="p-4 bg-gray-50/50 min-h-screen">
                         {filteredProducts.length === 0 ? (
-                            <EmptyState icon="🛒" heading="No items in this aisle" subtext="Try a different category or check back later." />
+                            <EmptyState icon="🛒" heading={t('storeNoItemsAisle')} subtext={t('storeNoItemsHint')} />
                         ) : viewMode === 'grid' ? (
                             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
                                 {filteredProducts.map((product: any) => {
@@ -808,7 +812,7 @@ const StoreDetail: React.FC = () => {
                                                 {isOutOfStock && (
                                                     <div className="absolute inset-0 bg-white/60 flex items-center justify-center z-10 backdrop-blur-[1px]">
                                                         <span className="bg-gray-800 text-white text-[10px] font-black px-3 py-1 rounded-full tracking-widest shadow-xl">
-                                                            Restocking
+                                                            {t('storeRestocking')}
                                                         </span>
                                                     </div>
                                                 )}
@@ -836,7 +840,7 @@ const StoreDetail: React.FC = () => {
                                                         : 'bg-[var(--brand-primary)] text-white hover:brightness-110'
                                                         }`}
                                                 >
-                                                    {isOutOfStock ? 'Sold Out' : '+ Add to Trolley'}
+                                                    {isOutOfStock ? t('storeSoldOut') : `+ ${t('storeAddToTrolley')}`}
                                                 </button>
                                             </div>
                                         );
@@ -881,7 +885,7 @@ const StoreDetail: React.FC = () => {
                                                     : 'bg-[var(--brand-primary)] text-white hover:brightness-110'
                                                     }`}
                                             >
-                                                {isOutOfStock ? 'Out' : '+ Add'}
+                                                {isOutOfStock ? t('storeOut') : `+ ${t('storeAdd')}`}
                                             </button>
                                         </div>
                                     );
@@ -922,7 +926,7 @@ const StoreDetail: React.FC = () => {
                                     />
                                 </div>
                                 <p className="text-[10px] text-gray-400 font-black tracking-[0.2em]">
-                                    {reviews.length || store.reviewCount || 0} TOTAL REVIEWS
+                                    {reviews.length || store.reviewCount || 0} {t('storeTotalReviews')}
                                 </p>
                             </div>
 
@@ -960,15 +964,15 @@ const StoreDetail: React.FC = () => {
                     <div className="pt-4">
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 border-b-2 border-gray-100 pb-4">
                             <div>
-                                <h3 className="text-xl font-black text-gray-900 tracking-tight m-0">Customer Voice</h3>
-                                <p className="text-xs text-gray-400 font-bold tracking-widest mt-1">Real Feedback from Your Community</p>
+                                <h3 className="text-xl font-black text-gray-900 tracking-tight m-0">{t('storeCustomerVoice')}</h3>
+                                <p className="text-xs text-gray-400 font-bold tracking-widest mt-1">{t('storeCustomerVoiceSubtitle')}</p>
                             </div>
                             <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-full border border-gray-100 shadow-sm">
-                                <span className="text-[10px] font-black text-gray-400 tracking-widest whitespace-nowrap">Sort:</span>
+                                <span className="text-[10px] font-black text-gray-400 tracking-widest whitespace-nowrap">{t('storeSort')}:</span>
                                 <select className="text-xs font-black bg-transparent border-none outline-none text-gray-900 cursor-pointer">
-                                    <option>Most Recent</option>
-                                    <option>Highest Rated</option>
-                                    <option>Most Helpful</option>
+                                    <option>{t('storeSortMostRecent')}</option>
+                                    <option>{t('storeSortHighestRated')}</option>
+                                    <option>{t('storeSortMostHelpful')}</option>
                                 </select>
                             </div>
                         </div>
@@ -980,13 +984,13 @@ const StoreDetail: React.FC = () => {
             {activeTab === 'info' && (
                 <div className="p-4 max-w-4xl mx-auto animate-fade-in space-y-6">
                     <div className="bg-white rounded-3xl p-6 md:p-10 shadow-xl border border-gray-100">
-                        <h2 className="text-3xl font-black text-gray-900 mb-8 italic tracking-tight">About {store.name}</h2>
+                        <h2 className="text-3xl font-black text-gray-900 mb-8 italic tracking-tight">{t('storeAbout')} {store.name}</h2>
                         
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                             {/* Location Section */}
                             <div className="bg-gray-50 rounded-2xl p-6 border border-gray-100 hover:shadow-md transition-shadow">
                                 <h3 className="text-sm font-black tracking-widest text-gray-400 mb-4 flex items-center gap-2">
-                                    <span className="text-xl">📍</span> LOCATION
+                                    <span className="text-xl">📍</span> {t('storeInfoLocation')}
                                 </h3>
                                 <p className="text-lg font-black text-gray-900 mb-1">{store.address}</p>
                                 <p className="text-sm font-bold text-gray-600">{store.city}, {store.province}</p>
@@ -996,20 +1000,20 @@ const StoreDetail: React.FC = () => {
                             {/* Delivery & Fees */}
                             <div className="bg-gray-50 rounded-2xl p-6 border border-gray-100 hover:shadow-md transition-shadow">
                                 <h3 className="text-sm font-black tracking-widest text-gray-400 mb-4 flex items-center gap-2">
-                                    <span className="text-xl">🚚</span> DELIVERY SERVICES
+                                    <span className="text-xl">🚚</span> {t('storeInfoDeliveryServices')}
                                 </h3>
                                 <div className="space-y-4">
                                     <div className="flex justify-between items-center border-b border-gray-200 pb-3">
-                                        <span className="font-bold text-gray-700 text-sm">Delivery Available</span>
-                                        <span className="font-black text-[#112244] bg-blue-100 px-3 py-1 rounded-full text-[10px] tracking-widest shadow-sm">YES</span>
+                                        <span className="font-bold text-gray-700 text-sm">{t('storeInfoDeliveryAvailable')}</span>
+                                        <span className="font-black text-[#112244] bg-blue-100 px-3 py-1 rounded-full text-[10px] tracking-widest shadow-sm">{t('storeInfoYes')}</span>
                                     </div>
                                     <div className="flex justify-between items-center border-b border-gray-200 pb-3">
-                                        <span className="font-bold text-gray-700 text-sm">Estimated Time</span>
+                                        <span className="font-bold text-gray-700 text-sm">{t('storeInfoEstimatedTime')}</span>
                                         <span className="font-black text-gray-900">{store.deliveryTime || '30-45 MIN'}</span>
                                     </div>
                                     <div className="flex justify-between items-center">
-                                        <span className="font-bold text-gray-700 text-sm">Delivery Fee</span>
-                                        <span className="font-black text-gray-900">{store.deliveryFee || 'Free'}</span>
+                                        <span className="font-bold text-gray-700 text-sm">{t('storeInfoDeliveryFee')}</span>
+                                        <span className="font-black text-gray-900">{store.deliveryFee || t('storeInfoFree')}</span>
                                     </div>
                                 </div>
                             </div>
@@ -1017,7 +1021,7 @@ const StoreDetail: React.FC = () => {
                             {/* Opening Hours */}
                             <div className="bg-gray-50 rounded-2xl p-6 border border-gray-100 md:col-span-2 hover:shadow-md transition-shadow">
                                 <h3 className="text-sm font-black tracking-widest text-gray-400 mb-4 flex items-center gap-2">
-                                    <span className="text-xl">⏰</span> STORE HOURS
+                                    <span className="text-xl">⏰</span> {t('storeInfoStoreHours')}
                                 </h3>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-4">
                                     {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map((day, idx) => (

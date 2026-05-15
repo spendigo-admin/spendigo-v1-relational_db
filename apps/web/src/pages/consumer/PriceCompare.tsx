@@ -8,6 +8,7 @@ import { calculateUnitPrice } from '../../smartcart/priceNormalization';
 import { Link } from 'react-router-dom';
 import { Skeleton } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
+import { useTranslation } from 'react-i18next';
 
 // Normalizes a flyer deal's price to a per-unit equivalent.
 const parseDealPrice = (deal: any): number => {
@@ -25,6 +26,7 @@ const parseDealPrice = (deal: any): number => {
 };
 
 const PriceCompare = () => {
+    const { t } = useTranslation();
     const [deals, setDeals] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const { items: wishlistItems } = useComparison();
@@ -136,12 +138,12 @@ const PriceCompare = () => {
             <div className="min-h-screen bg-[var(--surface-1)] flex items-center justify-center p-4">
                 <div className="max-w-md w-full bg-white rounded-3xl border border-[var(--glass-border)] shadow-sm p-8 text-center animate-fade-in">
                     <span className="text-6xl mb-6 block">🚧</span>
-                    <h1 className="text-2xl font-black text-[var(--text-main)] mb-2 tracking-tighter">Feature Temporarily Unavailable</h1>
+                    <h1 className="text-2xl font-black text-[var(--text-main)] mb-2 tracking-tighter">{t('compareFeatureUnavailable')}</h1>
                     <p className="text-[var(--text-muted)] font-medium mb-8">
-                        The price comparison tool is currently disabled for maintenance. Please check back later.
+                        {t('compareFeatureUnavailableDesc')}
                     </p>
                     <Link to="/" className="inline-flex items-center justify-center px-8 py-3 bg-[var(--brand-primary)] text-white font-bold rounded-xl hover:shadow-lg transition-all active:scale-95">
-                        Return to Marketplace
+                        {t('compareReturnToMarketplace')}
                     </Link>
                 </div>
             </div>
@@ -167,7 +169,7 @@ const PriceCompare = () => {
                             <div className="inline-flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 rounded-full bg-white shadow-sm border border-gray-100 mb-6 animate-fade-in">
                                 <span className="flex h-2 w-2 rounded-full bg-[var(--brand-primary)] animate-ping" />
                                 <span className="text-[10px] md:text-xs font-black uppercase tracking-[0.4em] text-[var(--text-muted)]">
-                                    Flyer Price Analysis
+                                    {t('compareFlyerPriceAnalysis')}
                                 </span>
                             </div>
                             <h1 className="text-2xl md:text-4xl font-black italic tracking-tighter mb-4 leading-[1.05] text-[var(--brand-navy)]">
@@ -175,26 +177,26 @@ const PriceCompare = () => {
                                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#112244] to-[#007AFF]">Comparison.</span>
                             </h1>
                             <p className="text-xs md:text-sm font-medium text-[var(--text-muted)] max-w-xl mx-auto md:mx-0 leading-relaxed">
-                                We've analyzed the latest grocery flyers to find matches for your wishlist. 
-                                <span className="text-[var(--brand-primary)]"> Real-time savings across all major retailers.</span>
+                                {t('compareFlyerDesc')}
+                                <span className="text-[var(--brand-primary)]"> {t('compareFlyerDescHighlight')}</span>
                             </p>
                         </div>
 
                         {!loading && deals.length > 0 && (
                             <div className="bg-white rounded-3xl p-8 min-w-[280px] shadow-2xl border-b-8 border-[var(--brand-primary)] relative overflow-hidden group">
                                 <div className="absolute top-0 right-0 w-24 h-24 bg-[var(--brand-primary)]/5 rounded-full -mr-12 -mt-12 group-hover:scale-150 transition-transform duration-700"></div>
-                                <div className="text-[10px] font-black uppercase tracking-[0.3em] text-[var(--brand-navy)] mb-2 relative z-10">Total Matches</div>
+                                <div className="text-[10px] font-black uppercase tracking-[0.3em] text-[var(--brand-navy)] mb-2 relative z-10">{t('compareTotalMatches')}</div>
                                 <div className="text-6xl font-black text-[var(--brand-navy)] tracking-tighter italic relative z-10">{deals.length}</div>
                                 <div className="mt-4 text-[9px] font-black text-white uppercase tracking-widest bg-[var(--brand-primary)] inline-block px-4 py-1.5 rounded-full shadow-lg shadow-blue-500/20 relative z-10">
-                                    Active In-Store
+                                    {t('compareActiveInStore')}
                                 </div>
                             </div>
                         )}
                     </div>
 
                     <div className="mt-8 p-4 rounded-2xl bg-amber-50/50 border border-amber-100 text-amber-800 text-[10px] md:text-xs font-bold uppercase tracking-widest leading-relaxed">
-                        <span className="bg-amber-100 px-2 py-0.5 rounded-full mr-2">Disclaimer</span>
-                        This information comes from public grocery flyers for price comparison only. Items shown here cannot be ordered through the platform.
+                        <span className="bg-amber-100 px-2 py-0.5 rounded-full mr-2">{t('compareDisclaimer')}</span>
+                        {t('compareDisclaimerText')}
                     </div>
                 </div>
             </section>
@@ -203,9 +205,9 @@ const PriceCompare = () => {
                 {wishlistItems.length === 0 ? (
                     <EmptyState
                         icon="🔍"
-                        heading="No items to compare"
-                        subtext="Add items to your wishlist first, then come back to compare flyer prices."
-                        action={<Link to="/profile" state={{ activeTab: 'wishlist' }} className="btn-primary">Manage Wishlist</Link>}
+                        heading={t('compareNoItemsToCompare')}
+                        subtext={t('compareNoItemsToCompareHint')}
+                        action={<Link to="/profile" state={{ activeTab: 'wishlist' }} className="btn-primary">{t('compareManageWishlist')}</Link>}
                     />
                 ) : loading ? (
                     <div className="space-y-6">
@@ -244,7 +246,7 @@ const PriceCompare = () => {
                                     </div>
                                     <div className="shrink-0">
                                         <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${group.deals.length > 0 ? 'bg-[#EBF5FF] text-[#007AFF]' : 'bg-gray-100 text-gray-400'}`}>
-                                            {group.deals.length} flyer deal{group.deals.length !== 1 ? 's' : ''} found
+                                            {group.deals.length} {t('compareFlyerDealsFound')}
                                         </span>
                                     </div>
                                 </div>
@@ -325,7 +327,7 @@ const PriceCompare = () => {
                                                     <div>
                                                         {headToHeadGroups.length > 0 && (
                                                             <p className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-3">
-                                                                Other Matches
+                                                                {t('compareOtherMatches')}
                                                             </p>
                                                         )}
                                                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -335,7 +337,7 @@ const PriceCompare = () => {
                                                                     <div key={i} className={`flex flex-col p-3 rounded-2xl border ${isBest ? 'bg-[var(--brand-primary-light)] border-[var(--brand-primary)]/20 shadow-sm' : 'bg-[var(--surface-0)] border-[var(--glass-border)]'} transition-colors`}>
                                                                         <div className="flex items-center justify-between mb-2">
                                                                             <div className="flex items-center gap-2 min-w-0">
-                                                                                {isBest && <span className="bg-[#007AFF] text-white text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-tighter">Best Price</span>}
+                                                                                {isBest && <span className="bg-[#007AFF] text-white text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-tighter">{t('compareBestPrice')}</span>}
                                                                                 <span className={`text-sm font-bold truncate ${isBest ? 'text-[#007AFF]' : 'text-[#112244]'}`}>
                                                                                     {deal.retailer}
                                                                                 </span>
@@ -386,8 +388,8 @@ const PriceCompare = () => {
                                         );
                                     })() : (
                                         <div className="text-center py-6 px-4 bg-[var(--surface-0)] rounded-2xl border border-dashed border-[var(--glass-border)]">
-                                            <p className="text-sm font-bold text-[var(--text-muted)] mb-1">No matches in current flyers</p>
-                                            <p className="text-xs text-[var(--text-muted)]">Try checking back next Thursday when new flyers are released.</p>
+                                            <p className="text-sm font-bold text-[var(--text-muted)] mb-1">{t('compareNoFlyerMatches')}</p>
+                                            <p className="text-xs text-[var(--text-muted)]">{t('compareNoFlyerMatchesHint')}</p>
                                         </div>
                                     )}
                                 </div>

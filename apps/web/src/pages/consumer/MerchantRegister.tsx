@@ -95,9 +95,9 @@ const MerchantRegister: React.FC = () => {
     };
 
     const steps = [
-        { id: 1, name: 'Account', icon: '👤' },
-        { id: 2, name: 'Business', icon: '🏪' },
-        { id: 3, name: 'Location', icon: '📍' }
+        { id: 1, name: t('registerStepAccount'), icon: '👤' },
+        { id: 2, name: t('registerStepBusiness'), icon: '🏪' },
+        { id: 3, name: t('registerStepLocation'), icon: '📍' }
     ];
 
     return (
@@ -159,7 +159,7 @@ const MerchantRegister: React.FC = () => {
                         <div className="mb-6 p-6 rounded-2xl bg-amber-50 border border-amber-200 text-amber-800 animate-fade-in shadow-sm">
                             <div className="flex items-center gap-3 mb-2">
                                 <span className="text-2xl">🤝</span>
-                                <h3 className="font-bold text-lg">Partner Intake on Hold</h3>
+                                <h3 className="font-bold text-lg">{t('registerPartnerIntakeOnHold')}</h3>
                             </div>
                             <p className="text-sm opacity-90">
                                 We are currently not accepting new partner registrations as we scale our current merchants. Please contact our business relations team at partners@spendigo.ca to be added to the waitlist.
@@ -179,7 +179,7 @@ const MerchantRegister: React.FC = () => {
                             <div className="animate-fade-in space-y-4">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="space-y-1.5">
-                                        <label className="text-sm font-bold text-[var(--text-main)] ml-1">Full Name</label>
+                                        <label className="text-sm font-bold text-[var(--text-main)] ml-1">{t('fullName')}</label>
                                         <input
                                             type="text"
                                             placeholder="First & Last Name"
@@ -190,7 +190,7 @@ const MerchantRegister: React.FC = () => {
                                         />
                                     </div>
                                     <div className="space-y-1.5">
-                                        <label className="text-sm font-bold text-[var(--text-main)] ml-1">Phone Number</label>
+                                        <label className="text-sm font-bold text-[var(--text-main)] ml-1">{t('phoneNumber')}</label>
                                         <input
                                             type="tel"
                                             placeholder="+1 (555) 000-0000"
@@ -202,7 +202,7 @@ const MerchantRegister: React.FC = () => {
                                     </div>
                                 </div>
                                 <div className="space-y-1.5">
-                                    <label className="text-sm font-bold text-[var(--text-main)] ml-1">Email Address</label>
+                                    <label className="text-sm font-bold text-[var(--text-main)] ml-1">{t('authEmailAddress')}</label>
                                     <input
                                         type="email"
                                         placeholder="business@example.com"
@@ -213,7 +213,7 @@ const MerchantRegister: React.FC = () => {
                                     />
                                 </div>
                                 <div className="space-y-1.5">
-                                    <label className="text-sm font-bold text-[var(--text-main)] ml-1">Create Password</label>
+                                    <label className="text-sm font-bold text-[var(--text-main)] ml-1">{t('registerCreatePassword')}</label>
                                     <input
                                         type="password"
                                         placeholder="Minimum 6 characters"
@@ -230,7 +230,7 @@ const MerchantRegister: React.FC = () => {
                         {step === 2 && (
                             <div className="animate-fade-in space-y-4">
                                 <div className="space-y-1.5">
-                                    <label className="text-sm font-bold text-[var(--text-main)] ml-1">Store Name</label>
+                                    <label className="text-sm font-bold text-[var(--text-main)] ml-1">{t('storeName')}</label>
                                     <input
                                         type="text"
                                         placeholder="e.g. FreshMart Queen St"
@@ -241,7 +241,7 @@ const MerchantRegister: React.FC = () => {
                                     />
                                 </div>
                                 <div className="space-y-1.5">
-                                    <label className="text-sm font-bold text-[var(--text-main)] ml-1">Business Number (BN)</label>
+                                    <label className="text-sm font-bold text-[var(--text-main)] ml-1">{t('businessRegNum')}</label>
                                     <input
                                         type="text"
                                         placeholder="12345 6789 RT0001"
@@ -253,7 +253,7 @@ const MerchantRegister: React.FC = () => {
                                     <p className="text-[11px] text-[var(--text-muted)] italic ml-1">Your 9-digit registration number prefix is required for verification.</p>
                                 </div>
                                 <div className="space-y-1.5">
-                                    <label className="text-sm font-bold text-[var(--text-main)] ml-1">Business Category</label>
+                                    <label className="text-sm font-bold text-[var(--text-main)] ml-1">{t('businessType')}</label>
                                     <select
                                         className="w-full p-3.5 rounded-xl bg-[var(--surface-1)] border border-[var(--glass-border)] focus:border-[var(--brand-primary)] outline-none transition-all focus:ring-4 focus:ring-[var(--brand-primary)]/5 appearance-none cursor-pointer"
                                         value={formData.businessType}
@@ -272,7 +272,7 @@ const MerchantRegister: React.FC = () => {
                         {step === 3 && (
                             <div className="animate-fade-in space-y-4">
                                 <div className="space-y-1.5">
-                                    <label className="text-sm font-bold text-[var(--text-main)] ml-1">Street Address</label>
+                                    <label className="text-sm font-bold text-[var(--text-main)] ml-1">{t('profileStreetAddress')}</label>
                                     <input
                                         type="text"
                                         placeholder="123 Smart St"
@@ -295,7 +295,7 @@ const MerchantRegister: React.FC = () => {
                                         />
                                     </div>
                                     <div className="space-y-1.5">
-                                        <label className="text-sm font-bold text-[var(--text-main)] ml-1">Province</label>
+                                        <label className="text-sm font-bold text-[var(--text-main)] ml-1">{t('registerProvince')}</label>
                                         <select
                                             className="w-full p-3.5 rounded-xl bg-[var(--surface-1)] border border-[var(--glass-border)] focus:border-[var(--brand-primary)] outline-none transition-all focus:ring-4 focus:ring-[var(--brand-primary)]/5"
                                             value={formData.province}
@@ -332,7 +332,7 @@ const MerchantRegister: React.FC = () => {
                                             onChange={e => setFormData({ ...formData, agreedToTerms: e.target.checked })}
                                         />
                                         <span className="text-xs text-[var(--text-muted)] leading-relaxed group-hover:text-[var(--text-main)] transition-colors">
-                                            I agree to the <Link to="/terms" className="text-[var(--brand-primary)] font-bold">Terms of Service</Link>, <Link to="/privacy" className="text-[var(--brand-primary)] font-bold">Privacy Policy</Link>, and the <Link to="/legal" className="text-[var(--brand-primary)] font-bold">Marketplace Facilitator Agreement</Link>.
+                                            {t('registerAgreeTerms')} <Link to="/terms" className="text-[var(--brand-primary)] font-bold">{t('registerTermsOfService')}</Link>, <Link to="/privacy" className="text-[var(--brand-primary)] font-bold">{t('registerPrivacyPolicy')}</Link>, {t('registerAnd')} <Link to="/legal" className="text-[var(--brand-primary)] font-bold">{t('registerMarketplaceAgreement')}</Link>.
                                         </span>
                                     </label>
                                 </div>

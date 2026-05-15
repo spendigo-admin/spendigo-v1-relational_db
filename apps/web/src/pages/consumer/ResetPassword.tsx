@@ -4,9 +4,11 @@ import { confirmPasswordReset, verifyPasswordResetCode } from 'firebase/auth';
 import { auth } from '../../lib/firebase';
 import '../../styles/design-system.css';
 import SEO from '../../components/SEO';
+import { useTranslation } from 'react-i18next';
 
 const ResetPassword = () => {
     const navigate = useNavigate();
+    const { t } = useTranslation();
     const [searchParams] = useSearchParams();
     const oobCode = searchParams.get('oobCode');
     const mode = searchParams.get('mode'); // Firebase adds mode=resetPassword
@@ -66,7 +68,7 @@ const ResetPassword = () => {
     };
 
     if (verifying) {
-        return <div className="min-h-screen flex items-center justify-center">Verifying link...</div>;
+        return <div className="min-h-screen flex items-center justify-center">{t('authVerifyingLink')}</div>;
     }
 
     return (
@@ -81,8 +83,8 @@ const ResetPassword = () => {
                     <Link to="/" className="inline-block text-4xl font-black tracking-tighter mb-4 gradient-text">
                         spendigo
                     </Link>
-                    <h2 className="text-2xl font-bold text-[var(--text-main)]">Set New Password</h2>
-                    {email && <p className="text-sm text-[var(--text-muted)] mt-2">for {email}</p>}
+                    <h2 className="text-2xl font-bold text-[var(--text-main)]">{t('authSetNewPassword')}</h2>
+                    {email && <p className="text-sm text-[var(--text-muted)] mt-2">{t('authForEmail', { email })}</p>}
                 </div>
 
                 <div className="glass-card p-8 rounded-[var(--radius-lg)] shadow-xl border border-[var(--glass-border)] bg-[var(--surface-1)] backdrop-blur-md">
@@ -90,21 +92,21 @@ const ResetPassword = () => {
                         <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 text-red-600 rounded-[var(--radius-sm)] text-sm flex items-start gap-2">
                             <span className="mt-0.5">⚠️</span>
                             <div>
-                                <p className="font-bold">Error</p>
+                                <p className="font-bold">{t('authError')}</p>
                                 <p>{error}</p>
-                                <Link to="/forgot-password" className="underline mt-2 inline-block">Request new link</Link>
+                                <Link to="/forgot-password" className="underline mt-2 inline-block">{t('authRequestNewLink')}</Link>
                             </div>
                         </div>
                     ) : message ? (
                         <div className="mb-6 p-4 bg-green-500/10 border border-green-500/20 text-green-600 rounded-[var(--radius-sm)] text-center">
-                            <h3 className="text-xl font-bold mb-2">✅ Success!</h3>
+                            <h3 className="text-xl font-bold mb-2">✅ {t('authSuccess')}</h3>
                             <p>{message}</p>
-                            <Link to="/login" className="mt-4 inline-block px-6 py-2 bg-green-600 text-white rounded-lg font-bold">Go to Login</Link>
+                            <Link to="/login" className="mt-4 inline-block px-6 py-2 bg-green-600 text-white rounded-lg font-bold">{t('authGoToLogin')}</Link>
                         </div>
                     ) : (
                         <form onSubmit={handleSubmit} className="space-y-6">
                             <div>
-                                <label className="block text-sm font-medium mb-1.5 text-[var(--text-main)]">New Password</label>
+                                <label className="block text-sm font-medium mb-1.5 text-[var(--text-main)]">{t('resetPasswordNew')}</label>
                                 <input
                                     type="password"
                                     value={password}
@@ -115,7 +117,7 @@ const ResetPassword = () => {
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium mb-1.5 text-[var(--text-main)]">Confirm Password</label>
+                                <label className="block text-sm font-medium mb-1.5 text-[var(--text-main)]">{t('resetPasswordConfirm')}</label>
                                 <input
                                     type="password"
                                     value={confirmPassword}
@@ -134,7 +136,7 @@ const ResetPassword = () => {
                                     : 'bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)] hover:brightness-110 hover:scale-[1.02] active:scale-[0.98]'
                                     }`}
                             >
-                                {isSubmitting ? 'Resetting...' : 'Update Password'}
+                                {isSubmitting ? t('authResetting') : t('authUpdatePassword')}
                             </button>
                         </form>
                     )}

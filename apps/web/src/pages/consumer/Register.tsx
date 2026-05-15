@@ -99,8 +99,8 @@ const Register: React.FC = () => {
     };
 
     const steps = [
-        { id: 1, name: 'Account', icon: '👤' },
-        { id: 2, name: 'Delivery', icon: '📍' }
+        { id: 1, name: t('registerStepAccount'), icon: '👤' },
+        { id: 2, name: t('registerStepDelivery'), icon: '📍' }
     ];
 
     return (
@@ -153,7 +153,7 @@ const Register: React.FC = () => {
                         <div className="mb-6 p-6 rounded-2xl bg-amber-50 border border-amber-200 text-amber-800 animate-fade-in shadow-sm">
                             <div className="flex items-center gap-3 mb-2">
                                 <span className="text-2xl">🛑</span>
-                                <h3 className="font-bold text-lg">Registrations on Hold</h3>
+                                <h3 className="font-bold text-lg">{t('registerRegistrationsOnHold')}</h3>
                             </div>
                             <p className="text-sm opacity-90">
                                 We are currently not accepting new shopper registrations. Please check back later or contact our support team if you have any questions.
@@ -289,7 +289,7 @@ const Register: React.FC = () => {
                                         />
                                     </div>
                                     <div className="space-y-1.5">
-                                        <label className="text-sm font-bold text-[var(--text-main)] ml-1">Province</label>
+                                        <label className="text-sm font-bold text-[var(--text-main)] ml-1">{t('registerProvince')}</label>
                                         <select
                                             className="w-full p-3.5 rounded-xl bg-[var(--surface-1)] border border-[var(--glass-border)] focus:border-[var(--brand-primary)] outline-none transition-all focus:ring-4 focus:ring-[var(--brand-primary)]/5"
                                             value={formData.province}
@@ -326,7 +326,7 @@ const Register: React.FC = () => {
                                             onChange={e => setFormData({ ...formData, agreedToTerms: e.target.checked })}
                                         />
                                         <span className="text-xs text-[var(--text-muted)] leading-relaxed group-hover:text-[var(--text-main)] transition-colors">
-                                            I agree to the <Link to="/terms" className="text-[var(--brand-primary)] font-bold">Terms of Service</Link> and <Link to="/privacy" className="text-[var(--brand-primary)] font-bold">Privacy Policy</Link>.
+                                            {t('registerAgreeTerms')} <Link to="/terms" className="text-[var(--brand-primary)] font-bold">{t('registerTermsOfService')}</Link> {t('registerAnd')} <Link to="/privacy" className="text-[var(--brand-primary)] font-bold">{t('registerPrivacyPolicy')}</Link>.
                                         </span>
                                     </label>
                                 </div>
@@ -353,7 +353,7 @@ const Register: React.FC = () => {
                                     disabled={allowRegistrations === false}
                                     className={`flex-[2] py-4 px-6 rounded-2xl bg-[#112244] text-white font-black shadow-xl shadow-blue-500/10 transition-all flex items-center justify-center gap-2 uppercase tracking-widest text-xs ${allowRegistrations === false ? 'opacity-50 cursor-not-allowed grayscale' : 'hover:bg-black'}`}
                                 >
-                                    Continue →
+                                    {t('registerContinue')}
                                 </button>
                             ) : (
                                 <button
@@ -364,7 +364,7 @@ const Register: React.FC = () => {
                                     {isLoading ? (
                                         <>
                                             <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                                            Processing...
+                                            {t('registerProcessing')}
                                         </>
                                     ) : (
                                         <>🚀 {t('createAccount')}</>
@@ -380,9 +380,9 @@ const Register: React.FC = () => {
                         {t('alreadyHaveAccount')} <Link to="/login" className="text-[var(--brand-primary)] font-bold hover:underline">{t('logIn')}</Link>
                     </p>
                     <div className="mt-4 pt-4 border-t border-[var(--glass-border)] w-full">
-                        <p className="text-xs text-[var(--text-muted)] mb-1">Are you a local business owner?</p>
+                        <p className="text-xs text-[var(--text-muted)] mb-1">{t('registerBusinessOwner')}</p>
                         <Link to="/partner" className="text-sm font-bold text-[var(--brand-primary)] hover:underline">
-                            Partner with Spendigo →
+                            {t('registerPartnerWithSpendigo')}
                         </Link>
                     </div>
                 </div>
@@ -390,9 +390,9 @@ const Register: React.FC = () => {
             
             {/* Trust Badges */}
             <div className="mt-12 flex flex-wrap justify-center gap-8 opacity-40 grayscale hover:grayscale-0 hover:opacity-100 transition-all duration-500">
-                <div className="flex items-center gap-2 text-sm font-bold">🛡️ Secure Data Encoding</div>
-                <div className="flex items-center gap-2 text-sm font-bold">🚚 Fast App Delivery</div>
-                <div className="flex items-center gap-2 text-sm font-bold">🇨🇦 Proudly Canadian</div>
+                <div className="flex items-center gap-2 text-sm font-bold">🛡️ {t('registerSecureData')}</div>
+                <div className="flex items-center gap-2 text-sm font-bold">🚚 {t('registerFastDelivery')}</div>
+                <div className="flex items-center gap-2 text-sm font-bold">🇨🇦 {t('registerProudlyCanadian')}</div>
             </div>
         </div>
     );

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useOrders } from '../../context/OrderContext';
 import { useAuth } from '../../context/AuthContext';
 import { usePushNotifications } from '../../hooks/usePushNotifications';
@@ -20,6 +21,7 @@ const Profile: React.FC = () => {
     const { user, logout } = useAuth();
     const location = useLocation();
     const navigate = useNavigate();
+    const { t } = useTranslation();
     const [activeTab, setActiveTab] = useState<'account' | 'orders' | 'wishlist' | 'settings' | 'support'>(
         (location.state as any)?.activeTab || 'account'
     );
@@ -275,20 +277,20 @@ const Profile: React.FC = () => {
             <div className="max-w-4xl mx-auto px-6 -mt-8 relative z-20">
                 <div className="bg-white rounded-3xl p-1 md:p-2 shadow-2xl border border-gray-100 flex gap-1">
                     {[
-                        { id: 'account', label: 'Profile', icon: '👤' },
-                        { id: 'orders', label: 'History', icon: '📦' },
-                        { id: 'wishlist', label: 'Wishlist', icon: '✨' },
-                        { id: 'settings', label: 'Preferences', icon: '⚙️' }
-                    ].map(t => (
+                        { id: 'account', label: t('profileTabAccount'), icon: '👤' },
+                        { id: 'orders', label: t('profileTabHistory'), icon: '📦' },
+                        { id: 'wishlist', label: t('profileTabWishlist'), icon: '✨' },
+                        { id: 'settings', label: t('profileTabPreferences'), icon: '⚙️' }
+                    ].map(tab => (
                         <button
-                            key={t.id}
-                            onClick={() => setActiveTab(t.id as any)}
-                            className={`flex-1 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all flex flex-col items-center gap-1 ${activeTab === t.id
+                            key={tab.id}
+                            onClick={() => setActiveTab(tab.id as any)}
+                            className={`flex-1 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all flex flex-col items-center gap-1 ${activeTab === tab.id
                                 ? 'bg-[var(--brand-navy)] text-white shadow-lg'
                                 : 'text-[var(--text-muted)] hover:bg-gray-50'}`}
                         >
-                            <span className="text-xl">{t.icon}</span>
-                            {t.label}
+                            <span className="text-xl">{tab.icon}</span>
+                            {tab.label}
                         </button>
                     ))}
                 </div>
@@ -300,10 +302,10 @@ const Profile: React.FC = () => {
                 {activeTab === 'account' && (
                     <div className="glass-panel-premium rounded-[2.5rem] p-6 md:p-10 animate-fade-in border border-[var(--glass-border)] bg-[var(--glass-bg)]">
                         <div className="flex items-center justify-between mb-8">
-                            <h2 className="text-xl font-black text-[var(--text-main)] tracking-tight italic">Account Overview</h2>
+                            <h2 className="text-xl font-black text-[var(--text-main)] tracking-tight italic">{t('profileAccountOverview')}</h2>
                             {!editingProfile && (
                                 <button onClick={() => setEditingProfile(true)} className="px-4 py-2 rounded-xl bg-blue-50 text-[#007AFF] text-[10px] font-black uppercase tracking-widest hover:bg-[#007AFF] hover:text-white transition-all">
-                                    Edit Profile
+                                    {t('profileEditProfile')}
                                 </button>
                             )}
                         </div>
@@ -313,9 +315,9 @@ const Profile: React.FC = () => {
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-10">
                                 <div className="p-6 bg-gradient-to-br from-emerald-50 to-white rounded-3xl border-2 border-emerald-300 flex items-center justify-between group hover:scale-[1.02] transition-all">
                                     <div>
-                                        <p className="text-[10px] font-black text-emerald-600 uppercase tracking-[0.2em] mb-1">Lifetime Savings</p>
+                                        <p className="text-[10px] font-black text-emerald-600 uppercase tracking-[0.2em] mb-1">{t('profileLifetimeSavings')}</p>
                                         <p className="text-3xl font-black text-[#112244] tracking-tighter italic">${(orders.reduce((acc, o) => acc + (o.total * 0.12), 0)).toFixed(2)}</p>
-                                        <p className="text-[10px] font-bold text-emerald-600/60 mt-1 uppercase tracking-tight">SmartCart Protocol Optimized</p>
+                                        <p className="text-[10px] font-bold text-emerald-600/60 mt-1 uppercase tracking-tight">{t('profileSmartCartOptimized')}</p>
                                     </div>
                                     <div className="w-12 h-12 bg-white rounded-[1rem] flex items-center justify-center text-2xl shadow-sm border border-emerald-50 group-hover:rotate-12 transition-transform">
                                         💰
@@ -324,9 +326,9 @@ const Profile: React.FC = () => {
 
                                 <div className="p-6 bg-gradient-to-br from-indigo-50 to-white rounded-3xl border-2 border-indigo-300 flex items-center justify-between group hover:scale-[1.02] transition-all">
                                     <div>
-                                        <p className="text-[10px] font-black text-indigo-600 uppercase tracking-[0.2em] mb-1">Neighbourhood Impact</p>
+                                        <p className="text-[10px] font-black text-indigo-600 uppercase tracking-[0.2em] mb-1">{t('profileNeighbourhoodImpact')}</p>
                                         <p className="text-3xl font-black text-[#112244] tracking-tighter italic">${(orders.reduce((acc, o) => acc + o.total, 0)).toFixed(2)}</p>
-                                        <p className="text-[10px] font-bold text-indigo-600/60 mt-1 uppercase tracking-tight">Invested in Local Economy</p>
+                                        <p className="text-[10px] font-bold text-indigo-600/60 mt-1 uppercase tracking-tight">{t('profileInvestedLocal')}</p>
                                     </div>
                                     <div className="w-12 h-12 bg-white rounded-[1rem] flex items-center justify-center text-2xl shadow-sm border border-indigo-50 group-hover:-rotate-12 transition-transform">
                                         🤝
@@ -338,34 +340,34 @@ const Profile: React.FC = () => {
                         {editingProfile ? (
                             <div className="space-y-4">
                                 <div>
-                                    <label className="block text-sm text-[var(--text-muted)] mb-1">Full Name</label>
+                                    <label className="block text-sm text-[var(--text-muted)] mb-1">{t('fullName')}</label>
                                     <input type="text" value={formName} onChange={e => setFormName(e.target.value)} className="w-full px-4 py-3 border border-[var(--glass-border)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)] focus:border-transparent transition-colors" />
                                 </div>
                                 <div>
-                                    <label className="block text-sm text-[var(--text-muted)] mb-1">Email</label>
+                                    <label className="block text-sm text-[var(--text-muted)] mb-1">{t('email')}</label>
                                     <input type="email" value={formEmail} onChange={e => setFormEmail(e.target.value)} className="w-full px-4 py-3 border border-[var(--glass-border)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)] focus:border-transparent transition-colors" />
                                 </div>
                                 <div>
-                                    <label className="block text-sm text-[var(--text-muted)] mb-1">Phone</label>
+                                    <label className="block text-sm text-[var(--text-muted)] mb-1">{t('phoneNumber')}</label>
                                     <input type="tel" value={formPhone} onChange={e => setFormPhone(e.target.value)} className="w-full px-4 py-3 border border-[var(--glass-border)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)] focus:border-transparent transition-colors" />
                                 </div>
                                 <div className="flex gap-3 pt-4">
-                                    <button onClick={handleSaveProfile} className="btn-primary flex-1 py-3">Save Changes</button>
-                                    <button onClick={() => setEditingProfile(false)} className="flex-1 py-3 border border-[var(--glass-border)] rounded-full text-[var(--text-muted)] text-sm font-medium hover:bg-[var(--surface-2)] transition-colors">Cancel</button>
+                                    <button onClick={handleSaveProfile} className="btn-primary flex-1 py-3">{t('profileSaveChanges')}</button>
+                                    <button onClick={() => setEditingProfile(false)} className="flex-1 py-3 border border-[var(--glass-border)] rounded-full text-[var(--text-muted)] text-sm font-medium hover:bg-[var(--surface-2)] transition-colors">{t('profileCancel')}</button>
                                 </div>
                             </div>
                         ) : (
                             <div className="space-y-4">
                                 <div className="flex justify-between py-3 border-b border-[var(--glass-border)]">
-                                    <span className="text-[var(--text-muted)]">Name</span>
+                                    <span className="text-[var(--text-muted)]">{t('profileFieldName')}</span>
                                     <span className="font-medium text-[var(--text-main)] capitalize">{profile.name?.toLowerCase()}</span>
                                 </div>
                                 <div className="flex justify-between py-3 border-b border-[var(--glass-border)]">
-                                    <span className="text-[var(--text-muted)]">Email</span>
+                                    <span className="text-[var(--text-muted)]">{t('email')}</span>
                                     <span className="font-medium text-[var(--text-main)]">{profile.email}</span>
                                 </div>
                                 <div className="flex justify-between py-3">
-                                    <span className="text-[var(--text-muted)]">Phone</span>
+                                    <span className="text-[var(--text-muted)]">{t('phoneNumber')}</span>
                                     <span className="font-medium text-[var(--text-main)]">{profile.phone}</span>
                                 </div>
                             </div>
@@ -375,11 +377,11 @@ const Profile: React.FC = () => {
                         <div className="mt-10 pt-8 border-t border-[var(--glass-border)]">
                             <div className="flex items-center justify-between mb-6">
                                 <h3 className="text-lg font-bold text-[var(--text-main)] italic flex items-center gap-2">
-                                    <span>📍</span> Saved Addresses
+                                    <span>📍</span> {t('profileSavedAddresses')}
                                 </h3>
                                 {!showAddAddress && (
                                     <button onClick={() => setShowAddAddress(true)} className="text-[10px] font-black uppercase tracking-widest text-[#007AFF] bg-blue-50 px-4 py-2 rounded-xl hover:bg-[#007AFF] hover:text-white transition-all">
-                                        + Add New
+                                        {t('profileAddNew')}
                                     </button>
                                 )}
                             </div>
@@ -394,19 +396,19 @@ const Profile: React.FC = () => {
                                                         {addr.label.toLowerCase().includes('home') ? '🏠' : addr.label.toLowerCase().includes('work') ? '🏢' : '📍'}
                                                     </div>
                                                     <span className="text-xs font-black uppercase tracking-widest text-[#112244] italic">{addr.label}</span>
-                                                    {addr.isDefault && <span className="text-[8px] font-black uppercase tracking-widest text-[#007AFF] bg-blue-50 px-2 py-0.5 rounded">Default</span>}
+                                                    {addr.isDefault && <span className="text-[8px] font-black uppercase tracking-widest text-[#007AFF] bg-blue-50 px-2 py-0.5 rounded">{t('profileDefault')}</span>}
                                                     {addr.lat && addr.lng ? (
                                                         <span className="text-[8px] font-black uppercase tracking-widest text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100 flex items-center gap-1">
                                                             <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
-                                                            GPS Verified
+                                                            {t('profileGpsVerified')}
                                                         </span>
                                                     ) : (
-                                                        <button 
-                                                            onClick={() => handleVerifyAddress(addr.id)} 
+                                                        <button
+                                                            onClick={() => handleVerifyAddress(addr.id)}
                                                             disabled={isValidating}
                                                             className="text-[8px] font-black uppercase tracking-widest text-[#007AFF] bg-blue-50 px-2 py-0.5 rounded border border-blue-100 hover:bg-[#007AFF] hover:text-white transition-all disabled:opacity-50"
                                                         >
-                                                            {isValidating ? 'Verifying...' : 'Verify GPS'}
+                                                            {isValidating ? t('profileVerifying') : t('profileVerifyGps')}
                                                         </button>
                                                     )}
                                                 </div>
@@ -426,11 +428,11 @@ const Profile: React.FC = () => {
                                 {showAddAddress && (
                                     <div className="bg-[var(--surface-1)] rounded-2xl border border-[var(--glass-border)] p-5 space-y-4 animate-fade-in">
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <input type="text" placeholder="Label (e.g., Home)" value={newAddress.label} onChange={e => setNewAddress({ ...newAddress, label: e.target.value })} className="w-full px-4 py-3 bg-white border border-[var(--glass-border)] rounded-xl text-sm outline-none focus:border-[var(--brand-primary)]" />
-                                            <input type="text" placeholder="Street Address" value={newAddress.street} onChange={e => setNewAddress({ ...newAddress, street: e.target.value })} className="w-full px-4 py-3 bg-white border border-[var(--glass-border)] rounded-xl text-sm outline-none focus:border-[var(--brand-primary)]" />
+                                            <input type="text" placeholder={t('profileAddressLabelPlaceholder')} value={newAddress.label} onChange={e => setNewAddress({ ...newAddress, label: e.target.value })} className="w-full px-4 py-3 bg-white border border-[var(--glass-border)] rounded-xl text-sm outline-none focus:border-[var(--brand-primary)]" />
+                                            <input type="text" placeholder={t('profileStreetAddress')} value={newAddress.street} onChange={e => setNewAddress({ ...newAddress, street: e.target.value })} className="w-full px-4 py-3 bg-white border border-[var(--glass-border)] rounded-xl text-sm outline-none focus:border-[var(--brand-primary)]" />
                                         </div>
                                         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                                            <input type="text" placeholder="City" value={newAddress.city} onChange={e => setNewAddress({ ...newAddress, city: e.target.value })} className="w-full px-4 py-3 bg-white border border-[var(--glass-border)] rounded-xl text-sm outline-none focus:border-[var(--brand-primary)]" />
+                                            <input type="text" placeholder={t('city')} value={newAddress.city} onChange={e => setNewAddress({ ...newAddress, city: e.target.value })} className="w-full px-4 py-3 bg-white border border-[var(--glass-border)] rounded-xl text-sm outline-none focus:border-[var(--brand-primary)]" />
                                             <select
                                                 value={newAddress.province}
                                                 onChange={e => setNewAddress({ ...newAddress, province: e.target.value })}
@@ -441,21 +443,21 @@ const Profile: React.FC = () => {
                                                 <option value="BC">BC</option>
                                                 <option value="AB">Alberta</option>
                                             </select>
-                                            <input type="text" placeholder="Postal Code" value={newAddress.postalCode} onChange={e => setNewAddress({ ...newAddress, postalCode: e.target.value })} className="w-full px-4 py-3 bg-white border border-[var(--glass-border)] rounded-xl text-sm outline-none focus:border-[var(--brand-primary)]" />
+                                            <input type="text" placeholder={t('postalCode')} value={newAddress.postalCode} onChange={e => setNewAddress({ ...newAddress, postalCode: e.target.value })} className="w-full px-4 py-3 bg-white border border-[var(--glass-border)] rounded-xl text-sm outline-none focus:border-[var(--brand-primary)]" />
                                         </div>
 
                                         {validationError && <p className="text-[10px] text-red-500 font-bold uppercase px-1">⚠️ {validationError}</p>}
 
                                         <div className="flex gap-3">
-                                            <button onClick={handleAddAddress} disabled={isValidating} className="btn-primary flex-1 py-3 text-[10px]">{isValidating ? 'Verifying...' : 'Save Address'}</button>
-                                            <button onClick={() => { setShowAddAddress(false); setValidationError(''); }} className="flex-1 py-3 border border-[var(--glass-border)] rounded-full text-[10px] font-black uppercase">Cancel</button>
+                                            <button onClick={handleAddAddress} disabled={isValidating} className="btn-primary flex-1 py-3 text-[10px]">{isValidating ? t('profileVerifying') : t('profileSaveAddress')}</button>
+                                            <button onClick={() => { setShowAddAddress(false); setValidationError(''); }} className="flex-1 py-3 border border-[var(--glass-border)] rounded-full text-[10px] font-black uppercase">{t('profileCancel')}</button>
                                         </div>
                                     </div>
                                 )}
 
                                 {!showAddAddress && profile.addresses.length === 0 && (
                                     <div className="text-center py-10 border-2 border-dashed border-[var(--glass-border)] rounded-3xl">
-                                        <p className="text-sm text-[var(--text-muted)] font-medium">No addresses saved yet.</p>
+                                        <p className="text-sm text-[var(--text-muted)] font-medium">{t('profileNoAddresses')}</p>
                                     </div>
                                 )}
                             </div>
@@ -467,17 +469,17 @@ const Profile: React.FC = () => {
                 {activeTab === 'settings' && (
                     <div className="glass-panel-premium rounded-[2.5rem] p-6 md:p-10 animate-fade-in border border-[var(--glass-border)] bg-[var(--glass-bg)]">
                         <div className="mb-8">
-                            <h2 className="text-xl font-black text-[var(--text-main)] tracking-tight italic">Preferences & Settings</h2>
-                            <p className="text-sm text-[var(--text-muted)] mt-1">Manage your app experience and security.</p>
+                            <h2 className="text-xl font-black text-[var(--text-main)] tracking-tight italic">{t('profilePreferencesTitle')}</h2>
+                            <p className="text-sm text-[var(--text-muted)] mt-1">{t('profilePreferencesSubtitle')}</p>
                         </div>
 
                         {/* NOTIFICATIONS */}
                         <div className="pt-6">
                             <h3 className="text-lg font-bold text-[var(--text-main)] mb-2 flex items-center gap-2">
-                                <span>🔔</span> Push Notifications
+                                <span>🔔</span> {t('profilePushNotifications')}
                             </h3>
                             <p className="text-sm text-[var(--text-muted)] mb-4">
-                                Receive alerts for order updates and price drops on your devices.
+                                {t('profilePushNotificationsDesc')}
                             </p>
                             
                             <div className="flex flex-wrap gap-3">
@@ -485,7 +487,7 @@ const Profile: React.FC = () => {
                                     <>
                                         <div className="inline-flex items-center gap-2 px-4 py-2 bg-green-500/10 text-green-700 rounded-lg text-sm font-bold border border-green-500/30">
                                             <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-                                            Active on this device
+                                            {t('profileNotifActive')}
                                         </div>
                                         <button
                                             onClick={async () => {
@@ -501,7 +503,7 @@ const Profile: React.FC = () => {
                                             disabled={isRequestingNotifications}
                                             className="px-6 py-2.5 bg-[var(--surface-1)] text-red-600 font-bold text-sm rounded-xl border border-red-500/20 hover:bg-red-500/10 hover:border-red-500/30 transition-all disabled:opacity-50"
                                         >
-                                            {isRequestingNotifications ? 'Working...' : 'Disable Notifications'}
+                                            {isRequestingNotifications ? t('profileWorking') : t('profileDisableNotifications')}
                                         </button>
                                     </>
                                 ) : (
@@ -510,7 +512,7 @@ const Profile: React.FC = () => {
                                         disabled={isRequestingNotifications}
                                         className="px-6 py-2.5 bg-[var(--surface-2)] text-[var(--brand-primary)] font-bold text-sm rounded-xl border border-[var(--glass-border)] hover:bg-blue-100 hover:border-[var(--brand-primary)] transition-all disabled:opacity-50"
                                     >
-                                        {isRequestingNotifications ? 'Enabling...' : 'Enable Push Notifications'}
+                                        {isRequestingNotifications ? t('profileEnabling') : t('profileEnableNotifications')}
                                     </button>
                                 )}
                             </div>
@@ -526,8 +528,8 @@ const Profile: React.FC = () => {
                         <div className="mt-10 pt-6 border-t border-[var(--glass-border)]">
                             <div className="flex items-center justify-between mb-6">
                                 <div>
-                                    <h3 className="text-lg font-bold text-[var(--text-main)] mb-1">Alert Preferences</h3>
-                                    <p className="text-sm text-[var(--text-muted)]">Configure which real-time alerts you receive.</p>
+                                    <h3 className="text-lg font-bold text-[var(--text-main)] mb-1">{t('profileAlertPreferences')}</h3>
+                                    <p className="text-sm text-[var(--text-muted)]">{t('profileAlertPreferencesDesc')}</p>
                                 </div>
                                 <span className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold ${permissionStatus === 'granted' ? 'badge-best' : 'badge-info'}`}>
                                     <span className={`w-2 h-2 rounded-full bg-[var(--surface-1)] ${permissionStatus === 'granted' ? 'animate-pulse' : 'opacity-60'}`}></span>
@@ -537,10 +539,10 @@ const Profile: React.FC = () => {
 
                             <div className="space-y-3">
                                 {[
-                                    { id: 'priceDrop', icon: '📉', label: 'Price Alerts', desc: 'When items in your wishlist or cart drop in price.' },
-                                    { id: 'orderUpdates', icon: '📦', label: 'Order Tracking', desc: 'Real-time updates on status, cooking, and delivery.' },
-                                    { id: 'promotions', icon: '✨', label: 'Exclusives', desc: 'Personalized marketplace deals and local offers.' },
-                                    { id: 'newArrivals', icon: '🚚', label: 'Merchant Drops', desc: 'Notify me when my favorite shops add new inventory.' }
+                                    { id: 'priceDrop', icon: '📉', label: t('profilePrefPriceAlerts'), desc: t('profilePrefPriceAlertsDesc') },
+                                    { id: 'orderUpdates', icon: '📦', label: t('profilePrefOrderTracking'), desc: t('profilePrefOrderTrackingDesc') },
+                                    { id: 'promotions', icon: '✨', label: t('profilePrefExclusives'), desc: t('profilePrefExclusivesDesc') },
+                                    { id: 'newArrivals', icon: '🚚', label: t('profilePrefMerchantDrops'), desc: t('profilePrefMerchantDropsDesc') }
                                 ].map(item => (
                                     <div 
                                         key={item.id} 
@@ -571,8 +573,8 @@ const Profile: React.FC = () => {
                                             📍
                                         </div>
                                         <div>
-                                            <p className="font-bold text-[var(--text-main)] text-sm">Proximity Alerts</p>
-                                            <p className="text-xs text-[var(--text-muted)] mt-0.5">Radius from default address</p>
+                                            <p className="font-bold text-[var(--text-main)] text-sm">{t('profileProximityAlerts')}</p>
+                                            <p className="text-xs text-[var(--text-muted)] mt-0.5">{t('profileProximityAlertsDesc')}</p>
                                         </div>
                                     </div>
 
@@ -594,10 +596,10 @@ const Profile: React.FC = () => {
                         {/* APP APPEARANCE */}
                         <div className="mt-10 pt-6 border-t border-[var(--glass-border)]">
                             <h3 className="text-lg font-bold text-[var(--text-main)] mb-2 flex items-center gap-2">
-                                <span>🎨</span> App Appearance
+                                <span>🎨</span> {t('profileAppAppearance')}
                             </h3>
                             <p className="text-sm text-[var(--text-muted)] mb-4">
-                                Customize your Spendigo experience with different premium themes.
+                                {t('profileAppAppearanceDesc')}
                             </p>
                             <ThemeSwitcher variant="inline" />
                         </div>
@@ -605,16 +607,16 @@ const Profile: React.FC = () => {
                         {/* DANGER ZONE */}
                         <div className="mt-10 pt-6 border-t-2 border-red-500/30">
                             <h3 className="text-lg font-bold text-red-600 mb-2 flex items-center gap-2">
-                                <span>⚠️</span> Danger Zone
+                                <span>⚠️</span> {t('profileDangerZone')}
                             </h3>
                             <p className="text-sm text-[var(--text-muted)] mb-4">
-                                Permanently delete your account and all associated data. This action cannot be undone.
+                                {t('profileDangerZoneDesc')}
                             </p>
                             <button
                                 onClick={() => setShowDeleteModal(true)}
                                 className="px-6 py-3 bg-red-500/10 text-red-600 font-bold text-sm rounded-xl border-2 border-red-500/30 hover:bg-red-100 hover:border-red-400 transition-all"
                             >
-                                🗑️ Delete My Account
+                                🗑️ {t('profileDeleteAccount')}
                             </button>
                         </div>
                     </div>
@@ -626,10 +628,9 @@ const Profile: React.FC = () => {
                         <div className="bg-[var(--surface-1)] rounded-2xl shadow-2xl max-w-md w-full p-6 animate-fade-in" onClick={e => e.stopPropagation()}>
                             <div className="text-center mb-6">
                                 <div className="text-5xl mb-3">🚨</div>
-                                <h3 className="text-xl font-bold text-[var(--text-main)] mb-2">Delete Your Account?</h3>
+                                <h3 className="text-xl font-bold text-[var(--text-main)] mb-2">{t('profileDeleteModalTitle')}</h3>
                                 <p className="text-sm text-[var(--text-muted)] leading-relaxed">
-                                    This will <strong>permanently</strong> erase your profile, addresses, and login credentials.
-                                    Your order history will be anonymized for merchant accounting purposes.
+                                    {t('profileDeleteModalDesc')}
                                 </p>
                             </div>
 
@@ -641,7 +642,7 @@ const Profile: React.FC = () => {
                                     type="text"
                                     value={deleteConfirmText}
                                     onChange={e => setDeleteConfirmText(e.target.value)}
-                                    placeholder="Type DELETE"
+                                    placeholder={t('profileDeleteConfirmPlaceholder')}
                                     className="w-full px-4 py-3 border-2 border-red-500/30 rounded-xl font-mono text-center text-lg focus:border-red-500 focus:ring-4 focus:ring-red-100 outline-none transition-all"
                                     disabled={isDeleting}
                                     autoFocus
@@ -660,7 +661,7 @@ const Profile: React.FC = () => {
                                     disabled={isDeleting}
                                     className="flex-1 py-3 border border-[var(--glass-border)] rounded-xl font-medium text-[var(--text-muted)] hover:bg-[var(--surface-2)] transition-colors disabled:opacity-50"
                                 >
-                                    Cancel
+                                    {t('profileCancel')}
                                 </button>
                                 <button
                                     onClick={handleDeleteAccount}
@@ -670,9 +671,9 @@ const Profile: React.FC = () => {
                                     {isDeleting ? (
                                         <>
                                     <span className="w-4 h-4 border-2 border-[var(--glass-border)]/30 border-t-white rounded-full animate-spin"></span>
-                                            Deleting...
+                                            {t('profileDeleting')}
                                         </>
-                                    ) : 'Permanently Delete'}
+                                    ) : t('profilePermanentlyDelete')}
                                 </button>
                             </div>
                         </div>
@@ -685,11 +686,11 @@ const Profile: React.FC = () => {
                 {activeTab === 'orders' && (
                     <div className="space-y-8 animate-fade-in min-w-0 overflow-hidden pb-10">
                         <div className="flex items-center justify-between px-2 mb-2">
-                            <h2 className="text-xl font-black text-[var(--text-main)] italic tracking-tight">Order History</h2>
-                            <span className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] bg-[var(--glass-bg)] px-3 py-1 rounded-full border border-[var(--glass-border)]">{orders.length} Total</span>
+                            <h2 className="text-xl font-black text-[var(--text-main)] italic tracking-tight">{t('profileOrderHistory')}</h2>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] bg-[var(--glass-bg)] px-3 py-1 rounded-full border border-[var(--glass-border)]">{orders.length} {t('profileTotal')}</span>
                         </div>
                         {orders.length === 0 ? (
-                            <EmptyState icon="📦" heading="No orders yet" subtext="Your order history will appear here." action={<Link to="/" className="btn-primary">Start Shopping</Link>} />
+                            <EmptyState icon="📦" heading={t('profileNoOrders')} subtext={t('profileNoOrdersHint')} action={<Link to="/" className="btn-primary">{t('profileStartShopping')}</Link>} />
                         ) : (
                             orders.map(order => (
                                 <Link key={order.id} to={`/order/${order.id}`} className="block relative bg-white rounded-[1.5rem] md:rounded-[2.5rem] p-5 md:p-8 transition-all duration-500 border-2 border-gray-300 shadow-sm hover:shadow-[0_20px_50px_rgba(0,0,0,0.08)] hover:border-[var(--brand-primary)]/30 hover:translate-y-[-4px] group overflow-hidden">
@@ -706,7 +707,7 @@ const Profile: React.FC = () => {
                                                 </div>
                                             </div>
                                             <p className="text-xs font-bold text-[var(--text-muted)] mt-1">
-                                                Placed on {new Date(order.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                                {t('profilePlacedOn')} {new Date(order.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                                             </p>
                                         </div>
                                         <div className="md:text-right">
@@ -729,11 +730,11 @@ const Profile: React.FC = () => {
                                             <p className="text-sm font-black text-[var(--text-main)] truncate">{order.storeName}</p>
                                             <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-tight flex items-center gap-1.5">
                                                 <span className="w-1 h-1 rounded-full bg-emerald-500" />
-                                                Express Delivery Tracking Active
+                                                {t('profileExpressDelivery')}
                                             </p>
                                         </div>
                                         <div className="hidden md:flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-[var(--brand-primary)] opacity-0 group-hover:opacity-100 transition-all translate-x-4 group-hover:translate-x-0">
-                                            View Details
+                                            {t('profileViewDetails')}
                                             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M9 5l7 7-7 7" /></svg>
                                         </div>
                                     </div>
@@ -746,14 +747,14 @@ const Profile: React.FC = () => {
                                         >
                                             {downloadingReceiptId === order.id ? (
                                                 <span className="w-3 h-3 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin"></span>
-                                            ) : <span>📄 Receipt</span>}
+                                            ) : <span>📄 {t('profileReceipt')}</span>}
                                         </button>
                                         <button
                                             onClick={(e) => handleReorder(e, order.id)}
                                             disabled={reorderingId === order.id}
                                             className="px-6 py-2.5 bg-[#112244] text-white text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-blue-500/10 hover:scale-105 active:scale-95 disabled:opacity-50 transition-all"
                                         >
-                                            {reorderingId === order.id ? 'Working...' : 'Reorder'}
+                                            {reorderingId === order.id ? t('profileWorking') : t('profileReorder')}
                                         </button>
                                     </div>
                                 </Link>
@@ -766,31 +767,31 @@ const Profile: React.FC = () => {
                 {activeTab === 'wishlist' && (
                     <div className="space-y-10 animate-fade-in pb-10">
                         <div className="flex items-center justify-between mb-2 px-2">
-                            <h2 className="text-xl font-black text-[var(--text-main)] italic tracking-tight">Shopping Wishlist</h2>
+                            <h2 className="text-xl font-black text-[var(--text-main)] italic tracking-tight">{t('profileShoppingWishlist')}</h2>
                             {wishlistItems.length > 0 && (
-                                <button onClick={clearComparison} className="text-[10px] font-black uppercase tracking-widest text-red-500 hover:bg-red-500/10 px-3 py-1 rounded-full transition-all">Clear All</button>
+                                <button onClick={clearComparison} className="text-[10px] font-black uppercase tracking-widest text-red-500 hover:bg-red-500/10 px-3 py-1 rounded-full transition-all">{t('profileClearAll')}</button>
                             )}
                         </div>
-                        
+
                         {wishlistItems.length === 0 ? (
-                            <EmptyState icon="✨" heading="Wishlist is empty" subtext="Type a product name below to start building your list." />
+                            <EmptyState icon="✨" heading={t('profileWishlistEmpty')} subtext={t('profileWishlistEmptyHint')} />
                         ) : null}
 
                         <div className="flex flex-col sm:flex-row items-center gap-3 mb-8 p-2">
-                            <input 
+                            <input
                                 type="text"
-                                placeholder="Add an item (e.g. 'Milk')"
+                                placeholder={t('profileAddItemPlaceholder')}
                                 value={newItemName}
                                 onChange={e => setNewItemName(e.target.value)}
                                 onKeyDown={e => e.key === 'Enter' && handleAddWishlistItem()}
                                 className="w-full sm:flex-1 px-5 py-4 bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-[1.25rem] outline-none focus:border-[var(--brand-primary)] focus:ring-4 focus:ring-[var(--brand-primary)]/10 text-sm font-bold placeholder:text-[var(--text-muted)]/50 transition-all shadow-sm"
                             />
-                            <button 
+                            <button
                                 onClick={handleAddWishlistItem}
                                 disabled={!newItemName.trim()}
                                 className="w-full sm:w-auto px-8 py-4 bg-[var(--brand-primary)] text-white text-xs font-black uppercase tracking-widest rounded-[1.25rem] disabled:opacity-50 transition-all hover:scale-105 active:scale-95 shadow-lg shadow-[var(--brand-primary)]/20"
                             >
-                                Add Item
+                                {t('profileAddItem')}
                             </button>
                         </div>
                         
@@ -821,12 +822,12 @@ const Profile: React.FC = () => {
                                         </button>
                                     </div>
                                 ))}
-                                <button 
+                                <button
                                     onClick={() => navigate('/compare')}
                                     className="w-full py-5 mt-4 bg-gradient-to-r from-[var(--brand-primary)] to-indigo-600 text-white text-xs font-black uppercase tracking-[0.25em] rounded-[2rem] shadow-2xl shadow-[var(--brand-primary)]/30 hover:scale-[1.02] active:scale-[0.98] transition-all group"
                                 >
                                     <span className="flex items-center justify-center gap-3">
-                                        ⚖️ <span className="group-hover:tracking-[0.35em] transition-all">Compare Real-time Prices</span>
+                                        ⚖️ <span className="group-hover:tracking-[0.35em] transition-all">{t('profileCompareRealtime')}</span>
                                     </span>
                                 </button>
                             </div>
@@ -840,7 +841,7 @@ const Profile: React.FC = () => {
                         onClick={logout}
                         className="w-full py-5 bg-white border-2 border-[var(--surface-2)] text-[var(--brand-navy)] font-black text-sm uppercase tracking-[0.2em] rounded-2xl hover:border-[var(--brand-primary)] hover:text-[var(--brand-primary)] transition-all flex items-center justify-center gap-3"
                     >
-                        <span>🚪</span> Secure Sign Out
+                        <span>🚪</span> {t('profileSecureSignOut')}
                     </button>
                 </div>
             </div>

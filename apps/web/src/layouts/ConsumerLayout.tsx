@@ -91,17 +91,21 @@ const ConsumerLayout: React.FC = () => {
 
                     {/* DESKTOP NAV LINKS */}
                     <nav className="hidden lg:flex items-center gap-8">
-                        {['Stores', 'Flyers', 'Deals', 'Compare', 'SmartCart']
-                            .filter(item => item !== 'Compare' || flyerIngestionEnabled)
-                            .map(item => (
-                                <Link 
-                                    key={item} 
-                                    to={item === 'Stores' ? '/#local-merchants' : (item === 'Compare' ? '/compare' : `/${item.toLowerCase()}`)} 
-                                    className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] hover:text-[var(--brand-primary)] transition-colors"
-                                >
-                                    {item}
-                                </Link>
-                            ))}
+                        {[
+                            { label: t('storesWord'), to: '/#local-merchants' },
+                            { label: t('flyersNav'), to: '/flyers' },
+                            { label: t('dealsWord'), to: '/deals' },
+                            ...(flyerIngestionEnabled ? [{ label: t('compareNav'), to: '/compare' }] : []),
+                            { label: t('smartCartNav'), to: '/smartcart' },
+                        ].map(item => (
+                            <Link
+                                key={item.to}
+                                to={item.to}
+                                className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] hover:text-[var(--brand-primary)] transition-colors"
+                            >
+                                {item.label}
+                            </Link>
+                        ))}
                     </nav>
                 </div>
 
@@ -112,7 +116,7 @@ const ConsumerLayout: React.FC = () => {
                             type="text" 
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            placeholder="Search neighborhood inventory..."
+                            placeholder={t('searchPlaceholder')}
                             className="w-full bg-gray-50 border border-transparent rounded-2xl py-3 pl-12 pr-4 text-sm font-bold focus:bg-white focus:border-[#007AFF]/20 transition-all outline-none"
                         />
                         <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-gray-300">
@@ -159,14 +163,14 @@ const ConsumerLayout: React.FC = () => {
                     <svg className="w-6 h-6" fill={location.pathname === '/' ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
                     </svg>
-                    <span className="text-[10px] font-semibold tracking-tight">Home</span>
+                    <span className="text-[10px] font-semibold tracking-tight">{t('homeNav')}</span>
                 </NavLink>
 
                 <NavLink to="/search" className={({ isActive }) => `flex flex-col items-center justify-center flex-1 transition-colors duration-150 gap-1 ${isActive ? 'text-blue-600' : 'text-gray-400 hover:text-gray-900'}`}>
                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
-                    <span className="text-[10px] font-semibold tracking-tight">Search</span>
+                    <span className="text-[10px] font-semibold tracking-tight">{t('searchNav')}</span>
                 </NavLink>
 
                 {flyerIngestionEnabled && (
@@ -189,7 +193,7 @@ const ConsumerLayout: React.FC = () => {
                         </svg>
                         <span className="absolute -top-1.5 -right-1.5 text-[10px] animate-pulse">✨</span>
                     </div>
-                    <span className="text-[10px] font-semibold tracking-tight">SmartCart</span>
+                    <span className="text-[10px] font-semibold tracking-tight">{t('smartCartNav')}</span>
                     {itemCount > 0 && (
                         <span className="absolute top-2 right-1 w-4 h-4 bg-blue-600 text-white text-[9px] font-bold flex items-center justify-center rounded-full border-2 border-white">
                             {itemCount}
@@ -201,7 +205,7 @@ const ConsumerLayout: React.FC = () => {
                     <svg className="w-6 h-6" fill={location.pathname === '/profile' ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                     </svg>
-                    <span className="text-[10px] font-semibold tracking-tight">Profile</span>
+                    <span className="text-[10px] font-semibold tracking-tight">{t('profileNav')}</span>
                 </NavLink>
             </nav>
 
@@ -219,7 +223,7 @@ const ConsumerLayout: React.FC = () => {
                                 <span className="text-lg font-black text-[var(--brand-navy)] tracking-tighter italic">Spendigo</span>
                             </Link>
                             <span className="hidden md:block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest italic border-l border-gray-100 pl-4 opacity-50">
-                                Shop Local. Think AI.
+                                {t('footerTagline')}
                             </span>
                         </div>
  
@@ -243,7 +247,7 @@ const ConsumerLayout: React.FC = () => {
                         <div className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] flex items-center gap-2 opacity-50">
                             <span>Spendigo Inc. © 2026</span>
                             <span className="opacity-40">•</span>
-                            <span className="hidden sm:inline">Made with ♥ for local shops</span>
+                            <span className="hidden sm:inline">{t('footerMadeWith')}</span>
                         </div>
                         <div className="flex items-center gap-3">
                             <span className="text-xl flex items-center gap-1.5" title="Proudly Canadian">

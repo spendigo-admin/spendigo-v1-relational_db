@@ -125,7 +125,7 @@ const Careers: React.FC = () => {
                     <span className="inline-flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 rounded-full bg-white shadow-sm border border-gray-100 mb-6 md:mb-8 animate-fade-in">
                         <span className="flex h-2 w-2 rounded-full bg-[var(--brand-primary)] animate-ping" />
                         <span className="text-[10px] md:text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">
-                            We're Hiring!
+                            {t('careersWeAreHiring')}
                         </span>
                     </span>
                     <h1 className="text-3xl sm:text-4xl md:text-7xl font-black tracking-tight text-[var(--text-main)] mb-4 md:mb-6 leading-[1.15] md:leading-[1.1]">
@@ -135,17 +135,17 @@ const Careers: React.FC = () => {
                         </span>
                     </h1>
                     <p className="text-base md:text-xl text-[var(--text-muted)] max-w-2xl mx-auto mb-8 md:mb-10 leading-relaxed px-2">
-                        We're a team of dreamers, builders, and AI enthusiasts on a mission to make smart shopping accessible to everyone.
+                        {t('careersHeroDesc')}
                     </p>
                     <div className="flex flex-col sm:flex-row items-center justify-center gap-3 md:gap-4 px-4 sm:px-0">
-                        <button 
-                            onClick={() => document.getElementById('open-roles')?.scrollIntoView({ behavior: 'smooth' })} 
+                        <button
+                            onClick={() => document.getElementById('open-roles')?.scrollIntoView({ behavior: 'smooth' })}
                             className="w-full sm:w-auto px-8 md:px-10 py-3.5 md:py-4 bg-[var(--brand-primary)] text-white font-black rounded-2xl shadow-xl shadow-blue-500/20 hover:scale-[1.02] active:scale-[0.98] transition-all text-sm md:text-base text-center cursor-pointer"
                         >
-                            🔍 Explore Open Roles
+                            🔍 {t('careersExploreRoles')}
                         </button>
                         <Link to="/register" className="w-full sm:w-auto px-8 md:px-10 py-3.5 md:py-4 bg-white text-[var(--text-main)] font-black rounded-2xl border-2 border-[var(--glass-border)] hover:bg-[var(--surface-1)] transition-all text-sm md:text-base text-center">
-                            Try the App First
+                            {t('careersTryAppFirst')}
                         </Link>
                     </div>
                 </div>
@@ -155,7 +155,7 @@ const Careers: React.FC = () => {
             <section className="py-16 md:py-24 bg-white border-y border-[var(--glass-border)]">
                 <div className="container mx-auto max-w-6xl px-4">
                     <div className="text-center mb-12 md:mb-20">
-                        <h2 className="text-2xl md:text-4xl font-black text-[var(--text-main)] mb-4">Our Core Values</h2>
+                        <h2 className="text-2xl md:text-4xl font-black text-[var(--text-main)] mb-4">{t('careersOurCoreValues')}</h2>
                         <div className="w-16 md:w-20 h-1.5 bg-[var(--brand-primary)] mx-auto rounded-full" />
                     </div>
 
@@ -176,7 +176,7 @@ const Careers: React.FC = () => {
                 <div className="container mx-auto max-w-6xl px-4">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 md:gap-20 items-center">
                         <div className="order-2 lg:order-1">
-                            <h2 className="text-2xl md:text-4xl font-black text-[var(--text-main)] mb-8 md:mb-12">Why Join Spendigo?</h2>
+                            <h2 className="text-2xl md:text-4xl font-black text-[var(--text-main)] mb-8 md:mb-12">{t('careersWhyJoin')}</h2>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 md:gap-10">
                                 {benefits.map((benefit, idx) => (
                                     <div key={idx} className="flex gap-4 md:gap-6">
@@ -223,20 +223,20 @@ const Careers: React.FC = () => {
             <section id="open-roles" className="py-20 md:py-32 bg-[var(--surface-1)] border-t border-[var(--glass-border)] scroll-mt-20">
                 <div className="container mx-auto max-w-4xl px-4">
                     <div className="text-center mb-12 md:mb-20">
-                        <h2 className="text-3xl md:text-5xl font-black text-[var(--text-main)] mb-4 tracking-tight">Open Opportunities</h2>
+                        <h2 className="text-3xl md:text-5xl font-black text-[var(--text-main)] mb-4 tracking-tight">{t('careersOpenOpportunities')}</h2>
                         <p className="text-sm md:text-base text-[var(--text-muted)]">
-                            {careersEnabled 
-                                ? 'Join us in reshaping the digital shopping experience.' 
-                                : 'We currently have no open vacancies at this time.'}
+                            {careersEnabled
+                                ? t('careersJoinReshaping')
+                                : t('careersNoVacanciesNow')}
                         </p>
                     </div>
 
                     {!careersEnabled || (dynamicJobs.length === 0 && !loading) ? (
                         <div className="text-center py-16 md:py-20 bg-white rounded-[2rem] border-2 border-dashed border-[var(--glass-border)]">
                             <div className="text-5xl md:text-6xl mb-6">✨</div>
-                            <h3 className="text-xl md:text-2xl font-bold text-[var(--text-main)] mb-3">No Open Vacancies</h3>
+                            <h3 className="text-xl md:text-2xl font-bold text-[var(--text-main)] mb-3">{t('careersNoOpenVacancies')}</h3>
                             <p className="text-sm md:text-base text-[var(--text-muted)] max-w-sm mx-auto px-4">
-                                We're not actively hiring for any roles right now, but we're always looking for talented dreamers to join our talent pool.
+                                {t('careersNotHiringDesc')}
                             </p>
                         </div>
                     ) : loading ? (
@@ -271,7 +271,7 @@ const Careers: React.FC = () => {
                                             </div>
                                             
                                             <div className="pt-6 border-t border-gray-50">
-                                                <p className="text-[10px] md:text-xs font-black text-[var(--text-muted)] uppercase tracking-widest mb-4">Core Requirements:</p>
+                                                <p className="text-[10px] md:text-xs font-black text-[var(--text-muted)] uppercase tracking-widest mb-4">{t('careersCoreRequirements')}</p>
                                                 <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3">
                                                     {(job.requirements || []).map((req: string, i: number) => (
                                                         <li key={i} className="text-xs md:text-sm text-[var(--text-muted)] flex items-start gap-3 leading-relaxed">
@@ -292,16 +292,16 @@ const Careers: React.FC = () => {
                     <div className="mt-12 md:mt-20 text-center bg-white rounded-[2rem] md:rounded-[3rem] p-8 md:p-16 border-2 border-dashed border-[var(--brand-primary)]/20 shadow-sm relative overflow-hidden">
                         <div className="absolute top-0 left-0 w-32 h-32 bg-[var(--brand-primary)]/5 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
                         <div className="w-16 h-16 md:w-20 md:h-20 bg-[var(--brand-primary)]/10 rounded-2xl flex items-center justify-center text-3xl md:text-4xl mx-auto mb-6 md:mb-8 transform -rotate-6">🤝</div>
-                        <h3 className="text-2xl md:text-3xl font-black text-[var(--text-main)] mb-3 md:mb-4">Don't see your fit?</h3>
+                        <h3 className="text-2xl md:text-3xl font-black text-[var(--text-main)] mb-3 md:mb-4">{t('careersDontSeeYourFit')}</h3>
                         <p className="text-sm md:text-base text-[var(--text-muted)] mb-8 md:mb-12 max-w-lg mx-auto leading-relaxed">
-                            We're always growing! If you're a designer, engineer, or marketer who believes in our mission, join our talent pool.
+                            {t('careersDontSeeYourFitDesc')}
                         </p>
                         <div className="flex flex-col sm:flex-row justify-center gap-4 px-4">
                             <button className="w-full sm:w-auto px-10 py-4 bg-[var(--brand-primary)] text-white font-black rounded-2xl shadow-xl shadow-[var(--brand-primary)]/20 hover:scale-[1.05] transition-all">
-                                Join Talent Pool
+                                {t('careersJoinTalentPool')}
                             </button>
                             <button className="w-full sm:w-auto px-10 py-4 bg-white text-[var(--text-main)] font-bold rounded-2xl border-2 border-[var(--glass-border)] hover:bg-gray-50 transition-colors">
-                                Refer a Friend
+                                {t('careersReferFriend')}
                             </button>
                         </div>
                     </div>
@@ -313,12 +313,12 @@ const Careers: React.FC = () => {
                 <div className="container mx-auto max-w-4xl">
                     <div className="bg-[#112244] rounded-[2.5rem] md:rounded-[4rem] p-10 md:p-20 text-center text-white shadow-2xl relative overflow-hidden">
                         <div className="relative z-10">
-                            <h2 className="text-3xl md:text-5xl font-black mb-6 md:mb-8 text-white leading-tight">Ready to make an impact?</h2>
+                            <h2 className="text-3xl md:text-5xl font-black mb-6 md:mb-8 text-white leading-tight">{t('careersReadyToMakeImpact')}</h2>
                             <p className="text-base md:text-lg mb-8 md:mb-12 max-w-xl mx-auto text-white/90">
-                                The future of shopping is being built right here at Spendigo. We'd love for you to be a part of it.
+                                {t('careersReadyToMakeImpactDesc')}
                             </p>
                             <Link to="/register" className="inline-block px-10 py-4 md:px-12 md:py-5 bg-white text-[var(--brand-primary)] font-black rounded-2xl md:rounded-[2rem] shadow-xl hover:scale-105 transition-transform text-base md:text-lg">
-                                Explore Our Platform
+                                {t('careersExplorePlatform')}
                             </Link>
                         </div>
                         <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
@@ -342,22 +342,22 @@ const Careers: React.FC = () => {
                             {submissionStatus === 'success' ? (
                                 <div className="text-center py-12 md:py-16">
                                     <div className="text-6xl md:text-8xl mb-6 md:mb-8 animate-bounce">🎉</div>
-                                    <h2 className="text-3xl md:text-4xl font-black text-[var(--text-main)] mb-4 md:mb-6">Application Sent!</h2>
+                                    <h2 className="text-3xl md:text-4xl font-black text-[var(--text-main)] mb-4 md:mb-6">{t('careersApplicationSent')}</h2>
                                     <p className="text-base md:text-lg text-[var(--text-muted)] mb-8 md:mb-12 leading-relaxed max-w-md mx-auto">
-                                        Thank you, {selectedJob?.title} candidate. Your application has been successfully sent to **support@spendigo.ca**. We'll get back to you soon.
+                                        {t('careersApplicationSentDesc', { title: selectedJob?.title })}
                                     </p>
-                                    <button 
+                                    <button
                                         onClick={() => setIsApplying(false)}
                                         className="px-12 py-4 bg-[var(--brand-primary)] text-white font-black rounded-2xl shadow-xl hover:scale-105 transition-all"
                                     >
-                                        Back to Careers
+                                        {t('careersBackToCareers')}
                                     </button>
                                 </div>
                             ) : (
                                 selectedJob && (
                                     <>
                                         <div className="mb-8 md:mb-12">
-                                            <h2 className="text-2xl md:text-4xl font-black text-[var(--text-main)] mb-2 md:mb-4">Apply for {selectedJob.title}</h2>
+                                            <h2 className="text-2xl md:text-4xl font-black text-[var(--text-main)] mb-2 md:mb-4">{t('careersApplyFor', { title: selectedJob.title })}</h2>
                                             <div className="flex flex-wrap gap-3">
                                                 <span className="px-3 py-1 rounded-full bg-[var(--brand-primary)]/10 text-[var(--brand-primary)] text-[10px] md:text-xs font-bold uppercase tracking-widest">📍 {selectedJob.location}</span>
                                                 <span className="px-3 py-1 rounded-full bg-gray-100 text-gray-500 text-[10px] md:text-xs font-bold uppercase tracking-widest">🕒 {selectedJob.type}</span>
@@ -370,34 +370,34 @@ const Careers: React.FC = () => {
                                     }} className="space-y-6 md:space-y-8">
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                             <div className="space-y-2">
-                                                <label className="text-[10px] md:text-xs font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">Full Name</label>
+                                                <label className="text-[10px] md:text-xs font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">{t('fullName')}</label>
                                                 <input required name="name" type="text" className="w-full h-12 md:h-14 px-5 bg-gray-50 border border-gray-100 rounded-2xl text-sm focus:bg-white focus:border-[var(--brand-primary)] focus:ring-4 focus:ring-[var(--brand-primary)]/5 outline-none transition-all" placeholder="John Doe" />
                                             </div>
                                             <div className="space-y-2">
-                                                <label className="text-[10px] md:text-xs font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">Email Address</label>
+                                                <label className="text-[10px] md:text-xs font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">{t('authEmailAddress')}</label>
                                                 <input required name="email" type="email" className="w-full h-12 md:h-14 px-5 bg-gray-50 border border-gray-100 rounded-2xl text-sm focus:bg-white focus:border-[var(--brand-primary)] focus:ring-4 focus:ring-[var(--brand-primary)]/5 outline-none transition-all" placeholder="john@example.com" />
                                             </div>
                                         </div>
 
                                         <div className="space-y-2">
-                                            <label className="text-[10px] md:text-xs font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">Phone Number</label>
+                                            <label className="text-[10px] md:text-xs font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">{t('phoneNumber')}</label>
                                             <input required name="phone" type="tel" className="w-full h-12 md:h-14 px-5 bg-gray-50 border border-gray-100 rounded-2xl text-sm focus:bg-white focus:border-[var(--brand-primary)] focus:ring-4 focus:ring-[var(--brand-primary)]/5 outline-none transition-all" placeholder="+1 (555) 000-0000" />
                                         </div>
 
                                         <div className="space-y-2">
-                                            <label className="text-[10px] md:text-xs font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">Resume (PDF only)</label>
+                                            <label className="text-[10px] md:text-xs font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">{t('careersResumePdf')}</label>
                                             <div className="relative group">
                                                 <input required name="resume" type="file" accept=".pdf" className="w-full h-24 md:h-32 opacity-0 absolute inset-0 z-10 cursor-pointer" />
                                                 <div className="w-full h-24 md:h-32 border-2 border-dashed border-gray-200 rounded-[1.5rem] flex flex-col items-center justify-center gap-2 group-hover:border-[var(--brand-primary)] group-hover:bg-[var(--brand-primary)]/[0.02] transition-all bg-gray-50">
                                                     <span className="text-3xl md:text-4xl transform group-hover:scale-110 transition-transform">📄</span>
-                                                    <span className="text-xs md:text-sm font-bold text-[var(--text-muted)]">Click or drag your resume here</span>
+                                                    <span className="text-xs md:text-sm font-bold text-[var(--text-muted)]">{t('careersClickOrDrag')}</span>
                                                 </div>
                                             </div>
                                         </div>
 
                                         <div className="space-y-2">
-                                            <label className="text-[10px] md:text-xs font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">Message (Optional)</label>
-                                            <textarea name="message" rows={3} className="w-full p-5 bg-gray-50 border border-gray-100 rounded-2xl text-sm focus:bg-white focus:border-[var(--brand-primary)] focus:ring-4 focus:ring-[var(--brand-primary)]/5 outline-none resize-none transition-all" placeholder="Tell us why you're a great fit..."></textarea>
+                                            <label className="text-[10px] md:text-xs font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">{t('careersMessageOptional')}</label>
+                                            <textarea name="message" rows={3} className="w-full p-5 bg-gray-50 border border-gray-100 rounded-2xl text-sm focus:bg-white focus:border-[var(--brand-primary)] focus:ring-4 focus:ring-[var(--brand-primary)]/5 outline-none resize-none transition-all" placeholder={t('careersMessagePlaceholder')}></textarea>
                                         </div>
 
                                         {submissionStatus === 'error' && (
@@ -414,10 +414,10 @@ const Careers: React.FC = () => {
                                                 {isSubmitting ? (
                                                     <div className="flex items-center justify-center gap-3">
                                                         <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                                                        <span>Uploading... {Math.round(uploadProgress)}%</span>
+                                                        <span>{t('careersUploading', { progress: Math.round(uploadProgress) })}</span>
                                                     </div>
                                                 ) : (
-                                                    'Submit Application'
+                                                    t('careersSubmitApplication')
                                                 )}
                                                 {isSubmitting && (
                                                     <div 

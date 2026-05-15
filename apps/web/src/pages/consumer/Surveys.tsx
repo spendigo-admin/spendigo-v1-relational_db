@@ -4,6 +4,7 @@ import { db } from '../../lib/firebase';
 import { useAuth } from '../../context/AuthContext';
 import { useNotifications } from '../../context/NotificationContext';
 import SEO from '../../components/SEO';
+import { useTranslation } from 'react-i18next';
 
 interface SurveyQuestion {
     id: string;
@@ -25,6 +26,7 @@ interface Survey {
 const ConsumerSurveys: React.FC = () => {
     const { user } = useAuth();
     const { addNotification } = useNotifications();
+    const { t } = useTranslation();
     const [surveys, setSurveys] = useState<Survey[]>([]);
     const [loading, setLoading] = useState(true);
     const [responses, setResponses] = useState<Record<string, Record<string, any>>>({}); // surveyId -> { questId -> answer }
@@ -114,14 +116,14 @@ const ConsumerSurveys: React.FC = () => {
         }
     };
 
-    if (loading) return <div className="p-8 text-center text-gray-400">Loading surveys...</div>;
+    if (loading) return <div className="p-8 text-center text-gray-400">{t('surveysLoading')}</div>;
 
     if (surveys.length === 0) {
         return (
             <div className="min-h-[50vh] flex flex-col items-center justify-center p-6 text-center">
                 <span className="text-6xl mb-4">📭</span>
-                <h2 className="text-2xl font-bold text-[var(--text-main)]">No Active Surveys</h2>
-                <p className="text-[var(--text-muted)]">Check back later for new polls and feedback opportunities!</p>
+                <h2 className="text-2xl font-bold text-[var(--text-main)]">{t('surveysNoActiveSurveys')}</h2>
+                <p className="text-[var(--text-muted)]">{t('surveysNoActiveSurveysHint')}</p>
             </div>
         );
     }
@@ -131,9 +133,9 @@ const ConsumerSurveys: React.FC = () => {
             <SEO title="Community Surveys" description="Share your feedback and help improve the Spendigo platform." path="/surveys" noIndex />
             <div className="text-center mb-8">
                 <h1 className="text-3xl font-bold bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)] bg-clip-text text-transparent">
-                    Community Board
+                    {t('surveysCommunityBoard')}
                 </h1>
-                <p className="text-[var(--text-muted)]">Help us improve Spendigo with your feedback.</p>
+                <p className="text-[var(--text-muted)]">{t('surveysHelpImprove')}</p>
             </div>
 
             <div className="space-y-8">
@@ -146,7 +148,7 @@ const ConsumerSurveys: React.FC = () => {
                                     <div>
                                         <h2 className="text-xl font-bold text-[var(--text-main)] flex items-center gap-2">
                                             {survey.title}
-                                            {isCompleted && <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Completed</span>}
+                                            {isCompleted && <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">{t('surveysCompleted')}</span>}
                                         </h2>
                                         {survey.description && <p className="text-sm text-[var(--text-muted)] mt-1">{survey.description}</p>}
                                     </div>
@@ -184,15 +186,15 @@ const ConsumerSurveys: React.FC = () => {
                                             onClick={() => handleSubmit(survey)}
                                             className="btn-primary px-8 py-3 rounded-full text-lg shadow-lg shadow-blue-500/20"
                                         >
-                                            Submit Feedback
+                                            {t('surveysSubmitFeedback')}
                                         </button>
                                     </div>
                                 </div>
                             ) : (
                                 <div className="p-8 text-center bg-green-50">
                                     <span className="text-4xl mb-2 block">🎉</span>
-                                    <h3 className="font-bold text-green-800">Thanks for participating!</h3>
-                                    <p className="text-sm text-green-700 mt-1">Your response has been recorded.</p>
+                                    <h3 className="font-bold text-green-800">{t('surveysParticipationThanks')}</h3>
+                                    <p className="text-sm text-green-700 mt-1">{t('surveysResponseRecorded')}</p>
                                 </div>
                             )}
                         </div>

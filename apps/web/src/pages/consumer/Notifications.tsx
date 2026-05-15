@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import '../../styles/design-system.css';
 import { useNotifications, AppNotification } from '../../context/NotificationContext';
 import { usePushNotifications } from '../../hooks/usePushNotifications';
@@ -18,6 +19,7 @@ const getRelativeTime = (timestamp: string): string => {
 
 const Notifications: React.FC = () => {
     const navigate = useNavigate();
+    const { t } = useTranslation();
     const { user } = useAuth();
     const { notifications, unreadCount, markAsRead, markAllRead, preferences, togglePreference } = useNotifications();
     const { permissionStatus, requestPermission } = usePushNotifications(user?.id);
@@ -128,19 +130,19 @@ const Notifications: React.FC = () => {
             <div className="bg-white/80 backdrop-blur-md border-b border-[var(--glass-border)] p-5 sticky top-14 z-30 pt-safe">
                 <div className="max-w-xl mx-auto flex items-center justify-between">
                     <div>
-                        <h1 className="text-2xl font-black text-[var(--text-main)] tracking-tight">Inbox</h1>
+                        <h1 className="text-2xl font-black text-[var(--text-main)] tracking-tight">{t('notifInbox')}</h1>
                         {unreadCount > 0 && (
                             <div className="inline-flex items-center gap-1.5 mt-0.5">
                                 <span className="flex h-2 w-2 rounded-full bg-[var(--brand-primary)]"></span>
-                                <p className="text-xs font-bold text-[var(--brand-primary)] uppercase tracking-wider">{unreadCount} New Messages</p>
+                                <p className="text-xs font-bold text-[var(--brand-primary)] uppercase tracking-wider">{unreadCount} {t('notifNewMessages')}</p>
                             </div>
                         )}
                     </div>
                     <div className="flex gap-2">
                         {[
-                            { id: 'all', label: 'All', icon: '📬', count: categoryCounts.all },
-                            { id: 'orders', label: 'Orders', icon: '📦', count: categoryCounts.orders },
-                            { id: 'deals', label: 'Deals & Promos', icon: '🏷️', count: categoryCounts.deals }
+                            { id: 'all', label: t('notifFilterAll'), icon: '📬', count: categoryCounts.all },
+                            { id: 'orders', label: t('notifFilterOrders'), icon: '📦', count: categoryCounts.orders },
+                            { id: 'deals', label: t('notifFilterDeals'), icon: '🏷️', count: categoryCounts.deals }
                         ].map(f => (
                             <button
                                 key={f.id}
@@ -166,16 +168,16 @@ const Notifications: React.FC = () => {
                         <div className="w-24 h-24 bg-white rounded-3xl flex items-center justify-center text-4xl mx-auto mb-6 shadow-xl border border-[var(--glass-border)]">
                             📭
                         </div>
-                        <h2 className="text-xl font-bold text-[var(--text-main)]">All Caught Up!</h2>
+                        <h2 className="text-xl font-bold text-[var(--text-main)]">{t('notifAllCaughtUp')}</h2>
                         <p className="max-w-[240px] mx-auto text-sm">
-                            {filter === 'orders' ? 'No order updates yet.' : filter === 'deals' ? 'No deals or promotions yet.' : 'Your inbox is empty. We\'ll notify you when price drops or deals arrive.'}
+                            {filter === 'orders' ? t('notifNoOrderUpdates') : filter === 'deals' ? t('notifNoDeals') : t('notifInboxEmpty')}
                         </p>
                     </div>
                 ) : (
                     <>
                         {sections.today.length > 0 && (
                             <div className="space-y-4">
-                                <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--text-muted)] ml-1">Today</h3>
+                            <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--text-muted)] ml-1">{t('notifToday')}</h3>
                                 <div className="space-y-3">
                                     {sections.today.map(renderNotification)}
                                 </div>
@@ -184,7 +186,7 @@ const Notifications: React.FC = () => {
 
                         {sections.earlier.length > 0 && (
                             <div className="space-y-4">
-                                <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--text-muted)] ml-1">Earlier</h3>
+                            <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--text-muted)] ml-1">{t('notifEarlier')}</h3>
                                 <div className="space-y-3">
                                     {sections.earlier.map(renderNotification)}
                                 </div>
@@ -200,16 +202,16 @@ const Notifications: React.FC = () => {
                             🔔
                         </div>
                         <div className="flex-1 min-w-0">
-                            <h3 className="font-black text-xl mb-1">Stay in the Loop</h3>
+                            <h3 className="font-black text-xl mb-1">{t('notifStayInLoop')}</h3>
                             <p className="text-blue-100 text-sm mb-4 leading-relaxed">
-                                Get instant alerts when your order is out for delivery or prices drop on your wishlist.
+                                {t('notifStayInLoopDesc')}
                             </p>
-                            <button 
+                            <button
                                 onClick={handleRequestPermission}
                                 disabled={isRequesting}
                                 className="bg-white text-[var(--brand-primary)] px-6 py-2.5 rounded-full font-bold text-sm hover:scale-105 active:scale-95 transition-transform shadow-lg disabled:opacity-75"
                             >
-                                {isRequesting ? 'Enabling...' : 'Enable Notifications'}
+                                {isRequesting ? t('notifEnabling') : t('notifEnableNotifications')}
                             </button>
                         </div>
                     </div>
@@ -220,17 +222,17 @@ const Notifications: React.FC = () => {
                     <div className="flex items-center gap-3 mb-6">
                         <div className="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl">⚙️</div>
                         <div>
-                            <h3 className="font-bold text-sm text-[var(--text-main)]">Preferences</h3>
-                            <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Configure Alerts</p>
+                            <h3 className="font-bold text-sm text-[var(--text-main)]">{t('notifPreferences')}</h3>
+                            <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">{t('notifConfigureAlerts')}</p>
                         </div>
                     </div>
 
                     <div className="space-y-5">
                         {[
-                            { key: 'priceDrop', label: 'Price Drop Alerts', desc: 'Alerts for wishlisted items' },
-                            { key: 'orderUpdates', label: 'Order Tracking', desc: 'Real-time status updates' },
-                            { key: 'promotions', label: 'Deals & Offers', desc: 'Exclusive store promotions' },
-                            { key: 'newArrivals', label: 'New Arrivals', desc: 'Fresh additions to catalog' },
+                            { key: 'priceDrop', label: t('notifPrefPriceDropAlerts'), desc: t('notifPrefPriceDropAlertsDesc') },
+                            { key: 'orderUpdates', label: t('notifPrefOrderTracking'), desc: t('notifPrefOrderTrackingDesc') },
+                            { key: 'promotions', label: t('notifPrefDealsOffers'), desc: t('notifPrefDealsOffersDesc') },
+                            { key: 'newArrivals', label: t('notifPrefNewArrivals'), desc: t('notifPrefNewArrivalsDesc') },
                         ].map(pref => (
                             <div key={pref.key} className="flex items-center justify-between group">
                                 <div className="min-w-0">

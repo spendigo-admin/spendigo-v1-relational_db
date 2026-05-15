@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import '../../styles/design-system.css';
 import SEO from '../../components/SEO';
+import { useTranslation } from 'react-i18next';
 
 const steps = [
     {
@@ -64,6 +65,7 @@ const benefits = [
 ];
 
 const PartnerWithUs: React.FC = () => {
+    const { t } = useTranslation();
     return (
         <div className="bg-[var(--surface-0)] min-h-screen">
             <SEO 
@@ -85,7 +87,7 @@ const PartnerWithUs: React.FC = () => {
                     <div className="inline-flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 rounded-full bg-white shadow-sm border border-gray-100 mb-6 md:mb-8 animate-fade-in">
                         <span className="flex h-2 w-2 rounded-full bg-[var(--brand-secondary)] animate-ping" />
                         <span className="text-[10px] md:text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">
-                            Merchant Partnership Program
+                            {t('partnerMerchantProgram')}
                         </span>
                     </div>
 
@@ -97,16 +99,16 @@ const PartnerWithUs: React.FC = () => {
                     </h1>
 
                     <p className="text-base md:text-xl text-[var(--text-muted)] max-w-2xl mx-auto mb-8 md:mb-10 leading-relaxed px-2">
-                        Join Canada's marketplace for local convenience stores, dépanneurs, and independent grocers.
-                        <span className="font-bold text-[var(--text-main)]"> Get discovered by nearby shoppers — for free.</span>
+                        {t('partnerHeroDesc')}
+                        <span className="font-bold text-[var(--text-main)]"> {t('partnerHeroDescHighlight')}</span>
                     </p>
 
                     <div className="flex flex-col sm:flex-row items-center justify-center gap-3 md:gap-4 px-4 sm:px-0">
                         <Link to="/register/business" className="w-full sm:w-auto px-8 md:px-10 py-3.5 md:py-4 bg-[#112244] text-white font-black rounded-2xl shadow-xl shadow-blue-500/10 hover:scale-[1.02] active:scale-[0.98] transition-all text-sm md:text-base text-center uppercase tracking-widest">
-                            🚀 Get Started Free
+                            🚀 {t('partnerGetStartedFree')}
                         </Link>
                         <Link to="/how-it-works" className="w-full sm:w-auto px-8 md:px-10 py-3.5 md:py-4 bg-white text-[#112244] font-black rounded-2xl border-2 border-gray-100 hover:border-[#007AFF] transition-all text-sm md:text-base text-center uppercase tracking-widest">
-                            Learn How it Works
+                            {t('partnerLearnHow')}
                         </Link>
                     </div>
                 </div>
@@ -116,7 +118,7 @@ const PartnerWithUs: React.FC = () => {
             <section className="py-16 md:py-24 bg-white relative">
                 <div className="max-w-5xl mx-auto px-4">
                     <div className="text-center mb-12 md:mb-20">
-                        <h2 className="text-2xl md:text-4xl font-black text-[#112244] mb-4">How It Works</h2>
+                        <h2 className="text-2xl md:text-4xl font-black text-[#112244] mb-4">{t('howItWorks')}</h2>
                         <div className="w-16 md:w-20 h-1.5 bg-[#007AFF] mx-auto rounded-full" />
                     </div>
 
@@ -158,8 +160,8 @@ const PartnerWithUs: React.FC = () => {
             <section className="py-16 md:py-24 bg-[var(--surface-1)]">
                 <div className="max-w-7xl mx-auto px-4">
                     <div className="text-center mb-12 md:mb-20">
-                        <h2 className="text-2xl md:text-4xl font-black text-[var(--text-main)] mb-4">Why Merchants Love Spendigo</h2>
-                        <p className="text-sm md:text-base text-[var(--text-muted)] max-w-xl mx-auto px-4">Everything you need to compete with the big chains — without the big budget.</p>
+                        <h2 className="text-2xl md:text-4xl font-black text-[var(--text-main)] mb-4">{t('partnerWhyMerchantsLove')}</h2>
+                        <p className="text-sm md:text-base text-[var(--text-muted)] max-w-xl mx-auto px-4">{t('partnerWhyMerchantsLoveDesc')}</p>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
@@ -184,16 +186,15 @@ const PartnerWithUs: React.FC = () => {
                     <div className="relative rounded-[2rem] md:rounded-[3rem] bg-[#112244] p-8 md:p-20 overflow-hidden text-white shadow-2xl shadow-blue-500/10">
                         <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
                         <div className="relative z-10">
-                            <h2 className="text-3xl md:text-5xl font-black text-white mb-6 leading-tight">Ready to Reach More Customers?</h2>
+                            <h2 className="text-3xl md:text-5xl font-black text-white mb-6 leading-tight">{t('partnerReadyToReach')}</h2>
                             <p className="text-lg md:text-xl text-white/80 mb-10 max-w-2xl mx-auto">
-                                Join hundreds of local merchants already growing their business on Spendigo. 
-                                No contracts, no hidden fees — just more customers.
+                                {t('partnerReadyToReachDesc')}
                             </p>
                             <Link
                                 to="/register/business"
                                 className="inline-flex items-center justify-center px-10 py-4 bg-[#007AFF] text-white font-black text-lg rounded-2xl shadow-xl hover:scale-105 active:scale-95 transition-all uppercase tracking-widest"
                             >
-                                Create Your Free Store →
+                                {t('partnerCreateFreeStore')}
                             </Link>
                         </div>
                     </div>

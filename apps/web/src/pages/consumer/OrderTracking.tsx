@@ -1,5 +1,6 @@
 import React from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useOrders } from '../../context/OrderContext';
 import { useMarketplace } from '../../context/MarketplaceContext';
 import { useNotifications } from '../../context/NotificationContext';
@@ -12,6 +13,7 @@ const ORDER_STEPS = ['placed', 'preparing', 'out_for_delivery', 'delivered'] as 
 const OrderTracking: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
+    const { t } = useTranslation();
     const { orders, cancelOrder, reorder } = useOrders();
     const { getStore } = useMarketplace();
     const { addNotification } = useNotifications();
@@ -53,10 +55,10 @@ const OrderTracking: React.FC = () => {
         return (
             <div className="animate-fade-in flex flex-col items-center justify-center min-h-[60vh] px-4 text-center">
                 <p className="text-5xl mb-4">📦</p>
-                <h2 className="text-2xl font-bold text-[var(--text-main)] mb-2">Order Not Found</h2>
-                <p className="text-[var(--text-muted)] mb-6">We couldn't find this order.</p>
+                <h2 className="text-2xl font-bold text-[var(--text-main)] mb-2">{t('orderNotFound')}</h2>
+                <p className="text-[var(--text-muted)] mb-6">{t('orderNotFoundDesc')}</p>
                 <Link to="/profile" className="px-6 py-3 bg-[var(--brand-primary)] text-white font-medium rounded-full">
-                    View All Orders
+                    {t('orderViewAllOrders')}
                 </Link>
             </div>
         );
@@ -69,10 +71,10 @@ const OrderTracking: React.FC = () => {
 
     const getStepLabel = (step: string) => {
         switch (step) {
-            case 'placed': return 'Order Placed';
-            case 'preparing': return 'Preparing';
-            case 'out_for_delivery': return order.deliveryAddress ? 'Out for Delivery' : 'Ready for Pickup';
-            case 'delivered': return 'Delivered';
+            case 'placed': return t('orderPlaced');
+            case 'preparing': return t('orderPreparing');
+            case 'out_for_delivery': return order.deliveryAddress ? t('orderOutForDelivery') : t('orderReady');
+            case 'delivered': return t('orderDelivered');
             default: return step;
         }
     };
@@ -96,13 +98,13 @@ const OrderTracking: React.FC = () => {
                 <div className="max-w-3xl mx-auto">
                     <p className="text-sm opacity-80 mb-1">{order.id}</p>
                     <h1 className="text-2xl font-bold mb-2">
-                        {isDelivered ? 'Order Delivered! 🎉' :
-                            isCancelled ? 'Order Cancelled' :
-                                isOnHold ? 'Order On Hold ⏳' :
-                                    'Track Your Order'}
+                        {isDelivered ? t('orderDeliveredTitle') :
+                            isCancelled ? t('orderCancelled') :
+                                isOnHold ? t('orderOnHold') :
+                                    t('orderTrackYourOrder')}
                     </h1>
                     {!isDelivered && !isCancelled && (order.estimatedTime || order.estimatedDelivery) && (
-                        <p className="text-white/90">Estimated {order.deliveryAddress ? 'delivery' : 'ready'}: <strong>{order.estimatedTime || order.estimatedDelivery}</strong></p>
+                        <p className="text-white/90">{t('orderEstimated')} {order.deliveryAddress ? t('orderDeliveryWord') : t('orderReadyWord')}: <strong>{order.estimatedTime || order.estimatedDelivery}</strong></p>
                     )}
                 </div>
             </div>
@@ -113,8 +115,8 @@ const OrderTracking: React.FC = () => {
                     <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 flex gap-3 animate-pulse">
                         <span className="text-2xl">⏳</span>
                         <div>
-                            <p className="font-bold text-yellow-800">Your order is currently on hold</p>
-                            <p className="text-sm text-yellow-700">The store has briefly paused preparation. They will resume shortly.</p>
+                            <p className="font-bold text-yellow-800">{t('orderOnHoldDesc')}</p>
+                            <p className="text-sm text-yellow-700">{t('orderOnHoldSubDesc')}</p>
                         </div>
                     </div>
                 )}
@@ -122,7 +124,7 @@ const OrderTracking: React.FC = () => {
                     <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex gap-3">
                         <span className="text-2xl">🚫</span>
                         <div>
-                            <p className="font-bold text-red-800">Reason for Cancellation</p>
+                            <p className="font-bold text-red-800">{t('orderCancellationReason')}</p>
                             <p className="text-sm text-red-700 italic">"{order.rejectionReason}"</p>
                         </div>
                     </div>
@@ -160,7 +162,7 @@ const OrderTracking: React.FC = () => {
                                             </p>
                                             {isCurrent && step === 'out_for_delivery' && (
                                                 <p className="text-sm text-[var(--brand-primary)] mt-1">
-                                                    {order.deliveryAddress ? 'Your order is on the way!' : 'Your order is ready for pickup!'}
+                                                    {order.deliveryAddress ? t('orderOnTheWay') : t('orderReadyForPickup')}
                                                 </p>
                                             )}
                                         </div>
@@ -176,14 +178,14 @@ const OrderTracking: React.FC = () => {
             <div className="max-w-3xl mx-auto px-4 space-y-4">
                 {/* Store Info */}
                 <div className="bg-white rounded-xl border border-[var(--glass-border)] p-4">
-                    <h3 className="font-bold text-[var(--text-main)] mb-3">Order from {order.storeName}</h3>
+                    <h3 className="font-bold text-[var(--text-main)] mb-3">{t('orderFromStore', { storeName: order.storeName })}</h3>
                     <div className="space-y-3">
                         {order.items.map(item => (
                             <div key={item.productId} className="flex items-center gap-3">
                                 {item.image && <img src={item.image} alt="" className="w-12 h-12 rounded-lg object-cover" />}
                                 <div className="flex-1">
                                     <p className="text-sm font-medium text-[var(--text-main)]">{item.productName}</p>
-                                    <p className="text-xs text-[var(--text-muted)]">Qty: {item.quantity}</p>
+                                    <p className="text-xs text-[var(--text-muted)]">{t('orderQty')}: {item.quantity}</p>
                                 </div>
                                 <p className="font-medium text-[var(--text-main)]">${(item.price * item.quantity).toFixed(2)}</p>
                             </div>
@@ -193,7 +195,7 @@ const OrderTracking: React.FC = () => {
 
                 {/* Delivery Address or Pickup Info */}
                 <div className="bg-white rounded-xl border border-[var(--glass-border)] p-4">
-                    <h3 className="font-bold text-[var(--text-main)] mb-2">{order.deliveryAddress ? 'Delivery Address' : 'Fulfillment Method'}</h3>
+                    <h3 className="font-bold text-[var(--text-main)] mb-2">{order.deliveryAddress ? t('orderDeliveryAddress') : t('orderFulfillmentMethod')}</h3>
                     {order.deliveryAddress ? (
                         <>
                             <p className="text-sm text-[var(--text-muted)]">{order.deliveryAddress.street}</p>
@@ -203,8 +205,8 @@ const OrderTracking: React.FC = () => {
                         <div className="flex items-center gap-2 text-[var(--text-main)]">
                             <span className="text-xl">🛍️</span>
                             <div>
-                                <p className="font-medium">Store Pickup</p>
-                                <p className="text-xs text-[var(--text-muted)]">Please pick up your order at {order.storeName}.</p>
+                                <p className="font-medium">{t('orderStorePickup')}</p>
+                                <p className="text-xs text-[var(--text-muted)]">{t('orderPickupDesc', { storeName: order.storeName })}</p>
                             </div>
                         </div>
                     )}
@@ -212,22 +214,22 @@ const OrderTracking: React.FC = () => {
 
                 {/* Price Breakdown */}
                 <div className="bg-white rounded-xl border border-[var(--glass-border)] p-4">
-                    <h3 className="font-bold text-[var(--text-main)] mb-3">Order Summary</h3>
+                    <h3 className="font-bold text-[var(--text-main)] mb-3">{t('orderSummaryTitle')}</h3>
                     <div className="space-y-2 text-sm">
                         <div className="flex justify-between">
-                            <span className="text-[var(--text-muted)]">Subtotal</span>
+                            <span className="text-[var(--text-muted)]">{t('orderSubtotal')}</span>
                             <span>${order.subtotal.toFixed(2)}</span>
                         </div>
                         <div className="flex justify-between">
-                            <span className="text-[var(--text-muted)]">Delivery Fee</span>
-                            <span>{order.deliveryFee === 0 ? 'Free' : `$${order.deliveryFee.toFixed(2)}`}</span>
+                            <span className="text-[var(--text-muted)]">{t('orderDeliveryFee')}</span>
+                            <span>{order.deliveryFee === 0 ? t('orderFree') : `$${order.deliveryFee.toFixed(2)}`}</span>
                         </div>
                         <div className="flex justify-between">
-                            <span className="text-[var(--text-muted)]">Tax</span>
+                            <span className="text-[var(--text-muted)]">{t('orderTax')}</span>
                             <span>${order.tax.toFixed(2)}</span>
                         </div>
                         <div className="flex justify-between pt-2 border-t border-[var(--glass-border)] font-bold text-lg">
-                            <span>Total</span>
+                            <span>{t('orderTotal')}</span>
                             <span className="text-[var(--brand-primary)]">${order.total.toFixed(2)}</span>
                         </div>
                     </div>
@@ -239,22 +241,22 @@ const OrderTracking: React.FC = () => {
                         to={`/store/${order.storeId}`}
                         className="flex-1 py-3 border border-[var(--glass-border)] rounded-xl font-medium text-[var(--text-main)] hover:bg-gray-50 transition-colors flex items-center justify-center"
                     >
-                        🏪 Visit Store Page
+                        🏪 {t('orderVisitStore')}
                     </Link>
                     <button
                         onClick={handleReorder}
                         disabled={reorderingId === order.id}
                         className="flex-1 py-3 bg-[var(--brand-primary)] text-white rounded-xl font-bold hover:bg-blue-600 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
                     >
-                        {reorderingId === order.id ? 'Reordering...' : '🔄 Reorder'}
+                        {reorderingId === order.id ? t('orderReordering') : `🔄 ${t('orderReorder')}`}
                     </button>
                     {order.status === 'placed' && (
                         <button
                             onClick={async () => {
                                 const confirmed = await confirm({
-                                    title: 'Cancel Order?',
-                                    message: 'Are you sure you want to cancel this order? This action will halt preparation and process a refund if applicable.',
-                                    confirmText: 'Yes, Cancel',
+                                    title: t('orderCancelTitle'),
+                                    message: t('orderCancelMessage'),
+                                    confirmText: t('orderCancelConfirm'),
                                     type: 'danger'
                                 });
                                 if (confirmed) {
@@ -263,14 +265,14 @@ const OrderTracking: React.FC = () => {
                             }}
                             className="flex-1 py-3 border border-red-200 text-red-600 bg-red-50 rounded-xl font-bold hover:bg-red-100 transition-colors"
                         >
-                            Cancel
+                            {t('orderCancel')}
                         </button>
                     )}
                     <button
                         onClick={() => setShowHelpModal(true)}
                         className="flex-1 py-3 border border-[var(--glass-border)] rounded-xl font-medium text-[var(--text-main)] hover:bg-gray-50 transition-colors flex items-center justify-center"
                     >
-                        ❓ Help
+                        ❓ {t('orderHelp')}
                     </button>
                 </div>
             </div>
@@ -279,7 +281,7 @@ const OrderTracking: React.FC = () => {
                 <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 animate-fade-in" onClick={() => setShowHelpModal(false)}>
                     <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl" onClick={e => e.stopPropagation()}>
                         <div className="flex justify-between items-center mb-4">
-                            <h3 className="text-xl font-bold">Contact Support</h3>
+                            <h3 className="text-xl font-bold">{t('orderContactSupport')}</h3>
                             <button onClick={() => setShowHelpModal(false)} className="text-gray-400 hover:text-gray-600">✕</button>
                         </div>
 
@@ -287,7 +289,7 @@ const OrderTracking: React.FC = () => {
                             {/* Merchant Section */}
                             <div>
                                 <h4 className="font-semibold text-[var(--text-main)] mb-2 flex items-center gap-2">
-                                    🏪 Contact Store directly
+                                    🏪 {t('orderContactStore')}
                                 </h4>
                                 <div className="bg-gray-50 rounded-xl p-4 space-y-3 text-sm">
                                     <p className="font-medium text-lg">{order.storeName}</p>
@@ -315,12 +317,12 @@ const OrderTracking: React.FC = () => {
 
                             {/* Platform Section */}
                             <div>
-                                <h4 className="font-semibold text-[var(--text-main)] mb-2">Platform Support</h4>
+                                <h4 className="font-semibold text-[var(--text-main)] mb-2">{t('orderPlatformSupport')}</h4>
                                 <a
                                     href="mailto:support@spendigo.ca?subject=Help Request Order #${order.id}"
                                     className="block w-full py-3 bg-[var(--surface-2)] text-[var(--text-main)] font-medium rounded-xl hover:bg-gray-200 transition-colors text-center"
                                 >
-                                    Email Spendigo Support
+                                    {t('orderEmailSupport')}
                                 </a>
                             </div>
                         </div>

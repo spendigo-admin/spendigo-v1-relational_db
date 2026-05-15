@@ -164,17 +164,17 @@ const Login = () => {
                             setIsLoading(false);
                         }
                     }} className="space-y-4">
-                        <p className="text-sm text-[var(--text-main)] mb-4">Your account requires two-factor authentication.</p>
-                        <p className="text-xs text-[var(--text-muted)] mb-4">A text message will be sent to your number ending in {mfaResolver.hints[0]?.phoneNumber?.slice(-4)}</p>
+                        <p className="text-sm text-[var(--text-main)] mb-4">{t('authMfaRequired')}</p>
+                        <p className="text-xs text-[var(--text-muted)] mb-4">{t('authMfaSmsWillBeSent', { digits: mfaResolver.hints[0]?.phoneNumber?.slice(-4) })}</p>
                         {error && <p className="text-red-500 text-sm text-center bg-red-50 p-2 rounded">{error}</p>}
                         <button disabled={isLoading} type="submit" className="w-full py-4 rounded-[var(--radius-md)] bg-white border border-[var(--glass-border)] text-[var(--brand-primary)] font-bold shadow-sm transition-all text-sm">
-                            {isLoading ? 'Sending SMS...' : 'Send SMS Code'}
+                            {isLoading ? t('authSendingSms') : t('authSendSmsCode')}
                         </button>
                     </form>
                 ) : mfaResolver && verificationId ? (
                     <form onSubmit={handleMfaSubmit} className="space-y-4">
                         <div>
-                            <label className="block text-sm font-medium mb-1 text-[var(--text-main)]">SMS Verification Code</label>
+                            <label className="block text-sm font-medium mb-1 text-[var(--text-main)]">{t('authSmsCode')}</label>
                             <input
                                 type="text"
                                 required
@@ -186,13 +186,13 @@ const Login = () => {
                             />
                             {mfaResolver.hints.length > 0 && (
                                 <p className="text-xs mt-4 text-[var(--text-muted)] text-center">
-                                    A verification code was sent to your phone ending in {mfaResolver.hints[0].phoneNumber?.slice(-4)}
+                                    {t('authSmsCodeSentTo', { digits: mfaResolver.hints[0].phoneNumber?.slice(-4) })}
                                 </p>
                             )}
                         </div>
                         {error && <p className="text-red-500 text-sm text-center bg-red-50 p-2 rounded">{error}</p>}
                         <button disabled={isLoading || !verificationId} type="submit" className="w-full py-4 rounded-[var(--radius-md)] bg-[var(--brand-primary)] text-white font-bold hover:brightness-110 shadow-lg shadow-[var(--brand-primary)]/20 transition-all uppercase tracking-wide text-sm">
-                            {isLoading || !verificationId ? 'Verifying...' : 'Verify Code'}
+                            {isLoading || !verificationId ? t('authVerifying') : t('authVerifyCode')}
                         </button>
                     </form>
                 ) : (

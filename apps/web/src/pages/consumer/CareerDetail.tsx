@@ -63,15 +63,15 @@ const CareerDetail: React.FC = () => {
             <div className="min-h-screen flex flex-col items-center justify-center p-4">
                 <div className="text-6xl mb-6">🔍</div>
                 <h2 className="text-2xl font-bold mb-2 text-[var(--text-main)]">
-                    {!careersEnabled ? 'Careers Section Disabled' : 'Job Not Found'}
+                    {!careersEnabled ? t('careersSectionDisabled') : t('careersJobNotFound')}
                 </h2>
                 <p className="text-[var(--text-muted)] mb-8 max-w-sm text-center">
-                    {!careersEnabled 
-                        ? 'The careers section is currently under maintenance. Please check back later.' 
-                        : 'This position may have been filled or the link is incorrect.'}
+                    {!careersEnabled
+                        ? t('careersSectionDisabledDesc')
+                        : t('careersJobNotFoundDesc')}
                 </p>
                 <Link to="/careers" className="px-8 py-3 bg-[var(--brand-primary)] text-white font-bold rounded-xl shadow-lg">
-                    Back to Careers
+                    {t('careersBackToCareers')}
                 </Link>
             </div>
         );
@@ -141,7 +141,7 @@ const CareerDetail: React.FC = () => {
             <div className="bg-[var(--surface-1)] border-b border-[var(--glass-border)] pt-20 pb-12 px-4 text-center relative overflow-hidden">
                 <div className="container mx-auto max-w-4xl relative z-10">
                     <Link to="/careers" className="inline-flex items-center gap-2 text-sm font-bold text-[var(--brand-primary)] mb-8 hover:translate-x-[-4px] transition-transform">
-                        ← Back to Careers
+                        ← {t('careersBackToCareers')}
                     </Link>
                     <h1 className="text-3xl md:text-5xl font-black text-[var(--text-main)] mb-4">{job.title}</h1>
                     <div className="flex flex-wrap justify-center gap-4 text-[var(--text-muted)] font-medium">
@@ -160,14 +160,14 @@ const CareerDetail: React.FC = () => {
                 {/* Main Content */}
                 <div className="lg:col-span-2 space-y-12">
                     <section>
-                        <h2 className="text-2xl font-bold text-[var(--text-main)] mb-4 text-left">About the Role</h2>
+                        <h2 className="text-2xl font-bold text-[var(--text-main)] mb-4 text-left">{t('careersAboutRole')}</h2>
                         <p className="text-[var(--text-muted)] leading-relaxed text-left">
                             {job.description}
                         </p>
                     </section>
 
                     <section>
-                        <h2 className="text-2xl font-bold text-[var(--text-main)] mb-6 text-left">Requirements</h2>
+                        <h2 className="text-2xl font-bold text-[var(--text-main)] mb-6 text-left">{t('careersRequirements')}</h2>
                         <ul className="space-y-4">
                             {job.requirements.map((req: string, i: number) => (
                                 <li key={i} className="flex items-start gap-3 group text-left">
@@ -184,7 +184,7 @@ const CareerDetail: React.FC = () => {
 
                     {job.responsibilities && (
                         <section>
-                            <h2 className="text-2xl font-bold text-[var(--text-main)] mb-6 text-left">Key Responsibilities</h2>
+                            <h2 className="text-2xl font-bold text-[var(--text-main)] mb-6 text-left">{t('careersKeyResponsibilities')}</h2>
                             <ul className="space-y-4">
                                 {job.responsibilities.map((resp: string, i: number) => (
                                     <li key={i} className="flex items-start gap-3 group text-left">
@@ -202,15 +202,15 @@ const CareerDetail: React.FC = () => {
                 {/* Sidebar Sticky Actions */}
                 <div className="lg:col-span-1">
                     <div className="sticky top-24 glass-panel p-8 space-y-6">
-                        <h3 className="text-xl font-bold text-[var(--text-main)] text-left">Ready to Apply?</h3>
+                        <h3 className="text-xl font-bold text-[var(--text-main)] text-left">{t('careersReadyToApply')}</h3>
                         <p className="text-sm text-[var(--text-muted)] text-left">
-                            Join us in building the future of AI-powered shopping.
+                            {t('careersReadyToApplyDesc')}
                         </p>
-                        <button 
+                        <button
                             onClick={() => setIsApplying(true)}
                             className="w-full py-4 bg-[var(--brand-primary)] text-white font-black rounded-2xl shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all"
                         >
-                            Apply Now
+                            {t('careersApply')}
                         </button>
                         <div className="pt-6 border-t border-[var(--glass-border)] space-y-4">
                             <div className="flex items-center gap-3 text-sm text-[var(--text-muted)]">
@@ -229,7 +229,7 @@ const CareerDetail: React.FC = () => {
             {/* Footnote */}
             <div className="container mx-auto max-w-4xl px-4 mt-20 text-center">
                 <p className="text-sm text-[var(--text-muted)] italic">
-                    Spendigo is an equal opportunity employer. We celebrate diversity and are committed to creating an inclusive environment for all employees.
+                    {t('careersEqualOpportunity')}
                 </p>
             </div>
 
@@ -248,20 +248,20 @@ const CareerDetail: React.FC = () => {
                             {submissionStatus === 'success' ? (
                                 <div className="text-center py-12">
                                     <div className="text-6xl mb-6">🎉</div>
-                                    <h2 className="text-2xl font-black text-[var(--text-main)] mb-3">Application Sent!</h2>
+                                    <h2 className="text-2xl font-black text-[var(--text-main)] mb-3">{t('careersApplicationSent')}</h2>
                                     <p className="text-[var(--text-muted)] mb-8">
-                                        Thank you for applying to the **{job.title}** role. Your application has been successfully sent to **support@spendigo.ca**.
+                                        {t('careersApplicationSentDetailDesc', { title: job.title })}
                                     </p>
-                                    <button 
+                                    <button
                                         onClick={() => setIsApplying(false)}
                                         className="px-8 py-3 bg-[var(--brand-primary)] text-white font-bold rounded-xl shadow-lg"
                                     >
-                                        Close
+                                        {t('careersClose')}
                                     </button>
                                 </div>
                             ) : (
                                 <>
-                                    <h2 className="text-2xl font-black text-[var(--text-main)] mb-6 text-left">Apply for {job.title}</h2>
+                                    <h2 className="text-2xl font-black text-[var(--text-main)] mb-6 text-left">{t('careersApplyFor', { title: job.title })}</h2>
                                     
                                     <form onSubmit={(e) => {
                                         e.preventDefault();
@@ -269,27 +269,27 @@ const CareerDetail: React.FC = () => {
                                     }} className="space-y-4">
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             <div className="space-y-1.5 text-left">
-                                                <label className="text-xs font-bold text-[var(--text-muted)] uppercase">Full Name</label>
+                                                <label className="text-xs font-bold text-[var(--text-muted)] uppercase">{t('fullName')}</label>
                                                 <input required name="name" type="text" className="w-full h-11 px-4 bg-[var(--surface-1)] border border-[var(--glass-border)] rounded-xl text-sm focus:border-[var(--brand-primary)] outline-none" />
                                             </div>
                                             <div className="space-y-1.5 text-left">
-                                                <label className="text-xs font-bold text-[var(--text-muted)] uppercase">Email Address</label>
+                                                <label className="text-xs font-bold text-[var(--text-muted)] uppercase">{t('authEmailAddress')}</label>
                                                 <input required name="email" type="email" className="w-full h-11 px-4 bg-[var(--surface-1)] border border-[var(--glass-border)] rounded-xl text-sm focus:border-[var(--brand-primary)] outline-none" />
                                             </div>
                                         </div>
 
                                         <div className="space-y-1.5 text-left">
-                                            <label className="text-xs font-bold text-[var(--text-muted)] uppercase">Phone Number</label>
+                                            <label className="text-xs font-bold text-[var(--text-muted)] uppercase">{t('phoneNumber')}</label>
                                             <input required name="phone" type="tel" className="w-full h-11 px-4 bg-[var(--surface-1)] border border-[var(--glass-border)] rounded-xl text-sm focus:border-[var(--brand-primary)] outline-none" />
                                         </div>
 
                                         <div className="space-y-1.5 text-left">
-                                            <label className="text-xs font-bold text-[var(--text-muted)] uppercase">Resume (PDF only)</label>
+                                            <label className="text-xs font-bold text-[var(--text-muted)] uppercase">{t('careersResumePdf')}</label>
                                             <div className="relative group">
                                                 <input required name="resume" type="file" accept=".pdf" className="w-full h-20 opacity-0 absolute inset-0 z-10 cursor-pointer" />
                                                 <div className="w-full h-20 border-2 border-dashed border-[var(--glass-border)] rounded-xl flex items-center justify-center gap-3 group-hover:border-[var(--brand-primary)] group-hover:bg-[var(--brand-primary)]/[0.02] transition-colors">
                                                     <span className="text-2xl opacity-40">📄</span>
-                                                    <span className="text-sm font-medium text-[var(--text-muted)]">Click or drag your resume here</span>
+                                                    <span className="text-sm font-medium text-[var(--text-muted)]">{t('careersClickOrDrag')}</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -308,10 +308,10 @@ const CareerDetail: React.FC = () => {
                                                 {isSubmitting ? (
                                                     <div className="flex items-center justify-center gap-3">
                                                         <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                                                        <span>Uploading... {Math.round(uploadProgress)}%</span>
+                                                        <span>{t('careersUploading', { progress: Math.round(uploadProgress) })}</span>
                                                     </div>
                                                 ) : (
-                                                    'Submit Application'
+                                                    t('careersSubmitApplication')
                                                 )}
                                                 {isSubmitting && (
                                                     <div 
