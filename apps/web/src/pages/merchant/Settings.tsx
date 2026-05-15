@@ -1644,7 +1644,12 @@ const MerchantSettings: React.FC = () => {
             <section className="bg-white p-6 rounded-xl border border-[var(--glass-border)] shadow-sm">
                 <div className="flex items-center justify-between mb-4">
                     <div>
-                        <h2 className="text-lg font-bold text-[var(--text-main)]">Business Verification (KYB)</h2>
+                        <h2 className="text-lg font-bold text-[var(--text-main)] flex items-center gap-2">
+                            Business Verification (KYB)
+                            {kybStatus === 'approved' && (
+                                <span className="inline-flex items-center justify-center w-5 h-5 bg-green-500 text-white rounded-full text-[11px] font-black leading-none">✓</span>
+                            )}
+                        </h2>
                         <p className="text-sm text-[var(--text-muted)] mt-1">Upload your business license or incorporation certificate so Spendigo can verify your store.</p>
                     </div>
                     <span className={`text-xs font-bold px-3 py-1 rounded-full border ${KYB_STATUS_CONFIG[kybStatus].color}`}>
