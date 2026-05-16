@@ -4,6 +4,15 @@ import * as crypto from 'crypto';
 import { checkRateLimit } from '../utils/rateLimiter';
 import { logEvent, buildActorFromContext } from '../utils/audit';
 
+function escapeHtml(str: string): string {
+    return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#x27;');
+}
+
 interface InviteData {
     email: string;
     name: string;
@@ -127,12 +136,12 @@ export const inviteTeamMember = functions.https.onCall(
     </div>
     
     <div style="padding: 30px; background: white; border: 1px solid #e5e7eb; margin-top: 20px; border-radius: 10px;">
-        <p>Hi ${name},</p>
+        <p>Hi ${escapeHtml(name)},</p>
         <p>You have been invited to join the team for your store on Spendigo. Click the button below to set your password and get started.</p>
 
         <div style="background: #f9fafb; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <p style="margin: 0;"><strong>Role:</strong> ${merchantRole}</p>
-            <p style="margin: 10px 0 0 0;"><strong>Email:</strong> ${email}</p>
+            <p style="margin: 0;"><strong>Role:</strong> ${escapeHtml(merchantRole)}</p>
+            <p style="margin: 10px 0 0 0;"><strong>Email:</strong> ${escapeHtml(email)}</p>
         </div>
 
         <div style="text-align: center; margin-top: 30px;">

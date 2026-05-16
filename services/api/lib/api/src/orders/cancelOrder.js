@@ -50,7 +50,9 @@ exports.cancelOrder = functions.https.onCall(async (data, context) => {
     }
     // Rate Limit Check: Max 5 requests per minute per user
     await (0, rateLimiter_1.checkRateLimit)(context.auth.uid, 'cancelOrder', 5, 60 * 1000);
-    const { orderId, reason } = data;
+    const { orderId } = data;
+    const rawReason = typeof data.reason === 'string' ? data.reason : undefined;
+    const reason = rawReason ? rawReason.trim().slice(0, 500) : undefined;
     const userId = context.auth.uid;
     if (!orderId) {
         throw new functions.https.HttpsError('invalid-argument', 'Missing orderId.');

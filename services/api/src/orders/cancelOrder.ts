@@ -18,7 +18,9 @@ export const cancelOrder = functions.https.onCall(async (data, context) => {
     // Rate Limit Check: Max 5 requests per minute per user
     await checkRateLimit(context.auth.uid, 'cancelOrder', 5, 60 * 1000);
 
-    const { orderId, reason } = data;
+    const { orderId } = data;
+    const rawReason: string | undefined = typeof data.reason === 'string' ? data.reason : undefined;
+    const reason = rawReason ? rawReason.trim().slice(0, 500) : undefined;
     const userId = context.auth.uid;
 
     if (!orderId) {
