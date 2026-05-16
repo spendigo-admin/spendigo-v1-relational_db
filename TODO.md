@@ -115,10 +115,8 @@ Currently, the public flyer ingestion relies on hotlinking images directly from 
 
 ### Cleanup: Legacy Service Directories
 
-**Status**: Identified / Low Priority
-**Description**:
-Two directories contain legacy/experimental code not connected to any active deployment:
-- `services/functions/src/` — superseded by `services/api/`; all active Cloud Functions live in `services/api/`
-- `services/smartcart_optimizer/index.ts` — early experimental optimizer; production logic is in `apps/web/src/smartcart/` and mirrored in `services/api/src/smartcart/`
-
-**Action**: Confirm nothing imports from these paths (`grep -r "services/functions\|services/smartcart_optimizer"`) and delete them to avoid confusion for new contributors.
+**Status**: Done
+- Deleted `services/functions/` (superseded `onUserUpdate` trigger; live version in `services/api/src/triggers/`)
+- Deleted `services/smartcart_optimizer/index.ts` (experimental greedy optimizer; production logic in `services/api/src/smartcart/`)
+- Deleted `tests/unit/services-smartcart-optimizer.test.ts` (only tested the deleted dead code)
+- 38 tests still pass after removal
