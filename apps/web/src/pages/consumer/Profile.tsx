@@ -8,7 +8,7 @@ import { useNotifications, NotificationPreferences } from '../../context/Notific
 import { useComparison } from '../../context/ComparisonContext';
 import { useMarketplace } from '../../context/MarketplaceContext';
 import { httpsCallable } from 'firebase/functions';
-import { functions } from '../../lib/firebase';
+import { functions, auth } from '../../lib/firebase';
 import '../../styles/design-system.css';
 import SEO from '../../components/SEO';
 import { EmptyState } from '../../components/ui/EmptyState';
@@ -262,7 +262,7 @@ const Profile: React.FC = () => {
                         <div>
                             <div className="flex flex-col items-start gap-1.5 mb-2">
                                 <span className="text-[9px] font-black bg-[var(--brand-primary)] text-white px-2 py-0.5 rounded tracking-widest uppercase shadow-lg">Premium Member</span>
-                                <span className="text-[9px] font-black bg-white shadow-sm text-[var(--text-muted)] px-2 py-0.5 rounded border border-gray-100 tracking-widest uppercase">Since 2024</span>
+                                <span className="text-[9px] font-black bg-white shadow-sm text-[var(--text-muted)] px-2 py-0.5 rounded border border-gray-100 tracking-widest uppercase">Since {new Date(auth.currentUser?.metadata.creationTime ?? Date.now()).getFullYear()}</span>
                             </div>
                             <h1 className="text-3xl md:text-5xl font-black text-[var(--brand-navy)] tracking-tighter leading-none italic capitalize">
                                 {user?.name?.toLowerCase() || 'Spendigo Shopper'}
