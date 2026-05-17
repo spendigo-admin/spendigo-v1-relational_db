@@ -29,15 +29,7 @@ const FlyerTab: React.FC<{ storeId: string; storeName: string; summary: any; vie
 
     useEffect(() => {
         const unsubscribe = subscribeToFlyers(storeId, (flyers) => {
-            const now = new Date();
-            const activeFlyers = flyers.filter(f => {
-                if (f.status !== 'active') return false;
-                if (!f.validUntil) return true;
-                const end = new Date(f.validUntil);
-                if (f.validUntil.indexOf(':') === -1) end.setHours(23, 59, 59, 999);
-                return end >= now;
-            });
-
+            const activeFlyers = flyers.filter(f => isFlyerActive(f));
             // Find best matching active flyer
             const active = activeFlyers.find(f => f.title === summary?.title) || activeFlyers[0];
             setFlyer(active);
@@ -51,6 +43,7 @@ const FlyerTab: React.FC<{ storeId: string; storeName: string; summary: any; vie
             productId: item.productId,
             productName: item.name,
             price: item.salePrice,
+            originalPrice: item.originalPrice,
             quantity: 1,
             storeId,
             storeName,
@@ -254,13 +247,7 @@ const OffersTab: React.FC<{ storeId: string, storeName: string; viewMode: 'grid'
 
     useEffect(() => {
         const unsubscribe = subscribeToDeals(storeId, (data) => {
-            const now = new Date();
-            const filteredDeals = data.filter(d => {
-                if (d.status !== 'active') return false;
-                if (!d.endDate) return true;
-                return new Date(d.endDate) >= now;
-            });
-            setDeals(filteredDeals);
+            setDeals(filterActiveDeals(data));
             setLoading(false);
         });
         return () => unsubscribe();
@@ -271,6 +258,7 @@ const OffersTab: React.FC<{ storeId: string, storeName: string; viewMode: 'grid'
             productId: item.productId,
             productName: item.productName || item.name || 'Product',
             price: item.salePrice ?? item.price,
+            originalPrice: item.originalPrice,
             quantity: 1,
             storeId,
             storeName,

@@ -47,3 +47,4 @@ export { processPendingStoreDeletions } from './admin/processPendingStoreDeletio
 export { forceDeleteStore } from './admin/forceDeleteStore';
 export { sendCampaign } from './marketing/sendCampaign';
 export { aggregateFlyerAnalytics, triggerAnalyticsAggregation } from './admin/aggregateFlyerAnalytics';
+export { revertExpiredDeals } from './triggers/revertExpiredDeals';
