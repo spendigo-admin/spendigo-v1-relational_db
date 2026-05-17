@@ -30,6 +30,8 @@ const MerchantRegister: React.FC = () => {
         agreedToTerms: false
     });
     const [allowRegistrations, setAllowRegistrations] = useState<boolean | null>(null);
+    const [currentTermsVersion, setCurrentTermsVersion] = useState('v1.0');
+    const [currentPrivacyVersion, setCurrentPrivacyVersion] = useState('v1.0');
 
     useEffect(() => {
         const docRef = doc(db, 'settings', 'platform');
@@ -37,6 +39,8 @@ const MerchantRegister: React.FC = () => {
             if (docSnap.exists()) {
                 const data = docSnap.data();
                 setAllowRegistrations(data.allowPartnerRegistrations !== false);
+                if (data.currentTermsVersion) setCurrentTermsVersion(data.currentTermsVersion);
+                if (data.currentPrivacyVersion) setCurrentPrivacyVersion(data.currentPrivacyVersion);
             } else {
                 setAllowRegistrations(true);
             }
@@ -79,6 +83,9 @@ const MerchantRegister: React.FC = () => {
             const success = await register({
                 ...formData,
                 role: 'merchant'
+            }, {
+                termsVersion: currentTermsVersion,
+                privacyVersion: currentPrivacyVersion,
             });
 
             if (success) {
@@ -332,7 +339,7 @@ const MerchantRegister: React.FC = () => {
                                             onChange={e => setFormData({ ...formData, agreedToTerms: e.target.checked })}
                                         />
                                         <span className="text-xs text-[var(--text-muted)] leading-relaxed group-hover:text-[var(--text-main)] transition-colors">
-                                            {t('registerAgreeTerms')} <Link to="/terms" className="text-[var(--brand-primary)] font-bold">{t('registerTermsOfService')}</Link>, <Link to="/privacy" className="text-[var(--brand-primary)] font-bold">{t('registerPrivacyPolicy')}</Link>, {t('registerAnd')} <Link to="/legal" className="text-[var(--brand-primary)] font-bold">{t('registerMarketplaceAgreement')}</Link>.
+                                            {t('registerAgreeTerms')} <Link to="/terms" className="text-[var(--brand-primary)] font-bold">{t('registerTermsOfService')}</Link>, <Link to="/privacy" className="text-[var(--brand-primary)] font-bold">{t('registerPrivacyPolicy')}</Link>, {t('registerAnd')} <Link to="/merchant-terms" className="text-[var(--brand-primary)] font-bold">{t('registerMarketplaceAgreement')}</Link>.
                                         </span>
                                     </label>
                                 </div>

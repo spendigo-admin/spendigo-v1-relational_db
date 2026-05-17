@@ -207,6 +207,7 @@ function App() {
                                                                     <Route path="/how-it-works" element={<HowItWorks />} />
                                                                     <Route path="/privacy" element={<Legal />} />
                                                                     <Route path="/terms" element={<Legal />} />
+                                                                    <Route path="/merchant-terms" element={<Legal />} />
                                                                     <Route path="/partner" element={<PartnerWithUs />} />
                                                                     <Route path="/careers" element={<Careers />} />
                                                                     <Route path="/careers/:id" element={<CareerDetail />} />

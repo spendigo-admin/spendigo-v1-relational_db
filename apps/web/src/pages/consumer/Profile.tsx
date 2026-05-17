@@ -462,6 +462,35 @@ const Profile: React.FC = () => {
                                 )}
                             </div>
                         </div>
+
+                        {/* LEGAL AGREEMENTS */}
+                        <div className="pt-8 mt-8 border-t border-[var(--glass-border)]">
+                            <h3 className="text-lg font-bold text-[var(--text-main)] mb-4 flex items-center gap-2">
+                                <span>📋</span> Legal Agreements
+                            </h3>
+                            {user?.consent ? (
+                                <div className="bg-[var(--surface-1)] rounded-xl p-4 space-y-3">
+                                    <div className="flex items-center justify-between text-sm">
+                                        <span className="text-[var(--text-muted)]">Terms of Service</span>
+                                        <span className="font-bold text-[var(--text-main)]">{user.consent.termsVersion}</span>
+                                    </div>
+                                    <div className="flex items-center justify-between text-sm">
+                                        <span className="text-[var(--text-muted)]">Privacy Policy</span>
+                                        <span className="font-bold text-[var(--text-main)]">{user.consent.privacyVersion}</span>
+                                    </div>
+                                    <div className="flex items-center justify-between text-sm">
+                                        <span className="text-[var(--text-muted)]">Accepted on</span>
+                                        <span className="font-bold text-[var(--text-main)]">{new Date(user.consent.acceptedAt).toLocaleDateString('en-CA', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                                    </div>
+                                    <div className="flex gap-4 pt-2 text-xs">
+                                        <a href="/terms" className="text-[var(--brand-primary)] font-bold hover:underline">View Terms</a>
+                                        <a href="/privacy" className="text-[var(--brand-primary)] font-bold hover:underline">View Privacy Policy</a>
+                                    </div>
+                                </div>
+                            ) : (
+                                <p className="text-sm text-[var(--text-muted)]">No consent record on file.</p>
+                            )}
+                        </div>
                     </div>
                 )}
 

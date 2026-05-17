@@ -25,9 +25,12 @@ const Register: React.FC = () => {
         city: '',
         province: 'ON',
         postalCode: '',
-        agreedToTerms: false
+        agreedToTerms: false,
+        marketingConsent: false,
     });
     const [allowRegistrations, setAllowRegistrations] = useState<boolean | null>(null);
+    const [currentTermsVersion, setCurrentTermsVersion] = useState('v1.0');
+    const [currentPrivacyVersion, setCurrentPrivacyVersion] = useState('v1.0');
 
     useEffect(() => {
         const docRef = doc(db, 'settings', 'platform');
@@ -35,6 +38,8 @@ const Register: React.FC = () => {
             if (docSnap.exists()) {
                 const data = docSnap.data();
                 setAllowRegistrations(data.allowShopperRegistrations !== false);
+                if (data.currentTermsVersion) setCurrentTermsVersion(data.currentTermsVersion);
+                if (data.currentPrivacyVersion) setCurrentPrivacyVersion(data.currentPrivacyVersion);
             } else {
                 setAllowRegistrations(true);
             }
@@ -78,6 +83,10 @@ const Register: React.FC = () => {
             const success = await register({
                 ...formData,
                 role: 'consumer'
+            }, {
+                termsVersion: currentTermsVersion,
+                privacyVersion: currentPrivacyVersion,
+                marketingConsent: formData.marketingConsent,
             });
 
             if (success) {
@@ -327,6 +336,17 @@ const Register: React.FC = () => {
                                         />
                                         <span className="text-xs text-[var(--text-muted)] leading-relaxed group-hover:text-[var(--text-main)] transition-colors">
                                             {t('registerAgreeTerms')} <Link to="/terms" className="text-[var(--brand-primary)] font-bold">{t('registerTermsOfService')}</Link> {t('registerAnd')} <Link to="/privacy" className="text-[var(--brand-primary)] font-bold">{t('registerPrivacyPolicy')}</Link>.
+                                        </span>
+                                    </label>
+                                    <label className="flex items-start gap-3 cursor-pointer group mt-3">
+                                        <input
+                                            type="checkbox"
+                                            className="mt-1 w-5 h-5 rounded border-[var(--glass-border)] text-[var(--brand-primary)] focus:ring-[var(--brand-primary)]"
+                                            checked={formData.marketingConsent}
+                                            onChange={e => setFormData({ ...formData, marketingConsent: e.target.checked })}
+                                        />
+                                        <span className="text-xs text-[var(--text-muted)] leading-relaxed group-hover:text-[var(--text-main)] transition-colors">
+                                            Receive promotions and deals from Spendigo and partner stores. (Optional)
                                         </span>
                                     </label>
                                 </div>

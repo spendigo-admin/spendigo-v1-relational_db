@@ -19,7 +19,9 @@ const AdminSettings: React.FC = () => {
         supportEmail: 'support@spendigo.ca',
         maxFlyerUploadSizeMB: 10,
         careersEnabled: true,
-        flyerIngestionEnabled: true
+        flyerIngestionEnabled: true,
+        currentTermsVersion: 'v1.0',
+        currentPrivacyVersion: 'v1.0',
     });
 
     // Load Settings
@@ -323,6 +325,30 @@ const AdminSettings: React.FC = () => {
                                     placeholder="e.g. support@spendigo.ca"
                                     className="w-full bg-white p-2 rounded border border-[var(--glass-border)] text-sm font-bold text-[var(--text-main)] focus:ring-2 focus:ring-[var(--brand-primary)]/20 outline-none transition-all"
                                 />
+                            </div>
+                            <div className="p-4 bg-[var(--surface-1)] rounded-xl border border-[var(--glass-border)]">
+                                <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1.5">Current Terms Version</label>
+                                <input
+                                    type="text"
+                                    name="currentTermsVersion"
+                                    value={settings.currentTermsVersion}
+                                    onChange={handleChange}
+                                    placeholder="e.g. v1.0"
+                                    className="w-full bg-white p-2 rounded border border-[var(--glass-border)] text-sm font-bold text-[var(--text-main)] focus:ring-2 focus:ring-[var(--brand-primary)]/20 outline-none transition-all"
+                                />
+                                <p className="text-[10px] text-[var(--text-muted)] mt-1">Bumping this forces re-consent from all users on next login.</p>
+                            </div>
+                            <div className="p-4 bg-[var(--surface-1)] rounded-xl border border-[var(--glass-border)]">
+                                <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1.5">Current Privacy Version</label>
+                                <input
+                                    type="text"
+                                    name="currentPrivacyVersion"
+                                    value={settings.currentPrivacyVersion}
+                                    onChange={handleChange}
+                                    placeholder="e.g. v1.0"
+                                    className="w-full bg-white p-2 rounded border border-[var(--glass-border)] text-sm font-bold text-[var(--text-main)] focus:ring-2 focus:ring-[var(--brand-primary)]/20 outline-none transition-all"
+                                />
+                                <p className="text-[10px] text-[var(--text-muted)] mt-1">Bumping this forces re-consent from all users on next login.</p>
                             </div>
                         </div>
                     </div>

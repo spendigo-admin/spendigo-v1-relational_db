@@ -90,3 +90,6 @@ scripts/service-account.json
 infra/.terraform/
 infra/*.tfstate*
 infra/.terraform.lock.hcl
+
+# Firebase Functions build
+services/api/lib/

@@ -4,17 +4,20 @@ import { useTranslation } from 'react-i18next';
 import '../../styles/design-system.css';
 import SEO from '../../components/SEO';
 
+const LEGAL_LAST_UPDATED = 'May 16, 2026';
+
 const Legal: React.FC = () => {
     const location = useLocation();
     const { t } = useTranslation();
     const isPrivacy = location.pathname.includes('/privacy');
+    const isMerchantTerms = location.pathname.includes('/merchant-terms');
 
     // MOCK DATA for boilerplate legal documents
     // Note: This should ideally be verified by a legal professional
     const privacyContent = (
         <>
             <h1 className="text-3xl font-bold mb-6 text-[var(--text-main)]">Privacy Policy</h1>
-            <p className="text-sm text-[var(--text-muted)] mb-8">Last Updated: {new Date().toLocaleDateString()}</p>
+            <p className="text-sm text-[var(--text-muted)] mb-8">Last Updated: {LEGAL_LAST_UPDATED}</p>
 
             <section className="mb-8">
                 <h2 className="text-xl font-bold mb-3 text-[var(--text-main)]">1. Information We Collect</h2>
@@ -54,7 +57,7 @@ const Legal: React.FC = () => {
     const termsContent = (
         <>
             <h1 className="text-3xl font-bold mb-6 text-[var(--text-main)]">Terms of Service</h1>
-            <p className="text-sm text-[var(--text-muted)] mb-8">Last Updated: {new Date().toLocaleDateString()}</p>
+            <p className="text-sm text-[var(--text-muted)] mb-8">Last Updated: {LEGAL_LAST_UPDATED}</p>
 
             <section className="mb-8">
                 <h2 className="text-xl font-bold mb-3 text-[var(--text-main)]">1. Platform Role</h2>
@@ -86,15 +89,57 @@ const Legal: React.FC = () => {
         </>
     );
 
+    const merchantTermsContent = (
+        <>
+            <h1 className="text-3xl font-bold mb-6 text-[var(--text-main)]">Merchant Terms — Marketplace Facilitator Agreement</h1>
+            <p className="text-sm text-[var(--text-muted)] mb-8">Last Updated: {LEGAL_LAST_UPDATED} · Version 1.0</p>
+
+            <section className="mb-8">
+                <h2 className="text-xl font-bold mb-3 text-[var(--text-main)]">1. Relationship</h2>
+                <p className="text-[var(--text-muted)] leading-relaxed mb-4">
+                    You acknowledge that Spendigo is a Marketplace Facilitator platform. Spendigo does not purchase, own, or hold inventory. All products listed are sold by independent merchants and Spendigo acts solely as a facilitator connecting merchants with consumers.
+                </p>
+            </section>
+
+            <section className="mb-8">
+                <h2 className="text-xl font-bold mb-3 text-[var(--text-main)]">2. Fees & Subscription</h2>
+                <p className="text-[var(--text-muted)] leading-relaxed mb-4">
+                    Spendigo operates on a Subscription Model. We do not charge a percentage commission on your sales. You receive 100% of your revenue (minus standard payment processing fees charged by Stripe). Subscription tiers and pricing are set out in the platform and may be updated with notice.
+                </p>
+            </section>
+
+            <section className="mb-8">
+                <h2 className="text-xl font-bold mb-3 text-[var(--text-main)]">3. Compliance & Privacy</h2>
+                <p className="text-[var(--text-muted)] leading-relaxed mb-4">
+                    You agree to comply with all applicable Canadian laws, including the Personal Information Protection and Electronic Documents Act (PIPEDA) and Anti-Spam Legislation (CASL). You acknowledge and agree to handle personal data in accordance with our Privacy Policy and to implement reasonable safeguards for customer data entrusted to you.
+                </p>
+            </section>
+
+            <section className="mb-8">
+                <h2 className="text-xl font-bold mb-3 text-[var(--text-main)]">4. Limitation of Liability</h2>
+                <p className="text-[var(--text-muted)] leading-relaxed mb-4">
+                    You agree that Spendigo provides the platform "as-is" and "as-available". To the maximum extent permitted by law, Spendigo shall not be liable for any indirect, incidental, or consequential damages, including loss of profits or data. You agree to indemnify and hold Spendigo harmless from any claims arising out of your merchant activities or breach of this agreement.
+                </p>
+            </section>
+
+            <section className="mb-8">
+                <h2 className="text-xl font-bold mb-3 text-[var(--text-main)]">5. Authority</h2>
+                <p className="text-[var(--text-muted)] leading-relaxed mb-4">
+                    By accepting these terms, you represent that you have the authority to bind the business entity on whose behalf you are registering, and that all information provided during registration is accurate and complete.
+                </p>
+            </section>
+        </>
+    );
+
     return (
         <div className="animate-fade-in pb-20 pt-8" style={{ minHeight: 'calc(100vh - 4rem)' }}>
             <SEO
-                title={isPrivacy ? 'Privacy Policy' : 'Terms of Service'}
-                description={isPrivacy ? 'Read the Spendigo privacy policy. Learn how we protect your data.' : 'Read the Spendigo terms of service for shoppers and merchants.'}
-                path={isPrivacy ? '/privacy' : '/terms'}
+                title={isPrivacy ? 'Privacy Policy' : isMerchantTerms ? 'Merchant Terms' : 'Terms of Service'}
+                description={isPrivacy ? 'Read the Spendigo privacy policy. Learn how we protect your data.' : isMerchantTerms ? 'Read the Spendigo Marketplace Facilitator Agreement for merchant partners.' : 'Read the Spendigo terms of service for shoppers and merchants.'}
+                path={isPrivacy ? '/privacy' : isMerchantTerms ? '/merchant-terms' : '/terms'}
             />
             <div className="max-w-3xl mx-auto px-4">
-                
+
                 {/* Back button */}
                 <Link to="/" className="inline-flex items-center text-sm font-bold text-[var(--brand-primary)] hover:underline mb-8">
                     ← Back to Home
@@ -102,7 +147,7 @@ const Legal: React.FC = () => {
 
                 {/* Content Panel */}
                 <div className="glass-panel p-8 rounded-2xl shadow-sm">
-                    {isPrivacy ? privacyContent : termsContent}
+                    {isPrivacy ? privacyContent : isMerchantTerms ? merchantTermsContent : termsContent}
                 </div>
 
                 {/* Navigating between docs */}
@@ -115,6 +160,11 @@ const Legal: React.FC = () => {
                     {isPrivacy && (
                         <Link to="/terms" className="text-sm text-[var(--text-muted)] hover:text-[var(--brand-primary)] hover:underline">
                             Read our Terms of Service
+                        </Link>
+                    )}
+                    {!isMerchantTerms && (
+                        <Link to="/merchant-terms" className="text-sm text-[var(--text-muted)] hover:text-[var(--brand-primary)] hover:underline">
+                            Merchant Terms
                         </Link>
                     )}
                 </div>

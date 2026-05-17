@@ -11,6 +11,7 @@ import '../styles/design-system.css';
 import { analytics, db } from '../lib/firebase';
 import { logEvent } from 'firebase/analytics';
 import { doc, onSnapshot } from 'firebase/firestore';
+import ReConsentModal from '../components/ReConsentModal';
 
 const ConsumerLayout: React.FC = () => {
     const { itemCount, notification, clearNotification } = useCart();
@@ -83,6 +84,7 @@ const ConsumerLayout: React.FC = () => {
 
     return (
         <div className="min-h-screen bg-[#F4F7FA] relative flex flex-col">
+            <ReConsentModal />
             {/* TOP NAVIGATION BAR */}
             <header className="fixed top-0 left-0 right-0 h-[calc(4.5rem+var(--safe-area-top))] pt-safe bg-white border-b border-gray-100 z-50 px-6 md:px-12 flex items-center justify-between shadow-sm">
                 {/* LEFT: Logo with Bag Icon */}

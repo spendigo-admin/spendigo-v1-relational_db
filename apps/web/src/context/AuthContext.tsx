@@ -10,7 +10,7 @@ import {
     sendPasswordResetEmail, // Added sendPasswordResetEmail
     User as FirebaseUser
 } from 'firebase/auth';
-import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore'; 
+import { doc, getDoc, setDoc, updateDoc, addDoc, collection } from 'firebase/firestore';
 import { auth, db } from '../lib/firebase';
 import { auditBridge } from '../utils/auditBridge';
 import { Capacitor } from '@capacitor/core';
@@ -41,6 +41,20 @@ export interface User {
     address?: string;
     postalCode?: string;
     coordinates?: { lat: number; lng: number };
+    // Consent
+    consent?: {
+        termsVersion: string;
+        privacyVersion: string;
+        acceptedAt: string;
+        userAgent: string;
+    };
+    marketingConsent?: boolean;
+}
+
+export interface ConsentData {
+    termsVersion: string;
+    privacyVersion: string;
+    marketingConsent?: boolean;
 }
 
 export type Permission =
@@ -74,8 +88,9 @@ const ROLE_PERMISSIONS: Record<string, Permission[]> = {
 interface AuthContextType {
     user: User | null;
     isAuthenticated: boolean;
+    consentRequired: boolean;
     login: (email: string, password: string) => Promise<boolean>;
-    register: (userData: Partial<User> & { password: string }) => Promise<boolean>;
+    register: (userData: Partial<User> & { password: string }, consent?: ConsentData) => Promise<boolean>;
     loginWithGoogle: (targetRole?: 'consumer' | 'merchant') => Promise<boolean>;
     loginWithFacebook: () => Promise<boolean>;
     logout: () => void;
@@ -84,6 +99,7 @@ interface AuthContextType {
     can: (permission: Permission) => boolean;
     switchRole: (role: any) => void;
     updateSubscription: (tier: 'free' | 'core' | 'growth') => void;
+    acceptConsent: (consent: ConsentData) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -91,6 +107,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
+    const [consentRequired, setConsentRequired] = useState(false);
 
     // Bootstrap Auth Listener with Real-time Firestore Sync
     useEffect(() => {
@@ -160,11 +177,30 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 finalRole === 'merchant' && data.storeId ? getDoc(doc(db, 'stores', data.storeId)) : Promise.resolve(null)
             ]);
 
+            const platformSettings = settingsDoc?.exists() ? settingsDoc.data() : null;
+
             // 1. Maintenance Mode Check
-            if (settingsDoc && settingsDoc.exists() && settingsDoc.data()?.maintenanceMode) {
+            if (platformSettings?.maintenanceMode) {
                 await signOut(auth);
                 setUser(null);
                 return;
+            }
+
+            // 2. Re-consent check: compare stored consent versions against current platform versions
+            // Only applies to consumer/merchant roles; admins are exempt
+            if (finalRole !== 'admin' && platformSettings) {
+                const currentTermsVersion = platformSettings.currentTermsVersion;
+                const currentPrivacyVersion = platformSettings.currentPrivacyVersion;
+                if (currentTermsVersion && currentPrivacyVersion && data.consent) {
+                    if (
+                        data.consent.termsVersion !== currentTermsVersion ||
+                        data.consent.privacyVersion !== currentPrivacyVersion
+                    ) {
+                        setConsentRequired(true);
+                    } else {
+                        setConsentRequired(false);
+                    }
+                }
             }
 
             // 2. Security Check: If Merchant, verify Store Status
@@ -255,7 +291,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
     };
 
-    const register = async (userData: Partial<User> & { password: string; street?: string; city?: string; province?: string; postalCode?: string; businessRegistrationNumber?: string; businessType?: string }): Promise<boolean> => {
+    const register = async (userData: Partial<User> & { password: string; street?: string; city?: string; province?: string; postalCode?: string; businessRegistrationNumber?: string; businessType?: string }, consent?: ConsentData): Promise<boolean> => {
         try {
             const userCredential = await createUserWithEmailAndPassword(auth, userData.email!, userData.password);
             const uid = userCredential.user.uid;
@@ -284,6 +320,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 phoneNumber: formattedPhone,
                 emailVerified: false,
             };
+
+            // Store consent data if provided
+            if (consent) {
+                newUser.consent = {
+                    termsVersion: consent.termsVersion,
+                    privacyVersion: consent.privacyVersion,
+                    acceptedAt: new Date().toISOString(),
+                    userAgent: navigator.userAgent,
+                };
+                newUser.marketingConsent = consent.marketingConsent ?? false;
+            }
 
             // Only add merchant fields if the user is a merchant
             if (userData.role === 'merchant') {
@@ -328,7 +375,29 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             await setDoc(doc(db, 'users', uid), newUser);
             setUser(newUser as User);
 
-            await auditBridge.emit({ action: 'AUTH_REGISTER_SUCCESS', metadata: { role: newUser.role } });
+            // Write immutable consent log entry
+            if (consent) {
+                try {
+                    await addDoc(collection(db, 'consent_logs'), {
+                        userId: uid,
+                        email: userData.email!,
+                        termsVersion: consent.termsVersion,
+                        privacyVersion: consent.privacyVersion,
+                        marketingConsent: consent.marketingConsent ?? false,
+                        userAgent: navigator.userAgent,
+                        acceptedAt: new Date().toISOString(),
+                        type: 'registration',
+                    });
+                } catch (e) {
+                    console.warn('[AuthContext] Failed to write consent_log:', e);
+                }
+                await auditBridge.emit({
+                    action: 'CONSUMER_CONSENT_ACCEPTED',
+                    metadata: { termsVersion: consent.termsVersion, privacyVersion: consent.privacyVersion, email: userData.email }
+                });
+            } else {
+                await auditBridge.emit({ action: 'AUTH_REGISTER_SUCCESS', metadata: { role: newUser.role } });
+            }
 
             // Redirect to verification page
             window.location.href = '/verify-email';
@@ -494,9 +563,38 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
     };
 
+    const acceptConsent = async (consent: ConsentData): Promise<void> => {
+        if (!user) return;
+        const consentRecord = {
+            termsVersion: consent.termsVersion,
+            privacyVersion: consent.privacyVersion,
+            acceptedAt: new Date().toISOString(),
+            userAgent: navigator.userAgent,
+        };
+        await updateDoc(doc(db, 'users', user.id), { consent: consentRecord, marketingConsent: consent.marketingConsent ?? user.marketingConsent ?? false });
+        try {
+            await addDoc(collection(db, 'consent_logs'), {
+                userId: user.id,
+                email: user.email,
+                ...consentRecord,
+                marketingConsent: consent.marketingConsent ?? false,
+                type: 're-consent',
+            });
+        } catch (e) {
+            console.warn('[AuthContext] Failed to write consent_log:', e);
+        }
+        await auditBridge.emit({
+            action: 'CONSUMER_CONSENT_ACCEPTED',
+            metadata: { termsVersion: consent.termsVersion, privacyVersion: consent.privacyVersion, email: user.email, type: 're-consent' }
+        });
+        setUser({ ...user, consent: consentRecord });
+        setConsentRequired(false);
+    };
+
     const value = {
         user,
         isAuthenticated: !!user,
+        consentRequired,
         login,
         register,
         loginWithGoogle,
@@ -506,7 +604,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         loading,
         can,
         switchRole,
-        updateSubscription
+        updateSubscription,
+        acceptConsent
     };
 
     return (
