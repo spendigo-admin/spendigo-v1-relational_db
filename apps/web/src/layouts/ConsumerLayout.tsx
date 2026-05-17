@@ -12,6 +12,8 @@ import { analytics, db } from '../lib/firebase';
 import { logEvent } from 'firebase/analytics';
 import { doc, onSnapshot } from 'firebase/firestore';
 import ReConsentModal from '../components/ReConsentModal';
+import CookieConsentBanner from '../components/CookieConsentBanner';
+import { useCookieConsent } from '../hooks/useCookieConsent';
 
 const ConsumerLayout: React.FC = () => {
     const { itemCount, notification, clearNotification } = useCart();
@@ -22,10 +24,11 @@ const ConsumerLayout: React.FC = () => {
     const location = useLocation();
     const { t } = useTranslation();
     const [flyerIngestionEnabled, setFlyerIngestionEnabled] = useState(true);
+    const { consent: cookieConsent, accept: acceptCookies } = useCookieConsent();
 
     // Track Page Views
     React.useEffect(() => {
-        if (analytics) {
+        if (analytics && cookieConsent === 'accepted') {
             logEvent(analytics, 'page_view', {
                 page_path: location.pathname,
                 page_location: window.location.href,
@@ -34,9 +37,11 @@ const ConsumerLayout: React.FC = () => {
         }
 
         // Custom Firestore Counter for Dashboard
-        import('../utils/traffic').then(({ incrementDailyVisitors }) => {
-            incrementDailyVisitors();
-        });
+        if (cookieConsent === 'accepted') {
+            import('../utils/traffic').then(({ incrementDailyVisitors }) => {
+                incrementDailyVisitors();
+            });
+        }
 
         const unsubSettings = onSnapshot(doc(db, 'settings', 'platform'), (snap) => {
             if (snap.exists()) {
@@ -45,7 +50,14 @@ const ConsumerLayout: React.FC = () => {
         });
 
         return () => unsubSettings();
-    }, [location]);
+    }, [location, cookieConsent]);
+
+    // Auto-accept cookies for authenticated users who have accepted the Privacy Policy
+    React.useEffect(() => {
+        if (user?.consent && cookieConsent === null) {
+            acceptCookies();
+        }
+    }, [user, cookieConsent]);
 
     // STRICT SECURITY CHECK: Redirect Admin/Merchant away from Shopper UI
     React.useEffect(() => {
@@ -85,6 +97,7 @@ const ConsumerLayout: React.FC = () => {
     return (
         <div className="min-h-screen bg-[#F4F7FA] relative flex flex-col">
             <ReConsentModal />
+            <CookieConsentBanner />
             {/* TOP NAVIGATION BAR */}
             <header className="fixed top-0 left-0 right-0 h-[calc(4.5rem+var(--safe-area-top))] pt-safe bg-white border-b border-gray-100 z-50 px-6 md:px-12 flex items-center justify-between shadow-sm">
                 {/* LEFT: Logo with Bag Icon */}

@@ -2,9 +2,19 @@ import * as Sentry from '@sentry/react';
 
 const SENTRY_DSN = import.meta.env.VITE_SENTRY_DSN;
 
+function cookieConsentAccepted(): boolean {
+    try {
+        return localStorage.getItem('spendigo_cookie_consent') === 'accepted';
+    } catch {
+        return false;
+    }
+}
+
 /**
  * Initialize Sentry for error tracking and performance monitoring.
  * Gracefully no-ops if VITE_SENTRY_DSN is not set (local dev).
+ * Session replay is only enabled when the user has accepted cookie consent —
+ * error tracking (stack traces) runs regardless as it's operational data.
  */
 export function initSentry() {
     if (!SENTRY_DSN) {
@@ -12,27 +22,26 @@ export function initSentry() {
         return;
     }
 
+    const replayConsented = cookieConsentAccepted();
+
     Sentry.init({
         dsn: SENTRY_DSN,
-        environment: import.meta.env.MODE, // 'development' | 'production'
-        
+        environment: import.meta.env.MODE,
+
         integrations: [
             Sentry.browserTracingIntegration(),
-            Sentry.replayIntegration({
-                // Mask all text and block all media for privacy
+            ...(replayConsented ? [Sentry.replayIntegration({
                 maskAllText: false,
                 blockAllMedia: false,
-            }),
+            })] : []),
         ],
 
-        // Performance: Sample 20% of transactions in production
         tracesSampleRate: import.meta.env.PROD ? 0.2 : 1.0,
 
-        // Session Replay: Capture 10% of sessions, 100% of sessions with errors
-        replaysSessionSampleRate: 0.1,
-        replaysOnErrorSampleRate: 1.0,
+        // Session replay only when cookie consent is granted
+        replaysSessionSampleRate: replayConsented ? 0.1 : 0,
+        replaysOnErrorSampleRate: replayConsented ? 1.0 : 0,
 
-        // Don't send errors from localhost in dev
         beforeSend(event) {
             if (import.meta.env.DEV) {
                 console.warn('[Sentry] Would have sent event:', event);
@@ -42,7 +51,7 @@ export function initSentry() {
         },
     });
 
-    console.info('[Sentry] Initialized for', import.meta.env.MODE);
+    console.info('[Sentry] Initialized for', import.meta.env.MODE, '| replay:', replayConsented);
 }
 
 export { Sentry };

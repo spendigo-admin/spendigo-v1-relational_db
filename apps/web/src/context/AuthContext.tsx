@@ -191,8 +191,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             if (finalRole !== 'admin' && platformSettings) {
                 const currentTermsVersion = platformSettings.currentTermsVersion;
                 const currentPrivacyVersion = platformSettings.currentPrivacyVersion;
-                if (currentTermsVersion && currentPrivacyVersion && data.consent) {
+                if (currentTermsVersion && currentPrivacyVersion) {
                     if (
+                        !data.consent ||
                         data.consent.termsVersion !== currentTermsVersion ||
                         data.consent.privacyVersion !== currentPrivacyVersion
                     ) {

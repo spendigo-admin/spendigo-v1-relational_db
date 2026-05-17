@@ -115,12 +115,12 @@ service cloud.firestore {
       allow list: if isAdmin() || (isMerchant() && resource.data.storeId == getMerchantStoreId());
       // New accounts may only register as consumer or merchant — admin/staff roles
       // are assigned server-side only. storeId and status are also admin-only on create.
-      // Consent fields (termsVersion, privacyVersion, acceptedAt) are required on create.
+      // Consent is enforced at the application layer (ReConsentModal blocks the UI) — not
+      // required on create because SSO flows (Google) create the user doc before the consent
+      // modal fires, then record consent via updateDoc.
       allow create: if isAuthenticated() && request.auth.uid == userId
         && request.resource.data.role in ['consumer', 'merchant']
-        && !request.resource.data.keys().hasAny(['adminRole', 'status', 'storeId'])
-        && request.resource.data.keys().hasAll(['consent'])
-        && request.resource.data.consent.keys().hasAll(['termsVersion', 'privacyVersion', 'acceptedAt']);
+        && !request.resource.data.keys().hasAny(['adminRole', 'status', 'storeId']);
       // role, adminRole, merchantRole, and storeId are admin-only fields.
       // Users can only update their status from 'pending_invite' to 'active'.
       allow update: if isAdmin()
