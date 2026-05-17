@@ -7,6 +7,7 @@ import { useCart } from '../../context/CartContext';
 import { useMarketplace } from '../../context/MarketplaceContext';
 import { useCatalog } from '../../hooks/useCatalog';
 import { useStoreProducts } from '../../hooks/useStoreProducts'; // Standalone hook
+import { useStoreActivePrices } from '../../hooks/useStoreActivePrices';
 import ReviewList from '../../components/ReviewList';
 import ReviewForm from '../../components/ReviewForm';
 import StarRating from '../../components/StarRating';
@@ -20,7 +21,7 @@ import { EmptyState } from '../../components/ui/EmptyState';
 import { useEffect } from 'react';
 
 // New FlyerTab Component
-const FlyerTab: React.FC<{ storeId: string; storeName: string; summary: any; viewMode: 'grid' | 'list' }> = ({ storeId, storeName, summary, viewMode }) => {
+const FlyerTab: React.FC<{ storeId: string; storeName: string; summary: any; viewMode: 'grid' | 'list'; getMinPrice: (productId: string, price: number) => number }> = ({ storeId, storeName, summary, viewMode, getMinPrice }) => {
     const { subscribeToFlyers } = useMarketplace();
     const { addToCart } = useCart();
     const { t } = useTranslation();
@@ -42,7 +43,7 @@ const FlyerTab: React.FC<{ storeId: string; storeName: string; summary: any; vie
         addToCart({
             productId: item.productId,
             productName: item.name,
-            price: item.salePrice,
+            price: getMinPrice(item.productId, item.salePrice),
             originalPrice: item.originalPrice,
             quantity: 1,
             storeId,
@@ -238,7 +239,7 @@ const FlyerTab: React.FC<{ storeId: string; storeName: string; summary: any; vie
 
 
 // New OffersTab Component
-const OffersTab: React.FC<{ storeId: string, storeName: string; viewMode: 'grid' | 'list' }> = ({ storeId, storeName, viewMode }) => {
+const OffersTab: React.FC<{ storeId: string, storeName: string; viewMode: 'grid' | 'list'; getMinPrice: (productId: string, price: number) => number }> = ({ storeId, storeName, viewMode, getMinPrice }) => {
     const { subscribeToDeals } = useMarketplace();
     const { addToCart } = useCart();
     const { t } = useTranslation();
@@ -257,7 +258,7 @@ const OffersTab: React.FC<{ storeId: string, storeName: string; viewMode: 'grid'
         addToCart({
             productId: item.productId,
             productName: item.productName || item.name || 'Product',
-            price: item.salePrice ?? item.price,
+            price: getMinPrice(item.productId, item.salePrice ?? item.price),
             originalPrice: item.originalPrice,
             quantity: 1,
             storeId,
@@ -527,6 +528,7 @@ const StoreDetail: React.FC = () => {
     }, [id]);
 
     const { products: catalogProducts, loading: loadingProducts } = useStoreProducts(id || '');
+    const { getMinPrice } = useStoreActivePrices(id || '');
     const [activeTab, setActiveTab] = useState<'products' | 'flyer' | 'offers' | 'reviews' | 'info'>((location.state as any)?.initialTab || 'products');
     const [activeCategory, setActiveCategory] = useState('All');
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -582,7 +584,8 @@ const StoreDetail: React.FC = () => {
         addToCart({
             productId: product.id,
             productName: product.name,
-            price: product.price,
+            price: getMinPrice(product.id, product.price),
+            originalPrice: product.originalPrice,
             quantity: 1,
             storeId: store.id,
             storeName: store.name,
@@ -885,11 +888,11 @@ const StoreDetail: React.FC = () => {
             )}
 
             {activeTab === 'flyer' && (
-                <FlyerTab storeId={store.id} storeName={store.name} summary={store.flyer} viewMode={viewMode} />
+                <FlyerTab storeId={store.id} storeName={store.name} summary={store.flyer} viewMode={viewMode} getMinPrice={getMinPrice} />
             )}
 
             {activeTab === 'offers' && (
-                <OffersTab storeId={store.id} storeName={store.name} viewMode={viewMode} />
+                <OffersTab storeId={store.id} storeName={store.name} viewMode={viewMode} getMinPrice={getMinPrice} />
             )}
 
             {activeTab === 'reviews' && (
