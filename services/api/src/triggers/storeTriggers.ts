@@ -123,15 +123,16 @@ export const onStoreUpdate = functions.firestore
   .onUpdate(async (change, context) => {
     const before = change.before.data();
     const after = change.after.data();
+    const storeId = context.params.storeId;
 
-    // Only re-geocode if the address parts changed
-    const addressChanged = before.address !== after.address || 
-                           before.city !== after.city || 
+    // Re-geocode when address parts change
+    const addressChanged = before.address !== after.address ||
+                           before.city !== after.city ||
                            before.postalCode !== after.postalCode;
 
     if (addressChanged && after.address) {
       const fullAddress = `${after.address}, ${after.city || ''}, ${after.province || ''}, ${after.postalCode || ''}, Canada`.replace(/,,/g, ',');
-      
+
       try {
         const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(fullAddress)}`);
         const results = await response.json() as any[];
@@ -144,10 +145,39 @@ export const onStoreUpdate = functions.firestore
               lng: parseFloat(lon)
             }
           });
-          functions.logger.info(`Re-geocoded updated store ${context.params.storeId}`);
+          functions.logger.info(`Re-geocoded updated store ${storeId}`);
         }
       } catch (err) {
-        functions.logger.error(`Failed to re-geocode store ${context.params.storeId}:`, err);
+        functions.logger.error(`Failed to re-geocode store ${storeId}:`, err);
+      }
+    }
+
+    // Notify admins when a merchant submits KYB documents for review
+    if (before.kybStatus !== 'pending_review' && after.kybStatus === 'pending_review') {
+      const storeName = after.name || storeId;
+      const docCount = (after.kybDocuments || []).length;
+      try {
+        await admin.firestore().collection('mail').add({
+          to: process.env.ADMIN_ALERT_EMAIL || 'ops@spendigo.ca',
+          message: {
+            subject: `KYB Review Required: ${storeName}`,
+            html: `
+              <h2 style="color:#1a1a1a">New KYB Submission</h2>
+              <p><strong>Store:</strong> ${storeName}</p>
+              <p><strong>Store ID:</strong> ${storeId}</p>
+              <p><strong>Documents submitted:</strong> ${docCount}</p>
+              <p style="margin-top:16px">
+                <a href="https://spendigo.ca/admin/stores" style="background:#0d9488;color:#fff;padding:10px 18px;border-radius:8px;text-decoration:none;font-weight:bold">
+                  Review in Admin Portal
+                </a>
+              </p>
+            `,
+          },
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+        functions.logger.info(`KYB review notification sent for store ${storeId}`);
+      } catch (err) {
+        functions.logger.error(`Failed to send KYB notification for store ${storeId}:`, err);
       }
     }
   });

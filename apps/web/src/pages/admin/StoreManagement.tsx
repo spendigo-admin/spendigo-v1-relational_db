@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { collection, query, where, onSnapshot, doc, updateDoc, addDoc } from 'firebase/firestore';
-import { db } from '../../lib/firebase';
+import { getDownloadURL, ref as storageRef } from 'firebase/storage';
+import { db, storage } from '../../lib/firebase';
 import '../../styles/design-system.css';
 import { useAuth } from '../../context/AuthContext';
 import { useAudit } from '../../context/AuditContext';
@@ -62,6 +63,18 @@ const StoreManagement: React.FC = () => {
     const [customReason, setCustomReason] = useState('');
     const [kybReviewNote, setKybReviewNote] = useState('');
     const [kybRejectMode, setKybRejectMode] = useState(false);
+
+    const handleViewKybDoc = async (d: any) => {
+        try {
+            // New docs store storagePath; legacy docs have a direct url
+            const url = d.storagePath
+                ? await getDownloadURL(storageRef(storage, d.storagePath))
+                : d.url;
+            window.open(url, '_blank', 'noopener,noreferrer');
+        } catch {
+            addNotification({ type: 'alert', title: 'Access Error', message: 'Could not retrieve document. Please try again.' });
+        }
+    };
 
     const resetForm = () => {
         setFormData({
@@ -1102,14 +1115,13 @@ const StoreManagement: React.FC = () => {
                                                                                 <p className="text-xs font-medium truncate">{d.filename}</p>
                                                                                 <p className="text-[10px] text-[var(--text-muted)]">{DOC_LABELS[d.type] || d.type} · {new Date(d.uploadedAt).toLocaleDateString()}</p>
                                                                             </div>
-                                                                            <a
-                                                                                href={d.url}
-                                                                                target="_blank"
-                                                                                rel="noopener noreferrer"
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => handleViewKybDoc(d)}
                                                                                 className="ml-2 text-[10px] font-bold text-blue-600 hover:text-blue-800 whitespace-nowrap"
                                                                             >
                                                                                 View
-                                                                            </a>
+                                                                            </button>
                                                                         </div>
                                                                     ))}
                                                                 </div>

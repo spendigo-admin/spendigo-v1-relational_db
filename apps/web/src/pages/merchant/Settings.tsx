@@ -353,7 +353,8 @@ const MerchantSettings: React.FC = () => {
     type KybStatus = 'not_submitted' | 'pending_review' | 'approved' | 'rejected';
     interface KybDocument {
         type: 'business_license' | 'incorporation_certificate' | 'other';
-        url: string;
+        storagePath: string;
+        url?: string;
         filename: string;
         uploadedAt: string;
     }
@@ -1618,12 +1619,12 @@ const MerchantSettings: React.FC = () => {
         const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
         const path = `stores/${storeId}/documents/${kybDocType}_${Date.now()}_${safeName}`;
 
-        const url = await uploadFile(file, path, 5, ['image/jpeg', 'image/png', 'application/pdf']);
-        if (!url) return;
+        const uploaded = await uploadFile(file, path, 5, ['image/jpeg', 'image/png', 'application/pdf']);
+        if (!uploaded) return;
 
         const newDoc: KybDocument = {
             type: kybDocType,
-            url,
+            storagePath: path,
             filename: file.name,
             uploadedAt: new Date().toISOString()
         };
@@ -1683,7 +1684,7 @@ const MerchantSettings: React.FC = () => {
                     <div className="p-4 bg-green-50 border border-green-200 rounded-xl text-sm text-green-700 font-medium">
                         Your business has been verified. No further action is needed.
                     </div>
-                ) : (
+                ) : user?.merchantRole === 'OWNER' ? (
                     <div className="space-y-4">
                         <div>
                             <label className="block text-sm font-medium text-[var(--text-main)] mb-1">Document Type</label>
@@ -1715,6 +1716,10 @@ const MerchantSettings: React.FC = () => {
                             className="hidden"
                             onChange={handleKybUpload}
                         />
+                    </div>
+                ) : (
+                    <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl text-sm text-[var(--text-muted)]">
+                        KYB document submission is restricted to the store owner. Please ask your store owner to upload the required documents.
                     </div>
                 )}
             </section>

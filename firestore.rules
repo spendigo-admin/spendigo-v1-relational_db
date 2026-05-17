@@ -34,6 +34,11 @@ service cloud.firestore {
       return getUserData().storeId;
     }
 
+    // Get the merchant sub-role (OWNER | MANAGER | STAFF | MARKETING)
+    function getMerchantRole() {
+      return getUserData().merchantRole;
+    }
+
     // Check if a store is in the pending_deletion grace period
     function isStorePendingDeletion(storeId) {
       return get(/databases/$(database)/documents/stores/$(storeId)).data.status == 'pending_deletion';
@@ -167,10 +172,11 @@ service cloud.firestore {
                && !request.resource.data.diff(resource.data).affectedKeys()
                    .hasAny(['subscriptionTier', 'stripeAccountId', 'stripeOnboardingStatus', 'ownerId']))
               ||
-              // 3. KYB Document Submission (merchants may upload docs and set status to pending_review)
+              // 3. KYB Document Submission (store OWNER only — not MANAGER/STAFF/MARKETING)
               (request.resource.data.diff(resource.data).affectedKeys()
                    .hasOnly(['kybDocuments', 'kybStatus'])
-               && request.resource.data.kybStatus in ['not_submitted', 'pending_review'])
+               && request.resource.data.kybStatus in ['not_submitted', 'pending_review']
+               && getMerchantRole() == 'OWNER')
             )
            )
         || (isAuthenticated() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['rating', 'reviewCount']));
