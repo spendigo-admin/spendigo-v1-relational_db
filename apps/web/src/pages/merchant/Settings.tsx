@@ -7,7 +7,8 @@ import { useNotifications } from '../../context/NotificationContext';
 import { useConfirmation } from '../../context/ConfirmationContext';
 import { useFileUpload } from '../../hooks/useFileUpload';
 import { getFunctions, httpsCallable } from 'firebase/functions';
-import { db, auth } from '../../lib/firebase';
+import { ref as storageRef, uploadBytes } from 'firebase/storage';
+import { db, auth, storage } from '../../lib/firebase';
 import { collection, query, where, onSnapshot, arrayUnion } from 'firebase/firestore';
 import { auditBridge } from '../../utils/auditBridge';
 
@@ -362,6 +363,7 @@ const MerchantSettings: React.FC = () => {
     const [kybDocuments, setKybDocuments] = useState<KybDocument[]>([]);
     const [kybReviewNote, setKybReviewNote] = useState('');
     const [kybDocType, setKybDocType] = useState<KybDocument['type']>('business_license');
+    const [kybUploading, setKybUploading] = useState(false);
     const kybFileInputRef = useRef<HTMLInputElement>(null);
 
     const [isLocatingStatus, setIsLocatingStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
@@ -1601,9 +1603,6 @@ const MerchantSettings: React.FC = () => {
     const handleKybUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (!e.target.files || !e.target.files[0]) return;
 
-        // Ensure auth token is fresh before hitting Storage — the SDK fetches it
-        // internally but silently returns null if the session hasn't settled yet,
-        // producing storage/unauthenticated even when the user appears logged in.
         if (!auth.currentUser) {
             addNotification({ type: 'alert', title: 'Session Expired', message: 'Please sign out and sign back in, then try again.' });
             return;
@@ -1616,11 +1615,35 @@ const MerchantSettings: React.FC = () => {
         }
 
         const file = e.target.files[0];
+
+        if (file.size > 5 * 1024 * 1024) {
+            addNotification({ type: 'alert', title: 'File Too Large', message: 'Document must be under 5 MB.' });
+            return;
+        }
+        const allowed = ['image/jpeg', 'image/png', 'application/pdf'];
+        if (!allowed.includes(file.type)) {
+            addNotification({ type: 'alert', title: 'Invalid File', message: 'Please upload a PDF, JPEG, or PNG.' });
+            return;
+        }
+
         const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
         const path = `stores/${storeId}/documents/${kybDocType}_${Date.now()}_${safeName}`;
 
-        const uploaded = await uploadFile(file, path, 5, ['image/jpeg', 'image/png', 'application/pdf']);
-        if (!uploaded) return;
+        try {
+            setKybUploading(true);
+            // Use uploadBytes directly — getDownloadURL is intentionally omitted.
+            // The Storage read rule restricts KYB documents to admins only; calling
+            // getDownloadURL here would throw storage/unauthorized for merchant users.
+            await uploadBytes(storageRef(storage, path), file);
+        } catch (err: any) {
+            const msg = err?.code === 'storage/unauthorized'
+                ? 'Permission denied. Only the store owner can upload KYB documents.'
+                : err?.message || 'Could not upload file.';
+            addNotification({ type: 'alert', title: 'Upload Failed', message: msg });
+            return;
+        } finally {
+            setKybUploading(false);
+        }
 
         const newDoc: KybDocument = {
             type: kybDocType,
@@ -1701,11 +1724,11 @@ const MerchantSettings: React.FC = () => {
 
                         <button
                             onClick={() => kybFileInputRef.current?.click()}
-                            disabled={uploading}
+                            disabled={kybUploading}
                             className="w-full border-2 border-dashed border-[var(--glass-border)] rounded-xl p-6 text-center hover:border-[var(--brand-primary)] hover:bg-[var(--brand-primary)]/5 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             <div className="text-3xl mb-2">📎</div>
-                            <p className="font-semibold text-[var(--text-main)]">{uploading ? 'Uploading...' : 'Upload Document'}</p>
+                            <p className="font-semibold text-[var(--text-main)]">{kybUploading ? 'Uploading...' : 'Upload Document'}</p>
                             <p className="text-xs text-[var(--text-muted)] mt-1">PDF, JPEG, or PNG — max 5 MB</p>
                         </button>
 
