@@ -6,6 +6,8 @@
 - [ ] **Staging Environment**: Provision an isolated `spendigo-staging` Firebase project (or Preview Channels) for QA.
 - [x] **Firebase Functions Upgrade**: Upgraded `firebase-functions` SDK from v4.9.0 to v6.6.0. All 50 source files migrated to `firebase-functions/v1` import path.
 - [x] **Migrate functions.config()**: All 6 `functions.config()` usages replaced with `process.env`. Values migrated to `services/api/.env` for the emulator. See affected files: `config/stripe.ts`, `payments/stripeWebhook.ts`, `payments/createCheckoutSession.ts`, `payments/updateSubscriptionPlan.ts`, `triggers/storeTriggers.ts`.
+- [x] **Expired Deal Price Reversion**: Added `revertExpiredDeals` pubsub trigger (every 30 min, Toronto) that reverts `merchant_products.price` back to `original_price` after `discount_valid_until` passes — prevents stale deal prices from causing `placeOrder` server-side validation failures at checkout.
+- [x] **Lowest Active Price on Cart Add**: Added `useStoreActivePrices` hook that subscribes to a store's live `deals` and `flyers` subcollections and exposes `getMinPrice(productId, candidatePrice)` — ensures the UI sends the true lowest current price when adding to cart, preventing client/server price mismatch errors.
 - [ ] **Set Production Env Vars Before Next Deploy**: `functions.config()` is gone — before running `firebase deploy --only functions`, set these in the Firebase Console (Functions → each function → Environment variables) or via Secret Manager: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_CORE`, `STRIPE_PRICE_GROWTH`. Optional: `APP_URL` (defaults to `https://spendigo.ca`), `ADMIN_ALERT_EMAIL` (defaults to `ops@spendigo.ca`).
 - [ ] **Stripe Secret Defaults to Placeholder**: `config/stripe.ts:3` falls back to `'sk_test_placeholder'` when `STRIPE_SECRET_KEY` is unset — all payment calls silently fail with an auth error instead of hard-crashing at startup. Throw during initialization if the key is missing.
 - [ ] **Stripe Webhook Secret Defaults to Empty String**: `stripeWebhook.ts:13` uses `process.env.STRIPE_WEBHOOK_SECRET || ''` — an empty string causes `stripe.webhooks.constructEvent()` to accept any signature in some SDK versions, bypassing webhook verification entirely. Throw at startup if missing.
@@ -43,6 +45,11 @@
 
 ### Mobile
 - [ ] **Android `allowBackup` Disabled**: `apps/web/android/app/src/main/AndroidManifest.xml` line 4 sets `android:allowBackup="true"`. This allows Android backup services to export app data (including cached tokens and localStorage) to uncontrolled locations. Set to `false` or configure `android:fullBackupContent` rules.
+
+### Compliance & Legal
+- [x] **GDPR Cookie Consent Banner**: Added consent banner (accept/decline); Sentry session replay and GA analytics now only activate after acceptance. Consent state persisted in localStorage via `useCookieConsent` hook.
+- [x] **KYB Merchant Compliance Documents**: Merchants upload business verification documents in Settings. Uploads restricted to store owners (`merchant-assets/{storeId}/kyb/`); admin portal receives a notification on submission. `getDownloadURL` calls skipped on upload to avoid unauthorized-read errors.
+- [x] **Legal Re-Consent Flow**: Added re-consent gate for updated Terms of Service / Privacy Policy — users must re-accept before accessing protected routes when a new policy version is published.
 
 ### Operational
 - [ ] **Unauthenticated Analytics View Inflation**: `firestore.rules` allows unauthenticated writes to `stores/{storeId}/analytics` view counters — a bot can inflate any store's traffic metrics to millions at zero cost. Require authentication for analytics writes, or enforce server-side increment via a Cloud Function.
