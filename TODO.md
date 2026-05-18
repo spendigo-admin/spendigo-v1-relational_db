@@ -4,19 +4,12 @@
 
 ### Infrastructure & Config
 - [ ] **Staging Environment**: Provision an isolated `spendigo-staging` Firebase project (or Preview Channels) for QA.
-- [x] **Firebase Functions Upgrade**: Upgraded `firebase-functions` SDK from v4.9.0 to v6.6.0. All 50 source files migrated to `firebase-functions/v1` import path.
-- [x] **Migrate functions.config()**: All 6 `functions.config()` usages replaced with `process.env`. Values migrated to `services/api/.env` for the emulator. See affected files: `config/stripe.ts`, `payments/stripeWebhook.ts`, `payments/createCheckoutSession.ts`, `payments/updateSubscriptionPlan.ts`, `triggers/storeTriggers.ts`.
-- [x] **Expired Deal Price Reversion**: Added `revertExpiredDeals` pubsub trigger (every 30 min, Toronto) that reverts `merchant_products.price` back to `original_price` after `discount_valid_until` passes — prevents stale deal prices from causing `placeOrder` server-side validation failures at checkout.
-- [x] **Lowest Active Price on Cart Add**: Added `useStoreActivePrices` hook that subscribes to a store's live `deals` and `flyers` subcollections and exposes `getMinPrice(productId, candidatePrice)` — ensures the UI sends the true lowest current price when adding to cart, preventing client/server price mismatch errors.
 - [ ] **Set Production Env Vars Before Next Deploy**: `functions.config()` is gone — before running `firebase deploy --only functions`, set these in the Firebase Console (Functions → each function → Environment variables) or via Secret Manager: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_CORE`, `STRIPE_PRICE_GROWTH`. Optional: `APP_URL` (defaults to `https://spendigo.ca`), `ADMIN_ALERT_EMAIL` (defaults to `ops@spendigo.ca`).
 - [ ] **Stripe Secret Defaults to Placeholder**: `config/stripe.ts:3` falls back to `'sk_test_placeholder'` when `STRIPE_SECRET_KEY` is unset — all payment calls silently fail with an auth error instead of hard-crashing at startup. Throw during initialization if the key is missing.
 - [ ] **Stripe Webhook Secret Defaults to Empty String**: `stripeWebhook.ts:13` uses `process.env.STRIPE_WEBHOOK_SECRET || ''` — an empty string causes `stripe.webhooks.constructEvent()` to accept any signature in some SDK versions, bypassing webhook verification entirely. Throw at startup if missing.
 
 ### Security
-- [x] **App Check Enforcement**
 - [ ] **CSP `unsafe-inline` Removal**: `firebase.json` CSP includes `'unsafe-inline'` in both `script-src` and `style-src`, weakening XSS protection. Migrate inline styles/scripts or introduce per-request nonces.
-- [x] **HTML Injection in Team Invite Email**: `inviteTeamMember.ts:130–135` — added `escapeHtml()` helper; all three caller-supplied fields (`name`, `email`, `merchantRole`) are now HTML-escaped before template interpolation.
-- [x] **`cancelOrder` Reason Field Unsanitized**: `cancelOrder.ts:21` — type-guarded to string, trimmed, and hard-capped at 500 chars before being written to Firestore or the audit log.
 - [ ] **Rate Limiter Concurrent Bypass**: `rateLimiter.ts:50–56` reads the current count, checks it, then increments in a separate write — two concurrent requests arriving just below the limit both pass the check before either write lands, exceeding the cap. Move the increment to occur before the threshold check, or use a Firestore transaction that atomically reads-increments-checks.
 - [ ] **Permission Bypass in `onboardStore`**: `onboardStore.ts:35–41` evaluates `caller?.storeId !== storeId` — when `caller.storeId` is `undefined` (e.g. no Firestore doc yet), the expression is `undefined !== storeId` which is `true`, so the check passes for any storeId. Use `caller?.storeId === storeId && caller?.merchantRole === 'OWNER'` instead.
 - [ ] **Permission Bypass in `removeTeamMember`**: `removeTeamMember.ts:31` has the same `undefined !== storeId` pattern — a caller with no `storeId` field can remove members from any store. Apply the same fix as `onboardStore`.
@@ -45,11 +38,6 @@
 
 ### Mobile
 - [ ] **Android `allowBackup` Disabled**: `apps/web/android/app/src/main/AndroidManifest.xml` line 4 sets `android:allowBackup="true"`. This allows Android backup services to export app data (including cached tokens and localStorage) to uncontrolled locations. Set to `false` or configure `android:fullBackupContent` rules.
-
-### Compliance & Legal
-- [x] **GDPR Cookie Consent Banner**: Added consent banner (accept/decline); Sentry session replay and GA analytics now only activate after acceptance. Consent state persisted in localStorage via `useCookieConsent` hook.
-- [x] **KYB Merchant Compliance Documents**: Merchants upload business verification documents in Settings. Uploads restricted to store owners (`merchant-assets/{storeId}/kyb/`); admin portal receives a notification on submission. `getDownloadURL` calls skipped on upload to avoid unauthorized-read errors.
-- [x] **Legal Re-Consent Flow**: Added re-consent gate for updated Terms of Service / Privacy Policy — users must re-accept before accessing protected routes when a new policy version is published.
 
 ### Operational
 - [ ] **Unauthenticated Analytics View Inflation**: `firestore.rules` allows unauthenticated writes to `stores/{storeId}/analytics` view counters — a bot can inflate any store's traffic metrics to millions at zero cost. Require authentication for analytics writes, or enforce server-side increment via a Cloud Function.
@@ -87,13 +75,12 @@
 ### Feature: Cloud Storage Image Mirroring for Public Flyers
 
 **Status**: Proposed / Backlog
-**Description**: 
-Currently, the public flyer ingestion relies on hotlinking images directly from the Flipp CDN. This carries a risk of broken images if Flipp changes URLs, blocks hotlinking, or deletes old assets. This feature proposes downloading these images to our own Firebase Storage bucket during/after ingestion.
+**Description**: Currently, the public flyer ingestion relies on hotlinking images directly from the Flipp CDN. This carries a risk of broken images if Flipp changes URLs, blocks hotlinking, or deletes old assets. This feature proposes downloading these images to our own Firebase Storage bucket during/after ingestion.
 
 **Proposed Architecture**:
 1. **Asynchronous Processing**: Do not block the main `runIngestion` Cloud Function, as downloading 1,500+ images will cause a function timeout (60s+ limit). Instead, save the deals with the original Flipp URLs first.
 2. **Background Queue**: After ingestion, trigger a background worker (e.g., via Google Cloud Tasks or Pub/Sub) to process the images asynchronously.
-3. **Image Deduplication**: Because grocery flyers repeat the exact same products week over week, we must deduplicate to save Firebase Storage and egress costs. 
+3. **Image Deduplication**: Because grocery flyers repeat the exact same products week over week, we must deduplicate to save Firebase Storage and egress costs.
    - Hash the original Flipp Image URL (e.g., `md5(flippUrl).jpg`).
    - Check if `bucket.file(hash).exists()` before downloading.
    - If it exists, skip the download. If not, download and upload it.
@@ -117,13 +104,3 @@ Currently, the public flyer ingestion relies on hotlinking images directly from 
 4. Update the admin catalog editor to allow uploading/reordering multiple images per product.
 
 **Cons**: Small schema migration; all existing products have only `primary_image_url` and would show a single-image gallery until backfilled.
-
----
-
-### Cleanup: Legacy Service Directories
-
-**Status**: Done
-- Deleted `services/functions/` (superseded `onUserUpdate` trigger; live version in `services/api/src/triggers/`)
-- Deleted `services/smartcart_optimizer/index.ts` (experimental greedy optimizer; production logic in `services/api/src/smartcart/`)
-- Deleted `tests/unit/services-smartcart-optimizer.test.ts` (only tested the deleted dead code)
-- 38 tests still pass after removal
