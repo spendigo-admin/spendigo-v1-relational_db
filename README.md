@@ -1,7 +1,7 @@
 # Spendigo SmartCart
 
 **Status**: Production-Ready (v1.0)  
-**Last Updated**: 2026-05-14
+**Last Updated**: 2026-05-19
 
 Spendigo SmartCart is a Canada-first **Marketplace Facilitator** platform connecting independent convenience stores with local consumers. It features smart basket optimization, real-time order management, digital flyer integration, robust subscription management, and production-grade security.
 
@@ -171,15 +171,17 @@ npm run build
 - 🌍 **Multilingual**: i18n support for global consumer reach
 - 🛡️ **Integrity Check**: Automated validation against price attacks
 - ⭐ **Product Reviews**: Verified purchase badges and helpfulness ranking
+- 🍪 **Privacy & Compliance**: GDPR-compliant cookie consent and legal re-consent workflows
+- 🏷️ **Price Enforcement**: Real-time lowest active price guarantee and automatic deal reversion
 
 ### 📊 Merchant Dashboard
 - 🚀 **Onboarding**: Integrated setup with Stripe Express
 - 👥 **Workforce Management**: Granular role-based access (Admin, Editor, Viewer)
 - 📁 **Catalog Sync**: Add products directly from the Spendigo Master Catalog
 - 📰 **Digital Flyers**: Interactive flyer builder for weekly promotions
-- 💳 **Stripe Subscriptions**: Multiple tiers (Free, Core, Growth) with feature gating
+- 💳 **Stripe Subscriptions**: Multiple tiers (Free, Core, Growth, Pro) with feature gating and Marketing Suite
 - 📉 **Analytics**: Detailed revenue and traffic insights
-- ⚖️ **Store Compliance**: In-app suspension notice handling and compliance workflows
+- ⚖️ **Store Compliance**: In-app suspension notice handling, KYB document verification, and compliance workflows
 
 ### 🛡️ System Admin Panel
 - 🤖 **Flyer Ingestion**: AI-powered automated flyer scraping jobs
@@ -235,6 +237,10 @@ npx cap open android
 ## 🎯 Roadmap
 
 ### ✅ Completed
+- [x] **Pro Subscription Tier**: Digital marketing suite, 1% commission, and targeted push campaigns
+- [x] **KYB Verification**: Merchant business document upload and admin approval workflows
+- [x] **Price Enforcement**: Real-time lowest active price guarantee and automatic deal reversion
+- [x] **Privacy & Compliance**: GDPR cookie consent banner and TOS re-consent flows
 - [x] **Advanced Search**: Algolia integration (Master & Merchant Products)
 - [x] **Security Hardening**: SHA-256 Audit Ledger & Integrity Utils
 - [x] **Subscription System**: Full Stripe Checkout & Webhook flow

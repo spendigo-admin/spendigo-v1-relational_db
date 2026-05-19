@@ -37,6 +37,7 @@
 - [ ] **Audit Logging IP Masked as `0.0.0.0` Behind Proxy**: `placeOrder.ts:174` and `cancelOrder.ts` fall back to `'0.0.0.0'` when `context.rawRequest.ip` is null — behind Cloud Load Balancer all attacker IPs look the same in audit logs. Read `x-forwarded-for` header with proper parsing as the primary source.
 
 ### Mobile
+- [ ] **App Check: Register Android and iOS Attestation Providers**: Web App is registered; Android (`com.spendigo.smartcart`) and iOS (`com.spendigo.smartcart`) show "Not registered" in the Firebase App Check console. Register Android with **Play Integrity** (preferred) or SafetyNet, and iOS with **App Attest** (preferred, iOS 14+) or DeviceCheck. Both require adding the respective SDK to the Capacitor native project and initializing App Check before any Firebase service call in the native layer. Enforce mode should mirror web — debug tokens needed for CI/emulator builds.
 - [ ] **Android `allowBackup` Disabled**: `apps/web/android/app/src/main/AndroidManifest.xml` line 4 sets `android:allowBackup="true"`. This allows Android backup services to export app data (including cached tokens and localStorage) to uncontrolled locations. Set to `false` or configure `android:fullBackupContent` rules.
 
 ### Operational
@@ -72,35 +73,4 @@
 
 ## 4. Backlog & Technical Investigations
 
-### Feature: Cloud Storage Image Mirroring for Public Flyers
-
-**Status**: Proposed / Backlog
-**Description**: Currently, the public flyer ingestion relies on hotlinking images directly from the Flipp CDN. This carries a risk of broken images if Flipp changes URLs, blocks hotlinking, or deletes old assets. This feature proposes downloading these images to our own Firebase Storage bucket during/after ingestion.
-
-**Proposed Architecture**:
-1. **Asynchronous Processing**: Do not block the main `runIngestion` Cloud Function, as downloading 1,500+ images will cause a function timeout (60s+ limit). Instead, save the deals with the original Flipp URLs first.
-2. **Background Queue**: After ingestion, trigger a background worker (e.g., via Google Cloud Tasks or Pub/Sub) to process the images asynchronously.
-3. **Image Deduplication**: Because grocery flyers repeat the exact same products week over week, we must deduplicate to save Firebase Storage and egress costs.
-   - Hash the original Flipp Image URL (e.g., `md5(flippUrl).jpg`).
-   - Check if `bucket.file(hash).exists()` before downloading.
-   - If it exists, skip the download. If not, download and upload it.
-4. **Data Update**: Once the image is uploaded to Firebase Storage, update the corresponding deal document in Firestore with the new `spendigo-8540c.firebasestorage.app` URL.
-
-**Pros**: 100% control over images, fast CDN delivery, prevents UI breaking if third-party links die.
-**Cons**: Increases Firebase Storage costs, requires handling background workers and download failure states.
-
----
-
-### Feature: Master Product Multi-Image Support
-
-**Status**: Proposed / Backlog
-**Source**: Inline TODO in `apps/web/src/hooks/useCatalog.ts:283`
-**Description**: Master products currently support a single `primary_image_url`. The schema and upload flow need to be extended to support an ordered array of images (gallery view) for richer product pages.
-
-**Proposed Architecture**:
-1. Add an `images: string[]` field to the `MasterProductRecord` model alongside the existing `primary_image_url`.
-2. Update `onMasterProductWrite` Cloud Function trigger to download and mirror all images in the array to Firebase Storage (same pattern as the existing single-image download).
-3. Update `ProductDetail.tsx` to render a swipeable image gallery when multiple images are present.
-4. Update the admin catalog editor to allow uploading/reordering multiple images per product.
-
-**Cons**: Small schema migration; all existing products have only `primary_image_url` and would show a single-image gallery until backfilled.
+*No active backlog items.*

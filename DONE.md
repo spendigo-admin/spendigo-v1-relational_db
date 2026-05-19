@@ -6,6 +6,21 @@ Chronological record of shipped fixes, features, and cleanup tasks. Newest at th
 
 ## May 2026
 
+### Cloud Storage Image Mirroring for Flyer Deals + Active Deals Static JSON
+`services/api/src/triggers/flyerImageMirror.ts`, `services/api/src/admin/rebuildActiveDealsJson.ts`, `services/api/src/utils/exportActiveDeals.ts`, `services/api/src/utils/flippScraper.ts`
+
+Implemented the full image mirroring pipeline described in the backlog. After flyer ingestion, a Firestore `onCreate` trigger (`flyerImageMirror.ts`) downloads each deal image from the Flipp CDN to `products/flyer-images/{md5Hash}.jpg` in Firebase Storage. URL deduplication via MD5 hash prevents re-downloading the same image across weekly flyer cycles. The deal document is updated with the new `firebasestorage.app` URL once mirrored. A separate `rebuildActiveDealsJson` Cloud Function (pub/sub cron) exports all non-expired deals to a static JSON file in GCS via `exportActiveDeals.ts`, enabling fast client-side deal browsing without live Firestore reads. Image download logic extracted from `flippScraper.ts` into the shared trigger to remove duplication.
+
+### KYB Document Signed URLs and Access Token Revocation
+`services/api/src/admin/getKybDocUrl.ts`, `services/api/src/triggers/kybDocTrigger.ts`, `apps/web/src/pages/admin/StoreManagement.tsx`, `scripts/revokeKybTokens.ts`
+
+Closed a security gap where KYB compliance documents were accessible to anyone with the Firebase download token embedded in the stored URL. Three-part fix: (1) `kybDocTrigger.ts` — Firestore `onCreate` trigger on `stores/{storeId}/documents/{docId}` immediately revokes the Firebase Storage download token after upload, making the raw `firebasestorage.app` URL non-functional. (2) `getKybDocUrl.ts` — new callable Cloud Function (admin-role only) that generates a short-lived signed URL (15-minute TTL) via the Storage Admin SDK; `StoreManagement.tsx` now fetches via this function instead of storing the URL directly. (3) `scripts/revokeKybTokens.ts` — one-time migration script to revoke download tokens on all existing KYB documents already in Storage.
+
+### Master Product Multi-Image Support
+`apps/web/src/hooks/useCatalog.ts`, `apps/web/src/pages/admin/MasterCatalog.tsx`, `services/api/src/models/catalog.ts`, `services/api/src/triggers/productTriggers.ts`
+
+Extended master products from a single `primary_image_url` to an `images: string[]` array in `MasterProductRecord`. The admin catalog editor (`MasterCatalog.tsx`) now supports uploading, previewing, and reordering multiple images per product. The `onMasterProductWrite` Cloud Function trigger was updated to download and mirror all images in the array to Firebase Storage (same pattern as the existing single-image download), not just the first. Existing products with only `primary_image_url` continue to work — `images` defaults to an empty array for backwards compatibility.
+
 ### Pro Merchant Subscription Tier with Digital Marketing Access
 `apps/web/src/context/AuthContext.tsx`, `apps/web/src/pages/merchant/Subscription.tsx`, `apps/web/src/pages/merchant/Marketing.tsx`, `apps/web/src/context/MarketplaceContext.tsx`, `apps/web/src/pages/consumer/StoreList.tsx`, `services/api/src/payments/updateSubscriptionPlan.ts`, `services/api/src/payments/createCheckoutSession.ts`, `services/api/src/marketing/sendCampaign.ts`
 
