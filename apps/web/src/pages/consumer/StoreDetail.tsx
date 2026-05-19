@@ -83,37 +83,39 @@ const FlyerTab: React.FC<{ storeId: string; storeName: string; summary: any; vie
     return (
         <div className="animate-fade-in bg-white min-h-screen">
             {/* RETAIL FLYER HEADER */}
-            <div className="bg-[#112244] text-white px-4 py-3 md:py-4 flex flex-col md:flex-row md:items-center justify-between gap-2 shadow-inner border-b-4 border-[#112244]">
-                <div className="flex items-center gap-3">
-                    <div className="bg-white p-1 rounded-lg">
-                        <span className="text-2xl">🍁</span>
-                    </div>
-                    <div>
-                        <h2 className="text-xl md:text-2xl font-black italic tracking-tighter mb-0 text-white drop-shadow-sm leading-none">
-                            {storeName}'s Great Deals
-                        </h2>
-                        <div className="flex items-center gap-2 mt-0.5">
-                            <span className="text-[10px] bg-blue-800 px-1.5 py-0.5 rounded font-bold tracking-widest">Proudly canadian</span>
-                            <span className="text-[10px] font-bold opacity-90 tracking-widest">SINCE 1922</span>
+            <div className="max-w-7xl mx-auto px-4 pt-6">
+                <div className="bg-[#112244] text-white px-6 py-5 md:py-6 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-lg rounded-2xl border-b-4 border-[#007AFF]">
+                    <div className="flex items-center gap-3">
+                        <div className="bg-white p-2 rounded-xl shadow-sm flex-shrink-0">
+                            <span className="text-2xl md:text-3xl">🍁</span>
+                        </div>
+                        <div>
+                            <h2 className="text-xl md:text-2xl font-black italic tracking-tighter mb-0 text-white drop-shadow-sm leading-none uppercase">
+                                {storeName}'s Great Deals
+                            </h2>
+                            <div className="flex items-center gap-2 mt-1.5">
+                                <span className="text-[9px] bg-blue-800 px-2 py-0.5 rounded font-bold tracking-widest uppercase">Proudly canadian</span>
+                                <span className="text-[9px] font-black opacity-90 tracking-widest uppercase">SINCE 1922</span>
+                            </div>
                         </div>
                     </div>
-                </div>
-                <div className="text-right flex flex-col items-end">
-                    <div className="text-xs font-bold bg-white text-blue-600 px-2 py-0.5 rounded-full mb-1">
-                        {flyer.title || "WEEKLY SAVINGS"}
-                    </div>
-                    <div className="flex flex-col items-end leading-tight">
-                        <p className="text-[10px] md:text-xs font-black tracking-widest text-yellow-300 drop-shadow-sm">
-                            VALID: {new Date(flyer.validFrom).toLocaleDateString()} - {new Date(flyer.validUntil).toLocaleDateString()}
-                        </p>
-                        <p className="text-[9px] md:text-[10px] font-black tracking-tighter bg-white/10 px-1.5 py-0.5 rounded mt-0.5 animate-pulse text-white">
-                            ⏰ {flyerDaysLeft} {flyerDaysLeft === 1 ? t('storeDay') : t('storeDays')} {t('storeLeft')}
-                        </p>
+                    <div className="text-left md:text-right flex flex-col items-start md:items-end">
+                        <div className="text-[10px] font-black bg-white text-[#007AFF] px-3 py-1 rounded-full mb-2 tracking-widest uppercase shadow-sm">
+                            {flyer.title || "WEEKLY SAVINGS"}
+                        </div>
+                        <div className="flex flex-col items-start md:items-end leading-tight">
+                            <p className="text-[10px] md:text-xs font-black tracking-widest text-yellow-300 drop-shadow-sm uppercase">
+                                VALID: {new Date(flyer.validFrom).toLocaleDateString()} - {new Date(flyer.validUntil).toLocaleDateString()}
+                            </p>
+                            <p className="text-[9px] md:text-[10px] font-black tracking-widest bg-white/10 px-2 py-1 rounded mt-1.5 animate-pulse text-white">
+                                ⏰ {flyerDaysLeft} {flyerDaysLeft === 1 ? t('storeDay') : t('storeDays')} {t('storeLeft')}
+                            </p>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div className="p-4 space-y-6">
+            <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
                 {viewMode === 'list' ? (
                     <div className="space-y-3">
                         {sortedItems.map((item: any, idx: number) => (
@@ -302,35 +304,37 @@ const OffersTab: React.FC<{ storeId: string, storeName: string; viewMode: 'grid'
     };
 
     return (
-        <div className="animate-fade-in bg-white min-h-screen">
+        <div className="animate-fade-in bg-white min-h-screen pb-12">
             {/* FLASH SALES SECTION */}
             {sortedFlashSales.length > 0 && (
                 <div className="mb-8">
-                    <div className="bg-[#112244] text-white px-4 py-3 md:py-4 flex items-center justify-between border-b-4 border-[#112244] shadow-inner">
-                        <div className="flex items-center gap-3">
-                            <div className="bg-white p-1 rounded-lg">
-                                <span className="text-2xl md:text-3xl animate-pulse">⚡</span>
+                    <div className="max-w-7xl mx-auto px-4 pt-6">
+                        <div className="bg-[#112244] text-white px-6 py-5 md:py-6 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-lg rounded-2xl border-b-4 border-orange-500">
+                            <div className="flex items-center gap-3">
+                                <div className="bg-white p-2 rounded-xl shadow-sm flex-shrink-0">
+                                    <span className="text-2xl md:text-3xl animate-pulse">⚡</span>
+                                </div>
+                                <div>
+                                    <h3 className="text-lg md:text-xl font-black italic tracking-tighter leading-none m-0 text-white uppercase">
+                                        Great Deals & Savings
+                                    </h3>
+                                    <p className="text-[9px] font-black tracking-[0.2em] text-white/80 mt-1.5 uppercase">THE PRICES YOU LOVE • EVERY DAY</p>
+                                </div>
                             </div>
-                            <div>
-                                <h3 className="text-lg md:text-xl font-black italic tracking-tighter leading-none m-0 text-white uppercase">
-                                    Great Deals & Savings
-                                </h3>
-                                <p className="text-[10px] font-black tracking-[0.2em] text-white/80 mt-1 uppercase">THE PRICES YOU LOVE • EVERY DAY</p>
+                            <div className="text-left md:text-right flex flex-col items-start md:items-end">
+                                <span className="text-[10px] font-black bg-white text-orange-600 px-3 py-1 rounded-full tracking-[0.2em] uppercase inline-block mb-2 shadow-sm">
+                                    Hot Deals
+                                </span>
+                                {sortedFlashSales[0]?.endDate && (
+                                    <p className="text-[9px] md:text-[10px] font-black bg-white/10 px-2 py-1 rounded text-white animate-pulse tracking-widest uppercase">
+                                        ⏰ {calculateDaysLeft(sortedFlashSales[0].endDate)} DAYS LEFT
+                                    </p>
+                                )}
                             </div>
-                        </div>
-                        <div className="text-right flex flex-col items-end">
-                            <span className="text-[10px] font-black bg-white text-[#007AFF] px-3 py-1 rounded-full tracking-[0.2em] uppercase inline-block mb-1 shadow-sm">
-                                Hot Deals
-                            </span>
-                            {sortedFlashSales[0]?.endDate && (
-                                <p className="text-[9px] md:text-[10px] font-black bg-white/10 px-2 py-0.5 rounded text-white animate-pulse tracking-tighter">
-                                    ⏰ {calculateDaysLeft(sortedFlashSales[0].endDate)} DAYS LEFT
-                                </p>
-                            )}
                         </div>
                     </div>
 
-                    <div className="p-4">
+                    <div className="max-w-7xl mx-auto px-4 py-6">
                         {viewMode === 'list' ? (
                             <div className="space-y-2">
                                 {sortedFlashSales.map((offer) => (
@@ -407,19 +411,23 @@ const OffersTab: React.FC<{ storeId: string, storeName: string; viewMode: 'grid'
             {/* SALE ITEMS SECTION */}
             {sortedSaleItems.length > 0 && (
                 <div>
-                    <div className="bg-[#112244] text-white px-4 py-3 md:py-4 flex items-center justify-between border-b-4 border-[#112244] shadow-inner">
-                        <div className="flex items-center gap-3">
-                            <span className="text-2xl md:text-3xl">🏷️</span>
-                            <div>
-                                <h3 className="text-lg md:text-xl font-black italic tracking-tighter leading-none m-0 text-white">
-                                    Great Deals & Savings
-                                </h3>
-                                <p className="text-[10px] font-bold tracking-widest text-white/90 mt-1">THE PRICES YOU LOVE • EVERY DAY</p>
+                    <div className="max-w-7xl mx-auto px-4 pt-6">
+                        <div className="bg-[#112244] text-white px-6 py-5 md:py-6 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-lg rounded-2xl border-b-4 border-[#007AFF]">
+                            <div className="flex items-center gap-3">
+                                <div className="bg-white p-2 rounded-xl shadow-sm flex-shrink-0">
+                                    <span className="text-2xl md:text-3xl">🏷️</span>
+                                </div>
+                                <div>
+                                    <h3 className="text-lg md:text-xl font-black italic tracking-tighter leading-none m-0 text-white uppercase">
+                                        Great Deals & Savings
+                                    </h3>
+                                    <p className="text-[9px] font-black tracking-[0.2em] text-white/80 mt-1.5 uppercase">THE PRICES YOU LOVE • EVERY DAY</p>
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <div className="p-4">
+                    <div className="max-w-7xl mx-auto px-4 py-6">
                         {viewMode === 'list' ? (
                             <div className="space-y-2">
                                 {sortedSaleItems.map((item) => (
