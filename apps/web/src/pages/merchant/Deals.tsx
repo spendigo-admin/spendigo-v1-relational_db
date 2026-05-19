@@ -68,7 +68,7 @@ const MerchantDeals: React.FC = () => {
     const { products: availableProducts } = useStoreProducts(storeId);
     const hasWriteAccess = !isLocked;
 
-    const isRestrictedPlan = (user?.subscriptionTier || 'free') !== 'growth';
+    const isRestrictedPlan = (user?.subscriptionTier || 'free') !== 'pro';
 
     const [deals, setDeals] = useState<Deal[]>([]); // Initial empty, populated by subscription
     const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'scheduled' | 'expired'>('all');

@@ -253,7 +253,9 @@ export const useOptimizedWishlist = () => {
             merchantInventory
                 .filter(p => wishlistMasterIds.has(p.master_product_id))
                 .map(p => p.merchant_id).filter(Boolean)
-        )).slice(0, 30);
+        ))
+        .filter(id => stores[id]?.subscriptionTier === 'pro')
+        .slice(0, 30);
         console.log(`[useOptimizedWishlist] Setting up deals listeners for ${storeIds.length} stores:`, storeIds);
         
         const unsubscribes: (() => void)[] = [];

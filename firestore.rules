@@ -188,7 +188,9 @@ service cloud.firestore {
             && !isStorePendingDeletion(storeId));
       }
       match /deals/{dealId} {
-        allow read: if true;
+        allow read: if isAdmin()
+            || (isMerchant() && getMerchantStoreId() == storeId)
+            || get(/databases/$(database)/documents/stores/$(storeId)).data.subscriptionTier == 'pro';
         allow write: if isAdmin() || (isMerchant() && getMerchantStoreId() == storeId
             && !isStorePendingDeletion(storeId));
       }

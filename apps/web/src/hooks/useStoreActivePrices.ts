@@ -7,12 +7,14 @@ import { filterActiveDeals, isFlyerActive } from '../utils/date-helpers';
  * Used so that adding to cart from ANY tab always applies the lowest valid price.
  */
 export function useStoreActivePrices(storeId: string) {
-    const { subscribeToDeals, subscribeToFlyers } = useMarketplace();
+    const { subscribeToDeals, subscribeToFlyers, getStore } = useMarketplace();
     const [dealPrices, setDealPrices] = useState<Map<string, number>>(new Map());
     const [flyerPrices, setFlyerPrices] = useState<Map<string, number>>(new Map());
 
+    const hasDealsAccess = getStore(storeId)?.subscriptionTier === 'pro';
+
     useEffect(() => {
-        if (!storeId) return;
+        if (!storeId || !hasDealsAccess) return;
         return subscribeToDeals(storeId, (data: any[]) => {
             const map = new Map<string, number>();
             filterActiveDeals(data).forEach((d: any) => {
@@ -24,7 +26,7 @@ export function useStoreActivePrices(storeId: string) {
             });
             setDealPrices(map);
         });
-    }, [storeId, subscribeToDeals]);
+    }, [storeId, subscribeToDeals, hasDealsAccess]);
 
     useEffect(() => {
         if (!storeId) return;

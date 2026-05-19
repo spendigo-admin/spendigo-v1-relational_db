@@ -242,19 +242,22 @@ const FlyerTab: React.FC<{ storeId: string; storeName: string; summary: any; vie
 
 // New OffersTab Component
 const OffersTab: React.FC<{ storeId: string, storeName: string; viewMode: 'grid' | 'list'; getMinPrice: (productId: string, price: number) => number }> = ({ storeId, storeName, viewMode, getMinPrice }) => {
-    const { subscribeToDeals } = useMarketplace();
+    const { subscribeToDeals, getStore } = useMarketplace();
     const { addToCart } = useCart();
     const { t } = useTranslation();
     const [deals, setDeals] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
+    const hasDealsAccess = getStore(storeId)?.subscriptionTier === 'pro';
+
     useEffect(() => {
+        if (!hasDealsAccess) { setLoading(false); return; }
         const unsubscribe = subscribeToDeals(storeId, (data) => {
             setDeals(filterActiveDeals(data));
             setLoading(false);
         });
         return () => unsubscribe();
-    }, [storeId, subscribeToDeals]);
+    }, [storeId, subscribeToDeals, hasDealsAccess]);
 
     const handleQuickAdd = (item: any) => {
         addToCart({
