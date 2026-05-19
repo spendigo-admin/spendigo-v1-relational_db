@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { collection, query, where, onSnapshot, doc, updateDoc, addDoc } from 'firebase/firestore';
-import { getDownloadURL, ref as storageRef } from 'firebase/storage';
-import { db, storage } from '../../lib/firebase';
+import { db, functions } from '../../lib/firebase';
+import { httpsCallable } from 'firebase/functions';
 import '../../styles/design-system.css';
 import { useAuth } from '../../context/AuthContext';
 import { useAudit } from '../../context/AuditContext';
@@ -66,10 +66,15 @@ const StoreManagement: React.FC = () => {
 
     const handleViewKybDoc = async (d: any) => {
         try {
-            // New docs store storagePath; legacy docs have a direct url
-            const url = d.storagePath
-                ? await getDownloadURL(storageRef(storage, d.storagePath))
-                : d.url;
+            let url: string;
+            if (d.storagePath) {
+                const getKybDocUrl = httpsCallable<{ storagePath: string }, { url: string }>(functions, 'getKybDocUrl');
+                const result = await getKybDocUrl({ storagePath: d.storagePath });
+                url = result.data.url;
+            } else {
+                // Legacy docs stored a direct url before storagePath was introduced
+                url = d.url;
+            }
             window.open(url, '_blank', 'noopener,noreferrer');
         } catch {
             addNotification({ type: 'alert', title: 'Access Error', message: 'Could not retrieve document. Please try again.' });

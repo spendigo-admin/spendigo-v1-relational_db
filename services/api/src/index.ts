@@ -48,3 +48,5 @@ export { forceDeleteStore } from './admin/forceDeleteStore';
 export { sendCampaign } from './marketing/sendCampaign';
 export { aggregateFlyerAnalytics, triggerAnalyticsAggregation } from './admin/aggregateFlyerAnalytics';
 export { revertExpiredDeals } from './triggers/revertExpiredDeals';
+export { onKybDocumentUploaded } from './triggers/kybDocTrigger';
+export { getKybDocUrl } from './admin/getKybDocUrl';
