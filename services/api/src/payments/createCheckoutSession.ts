@@ -18,20 +18,21 @@ export const createCheckoutSession = functions.https.onCall(async (data, context
     // Rate Limit Check: Max 3 checkout sessions initialized per minute
     await checkRateLimit(context.auth.uid, 'createCheckoutSession', 3, 60 * 1000);
 
-    const { tier, promoCode } = data; // 'core' or 'growth'
+    const { tier, promoCode } = data; // 'core', 'growth', or 'pro'
     const userId = context.auth.uid;
     const userEmail = context.auth.token.email;
 
-    if (!tier || !['core', 'growth'].includes(tier)) {
+    if (!tier || !['core', 'growth', 'pro'].includes(tier)) {
         throw new functions.https.HttpsError('invalid-argument', 'Invalid subscription tier.');
     }
 
     const PRICE_IDS = {
         core: process.env.STRIPE_PRICE_CORE,
         growth: process.env.STRIPE_PRICE_GROWTH,
+        pro: process.env.STRIPE_PRICE_PRO,
     };
-    if (!PRICE_IDS.core || !PRICE_IDS.growth) {
-        throw new functions.https.HttpsError('internal', 'Stripe price IDs not configured. Set STRIPE_PRICE_CORE and STRIPE_PRICE_GROWTH.');
+    if (!PRICE_IDS.core || !PRICE_IDS.growth || !PRICE_IDS.pro) {
+        throw new functions.https.HttpsError('internal', 'Stripe price IDs not configured. Set STRIPE_PRICE_CORE, STRIPE_PRICE_GROWTH, and STRIPE_PRICE_PRO.');
     }
 
     try {

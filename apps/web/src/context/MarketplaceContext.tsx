@@ -251,7 +251,15 @@ export const MarketplaceProvider: React.FC<{ children: ReactNode }> = ({ childre
     }, [stores, lastTimeRefreshed]); // Depend on lastTimeRefreshed to re-calc every minute
 
     const getStore = (storeId: string | number) => filteredStores[storeId];
-    const allStores = React.useMemo(() => Object.values(filteredStores).filter((s: any) => s.status === 'active'), [filteredStores]);
+    const allStores = React.useMemo(() => {
+        const active = Object.values(filteredStores).filter((s: any) => s.status === 'active') as any[];
+        // Pro-tier stores with sponsoredPlacement float to the top
+        return active.sort((a, b) => {
+            const aSponsored = a.subscriptionTier === 'pro' && a.sponsoredPlacement ? 1 : 0;
+            const bSponsored = b.subscriptionTier === 'pro' && b.sponsoredPlacement ? 1 : 0;
+            return bSponsored - aSponsored;
+        });
+    }, [filteredStores]);
 
     return (
         <MarketplaceContext.Provider value={{

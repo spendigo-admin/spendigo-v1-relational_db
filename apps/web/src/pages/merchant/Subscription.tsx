@@ -76,6 +76,8 @@ const Subscription: React.FC = () => {
         }
     };
 
+    const TIER_ORDER: Record<string, number> = { free: 0, core: 1, growth: 2, pro: 3 };
+
     const tiers = [
         {
             id: 'free',
@@ -121,6 +123,23 @@ const Subscription: React.FC = () => {
                 '✅ Advanced Analytics',
                 '✅ Custom Promo Codes'
             ]
+        },
+        {
+            id: 'pro',
+            name: 'Pro',
+            basePrice: '$149',
+            period: '/month',
+            description: 'Full digital marketing suite for ambitious brands.',
+            color: 'bg-gradient-to-br from-amber-50 to-orange-50 border-amber-300',
+            badge: 'Marketing Suite',
+            features: [
+                '✅ Everything in Growth',
+                '✅ Push Campaign Access',
+                '✅ 200 Campaigns / 24 h',
+                '✅ Campaign Scheduling',
+                '✅ Sponsored Placement Boost',
+                '✅ 1% Commission Rate'
+            ]
         }
     ];
 
@@ -144,7 +163,7 @@ const Subscription: React.FC = () => {
                 type: 'warning'
             };
         } else if (user?.subscriptionStatus === 'active') {
-            const isUpgrade = tierId === 'growth' && user?.subscriptionTier === 'core';
+            const isUpgrade = (TIER_ORDER[tierId] ?? 0) > (TIER_ORDER[user?.subscriptionTier ?? 'free'] ?? 0);
             confirmOptions = {
                 title: isUpgrade ? 'Confirm Upgrade' : 'Confirm Plan Change',
                 message: isUpgrade
@@ -231,7 +250,7 @@ const Subscription: React.FC = () => {
                     </div>
                 )}
 
-                <div className="grid md:grid-cols-3 gap-6">
+                <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
                     {tiers.map((tier) => {
                         // Calculate Display Price
                         let displayPrice = tier.basePrice;
@@ -244,6 +263,9 @@ const Subscription: React.FC = () => {
                             } else if (tier.id === 'growth') {
                                 originalPrice = tier.basePrice;
                                 displayPrice = '$9.90';
+                            } else if (tier.id === 'pro') {
+                                originalPrice = tier.basePrice;
+                                displayPrice = '$14.90';
                             }
                         }
 
@@ -256,6 +278,11 @@ const Subscription: React.FC = () => {
                                 {tier.recommended && (
                                     <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide">
                                         Recommended
+                                    </div>
+                                )}
+                                {tier.badge && (
+                                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-amber-500 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide">
+                                        {tier.badge}
                                     </div>
                                 )}
 
@@ -331,6 +358,7 @@ const Subscription: React.FC = () => {
                             <ul className="text-left mt-1 list-disc list-inside space-y-1 inline-block">
                                 <li><strong>Core Plan:</strong> FREE for 1 Year ($0/mo)</li>
                                 <li><strong>Growth Plan:</strong> 90% OFF for 1 Year ($9.90/mo)</li>
+                                <li><strong>Pro Plan:</strong> 90% OFF for 1 Year ($14.90/mo)</li>
                             </ul>
                         </div>
                     )}

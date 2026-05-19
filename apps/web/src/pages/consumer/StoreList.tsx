@@ -454,7 +454,16 @@ const StoreList: React.FC = () => {
                                     )}
                                 </div>
                                 <div className="flex-1 text-center md:text-left min-w-0 w-full">
-                                    <h3 className="font-bold text-base sm:text-lg md:text-2xl text-[var(--brand-navy)] mb-1 md:mb-2 group-hover:text-[var(--brand-primary)] transition-colors truncate">{store.name}</h3>
+                                    <div className="flex items-center justify-center md:justify-start gap-1.5 mb-1 md:mb-2">
+                                        <h3 className="font-bold text-base sm:text-lg md:text-2xl text-[var(--brand-navy)] group-hover:text-[var(--brand-primary)] transition-colors truncate">{store.name}</h3>
+                                        {store.kybStatus === 'approved' && store.subscriptionTier === 'growth' && (
+                                            <span title="Spendigo Verified Business" className="shrink-0 inline-flex items-center justify-center w-4 h-4 md:w-5 md:h-5 bg-teal-500 rounded-full">
+                                                <svg className="w-2.5 h-2.5 md:w-3 md:h-3 text-white" fill="none" stroke="currentColor" strokeWidth={3} viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                                </svg>
+                                            </span>
+                                        )}
+                                    </div>
 
                                     {activeCategory === 'Offers' ? (
                                         <div className="mb-4">

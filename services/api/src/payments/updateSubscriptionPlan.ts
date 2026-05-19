@@ -9,6 +9,7 @@ const db = admin.firestore();
 const PRICE_IDS = {
     core: process.env.STRIPE_PRICE_CORE || 'price_123_test_core',
     growth: process.env.STRIPE_PRICE_GROWTH || 'price_456_test_growth',
+    pro: process.env.STRIPE_PRICE_PRO || 'price_789_test_pro',
 };
 
 export const updateSubscriptionPlan = functions.https.onCall(async (data, context) => {
@@ -20,10 +21,10 @@ export const updateSubscriptionPlan = functions.https.onCall(async (data, contex
         throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated.');
     }
 
-    const { newTier } = data; // 'free', 'core', 'growth'
+    const { newTier } = data; // 'free', 'core', 'growth', 'pro'
     const userId = context.auth.uid;
 
-    if (!['free', 'core', 'growth'].includes(newTier)) {
+    if (!['free', 'core', 'growth', 'pro'].includes(newTier)) {
         throw new functions.https.HttpsError('invalid-argument', 'Invalid tier.');
     }
 
@@ -67,8 +68,8 @@ export const updateSubscriptionPlan = functions.https.onCall(async (data, contex
 
         // Determine if Upgrade or Downgrade
         // We need a way to know price value or just compare tier logical order
-        // Assuming logical order: free < core < growth
-        const TIER_ORDER = { free: 0, core: 1, growth: 2 };
+        // Assuming logical order: free < core < growth < pro
+        const TIER_ORDER = { free: 0, core: 1, growth: 2, pro: 3 };
         const currentTier = userData?.subscriptionTier || 'free';
 
         const isUpgrade = TIER_ORDER[newTier as keyof typeof TIER_ORDER] > TIER_ORDER[currentTier as keyof typeof TIER_ORDER];

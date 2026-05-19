@@ -259,7 +259,17 @@ const MerchantMarketing: React.FC = () => {
                 {/* Push Campaign Section */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* Send Campaign */}
-                    <div className="bg-white p-6 rounded-2xl border border-[var(--glass-border)] shadow-sm">
+                    <div className="bg-white p-6 rounded-2xl border border-[var(--glass-border)] shadow-sm relative overflow-hidden">
+                        {user?.subscriptionTier !== 'pro' && (
+                            <div className="absolute inset-0 z-10 bg-white/90 backdrop-blur-sm flex flex-col items-center justify-center rounded-2xl p-6 text-center">
+                                <div className="text-4xl mb-3">🔒</div>
+                                <h4 className="font-bold text-lg text-[var(--text-main)] mb-1">Pro Feature</h4>
+                                <p className="text-sm text-[var(--text-muted)] mb-4">Push campaigns are available on the <strong>Pro plan</strong> ($149/mo). Reach customers directly on their devices.</p>
+                                <a href="/merchant/subscription" className="px-5 py-2 bg-amber-500 text-white text-sm font-bold rounded-xl hover:bg-amber-600 transition-colors shadow-md">
+                                    Upgrade to Pro →
+                                </a>
+                            </div>
+                        )}
                         <h3 className="font-bold text-xl mb-1 flex items-center gap-2 text-[var(--text-main)]">
                             <span>📣</span> Send Push Campaign
                         </h3>

@@ -70,14 +70,19 @@ export const sendCampaign = functions.https.onCall(async (data, context) => {
         throw new functions.https.HttpsError('permission-denied', 'You do not own this store.');
     }
 
-    // Rate limit: 10 campaigns per 24h per merchant
-    await checkRateLimit(uid, 'sendCampaign', 50, 24 * 60 * 60 * 1000);
-
     const storeDoc = await db.collection('stores').doc(storeId).get();
     if (!storeDoc.exists) {
         throw new functions.https.HttpsError('not-found', 'Store not found.');
     }
     const store = storeDoc.data()!;
+
+    // Push campaigns require the Pro subscription tier
+    if (store.subscriptionTier !== 'pro') {
+        throw new functions.https.HttpsError('permission-denied', 'Push campaigns require the Pro subscription plan.');
+    }
+
+    // Rate limit: 200 campaigns per 24h for Pro merchants
+    await checkRateLimit(uid, 'sendCampaign', 200, 24 * 60 * 60 * 1000);
     const campaignTitle = title || store.name || 'Special Offer';
 
     // Resolve segment to a list of {uid, fcmTokens} pairs

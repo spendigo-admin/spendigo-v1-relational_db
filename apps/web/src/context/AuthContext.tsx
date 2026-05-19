@@ -30,7 +30,7 @@ export interface User {
     businessRegistrationNumber?: string;
     businessType?: string;
     merchantRole?: 'OWNER' | 'MANAGER' | 'STAFF' | 'MARKETING';
-    subscriptionTier?: 'free' | 'core' | 'growth';
+    subscriptionTier?: 'free' | 'core' | 'growth' | 'pro';
     subscriptionStatus?: 'active' | 'past_due' | 'canceled' | 'unpaid';
     subscriptionEnd?: string; // ISO String
     // Admin specific
