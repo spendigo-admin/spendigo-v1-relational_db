@@ -754,71 +754,73 @@ const StoreDetail: React.FC = () => {
             {activeTab === 'products' && (
                 <div className="animate-fade-in">
                     {/* Premium Category Filters */}
-                    <div className="px-4 py-4 bg-white border-b border-gray-100 flex items-center gap-4">
-                        <span className="text-[10px] font-black text-gray-600 tracking-widest whitespace-nowrap">{t('storeFilterBy')}:</span>
-                        <div className="overflow-x-auto scrollbar-hide flex gap-2 pb-1">
-                            {store.categories.map((cat: string) => (
-                                <button
-                                    key={cat}
-                                    onClick={() => setActiveCategory(cat)}
-                                    className={`px-4 py-2 rounded-full text-xs font-semibold transition-all whitespace-nowrap border ${activeCategory === cat
-                                        ? 'bg-[var(--brand-primary)] text-white border-[var(--brand-primary)] shadow-sm'
-                                        : 'bg-[var(--surface-2)] text-[var(--text-main)] border-[var(--glass-border)] hover:border-[var(--brand-primary)]'}`}
-                                >
-                                    {cat.replace(/^cat-/, '').replace(/-/g, ' ')}
-                                </button>
-                            ))}
+                    <div className="bg-white border-b border-gray-100">
+                        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center gap-4">
+                            <span className="text-[10px] font-black text-gray-600 tracking-widest whitespace-nowrap">{t('storeFilterBy')}:</span>
+                            <div className="overflow-x-auto scrollbar-hide flex gap-2 pb-1">
+                                {store.categories.map((cat: string) => (
+                                    <button
+                                        key={cat}
+                                        onClick={() => setActiveCategory(cat)}
+                                        className={`px-4 py-2 rounded-full text-xs font-semibold transition-all whitespace-nowrap border ${activeCategory === cat
+                                            ? 'bg-[var(--brand-primary)] text-white border-[var(--brand-primary)] shadow-sm'
+                                            : 'bg-[var(--surface-2)] text-[var(--text-main)] border-[var(--glass-border)] hover:border-[var(--brand-primary)]'}`}
+                                    >
+                                        {cat.replace(/^cat-/, '').replace(/-/g, ' ')}
+                                    </button>
+                                ))}
+                            </div>
                         </div>
                     </div>
 
                     {/* Product Grid/List View */}
-                    <div className="p-4 bg-gray-50/50 min-h-screen">
-                        {filteredProducts.length === 0 ? (
-                            <EmptyState icon="🛒" heading={t('storeNoItemsAisle')} subtext={t('storeNoItemsHint')} />
-                        ) : viewMode === 'grid' ? (
-                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
-                                {filteredProducts.map((product: any) => {
-                                    const savingsAmount = product.originalPrice ? (product.originalPrice - product.price).toFixed(2) : null;
-                                    const savingsPercent = product.originalPrice ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100) : 0;
-                                    const isOutOfStock = product.available_quantity !== undefined && product.available_quantity <= 0;
+                    <div className="bg-gray-50/50 min-h-screen">
+                        <div className="max-w-7xl mx-auto px-4 py-6">
+                            {filteredProducts.length === 0 ? (
+                                <EmptyState icon="🛒" heading={t('storeNoItemsAisle')} subtext={t('storeNoItemsHint')} />
+                            ) : viewMode === 'grid' ? (
+                                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
+                                    {filteredProducts.map((product: any) => {
+                                        const savingsAmount = product.originalPrice ? (product.originalPrice - product.price).toFixed(2) : null;
+                                        const savingsPercent = product.originalPrice ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100) : 0;
+                                        const isOutOfStock = product.available_quantity !== undefined && product.available_quantity <= 0;
 
-                                    return (
-                                        <div 
-                                            key={product.id} 
-                                            className={`relative group bg-white border-2 border-gray-100 p-3 flex flex-col shadow-sm transition-all hover:shadow-xl hover:z-10 ${isOutOfStock ? 'opacity-75 grayscale-[0.5]' : ''}`}
-                                        >
-                                            {/* Retail Savings Sticker */}
-                                            {savingsPercent >= 10 && !isOutOfStock && (
-                                                <div className="absolute -top-2 -right-2 w-12 h-12 z-20 bg-yellow-400 rounded-full flex flex-col items-center justify-center border-4 border-white shadow-lg rotate-12 group-hover:rotate-0 transition-transform">
-                                                    <span className="text-[10px] font-black text-teal-700 leading-none">-{savingsPercent}%</span>
-                                                </div>
-                                            )}
-
-                                            {/* Product Image Section */}
+                                        return (
                                             <div 
-                                                onClick={() => navigate(`/product/${product.id}`)} 
-                                                className="h-32 md:h-44 bg-white relative cursor-pointer overflow-hidden p-2 flex items-center justify-center bg-gradient-to-b from-gray-50/30 to-white"
+                                                key={product.id} 
+                                                className={`relative group bg-white border-2 border-gray-100 p-3 flex flex-col shadow-sm transition-all hover:shadow-xl hover:z-10 ${isOutOfStock ? 'opacity-75 grayscale-[0.5]' : ''}`}
                                             >
-                                                <img
-                                                    src={product.image}
-                                                    alt={product.name}
-                                                    className="max-w-full max-h-full object-contain group-hover:scale-110 transition-transform duration-500"
-                                                    loading="lazy"
-                                                />
-                                                {product.originalPrice && !isOutOfStock && (
-                                                    <div className="absolute top-2 left-2 bg-[#007AFF] text-white text-[9px] font-black px-1.5 py-0.5 rounded skew-x-[-10deg] shadow-lg">
-                                                        HOT DEAL
+                                                {/* Retail Savings Sticker */}
+                                                {savingsPercent >= 10 && !isOutOfStock && (
+                                                    <div className="absolute -top-2 -right-2 w-12 h-12 z-20 bg-yellow-400 rounded-full flex flex-col items-center justify-center border-4 border-white shadow-lg rotate-12 group-hover:rotate-0 transition-transform">
+                                                        <span className="text-[10px] font-black text-teal-700 leading-none">-{savingsPercent}%</span>
                                                     </div>
                                                 )}
-                                                {isOutOfStock && (
-                                                    <div className="absolute inset-0 bg-white/60 flex items-center justify-center z-10 backdrop-blur-[1px]">
-                                                        <span className="bg-gray-800 text-white text-[10px] font-black px-3 py-1 rounded-full tracking-widest shadow-xl">
-                                                            {t('storeRestocking')}
-                                                        </span>
-                                                    </div>
-                                                )}
-                                            </div>
 
+                                                {/* Product Image Section */}
+                                                <div 
+                                                    onClick={() => navigate(`/product/${product.id}`)} 
+                                                    className="h-32 md:h-44 bg-white relative cursor-pointer overflow-hidden p-2 flex items-center justify-center bg-gradient-to-b from-gray-50/30 to-white"
+                                                >
+                                                    <img
+                                                        src={product.image}
+                                                        alt={product.name}
+                                                        className="max-w-full max-h-full object-contain group-hover:scale-110 transition-transform duration-500"
+                                                        loading="lazy"
+                                                    />
+                                                    {product.originalPrice && !isOutOfStock && (
+                                                        <div className="absolute top-2 left-2 bg-[#007AFF] text-white text-[9px] font-black px-1.5 py-0.5 rounded skew-x-[-10deg] shadow-lg">
+                                                            HOT DEAL
+                                                        </div>
+                                                    )}
+                                                    {isOutOfStock && (
+                                                        <div className="absolute inset-0 bg-white/60 flex items-center justify-center z-10 backdrop-blur-[1px]">
+                                                            <span className="bg-gray-800 text-white text-[10px] font-black px-3 py-1 rounded-full tracking-widest shadow-xl">
+                                                                {t('storeRestocking')}
+                                                            </span>
+                                                        </div>
+                                                    )}
+                                                </div>
 
                                                 {/* Pricing Block */}
                                                 <div className="mt-3 bg-gray-50 p-2 rounded-lg border border-gray-100">
@@ -846,53 +848,54 @@ const StoreDetail: React.FC = () => {
                                             </div>
                                         );
                                     })}
-                            </div>
-                        ) : (
-                            /* List View Redesign */
-                            <div className="space-y-3">
-                                {filteredProducts.map((product: any) => {
-                                    const isOutOfStock = product.available_quantity !== undefined && product.available_quantity <= 0;
-                                    return (
-                                        <div key={product.id} className={`bg-white rounded-xl border-2 border-gray-100 p-3 flex gap-4 items-center shadow-sm hover:shadow-lg transition-all ${isOutOfStock ? 'opacity-70' : ''}`}>
-                                            <div 
-                                                onClick={() => navigate(`/product/${product.id}`)} 
-                                                className="w-16 h-16 md:w-20 md:h-20 rounded-lg bg-gray-50 flex-shrink-0 cursor-pointer overflow-hidden p-1 flex items-center justify-center border border-gray-100 relative"
-                                            >
-                                                <img src={product.image} alt={product.name} className="max-w-full max-h-full object-contain" />
-                                                {isOutOfStock && <div className="absolute inset-0 bg-white/40 z-10"></div>}
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                                <p onClick={() => navigate(`/product/${product.id}`)} className="font-black text-xs md:text-sm text-gray-800 truncate cursor-pointer hover:text-[#007AFF]">{product.name}</p>
-                                                <div className="flex items-center gap-2 mt-1">
-                                                    {product.is_canadian_local && (
-                                                        <span className="text-[8px] font-black text-[#007AFF] bg-blue-50 px-1 rounded border border-blue-100">🍁 LOCAL</span>
-                                                    )}
-                                                    {product.originalPrice && (
-                                                        <span className="text-[8px] font-black bg-[#007AFF] text-white px-1.5 py-0.5 rounded-sm skew-x-[-12deg]">Sale</span>
-                                                    )}
+                                </div>
+                            ) : (
+                                /* List View Redesign */
+                                <div className="space-y-3">
+                                    {filteredProducts.map((product: any) => {
+                                        const isOutOfStock = product.available_quantity !== undefined && product.available_quantity <= 0;
+                                        return (
+                                            <div key={product.id} className={`bg-white rounded-xl border-2 border-gray-100 p-3 flex gap-4 items-center shadow-sm hover:shadow-lg transition-all ${isOutOfStock ? 'opacity-70' : ''}`}>
+                                                <div 
+                                                    onClick={() => navigate(`/product/${product.id}`)} 
+                                                    className="w-16 h-16 md:w-20 md:h-20 rounded-lg bg-gray-50 flex-shrink-0 cursor-pointer overflow-hidden p-1 flex items-center justify-center border border-gray-100 relative"
+                                                >
+                                                    <img src={product.image} alt={product.name} className="max-w-full max-h-full object-contain" />
+                                                    {isOutOfStock && <div className="absolute inset-0 bg-white/40 z-10"></div>}
                                                 </div>
-                                                <div className="flex items-baseline gap-2 mt-0.5">
-                                                    <span className="text-lg font-black text-[var(--brand-primary)] tracking-tighter">${product.price.toFixed(2)}</span>
-                                                    {product.originalPrice && (
-                                                        <span className="text-[10px] text-gray-400 line-through font-bold">Reg ${product.originalPrice.toFixed(2)}</span>
-                                                    )}
+                                                <div className="flex-1 min-w-0">
+                                                    <p onClick={() => navigate(`/product/${product.id}`)} className="font-black text-xs md:text-sm text-gray-800 truncate cursor-pointer hover:text-[#007AFF]">{product.name}</p>
+                                                    <div className="flex items-center gap-2 mt-1">
+                                                        {product.is_canadian_local && (
+                                                            <span className="text-[8px] font-black text-[#007AFF] bg-blue-50 px-1 rounded border border-blue-100">🍁 LOCAL</span>
+                                                        )}
+                                                        {product.originalPrice && (
+                                                            <span className="text-[8px] font-black bg-[#007AFF] text-white px-1.5 py-0.5 rounded-sm skew-x-[-12deg]">Sale</span>
+                                                        )}
+                                                    </div>
+                                                    <div className="flex items-baseline gap-2 mt-0.5">
+                                                        <span className="text-lg font-black text-[var(--brand-primary)] tracking-tighter">${product.price.toFixed(2)}</span>
+                                                        {product.originalPrice && (
+                                                            <span className="text-[10px] text-gray-400 line-through font-bold">Reg ${product.originalPrice.toFixed(2)}</span>
+                                                        )}
+                                                    </div>
                                                 </div>
+                                                <button
+                                                    onClick={() => !isOutOfStock && handleQuickAdd(product)}
+                                                    disabled={isOutOfStock}
+                                                    className={`px-4 md:px-6 py-2.5 rounded-full text-xs font-bold tracking-wide shadow-sm transition-all active:scale-95 ${isOutOfStock
+                                                        ? 'bg-gray-100 text-gray-400 border border-gray-200'
+                                                        : 'bg-[var(--brand-primary)] text-white hover:brightness-110'
+                                                        }`}
+                                                >
+                                                    {isOutOfStock ? t('storeOut') : `+ ${t('storeAdd')}`}
+                                                </button>
                                             </div>
-                                            <button
-                                                onClick={() => !isOutOfStock && handleQuickAdd(product)}
-                                                disabled={isOutOfStock}
-                                                className={`px-4 md:px-6 py-2.5 rounded-full text-xs font-bold tracking-wide shadow-sm transition-all active:scale-95 ${isOutOfStock
-                                                    ? 'bg-gray-100 text-gray-400 border border-gray-200'
-                                                    : 'bg-[var(--brand-primary)] text-white hover:brightness-110'
-                                                    }`}
-                                            >
-                                                {isOutOfStock ? t('storeOut') : `+ ${t('storeAdd')}`}
-                                            </button>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        )}
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
             )}

@@ -6,6 +6,22 @@ Chronological record of shipped fixes, features, and cleanup tasks. Newest at th
 
 ## May 2026
 
+### Pro Merchant Subscription Tier with Digital Marketing Access
+`apps/web/src/context/AuthContext.tsx`, `apps/web/src/pages/merchant/Subscription.tsx`, `apps/web/src/pages/merchant/Marketing.tsx`, `apps/web/src/context/MarketplaceContext.tsx`, `apps/web/src/pages/consumer/StoreList.tsx`, `services/api/src/payments/updateSubscriptionPlan.ts`, `services/api/src/payments/createCheckoutSession.ts`, `services/api/src/marketing/sendCampaign.ts`
+
+Added a fourth subscription tier — **Pro ($149/mo CAD, 1% commission)** — as the digital marketing tier above Growth. Key changes:
+
+- **Type system**: Added `'pro'` to the `subscriptionTier` union in `AuthContext.tsx`.
+- **Subscription UI**: Fourth tier card with "Marketing Suite" badge. Grid changed to 4-column (2-col on md, 4-col on lg). `WELCOME2026` promo extended to Pro at $14.90/mo (90% off). `isUpgrade` confirmation logic now uses `TIER_ORDER` map instead of the hardcoded `growth && core` check.
+- **Push campaigns gated behind Pro**: `Marketing.tsx` renders a blur overlay with "Upgrade to Pro →" CTA for non-Pro merchants. `sendCampaign` Cloud Function rejects with `permission-denied` if `store.subscriptionTier !== 'pro'`. Rate limit raised from 50 to 200 campaigns per 24h for Pro merchants.
+- **Tier access matrix clarified**:
+  - *Flyers*: Growth and Pro only (was: all non-Free).
+  - *Deals (saleItems + oneDayOffers)*: Pro only (was: all non-Free).
+  - *Featured/Verified badge*: Pro only with KYB approved (was: Growth).
+  - *Sponsored placement sort*: Pro stores with `sponsoredPlacement: true` float to top of `allStores` in `MarketplaceContext`.
+- **Core promo price corrected**: `WELCOME2026` now shows `$4.99/mo` for Core (consistent 90%-off pattern across all paid tiers — Growth: $9.90, Pro: $14.90).
+- **Removed phantom feature**: "Custom Promo Codes" was listed under Growth but had no implementation. Removed from the feature list. `STRIPE_PRICE_PRO` env var added to the pre-deploy checklist in TODO.md.
+
 ### App Check: ReCaptchaEnterpriseProvider Restored
 `apps/web/src/lib/firebase.ts`
 The site key `VITE_FIREBASE_APP_CHECK_KEY` is a ReCAPTCHA **Enterprise** key. Switching to `ReCaptchaV3Provider` caused App Check to silently block every outgoing Firebase request (Storage writes, Firestore reads) with `appCheck/recaptcha-error` before Security Rules were evaluated — including the KYB document upload. Reverted to `ReCaptchaEnterpriseProvider`. See memory file for full diagnosis notes.

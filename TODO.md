@@ -4,7 +4,7 @@
 
 ### Infrastructure & Config
 - [ ] **Staging Environment**: Provision an isolated `spendigo-staging` Firebase project (or Preview Channels) for QA.
-- [ ] **Set Production Env Vars Before Next Deploy**: `functions.config()` is gone — before running `firebase deploy --only functions`, set these in the Firebase Console (Functions → each function → Environment variables) or via Secret Manager: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_CORE`, `STRIPE_PRICE_GROWTH`. Optional: `APP_URL` (defaults to `https://spendigo.ca`), `ADMIN_ALERT_EMAIL` (defaults to `ops@spendigo.ca`).
+- [ ] **Set Production Env Vars Before Next Deploy**: `functions.config()` is gone — before running `firebase deploy --only functions`, set these in the Firebase Console (Functions → each function → Environment variables) or via Secret Manager: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_CORE`, `STRIPE_PRICE_GROWTH`, `STRIPE_PRICE_PRO`. Optional: `APP_URL` (defaults to `https://spendigo.ca`), `ADMIN_ALERT_EMAIL` (defaults to `ops@spendigo.ca`).
 - [ ] **Stripe Secret Defaults to Placeholder**: `config/stripe.ts:3` falls back to `'sk_test_placeholder'` when `STRIPE_SECRET_KEY` is unset — all payment calls silently fail with an auth error instead of hard-crashing at startup. Throw during initialization if the key is missing.
 - [ ] **Stripe Webhook Secret Defaults to Empty String**: `stripeWebhook.ts:13` uses `process.env.STRIPE_WEBHOOK_SECRET || ''` — an empty string causes `stripe.webhooks.constructEvent()` to accept any signature in some SDK versions, bypassing webhook verification entirely. Throw at startup if missing.
 
