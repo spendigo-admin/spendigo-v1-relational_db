@@ -50,3 +50,5 @@ export { aggregateFlyerAnalytics, triggerAnalyticsAggregation } from './admin/ag
 export { revertExpiredDeals } from './triggers/revertExpiredDeals';
 export { onKybDocumentUploaded } from './triggers/kybDocTrigger';
 export { getKybDocUrl } from './admin/getKybDocUrl';
+export { onFlyerDealCreated } from './triggers/flyerImageMirror';
+export { rebuildActiveDealsJson } from './admin/rebuildActiveDealsJson';

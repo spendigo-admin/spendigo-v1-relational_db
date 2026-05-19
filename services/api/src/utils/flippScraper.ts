@@ -1,6 +1,7 @@
 import * as admin from 'firebase-admin';
 import { logger } from 'firebase-functions/v1';
 import { indexFlyerDeals } from '../admin/indexFlyerDeals';
+import { exportActiveDeals } from './exportActiveDeals';
 
 const FLYERS_URL = 'https://flyers-ng.flippback.com/api/flipp/data?locale=en&postal_code={}&sid={}';
 const FLYER_ITEMS_URL = 'https://flyers-ng.flippback.com/api/flipp/flyers/{}/flyer_items?locale=en&sid={}';
@@ -174,30 +175,11 @@ export async function runIngestion(postalCode: string, resetData: boolean = fals
         }
 
         // Generate static JSON export of all active deals for zero-read client comparison
-        logger.info("Generating static JSON export of all active deals...");
-        const flyersSnapshot = await db.collection('public_flyers').get();
-        const allDeals: any[] = [];
-        for (const flyerDoc of flyersSnapshot.docs) {
-            const dealsSnapshot = await flyerDoc.ref.collection('deals').get();
-            dealsSnapshot.forEach(doc => {
-                allDeals.push({ ...doc.data(), flyerId: flyerDoc.id });
-            });
-        }
-        
         try {
-            const bucket = admin.storage().bucket('spendigo-8540c.firebasestorage.app');
-            const file = bucket.file('public/active_deals.json');
-            await file.save(JSON.stringify(allDeals), {
-                contentType: 'application/json',
-                metadata: {
-                    cacheControl: 'public, max-age=60' // Reduced from 3600s to 60s for faster updates
-                }
-            });
-            await file.makePublic();
-            logger.info(`Successfully exported ${allDeals.length} deals to Storage.`);
+            await exportActiveDeals();
         } catch (storageError) {
             logger.error("Failed to upload active_deals.json to storage:", storageError);
-            // Non-fatal error, we still want to return success for ingestion
+            // Non-fatal: ingestion is still considered successful
         }
 
         return {
