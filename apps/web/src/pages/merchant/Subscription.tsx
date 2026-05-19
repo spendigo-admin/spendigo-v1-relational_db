@@ -100,8 +100,7 @@ const Subscription: React.FC = () => {
             basePrice: '$49',
             period: '/month',
             description: 'Recommended for active stores.',
-            color: 'bg-blue-50 border-blue-200 ring-2 ring-blue-500',
-            recommended: true,
+            color: 'bg-blue-50 border-blue-200',
             features: [
                 '✅ Unlimited Products',
                 '✅ Pickup + Delivery Toggle',
@@ -115,7 +114,8 @@ const Subscription: React.FC = () => {
             basePrice: '$99',
             period: '/month',
             description: 'Maximize sales & visibility.',
-            color: 'bg-purple-50 border-purple-200',
+            color: 'bg-purple-50 border-purple-200 ring-2 ring-purple-500',
+            recommended: true,
             features: [
                 '✅ Everything in Core',
                 '✅ Flyer Highlighting',
