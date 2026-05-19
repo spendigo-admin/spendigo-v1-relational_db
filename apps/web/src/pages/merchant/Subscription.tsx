@@ -7,7 +7,7 @@ import { useConfirmation } from '../../context/ConfirmationContext';
 import '../../styles/design-system.css';
 
 const Subscription: React.FC = () => {
-    const { user, updateSubscription } = useAuth();
+    const { user } = useAuth();
     const { stores } = useMarketplace();
     const { addNotification } = useNotifications();
     const { confirm } = useConfirmation();
@@ -118,10 +118,10 @@ const Subscription: React.FC = () => {
             color: 'bg-purple-50 border-purple-200',
             features: [
                 '✅ Everything in Core',
-                '✅ Featured Placement',
                 '✅ Flyer Highlighting',
                 '✅ Advanced Analytics',
-                '✅ Custom Promo Codes'
+                '❌ Deals & Flash Sales',
+                '❌ Featured Placement'
             ]
         },
         {
@@ -134,10 +134,10 @@ const Subscription: React.FC = () => {
             badge: 'Marketing Suite',
             features: [
                 '✅ Everything in Growth',
+                '✅ Deals & Flash Sales',
+                '✅ Featured Placement',
                 '✅ Push Campaign Access',
                 '✅ 200 Campaigns / 24 h',
-                '✅ Campaign Scheduling',
-                '✅ Sponsored Placement Boost',
                 '✅ 1% Commission Rate'
             ]
         }
@@ -259,7 +259,7 @@ const Subscription: React.FC = () => {
                         if (activePromo === 'WELCOME2026') {
                             if (tier.id === 'core') {
                                 originalPrice = tier.basePrice;
-                                displayPrice = '$0';
+                                displayPrice = '$4.99';
                             } else if (tier.id === 'growth') {
                                 originalPrice = tier.basePrice;
                                 displayPrice = '$9.90';
@@ -356,7 +356,7 @@ const Subscription: React.FC = () => {
                         <div className="mt-4 bg-green-100 text-green-800 p-3 rounded-lg text-sm animate-pulse border border-green-200">
                             <p className="font-bold">✅ 'WELCOME2026' Applied!</p>
                             <ul className="text-left mt-1 list-disc list-inside space-y-1 inline-block">
-                                <li><strong>Core Plan:</strong> FREE for 1 Year ($0/mo)</li>
+                                <li><strong>Core Plan:</strong> 90% OFF for 1 Year ($4.99/mo)</li>
                                 <li><strong>Growth Plan:</strong> 90% OFF for 1 Year ($9.90/mo)</li>
                                 <li><strong>Pro Plan:</strong> 90% OFF for 1 Year ($14.90/mo)</li>
                             </ul>

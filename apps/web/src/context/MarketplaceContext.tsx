@@ -220,23 +220,23 @@ export const MarketplaceProvider: React.FC<{ children: ReactNode }> = ({ childre
 
         const filteredStore = { ...store };
         const tier = filteredStore.subscriptionTier || 'free';
-        // Starter/Free plan has no promos in the marketplace. Core and Growth do.
-        const hasPromoPlan = tier !== 'free';
+        const hasFlyerAccess = tier === 'growth' || tier === 'pro';
+        const hasDealsAccess = tier === 'pro';
 
-        // 1. Filter Flyer - only clear if it's actually expired OR if store is NOT on growth tier
-        if (!isFlyerActive(filteredStore.flyer) || !hasPromoPlan) {
+        // 1. Filter Flyer - visible for Growth and Pro only
+        if (!isFlyerActive(filteredStore.flyer) || !hasFlyerAccess) {
             filteredStore.flyer = { title: '', validUntil: '', image: '' };
             filteredStore.activeFlyerItems = [];
         }
 
-        // 2. Filter Sale Items - clear if expired OR if store is NOT on growth tier
+        // 2. Filter Sale Items - Pro only
         if (filteredStore.saleItems) {
-            filteredStore.saleItems = !hasPromoPlan ? [] : filterActiveDeals(filteredStore.saleItems);
+            filteredStore.saleItems = !hasDealsAccess ? [] : filterActiveDeals(filteredStore.saleItems);
         }
 
-        // 3. Filter One Day Offers - clear if expired OR if store is NOT on growth tier
+        // 3. Filter One Day Offers - Pro only
         if (filteredStore.oneDayOffers) {
-            filteredStore.oneDayOffers = !hasPromoPlan ? [] : filterActiveDeals(filteredStore.oneDayOffers);
+            filteredStore.oneDayOffers = !hasDealsAccess ? [] : filterActiveDeals(filteredStore.oneDayOffers);
         }
 
         return filteredStore;
