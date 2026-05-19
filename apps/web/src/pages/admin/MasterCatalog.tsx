@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useCatalog, MasterProduct } from '../../hooks/useCatalog';
 import { useNotifications } from '../../context/NotificationContext';
 import { useAudit } from '../../context/AuditContext';
 import { useConfirmation } from '../../context/ConfirmationContext';
+import { useFileUpload } from '../../hooks/useFileUpload';
 import {
     collection, query, where, onSnapshot, getDocs,
     orderBy, startAfter, limit, getCountFromServer, QueryDocumentSnapshot
@@ -123,6 +124,12 @@ const MasterCatalog: React.FC = () => {
     const { logEvent } = useAudit();
     const { addNotification } = useNotifications();
     const { confirm } = useConfirmation();
+    const { uploadFile } = useFileUpload();
+
+    // Image upload refs
+    const primaryImageInputRef = useRef<HTMLInputElement>(null);
+    const secondaryImageInputRef = useRef<HTMLInputElement>(null);
+    const [uploadingImage, setUploadingImage] = useState(false);
 
     // UI state
     const [activeTab, setActiveTab] = useState<'catalog' | 'requests' | 'pending'>('catalog');
@@ -858,9 +865,35 @@ const MasterCatalog: React.FC = () => {
                             <section>
                                 <h3 className="text-[10px] font-bold uppercase text-gray-400 mb-4 border-b pb-2 tracking-widest">B. Logistics & Media</h3>
                                 <div className="flex flex-col md:flex-row gap-6">
-                                    <div className="w-full md:w-40 h-40 bg-gray-50 border rounded-2xl flex items-center justify-center p-4 relative group">
-                                        <img src={editForm.primary_image_url || '/placeholder.png'} className="max-w-full max-h-full object-contain" />
-                                        {isEditing && <button className="absolute inset-0 bg-black/40 text-white text-[10px] font-bold opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl">CHANGE IMAGE</button>}
+                                    {/* Primary image */}
+                                    <div className="relative w-full md:w-40 h-40 bg-gray-50 border rounded-2xl flex items-center justify-center p-4 group flex-shrink-0">
+                                        <img src={editForm.primary_image_url || '/placeholder.png'} className="max-w-full max-h-full object-contain" alt="Primary" />
+                                        {isEditing && (
+                                            <>
+                                                <button
+                                                    className="absolute inset-0 bg-black/40 text-white text-[10px] font-bold opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl disabled:opacity-40"
+                                                    disabled={uploadingImage}
+                                                    onClick={() => primaryImageInputRef.current?.click()}
+                                                >
+                                                    {uploadingImage ? 'UPLOADING…' : 'CHANGE IMAGE'}
+                                                </button>
+                                                <input
+                                                    ref={primaryImageInputRef}
+                                                    type="file"
+                                                    accept="image/*"
+                                                    className="hidden"
+                                                    onChange={async (e) => {
+                                                        const file = e.target.files?.[0];
+                                                        if (!file) return;
+                                                        setUploadingImage(true);
+                                                        const url = await uploadFile(file, `admin-assets/products/${Date.now()}-primary`);
+                                                        if (url) setEditForm(f => ({ ...f, primary_image_url: url }));
+                                                        setUploadingImage(false);
+                                                        e.target.value = '';
+                                                    }}
+                                                />
+                                            </>
+                                        )}
                                     </div>
                                     <div className="flex-1 space-y-4">
                                         <div className="bg-gray-50 md:bg-transparent p-3 md:p-0 rounded-xl">
@@ -880,6 +913,86 @@ const MasterCatalog: React.FC = () => {
                                         </div>
                                     </div>
                                 </div>
+
+                                {/* Secondary images */}
+                                {(isEditing || (selectedProduct.secondary_image_urls ?? []).length > 0) && (
+                                    <div className="mt-4">
+                                        <label className="block text-[10px] uppercase font-bold text-gray-400 mb-2">Additional Images</label>
+                                        <div className="flex flex-wrap gap-3 items-end">
+                                            {(editForm.secondary_image_urls ?? []).map((url, i) => (
+                                                <div key={i} className="relative group w-20 h-20 bg-gray-50 border rounded-xl overflow-hidden flex-shrink-0">
+                                                    <img src={url} alt={`Gallery ${i + 1}`} className="w-full h-full object-contain p-1" />
+                                                    {isEditing && (
+                                                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1">
+                                                            <button
+                                                                className="text-white text-[10px] font-bold leading-none hover:text-red-300"
+                                                                title="Remove"
+                                                                onClick={() => setEditForm(f => ({
+                                                                    ...f,
+                                                                    secondary_image_urls: (f.secondary_image_urls ?? []).filter((_, j) => j !== i)
+                                                                }))}
+                                                            >✕</button>
+                                                            <div className="flex gap-1">
+                                                                {i > 0 && (
+                                                                    <button
+                                                                        className="text-white text-[10px] leading-none hover:text-blue-300"
+                                                                        title="Move left"
+                                                                        onClick={() => setEditForm(f => {
+                                                                            const arr = [...(f.secondary_image_urls ?? [])];
+                                                                            [arr[i - 1], arr[i]] = [arr[i], arr[i - 1]];
+                                                                            return { ...f, secondary_image_urls: arr };
+                                                                        })}
+                                                                    >◀</button>
+                                                                )}
+                                                                {i < (editForm.secondary_image_urls ?? []).length - 1 && (
+                                                                    <button
+                                                                        className="text-white text-[10px] leading-none hover:text-blue-300"
+                                                                        title="Move right"
+                                                                        onClick={() => setEditForm(f => {
+                                                                            const arr = [...(f.secondary_image_urls ?? [])];
+                                                                            [arr[i], arr[i + 1]] = [arr[i + 1], arr[i]];
+                                                                            return { ...f, secondary_image_urls: arr };
+                                                                        })}
+                                                                    >▶</button>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ))}
+                                            {isEditing && (
+                                                <>
+                                                    <button
+                                                        className="w-20 h-20 border-2 border-dashed border-gray-300 rounded-xl text-gray-400 hover:border-blue-400 hover:text-blue-500 transition-colors text-2xl flex items-center justify-center disabled:opacity-40"
+                                                        disabled={uploadingImage}
+                                                        onClick={() => secondaryImageInputRef.current?.click()}
+                                                        title="Add image"
+                                                    >
+                                                        {uploadingImage ? '…' : '+'}
+                                                    </button>
+                                                    <input
+                                                        ref={secondaryImageInputRef}
+                                                        type="file"
+                                                        accept="image/*"
+                                                        className="hidden"
+                                                        onChange={async (e) => {
+                                                            const file = e.target.files?.[0];
+                                                            if (!file) return;
+                                                            setUploadingImage(true);
+                                                            const url = await uploadFile(file, `admin-assets/products/${Date.now()}-secondary`);
+                                                            if (url) setEditForm(f => ({
+                                                                ...f,
+                                                                secondary_image_urls: [...(f.secondary_image_urls ?? []), url]
+                                                            }));
+                                                            setUploadingImage(false);
+                                                            e.target.value = '';
+                                                        }}
+                                                    />
+                                                </>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
                             </section>
 
                             <section className="bg-blue-50 border border-blue-100 p-4 md:p-6 rounded-2xl">

@@ -280,7 +280,7 @@ export const useCatalog = () => {
                             name: master.product_name,
                             description: master.short_description,
                             image: master.primary_image_url,
-                            images: [master.primary_image_url], // TODO: Master should support multiple images
+                            images: [master.primary_image_url, ...(master.secondary_image_urls ?? [])].filter(Boolean),
                             category: master.category_id,
                             brand_name: master.brand_name,
                             barcode: master.barcode,
@@ -1437,6 +1437,11 @@ export const useCatalog = () => {
                     try {
                         await deleteObject(ref(storage, data.primary_image_url));
                     } catch (err) { console.warn('Master Product Image delete failed', err); }
+                }
+                for (const url of (data.secondary_image_urls ?? [])) {
+                    if (url?.includes('firebasestorage')) {
+                        try { await deleteObject(ref(storage, url)); } catch { /* ignore */ }
+                    }
                 }
             }
             await deleteDoc(doc(db, 'master_products', id));

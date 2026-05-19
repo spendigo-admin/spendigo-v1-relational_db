@@ -9,6 +9,7 @@ export interface MasterProductRecord {
     unit_type?: 'weight' | 'volume' | 'count';
     package_count?: number;
     primary_image_url?: string;
+    secondary_image_urls?: string[];
     tax_category_id?: string;
     status?: 'active' | 'deprecated' | 'blocked';
     verification_status?: 'unverified' | 'verified' | 'manufacturer_verified';
