@@ -35,8 +35,13 @@ export const onboardStore = functions.https.onCall(async (data, context) => {
         // 2b. Ownership check — only the store OWNER or an admin may attach a Stripe account.
         // Any authenticated user who knows a storeId could otherwise hijack a competitor's payments.
         const callerSnap = await db.collection('users').doc(context.auth.uid).get();
-        const caller = callerSnap.data();
-        if (caller?.role !== 'admin' && (caller?.storeId !== storeId || caller?.merchantRole !== 'OWNER')) {
+        if (!callerSnap.exists) {
+            throw new functions.https.HttpsError('permission-denied', 'Only the store owner may initiate Stripe onboarding.');
+        }
+        const caller = callerSnap.data()!;
+        const isAdmin = caller.role === 'admin';
+        const isOwner = caller.storeId === storeId && caller.merchantRole === 'OWNER';
+        if (!isAdmin && !isOwner) {
             throw new functions.https.HttpsError('permission-denied', 'Only the store owner may initiate Stripe onboarding.');
         }
 

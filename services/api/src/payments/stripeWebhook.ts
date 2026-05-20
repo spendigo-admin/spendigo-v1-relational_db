@@ -4,25 +4,29 @@ import { stripe } from '../config/stripe';
 
 const db = admin.firestore();
 
+const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+if (!webhookSecret) {
+    throw new Error('[Spendigo] STRIPE_WEBHOOK_SECRET is not set. Add it to services/api/.env or Firebase environment variables.');
+}
+
 /**
  * Stripe Webhook Handler (HTTPS Endpoint)
  * Listens for events from Stripe and updates Firestore accordingly.
  */
 export const stripeWebhook = functions.https.onRequest(async (req, res) => {
     const sig = req.headers['stripe-signature'];
-    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET || '';
 
     let event;
 
     try {
-        if (!sig || !webhookSecret) {
-            throw new Error('Missing Stripe signature or webhook secret.');
+        if (!sig) {
+            throw new Error('Missing Stripe signature.');
         }
-        
+
         // Verify the event came from Stripe
         event = stripe.webhooks.constructEvent(
-            req.rawBody, 
-            sig, 
+            req.rawBody,
+            sig,
             webhookSecret
         );
 

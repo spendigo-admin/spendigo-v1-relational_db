@@ -46,19 +46,19 @@ export const checkRateLimit = async (
                 return;
             }
 
-            // We are within the active time window
-            if (data?.count >= maxRequests) {
-                // Rate limit exclusively exceeded
+            // We are within the active time window. Compute the new count first,
+            // then check — ensures the Firestore transaction's optimistic locking
+            // serialises concurrent requests correctly (FieldValue.increment is a
+            // server-side transform that bypasses the version check).
+            const newCount = (data?.count ?? 0) + 1;
+            if (newCount > maxRequests) {
                 throw new functions.https.HttpsError(
-                    'resource-exhausted', 
+                    'resource-exhausted',
                     `Rate limit exceeded for ${action}. Please wait before trying again.`
                 );
             }
 
-            // Valid request within limits, increment the counter natively
-            transaction.update(docRef, {
-                count: admin.firestore.FieldValue.increment(1)
-            });
+            transaction.update(docRef, { count: newCount });
         });
     } catch (error: any) {
         if (error.code === 'resource-exhausted') {

@@ -3,19 +3,11 @@
 ## 1. Pre-Launch Blockers (v1.0 GA Target)
 
 ### Infrastructure & Config
-- [ ] **Stripe Secret Defaults to Placeholder**: `config/stripe.ts:3` falls back to `'sk_test_placeholder'` when `STRIPE_SECRET_KEY` is unset — all payment calls silently fail with an auth error instead of hard-crashing at startup. Throw during initialization if the key is missing.
-- [ ] **Stripe Webhook Secret Defaults to Empty String**: `stripeWebhook.ts:13` uses `process.env.STRIPE_WEBHOOK_SECRET || ''` — an empty string causes `stripe.webhooks.constructEvent()` to accept any signature in some SDK versions, bypassing webhook verification entirely. Throw at startup if missing.
 - [ ] **Set Production Env Vars Before Next Deploy**: `functions.config()` is gone — before running `firebase deploy --only functions`, set these in the Firebase Console (Functions → each function → Environment variables) or via Secret Manager: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_CORE`, `STRIPE_PRICE_GROWTH`, `STRIPE_PRICE_PRO`. Optional: `APP_URL` (defaults to `https://spendigo.ca`), `ADMIN_ALERT_EMAIL` (defaults to `ops@spendigo.ca`).
 - [ ] **Staging Environment**: Provision an isolated `spendigo-staging` Firebase project (or Preview Channels) for QA.
 
 ### Security
-- [ ] **Rate Limiter Concurrent Bypass**: `rateLimiter.ts:50–56` reads the current count, checks it, then increments in a separate write — two concurrent requests arriving just below the limit both pass the check before either write lands, exceeding the cap. Move the increment to occur before the threshold check, or use a Firestore transaction that atomically reads-increments-checks.
-- [ ] **Permission Bypass in `onboardStore`**: `onboardStore.ts:35–41` evaluates `caller?.storeId !== storeId` — when `caller.storeId` is `undefined` (e.g. no Firestore doc yet), the expression is `undefined !== storeId` which is `true`, so the check passes for any storeId. Use `caller?.storeId === storeId && caller?.merchantRole === 'OWNER'` instead.
-- [ ] **Permission Bypass in `removeTeamMember`**: `removeTeamMember.ts:31` has the same `undefined !== storeId` pattern — a caller with no `storeId` field can remove members from any store. Apply the same fix as `onboardStore`.
-- [ ] **Unauthenticated Callers Can Spoof Audit Email**: `recordAuditEvent.ts:22–30` accepts a caller-supplied `metadata.email` for `AUTH_REGISTER_SUCCESS` events even when `context.auth` is null — unauthenticated users can write fake email addresses into the append-only audit log. Derive email exclusively from `context.auth.token.email`; reject or ignore `metadata.email` for any unauthenticated call.
-- [ ] **Firestore Rules Allow Anyone to Zero Store Ratings**: `firestore.rules:166` permits unauthenticated writes to `rating` and `reviewCount` fields on store documents. Move these fields to a server-only allowlist (written only by the `onReviewCreated` Cloud Function) and remove them from client-writable rules.
-- [ ] **App Check Missing Key Silently No-Ops in Production**: `firebase.ts:24–34` logs a `console.warn` and continues when `VITE_FIREBASE_APP_CHECK_KEY` is absent — production browsers then attach no App Check token, bypassing server-side enforcement. Throw (or hard-redirect to an error page) if the key is missing in a non-dev, non-native build.
-- [ ] **CSP `unsafe-inline` Removal**: `firebase.json` CSP includes `'unsafe-inline'` in both `script-src` and `style-src`, weakening XSS protection. Migrate inline styles/scripts or introduce per-request nonces.
+- [ ] **CSP `unsafe-inline` Removal**: `firebase.json` CSP includes `'unsafe-inline'` in both `script-src` and `style-src`, weakening XSS protection. Requires a full audit of inline `style={{}}` usage across React components and any inline scripts injected by third-party libraries — separate investigation task.
 
 ---
 

@@ -26,9 +26,11 @@ export const removeTeamMember = functions.https.onCall(async (data, context) => 
 
     // 2. Verify Caller is Owner/Manager of the store
     const callerDoc = await admin.firestore().collection('users').doc(context.auth.uid).get();
-    const callerData = callerDoc.data();
-
-    if (!callerData || callerData.storeId !== storeId) {
+    if (!callerDoc.exists) {
+        throw new functions.https.HttpsError('permission-denied', 'Not authorized for this store');
+    }
+    const callerData = callerDoc.data()!;
+    if (callerData.storeId !== storeId) {
         throw new functions.https.HttpsError('permission-denied', 'Not authorized for this store');
     }
 

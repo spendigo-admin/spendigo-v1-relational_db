@@ -6,6 +6,24 @@ Chronological record of shipped fixes, features, and cleanup tasks. Newest at th
 
 ## May 2026
 
+### Security: Pre-Launch Blocker Batch (8 fixes)
+`services/api/src/config/stripe.ts`, `services/api/src/payments/stripeWebhook.ts`, `services/api/src/payments/onboardStore.ts`, `services/api/src/auth/removeTeamMember.ts`, `services/api/src/audit/recordAuditEvent.ts`, `services/api/src/utils/rateLimiter.ts`, `firestore.rules`, `apps/web/src/lib/firebase.ts`
+
+Eight pre-launch security blockers resolved in a single pass:
+
+1. **Stripe secret fails at startup** — removed `|| 'sk_test_placeholder'` fallback in `stripe.ts`; module now throws at cold-start if `STRIPE_SECRET_KEY` is unset instead of silently accepting all payment calls and failing cryptically at runtime.
+2. **Stripe webhook secret fails at startup** — moved `webhookSecret` to module level in `stripeWebhook.ts`; throws at cold-start if `STRIPE_WEBHOOK_SECRET` is unset; removed the now-redundant in-handler `!webhookSecret` check.
+3. **`onboardStore` permission bypass** — added `!callerSnap.exists` guard and replaced the unsafe negative-equality check (`caller?.storeId !== storeId`) with explicit positive equality (`isAdmin || isOwner`), eliminating the undefined-chaining bypass path.
+4. **`removeTeamMember` permission bypass** — added `!callerDoc.exists` guard before accessing `callerData`, making document non-existence an explicit hard deny rather than relying on `!callerData` catching the downstream `undefined`.
+5. **Audit email spoofing** — replaced `metadata?.email || 'unauthenticated'` with the literal `'anonymous'` in the unauthenticated actor branch of `recordAuditEvent.ts`; client-supplied identity fields are never written into the append-only audit ledger.
+6. **Rate limiter concurrent bypass** — replaced `FieldValue.increment(1)` (a server-side transform that bypasses Firestore optimistic locking) with an explicit `newCount = count + 1` computed before the transaction commits; the limit check now runs against `newCount`, ensuring concurrent transactions at the boundary are correctly serialised.
+7. **Firestore rules: unauthenticated store rating writes** — removed the `isAuthenticated() && affectedKeys().hasOnly(['rating', 'reviewCount'])` allow clause from **both** the `stores` and `users` match blocks; ratings are written server-side via Admin SDK by `onReviewCreated` and require no client-side write permission.
+8. **App Check silent no-op in production** — replaced `console.warn` with a thrown `Error` in `firebase.ts` when `VITE_FIREBASE_APP_CHECK_KEY` is missing in a production, non-native build; the error is caught by the global `ErrorBoundary` and surfaces immediately at page load.
+
+**Deferred**: CSP `unsafe-inline` removal remains in TODO — requires a dedicated audit of inline `style={{}}` usage across React components.
+
+---
+
 ### Product Image Gallery: Persistence Bug Fix + Arrow Navigation
 `apps/web/src/hooks/useCatalog.ts`, `apps/web/src/pages/consumer/ProductDetail.tsx`
 

@@ -22,17 +22,13 @@ const app = initializeApp(firebaseConfig);
 
 // Initialize App Check (production web only — ReCaptchaEnterprise throws in Capacitor WKWebView)
 if (typeof window !== 'undefined' && !import.meta.env.DEV && !Capacitor.isNativePlatform()) {
-    // Only initialize if we have a key
-    if (import.meta.env.VITE_FIREBASE_APP_CHECK_KEY) {
-        // We restore App Check initialization. Since your key is from Google Cloud Console's 
-        // reCAPTCHA Enterprise, we MUST use ReCaptchaEnterpriseProvider.
-        initializeAppCheck(app, {
-            provider: new ReCaptchaEnterpriseProvider(import.meta.env.VITE_FIREBASE_APP_CHECK_KEY),
-            isTokenAutoRefreshEnabled: true
-        });
-    } else {
-        console.warn("App Check key is missing in production environment.");
+    if (!import.meta.env.VITE_FIREBASE_APP_CHECK_KEY) {
+        throw new Error('[Spendigo] VITE_FIREBASE_APP_CHECK_KEY is required in production. Set it in apps/web/.env.local.');
     }
+    initializeAppCheck(app, {
+        provider: new ReCaptchaEnterpriseProvider(import.meta.env.VITE_FIREBASE_APP_CHECK_KEY),
+        isTokenAutoRefreshEnabled: true
+    });
 }
 
 // Export Services

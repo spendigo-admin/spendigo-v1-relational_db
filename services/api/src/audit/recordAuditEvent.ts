@@ -59,7 +59,7 @@ export const recordAuditEvent = functions.https.onCall(async (data, context) => 
               }
             : {
                 id: 'unauthenticated',
-                email: metadata?.email || 'unauthenticated',
+                email: 'anonymous',
                 ip: context.rawRequest.ip || 'unknown'
               };
 
