@@ -7,7 +7,9 @@ import { stripe } from '../config/stripe';
  * The normal deletion workflow goes through processPendingStoreDeletions (30-day grace period).
  * This trigger fires only when a store document is hard-deleted without the grace period flow.
  */
-export const onStoreDelete = functions.firestore
+export const onStoreDelete = functions
+  .runWith({ secrets: ['STRIPE_SECRET_KEY'] })
+  .firestore
   .document('stores/{storeId}')
   .onDelete(async (snap, context) => {
     const storeId = context.params.storeId;

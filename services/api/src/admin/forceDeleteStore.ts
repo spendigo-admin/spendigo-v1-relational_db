@@ -4,7 +4,7 @@ import { cascadeDeleteStore } from './storeCleanupUtils';
 import { toHttpsError } from '../utils/errors';
 
 export const forceDeleteStore = functions
-    .runWith({ timeoutSeconds: 540, memory: '256MB' })
+    .runWith({ timeoutSeconds: 540, memory: '256MB', secrets: ['STRIPE_SECRET_KEY'] })
     .https.onCall(async (data: { storeId: string }, context) => {
         if (!context.app && process.env.FUNCTIONS_EMULATOR !== 'true') {
             throw new functions.https.HttpsError('failed-precondition', 'App Check required.');

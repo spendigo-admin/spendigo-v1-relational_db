@@ -553,7 +553,7 @@ const MerchantDeals: React.FC = () => {
                 <div className="text-center py-20 bg-gray-50 rounded-xl border border-dashed border-gray-300">
                     <div className="text-6xl mb-4 grayscale opacity-50">🏷️</div>
                     <h3 className="text-xl font-bold text-gray-800 mb-2">Upgrade to Create Deals</h3>
-                    <p className="text-gray-500 mb-6 max-w-md mx-auto">Deals and Flash Sales are premium features available exclusively on the Growth plan. Upgrade your subscription to engage more customers.</p>
+                    <p className="text-gray-500 mb-6 max-w-md mx-auto">Deals and Flash Sales are premium features available exclusively on the Pro plan. Upgrade your subscription to engage more customers.</p>
                     <a href="/merchant/subscription" className="px-6 py-2 bg-[var(--brand-primary)] text-white font-bold rounded-lg hover:brightness-110 shadow-lg shadow-[var(--brand-primary)]/20 inline-block">
                         View Plans & Upgrade
                     </a>

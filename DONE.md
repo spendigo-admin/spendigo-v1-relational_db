@@ -6,6 +6,20 @@ Chronological record of shipped fixes, features, and cleanup tasks. Newest at th
 
 ## May 2026
 
+### GCP Secret Manager Migration: All Cloud Functions Wired
+`services/api/src/payments/createCheckoutSession.ts`, `stripeWebhook.ts`, `onboardStore.ts`, `createPaymentIntent.ts`, `refundOrder.ts`, `checkStripeStatus.ts`, `getPaymentHistory.ts`, `updateSubscriptionPlan.ts`, `services/api/src/orders/placeOrder.ts`, `services/api/src/admin/forceDeleteStore.ts`, `services/api/src/admin/processPendingStoreDeletions.ts`, `services/api/src/triggers/storeTriggers.ts`, `services/api/src/triggers/algoliaTriggers.ts`, `services/api/src/triggers/algoliaMerchantTriggers.ts`, `services/api/.env.example`
+
+Migrated all platform secrets from plain-text Firebase environment variables to GCP Secret Manager. Every Cloud Function that reads `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `ALGOLIA_API_KEY`, or the three Stripe price IDs now declares them via `runWith({ secrets: [...] })`, causing Firebase to inject the decrypted values into `process.env` at cold-start.
+
+- **14 functions wired**: all 9 payment/order functions, `onStoreDelete`, `processPendingStoreDeletions`, `forceDeleteStore`, and both Algolia sync triggers.
+- **Startup validation hardened**: `stripe.ts` throws at module load if `STRIPE_SECRET_KEY` is unset; `stripeWebhook.ts` same for `STRIPE_WEBHOOK_SECRET` — misconfigured deploys fail fast instead of silently accepting requests.
+- **`.env.example` added**: committed template documenting all 11 variables with placeholders, separating secrets (→ GCP Secret Manager) from config values (→ Firebase Console). `.env` remains gitignored.
+- **Local emulator unchanged**: `services/api/.env` still supplies all values to the emulator; development workflow unchanged.
+
+Next step: run `firebase functions:secrets:set` for each secret + `firebase deploy --only functions`.
+
+---
+
 ### Security: Pre-Launch Blocker Batch (8 fixes)
 `services/api/src/config/stripe.ts`, `services/api/src/payments/stripeWebhook.ts`, `services/api/src/payments/onboardStore.ts`, `services/api/src/auth/removeTeamMember.ts`, `services/api/src/audit/recordAuditEvent.ts`, `services/api/src/utils/rateLimiter.ts`, `firestore.rules`, `apps/web/src/lib/firebase.ts`
 

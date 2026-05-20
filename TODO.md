@@ -3,7 +3,16 @@
 ## 1. Pre-Launch Blockers (v1.0 GA Target)
 
 ### Infrastructure & Config
-- [ ] **Set Production Env Vars Before Next Deploy**: `functions.config()` is gone — before running `firebase deploy --only functions`, set these in the Firebase Console (Functions → each function → Environment variables) or via Secret Manager: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_CORE`, `STRIPE_PRICE_GROWTH`, `STRIPE_PRICE_PRO`. Optional: `APP_URL` (defaults to `https://spendigo.ca`), `ADMIN_ALERT_EMAIL` (defaults to `ops@spendigo.ca`).
+- [ ] **Deploy Secrets to Production**: Code-side `runWith` declarations are complete for all 14 functions. Before running `firebase deploy --only functions`, provision each secret once:
+  ```bash
+  firebase functions:secrets:set STRIPE_SECRET_KEY
+  firebase functions:secrets:set STRIPE_WEBHOOK_SECRET
+  firebase functions:secrets:set ALGOLIA_API_KEY
+  firebase functions:secrets:set STRIPE_PRICE_CORE
+  firebase functions:secrets:set STRIPE_PRICE_GROWTH
+  firebase functions:secrets:set STRIPE_PRICE_PRO
+  ```
+  Then set the non-sensitive config vars in Firebase Console → Functions → Configuration → Environment variables: `ALGOLIA_APP_ID`, `ALGOLIA_INDEX_NAME` (`master_products`), `ALGOLIA_MERCHANT_INDEX_NAME` (`merchant_products`), `APP_URL` (`https://spendigo.ca`), `ADMIN_ALERT_EMAIL`. See `services/api/.env.example` for the full variable list and which category each belongs to.
 - [ ] **Staging Environment**: Provision an isolated `spendigo-staging` Firebase project (or Preview Channels) for QA.
 
 ### Security

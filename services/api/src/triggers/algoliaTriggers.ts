@@ -10,7 +10,9 @@ const algoliaClient = (ALGOLIA_APP_ID && ALGOLIA_API_KEY)
   ? algoliasearch(ALGOLIA_APP_ID, ALGOLIA_API_KEY)
   : null;
 
-export const syncMasterProductToAlgolia = functions.firestore
+export const syncMasterProductToAlgolia = functions
+  .runWith({ secrets: ['ALGOLIA_API_KEY'] })
+  .firestore
   .document('master_products/{productId}')
   .onWrite(async (change, context) => {
     if (!algoliaClient) {

@@ -12,7 +12,9 @@ const PRICE_IDS = {
     pro: process.env.STRIPE_PRICE_PRO || 'price_789_test_pro',
 };
 
-export const updateSubscriptionPlan = functions.https.onCall(async (data, context) => {
+export const updateSubscriptionPlan = functions
+    .runWith({ secrets: ['STRIPE_SECRET_KEY'] })
+    .https.onCall(async (data, context) => {
     // 1. Security & Validation
     if (!context.app && process.env.FUNCTIONS_EMULATOR !== 'true') {
         throw new functions.https.HttpsError('failed-precondition', 'The function must be called from an App Check verified app.');

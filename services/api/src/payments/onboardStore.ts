@@ -9,7 +9,9 @@ const db = admin.firestore();
  * Creates a Stripe Connect account for a merchant store
  * and returns an onboarding link.
  */
-export const onboardStore = functions.https.onCall(async (data, context) => {
+export const onboardStore = functions
+    .runWith({ secrets: ['STRIPE_SECRET_KEY'] })
+    .https.onCall(async (data, context) => {
     // 1. Authentication Check
     if (!context.auth) {
         throw new functions.https.HttpsError('unauthenticated', 'User must be logged in.');

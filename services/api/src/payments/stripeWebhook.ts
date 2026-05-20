@@ -13,7 +13,9 @@ if (!webhookSecret) {
  * Stripe Webhook Handler (HTTPS Endpoint)
  * Listens for events from Stripe and updates Firestore accordingly.
  */
-export const stripeWebhook = functions.https.onRequest(async (req, res) => {
+export const stripeWebhook = functions
+    .runWith({ secrets: ['STRIPE_SECRET_KEY', 'STRIPE_WEBHOOK_SECRET'] })
+    .https.onRequest(async (req, res) => {
     const sig = req.headers['stripe-signature'];
 
     let event;

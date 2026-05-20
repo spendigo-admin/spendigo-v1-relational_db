@@ -9,7 +9,9 @@ const db = admin.firestore();
  * Checks the status of a Stripe Connect account.
  * Updates the 'stripeOnboardingStatus' in Firestore if it has changed.
  */
-export const checkStripeAccountStatus = functions.https.onCall(async (data, context) => {
+export const checkStripeAccountStatus = functions
+    .runWith({ secrets: ['STRIPE_SECRET_KEY'] })
+    .https.onCall(async (data, context) => {
     // 1. Authentication Check
     if (!context.auth) {
         throw new functions.https.HttpsError('unauthenticated', 'User must be logged in.');

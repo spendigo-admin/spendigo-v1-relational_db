@@ -6,7 +6,9 @@ import { toHttpsError } from '../utils/errors';
 
 const db = admin.firestore();
 
-export const createCheckoutSession = functions.https.onCall(async (data, context) => {
+export const createCheckoutSession = functions
+    .runWith({ secrets: ['STRIPE_SECRET_KEY', 'STRIPE_PRICE_CORE', 'STRIPE_PRICE_GROWTH', 'STRIPE_PRICE_PRO'] })
+    .https.onCall(async (data, context) => {
     // 1. Security Check
     if (!context.app && process.env.FUNCTIONS_EMULATOR !== 'true') {
         throw new functions.https.HttpsError('failed-precondition', 'The function must be called from an App Check verified app.');

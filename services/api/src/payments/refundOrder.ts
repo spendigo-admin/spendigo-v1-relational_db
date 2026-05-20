@@ -11,7 +11,9 @@ const db = admin.firestore();
  * Merchant-initiated refund for a specific order.
  * Verifies that the order exists and has a valid PaymentIntent before refunding via Stripe.
  */
-export const refundOrder = functions.https.onCall(async (data, context) => {
+export const refundOrder = functions
+    .runWith({ secrets: ['STRIPE_SECRET_KEY'] })
+    .https.onCall(async (data, context) => {
     // 1. Authentication Check
     if (!context.auth) {
         throw new functions.https.HttpsError('unauthenticated', 'User must be logged in.');

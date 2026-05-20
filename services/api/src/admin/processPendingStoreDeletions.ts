@@ -5,7 +5,7 @@ import { cascadeDeleteStore } from './storeCleanupUtils';
 const GRACE_PERIOD_DAYS = 30;
 
 export const processPendingStoreDeletions = functions
-    .runWith({ timeoutSeconds: 540, memory: '256MB' })
+    .runWith({ timeoutSeconds: 540, memory: '256MB', secrets: ['STRIPE_SECRET_KEY'] })
     .pubsub.schedule('0 4 * * *')
     .timeZone('America/Toronto')
     .onRun(async (_context) => {
