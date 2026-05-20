@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useCart } from '../../context/CartContext';
@@ -50,6 +50,20 @@ const ProductDetail: React.FC = () => {
     const { getStore } = useMarketplace();
     const store = getStore(displayProduct?.storeId || '');
     const isInactive = store && store.status && store.status !== 'active';
+
+    const imageCount = displayProduct?.images?.length ?? 0;
+    const prevImage = useCallback(() => setActiveImage(i => (i - 1 + imageCount) % imageCount), [imageCount]);
+    const nextImage = useCallback(() => setActiveImage(i => (i + 1) % imageCount), [imageCount]);
+
+    useEffect(() => {
+        if (imageCount <= 1) return;
+        const onKey = (e: KeyboardEvent) => {
+            if (e.key === 'ArrowLeft') prevImage();
+            else if (e.key === 'ArrowRight') nextImage();
+        };
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+    }, [imageCount, prevImage, nextImage]);
 
     if (loading) return <div className="p-20 text-center">{t('productLoadingDetails')}</div>;
 
@@ -114,12 +128,30 @@ const ProductDetail: React.FC = () => {
                     {/* IMAGE GALLERY */}
                     <div className="space-y-4">
                         {/* Main Image */}
-                        <div className="aspect-square rounded-2xl overflow-hidden bg-[var(--surface-2)]">
+                        <div className="relative aspect-square rounded-2xl overflow-hidden bg-[var(--surface-2)]">
                             <img
                                 src={displayProduct.images[activeImage]}
                                 alt={displayProduct.name}
                                 className="w-full h-full object-cover"
                             />
+                            {displayProduct.images.length > 1 && (
+                                <>
+                                    <button
+                                        onClick={prevImage}
+                                        aria-label="Previous image"
+                                        className="absolute left-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/80 hover:bg-white shadow flex items-center justify-center text-gray-700 transition-colors"
+                                    >
+                                        &#8249;
+                                    </button>
+                                    <button
+                                        onClick={nextImage}
+                                        aria-label="Next image"
+                                        className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/80 hover:bg-white shadow flex items-center justify-center text-gray-700 transition-colors"
+                                    >
+                                        &#8250;
+                                    </button>
+                                </>
+                            )}
                         </div>
                         {/* Thumbnails */}
                         {displayProduct.images.length > 1 && (

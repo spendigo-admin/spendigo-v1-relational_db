@@ -6,6 +6,19 @@ Chronological record of shipped fixes, features, and cleanup tasks. Newest at th
 
 ## May 2026
 
+### Product Image Gallery: Persistence Bug Fix + Arrow Navigation
+`apps/web/src/hooks/useCatalog.ts`, `apps/web/src/pages/consumer/ProductDetail.tsx`
+
+Two bugs fixed in the multi-image pipeline:
+
+1. **Images disappeared on re-open (admin)** — `useMasterCatalog`'s `onSnapshot` deserializer explicitly mapped every field on `MasterProduct` but omitted `secondary_image_urls`. After saving, Firestore held the correct array, but the next snapshot rebuilt the in-memory object without it, so `editForm` was always initialised with `secondary_image_urls: undefined` on re-open. Fixed by adding `secondary_image_urls: data.secondary_image_urls` to the deserializer.
+
+2. **Gallery never showed on shopper page (consumer)** — `useProductDetail`, the Algolia search path, and the Firestore global-catalog path all built the `images` array as `[primary_image_url]` only, ignoring `secondary_image_urls`. The thumbnail strip in `ProductDetail.tsx` is hidden when `images.length <= 1`, so the gallery never appeared. All three paths now use the same pattern as `useStoreProducts`: `[primary, ...(secondary ?? [])].filter(Boolean)`.
+
+Arrow key navigation added to `ProductDetail.tsx`: `useEffect` listens for `ArrowLeft`/`ArrowRight` on `window` (attached only when `images.length > 1`, cleaned up on unmount). On-screen `‹` / `›` chevron buttons are overlaid on the left/right edges of the main image for touch/mouse users. Both methods share `prevImage`/`nextImage` callbacks and wrap around.
+
+---
+
 ### Cloud Storage Image Mirroring for Flyer Deals + Active Deals Static JSON
 `services/api/src/triggers/flyerImageMirror.ts`, `services/api/src/admin/rebuildActiveDealsJson.ts`, `services/api/src/utils/exportActiveDeals.ts`, `services/api/src/utils/flippScraper.ts`
 
