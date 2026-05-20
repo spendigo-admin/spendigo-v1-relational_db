@@ -339,8 +339,10 @@ const MerchantSettings: React.FC = () => {
         acceptApplePay: true,
         acceptCash: false, // Cash on delivery
         payoutSchedule: 'weekly',
+        statementDescriptor: '',
         bankLast4: '4242'
     });
+    const [isSavingPayout, setIsSavingPayout] = useState(false);
 
     // Notifications State
     const [notifications, setNotifications] = useState({
@@ -488,6 +490,12 @@ const MerchantSettings: React.FC = () => {
                 }));
             }
 
+            setPayments(prev => ({
+                ...prev,
+                payoutSchedule: store.payoutSchedule || 'weekly',
+                statementDescriptor: store.statementDescriptor || store.name?.substring(0, 22) || '',
+            }));
+
             if (store.kybStatus) setKybStatus(store.kybStatus as KybStatus);
             if (store.kybDocuments) setKybDocuments(store.kybDocuments as KybDocument[]);
             if (store.kybReviewNote) setKybReviewNote(store.kybReviewNote);
@@ -545,6 +553,24 @@ const MerchantSettings: React.FC = () => {
             addNotification({ type: 'alert', title: 'Export Failed', message: err.message || 'Could not export data.' });
         } finally {
             setIsExporting(false);
+        }
+    };
+
+    const handleSavePayoutConfig = async () => {
+        setIsSavingPayout(true);
+        try {
+            const fns = getFunctions();
+            const updateFn = httpsCallable(fns, 'updatePayoutConfig');
+            await updateFn({
+                storeId,
+                payoutSchedule: payments.payoutSchedule,
+                statementDescriptor: payments.statementDescriptor,
+            });
+            addNotification({ type: 'system', title: 'Payout Settings Saved', message: 'Your payout schedule and statement descriptor have been updated.' });
+        } catch (err: any) {
+            addNotification({ type: 'alert', title: 'Save Failed', message: err.message || 'Could not update payout settings.' });
+        } finally {
+            setIsSavingPayout(false);
         }
     };
 
@@ -1498,7 +1524,7 @@ const MerchantSettings: React.FC = () => {
                         </div>
                     )}
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 opacity-75">
+                    <div className={`grid grid-cols-1 md:grid-cols-2 gap-6 ${!isConnected ? 'opacity-50 pointer-events-none' : ''}`}>
                         <div>
                             <label className="block text-sm font-medium text-[var(--text-muted)] mb-2">Payout Schedule</label>
                             <select
@@ -1519,15 +1545,30 @@ const MerchantSettings: React.FC = () => {
                             <label className="block text-sm font-medium text-[var(--text-muted)] mb-2">Statement Descriptor</label>
                             <input
                                 type="text"
-                                value={storeInfo.name.substring(0, 20)}
-                                readOnly
-                                className="w-full p-3 border border-[var(--glass-border)] rounded-lg bg-gray-50 text-gray-500 cursor-not-allowed"
+                                value={payments.statementDescriptor}
+                                onChange={e => setPayments({ ...payments, statementDescriptor: e.target.value.substring(0, 22) })}
+                                maxLength={22}
+                                disabled={!isConnected}
+                                placeholder={storeInfo.name.substring(0, 22)}
+                                className="w-full p-3 border border-[var(--glass-border)] rounded-lg bg-[var(--surface-1)] disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed"
                             />
-                            <p className="text-xs text-[var(--text-muted)] mt-2">
-                                This is what customers will see on their bank statements.
+                            <p className="text-xs text-[var(--text-muted)] mt-1 flex justify-between">
+                                <span>This is what customers will see on their bank statements.</span>
+                                <span className={payments.statementDescriptor.length >= 20 ? 'text-orange-500' : ''}>{payments.statementDescriptor.length}/22</span>
                             </p>
                         </div>
                     </div>
+                    {isConnected && (
+                        <div className="flex justify-end mt-4">
+                            <button
+                                onClick={handleSavePayoutConfig}
+                                disabled={isSavingPayout || payments.statementDescriptor.length < 5}
+                                className="px-5 py-2 bg-[var(--brand-primary)] text-white rounded-lg font-bold text-sm hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {isSavingPayout ? 'Saving...' : 'Save Payout Settings'}
+                            </button>
+                        </div>
+                    )}
                 </section>
             </div>
         );

@@ -35,6 +35,7 @@ export { onboardStore } from './payments/onboardStore';
 export { checkStripeAccountStatus } from './payments/checkStripeStatus';
 export { createPaymentIntent } from './payments/createPaymentIntent';
 export { refundOrder } from './payments/refundOrder';
+export { updatePayoutConfig } from './payments/updatePayoutConfig';
 export { onOrderStatusUpdated } from './triggers/orderTriggers';
 export { onOrderCreated } from './triggers/orderCreationTrigger';
 export { onMerchantProductPriceChange } from './triggers/priceHistoryTrigger';
