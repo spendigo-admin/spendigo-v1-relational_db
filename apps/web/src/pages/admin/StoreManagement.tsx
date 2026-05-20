@@ -990,7 +990,7 @@ const StoreManagement: React.FC = () => {
                                                 value={formData.province}
                                                 onChange={e => setFormData({ ...formData, province: e.target.value })}
                                             >
-                                                {['ON', 'BC', 'AB', 'QC', 'MB', 'NS', 'NB', 'SK', 'NL', 'PE'].map(p => (
+                                                {['ON', 'BC', 'AB', 'QC', 'MB', 'NS', 'NB', 'SK', 'NL', 'PE', 'YT', 'NT', 'NU'].map(p => (
                                                     <option key={p} value={p}>{p}</option>
                                                 ))}
                                             </select>

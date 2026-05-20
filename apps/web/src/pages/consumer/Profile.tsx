@@ -440,8 +440,17 @@ const Profile: React.FC = () => {
                                             >
                                                 <option value="ON">Ontario</option>
                                                 <option value="QC">Quebec</option>
-                                                <option value="BC">BC</option>
+                                                <option value="BC">British Columbia</option>
                                                 <option value="AB">Alberta</option>
+                                                <option value="NS">Nova Scotia</option>
+                                                <option value="NB">New Brunswick</option>
+                                                <option value="MB">Manitoba</option>
+                                                <option value="SK">Saskatchewan</option>
+                                                <option value="PE">Prince Edward Island</option>
+                                                <option value="NL">Newfoundland & Labrador</option>
+                                                <option value="YT">Yukon</option>
+                                                <option value="NT">Northwest Territories</option>
+                                                <option value="NU">Nunavut</option>
                                             </select>
                                             <input type="text" placeholder={t('postalCode')} value={newAddress.postalCode} onChange={e => setNewAddress({ ...newAddress, postalCode: e.target.value })} className="w-full px-4 py-3 bg-white border border-[var(--glass-border)] rounded-xl text-sm outline-none focus:border-[var(--brand-primary)]" />
                                         </div>

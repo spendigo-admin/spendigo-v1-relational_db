@@ -61,16 +61,21 @@ export const placeOrder = functions.runWith({ timeoutSeconds: 120, memory: '256M
         }> = [];
 
         await db.runTransaction(async (transaction) => {
-            // PHASE 1: READS (Collect all product snapshots)
+            // PHASE 1: READS (Collect all product snapshots + store province for tax rate)
             const productChecks: {
                 ref: DocumentReference,
                 snap: DocumentSnapshot,
                 item: any,
                 storeId: string
             }[] = [];
+            const storeSnaps: Record<string, DocumentSnapshot> = {};
 
             for (const order of ordersToProcess) {
                 if (!order.storeId) throw new functions.https.HttpsError('invalid-argument', 'Order missing storeId');
+
+                if (!storeSnaps[order.storeId]) {
+                    storeSnaps[order.storeId] = await transaction.get(db.collection('stores').doc(order.storeId));
+                }
 
                 for (const item of order.items) {
                     const productRef = db.collection('merchant_products').doc(item.productId);
@@ -105,23 +110,39 @@ export const placeOrder = functions.runWith({ timeoutSeconds: 120, memory: '256M
             }
 
             // PHASE 2.5: SERVER-SIDE PRICE VALIDATION
-            // Client-supplied totals cannot be trusted — compute from authoritative snapshots.
-            const TAX_RATE = 0.13; // Ontario HST — replace with settings/platform lookup later
+            // Must mirror Checkout.tsx exactly: per-province rates, item taxability, delivery fee in tax base.
+            const TAX_RATES: Record<string, number> = {
+                'ON': 0.13, 'BC': 0.12, 'QC': 0.14975, 'AB': 0.05,
+                'NS': 0.15, 'NB': 0.15, 'MB': 0.12, 'SK': 0.11, 'PE': 0.15, 'NL': 0.15,
+                'YT': 0.05, 'NT': 0.05, 'NU': 0.05
+            };
             for (const orderData of ordersToProcess) {
                 // Gather the product checks that belong to this order
                 const orderChecks = productChecks.filter(pc => pc.storeId === orderData.storeId);
-                const serverSubtotal = parseFloat(
-                    orderChecks.reduce((sum, { snap, item }) =>
-                        sum + (snap.exists ? (snap.data()?.price ?? 0) * item.quantity : 0), 0
-                    ).toFixed(2)
-                );
-                const serverTax = parseFloat((serverSubtotal * TAX_RATE).toFixed(2));
+
+                let serverSubtotal = 0;
+                let taxableSubtotal = 0;
+                for (const { snap, item } of orderChecks) {
+                    if (!snap.exists) continue;
+                    const lineTotal = (snap.data()?.price ?? 0) * item.quantity;
+                    serverSubtotal += lineTotal;
+                    if (item.taxable !== false) taxableSubtotal += lineTotal;
+                }
+                serverSubtotal = parseFloat(serverSubtotal.toFixed(2));
+                taxableSubtotal = parseFloat(taxableSubtotal.toFixed(2));
+
                 const deliveryFee = orderData.deliveryFee ?? 0;
                 if (typeof deliveryFee !== 'number' || deliveryFee < 0 || deliveryFee > 25) {
                     throw new functions.https.HttpsError('invalid-argument', 'Invalid delivery fee.');
                 }
+
+                // Province is read from Firestore — not trusted from the client
+                const province = (storeSnaps[orderData.storeId]?.data()?.province || 'ON').toUpperCase();
+                const taxRate = TAX_RATES[province] ?? 0.13;
+                const serverTax = parseFloat(((taxableSubtotal + deliveryFee) * taxRate).toFixed(2));
                 const serverTotal = parseFloat((serverSubtotal + serverTax + deliveryFee).toFixed(2));
                 if (Math.abs(serverTotal - (orderData.total ?? 0)) > 0.02) {
+                    functions.logger.warn(`Price mismatch store=${orderData.storeId} server=${serverTotal} client=${orderData.total} province=${province} rate=${taxRate} deliveryFee=${deliveryFee}`);
                     throw new functions.https.HttpsError('invalid-argument', 'Price mismatch. Please refresh and retry.');
                 }
                 // Attach server-computed values so Phase 3 can use them

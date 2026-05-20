@@ -214,7 +214,7 @@ const Checkout: React.FC = () => {
 
             // Calculate Tax for this specific store based on its province
             const province = store?.province || STORE_DATA[storeId]?.province || 'ON';
-            const TAX_RATES: Record<string, number> = { 'ON': 0.13, 'BC': 0.12, 'QC': 0.14975, 'AB': 0.05, 'NS': 0.15, 'NB': 0.15, 'MB': 0.12, 'SK': 0.11, 'PE': 0.15, 'NL': 0.15 };
+            const TAX_RATES: Record<string, number> = { 'ON': 0.13, 'BC': 0.12, 'QC': 0.14975, 'AB': 0.05, 'NS': 0.15, 'NB': 0.15, 'MB': 0.12, 'SK': 0.11, 'PE': 0.15, 'NL': 0.15, 'YT': 0.05, 'NT': 0.05, 'NU': 0.05 };
             const rate = TAX_RATES[province] || 0.13;
 
             // Tax is applied to taxable items + delivery fee
@@ -292,7 +292,7 @@ const Checkout: React.FC = () => {
 
                 // Determine Rate
                 const province = store?.province || 'ON';
-                const TAX_RATES: Record<string, number> = { 'ON': 0.13, 'BC': 0.12, 'QC': 0.14975, 'AB': 0.05, 'NS': 0.15, 'NB': 0.15, 'MB': 0.12, 'SK': 0.11, 'PE': 0.15, 'NL': 0.15 };
+                const TAX_RATES: Record<string, number> = { 'ON': 0.13, 'BC': 0.12, 'QC': 0.14975, 'AB': 0.05, 'NS': 0.15, 'NB': 0.15, 'MB': 0.12, 'SK': 0.11, 'PE': 0.15, 'NL': 0.15, 'YT': 0.05, 'NT': 0.05, 'NU': 0.05 };
                 const rate = TAX_RATES[province] || 0.13;
 
                 // Re-calculate fee for this specific order

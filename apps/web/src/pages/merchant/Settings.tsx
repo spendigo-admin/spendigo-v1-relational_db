@@ -1140,7 +1140,10 @@ const MerchantSettings: React.FC = () => {
                             <option value="MB">MB - Manitoba (12%)</option>
                             <option value="SK">SK - Saskatchewan (11%)</option>
                             <option value="PE">PE - PEI (15%)</option>
-                            <option value="NL">NL - Newfoundland (15%)</option>
+                            <option value="NL">NL - Newfoundland & Labrador (15%)</option>
+                            <option value="YT">YT - Yukon (5%)</option>
+                            <option value="NT">NT - Northwest Territories (5%)</option>
+                            <option value="NU">NU - Nunavut (5%)</option>
                         </select>
                     </div>
                     <div>
