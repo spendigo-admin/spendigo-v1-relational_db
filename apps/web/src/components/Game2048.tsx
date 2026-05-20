@@ -310,24 +310,6 @@ const Game2048: React.FC = () => {
                 <p className="text-gray-500 text-[10px] uppercase tracking-[0.2em]">Use arrows or swipe to move tiles</p>
             </div>
 
-            <style>{`
-                @keyframes scale-in {
-                    0% { transform: scale(0); opacity: 0; }
-                    100% { transform: scale(1); opacity: 1; }
-                }
-                @keyframes pop {
-                    0% { transform: scale(1); }
-                    50% { transform: scale(1.15); }
-                    100% { transform: scale(1); }
-                }
-                @keyframes fade-in {
-                    0% { opacity: 0; }
-                    100% { opacity: 1; }
-                }
-                .animate-scale-in { animation: scale-in 0.2s ease-out; }
-                .animate-pop { animation: pop 0.15s ease-in-out; }
-                .animate-fade-in { animation: fade-in 0.3s ease-out; }
-            `}</style>
         </div>
     );
 };

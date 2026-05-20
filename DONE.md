@@ -6,6 +6,17 @@ Chronological record of shipped fixes, features, and cleanup tasks. Newest at th
 
 ## May 2026
 
+### CSP `unsafe-inline` Removal
+`firebase.json`, `apps/web/src/components/Game2048.tsx`, `apps/web/src/pages/Maintenance.tsx`, `apps/web/src/styles/design-system.css`
+
+Removed `'unsafe-inline'` from both `script-src` and `style-src` in the enforcing `Content-Security-Policy` header.
+
+Full codebase audit confirmed only two components used JSX `<style>` blocks that required the directive: `Game2048.tsx` (3 `@keyframes` + 3 utility classes) and `Maintenance.tsx` (1 `@keyframes` + 1 utility class). Both `<style>` blocks were deleted and their keyframes migrated to `design-system.css` as static global styles. The 26 files with React `style={{}}` props required no changes — React applies those via the JavaScript DOM API (`element.style`), which is governed by `script-src`, not `style-src`. No inline `<script>` blocks exist anywhere in the codebase; third-party libs (Stripe, reCAPTCHA, Algolia, Sentry) all load from their own domains already listed in the CSP.
+
+A matching `Content-Security-Policy-Report-Only` header (same policy, no `unsafe-inline`) was added alongside the enforcing header. Any violations from third-party libraries will appear in the browser console after deploying, with zero enforcement impact. If violations surface, restore `'unsafe-inline'` in `firebase.json` and investigate the specific source before retrying.
+
+---
+
 ### GCP Secret Manager Migration: All Cloud Functions Wired
 `services/api/src/payments/createCheckoutSession.ts`, `stripeWebhook.ts`, `onboardStore.ts`, `createPaymentIntent.ts`, `refundOrder.ts`, `checkStripeStatus.ts`, `getPaymentHistory.ts`, `updateSubscriptionPlan.ts`, `services/api/src/orders/placeOrder.ts`, `services/api/src/admin/forceDeleteStore.ts`, `services/api/src/admin/processPendingStoreDeletions.ts`, `services/api/src/triggers/storeTriggers.ts`, `services/api/src/triggers/algoliaTriggers.ts`, `services/api/src/triggers/algoliaMerchantTriggers.ts`, `services/api/.env.example`
 

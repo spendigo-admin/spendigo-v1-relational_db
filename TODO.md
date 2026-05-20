@@ -15,9 +15,6 @@
   Then set the non-sensitive config vars in Firebase Console → Functions → Configuration → Environment variables: `ALGOLIA_APP_ID`, `ALGOLIA_INDEX_NAME` (`master_products`), `ALGOLIA_MERCHANT_INDEX_NAME` (`merchant_products`), `APP_URL` (`https://spendigo.ca`), `ADMIN_ALERT_EMAIL`. See `services/api/.env.example` for the full variable list and which category each belongs to.
 - [ ] **Staging Environment**: Provision an isolated `spendigo-staging` Firebase project (or Preview Channels) for QA.
 
-### Security
-- [ ] **CSP `unsafe-inline` Removal**: `firebase.json` CSP includes `'unsafe-inline'` in both `script-src` and `style-src`, weakening XSS protection. Requires a full audit of inline `style={{}}` usage across React components and any inline scripts injected by third-party libraries — separate investigation task.
-
 ---
 
 ## 2. High Priority (Post-Launch v1.0.x)

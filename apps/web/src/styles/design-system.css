@@ -315,6 +315,24 @@ p {
     animation: skeleton-pulse 1.5s ease-in-out infinite;
 }
 
+@keyframes scale-in {
+    0% { transform: scale(0); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+}
+@keyframes pop {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.15); }
+    100% { transform: scale(1); }
+}
+.animate-scale-in { animation: scale-in 0.2s ease-out; }
+.animate-pop { animation: pop 0.15s ease-in-out; }
+
+@keyframes fade-in-up {
+    0% { opacity: 0; transform: translateY(20px); }
+    100% { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in-up { animation: fade-in-up 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
 @layer base {
     .theme-night .text-gray-900,
     .theme-night .text-gray-800,

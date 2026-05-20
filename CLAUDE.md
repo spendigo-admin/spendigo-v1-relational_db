@@ -13,6 +13,42 @@ Spendigo SmartCart is a Canada-first Marketplace Facilitator connecting independ
 5. **No Vibe Coding**: Rely on documentation and test results, not assumptions. Use `ls`, `grep`, and `cat` (or their tool equivalents) to verify codebase state before editing.
 6. **Explain the Why**: After every non-trivial fix, add a one-paragraph "Why this works" explanation covering the low-level mechanism — which data structure changed, which race condition was closed, which contract was violated and how. Surface-level "this fixes the bug" summaries are not enough.
 
+## Security Rules
+
+These rules apply to every change. Do not wait to be asked — enforce them proactively.
+
+### Cloud Functions
+- **Validate caller identity first.** Every callable function must verify `context.auth` exists before reading `context.auth.uid`. Unauthenticated callers must be rejected with `unauthenticated` before any Firestore read.
+- **Verify the caller's Firestore document exists before trusting its data.** After fetching a caller doc, check `.exists` and throw `permission-denied` if missing — never rely on `!callerData` catching `undefined` downstream.
+- **Use positive permission checks, not negative.** Write `isAdmin || isOwner`, never `caller?.storeId !== storeId`. Negative equality checks silently pass when the field is `undefined`.
+- **No secrets in code or environment variables.** All secrets (`STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `ALGOLIA_API_KEY`, Stripe price IDs) live in GCP Secret Manager and are declared via `runWith({ secrets: [...] })`. The functions runtime injects them into `process.env` at cold-start.
+- **Validate and sanitize every user-supplied string** before writing to Firestore, the audit log, or an email template. Trim and cap length. HTML-escape anything interpolated into email markup.
+- **Wrap every outbound HTTP call** (Nominatim, Stripe, Algolia, FCM) in `Promise.race` with an `AbortController` timeout of ≤ 5 s. An uncancelled call can hang the function until the 60 s hard limit, causing retries and duplicate side-effects.
+- **Never use `FieldValue.increment` inside a transaction for limit checks.** `increment` is a server-side transform that bypasses Firestore optimistic locking — read the current count, compute the new value, and write it explicitly so the transaction can abort on conflict.
+- **Audit writes must be atomic with their triggering action.** Pass the outer transaction object to `logEvent` so the audit entry and the business write commit together or not at all. Fire-and-forget audit writes swallow failures silently.
+- **Rate-limit every user-facing callable.** Use `rateLimiter.ts` at the top of the handler, before any business logic. Return `resource-exhausted` on breach.
+
+### Firestore Rules
+- **Field-level diffs on updates.** Use `diff().affectedKeys().hasOnly([...])` to whitelist the exact fields each role can mutate. Blanket `update` permission is never acceptable.
+- **`exists()` checks for cross-collection references.** If a document must reference another collection (e.g. `master_products`), enforce it with an `exists()` call in the rule, not in application code.
+- **No unauthenticated writes to analytics or counters.** Require `isAuthenticated()` for all write paths, including view counters. Unauthenticated increments allow unlimited free inflation.
+- **Sensitive fields are admin-only.** `role`, `adminRole`, `merchantRole`, `storeId`, `subscriptionTier`, `status`, and all Stripe config fields must not appear in any non-admin `allow write` clause.
+
+### React / Frontend
+- **No JSX `<style>` blocks.** Inline `<style>` tags require `'unsafe-inline'` in `style-src` CSP. Move all keyframes and utility classes to `apps/web/src/styles/design-system.css`.
+- **No `dangerouslySetInnerHTML`.** If dynamic HTML is truly unavoidable, sanitize with DOMPurify first.
+- **No inline `<script>` injection.** Structured data (JSON-LD) and analytics must be loaded via external files or the existing tag manager integration, not `document.createElement('script')`.
+- **Validate at system boundaries only.** Do not add client-side guards for things that Firestore rules or Cloud Function validators already enforce — duplication creates a false sense of coverage. Add server-side validation instead.
+- **Environment variables with secrets must never be logged or exposed in error messages** rendered to the browser.
+
+### Stripe / Payments
+- **Verify webhook signatures before reading the event payload.** `stripe.webhooks.constructEvent` with the secret from Secret Manager must be the first line of the webhook handler. Never process an unverified payload.
+- **Always use destination charges with explicit `application_fee_amount`** for marketplace payments — never bare charges that bypass the Connect fee split.
+- **Proration behaviour must be intentional.** Upgrades → `always_invoice`. Downgrades → `none`. Document the reason in a comment.
+
+### Dependency on `PROCESS_LIFECYCLES.md`
+Before touching any multi-step workflow (order placement, store deletion, team invites, payments, subscriptions), read `docs/PROCESS_LIFECYCLES.md`. It documents error paths, async gaps, and known race conditions. Fixing one step without reading the full lifecycle is the primary source of regressions in this codebase.
+
 ## Commands
 
 ### Development
