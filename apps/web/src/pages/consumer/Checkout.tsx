@@ -106,6 +106,8 @@ const Checkout: React.FC = () => {
 
     // State for fulfillment method PER STORE
     const [fulfillmentMethods, setFulfillmentMethods] = useState<Record<string, 'delivery' | 'pickup'>>({});
+    // Payment choice per store: 'card' = pay online via Stripe, 'in_store' = pay at terminal / on delivery
+    const [paymentChoices, setPaymentChoices] = useState<Record<string, 'card' | 'in_store'>>({});
     // Audit logging removed
     const [isProcessing, setIsProcessing] = useState(false);
     const [orderComplete, setOrderComplete] = useState(false);
@@ -117,6 +119,7 @@ const Checkout: React.FC = () => {
     // Initialize fulfillment methods based on tier capabilities
     useEffect(() => {
         const methods: Record<string, 'delivery' | 'pickup'> = {};
+        const choices: Record<string, 'card' | 'in_store'> = {};
         Object.entries(groupedItems).forEach(([storeId, data]) => {
             const store = getStore(storeId);
             const tier = store?.subscriptionTier || data.tier || 'free';
@@ -132,8 +135,13 @@ const Checkout: React.FC = () => {
                 // Edge case: Both disabled (shouldn't happen in normal flow)
                 methods[storeId] = 'pickup';
             }
+
+            // Default payment choice: online for Stripe-connected pickup stores, in_store otherwise
+            const isPickup = methods[storeId] === 'pickup';
+            choices[storeId] = (data.acceptsOnlinePayment && isPickup) ? 'card' : 'in_store';
         });
         setFulfillmentMethods(methods);
+        setPaymentChoices(choices);
     }, [items.length, getStore, userCoords]);
 
     const toggleFulfillment = (storeId: string, method: 'delivery' | 'pickup') => {
@@ -147,6 +155,16 @@ const Checkout: React.FC = () => {
             ...prev,
             [storeId]: method
         }));
+        // Delivery is always pay-on-delivery; pickup at Stripe store defaults to card
+        setPaymentChoices(prev => ({
+            ...prev,
+            [storeId]: (method === 'delivery') ? 'in_store'
+                : (storeData.acceptsOnlinePayment ? 'card' : 'in_store')
+        }));
+    };
+
+    const togglePaymentChoice = (storeId: string, choice: 'card' | 'in_store') => {
+        setPaymentChoices(prev => ({ ...prev, [storeId]: choice }));
     };
 
     const taxRate = 0.13; // 13% HST Ontario
@@ -297,8 +315,9 @@ const Checkout: React.FC = () => {
 
                 let paymentIntentId = null;
 
-                // --- NEW: Real Stripe Payment Logic ---
-                if (data.acceptsOnlinePayment && stripe && elements) {
+                // Charge via Stripe only when the shopper explicitly chose "Pay Online" for a pickup order
+                const wantsOnlinePayment = data.acceptsOnlinePayment && method !== 'delivery' && paymentChoices[storeId] === 'card';
+                if (wantsOnlinePayment && stripe && elements) {
                     const cardElement = elements.getElement(CardElement);
                     if (!cardElement) throw new Error("Payment input missing.");
 
@@ -340,7 +359,7 @@ const Checkout: React.FC = () => {
                     storeProvince: province,
                     appliedTaxRate: rate,
                     status: 'placed' as const,
-                    paymentStatus: data.acceptsOnlinePayment ? 'paid' as const : 'pending' as const,
+                    paymentStatus: wantsOnlinePayment ? 'paid' as const : 'pending' as const,
                     items: data.items.map((i: any) => ({
                         productId: i.productId || i.id,
                         productName: i.productName || i.name,
@@ -353,7 +372,7 @@ const Checkout: React.FC = () => {
                     tax: taxAmount,
                     deliveryFee: fee,
                     total: grandTotal,
-                    paymentMethod: data.acceptsOnlinePayment ? ('card' as const) : ('in_store' as const),
+                    paymentMethod: wantsOnlinePayment ? ('card' as const) : ('in_store' as const),
                     paymentIntentId: paymentIntentId,
                     deliveryAddress: method === 'delivery'
                         ? (() => {
@@ -529,6 +548,36 @@ const Checkout: React.FC = () => {
                                     </button>
                                 </div>
 
+                                {/* Payment Method Toggle — only for Stripe-connected pickup stores */}
+                                {groupedItems[storeId].acceptsOnlinePayment && fulfillmentMethods[storeId] !== 'delivery' && (
+                                    <div className="mb-4">
+                                        <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-1.5">How would you like to pay?</p>
+                                        <div className="bg-[var(--surface-1)] p-1 rounded-lg flex">
+                                            <button
+                                                onClick={() => togglePaymentChoice(storeId, 'card')}
+                                                className={`flex-1 py-2 text-sm font-bold rounded-md transition-all flex items-center justify-center gap-2 ${paymentChoices[storeId] === 'card'
+                                                    ? 'bg-white text-[var(--brand-primary)] shadow-sm'
+                                                    : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
+                                                    }`}
+                                            >
+                                                💳 Pay Online
+                                            </button>
+                                            <button
+                                                onClick={() => togglePaymentChoice(storeId, 'in_store')}
+                                                className={`flex-1 py-2 text-sm font-bold rounded-md transition-all flex items-center justify-center gap-2 ${paymentChoices[storeId] === 'in_store'
+                                                    ? 'bg-white text-[var(--brand-primary)] shadow-sm'
+                                                    : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
+                                                    }`}
+                                            >
+                                                🏪 Pay at Store
+                                            </button>
+                                        </div>
+                                        {paymentChoices[storeId] === 'in_store' && (
+                                            <p className="text-[10px] text-[var(--text-muted)] mt-1.5 text-center">Pay at the store terminal when you pick up your order.</p>
+                                        )}
+                                    </div>
+                                )}
+
                                 {/* Item List (Collapsed/Simple) */}
                                 < div className="space-y-2 pl-2 border-l-2 border-[var(--glass-border)]" >
                                     {
@@ -595,8 +644,8 @@ const Checkout: React.FC = () => {
                         </div>
                     </div>
                     <p className="text-sm text-[var(--text-muted)] leading-relaxed bg-blue-50 p-4 rounded-xl border border-blue-100 text-blue-800">
-                        <strong>Note:</strong> Spendigo is a marketplace facilitator. {Object.values(groupedItems).some(g => g.acceptsOnlinePayment) 
-                            ? "Your online payment will be securely transferred to the merchant(s) upon order confirmation." 
+                        <strong>Note:</strong> Spendigo is a marketplace facilitator. {Object.entries(groupedItems).some(([sid, g]) => g.acceptsOnlinePayment && (fulfillmentMethods[sid] || 'pickup') !== 'delivery' && paymentChoices[sid] === 'card')
+                            ? "Your online payment will be securely transferred to the merchant(s) upon order confirmation."
                             : "You are reserving these items. Please complete payment at the store or with the delivery driver upon receipt."}
                     </p>
                 </div>
@@ -637,7 +686,9 @@ const Checkout: React.FC = () => {
                         // Check if ANY store blocks the entire checkout
                         const hasBlockers = Object.values(groupedItems).some(g => !g.isOpen || (!g.deliveryEnabled && !g.pickupEnabled));
                         const ageBlocked = hasAgeRestricted && !ageVerified;
-                        const hasOnlinePay = Object.values(groupedItems).some(g => g.acceptsOnlinePayment);
+                        const hasOnlinePay = Object.entries(groupedItems).some(([sid, g]) =>
+                            g.acceptsOnlinePayment && (fulfillmentMethods[sid] || 'pickup') !== 'delivery' && paymentChoices[sid] === 'card'
+                        );
 
                         return (
                             <div className="space-y-4">
