@@ -40,8 +40,9 @@ const FlyerTab: React.FC<{ storeId: string; storeName: string; summary: any; vie
     }, [storeId, subscribeToFlyers, summary]);
 
     const handleAdd = (item: any) => {
+        const resolvedProductId = item.productId.startsWith(`${storeId}_`) ? item.productId : `${storeId}_${item.productId}`;
         addToCart({
-            productId: item.productId,
+            productId: resolvedProductId,
             productName: item.name,
             price: getMinPrice(item.productId, item.salePrice),
             originalPrice: item.originalPrice,
@@ -260,8 +261,9 @@ const OffersTab: React.FC<{ storeId: string, storeName: string; viewMode: 'grid'
     }, [storeId, subscribeToDeals, hasDealsAccess]);
 
     const handleQuickAdd = (item: any) => {
+        const resolvedProductId = item.productId.startsWith(`${storeId}_`) ? item.productId : `${storeId}_${item.productId}`;
         addToCart({
-            productId: item.productId,
+            productId: resolvedProductId,
             productName: item.productName || item.name || 'Product',
             price: getMinPrice(item.productId, item.salePrice ?? item.price),
             originalPrice: item.originalPrice,

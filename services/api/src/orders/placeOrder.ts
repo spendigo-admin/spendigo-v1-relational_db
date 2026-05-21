@@ -8,6 +8,39 @@ import { toHttpsError } from '../utils/errors';
 
 const db = admin.firestore();
 
+const isDateActive = (dateString: any): boolean => {
+    if (!dateString) return false;
+    try {
+        const end = new Date(dateString);
+        if (isNaN(end.getTime())) return false;
+        const now = new Date();
+        if (typeof dateString === 'string' && dateString.indexOf(':') === -1) {
+            end.setHours(23, 59, 59, 999);
+        }
+        return end >= now;
+    } catch (e) {
+        return false;
+    }
+};
+
+const isFlyerActive = (flyer: any): boolean => {
+    if (!flyer || !flyer.title) return false;
+    if (flyer.status && flyer.status !== 'active') return false;
+    if (!flyer.validUntil) return false;
+    return isDateActive(flyer.validUntil);
+};
+
+const filterActiveDeals = (deals: any[]): any[] => {
+    if (!Array.isArray(deals)) return [];
+    return deals.filter(deal => {
+        if (!deal) return false;
+        if (deal.status && deal.status !== 'active') return false;
+        const expiry = deal.validUntil || deal.endDate || deal.expiryDate;
+        if (!expiry) return false;
+        return isDateActive(expiry);
+    });
+};
+
 export const placeOrder = functions.runWith({ timeoutSeconds: 120, memory: '256MB', secrets: ['STRIPE_SECRET_KEY'] }).https.onCall(async (data, context) => {
     // 1. Security Check
     if (!context.app && process.env.FUNCTIONS_EMULATOR !== 'true') {
@@ -89,6 +122,53 @@ export const placeOrder = functions.runWith({ timeoutSeconds: 120, memory: '256M
                 }
             }
 
+            // Load active flyers and deals for each store to compute correct promotional pricing
+            const storeActivePrices: Record<string, { getMinPrice: (productId: string, candidatePrice: number) => number }> = {};
+            
+            for (const storeId of Object.keys(storeSnaps)) {
+                const dealPrices = new Map<string, number>();
+                const flyerPrices = new Map<string, number>();
+
+                // Fetch deals
+                const dealsSnap = await db.collection('stores').doc(storeId).collection('deals').get();
+                const dealsData = dealsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                filterActiveDeals(dealsData).forEach((d: any) => {
+                    const p = d.salePrice ?? d.price;
+                    if (d.productId && p != null) {
+                        const prev = dealPrices.get(d.productId);
+                        if (prev === undefined || p < prev) dealPrices.set(d.productId, p);
+                    }
+                });
+
+                // Fetch flyers
+                const flyersSnap = await db.collection('stores').doc(storeId).collection('flyers').get();
+                const flyersData = flyersSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                flyersData.filter(isFlyerActive).forEach((flyer: any) => {
+                    (flyer.items || []).forEach((item: any) => {
+                        if (item.productId && item.salePrice != null) {
+                            const prev = flyerPrices.get(item.productId);
+                            if (prev === undefined || item.salePrice < prev) flyerPrices.set(item.productId, item.salePrice);
+                        }
+                    });
+                });
+
+                storeActivePrices[storeId] = {
+                    getMinPrice: (productId: string, candidatePrice: number): number => {
+                        const bareId = productId.includes('_') ? productId.split('_')[1] : productId;
+                        const fullId = productId.includes('_') ? productId : `${storeId}_${productId}`;
+                        const prices = [candidatePrice];
+                        
+                        const dp = dealPrices.get(productId) ?? dealPrices.get(bareId) ?? dealPrices.get(fullId);
+                        if (dp !== undefined) prices.push(dp);
+                        
+                        const fp = flyerPrices.get(productId) ?? flyerPrices.get(bareId) ?? flyerPrices.get(fullId);
+                        if (fp !== undefined) prices.push(fp);
+                        
+                        return Math.min(...prices);
+                    }
+                };
+            }
+
             // PHASE 2: WRITES (Stock Updates)
             for (const { ref, snap, item, storeId } of productChecks) {
                 if (!snap.exists) {
@@ -124,7 +204,9 @@ export const placeOrder = functions.runWith({ timeoutSeconds: 120, memory: '256M
                 let taxableSubtotal = 0;
                 for (const { snap, item } of orderChecks) {
                     if (!snap.exists) continue;
-                    const lineTotal = (snap.data()?.price ?? 0) * item.quantity;
+                    const basePrice = snap.data()?.price ?? 0;
+                    const activePrice = storeActivePrices[orderData.storeId]?.getMinPrice(item.productId, basePrice) ?? basePrice;
+                    const lineTotal = activePrice * item.quantity;
                     serverSubtotal += lineTotal;
                     if (item.taxable !== false) taxableSubtotal += lineTotal;
                 }

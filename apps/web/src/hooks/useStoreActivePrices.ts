@@ -45,13 +45,15 @@ export function useStoreActivePrices(storeId: string) {
     }, [storeId, subscribeToFlyers]);
 
     const getMinPrice = useCallback((productId: string, candidatePrice: number): number => {
+        const bareId = productId.includes('_') ? productId.split('_')[1] : productId;
+        const fullId = productId.includes('_') ? productId : `${storeId}_${productId}`;
         const prices = [candidatePrice];
-        const dp = dealPrices.get(productId);
+        const dp = dealPrices.get(productId) ?? dealPrices.get(bareId) ?? dealPrices.get(fullId);
         if (dp !== undefined) prices.push(dp);
-        const fp = flyerPrices.get(productId);
+        const fp = flyerPrices.get(productId) ?? flyerPrices.get(bareId) ?? flyerPrices.get(fullId);
         if (fp !== undefined) prices.push(fp);
         return Math.min(...prices);
-    }, [dealPrices, flyerPrices]);
+    }, [storeId, dealPrices, flyerPrices]);
 
     return { getMinPrice };
 }

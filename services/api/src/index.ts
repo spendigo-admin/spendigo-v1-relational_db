@@ -1,6 +1,6 @@
 import * as admin from 'firebase-admin';
 
-// Initialize Firebase Admin
+// Initialize Firebase Admin SDK
 admin.initializeApp();
 
 // Export all functions

@@ -108,7 +108,7 @@ const Checkout: React.FC = () => {
     const [fulfillmentMethods, setFulfillmentMethods] = useState<Record<string, 'delivery' | 'pickup'>>({});
     // Payment choice per store: 'card' = pay online via Stripe, 'in_store' = pay at terminal / on delivery
     const [paymentChoices, setPaymentChoices] = useState<Record<string, 'card' | 'in_store'>>({});
-    // Audit logging removed
+    const [checkoutStep, setCheckoutStep] = useState<2 | 3>(2);
     const [isProcessing, setIsProcessing] = useState(false);
     const [orderComplete, setOrderComplete] = useState(false);
     const [ageVerified, setAgeVerified] = useState(false);
@@ -161,6 +161,7 @@ const Checkout: React.FC = () => {
             [storeId]: (method === 'delivery') ? 'in_store'
                 : (storeData.acceptsOnlinePayment ? 'card' : 'in_store')
         }));
+        setCheckoutStep(3);
     };
 
     const togglePaymentChoice = (storeId: string, choice: 'card' | 'in_store') => {
@@ -219,15 +220,18 @@ const Checkout: React.FC = () => {
 
             // Tax is applied to taxable items + delivery fee
             // Note: In some jurisdictions delivery might be taxed differently, but for simplicity assuming general sales tax rule
-            totalCalculatedTax += (storeTaxable + fee) * rate;
+            totalCalculatedTax += parseFloat(((storeTaxable + fee) * rate).toFixed(2));
         });
 
         // Computed totals
+        const roundedSub = parseFloat(sub.toFixed(2));
+        const roundedFees = parseFloat(fees.toFixed(2));
+        const roundedTax = parseFloat(totalCalculatedTax.toFixed(2));
         return {
-            orderSubtotal: sub,
-            deliveryFees: fees,
-            calculatedTax: totalCalculatedTax,
-            grandTotal: sub + fees + totalCalculatedTax
+            orderSubtotal: roundedSub,
+            deliveryFees: roundedFees,
+            calculatedTax: roundedTax,
+            grandTotal: parseFloat((roundedSub + roundedFees + roundedTax).toFixed(2))
         };
 
 
@@ -310,8 +314,10 @@ const Checkout: React.FC = () => {
                     return (i.taxable !== false) ? sum + (i.price * i.quantity) : sum;
                 }, 0);
 
-                const taxAmount = (taxableAmount + fee) * rate;
-                const grandTotal = data.total + taxAmount + fee;
+                const roundedSubtotal = parseFloat(data.total.toFixed(2));
+                const roundedTaxable = parseFloat(taxableAmount.toFixed(2));
+                const taxAmount = parseFloat(((roundedTaxable + fee) * rate).toFixed(2));
+                const grandTotal = parseFloat((roundedSubtotal + taxAmount + fee).toFixed(2));
 
                 let paymentIntentId = null;
 
@@ -368,7 +374,7 @@ const Checkout: React.FC = () => {
                         image: i.image,
                         taxable: i.taxable !== false
                     })),
-                    subtotal: data.total,
+                    subtotal: roundedSubtotal,
                     tax: taxAmount,
                     deliveryFee: fee,
                     total: grandTotal,
@@ -457,8 +463,8 @@ const Checkout: React.FC = () => {
                 <div className="flex items-center mb-12">
                     {[
                         { step: 1, label: t('stepCartLabel'), done: true },
-                        { step: 2, label: t('stepFulfillment'), done: false, active: true },
-                        { step: 3, label: t('stepPayment'), done: false },
+                        { step: 2, label: t('stepFulfillment'), done: checkoutStep === 3, active: checkoutStep === 2 },
+                        { step: 3, label: t('stepPayment'), done: false, active: checkoutStep === 3 },
                     ].map((s, i, arr) => (
                         <React.Fragment key={s.step}>
                             <div className="flex items-center gap-3 flex-shrink-0">
@@ -689,6 +695,21 @@ const Checkout: React.FC = () => {
                         const hasOnlinePay = Object.entries(groupedItems).some(([sid, g]) =>
                             g.acceptsOnlinePayment && (fulfillmentMethods[sid] || 'pickup') !== 'delivery' && paymentChoices[sid] === 'card'
                         );
+
+                        if (checkoutStep === 2) {
+                            return (
+                                <button
+                                    onClick={() => setCheckoutStep(3)}
+                                    disabled={hasBlockers}
+                                    className={`w-full py-5 text-white font-black text-sm uppercase tracking-[0.2em] rounded-2xl transition-all flex items-center justify-center gap-3 shadow-2xl ${hasBlockers
+                                        ? 'bg-gray-400 cursor-not-allowed opacity-80'
+                                        : 'bg-[var(--brand-primary)] hover:opacity-90 active:scale-95 shadow-[var(--brand-primary)]/30'
+                                        }`}
+                                >
+                                    {hasBlockers ? '⚠️ Checkout Disabled' : 'Continue to Payment →'}
+                                </button>
+                            );
+                        }
 
                         return (
                             <div className="space-y-4">
