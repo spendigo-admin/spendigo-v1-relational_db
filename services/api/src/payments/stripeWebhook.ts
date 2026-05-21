@@ -64,7 +64,7 @@ export const stripeWebhook = functions
                         // We can store the payment record to be picked up by the placeOrder function
                         await db.collection('payments').doc(paymentIntent.id).set({
                             status: 'succeeded',
-                            orderId: null, // Placeholder
+                            orderId: orderId, // Set actual pre-generated ID
                             metadata: paymentIntent.metadata,
                             createdAt: admin.firestore.FieldValue.serverTimestamp()
                         });

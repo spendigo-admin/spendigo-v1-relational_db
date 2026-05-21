@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
 import { useOrders } from '../../context/OrderContext';
 import { useWishlist } from '../../context/WishlistContext';
@@ -11,8 +11,10 @@ import { STORE_DATA } from '../../data/productData';
 import '../../styles/design-system.css';
 import SEO from '../../components/SEO';
 import { loadStripe } from '@stripe/stripe-js';
-import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
+import { Elements, useStripe, useElements } from '@stripe/react-stripe-js';
 import { stripePromise } from '../../lib/stripe';
+import { collection, doc } from 'firebase/firestore';
+import { db } from '../../lib/firebase';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { useTranslation } from 'react-i18next';
 
@@ -20,6 +22,11 @@ const Checkout: React.FC = () => {
 
     const stripe = useStripe();
     const elements = useElements();
+    const [searchParams] = useSearchParams();
+    const sessionId = searchParams.get('session_id');
+    const orderIdParam = searchParams.get('order_id');
+    const [isConfirmingSession, setIsConfirmingSession] = useState(false);
+
     const { items, subtotal, clearCart } = useCart();
     const { clearWishlist } = useWishlist();
     const { addOrder, createBatchOrders, profile } = useOrders();
@@ -57,10 +64,70 @@ const Checkout: React.FC = () => {
 
     // Security Check: Redirect to login if not authenticated
     useEffect(() => {
-        if (!user && items.length > 0) {
+        if (!user && items.length > 0 && !sessionId) {
             navigate('/login?returnUrl=/checkout', { replace: true });
         }
-    }, [user, navigate, items.length]);
+    }, [user, navigate, items.length, sessionId]);
+
+    // Payment Confirmation & Checkout Session Verification Hook
+    useEffect(() => {
+        const confirmSession = async () => {
+            if (!sessionId || isConfirmingSession || orderComplete) return;
+
+            setIsConfirmingSession(true);
+            try {
+                // Retrieve the stored order info from localStorage
+                const pendingOrderStr = localStorage.getItem('spendigo_pending_order_v1');
+                if (!pendingOrderStr) {
+                    throw new Error("No pending order session found in this browser.");
+                }
+
+                const pendingOrders = JSON.parse(pendingOrderStr);
+                
+                // Inject the stripe checkoutSessionId into each order object
+                const ordersWithSession = pendingOrders.map((ord: any) => ({
+                    ...ord,
+                    checkoutSessionId: sessionId
+                }));
+
+                console.log("Confirming secure payment session and placing order:", sessionId);
+                await createBatchOrders(ordersWithSession);
+
+                // Clear cart and tracking info
+                clearCart();
+                clearWishlist();
+                localStorage.removeItem('smartcart_selections_v1');
+                localStorage.removeItem('spendigo_pending_order_v1');
+
+                addNotification({
+                    type: 'order',
+                    title: 'Order Confirmed! 🎉',
+                    message: 'Your secure payment was processed and your order is placed.'
+                });
+
+                // Redirect to tracking page
+                const targetOrderId = orderIdParam || ordersWithSession[0]?.id;
+                if (targetOrderId) {
+                    navigate(`/order/${targetOrderId}`);
+                } else {
+                    navigate('/profile', { state: { activeTab: 'orders' } });
+                }
+            } catch (err: any) {
+                console.error("Session confirmation failed:", err);
+                addNotification({
+                    type: 'alert',
+                    title: 'Payment Confirmation Failed',
+                    message: err.message || "Failed to finalize your payment. Please contact support."
+                });
+                // Remove query parameters to prevent infinite failure loops and preserve cart
+                navigate('/checkout', { replace: true });
+            } finally {
+                setIsConfirmingSession(false);
+            }
+        };
+
+        confirmSession();
+    }, [sessionId, orderIdParam]);
 
     // Group items by store
     const groupedItems = useMemo(() => items.reduce((acc, item) => {
@@ -136,9 +203,8 @@ const Checkout: React.FC = () => {
                 methods[storeId] = 'pickup';
             }
 
-            // Default payment choice: online for Stripe-connected pickup stores, in_store otherwise
-            const isPickup = methods[storeId] === 'pickup';
-            choices[storeId] = (data.acceptsOnlinePayment && isPickup) ? 'card' : 'in_store';
+            // Default payment choice: online for Stripe-connected stores, in_store otherwise
+            choices[storeId] = data.acceptsOnlinePayment ? 'card' : 'in_store';
         });
         setFulfillmentMethods(methods);
         setPaymentChoices(choices);
@@ -155,11 +221,10 @@ const Checkout: React.FC = () => {
             ...prev,
             [storeId]: method
         }));
-        // Delivery is always pay-on-delivery; pickup at Stripe store defaults to card
+        // If the store accepts online payments, default to card payment regardless of pickup/delivery
         setPaymentChoices(prev => ({
             ...prev,
-            [storeId]: (method === 'delivery') ? 'in_store'
-                : (storeData.acceptsOnlinePayment ? 'card' : 'in_store')
+            [storeId]: storeData.acceptsOnlinePayment ? 'card' : 'in_store'
         }));
         setCheckoutStep(3);
     };
@@ -268,7 +333,6 @@ const Checkout: React.FC = () => {
                         title: 'Missing Address',
                         message: `Please add a delivery address to your profile before placing a delivery order.`
                     });
-                    // Ideally redirect to profile/address page or show modal
                     navigate('/profile/addresses');
                     return;
                 }
@@ -289,14 +353,22 @@ const Checkout: React.FC = () => {
         setIsProcessing(true);
 
         try {
-            // Prepare orders for batch submission
-            const ordersToCreate = await Promise.all(Object.entries(groupedItems).map(async ([storeId, data]) => {
+            // Prepare orders
+            const ordersToCreate = Object.entries(groupedItems).map(([storeId, data]) => {
                 const method = fulfillmentMethods[storeId] || 'pickup';
                 const store = getStore(storeId) || STORE_DATA[storeId];
 
+                // Pre-generate a unique Firestore order ID for this store order
+                const orderDocRef = doc(collection(db, 'orders'));
+                const orderId = orderDocRef.id;
+
                 // Determine Rate
                 const province = store?.province || 'ON';
-                const TAX_RATES: Record<string, number> = { 'ON': 0.13, 'BC': 0.12, 'QC': 0.14975, 'AB': 0.05, 'NS': 0.15, 'NB': 0.15, 'MB': 0.12, 'SK': 0.11, 'PE': 0.15, 'NL': 0.15, 'YT': 0.05, 'NT': 0.05, 'NU': 0.05 };
+                const TAX_RATES: Record<string, number> = { 
+                    'ON': 0.13, 'BC': 0.12, 'QC': 0.14975, 'AB': 0.05, 
+                    'NS': 0.15, 'NB': 0.15, 'MB': 0.12, 'SK': 0.11, 
+                    'PE': 0.15, 'NL': 0.15, 'YT': 0.05, 'NT': 0.05, 'NU': 0.05 
+                };
                 const rate = TAX_RATES[province] || 0.13;
 
                 // Re-calculate fee for this specific order
@@ -319,53 +391,16 @@ const Checkout: React.FC = () => {
                 const taxAmount = parseFloat(((roundedTaxable + fee) * rate).toFixed(2));
                 const grandTotal = parseFloat((roundedSubtotal + taxAmount + fee).toFixed(2));
 
-                let paymentIntentId = null;
-
-                // Charge via Stripe only when the shopper explicitly chose "Pay Online" for a pickup order
-                const wantsOnlinePayment = data.acceptsOnlinePayment && method !== 'delivery' && paymentChoices[storeId] === 'card';
-                if (wantsOnlinePayment && stripe && elements) {
-                    const cardElement = elements.getElement(CardElement);
-                    if (!cardElement) throw new Error("Payment input missing.");
-
-                    // 1. Create PaymentIntent on server
-                    const functions = getFunctions();
-                    const createIntentFn = httpsCallable(functions, 'createPaymentIntent');
-                    const intentResult = await createIntentFn({ 
-                        amount: Math.round(grandTotal * 100), // in cents
-                        storeId: storeId,
-                        metadata: { storeName: data.storeName }
-                    }) as { data: { clientSecret: string, paymentIntentId: string } };
-
-                    const clientSecret = intentResult.data.clientSecret;
-                    paymentIntentId = intentResult.data.paymentIntentId;
-
-                    // 2. Confirm Payment on Client
-                    const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
-                        payment_method: {
-                            card: cardElement,
-                            billing_details: {
-                                name: profile.name || user?.email,
-                                email: user?.email
-                            }
-                        }
-                    });
-
-                    if (error) {
-                        throw new Error(`Payment for ${data.storeName} failed: ${error.message}`);
-                    }
-                    
-                    if (paymentIntent?.status !== 'succeeded') {
-                        throw new Error(`Payment for ${data.storeName} is ${paymentIntent?.status}.`);
-                    }
-                }
+                const wantsOnlinePayment = data.acceptsOnlinePayment && paymentChoices[storeId] === 'card';
 
                 return {
+                    id: orderId,
                     storeId,
                     storeName: data.storeName,
                     storeProvince: province,
                     appliedTaxRate: rate,
                     status: 'placed' as const,
-                    paymentStatus: wantsOnlinePayment ? 'paid' as const : 'pending' as const,
+                    paymentStatus: 'pending' as const,
                     items: data.items.map((i: any) => ({
                         productId: i.productId || i.id,
                         productName: i.productName || i.name,
@@ -379,7 +414,7 @@ const Checkout: React.FC = () => {
                     deliveryFee: fee,
                     total: grandTotal,
                     paymentMethod: wantsOnlinePayment ? ('card' as const) : ('in_store' as const),
-                    paymentIntentId: paymentIntentId,
+                    paymentIntentId: null,
                     deliveryAddress: method === 'delivery'
                         ? (() => {
                             const addr = (profile.addresses.find(a => a.isDefault) || profile.addresses[0]);
@@ -396,18 +431,52 @@ const Checkout: React.FC = () => {
                         })()
                         : undefined
                 };
-            }));
+            });
 
-            console.log(`Submitting batch of ${ordersToCreate.length} orders`);
+            // Find if any order is using online payment
+            const onlineOrder = ordersToCreate.find(o => o.paymentMethod === 'card');
+
+            if (onlineOrder) {
+                // Call secure Cloud Function to create a Stripe Checkout Session
+                const functions = getFunctions();
+                const createShopperCheckoutSessionFn = httpsCallable(functions, 'createShopperCheckoutSession');
+                
+                console.log("Creating Stripe Checkout Session for order:", onlineOrder.id);
+                const sessionResult = await createShopperCheckoutSessionFn({
+                    amount: Math.round(onlineOrder.total * 100), // in cents
+                    storeId: onlineOrder.storeId,
+                    metadata: {
+                        orderId: onlineOrder.id,
+                        storeName: onlineOrder.storeName
+                    }
+                }) as { data: { url: string; sessionId: string } };
+
+                if (!sessionResult.data || !sessionResult.data.url) {
+                    throw new Error("Invalid session response from payment server.");
+                }
+
+                // Save pending order details to localStorage
+                localStorage.setItem('spendigo_pending_order_v1', JSON.stringify(ordersToCreate));
+
+                // Redirect to Stripe Checkout page
+                window.location.href = sessionResult.data.url;
+                return;
+            }
+
+            // Cash / In-store fallback flow
+            console.log(`Submitting batch of ${ordersToCreate.length} cash/in-store orders`);
             await createBatchOrders(ordersToCreate);
-            console.log('All orders submitted successfully via batch');
+            console.log('All orders submitted successfully');
 
             clearCart();
             clearWishlist();
             localStorage.removeItem('smartcart_selections_v1');
             
-            // Navigate to Profile page (Orders tab) instead of showing inline message
-            navigate('/profile', { state: { activeTab: 'orders' } });
+            if (ordersToCreate.length > 0) {
+                navigate(`/order/${ordersToCreate[0].id}`);
+            } else {
+                navigate('/profile', { state: { activeTab: 'orders' } });
+            }
             
             addNotification({
                 type: 'order',
@@ -417,7 +486,6 @@ const Checkout: React.FC = () => {
 
         } catch (err: any) {
             console.error('Checkout failed:', err);
-            // Show detailed error
             addNotification({
                 type: 'alert',
                 title: 'Order Failed',
@@ -439,6 +507,36 @@ const Checkout: React.FC = () => {
                         You will receive a confirmation email shortly.
                     </p>
                     <Link to="/" className="btn-primary w-full px-6 py-3 bg-[var(--brand-primary)] text-white rounded-xl font-bold">Continue Shopping</Link>
+                </div>
+            </div>
+        );
+    }
+
+    if (isConfirmingSession) {
+        return (
+            <div className="fixed inset-0 z-50 bg-[var(--surface-0)]/85 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center animate-fade-in">
+                <div className="glass-panel p-10 rounded-[2.5rem] shadow-2xl max-w-md w-full border border-white/40 bg-white/70 flex flex-col items-center">
+                    <div className="relative mb-8">
+                        {/* Outer rotating gradient ring */}
+                        <div className="w-24 h-24 rounded-full border-4 border-transparent border-t-purple-600 border-r-indigo-600 animate-spin" />
+                        {/* Inner secure shield icon */}
+                        <div className="absolute inset-0 flex items-center justify-center text-4xl">
+                            🛡️
+                        </div>
+                    </div>
+                    
+                    <h2 className="text-2xl font-black text-[var(--brand-navy)] mb-3 tracking-tight italic">
+                        Finalizing Secure Order
+                    </h2>
+                    
+                    <p className="text-sm text-[var(--text-muted)] leading-relaxed mb-6">
+                        We are verifying your transaction with Stripe and finalizing your reservations with the merchants. Please do not close this window.
+                    </p>
+                    
+                    <div className="flex items-center gap-2 text-xs font-semibold text-[var(--brand-primary)] bg-blue-50/50 px-4 py-2 rounded-full border border-blue-100">
+                        <span className="w-2 h-2 rounded-full bg-[var(--brand-primary)] animate-ping" />
+                        Verifying secure checkout session...
+                    </div>
                 </div>
             </div>
         );
@@ -477,6 +575,24 @@ const Checkout: React.FC = () => {
                         </React.Fragment>
                     ))}
                 </div>
+
+                {/* Multi-Store Online Payment Warning */}
+                {Object.keys(groupedItems).length > 1 && Object.entries(groupedItems).some(([sid, g]) => g.acceptsOnlinePayment && paymentChoices[sid] === 'card') && (
+                    <div className="glass-panel p-6 border-2 border-amber-200 bg-amber-50/50 mb-8 rounded-3xl animate-fade-in">
+                        <div className="flex items-start gap-3">
+                            <span className="text-2xl">⚠️</span>
+                            <div>
+                                <h3 className="font-bold text-[var(--brand-navy)] mb-1">Multi-Store Checkout with Online Payment</h3>
+                                <p className="text-xs text-[var(--text-muted)] leading-relaxed">
+                                    To protect shoppers from partial failures and duplicate charges, Spendigo processes secure online credit card payments individually per merchant.
+                                </p>
+                                <p className="text-xs font-semibold text-amber-800 mt-2">
+                                    Remedy: Please switch all store payment methods to <strong>"Pay at Store" / "Pay on Delivery"</strong> to checkout all stores together, or check out each store individually by adjusting your cart items.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 <div className="space-y-6">
                     {/* Iterate over Stores */}
@@ -554,35 +670,42 @@ const Checkout: React.FC = () => {
                                     </button>
                                 </div>
 
-                                {/* Payment Method Toggle — only for Stripe-connected pickup stores */}
-                                {groupedItems[storeId].acceptsOnlinePayment && fulfillmentMethods[storeId] !== 'delivery' && (
-                                    <div className="mb-4">
-                                        <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-1.5">How would you like to pay?</p>
-                                        <div className="bg-[var(--surface-1)] p-1 rounded-lg flex">
-                                            <button
-                                                onClick={() => togglePaymentChoice(storeId, 'card')}
-                                                className={`flex-1 py-2 text-sm font-bold rounded-md transition-all flex items-center justify-center gap-2 ${paymentChoices[storeId] === 'card'
-                                                    ? 'bg-white text-[var(--brand-primary)] shadow-sm'
-                                                    : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
-                                                    }`}
-                                            >
-                                                💳 Pay Online
-                                            </button>
-                                            <button
-                                                onClick={() => togglePaymentChoice(storeId, 'in_store')}
-                                                className={`flex-1 py-2 text-sm font-bold rounded-md transition-all flex items-center justify-center gap-2 ${paymentChoices[storeId] === 'in_store'
-                                                    ? 'bg-white text-[var(--brand-primary)] shadow-sm'
-                                                    : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
-                                                    }`}
-                                            >
-                                                🏪 Pay at Store
-                                            </button>
-                                        </div>
-                                        {paymentChoices[storeId] === 'in_store' && (
-                                            <p className="text-[10px] text-[var(--text-muted)] mt-1.5 text-center">Pay at the store terminal when you pick up your order.</p>
-                                        )}
+                                {/* Payment Method Toggle */}
+                                <div className="mb-4">
+                                    <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-1.5">How would you like to pay?</p>
+                                    <div className="bg-[var(--surface-1)] p-1 rounded-lg flex">
+                                        <button
+                                            onClick={() => togglePaymentChoice(storeId, 'card')}
+                                            className={`flex-1 py-2 text-sm font-bold rounded-md transition-all flex items-center justify-center gap-2 ${paymentChoices[storeId] === 'card'
+                                                ? 'bg-white text-[var(--brand-primary)] shadow-sm'
+                                                : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
+                                                }`}
+                                        >
+                                            💳 Pay Online
+                                        </button>
+                                        <button
+                                            onClick={() => togglePaymentChoice(storeId, 'in_store')}
+                                            className={`flex-1 py-2 text-sm font-bold rounded-md transition-all flex items-center justify-center gap-2 ${paymentChoices[storeId] === 'in_store'
+                                                ? 'bg-white text-[var(--brand-primary)] shadow-sm'
+                                                : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
+                                                }`}
+                                        >
+                                            🏪 {fulfillmentMethods[storeId] === 'delivery' ? 'Pay on Delivery' : 'Pay at Store'}
+                                        </button>
                                     </div>
-                                )}
+                                    {paymentChoices[storeId] === 'in_store' && (
+                                        <p className="text-[10px] text-[var(--text-muted)] mt-1.5 text-center">
+                                            {fulfillmentMethods[storeId] === 'delivery'
+                                                ? 'Pay with the delivery driver upon receipt of your order.'
+                                                : 'Pay at the store terminal when you pick up your order.'}
+                                        </p>
+                                    )}
+                                    {paymentChoices[storeId] === 'card' && !groupedItems[storeId].acceptsOnlinePayment && (
+                                        <div className="mt-2 text-xs text-amber-700 bg-amber-50 p-3 rounded-xl border border-amber-200 animate-fade-in text-center font-medium">
+                                            ⚠️ Online payment is currently unavailable for this store. Please select "{fulfillmentMethods[storeId] === 'delivery' ? 'Pay on Delivery' : 'Pay at Store'}".
+                                        </div>
+                                    )}
+                                </div>
 
                                 {/* Item List (Collapsed/Simple) */}
                                 < div className="space-y-2 pl-2 border-l-2 border-[var(--glass-border)]" >
@@ -650,7 +773,7 @@ const Checkout: React.FC = () => {
                         </div>
                     </div>
                     <p className="text-sm text-[var(--text-muted)] leading-relaxed bg-blue-50 p-4 rounded-xl border border-blue-100 text-blue-800">
-                        <strong>Note:</strong> Spendigo is a marketplace facilitator. {Object.entries(groupedItems).some(([sid, g]) => g.acceptsOnlinePayment && (fulfillmentMethods[sid] || 'pickup') !== 'delivery' && paymentChoices[sid] === 'card')
+                        <strong>Note:</strong> Spendigo is a marketplace facilitator. {Object.entries(groupedItems).some(([sid, g]) => g.acceptsOnlinePayment && paymentChoices[sid] === 'card')
                             ? "Your online payment will be securely transferred to the merchant(s) upon order confirmation."
                             : "You are reserving these items. Please complete payment at the store or with the delivery driver upon receipt."}
                     </p>
@@ -693,56 +816,67 @@ const Checkout: React.FC = () => {
                         const hasBlockers = Object.values(groupedItems).some(g => !g.isOpen || (!g.deliveryEnabled && !g.pickupEnabled));
                         const ageBlocked = hasAgeRestricted && !ageVerified;
                         const hasOnlinePay = Object.entries(groupedItems).some(([sid, g]) =>
-                            g.acceptsOnlinePayment && (fulfillmentMethods[sid] || 'pickup') !== 'delivery' && paymentChoices[sid] === 'card'
+                            g.acceptsOnlinePayment && paymentChoices[sid] === 'card'
                         );
+                        const hasUnsupportedOnlinePayment = Object.entries(groupedItems).some(([sid, g]) =>
+                            paymentChoices[sid] === 'card' && !g.acceptsOnlinePayment
+                        );
+                        const isMultiStore = Object.keys(groupedItems).length > 1;
+                        const multiStoreOnlinePayBlocker = isMultiStore && hasOnlinePay;
 
                         if (checkoutStep === 2) {
                             return (
                                 <button
                                     onClick={() => setCheckoutStep(3)}
-                                    disabled={hasBlockers}
-                                    className={`w-full py-5 text-white font-black text-sm uppercase tracking-[0.2em] rounded-2xl transition-all flex items-center justify-center gap-3 shadow-2xl ${hasBlockers
+                                    disabled={hasBlockers || multiStoreOnlinePayBlocker || hasUnsupportedOnlinePayment}
+                                    className={`w-full py-5 text-white font-black text-sm uppercase tracking-[0.2em] rounded-2xl transition-all flex items-center justify-center gap-3 shadow-2xl ${hasBlockers || multiStoreOnlinePayBlocker || hasUnsupportedOnlinePayment
                                         ? 'bg-gray-400 cursor-not-allowed opacity-80'
                                         : 'bg-[var(--brand-primary)] hover:opacity-90 active:scale-95 shadow-[var(--brand-primary)]/30'
                                         }`}
                                 >
-                                    {hasBlockers ? '⚠️ Checkout Disabled' : 'Continue to Payment →'}
+                                    {hasBlockers ? '⚠️ Checkout Disabled' : multiStoreOnlinePayBlocker ? '⚠️ Check Out Per Store Required' : hasUnsupportedOnlinePayment ? '⚠️ Online Payment Unavailable' : 'Continue to Payment →'}
                                 </button>
                             );
                         }
 
                         return (
                             <div className="space-y-4">
-                                {hasOnlinePay && (
-                                    <div className="bg-white p-4 rounded-xl border-2 border-[var(--brand-primary)] shadow-sm animate-fade-in mb-4">
-                                        <div className="flex items-center gap-2 mb-3">
-                                            <span className="text-xl">💳</span>
-                                            <div>
-                                                <h3 className="font-bold text-[var(--text-main)] text-sm">Online Payment Required</h3>
-                                                <p className="text-[10px] text-[var(--text-muted)]">Participating merchants require upfront payment for orders.</p>
+                                {hasOnlinePay && !multiStoreOnlinePayBlocker && (
+                                    <div className="glass-panel p-6 border border-purple-200/50 bg-gradient-to-br from-purple-50/70 to-indigo-50/50 rounded-3xl shadow-md animate-fade-in mb-6 hover:scale-[1.01] transition-transform duration-300">
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-12 h-12 rounded-2xl bg-purple-100 flex items-center justify-center text-2xl shadow-inner animate-pulse">
+                                                🔒
+                                            </div>
+                                            <div className="flex-1">
+                                                <h3 className="font-black text-sm text-[var(--brand-navy)] mb-1 flex items-center gap-2">
+                                                    Secure Stripe Checkout Redirect
+                                                    <span className="text-[9px] font-black bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full border border-purple-200 uppercase tracking-widest">
+                                                        Official Partner
+                                                    </span>
+                                                </h3>
+                                                <p className="text-[11px] text-[var(--text-muted)] leading-relaxed">
+                                                    You will be securely redirected to Stripe to finalize payment. Supports **Credit/Debit, Google Pay, Apple Pay**, and other localized options.
+                                                </p>
                                             </div>
                                         </div>
-                                        <div className="p-3 bg-[var(--surface-1)] rounded-lg border border-[var(--glass-border)]">
-                                            <CardElement options={{
-                                                style: {
-                                                    base: {
-                                                        fontSize: '16px',
-                                                        color: '#1a1a1a',
-                                                        '::placeholder': { color: '#888' },
-                                                    }
-                                                }
-                                            }} />
-                                        </div>
-                                        <div className="flex items-center gap-1 mt-2 text-[10px] text-[var(--text-muted)] justify-center">
-                                            <span>🔒 Securely processed by</span>
-                                            <span className="font-bold text-[#635BFF]">Stripe</span>
+                                        <div className="mt-4 pt-4 border-t border-purple-100 flex items-center justify-between text-[11px] text-[var(--text-muted)]">
+                                            <div className="flex items-center gap-1">
+                                                <span className="text-[10px]">🛡️</span>
+                                                <span>256-bit SSL Encryption</span>
+                                            </div>
+                                            <div className="flex items-center gap-1.5">
+                                                <span>Processed by</span>
+                                                <span className="font-extrabold tracking-tight text-[#635BFF] bg-purple-50 px-2.5 py-1 rounded-lg border border-[#635BFF]/10 text-xs">
+                                                    stripe
+                                                </span>
+                                            </div>
                                         </div>
                                     </div>
                                 )}
                                 <button
                                     onClick={handlePayment}
-                                    disabled={isProcessing || hasBlockers || ageBlocked}
-                                    className={`w-full py-5 text-white font-black text-sm uppercase tracking-[0.2em] rounded-2xl transition-all flex items-center justify-center gap-3 shadow-2xl ${isProcessing || hasBlockers || ageBlocked
+                                    disabled={isProcessing || hasBlockers || ageBlocked || multiStoreOnlinePayBlocker || hasUnsupportedOnlinePayment}
+                                    className={`w-full py-5 text-white font-black text-sm uppercase tracking-[0.2em] rounded-2xl transition-all flex items-center justify-center gap-3 shadow-2xl ${isProcessing || hasBlockers || ageBlocked || multiStoreOnlinePayBlocker || hasUnsupportedOnlinePayment
                                         ? 'bg-gray-400 cursor-not-allowed opacity-80'
                                         : 'bg-[var(--brand-navy)] hover:bg-[var(--brand-primary)] active:scale-95 shadow-[var(--brand-navy)]/30'
                                         }`}
@@ -750,8 +884,10 @@ const Checkout: React.FC = () => {
                                     {isProcessing ? 'Processing Secure Payment...' :
                                         hasBlockers ? '⚠️ Checkout Disabled' :
                                             ageBlocked ? '🔞 Verify Age Above' :
-                                                hasOnlinePay ? `Complete Payment • $${grandTotal.toFixed(2)}` :
-                                                    `Confirm Order • $${grandTotal.toFixed(2)}`}
+                                                multiStoreOnlinePayBlocker ? '⚠️ Check Out Per Store Required' :
+                                                    hasUnsupportedOnlinePayment ? '⚠️ Online Payment Unavailable' :
+                                                        hasOnlinePay ? `Complete Payment • $${grandTotal.toFixed(2)}` :
+                                                            `Confirm Order • $${grandTotal.toFixed(2)}`}
                                 </button>
                             </div>
                         );

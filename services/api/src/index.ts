@@ -34,6 +34,7 @@ export { syncMerchantProductToAlgolia } from './triggers/algoliaMerchantTriggers
 export { onboardStore } from './payments/onboardStore';
 export { checkStripeAccountStatus } from './payments/checkStripeStatus';
 export { createPaymentIntent } from './payments/createPaymentIntent';
+export { createShopperCheckoutSession } from './payments/createShopperCheckoutSession';
 export { refundOrder } from './payments/refundOrder';
 export { updatePayoutConfig } from './payments/updatePayoutConfig';
 export { onOrderStatusUpdated } from './triggers/orderTriggers';

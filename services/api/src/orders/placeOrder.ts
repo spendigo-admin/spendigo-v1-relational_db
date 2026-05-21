@@ -69,9 +69,34 @@ export const placeOrder = functions.runWith({ timeoutSeconds: 120, memory: '256M
     // otherwise decrement stock and create a duplicate order against the same payment.
     const ordersToProcess: any[] = [];
     for (const orderData of orders) {
-        if (orderData.paymentIntentId) {
+        let paymentIntentId = orderData.paymentIntentId;
+        let paymentSucceeded = false;
+
+        // If a checkoutSessionId is provided, retrieve it from Stripe to get the paymentIntentId
+        if (orderData.checkoutSessionId) {
+            const session = await stripe.checkout.sessions.retrieve(orderData.checkoutSessionId);
+            if (session.payment_status !== 'paid') {
+                throw new functions.https.HttpsError('failed-precondition', 'Stripe checkout session has not been paid.');
+            }
+            paymentIntentId = typeof session.payment_intent === 'string' ? session.payment_intent : session.payment_intent?.id;
+            orderData.paymentIntentId = paymentIntentId; // Inject paymentIntentId for subsequent checks
+            paymentSucceeded = true;
+        } else if (paymentIntentId) {
+            // Verify this intent was successful in Stripe (moved outside the transaction to avoid lock contention & retries)
+            const intent = await stripe.paymentIntents.retrieve(paymentIntentId);
+            if (intent.status === 'succeeded') {
+                paymentSucceeded = true;
+            } else {
+                functions.logger.error(`Checkout abort: Payment Intent ${paymentIntentId} status is ${intent.status}`);
+                throw new functions.https.HttpsError('failed-precondition', 'Payment verification failed.');
+            }
+        }
+
+        orderData._paymentSucceeded = paymentSucceeded;
+
+        if (paymentIntentId) {
             const existing = await db.collection('orders')
-                .where('paymentIntentId', '==', orderData.paymentIntentId).limit(1).get();
+                .where('paymentIntentId', '==', paymentIntentId).limit(1).get();
             if (!existing.empty) {
                 orderIds.push(existing.docs[0].id);
                 continue;
@@ -236,20 +261,12 @@ export const placeOrder = functions.runWith({ timeoutSeconds: 120, memory: '256M
 
             // PHASE 3: CREATE ORDERS
             for (const orderData of ordersToProcess) {
-                const newOrderRef = db.collection('orders').doc();
+                const newOrderRef = orderData.id 
+                    ? db.collection('orders').doc(orderData.id)
+                    : db.collection('orders').doc();
                 orderIds.push(newOrderRef.id);
 
-                let paymentSucceeded = false;
-                if (orderData.paymentIntentId) {
-                     // Verify this intent was successful in Stripe
-                     const intent = await stripe.paymentIntents.retrieve(orderData.paymentIntentId);
-                     if (intent.status === 'succeeded') {
-                         paymentSucceeded = true;
-                     } else {
-                         functions.logger.error(`Checkout abort: Payment Intent ${orderData.paymentIntentId} status is ${intent.status}`);
-                         throw new functions.https.HttpsError('failed-precondition', 'Payment verification failed.');
-                     }
-                }
+                const paymentSucceeded = !!orderData._paymentSucceeded;
 
                 const finalOrder = {
                     storeId: orderData.storeId,

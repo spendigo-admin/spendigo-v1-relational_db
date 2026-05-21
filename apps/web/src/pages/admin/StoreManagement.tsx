@@ -535,7 +535,8 @@ const StoreManagement: React.FC = () => {
                                             <td className="p-4">
                                                 <div className="flex flex-col gap-1">
                                                     <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded w-fit border uppercase
-                                                        ${subData.tier === 'growth' ? 'bg-purple-50 text-purple-700 border-purple-100' :
+                                                        ${subData.tier === 'pro' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                                                        subData.tier === 'growth' ? 'bg-purple-50 text-purple-700 border-purple-100' :
                                                         subData.tier === 'core' ? 'bg-blue-50 text-blue-700 border-blue-100' :
                                                         'bg-gray-50 text-gray-600 border-gray-200'}`}>
                                                         {subData.tier}
@@ -1059,6 +1060,7 @@ const StoreManagement: React.FC = () => {
                                                 <option value="free">Free Starter</option>
                                                 <option value="core">Core Professional</option>
                                                 <option value="growth">Growth Enterprise</option>
+                                                <option value="pro">Pro Marketing Suite</option>
                                             </select>
                                         </div>
                                         <div>

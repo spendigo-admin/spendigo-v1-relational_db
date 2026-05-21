@@ -105,6 +105,7 @@ const AdminDashboard: React.FC = () => {
                 acc + (store.oneDayOffers?.length || 0) + (store.saleItems?.length || 0), 0);
         const mrr = allStores.reduce((acc: number, store: any) => {
             const tier = store.subscriptionTier || 'free';
+            if (tier === 'pro') return acc + 149;
             if (tier === 'growth') return acc + 99;
             if (tier === 'core') return acc + 49;
             return acc;

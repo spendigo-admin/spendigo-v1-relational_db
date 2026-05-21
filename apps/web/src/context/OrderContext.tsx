@@ -78,7 +78,7 @@ interface OrderContextType {
     orders: Order[];
     profile: UserProfile;
     addOrder: (order: Omit<Order, 'id' | 'date' | 'customerName' | 'customerId'>) => Promise<string>;
-    createBatchOrders: (orders: Omit<Order, 'id' | 'date' | 'customerName' | 'customerId'>[]) => Promise<string[]>;
+    createBatchOrders: (orders: (Omit<Order, 'id' | 'date' | 'customerName' | 'customerId'> & { id?: string })[]) => Promise<string[]>;
     updateOrderStatus: (orderId: string, status: Order['status'], reason?: string) => Promise<void>;
     updateEstimatedTime: (orderId: string, time: string) => Promise<void>;
     updatePaymentStatus: (orderId: string, status: Order['paymentStatus'], auditData?: { id: string; name: string; timestamp: string }) => Promise<void>;
@@ -219,7 +219,7 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         return ids[0];
     };
 
-    const createBatchOrders = async (ordersData: Omit<Order, 'id' | 'date' | 'customerName' | 'customerId'>[]): Promise<string[]> => {
+    const createBatchOrders = async (ordersData: (Omit<Order, 'id' | 'date' | 'customerName' | 'customerId'> & { id?: string })[]): Promise<string[]> => {
         if (!user) throw new Error("Must be logged in");
 
         try {

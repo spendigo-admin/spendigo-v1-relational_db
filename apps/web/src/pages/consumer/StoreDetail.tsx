@@ -647,7 +647,7 @@ const StoreDetail: React.FC = () => {
 
                         <div className="flex-1 pb-2">
                             <div className="flex flex-wrap items-center gap-3 mb-2">
-                                {store.kybStatus === 'approved' && store.subscriptionTier === 'growth' && (
+                                {store.kybStatus === 'approved' && (store.subscriptionTier === 'growth' || store.subscriptionTier === 'pro') && (
                                     <span className="text-[9px] font-black bg-[var(--brand-primary)] text-white px-2 py-0.5 rounded skew-x-[-12deg] shadow-lg tracking-widest uppercase">{t('storeVerified')}</span>
                                 )}
                                 <span className="text-[9px] font-black bg-white/10 backdrop-blur-md text-white px-2 py-0.5 rounded border border-white/20 tracking-widest uppercase">{t('storeOpenNow')}</span>
