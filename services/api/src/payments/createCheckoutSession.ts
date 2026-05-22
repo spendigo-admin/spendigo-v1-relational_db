@@ -84,6 +84,7 @@ export const createCheckoutSession = functions
         if (currentDate.getUTCDate() !== 1 && !subscriptionData.trial_period_days) {
             const nextMonth = new Date(Date.UTC(currentDate.getUTCFullYear(), currentDate.getUTCMonth() + 1, 1, 0, 0, 0));
             subscriptionData.billing_cycle_anchor = Math.floor(nextMonth.getTime() / 1000);
+            subscriptionData.proration_behavior = 'none';
         }
 
         // 3. Create Checkout Session

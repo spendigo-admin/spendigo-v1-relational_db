@@ -80,21 +80,6 @@ const Subscription: React.FC = () => {
 
     const tiers = [
         {
-            id: 'free',
-            name: 'Starter',
-            basePrice: '$0',
-            period: '/month',
-            description: 'Essential tools to get visible.',
-            color: 'bg-gray-100 border-gray-200',
-            features: [
-                '✅ Store Profile',
-                '✅ Up to 50 Products',
-                '✅ Pickup Orders Only',
-                '❌ Delivery Toggle',
-                '❌ Promos & Analytics'
-            ]
-        },
-        {
             id: 'core',
             name: 'Core',
             basePrice: '$49',
@@ -235,8 +220,8 @@ const Subscription: React.FC = () => {
 
             <div className="max-w-6xl mx-auto">
                 <div className="text-center mb-10">
-                    <h1 className="page-headline mb-2">Store Subscription</h1>
-                    <p className="text-[var(--text-muted)]">Choose the plan that fits your business needs. Upgrade or downgrade anytime.</p>
+                    <h1 className="page-headline mb-2">Store Subscription — Starter</h1>
+                    <p className="text-[var(--text-muted)]">Choose the plan that fits your business needs. Upgrade or downgrade anytime. Starter plan comes by default (up to 10 products).</p>
                 </div>
 
                 {isViewOnly && (
@@ -250,7 +235,7 @@ const Subscription: React.FC = () => {
                     </div>
                 )}
 
-                <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="grid md:grid-cols-3 gap-6">
                     {tiers.map((tier) => {
                         // Calculate Display Price
                         let displayPrice = tier.basePrice;
@@ -331,6 +316,22 @@ const Subscription: React.FC = () => {
                         );
                     })}
                 </div>
+
+                {currentTier !== 'free' && (
+                    <div className="mt-8 text-center bg-gray-50 border border-gray-200/50 rounded-xl p-4 max-w-md mx-auto">
+                        <p className="text-sm text-[var(--text-muted)] font-medium">
+                            Need to pause or downgrade? You can{' '}
+                            <button
+                                onClick={() => handleUpgrade('free', '$0')}
+                                disabled={isViewOnly || !!processingId}
+                                className="text-indigo-600 hover:text-indigo-800 font-semibold underline bg-transparent border-none p-0 cursor-pointer transition-colors"
+                            >
+                                downgrade to the Starter plan
+                            </button>
+                            .
+                        </p>
+                    </div>
+                )}
 
                 <div className="mt-12 bg-gray-50 rounded-xl p-6 text-center border border-gray-100 relative overflow-hidden">
                     <div className="absolute top-0 right-0 p-4 opacity-10 text-6xl rotate-12">🎟️</div>
