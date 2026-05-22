@@ -62,10 +62,10 @@ const Flyers: React.FC = () => {
                         ←
                     </button>
                     <div>
-                        <h1 className="text-xl font-bold text-[var(--text-main)] flex items-center gap-2">
+                        <h1 className="text-xl font-black text-[var(--brand-navy)] flex items-center gap-2 italic tracking-tighter">
                             <span className="text-2xl">📰</span> {t('flyersAllWeekly')}
                         </h1>
-                        <p className="text-xs text-[var(--text-muted)]">{activeFlyerStores.length} {t('flyersActiveCount')}</p>
+                        <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest">{activeFlyerStores.length} {t('flyersActiveCount')}</p>
                     </div>
                 </div>
             </div>

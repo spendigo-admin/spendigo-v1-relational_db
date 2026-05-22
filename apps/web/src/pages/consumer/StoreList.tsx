@@ -387,7 +387,7 @@ const StoreList: React.FC = () => {
             )}
 
             {/* LOCAL MERCHANTS */}
-            <section id="local-merchants" className="max-w-7xl mx-auto px-6 md:px-12 mt-8 md:mt-20">
+            <section id="local-merchants" className="max-w-7xl mx-auto px-6 md:px-12 mt-8 md:mt-20 scroll-mt-24 md:scroll-mt-28">
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-6 md:mb-12">
                     <div>
                         <h2 className="text-2xl md:text-5xl font-black text-[#112244] tracking-tighter mb-2">{t('localMerchantsTitle')}</h2>

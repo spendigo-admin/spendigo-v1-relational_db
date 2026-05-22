@@ -67,6 +67,10 @@
 }
 
 /* Base Styles */
+html {
+    scroll-padding-top: calc(4.5rem + var(--safe-area-top) + 1rem);
+}
+
 html, body {
     background-color: var(--bg-app, #f8fafc);
     color: var(--text-main);
