@@ -772,7 +772,7 @@ const MerchantOrders: React.FC = () => {
         if (!evidenceOrder) return;
         setIsEvidenceSubmitting(true);
         try {
-            let deliveryEvidencePayload: any = {
+            const deliveryEvidencePayload: any = {
                 evidenceType,
                 capturedAt: new Date().toISOString(),
             };
