@@ -147,7 +147,7 @@ const Deals: React.FC = () => {
             <SEO title="Active Deals" description="Discover hot deals and sale items from local grocery stores near you. Save more with Spendigo SmartCart." path="/deals" />
 
             {/* Header */}
-            <div className="bg-white border-b border-[var(--glass-border)] sticky top-0 z-30 px-4 py-4 backdrop-blur-md bg-white/80">
+            <div className="bg-white border-b border-[var(--glass-border)] sticky top-[calc(4.5rem+var(--safe-area-top))] z-30 px-4 py-4 backdrop-blur-md bg-white/80">
                 <div className="max-w-5xl mx-auto flex items-center gap-4">
                     <button
                         onClick={() => navigate('/')}

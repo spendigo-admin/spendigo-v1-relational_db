@@ -65,7 +65,7 @@ export const OrderSummaryPanel: React.FC<OrderSummaryPanelProps> = ({
     };
 
     return (
-        <div className="glass-panel sticky top-8 border-[var(--glass-border)] shadow-xl bg-white/50 backdrop-blur-xl overflow-hidden">
+        <div className="glass-panel sticky top-[calc(6.5rem+var(--safe-area-top))] border-[var(--glass-border)] shadow-xl bg-white/50 backdrop-blur-xl overflow-hidden">
             {/* Panel Header */}
             <div className="bg-[#112244] p-5 mb-5">
                 <h2 className="text-lg font-black text-white italic tracking-tighter uppercase">The SmartCart Report</h2>

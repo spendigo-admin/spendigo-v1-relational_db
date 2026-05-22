@@ -122,7 +122,7 @@ const Search: React.FC = () => {
             <SEO title={t('searchPageTitle')} description="Search across all local grocery stores on Spendigo. Find the best prices and compare products." path="/search" />
             
             {/* Search Header - Sticky & Glassmorphic */}
-            <div className="sticky top-14 z-30 bg-white/70 backdrop-blur-2xl border-b border-gray-200/50 p-4 shadow-[0_4px_30px_rgba(0,0,0,0.03)] transition-all duration-300">
+            <div className="sticky top-[calc(4.5rem+var(--safe-area-top))] z-30 bg-white/70 backdrop-blur-2xl border-b border-gray-200/50 p-4 shadow-[0_4px_30px_rgba(0,0,0,0.03)] transition-all duration-300">
                 <div className="max-w-5xl mx-auto">
                     {activeSearchQuery && (
                         <div className="flex items-center gap-3 bg-[var(--surface-1)] rounded-2xl px-4 py-3 border border-[var(--glass-border)] shadow-inner">

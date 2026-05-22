@@ -53,7 +53,7 @@ const Flyers: React.FC = () => {
         <div className="animate-fade-in pb-20">
             <SEO title="Weekly Flyers" description="Browse all weekly grocery flyers from local stores near you. Compare deals and save more with Spendigo." path="/flyers" />
             {/* Header */}
-            <div className="bg-[var(--surface-0)] border-b border-[var(--glass-border)] sticky top-0 z-30 px-4 py-4">
+            <div className="bg-[var(--surface-0)] border-b border-[var(--glass-border)] sticky top-[calc(4.5rem+var(--safe-area-top))] z-30 px-4 py-4">
                 <div className="max-w-5xl mx-auto flex items-center gap-4">
                     <button
                         onClick={() => navigate('/')}

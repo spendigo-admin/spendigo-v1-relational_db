@@ -21,6 +21,8 @@ import ConsumerLayout from './layouts/ConsumerLayout';
 import MerchantLayout from './layouts/MerchantLayout';
 import AdminLayout from './layouts/AdminLayout';
 import RequireVerification from './components/RequireVerification';
+import ScrollToTop from './components/ScrollToTop';
+
 
 // Auth pages — small and needed immediately on load
 import Login from './pages/consumer/Login';
@@ -165,7 +167,9 @@ function App() {
     return (
         <ErrorBoundary FallbackComponent={ErrorFallback} onReset={() => window.location.href = '/'}>
             <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+                <ScrollToTop />
                 <AuthProvider>
+
                     <AuditProvider>
                         <MaintenanceGuard>
                                 <MarketplaceProvider>

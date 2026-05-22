@@ -169,7 +169,7 @@ const Cart: React.FC = () => {
 
                     {/* RIGHT COLUMN: CHECKOUT SUMMARY (Span 4) */}
                     <div className="lg:col-span-4 mt-8 lg:mt-0">
-                        <div className="glass-panel p-6 sticky top-8 border-[var(--glass-border)] shadow-xl bg-white/50 backdrop-blur-xl">
+                        <div className="glass-panel p-6 sticky top-[calc(6.5rem+var(--safe-area-top))] border-[var(--glass-border)] shadow-xl bg-white/50 backdrop-blur-xl">
                             <h2 className="text-xl font-bold text-[var(--text-main)] mb-4">{t('orderSummaryTitle')}</h2>
 
                             <div className="flex items-center justify-between mb-2">

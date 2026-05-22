@@ -127,7 +127,7 @@ const Notifications: React.FC = () => {
         <div className="animate-fade-in pb-24 bg-[var(--surface-1)] min-h-screen">
             <SEO title="Notifications" description="Your Spendigo notifications." noIndex />
             {/* Header */}
-            <div className="bg-white/80 backdrop-blur-md border-b border-[var(--glass-border)] p-5 sticky top-14 z-30 pt-safe">
+            <div className="bg-white/80 backdrop-blur-md border-b border-[var(--glass-border)] p-5 sticky top-[calc(4.5rem+var(--safe-area-top))] z-30 pt-safe">
                 <div className="max-w-xl mx-auto flex items-center justify-between">
                     <div>
                         <h1 className="text-2xl font-black text-[var(--text-main)] tracking-tight">{t('notifInbox')}</h1>

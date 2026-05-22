@@ -700,7 +700,7 @@ const StoreDetail: React.FC = () => {
             </div>
 
             {/* HIGH-IMPACT STICKY NAVIGATION */}
-            <div className="sticky top-14 z-40 bg-white/80 backdrop-blur-xl border-b border-gray-100 px-4 py-4 mt-6">
+            <div className="sticky top-[calc(4.5rem+var(--safe-area-top))] z-40 bg-white/80 backdrop-blur-xl border-b border-gray-100 px-4 py-4 mt-6">
                 <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div className="flex gap-2 overflow-x-auto scrollbar-hide">
                         {[
