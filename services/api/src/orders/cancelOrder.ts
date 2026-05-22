@@ -90,6 +90,7 @@ export const cancelOrder = functions
                     const refund = await stripe.refunds.create({
                         payment_intent: order.paymentIntentId,
                         refund_application_fee: true,
+                        reverse_transfer: true,
                         reason: 'requested_by_customer',
                         metadata: {
                             orderId,

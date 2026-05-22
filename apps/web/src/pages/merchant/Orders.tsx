@@ -64,7 +64,19 @@ const MerchantOrders: React.FC = () => {
     const [now, setNow] = useState(new Date());
 
     const [rejectionReason, setRejectionReason] = useState('');
-    const [refundAmountInput, setRefundAmountInput] = useState('');
+    
+    // Refund Wizard Modal States
+    const [isRefundWizardOpen, setIsRefundWizardOpen] = useState(false);
+    const [refundWizardOrder, setRefundWizardOrder] = useState<Order | null>(null);
+    const [refundWizardStep, setRefundWizardStep] = useState<1 | 2 | 3>(1);
+    const [refundWizardType, setRefundWizardType] = useState<'full' | 'partial'>('full');
+    const [refundWizardAmount, setRefundWizardAmount] = useState('');
+    const [refundWizardReason, setRefundWizardReason] = useState('Customer Request');
+    const [refundWizardCustomReason, setRefundWizardCustomReason] = useState('');
+    const [refundWizardError, setRefundWizardError] = useState<string | null>(null);
+    const [refundWizardId, setRefundWizardId] = useState<string | null>(null);
+    const [refundMilestone, setRefundMilestone] = useState(0);
+
     const [estTimeInput, setEstTimeInput] = useState('');
     const [mobileStatusFilter, setMobileStatusFilter] = useState<string>('placed'); // Default to 'New Orders' on mobile
     const [downloadingReceiptId, setDownloadingReceiptId] = useState<string | null>(null);
@@ -299,53 +311,57 @@ const MerchantOrders: React.FC = () => {
         }
     };
 
-    const handleRefundOrder = async (order: Order) => {
-        if (!rejectionReason.trim()) {
-            addNotification({ type: 'alert', title: 'Required', message: "Please provide a reason for refund" });
+    const handleProcessRefund = async () => {
+        if (!refundWizardOrder) return;
+        
+        const remainingTotal = refundWizardOrder.total - (refundWizardOrder.refundedAmount || 0);
+        const finalAmount = refundWizardType === 'full' 
+            ? remainingTotal 
+            : parseFloat(refundWizardAmount);
+
+        if (isNaN(finalAmount) || finalAmount <= 0) {
+            setRefundWizardError("Refund amount must be a positive number.");
             return;
         }
 
-        const remainingTotal = order.total - (order.refundedAmount || 0);
-        const inputAmount = refundAmountInput.trim() ? parseFloat(refundAmountInput) : null;
-        const refundAmt = inputAmount !== null ? inputAmount : remainingTotal;
-
-        if (isNaN(refundAmt) || refundAmt <= 0) {
-            addNotification({ type: 'alert', title: 'Invalid Amount', message: "Refund amount must be a positive number" });
+        if (finalAmount > remainingTotal) {
+            setRefundWizardError(`Amount cannot exceed remaining balance ($${remainingTotal.toFixed(2)}).`);
             return;
         }
 
-        if (refundAmt > remainingTotal) {
-            addNotification({ type: 'alert', title: 'Invalid Amount', message: `Refund amount cannot exceed the remaining order total ($${remainingTotal.toFixed(2)})` });
+        const finalReason = refundWizardReason === 'Other' 
+            ? refundWizardCustomReason.trim() 
+            : refundWizardReason;
+
+        if (!finalReason) {
+            setRefundWizardError("Please provide a reason for the refund.");
             return;
         }
 
-        const isPartial = refundAmt < remainingTotal;
-        const confirmMsg = isPartial 
-            ? `Are you sure you want to issue a PARTIAL refund of $${refundAmt.toFixed(2)} to ${order.customerName}?`
-            : `Are you sure you want to issue a FULL refund of $${refundAmt.toFixed(2)} to ${order.customerName}?`;
+        // Advance to Step 2 (Processing)
+        setRefundWizardStep(2);
+        setRefundMilestone(0);
+        setRefundWizardError(null);
 
-        const confirmed = await confirm({
-            title: isPartial ? 'Confirm Partial Refund' : 'Confirm Full Refund',
-            message: `${confirmMsg} This will process immediately.`,
-            confirmText: 'Issue Refund',
-            type: 'danger'
-        });
-
-        if (!confirmed) return;
+        // Simulated milestones
+        const timer = setInterval(() => {
+            setRefundMilestone(prev => Math.min(prev + 1, 2));
+        }, 900);
 
         try {
-            await refundOrder(order.id, rejectionReason, refundAmt);
-            setRejectionReason('');
-            setRefundAmountInput('');
-            setSelectedOrder(null);
-            addNotification({ 
-                type: 'system', 
-                title: isPartial ? 'Partial Refund Initiated' : 'Refund Initiated', 
-                message: `Refund of $${refundAmt.toFixed(2)} is being processed.` 
-            });
+            const result = await refundOrder(refundWizardOrder.id, finalReason, finalAmount);
+            clearInterval(timer);
+            setRefundMilestone(3);
+            
+            // Wait a brief moment to show completeness
+            setTimeout(() => {
+                setRefundWizardId(result?.refundId || 'ref_sample_id');
+                setRefundWizardStep(3);
+            }, 600);
         } catch (e: any) {
-            console.error("Refund failed", e);
-            addNotification({ type: 'alert', title: 'Refund Failed', message: e.message || "Failed to process refund" });
+            clearInterval(timer);
+            console.error("Refund wizard failed", e);
+            setRefundWizardError(e.message || "Stripe refund processing failed.");
         }
     };
 
@@ -886,58 +902,58 @@ const MerchantOrders: React.FC = () => {
 
                                 {/* Actions Panel - Mobile Optimized */}
                                 {hasWriteAccess && (
-                                    <div className="bg-gray-900 rounded-3xl p-5 md:p-6 text-white space-y-6">
+                                    <div className="bg-[var(--surface-1)] rounded-3xl p-5 md:p-6 border border-[var(--glass-border)] space-y-6 text-[var(--text-main)] shadow-sm">
                                         <div className="space-y-5">
-                                            <h3 className="text-[10px] font-black uppercase tracking-widest opacity-50 ml-1">Merchant Controls</h3>
+                                            <h3 className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] ml-1">Merchant Controls</h3>
                                             
                                             <div className="grid grid-cols-2 gap-3">
                                                 <button 
                                                     onClick={() => handleUpdateStatus(selectedOrder.id, selectedOrder.status === 'on_hold' ? 'preparing' : 'on_hold')} 
-                                                    className={`p-3 rounded-2xl text-[11px] font-black transition-all border flex items-center justify-center gap-2 ${selectedOrder.status === 'on_hold' ? 'bg-orange-500 text-white border-orange-400' : 'bg-white/10 text-white border-white/5 hover:bg-white/20'}`}
+                                                    className={`p-3 rounded-2xl text-[11px] font-black transition-all border flex items-center justify-center gap-2 ${selectedOrder.status === 'on_hold' ? 'bg-orange-500 text-white border-orange-400' : 'bg-white text-[var(--text-main)] border-[var(--glass-border)] hover:bg-gray-50 shadow-sm active:scale-95'}`}
                                                 >
                                                     {selectedOrder.status === 'on_hold' ? '▶️ Resume' : '⏳ Hold'}
                                                 </button>
                                                 <button 
                                                     onClick={() => handleDownloadReceipt(selectedOrder.id)} 
                                                     disabled={downloadingReceiptId === selectedOrder.id}
-                                                    className="bg-white/10 p-3 rounded-2xl text-[11px] font-black hover:bg-white/20 transition-all border border-white/5 flex items-center justify-center gap-2 disabled:opacity-50"
+                                                    className="bg-white text-[var(--text-main)] p-3 rounded-2xl text-[11px] font-black hover:bg-gray-50 transition-all border border-[var(--glass-border)] flex items-center justify-center gap-2 disabled:opacity-50 shadow-sm active:scale-95"
                                                 >
                                                     {downloadingReceiptId === selectedOrder.id ? '⌛...' : '📄 Receipt'}
                                                 </button>
                                             </div>
 
                                             <div className="space-y-2">
-                                                <label className="text-[9px] font-black uppercase tracking-widest opacity-50 ml-1">Est. Prep Time</label>
+                                                <label className="text-[9px] font-black uppercase tracking-widest text-[var(--text-muted)] ml-1">Est. Prep Time</label>
                                                 <div className="flex gap-2 h-11">
                                                     <input
                                                         type="text"
                                                         value={estTimeInput}
                                                         onChange={(e) => setEstTimeInput(e.target.value)}
                                                         placeholder="e.g. 15 min"
-                                                        className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 text-sm focus:ring-1 focus:ring-[var(--brand-primary)] outline-none"
+                                                        className="flex-1 bg-white border border-[var(--glass-border)] rounded-xl px-4 text-sm focus:ring-1 focus:ring-[var(--brand-primary)] outline-none text-[var(--text-main)] placeholder:text-[var(--text-muted)]/50"
                                                     />
                                                     <button 
                                                         onClick={() => handleSaveET(selectedOrder.id)} 
-                                                        className="px-5 bg-white text-black text-[11px] font-black rounded-xl active:scale-95 transition-all shrink-0"
+                                                        className="px-5 bg-[var(--brand-primary)] text-white hover:bg-[var(--brand-primary-dark)] text-[11px] font-black rounded-xl active:scale-95 transition-all shrink-0 shadow-md shadow-[var(--brand-primary)]/10"
                                                     >
                                                         Save
                                                     </button>
                                                 </div>
                                             </div>
 
-                                            <div className="pt-4 border-t border-white/10">
-                                                <label className="text-[9px] font-black uppercase tracking-widest opacity-50 ml-1">Cancel / Reject</label>
+                                            <div className="pt-4 border-t border-[var(--glass-border)]">
+                                                <label className="text-[9px] font-black uppercase tracking-widest text-[var(--text-muted)] ml-1">Cancel / Reject</label>
                                                 <div className="flex gap-2 mt-2 h-11">
                                                     <input
                                                         type="text"
                                                         value={rejectionReason}
                                                         onChange={(e) => setRejectionReason(e.target.value)}
                                                         placeholder="Reason..."
-                                                        className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 text-sm outline-none"
+                                                        className="flex-1 bg-white border border-[var(--glass-border)] rounded-xl px-4 text-sm focus:ring-1 focus:ring-red-500 outline-none text-[var(--text-main)] placeholder:text-[var(--text-muted)]/50"
                                                     />
                                                     <button 
                                                         onClick={() => handleCancelOrder(selectedOrder.id)} 
-                                                        className="px-5 bg-red-500/20 text-red-400 border border-red-500/30 text-[11px] font-black rounded-xl active:scale-95 transition-all shrink-0"
+                                                        className="px-5 bg-red-50 text-red-650 hover:bg-red-100/50 border border-red-200 text-[11px] font-black rounded-xl active:scale-95 transition-all shrink-0"
                                                     >
                                                         REJ.
                                                     </button>
@@ -945,35 +961,24 @@ const MerchantOrders: React.FC = () => {
                                             </div>
 
                                             {['paid', 'partially_refunded'].includes(selectedOrder.paymentStatus) && (
-                                                <div className="pt-4 border-t border-white/10">
-                                                    <label className="text-[9px] font-black uppercase tracking-widest opacity-50 ml-1">Issue Refund (Full / Partial)</label>
-                                                    <div className="space-y-2 mt-2">
-                                                        <div className="flex gap-2 h-11">
-                                                            <input
-                                                                type="number"
-                                                                value={refundAmountInput}
-                                                                onChange={(e) => setRefundAmountInput(e.target.value)}
-                                                                placeholder={`Amt (Max $${(selectedOrder.total - (selectedOrder.refundedAmount || 0)).toFixed(2)})`}
-                                                                className="flex-1 bg-white/5 border border-white/10 rounded-xl px-3 text-xs outline-none text-white"
-                                                                step="0.01"
-                                                                min="0.01"
-                                                                max={selectedOrder.total - (selectedOrder.refundedAmount || 0)}
-                                                            />
-                                                            <input
-                                                                type="text"
-                                                                value={rejectionReason}
-                                                                onChange={(e) => setRejectionReason(e.target.value)}
-                                                                placeholder="Reason..."
-                                                                className="flex-[1.5] bg-white/5 border border-white/10 rounded-xl px-3 text-xs outline-none text-white"
-                                                            />
-                                                            <button 
-                                                                onClick={() => handleRefundOrder(selectedOrder)} 
-                                                                className="px-4 bg-orange-500/25 text-orange-400 border border-orange-500/40 text-[10px] font-black rounded-xl active:scale-95 transition-all shrink-0 font-bold"
-                                                            >
-                                                                REFUND
-                                                            </button>
-                                                        </div>
-                                                    </div>
+                                                <div className="pt-4 border-t border-[var(--glass-border)]">
+                                                    <button 
+                                                        onClick={() => {
+                                                            setRefundWizardOrder(selectedOrder);
+                                                            setRefundWizardType('full');
+                                                            const remaining = selectedOrder.total - (selectedOrder.refundedAmount || 0);
+                                                            setRefundWizardAmount(remaining.toFixed(2));
+                                                            setRefundWizardReason('Customer Request');
+                                                            setRefundWizardCustomReason('');
+                                                            setRefundWizardStep(1);
+                                                            setRefundWizardError(null);
+                                                            setRefundWizardId(null);
+                                                            setIsRefundWizardOpen(true);
+                                                        }}
+                                                        className="w-full py-3.5 bg-orange-50 text-orange-600 border border-orange-200 text-xs font-black rounded-xl active:scale-95 transition-all flex items-center justify-center gap-2 hover:bg-orange-100/60 shadow-sm"
+                                                    >
+                                                        <span>💳</span> Issue Refund (Wizard)
+                                                    </button>
                                                 </div>
                                             )}
                                         </div>
@@ -1030,6 +1035,330 @@ const MerchantOrders: React.FC = () => {
                     </div>
                 )
             }
+                    {/* Refund Wizard Modal Overlay */}
+            {isRefundWizardOpen && refundWizardOrder && (
+                <div 
+                    className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-[70] p-4 animate-fade-in font-sans"
+                    onClick={() => {
+                        if (refundWizardStep !== 2) {
+                            setIsRefundWizardOpen(false);
+                            setRefundWizardOrder(null);
+                        }
+                    }}
+                >
+                    <div 
+                        className="bg-white border border-[var(--glass-border)] rounded-3xl w-full max-w-md p-6 shadow-2xl relative overflow-hidden text-[var(--text-main)] flex flex-col max-h-[90vh] animate-scale-in"
+                        onClick={e => e.stopPropagation()}
+                    >
+                        {/* Brand top glowing accent border */}
+                        <div className="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-[var(--brand-primary)] via-indigo-500 to-blue-500"></div>
+
+                        {/* Step 1: Configuration Form */}
+                        {refundWizardStep === 1 && (
+                            <div className="animate-fade-in">
+                                <div className="flex justify-between items-start mb-6">
+                                    <div>
+                                        <span className="text-[10px] font-black uppercase tracking-widest bg-blue-50 text-[var(--brand-primary)] px-2.5 py-1 rounded-full border border-blue-200/50">
+                                            Order Financials
+                                        </span>
+                                        <h3 className="text-xl font-extrabold text-gray-900 mt-3">Issue Refund</h3>
+                                        <p className="text-xs text-gray-500 mt-1 font-medium">For {refundWizardOrder.customerName}</p>
+                                    </div>
+                                    <button 
+                                        onClick={() => {
+                                            setIsRefundWizardOpen(false);
+                                            setRefundWizardOrder(null);
+                                        }}
+                                        className="text-gray-400 hover:text-gray-600 text-lg w-8 h-8 rounded-full bg-gray-50 border border-gray-200 flex items-center justify-center transition-colors"
+                                    >
+                                        ✕
+                                    </button>
+                                </div>
+
+                                <div className="space-y-5">
+                                    {/* Segment Toggle */}
+                                    <div className="bg-gray-100 p-1 rounded-xl flex gap-1 border border-gray-200">
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setRefundWizardType('full');
+                                                const remaining = refundWizardOrder.total - (refundWizardOrder.refundedAmount || 0);
+                                                setRefundWizardAmount(remaining.toFixed(2));
+                                            }}
+                                            className={`flex-1 py-2 text-xs font-black rounded-lg transition-all ${refundWizardType === 'full' ? 'bg-[var(--brand-primary)] text-white shadow-md shadow-[var(--brand-primary)]/15' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'}`}
+                                        >
+                                            Full Refund
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setRefundWizardType('partial');
+                                                setRefundWizardAmount('');
+                                            }}
+                                            className={`flex-1 py-2 text-xs font-black rounded-lg transition-all ${refundWizardType === 'partial' ? 'bg-[var(--brand-primary)] text-white shadow-md shadow-[var(--brand-primary)]/15' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'}`}
+                                        >
+                                            Partial Refund
+                                        </button>
+                                    </div>
+
+                                    {/* Amount Input */}
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1">
+                                            Refund Amount
+                                        </label>
+                                        <div className="relative">
+                                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-extrabold text-lg">$</span>
+                                            <input
+                                                type="number"
+                                                value={refundWizardAmount}
+                                                onChange={(e) => setRefundWizardAmount(e.target.value)}
+                                                disabled={refundWizardType === 'full'}
+                                                placeholder="0.00"
+                                                step="0.01"
+                                                min="0.01"
+                                                max={(refundWizardOrder.total - (refundWizardOrder.refundedAmount || 0)).toFixed(2)}
+                                                className={`w-full bg-gray-50 border border-gray-200 rounded-2xl pl-8 pr-4 py-3.5 text-lg font-black outline-none text-gray-800 focus:bg-white focus:border-[var(--brand-primary)] transition-all ${refundWizardType === 'full' ? 'opacity-65 cursor-not-allowed bg-gray-100' : ''}`}
+                                            />
+                                        </div>
+                                        <p className="text-[10px] text-gray-500 ml-1">
+                                            Remaining refundable balance: <span className="font-bold text-gray-700">${(refundWizardOrder.total - (refundWizardOrder.refundedAmount || 0)).toFixed(2)}</span>
+                                        </p>
+                                    </div>
+
+                                    {/* Reason Selector Grid */}
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1">
+                                            Select Reason
+                                        </label>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            {[
+                                                { label: 'Customer Request', emoji: '🙋‍♂️' },
+                                                { label: 'Out of Stock', emoji: '📦' },
+                                                { label: 'Store Rejected', emoji: '🚫' },
+                                                { label: 'Other', emoji: '📝' }
+                                            ].map((item) => (
+                                                <button
+                                                    key={item.label}
+                                                    type="button"
+                                                    onClick={() => setRefundWizardReason(item.label)}
+                                                    className={`p-3 rounded-xl border text-xs font-bold transition-all flex items-center gap-2.5 ${refundWizardReason === item.label ? 'bg-blue-50/50 border-[var(--brand-primary)] text-[var(--brand-primary)] shadow-sm font-black' : 'bg-gray-50 border border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-100/50'}`}
+                                                >
+                                                    <span className="text-base">{item.emoji}</span>
+                                                    <span>{item.label}</span>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Custom Reason Field */}
+                                    {refundWizardReason === 'Other' && (
+                                        <div className="space-y-2 animate-fade-in">
+                                            <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1">
+                                                Custom Reason Description
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={refundWizardCustomReason}
+                                                onChange={(e) => setRefundWizardCustomReason(e.target.value)}
+                                                placeholder="Describe the reason..."
+                                                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-xs outline-none text-gray-800 focus:bg-white focus:border-[var(--brand-primary)] transition-colors"
+                                            />
+                                        </div>
+                                    )}
+
+                                    {/* Stripe Connect Warning */}
+                                    <div className="bg-amber-50 border border-amber-200/70 rounded-2xl p-3.5 flex gap-3 text-[11px] text-amber-800 leading-relaxed">
+                                        <span className="text-lg shrink-0">🛡️</span>
+                                        <div>
+                                            <span className="font-bold text-amber-900 block mb-0.5">Stripe Connect Security Enabled</span>
+                                            This action will reverse the corresponding platform application fee and connected merchant transfer automatically.
+                                        </div>
+                                    </div>
+
+                                    {/* Error Message if local validation fails */}
+                                    {refundWizardError && (
+                                        <div className="bg-red-50 border border-red-200 text-red-650 rounded-xl p-3 text-xs text-center font-semibold">
+                                            {refundWizardError}
+                                        </div>
+                                    )}
+
+                                    {/* Buttons */}
+                                    <div className="flex gap-3 pt-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setIsRefundWizardOpen(false);
+                                                setRefundWizardOrder(null);
+                                            }}
+                                            className="flex-1 py-3.5 border border-gray-200 rounded-2xl text-xs font-black text-gray-500 hover:bg-gray-105 transition-colors active:scale-95"
+                                        >
+                                            Cancel
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={handleProcessRefund}
+                                            className="flex-1 py-3.5 bg-[var(--brand-primary)] text-white rounded-2xl text-xs font-black hover:brightness-110 transition-all shadow-lg shadow-[var(--brand-primary)]/20 active:scale-95 flex items-center justify-center gap-2"
+                                        >
+                                            Confirm & Process
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Step 2: Processing Reversal */}
+                        {refundWizardStep === 2 && (
+                            <div className="animate-fade-in">
+                                {refundWizardError ? (
+                                    /* Error Screen inside Step 2 */
+                                    <div className="text-center py-6">
+                                        <div className="w-16 h-16 bg-red-50 border border-red-200 text-red-500 rounded-full flex items-center justify-center text-3xl mx-auto mb-4 animate-bounce">
+                                            ⚠️
+                                        </div>
+                                        <h3 className="text-lg font-black text-gray-900">Refund Processing Failed</h3>
+                                        <p className="text-xs text-red-600 px-4 mt-2 max-w-sm mx-auto leading-relaxed font-medium">
+                                            {refundWizardError}
+                                        </p>
+                                        
+                                        <div className="bg-gray-50 border border-gray-200 rounded-2xl p-4 mt-6 text-left text-[11px] text-gray-500 space-y-1.5 max-w-sm mx-auto">
+                                            <p className="font-bold text-gray-800">Suggested Troubleshooting:</p>
+                                            <p>• Verify merchant account has sufficient Stripe balance.</p>
+                                            <p>• Ensure Internet connection is stable.</p>
+                                            <p>• Contact platform support if error persists.</p>
+                                        </div>
+
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setRefundWizardError(null);
+                                                setRefundWizardStep(1);
+                                            }}
+                                            className="mt-8 px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-200 rounded-2xl text-xs font-black transition-all active:scale-95 inline-flex items-center gap-2"
+                                        >
+                                            ← Go Back & Edit
+                                        </button>
+                                    </div>
+                                ) : (
+                                    /* Live Processing Milestones */
+                                    <div className="text-center py-8">
+                                        <div className="relative w-20 h-20 mx-auto mb-8 flex items-center justify-center">
+                                            <div className="absolute inset-0 rounded-full border-4 border-gray-100"></div>
+                                            <div className="absolute inset-0 rounded-full border-4 border-t-[var(--brand-primary)] animate-spin"></div>
+                                            <div className="absolute inset-0 rounded-full bg-[var(--brand-primary)]/5 blur-md"></div>
+                                            <span className="text-xl">💳</span>
+                                        </div>
+
+                                        <h3 className="text-lg font-black text-gray-900">Processing Transaction</h3>
+                                        <p className="text-xs text-gray-500 mt-1.5 max-w-xs mx-auto leading-relaxed font-medium">
+                                            Communicating securely with payment gateway. Do not reload or close this page.
+                                        </p>
+
+                                        <div className="mt-8 space-y-3.5 max-w-xs mx-auto text-left">
+                                            {[
+                                                "Initiating secure transaction...",
+                                                "Reversing Stripe Connected transfer...",
+                                                "Finalizing platform fee ledger..."
+                                            ].map((text, idx) => {
+                                                const isChecked = refundMilestone > idx;
+                                                const isCurrent = refundMilestone === idx;
+                                                return (
+                                                    <div key={idx} className="flex items-center gap-3 transition-all duration-300">
+                                                        <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black border transition-all duration-300 ${isChecked ? 'bg-blue-50 border-[var(--brand-primary)] text-[var(--brand-primary)]' : isCurrent ? 'border-[var(--brand-primary)] text-[var(--brand-primary)] animate-pulse' : 'border-gray-200 text-gray-400'}`}>
+                                                            {isChecked ? '✓' : isCurrent ? '⏳' : ''}
+                                                        </div>
+                                                        <span className={`text-xs transition-colors duration-350 ${isChecked ? 'text-gray-500 font-medium' : isCurrent ? 'text-gray-900 font-bold' : 'text-gray-400'}`}>
+                                                                {text}
+                                                        </span>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Step 3: Success Screen */}
+                        {refundWizardStep === 3 && (
+                            <div className="animate-fade-in text-center py-4">
+                                <div className="relative w-16 h-16 bg-emerald-50 border border-emerald-250 rounded-full flex items-center justify-center text-3xl mx-auto mb-5 shadow-sm shadow-emerald-500/5 animate-scale-in">
+                                    🎉
+                                </div>
+
+                                <h3 className="text-xl font-extrabold text-gray-900">Refund Finalized</h3>
+                                <p className="text-xs text-emerald-600 font-bold mt-1">Transaction Completed Successfully</p>
+
+                                {/* Ticket Summary Receipt */}
+                                <div className="relative bg-gray-50 border border-gray-200 rounded-2xl p-5 mt-6 mb-6 text-left overflow-hidden shadow-sm">
+                                    {/* Ticket holes punched with modal backdrop surface-0 */}
+                                    <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-2.5 w-5 h-5 rounded-full bg-white border-r border-gray-200"></div>
+                                    <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-2.5 w-5 h-5 rounded-full bg-white border-l border-gray-200"></div>
+
+                                    <div className="text-center pb-4 border-b border-gray-200 border-dashed mb-4">
+                                        <span className="text-[9px] uppercase tracking-widest text-gray-400 font-black">Refunded Amount</span>
+                                        <div className="text-3xl font-black text-emerald-650 mt-1">
+                                            -${parseFloat(refundWizardAmount).toFixed(2)}
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-3 text-xs">
+                                        <div className="flex justify-between">
+                                            <span className="text-gray-400 font-bold">Shopper:</span>
+                                            <span className="text-gray-700 font-medium">{refundWizardOrder.customerName}</span>
+                                        </div>
+                                        {refundWizardOrder.customerEmail && (
+                                            <div className="flex justify-between">
+                                                <span className="text-gray-400 font-bold">Email:</span>
+                                                <span className="text-gray-700 font-medium truncate max-w-[180px]">{refundWizardOrder.customerEmail}</span>
+                                            </div>
+                                        )}
+                                        <div className="flex justify-between border-t border-gray-200 pt-3">
+                                            <span className="text-gray-400 font-bold">Refund ID:</span>
+                                            <div className="flex items-center gap-1.5">
+                                                <span className="text-gray-600 font-medium font-mono text-[10px]">
+                                                    {refundWizardId ? `${refundWizardId.substr(0, 16)}...` : 'N/A'}
+                                                </span>
+                                                {refundWizardId && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            navigator.clipboard.writeText(refundWizardId);
+                                                            addNotification({ type: 'system', title: 'Copied', message: 'Refund ID copied to clipboard' });
+                                                        }}
+                                                        className="text-[9px] bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded hover:bg-gray-300 transition-colors"
+                                                    >
+                                                        Copy
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="bg-blue-50 border border-blue-150 rounded-2xl p-4 mb-6 flex gap-3 text-left text-[11px] text-blue-800 leading-relaxed">
+                                    <span className="text-lg">⏱️</span>
+                                    <div>
+                                        <span className="font-bold text-blue-900 block">Shopper Payout Timeline</span>
+                                        Stripe Connect processes refunds immediately. The returned funds will clear on the shopper's card statement in 5-10 business days.
+                                    </div>
+                                </div>
+
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setIsRefundWizardOpen(false);
+                                        setRefundWizardOrder(null);
+                                        setSelectedOrder(null);
+                                    }}
+                                    className="w-full py-4 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl text-sm font-black transition-all shadow-lg shadow-emerald-500/20 active:scale-[0.98]"
+                                >
+                                    Dismiss & Complete
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

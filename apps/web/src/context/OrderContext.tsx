@@ -86,7 +86,7 @@ interface OrderContextType {
     updateEstimatedTime: (orderId: string, time: string) => Promise<void>;
     updatePaymentStatus: (orderId: string, status: Order['paymentStatus'], auditData?: { id: string; name: string; timestamp: string }) => Promise<void>;
     cancelOrder: (orderId: string, reason?: string) => Promise<void>;
-    refundOrder: (orderId: string, reason: string, amount?: number) => Promise<void>;
+    refundOrder: (orderId: string, reason: string, amount?: number) => Promise<{ success: boolean; refundId: string }>;
     downloadOrderReceipt: (orderId: string) => Promise<void>;
     reorder: (orderId: string) => Promise<string[]>; // Returns an array of out-of-stock or changed item messages
     updateProfile: (updates: Partial<UserProfile>) => void;
@@ -308,13 +308,15 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     const refundOrder = async (orderId: string, reason: string, amount?: number) => {
         try {
             const refundOrderFn = httpsCallable(functions, 'refundOrder');
-            await refundOrderFn({ orderId, reason, amount });
+            const result = await refundOrderFn({ orderId, reason, amount });
 
             auditBridge.emit('ORDER_REFUND', {
                 orderId,
                 reason,
                 amount
             });
+
+            return result.data as { success: boolean; refundId: string };
         } catch (e: any) {
             console.error('OrderContext: Refund order failed', e);
             throw e;
