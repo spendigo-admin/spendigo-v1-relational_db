@@ -54,11 +54,18 @@ const sha256 = (message: string): string => {
  * Builds the actor object for logEvent from a callable function context.
  * Callers must verify context.auth is present before calling this.
  */
-export const buildActorFromContext = (context: functions.https.CallableContext) => ({
-    id: context.auth!.uid,
-    email: context.auth!.token.email || '',
-    ip: context.rawRequest.ip || ''
-});
+export const buildActorFromContext = (context: functions.https.CallableContext) => {
+    const xForwardedFor = context.rawRequest.headers['x-forwarded-for'];
+    const ip = typeof xForwardedFor === 'string'
+        ? xForwardedFor.split(',')[0].trim()
+        : context.rawRequest.ip || '0.0.0.0';
+
+    return {
+        id: context.auth!.uid,
+        email: context.auth!.token.email || '',
+        ip
+    };
+};
 
 /**
  * Logs a system event with tamper-evident chaining.

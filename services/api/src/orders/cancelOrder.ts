@@ -4,10 +4,13 @@ import { FieldValue, DocumentReference } from 'firebase-admin/firestore';
 import { checkRateLimit } from '../utils/rateLimiter';
 import { logEvent } from '../utils/audit';
 import { toHttpsError } from '../utils/errors';
+import { stripe } from '../config/stripe';
 
 const db = admin.firestore();
 
-export const cancelOrder = functions.https.onCall(async (data, context) => {
+export const cancelOrder = functions
+    .runWith({ secrets: ['STRIPE_SECRET_KEY'] })
+    .https.onCall(async (data, context) => {
     if (!context.app && process.env.FUNCTIONS_EMULATOR !== 'true') {
         throw new functions.https.HttpsError('failed-precondition', 'The function must be called from an App Check verified app.');
     }
@@ -59,6 +62,13 @@ export const cancelOrder = functions.https.onCall(async (data, context) => {
             }
 
             // PHASE 1: READS
+            // 1. Get latest audit log hash for atomic transaction serialization
+            const auditMetaSnap = await transaction.get(db.collection('audit_logs_meta').doc('latest'));
+            const preFetchedPrevHash = auditMetaSnap.exists 
+                ? auditMetaSnap.data()?.latestHash 
+                : '0000000000000000000000000000000000000000000000000000000000000000';
+
+            // 2. Fetch products to restore
             const productsToRestore: { ref: DocumentReference, quantity: number }[] = [];
 
             if (order?.items && Array.isArray(order.items)) {
@@ -73,12 +83,33 @@ export const cancelOrder = functions.https.onCall(async (data, context) => {
                 }
             }
 
-            // PHASE 2: WRITES
+            // PHASE 2: STRIPE INTEGRATION (Executed between reads and writes)
+            let refundId: string | undefined = undefined;
+            if (order?.paymentMethod === 'card' && order?.paymentStatus === 'paid' && order?.paymentIntentId) {
+                try {
+                    const refund = await stripe.refunds.create({
+                        payment_intent: order.paymentIntentId,
+                        refund_application_fee: true,
+                        reason: 'requested_by_customer',
+                        metadata: {
+                            orderId,
+                            cancelledBy: userId,
+                            reason: reason || 'Cancelled by user/merchant'
+                        }
+                    });
+                    refundId = refund.id;
+                } catch (stripeErr: any) {
+                    throw new functions.https.HttpsError('internal', `Stripe refund failed: ${stripeErr.message}`);
+                }
+            }
+
+            // PHASE 3: WRITES
             // 1. Update Status
             transaction.update(orderRef, {
                 status: 'cancelled',
                 rejectionReason: reason || 'Cancelled by user',
-                cancelledAt: FieldValue.serverTimestamp()
+                cancelledAt: FieldValue.serverTimestamp(),
+                ...(refundId && { paymentStatus: 'refunding', refundId })
             });
 
             // 2. Restore Stock
@@ -88,15 +119,23 @@ export const cancelOrder = functions.https.onCall(async (data, context) => {
                 });
             }
 
-            // Audit: Order Cancelled
+            // 3. Atomic, retry-safe Audit logging
+            const xForwardedFor = context.rawRequest.headers['x-forwarded-for'];
+            const clientIp = typeof xForwardedFor === 'string'
+                ? xForwardedFor.split(',')[0].trim()
+                : context.rawRequest.ip || '0.0.0.0';
+
             await logEvent(
                 'ORDER_CANCELLED',
-                { id: context.auth?.uid || 'unknown', email: context.auth?.token.email || 'unknown', ip: context.rawRequest.ip || '0.0.0.0' },
+                { id: context.auth?.uid || 'unknown', email: context.auth?.token.email || 'unknown', ip: clientIp },
                 { 
                     orderId,
-                    reason: reason || 'Cancelled by user'
+                    reason: reason || 'Cancelled by user',
+                    ...(refundId && { refundId })
                 },
-                orderId
+                orderId,
+                transaction,
+                preFetchedPrevHash
             );
         });
 

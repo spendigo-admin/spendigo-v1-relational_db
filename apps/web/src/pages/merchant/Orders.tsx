@@ -43,15 +43,28 @@ const MerchantOrders: React.FC = () => {
         negativeStock: { id: string; name: string; qty: number }[];
         paymentGaps: Order[];
         integrityIssues: { orderId: string; issues: string[] }[];
-        totalRevenue: number;
+        grossSales: number;
+        totalRefunds: number;
+        netSales: number;
+        platformFees: number;
         loading: boolean;
-    }>({ negativeStock: [], paymentGaps: [], integrityIssues: [], totalRevenue: 0, loading: false });
+    }>({
+        negativeStock: [],
+        paymentGaps: [],
+        integrityIssues: [],
+        grossSales: 0,
+        totalRefunds: 0,
+        netSales: 0,
+        platformFees: 0,
+        loading: false
+    });
 
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
     const [now, setNow] = useState(new Date());
 
     const [rejectionReason, setRejectionReason] = useState('');
+    const [refundAmountInput, setRefundAmountInput] = useState('');
     const [estTimeInput, setEstTimeInput] = useState('');
     const [mobileStatusFilter, setMobileStatusFilter] = useState<string>('placed'); // Default to 'New Orders' on mobile
     const [downloadingReceiptId, setDownloadingReceiptId] = useState<string | null>(null);
@@ -81,9 +94,32 @@ const MerchantOrders: React.FC = () => {
                     qty: d.data().available_quantity as number,
                 }));
 
-                // 2. Revenue from paid orders in context
-                const paidOrders = contextOrders.filter(o => o.paymentStatus === 'paid');
-                const totalRevenue = paidOrders.reduce((sum, o) => sum + (o.total || 0), 0);
+                // 2. Financial reconciliation calculations
+                const grossOrders = contextOrders.filter(o => ['paid', 'refunded', 'partially_refunded'].includes(o.paymentStatus));
+                const grossSales = grossOrders.reduce((sum, o) => sum + (o.total || 0), 0);
+
+                const totalRefunds = contextOrders.reduce((sum, o) => {
+                    if (o.paymentStatus === 'refunded') {
+                        return sum + (o.refundedAmount || o.refundingAmount || o.total || 0);
+                    } else if (o.paymentStatus === 'partially_refunded') {
+                        return sum + (o.refundedAmount || o.refundingAmount || 0);
+                    }
+                    return sum;
+                }, 0);
+
+                const netSales = grossSales - totalRefunds;
+
+                const platformFees = contextOrders.reduce((sum, o) => {
+                    if (o.paymentMethod === 'card') {
+                        if (o.paymentStatus === 'paid') {
+                            return sum + (0.05 * o.total + 0.30);
+                        } else if (o.paymentStatus === 'partially_refunded') {
+                            const netAmount = o.total - (o.refundedAmount || o.refundingAmount || 0);
+                            return sum + Math.max(0, 0.05 * netAmount + 0.30);
+                        }
+                    }
+                    return sum;
+                }, 0);
 
                 // 3. Payment gap detection — card orders still in 'pending' payment status
                 const paymentGaps = contextOrders.filter(
@@ -107,7 +143,16 @@ const MerchantOrders: React.FC = () => {
                     }
                 }
 
-                setReconData({ negativeStock, paymentGaps, integrityIssues, totalRevenue, loading: false });
+                setReconData({
+                    negativeStock,
+                    paymentGaps,
+                    integrityIssues,
+                    grossSales,
+                    totalRefunds,
+                    netSales,
+                    platformFees,
+                    loading: false
+                });
             } catch (err) {
                 console.error('[Reconciliation] Failed:', err);
                 setReconData(prev => ({ ...prev, loading: false }));
@@ -260,9 +305,28 @@ const MerchantOrders: React.FC = () => {
             return;
         }
 
+        const remainingTotal = order.total - (order.refundedAmount || 0);
+        const inputAmount = refundAmountInput.trim() ? parseFloat(refundAmountInput) : null;
+        const refundAmt = inputAmount !== null ? inputAmount : remainingTotal;
+
+        if (isNaN(refundAmt) || refundAmt <= 0) {
+            addNotification({ type: 'alert', title: 'Invalid Amount', message: "Refund amount must be a positive number" });
+            return;
+        }
+
+        if (refundAmt > remainingTotal) {
+            addNotification({ type: 'alert', title: 'Invalid Amount', message: `Refund amount cannot exceed the remaining order total ($${remainingTotal.toFixed(2)})` });
+            return;
+        }
+
+        const isPartial = refundAmt < remainingTotal;
+        const confirmMsg = isPartial 
+            ? `Are you sure you want to issue a PARTIAL refund of $${refundAmt.toFixed(2)} to ${order.customerName}?`
+            : `Are you sure you want to issue a FULL refund of $${refundAmt.toFixed(2)} to ${order.customerName}?`;
+
         const confirmed = await confirm({
-            title: 'Confirm Refund',
-            message: `Are you sure you want to refund $${order.total.toFixed(2)} to ${order.customerName}? This will process immediately through Stripe.`,
+            title: isPartial ? 'Confirm Partial Refund' : 'Confirm Full Refund',
+            message: `${confirmMsg} This will process immediately.`,
             confirmText: 'Issue Refund',
             type: 'danger'
         });
@@ -270,9 +334,15 @@ const MerchantOrders: React.FC = () => {
         if (!confirmed) return;
 
         try {
-            await refundOrder(order.id, rejectionReason);
+            await refundOrder(order.id, rejectionReason, refundAmt);
             setRejectionReason('');
-            addNotification({ type: 'system', title: 'Refund Initiated', message: "Funds are being transferred back to the customer." });
+            setRefundAmountInput('');
+            setSelectedOrder(null);
+            addNotification({ 
+                type: 'system', 
+                title: isPartial ? 'Partial Refund Initiated' : 'Refund Initiated', 
+                message: `Refund of $${refundAmt.toFixed(2)} is being processed.` 
+            });
         } catch (e: any) {
             console.error("Refund failed", e);
             addNotification({ type: 'alert', title: 'Refund Failed', message: e.message || "Failed to process refund" });
@@ -480,7 +550,10 @@ const MerchantOrders: React.FC = () => {
                                                 {order.status}
                                             </span>
                                         </div>
-                                        <div className="text-xs text-[var(--text-muted)] font-medium truncate italic">{order.customerName}</div>
+                                        <div className="flex items-center gap-2 text-xs text-[var(--text-muted)] font-medium truncate italic">
+                                            <span>{order.customerName}</span>
+                                            {getPaymentStatusBadge(order)}
+                                        </div>
                                     </div>
                                     <div className="text-right shrink-0">
                                         <div className="text-sm font-black text-[var(--brand-primary)]">${order.total.toFixed(2)}</div>
@@ -515,7 +588,10 @@ const MerchantOrders: React.FC = () => {
                                             <td className="p-4 font-bold text-sm text-[var(--text-main)]">#{order.id.substr(0, 12)}...</td>
                                             <td className="p-4">
                                                 <div className="font-medium text-sm">{order.customerName}</div>
-                                                <div className="text-[10px] text-[var(--text-muted)]">{order.deliveryAddress ? '🛵 Delivery' : '🛍️ Pickup'}</div>
+                                                <div className="flex items-center gap-2 mt-1">
+                                                    <span className="text-[10px] text-[var(--text-muted)]">{order.deliveryAddress ? '🛵 Delivery' : '🛍️ Pickup'}</span>
+                                                    {getPaymentStatusBadge(order)}
+                                                </div>
                                             </td>
                                             <td className="p-4">
                                                 <span className={`px-2 py-1 rounded-full text-[10px] font-black border ${getStatusColor(order.status)} uppercase tracking-tighter`}>
@@ -557,11 +633,38 @@ const MerchantOrders: React.FC = () => {
                         </div>
                     ) : (
                         <>
-                            {/* Revenue Summary */}
-                            <div className="bg-white rounded-2xl border border-[var(--glass-border)] p-5 shadow-sm">
-                                <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)] mb-1">Paid Revenue (All Time)</p>
-                                <p className="text-3xl font-black text-[var(--brand-primary)]">${reconData.totalRevenue.toFixed(2)}</p>
-                                <p className="text-xs text-[var(--text-muted)] mt-1">{contextOrders.filter(o => o.paymentStatus === 'paid').length} paid orders</p>
+                            {/* Financial Reconciliation Summary */}
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                <div className="bg-white rounded-2xl border border-[var(--glass-border)] p-5 shadow-sm flex flex-col justify-between">
+                                    <div>
+                                        <p className="text-[9px] font-bold uppercase tracking-widest text-[var(--text-muted)] mb-1">Gross Sales</p>
+                                        <p className="text-2xl font-black text-[var(--text-main)]">${reconData.grossSales.toFixed(2)}</p>
+                                    </div>
+                                    <p className="text-[10px] text-[var(--text-muted)] mt-2">Before refunds & fees</p>
+                                </div>
+                                <div className="bg-white rounded-2xl border border-[var(--glass-border)] p-5 shadow-sm flex flex-col justify-between">
+                                    <div>
+                                        <p className="text-[9px] font-bold uppercase tracking-widest text-[var(--text-muted)] mb-1">Refunds Issued</p>
+                                        <p className="text-2xl font-black text-red-500">-${reconData.totalRefunds.toFixed(2)}</p>
+                                    </div>
+                                    <p className="text-[10px] text-[var(--text-muted)] mt-2">
+                                        {contextOrders.filter(o => ['refunded', 'partially_refunded'].includes(o.paymentStatus)).length} refunded orders
+                                    </p>
+                                </div>
+                                <div className="bg-white rounded-2xl border border-[var(--glass-border)] p-5 shadow-sm flex flex-col justify-between ring-2 ring-[var(--brand-primary)]/10 bg-gradient-to-br from-[var(--surface-1)] to-white">
+                                    <div>
+                                        <p className="text-[9px] font-bold uppercase tracking-widest text-[var(--brand-primary)] mb-1">Net Sales</p>
+                                        <p className="text-2xl font-black text-[var(--brand-primary)]">${reconData.netSales.toFixed(2)}</p>
+                                    </div>
+                                    <p className="text-[10px] text-[var(--text-muted)] mt-2">Gross less refunds</p>
+                                </div>
+                                <div className="bg-white rounded-2xl border border-[var(--glass-border)] p-5 shadow-sm flex flex-col justify-between">
+                                    <div>
+                                        <p className="text-[9px] font-bold uppercase tracking-widest text-[var(--text-muted)] mb-1">Platform Fees</p>
+                                        <p className="text-2xl font-black text-orange-500">-${reconData.platformFees.toFixed(2)}</p>
+                                    </div>
+                                    <p className="text-[10px] text-[var(--text-muted)] mt-2">5% + $0.30 per card order</p>
+                                </div>
                             </div>
 
                             {/* Negative Stock Alerts */}
@@ -750,6 +853,35 @@ const MerchantOrders: React.FC = () => {
                                         <span className="text-sm font-bold text-gray-500">Total Charged</span>
                                         <span className="text-2xl font-black text-[var(--brand-primary)]">${selectedOrder.total.toFixed(2)}</span>
                                     </div>
+                                    
+                                    {/* Detailed Payment Info */}
+                                    <div className="bg-gray-50 rounded-2xl p-4 mt-4 space-y-2 border border-gray-100 text-xs">
+                                        <div className="flex justify-between">
+                                            <span className="text-gray-500 font-bold">Payment Method:</span>
+                                            <span className="font-medium text-[var(--text-main)] capitalize">
+                                                {selectedOrder.paymentMethod === 'card' ? '💳 Online Card' : '🏪 In-Store'}
+                                            </span>
+                                        </div>
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-gray-500 font-bold">Payment Status:</span>
+                                            {getPaymentStatusBadge(selectedOrder)}
+                                        </div>
+                                        {(selectedOrder.refundedAmount || selectedOrder.refundingAmount) && (
+                                            <div className="flex justify-between border-t border-gray-200/60 pt-2 mt-2">
+                                                <span className="text-red-600 font-bold">
+                                                    {selectedOrder.paymentStatus === 'refunding' ? 'Refunding Amount:' : 'Refunded Amount:'}
+                                                </span>
+                                                <span className="font-black text-red-600">
+                                                    -${(selectedOrder.refundedAmount || selectedOrder.refundingAmount || 0).toFixed(2)}
+                                                </span>
+                                            </div>
+                                        )}
+                                        {selectedOrder.refundReason && (
+                                            <div className="text-gray-500 italic mt-1 leading-snug">
+                                                Reason: {selectedOrder.refundReason}
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
 
                                 {/* Actions Panel - Mobile Optimized */}
@@ -811,6 +943,39 @@ const MerchantOrders: React.FC = () => {
                                                     </button>
                                                 </div>
                                             </div>
+
+                                            {['paid', 'partially_refunded'].includes(selectedOrder.paymentStatus) && (
+                                                <div className="pt-4 border-t border-white/10">
+                                                    <label className="text-[9px] font-black uppercase tracking-widest opacity-50 ml-1">Issue Refund (Full / Partial)</label>
+                                                    <div className="space-y-2 mt-2">
+                                                        <div className="flex gap-2 h-11">
+                                                            <input
+                                                                type="number"
+                                                                value={refundAmountInput}
+                                                                onChange={(e) => setRefundAmountInput(e.target.value)}
+                                                                placeholder={`Amt (Max $${(selectedOrder.total - (selectedOrder.refundedAmount || 0)).toFixed(2)})`}
+                                                                className="flex-1 bg-white/5 border border-white/10 rounded-xl px-3 text-xs outline-none text-white"
+                                                                step="0.01"
+                                                                min="0.01"
+                                                                max={selectedOrder.total - (selectedOrder.refundedAmount || 0)}
+                                                            />
+                                                            <input
+                                                                type="text"
+                                                                value={rejectionReason}
+                                                                onChange={(e) => setRejectionReason(e.target.value)}
+                                                                placeholder="Reason..."
+                                                                className="flex-[1.5] bg-white/5 border border-white/10 rounded-xl px-3 text-xs outline-none text-white"
+                                                            />
+                                                            <button 
+                                                                onClick={() => handleRefundOrder(selectedOrder)} 
+                                                                className="px-4 bg-orange-500/25 text-orange-400 border border-orange-500/40 text-[10px] font-black rounded-xl active:scale-95 transition-all shrink-0 font-bold"
+                                                            >
+                                                                REFUND
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 )}
@@ -869,6 +1034,48 @@ const MerchantOrders: React.FC = () => {
     );
 };
 
+// --- Helper functions ---
+
+export const getPaymentStatusBadge = (order: Order) => {
+    const status = order.paymentStatus;
+    const amount = order.refundedAmount || order.refundingAmount;
+    
+    switch (status) {
+        case 'refunded':
+            return (
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[8px] font-black uppercase tracking-tight bg-red-100 text-red-700 border border-red-200">
+                    🔄 Refunded
+                </span>
+            );
+        case 'partially_refunded':
+            return (
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[8px] font-black uppercase tracking-tight bg-orange-100 text-orange-700 border border-orange-200">
+                    🔄 Partial {amount ? `(-$${amount.toFixed(2)})` : ''}
+                </span>
+            );
+        case 'refunding':
+            return (
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[8px] font-black uppercase tracking-tight bg-yellow-100 text-yellow-700 border border-yellow-200 animate-pulse">
+                    ⏳ Refunding
+                </span>
+            );
+        case 'paid':
+            return (
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[8px] font-black uppercase tracking-tight bg-green-100 text-green-700 border border-green-200">
+                    💳 Paid
+                </span>
+            );
+        case 'pending':
+            return (
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[8px] font-black uppercase tracking-tight bg-blue-50 text-blue-600 border border-blue-100">
+                    ⏳ Pending
+                </span>
+            );
+        default:
+            return null;
+    }
+};
+
 // --- Internal Components ---
 
 interface OrderCardProps {
@@ -920,9 +1127,10 @@ const OrderCard = ({ order, onClick, onUpdateStatus, onComplete, onMarkPaid, tim
                         + {order.items.length - 3} more items...
                     </div>
                 )}
-                <div className="pt-1 text-[10px] text-gray-400 font-bold border-t border-dashed border-gray-100 mt-2">
-                    {order.items.length} items • ${order.total.toFixed(2)}
-                </div>
+            <div className="pt-1 text-[10px] text-gray-400 font-bold border-t border-dashed border-gray-100 mt-2 flex justify-between items-center">
+                <span>{order.items.length} items • ${order.total.toFixed(2)}</span>
+                {getPaymentStatusBadge(order)}
+            </div>
             </div>
 
             <div className="pt-3 border-t border-[var(--glass-border)] flex justify-between items-center">

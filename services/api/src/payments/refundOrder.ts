@@ -24,7 +24,7 @@ export const refundOrder = functions
 
     await checkRateLimit(context.auth.uid, 'refundOrder', 5, 5 * 60 * 1000);
 
-    const { orderId, reason } = data;
+    const { orderId, reason, amount } = data; // amount is optional for partial refunds
     if (!orderId) {
         throw new functions.https.HttpsError('invalid-argument', 'Order ID is required.');
     }
@@ -37,7 +37,7 @@ export const refundOrder = functions
         }
 
         const orderData = orderSnap.data();
-        const { paymentIntentId, paymentStatus, storeId: orderStoreId } = orderData || {};
+        const { paymentIntentId, paymentStatus, storeId: orderStoreId, paymentMethod, total } = orderData || {};
 
         // Security check: Verify that context.auth.uid has permissions for storeId
         const callerSnap = await db.collection('users').doc(context.auth.uid).get();
@@ -51,35 +51,80 @@ export const refundOrder = functions
         if (!isStoreMerchant && !isAdmin) {
             throw new functions.https.HttpsError('permission-denied', 'You do not have permission to refund this order.');
         }
-        if (paymentStatus !== 'paid' || !paymentIntentId) {
+        if (paymentStatus !== 'paid') {
             throw new functions.https.HttpsError('failed-precondition', 'Only paid orders can be refunded.');
         }
 
-        // 3. Trigger Stripe Refund
-        const refund = await stripe.refunds.create({
+        // --- IN-STORE PAYMENT REFUND FLOW ---
+        if (paymentMethod === 'in_store') {
+            await db.collection('orders').doc(orderId).update({
+                paymentStatus: 'refunded',
+                status: 'cancelled',
+                refundReason: reason || 'Merchant in-store refund',
+                refundedAt: admin.firestore.FieldValue.serverTimestamp(),
+                ...(amount && { refundedAmount: amount })
+            });
+
+            await logEvent(
+                'ORDER_REFUNDED',
+                buildActorFromContext(context),
+                { orderId, reason: reason || 'Merchant in-store refund', amount: amount || total, storeId: orderStoreId },
+                `orders/${orderId}`
+            );
+
+            return {
+                success: true,
+                message: 'In-store order marked as refunded.'
+            };
+        }
+
+        // --- ONLINE STRIPE PAYMENT REFUND FLOW ---
+        if (!paymentIntentId) {
+            throw new functions.https.HttpsError('failed-precondition', 'Missing PaymentIntent ID for online card order.');
+        }
+
+        const refundParams: any = {
             payment_intent: paymentIntentId,
-            reason: 'requested_by_customer', // Default reason
+            refund_application_fee: true,
+            reason: 'requested_by_customer',
             metadata: {
                 orderId,
                 reason: reason || 'Merchant initiated refund'
             }
-        });
+        };
+
+        if (amount != null && amount > 0) {
+            if (amount > total) {
+                throw new functions.https.HttpsError('invalid-argument', `Refund amount ($${amount}) cannot exceed order total ($${total}).`);
+            }
+            refundParams.amount = Math.round(amount * 100); // Stripe expects amount in cents
+        }
+
+        // 3. Trigger Stripe Refund
+        const refund = await stripe.refunds.create(refundParams);
 
         functions.logger.log(`🔄 Refund initiated for order ${orderId} (Refund ID: ${refund.id})`);
 
         // 4. Update Firestore Status
-        // We set it to 'refunding' - the webhook will eventually set it to 'refunded'
+        // We set it to 'refunding' - the webhook will eventually set it to 'refunded' or 'partially_refunded'
         await db.collection('orders').doc(orderId).update({
             paymentStatus: 'refunding',
             refundId: refund.id,
             refundReason: reason || 'Merchant initiated',
-            refundedAt: admin.firestore.FieldValue.serverTimestamp()
+            refundedAt: admin.firestore.FieldValue.serverTimestamp(),
+            ...(amount && { refundingAmount: amount })
         });
 
         await logEvent(
             'ORDER_REFUND_INITIATED',
             buildActorFromContext(context),
-            { orderId, refundId: refund.id, reason: reason || 'Merchant initiated', storeId: orderStoreId },
+            { 
+                orderId, 
+                refundId: refund.id, 
+                reason: reason || 'Merchant initiated', 
+                storeId: orderStoreId,
+                amount: amount || total
+            },
             `orders/${orderId}`
         );
 

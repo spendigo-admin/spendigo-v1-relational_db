@@ -58,11 +58,14 @@ export interface Order {
     deliveryFee: number;
     total: number;
     paymentMethod: 'card' | 'in_store';
-    paymentStatus: 'paid' | 'pending' | 'refunding' | 'refunded';
+    paymentStatus: 'paid' | 'pending' | 'refunding' | 'refunded' | 'partially_refunded';
     paymentCollectedBy?: { id: string; name: string; timestamp: string };
     estimatedTime?: string; // New: "20 min", "5:30 PM", etc.
     estimatedDelivery?: string; // Legacy
     rejectionReason?: string; // New
+    refundedAmount?: number; // New
+    refundingAmount?: number; // New
+    refundReason?: string; // New
     deliveryAddress?: Address;
 }
 
@@ -83,7 +86,7 @@ interface OrderContextType {
     updateEstimatedTime: (orderId: string, time: string) => Promise<void>;
     updatePaymentStatus: (orderId: string, status: Order['paymentStatus'], auditData?: { id: string; name: string; timestamp: string }) => Promise<void>;
     cancelOrder: (orderId: string, reason?: string) => Promise<void>;
-    refundOrder: (orderId: string, reason: string) => Promise<void>;
+    refundOrder: (orderId: string, reason: string, amount?: number) => Promise<void>;
     downloadOrderReceipt: (orderId: string) => Promise<void>;
     reorder: (orderId: string) => Promise<string[]>; // Returns an array of out-of-stock or changed item messages
     updateProfile: (updates: Partial<UserProfile>) => void;
@@ -302,14 +305,15 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         }
     };
 
-    const refundOrder = async (orderId: string, reason: string) => {
+    const refundOrder = async (orderId: string, reason: string, amount?: number) => {
         try {
             const refundOrderFn = httpsCallable(functions, 'refundOrder');
-            await refundOrderFn({ orderId, reason });
+            await refundOrderFn({ orderId, reason, amount });
 
             auditBridge.emit('ORDER_REFUND', {
                 orderId,
-                reason
+                reason,
+                amount
             });
         } catch (e: any) {
             console.error('OrderContext: Refund order failed', e);

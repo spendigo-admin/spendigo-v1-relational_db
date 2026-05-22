@@ -124,11 +124,18 @@ export const stripeWebhook = functions
 
                 if (!orderQuery.empty) {
                     const orderDoc = orderQuery.docs[0];
-                    await orderDoc.ref.update({
-                        paymentStatus: 'refunded',
+                    const orderRef = orderDoc.ref;
+                    
+                    const amountRefunded = charge.amount_refunded / 100; // convert cents to dollars
+                    const isFullyRefunded = charge.refunded === true || charge.amount_refunded === charge.amount;
+                    const paymentStatus = isFullyRefunded ? 'refunded' : 'partially_refunded';
+                    
+                    await orderRef.update({
+                        paymentStatus,
+                        refundedAmount: amountRefunded,
                         refundedAt: admin.firestore.FieldValue.serverTimestamp()
                     });
-                    functions.logger.log(`✅ Order ${orderDoc.id} marked as REFUNDED via Webhook.`);
+                    functions.logger.log(`✅ Order ${orderDoc.id} marked as ${paymentStatus.toUpperCase()} via Webhook. Refunded: $${amountRefunded}`);
                 }
                 break;
             }
