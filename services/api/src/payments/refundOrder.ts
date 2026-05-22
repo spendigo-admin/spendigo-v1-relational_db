@@ -86,6 +86,7 @@ export const refundOrder = functions
         const refundParams: any = {
             payment_intent: paymentIntentId,
             refund_application_fee: true,
+            reverse_transfer: true,
             reason: 'requested_by_customer',
             metadata: {
                 orderId,
@@ -101,22 +102,35 @@ export const refundOrder = functions
         }
 
         // 3. Trigger Stripe Refund
-        const refund = await stripe.refunds.create(refundParams);
+        let refund;
+        try {
+            refund = await stripe.refunds.create(refundParams);
+        } catch (stripeErr: any) {
+            functions.logger.error("Stripe refund call failed", stripeErr);
+            throw new functions.https.HttpsError(
+                'internal',
+                `Stripe refund failed: ${stripeErr.message || 'Unknown Stripe error'}`
+            );
+        }
 
         functions.logger.log(`🔄 Refund initiated for order ${orderId} (Refund ID: ${refund.id})`);
 
-        // 4. Update Firestore Status
-        // We set it to 'refunding' - the webhook will eventually set it to 'refunded' or 'partially_refunded'
+        const currentRefunded = orderData?.refundedAmount || 0;
+        const newRefundedTotal = amount ? (currentRefunded + amount) : total;
+        const isFullyRefunded = newRefundedTotal >= total;
+        const finalPaymentStatus = isFullyRefunded ? 'refunded' : 'partially_refunded';
+
+        // 4. Update Firestore Status Immediately
         await db.collection('orders').doc(orderId).update({
-            paymentStatus: 'refunding',
+            paymentStatus: finalPaymentStatus,
             refundId: refund.id,
             refundReason: reason || 'Merchant initiated',
             refundedAt: admin.firestore.FieldValue.serverTimestamp(),
-            ...(amount && { refundingAmount: amount })
+            refundedAmount: newRefundedTotal
         });
 
         await logEvent(
-            'ORDER_REFUND_INITIATED',
+            'ORDER_REFUNDED',
             buildActorFromContext(context),
             { 
                 orderId, 

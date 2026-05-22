@@ -17,7 +17,7 @@
     "stripe:listen": "stripe listen --forward-to localhost:5001/spendigo-8540c/us-central1/stripeWebhook",
     "format": "prettier --write .",
     "test:e2e": "playwright test",
-    "test:rules": "vitest run tests/rules"
+    "test:rules": "vitest run -c tests/rules/vitest.rules.config.ts"
   },
   "devDependencies": {
     "@firebase/rules-unit-testing": "^5.0.1",

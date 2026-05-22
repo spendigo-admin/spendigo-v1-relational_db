@@ -47,6 +47,9 @@ const MerchantOrders: React.FC = () => {
         totalRefunds: number;
         netSales: number;
         platformFees: number;
+        totalTaxes: number;
+        totalDeliveryFees: number;
+        netPayout: number;
         loading: boolean;
     }>({
         negativeStock: [],
@@ -56,10 +59,21 @@ const MerchantOrders: React.FC = () => {
         totalRefunds: 0,
         netSales: 0,
         platformFees: 0,
+        totalTaxes: 0,
+        totalDeliveryFees: 0,
+        netPayout: 0,
         loading: false
     });
 
     const [searchQuery, setSearchQuery] = useState('');
+    const [ledgerSearch, setLedgerSearch] = useState('');
+    const [ledgerDateRange, setLedgerDateRange] = useState<'all' | '7d' | '30d' | 'this_month'>('all');
+    const [ledgerOrderType, setLedgerOrderType] = useState<'all' | 'card' | 'in_store' | 'delivery' | 'pickup'>('all');
+    
+    // Collapsible Operational Alerts
+    const [isNegativeStockExpanded, setIsNegativeStockExpanded] = useState(false);
+    const [isPaymentGapsExpanded, setIsPaymentGapsExpanded] = useState(false);
+    const [isPriceIntegrityExpanded, setIsPriceIntegrityExpanded] = useState(false);
     const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
     const [now, setNow] = useState(new Date());
 
@@ -76,6 +90,24 @@ const MerchantOrders: React.FC = () => {
     const [refundWizardError, setRefundWizardError] = useState<string | null>(null);
     const [refundWizardId, setRefundWizardId] = useState<string | null>(null);
     const [refundMilestone, setRefundMilestone] = useState(0);
+
+    // Delivery Evidence Modal States
+    const [isEvidenceModalOpen, setIsEvidenceModalOpen] = useState(false);
+    const [evidenceOrder, setEvidenceOrder] = useState<Order | null>(null);
+    const [evidenceType, setEvidenceType] = useState<'signature' | 'photo' | 'none'>('signature');
+    const [signatureName, setSignatureName] = useState('');
+    const [signatureData, setSignatureData] = useState<string | null>(null);
+    const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+    const [photoPreset, setPhotoPreset] = useState<string | null>('door');
+    const [customPhotoData, setCustomPhotoData] = useState<string | null>(null);
+    const [evidenceNote, setEvidenceNote] = useState('');
+    const [isEvidenceSubmitting, setIsEvidenceSubmitting] = useState(false);
+
+    // Canvas drawing refs
+    const canvasRef = useRef<HTMLCanvasElement | null>(null);
+    const isDrawingRef = useRef(false);
+    const lastXRef = useRef(0);
+    const lastYRef = useRef(0);
 
     const [estTimeInput, setEstTimeInput] = useState('');
     const [mobileStatusFilter, setMobileStatusFilter] = useState<string>('placed'); // Default to 'New Orders' on mobile
@@ -107,13 +139,13 @@ const MerchantOrders: React.FC = () => {
                 }));
 
                 // 2. Financial reconciliation calculations
-                const grossOrders = contextOrders.filter(o => ['paid', 'refunded', 'partially_refunded'].includes(o.paymentStatus));
+                const grossOrders = contextOrders.filter(o => ['paid', 'refunded', 'partially_refunded', 'refunding'].includes(o.paymentStatus));
                 const grossSales = grossOrders.reduce((sum, o) => sum + (o.total || 0), 0);
 
                 const totalRefunds = contextOrders.reduce((sum, o) => {
                     if (o.paymentStatus === 'refunded') {
                         return sum + (o.refundedAmount || o.refundingAmount || o.total || 0);
-                    } else if (o.paymentStatus === 'partially_refunded') {
+                    } else if (['partially_refunded', 'refunding'].includes(o.paymentStatus)) {
                         return sum + (o.refundedAmount || o.refundingAmount || 0);
                     }
                     return sum;
@@ -125,13 +157,18 @@ const MerchantOrders: React.FC = () => {
                     if (o.paymentMethod === 'card') {
                         if (o.paymentStatus === 'paid') {
                             return sum + (0.05 * o.total + 0.30);
-                        } else if (o.paymentStatus === 'partially_refunded') {
-                            const netAmount = o.total - (o.refundedAmount || o.refundingAmount || 0);
+                        } else if (['partially_refunded', 'refunded', 'refunding'].includes(o.paymentStatus)) {
+                            const refunded = o.refundedAmount || o.refundingAmount || 0;
+                            const netAmount = o.total - refunded;
                             return sum + Math.max(0, 0.05 * netAmount + 0.30);
                         }
                     }
                     return sum;
                 }, 0);
+
+                const totalTaxes = grossOrders.reduce((sum, o) => sum + (o.tax || 0), 0);
+                const totalDeliveryFees = grossOrders.reduce((sum, o) => sum + (o.deliveryFee || 0), 0);
+                const netPayout = netSales - platformFees;
 
                 // 3. Payment gap detection — card orders still in 'pending' payment status
                 const paymentGaps = contextOrders.filter(
@@ -163,6 +200,9 @@ const MerchantOrders: React.FC = () => {
                     totalRefunds,
                     netSales,
                     platformFees,
+                    totalTaxes,
+                    totalDeliveryFees,
+                    netPayout,
                     loading: false
                 });
             } catch (err) {
@@ -207,6 +247,183 @@ const MerchantOrders: React.FC = () => {
             }
         }
     }, [contextOrders, selectedOrder?.id]); // Watch for updates
+
+    // Memoize the filtered transaction log list (Ledger Transactions)
+    const ledgerTransactions = useMemo(() => {
+        let list = contextOrders.filter(o => 
+            ['paid', 'refunded', 'partially_refunded', 'refunding'].includes(o.paymentStatus)
+        );
+
+        // Date Range Filtering
+        if (ledgerDateRange !== 'all') {
+            const nowTime = new Date().getTime();
+            list = list.filter(o => {
+                const orderTime = new Date(o.date).getTime();
+                const diffDays = (nowTime - orderTime) / (1000 * 60 * 60 * 24);
+                if (ledgerDateRange === '7d') return diffDays <= 7;
+                if (ledgerDateRange === '30d') return diffDays <= 30;
+                if (ledgerDateRange === 'this_month') {
+                    const orderDate = new Date(o.date);
+                    const currentDate = new Date();
+                    return orderDate.getMonth() === currentDate.getMonth() && 
+                           orderDate.getFullYear() === currentDate.getFullYear();
+                }
+                return true;
+            });
+        }
+
+        // Order Type / Fulfillment Filtering
+        if (ledgerOrderType !== 'all') {
+            list = list.filter(o => {
+                if (ledgerOrderType === 'card') return o.paymentMethod === 'card';
+                if (ledgerOrderType === 'in_store') return o.paymentMethod === 'in_store';
+                if (ledgerOrderType === 'delivery') return !!o.deliveryAddress;
+                if (ledgerOrderType === 'pickup') return !o.deliveryAddress;
+                return true;
+            });
+        }
+
+        // Search Query Filtering
+        if (ledgerSearch.trim()) {
+            const query = ledgerSearch.toLowerCase().trim();
+            list = list.filter(o => 
+                o.id.toLowerCase().includes(query) || 
+                o.customerName.toLowerCase().includes(query)
+            );
+        }
+
+        // Sort newest to oldest
+        return list.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    }, [contextOrders, ledgerSearch, ledgerDateRange, ledgerOrderType]);
+
+    // Memoize ledger totals dynamically based on selected filters
+    const ledgerTotals = useMemo(() => {
+        const grossSales = ledgerTransactions.reduce((sum, o) => sum + (o.total || 0), 0);
+        
+        const totalRefunds = ledgerTransactions.reduce((sum, o) => {
+            if (o.paymentStatus === 'refunded') {
+                return sum + (o.refundedAmount || o.refundingAmount || o.total || 0);
+            } else if (['partially_refunded', 'refunding'].includes(o.paymentStatus)) {
+                return sum + (o.refundedAmount || o.refundingAmount || 0);
+            }
+            return sum;
+        }, 0);
+
+        const totalTaxes = ledgerTransactions.reduce((sum, o) => sum + (o.tax || 0), 0);
+        
+        const totalDeliveryFees = ledgerTransactions.reduce((sum, o) => sum + (o.deliveryFee || 0), 0);
+
+        const platformFees = ledgerTransactions.reduce((sum, o) => {
+            if (o.paymentMethod === 'card') {
+                if (o.paymentStatus === 'paid') {
+                    return sum + (0.05 * o.total + 0.30);
+                } else if (['partially_refunded', 'refunded', 'refunding'].includes(o.paymentStatus)) {
+                    const refunded = o.refundedAmount || o.refundingAmount || 0;
+                    const netAmount = o.total - refunded;
+                    return sum + Math.max(0, 0.05 * netAmount + 0.30);
+                }
+            }
+            return sum;
+        }, 0);
+
+        const netSales = grossSales - totalRefunds;
+        const netPayout = netSales - platformFees;
+
+        return {
+            grossSales,
+            totalRefunds,
+            totalTaxes,
+            totalDeliveryFees,
+            platformFees,
+            netSales,
+            netPayout
+        };
+    }, [ledgerTransactions]);
+
+    // Local CSV Exporter Method
+    const handleExportLedgerCSV = () => {
+        if (ledgerTransactions.length === 0) {
+            addNotification({
+                type: 'alert',
+                title: 'No Data',
+                message: 'There are no transactions in the current ledger view to export.'
+            });
+            return;
+        }
+
+        // CSV Headers
+        const headers = [
+            'Order ID',
+            'Date',
+            'Shopper Name',
+            'Fulfillment Type',
+            'Payment Method',
+            'Payment Status',
+            'Subtotal ($)',
+            'Sales Tax ($)',
+            'Delivery Fee ($)',
+            'Refunded Amount ($)',
+            'Platform Fees ($)',
+            'Order Total ($)',
+            'Net Payout ($)'
+        ];
+
+        // Format rows
+        const rows = ledgerTransactions.map(o => {
+            const isCard = o.paymentMethod === 'card';
+            const refunded = (o.paymentStatus === 'refunded') 
+                ? (o.refundedAmount || o.refundingAmount || o.total || 0) 
+                : (['partially_refunded', 'refunding'].includes(o.paymentStatus) ? (o.refundedAmount || o.refundingAmount || 0) : 0);
+            
+            let platformFee = 0;
+            if (isCard) {
+                if (o.paymentStatus === 'paid') {
+                    platformFee = 0.05 * o.total + 0.30;
+                } else if (['partially_refunded', 'refunded', 'refunding'].includes(o.paymentStatus)) {
+                    platformFee = Math.max(0, 0.05 * (o.total - refunded) + 0.30);
+                }
+            }
+            const netPayout = (o.total - refunded) - platformFee;
+
+            return [
+                o.id,
+                new Date(o.date).toLocaleString(),
+                `"${o.customerName.replace(/"/g, '""')}"`,
+                o.deliveryAddress ? 'Delivery' : 'Pickup',
+                o.paymentMethod === 'card' ? 'Online Card' : 'In-Store Cash',
+                o.paymentStatus.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+                o.subtotal.toFixed(2),
+                o.tax.toFixed(2),
+                o.deliveryFee.toFixed(2),
+                refunded.toFixed(2),
+                platformFee.toFixed(2),
+                o.total.toFixed(2),
+                netPayout.toFixed(2)
+            ];
+        });
+
+        // Combine into CSV string
+        const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+        
+        // Create download blob
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        
+        const timestamp = new Date().toISOString().slice(0, 10);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `spendigo_ledger_export_${timestamp}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        addNotification({
+            type: 'system',
+            title: 'Export Complete 📥',
+            message: `Successfully exported ${ledgerTransactions.length} transactions to CSV.`
+        });
+    };
 
     if (!hasReadAccess) {
         return (
@@ -280,7 +497,41 @@ const MerchantOrders: React.FC = () => {
 
     const handleUpdateStatus = async (id: string, newStatus: Order['status'], reason?: string) => {
         try {
+            if (newStatus === 'preparing') {
+                const order = contextOrders.find(o => o.id === id);
+                const isCurrentlySelected = selectedOrder && selectedOrder.id === id;
+                const prepTime = (isCurrentlySelected ? estTimeInput : '') || order?.estimatedTime;
+                
+                if (!prepTime) {
+                    addNotification({
+                        type: 'alert',
+                        title: 'Prep Time Required ⏱️',
+                        message: 'Please select an Est. Prep Time from the dropdown before accepting the order.'
+                    });
+                    
+                    if (!isCurrentlySelected) {
+                        const orderToSelect = contextOrders.find(o => o.id === id);
+                        if (orderToSelect) {
+                            setSelectedOrder(orderToSelect);
+                            setEstTimeInput('');
+                        }
+                    }
+                    return;
+                }
+                
+                if (isCurrentlySelected && estTimeInput && estTimeInput !== order?.estimatedTime) {
+                    await updateOrderStatus(id, 'preparing', undefined, undefined, estTimeInput);
+                    addNotification({ type: 'system', title: 'Accepted 👨‍🍳', message: `Order #${id.substr(0,4)} accepted with ${estTimeInput} prep time.` });
+                    setSelectedOrder(null);
+                    setEstTimeInput('');
+                    return;
+                }
+            }
+
             await updateOrderStatus(id, newStatus, reason);
+            if (newStatus === 'preparing') {
+                addNotification({ type: 'system', title: 'Accepted 👨‍🍳', message: `Order now preparing.` });
+            }
         } catch (e) {
             console.error("Failed to update status", e);
             addNotification({ type: 'alert', title: 'Error', message: "Failed to update order status" });
@@ -349,7 +600,11 @@ const MerchantOrders: React.FC = () => {
         }, 900);
 
         try {
-            const result = await refundOrder(refundWizardOrder.id, finalReason, finalAmount);
+            const result = await refundOrder(
+                refundWizardOrder.id, 
+                finalReason, 
+                refundWizardType === 'full' ? undefined : finalAmount
+            );
             clearInterval(timer);
             setRefundMilestone(3);
             
@@ -394,23 +649,205 @@ const MerchantOrders: React.FC = () => {
         }
     };
 
-    const handleCompleteOrder = async (order: Order) => {
-        try {
-            // 1. Mark Delivered
-            await updateOrderStatus(order.id, 'delivered');
+    // Canvas Drawing Helpers
+    const getCoordinates = (e: React.MouseEvent | React.TouchEvent) => {
+        if (!canvasRef.current) return { x: 0, y: 0 };
+        const canvas = canvasRef.current;
+        const rect = canvas.getBoundingClientRect();
+        
+        let clientX = 0;
+        let clientY = 0;
+        
+        if ('touches' in e) {
+            if (e.touches.length === 0) return { x: 0, y: 0 };
+            clientX = e.touches[0].clientX;
+            clientY = e.touches[0].clientY;
+        } else {
+            clientX = e.clientX;
+            clientY = e.clientY;
+        }
+        
+        return {
+            x: rect.width > 0 ? ((clientX - rect.left) / rect.width) * canvas.width : 0,
+            y: rect.height > 0 ? ((clientY - rect.top) / rect.height) * canvas.height : 0
+        };
+    };
 
-            // 2. Mark Paid (if pending)
-            if (order.paymentStatus !== 'paid') {
+    const startDrawing = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+        e.preventDefault();
+        const coords = getCoordinates(e);
+        isDrawingRef.current = true;
+        lastXRef.current = coords.x;
+        lastYRef.current = coords.y;
+
+        const canvas = canvasRef.current;
+        if (canvas) {
+            const ctx = canvas.getContext('2d');
+            if (ctx) {
+                ctx.beginPath();
+                ctx.arc(coords.x, coords.y, 3, 0, Math.PI * 2);
+                ctx.fillStyle = '#0f172a';
+                ctx.fill();
+            }
+        }
+    };
+
+    const draw = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+        if (!isDrawingRef.current || !canvasRef.current) return;
+        e.preventDefault();
+        const coords = getCoordinates(e);
+        const canvas = canvasRef.current;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+            ctx.beginPath();
+            ctx.moveTo(lastXRef.current, lastYRef.current);
+            ctx.lineTo(coords.x, coords.y);
+            ctx.strokeStyle = '#0f172a';
+            ctx.lineWidth = 6;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.stroke();
+            
+            lastXRef.current = coords.x;
+            lastYRef.current = coords.y;
+        }
+    };
+
+    const stopDrawing = () => {
+        if (isDrawingRef.current) {
+            isDrawingRef.current = false;
+            saveCanvasData();
+        }
+    };
+
+    const clearCanvas = () => {
+        if (!canvasRef.current) return;
+        const canvas = canvasRef.current;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            setSignatureData(null);
+        }
+    };
+
+    const saveCanvasData = () => {
+        if (!canvasRef.current) return;
+        const canvas = canvasRef.current;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+            const data = canvas.toDataURL('image/png');
+            const buffer = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const isBlank = !buffer.data.some(channel => channel !== 0);
+            if (!isBlank) {
+                setSignatureData(data);
+            } else {
+                setSignatureData(null);
+            }
+        }
+    };
+
+    const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setCustomPhotoData(reader.result as string);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    const handleCompleteOrder = async (order: Order) => {
+        setEvidenceOrder(order);
+        setSignatureName(order.customerName || '');
+        setSignatureData(null);
+        setPhotoPreset('door');
+        setCustomPhotoData(null);
+        setEvidenceNote('');
+        setEvidenceType('signature');
+        setIsEvidenceModalOpen(true);
+    };
+
+    const handleSubmitEvidence = async () => {
+        if (!evidenceOrder) return;
+        setIsEvidenceSubmitting(true);
+        try {
+            let deliveryEvidencePayload: any = {
+                evidenceType,
+                capturedAt: new Date().toISOString(),
+            };
+
+            if (evidenceType === 'signature') {
+                if (!signatureName.trim()) {
+                    addNotification({ type: 'alert', title: 'Name Required', message: "Please specify who received the package" });
+                    setIsEvidenceSubmitting(false);
+                    return;
+                }
+                if (!signatureData) {
+                    addNotification({ type: 'alert', title: 'Signature Required', message: "Please ask the customer to sign on the drawing board" });
+                    setIsEvidenceSubmitting(false);
+                    return;
+                }
+                deliveryEvidencePayload.signatureName = signatureName.trim();
+                deliveryEvidencePayload.signatureData = signatureData;
+            } else if (evidenceType === 'photo') {
+                let url = '';
+                if (photoPreset === 'door') {
+                    url = 'https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=600&q=80';
+                } else if (photoPreset === 'mailbox') {
+                    url = 'https://images.unsplash.com/photo-1590247813693-5541f1c609fd?auto=format&fit=crop&w=600&q=80';
+                } else if (photoPreset === 'hand') {
+                    url = 'https://images.unsplash.com/photo-1616077168079-7e09a677fb2c?auto=format&fit=crop&w=600&q=80';
+                } else if (photoPreset === 'counter') {
+                    url = 'https://images.unsplash.com/photo-1578916171728-46686eac8d58?auto=format&fit=crop&w=600&q=80';
+                } else if (photoPreset === 'curbside') {
+                    url = 'https://images.unsplash.com/photo-1563013544-824ae1d704d3?auto=format&fit=crop&w=600&q=80';
+                } else if (photoPreset === 'custom') {
+                    if (!customPhotoData) {
+                        addNotification({ type: 'alert', title: 'Photo Required', message: "Please upload or snap a photo of the package" });
+                        setIsEvidenceSubmitting(false);
+                        return;
+                    }
+                    url = customPhotoData;
+                }
+                deliveryEvidencePayload.photoUrl = url;
+                if (evidenceNote.trim()) {
+                    deliveryEvidencePayload.note = evidenceNote.trim();
+                }
+            } else if (evidenceType === 'none') {
+                if (!evidenceNote.trim()) {
+                    addNotification({ type: 'alert', title: 'Notes Required', message: "Please provide contactless drop-off details or courier verification remarks" });
+                    setIsEvidenceSubmitting(false);
+                    return;
+                }
+                deliveryEvidencePayload.note = evidenceNote.trim();
+            }
+
+            await updateOrderStatus(evidenceOrder.id, 'delivered', undefined, deliveryEvidencePayload);
+            
+            if (evidenceOrder.paymentStatus !== 'paid') {
                 const auditEntry = {
                     id: user?.id || 'unknown',
                     name: user?.name || 'Staff',
                     timestamp: new Date().toISOString()
                 };
-                await updatePaymentStatus(order.id, 'paid', auditEntry);
+                await updatePaymentStatus(evidenceOrder.id, 'paid', auditEntry);
             }
-        } catch (e) {
-            console.error("Failed to complete order", e);
-            addNotification({ type: 'alert', title: 'Error', message: "Failed to complete order" });
+
+            addNotification({ type: 'system', title: 'Completed', message: `Order #${evidenceOrder.id.substr(0,4)} completed with proof.` });
+            
+            setIsEvidenceModalOpen(false);
+            setEvidenceOrder(null);
+            setSignatureName('');
+            setSignatureData(null);
+            setPhotoPreset('door');
+            setCustomPhotoData(null);
+            setEvidenceNote('');
+        } catch (e: any) {
+            console.error("Failed to complete order with evidence", e);
+            addNotification({ type: 'alert', title: 'Completion Failed', message: e.message || "Failed to finalize order with evidence" });
+        } finally {
+            setIsEvidenceSubmitting(false);
         }
     };
 
@@ -638,10 +1075,9 @@ const MerchantOrders: React.FC = () => {
                     </div>
                 )
             }
-
             {/* Reconciliation View */}
             {viewMode === 'reconciliation' && (
-                <div className="flex-1 overflow-y-auto p-4 md:p-6 pt-2 space-y-4 animate-fade-in">
+                <div className="flex-1 overflow-y-auto p-4 md:p-6 pt-2 space-y-5 animate-fade-in">
                     {reconData.loading ? (
                         <div className="text-center py-20 text-[var(--text-muted)]">
                             <div className="text-3xl mb-3 animate-spin">⚙️</div>
@@ -649,112 +1085,356 @@ const MerchantOrders: React.FC = () => {
                         </div>
                     ) : (
                         <>
-                            {/* Financial Reconciliation Summary */}
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                <div className="bg-white rounded-2xl border border-[var(--glass-border)] p-5 shadow-sm flex flex-col justify-between">
+                            {/* Expanded Financial Summary Metrics */}
+                            <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
+                                <div className="bg-white rounded-2xl border border-[var(--glass-border)] p-4 shadow-sm flex flex-col justify-between hover:shadow-md transition-all duration-300">
                                     <div>
                                         <p className="text-[9px] font-bold uppercase tracking-widest text-[var(--text-muted)] mb-1">Gross Sales</p>
-                                        <p className="text-2xl font-black text-[var(--text-main)]">${reconData.grossSales.toFixed(2)}</p>
+                                        <p className="text-xl font-black text-[var(--text-main)]">${ledgerTotals.grossSales.toFixed(2)}</p>
                                     </div>
-                                    <p className="text-[10px] text-[var(--text-muted)] mt-2">Before refunds & fees</p>
+                                    <p className="text-[8px] text-[var(--text-muted)] mt-1.5">Total rev. collected</p>
                                 </div>
-                                <div className="bg-white rounded-2xl border border-[var(--glass-border)] p-5 shadow-sm flex flex-col justify-between">
+                                <div className="bg-white rounded-2xl border border-[var(--glass-border)] p-4 shadow-sm flex flex-col justify-between hover:shadow-md transition-all duration-300">
                                     <div>
-                                        <p className="text-[9px] font-bold uppercase tracking-widest text-[var(--text-muted)] mb-1">Refunds Issued</p>
-                                        <p className="text-2xl font-black text-red-500">-${reconData.totalRefunds.toFixed(2)}</p>
+                                        <p className="text-[9px] font-bold uppercase tracking-widest text-[var(--text-muted)] mb-1">Sales Tax</p>
+                                        <p className="text-xl font-black text-blue-500">${ledgerTotals.totalTaxes.toFixed(2)}</p>
                                     </div>
-                                    <p className="text-[10px] text-[var(--text-muted)] mt-2">
-                                        {contextOrders.filter(o => ['refunded', 'partially_refunded'].includes(o.paymentStatus)).length} refunded orders
-                                    </p>
+                                    <p className="text-[8px] text-[var(--text-muted)] mt-1.5">Collected tax</p>
                                 </div>
-                                <div className="bg-white rounded-2xl border border-[var(--glass-border)] p-5 shadow-sm flex flex-col justify-between ring-2 ring-[var(--brand-primary)]/10 bg-gradient-to-br from-[var(--surface-1)] to-white">
+                                <div className="bg-white rounded-2xl border border-[var(--glass-border)] p-4 shadow-sm flex flex-col justify-between hover:shadow-md transition-all duration-300">
                                     <div>
-                                        <p className="text-[9px] font-bold uppercase tracking-widest text-[var(--brand-primary)] mb-1">Net Sales</p>
-                                        <p className="text-2xl font-black text-[var(--brand-primary)]">${reconData.netSales.toFixed(2)}</p>
+                                        <p className="text-[9px] font-bold uppercase tracking-widest text-[var(--text-muted)] mb-1">Delivery Fees</p>
+                                        <p className="text-xl font-black text-purple-500">${ledgerTotals.totalDeliveryFees.toFixed(2)}</p>
                                     </div>
-                                    <p className="text-[10px] text-[var(--text-muted)] mt-2">Gross less refunds</p>
+                                    <p className="text-[8px] text-[var(--text-muted)] mt-1.5">Courier earnings</p>
                                 </div>
-                                <div className="bg-white rounded-2xl border border-[var(--glass-border)] p-5 shadow-sm flex flex-col justify-between">
+                                <div className="bg-white rounded-2xl border border-[var(--glass-border)] p-4 shadow-sm flex flex-col justify-between hover:shadow-md transition-all duration-300">
+                                    <div>
+                                        <p className="text-[9px] font-bold uppercase tracking-widest text-[var(--text-muted)] mb-1">Refunds</p>
+                                        <p className="text-xl font-black text-red-500">-${ledgerTotals.totalRefunds.toFixed(2)}</p>
+                                    </div>
+                                    <p className="text-[8px] text-[var(--text-muted)] mt-1.5">Returns & voids</p>
+                                </div>
+                                <div className="bg-white rounded-2xl border border-[var(--glass-border)] p-4 shadow-sm flex flex-col justify-between hover:shadow-md transition-all duration-300">
                                     <div>
                                         <p className="text-[9px] font-bold uppercase tracking-widest text-[var(--text-muted)] mb-1">Platform Fees</p>
-                                        <p className="text-2xl font-black text-orange-500">-${reconData.platformFees.toFixed(2)}</p>
+                                        <p className="text-xl font-black text-orange-500">-${ledgerTotals.platformFees.toFixed(2)}</p>
                                     </div>
-                                    <p className="text-[10px] text-[var(--text-muted)] mt-2">5% + $0.30 per card order</p>
+                                    <p className="text-[8px] text-[var(--text-muted)] mt-1.5">Stripe processing</p>
+                                </div>
+                                <div className="bg-white rounded-2xl border border-[var(--glass-border)] p-4 shadow-sm flex flex-col justify-between ring-2 ring-[var(--brand-primary)]/20 bg-gradient-to-br from-[var(--brand-primary)]/5 to-white hover:shadow-md transition-all duration-300">
+                                    <div>
+                                        <p className="text-[9px] font-bold uppercase tracking-widest text-[var(--brand-primary)] mb-1">Net Payout</p>
+                                        <p className="text-xl font-black text-[var(--brand-primary)]">${ledgerTotals.netPayout.toFixed(2)}</p>
+                                    </div>
+                                    <p className="text-[8px] text-[var(--text-muted)] mt-1.5">Settled to bank</p>
                                 </div>
                             </div>
 
-                            {/* Negative Stock Alerts */}
-                            <div className="bg-white rounded-2xl border border-[var(--glass-border)] p-5 shadow-sm">
-                                <div className="flex items-center justify-between mb-3">
-                                    <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">Negative Stock</p>
-                                    <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${reconData.negativeStock.length > 0 ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
-                                        {reconData.negativeStock.length} issues
-                                    </span>
-                                </div>
-                                {reconData.negativeStock.length === 0 ? (
-                                    <p className="text-sm text-[var(--text-muted)]">All products have non-negative inventory.</p>
-                                ) : (
-                                    <div className="space-y-2">
-                                        {reconData.negativeStock.map(p => (
-                                            <div key={p.id} className="flex justify-between items-center p-3 bg-red-50 rounded-xl border border-red-100">
-                                                <span className="text-sm font-medium text-[var(--text-main)] truncate pr-4">{p.name}</span>
-                                                <span className="text-sm font-black text-red-600 shrink-0">{p.qty}</span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Payment Gaps */}
-                            <div className="bg-white rounded-2xl border border-[var(--glass-border)] p-5 shadow-sm">
-                                <div className="flex items-center justify-between mb-3">
-                                    <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">Payment Gaps</p>
-                                    <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${reconData.paymentGaps.length > 0 ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700'}`}>
-                                        {reconData.paymentGaps.length} gaps
-                                    </span>
-                                </div>
-                                <p className="text-[10px] text-[var(--text-muted)] mb-3">Card orders with payment still pending (not yet settled).</p>
-                                {reconData.paymentGaps.length === 0 ? (
-                                    <p className="text-sm text-[var(--text-muted)]">All paid orders are reconciled.</p>
-                                ) : (
-                                    <div className="space-y-2">
-                                        {reconData.paymentGaps.map(o => (
-                                            <div key={o.id} className="flex justify-between items-center p-3 bg-yellow-50 rounded-xl border border-yellow-100">
-                                                <div className="min-w-0 pr-4">
-                                                    <p className="text-xs font-bold text-[var(--text-main)]">#{o.id.substr(0, 8)}</p>
-                                                    <p className="text-[10px] text-[var(--text-muted)] truncate">{o.customerName}</p>
-                                                </div>
-                                                <span className="text-sm font-black text-yellow-700 shrink-0">${o.total.toFixed(2)}</span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Price Integrity Issues */}
-                            <div className="bg-white rounded-2xl border border-[var(--glass-border)] p-5 shadow-sm">
-                                <div className="flex items-center justify-between mb-3">
-                                    <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">Price Integrity (Last 10 Orders)</p>
-                                    <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${reconData.integrityIssues.length > 0 ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
-                                        {reconData.integrityIssues.length} alerts
-                                    </span>
-                                </div>
-                                {reconData.integrityIssues.length === 0 ? (
-                                    <p className="text-sm text-[var(--text-muted)]">No price discrepancies detected in recent orders.</p>
-                                ) : (
-                                    <div className="space-y-3">
-                                        {reconData.integrityIssues.map(({ orderId, issues }) => (
-                                            <div key={orderId} className="p-3 bg-red-50 rounded-xl border border-red-100">
-                                                <p className="text-xs font-bold text-red-700 mb-1">Order #{orderId.substr(0, 8)}</p>
-                                                <ul className="space-y-0.5">
-                                                    {issues.map((issue, i) => (
-                                                        <li key={i} className="text-[10px] text-red-600">• {issue}</li>
+                            {/* Accordion Alerts Group */}
+                            <div className="space-y-3">
+                                {/* Negative Stock Alert Accordion */}
+                                <div className="bg-white rounded-2xl border border-[var(--glass-border)] shadow-sm overflow-hidden transition-all duration-300">
+                                    <button 
+                                        onClick={() => setIsNegativeStockExpanded(!isNegativeStockExpanded)}
+                                        className="w-full flex items-center justify-between p-4 bg-gray-50/50 hover:bg-gray-50 transition-colors"
+                                    >
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-base">📦</span>
+                                            <p className="text-xs font-bold uppercase tracking-widest text-[var(--text-muted)]">Negative Stock</p>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${reconData.negativeStock.length > 0 ? 'bg-red-100 text-red-750 animate-pulse' : 'bg-green-100 text-green-700'}`}>
+                                                {reconData.negativeStock.length} issues
+                                            </span>
+                                            <span className="text-xs text-gray-400">{isNegativeStockExpanded ? '▼' : '▶'}</span>
+                                        </div>
+                                    </button>
+                                    
+                                    {isNegativeStockExpanded && (
+                                        <div className="p-4 border-t border-gray-100 space-y-2 bg-white animate-slide-down">
+                                            {reconData.negativeStock.length === 0 ? (
+                                                <p className="text-sm text-[var(--text-muted)]">All products have non-negative inventory.</p>
+                                            ) : (
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                                    {reconData.negativeStock.map(p => (
+                                                        <div key={p.id} className="flex justify-between items-center p-3 bg-red-50/60 rounded-xl border border-red-100">
+                                                            <span className="text-xs font-semibold text-[var(--text-main)] truncate pr-4">{p.name}</span>
+                                                            <span className="text-xs font-black text-red-650 shrink-0">{p.qty}</span>
+                                                        </div>
                                                     ))}
-                                                </ul>
-                                            </div>
-                                        ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Payment Gaps Accordion */}
+                                <div className="bg-white rounded-2xl border border-[var(--glass-border)] shadow-sm overflow-hidden transition-all duration-300">
+                                    <button 
+                                        onClick={() => setIsPaymentGapsExpanded(!isPaymentGapsExpanded)}
+                                        className="w-full flex items-center justify-between p-4 bg-gray-50/50 hover:bg-gray-50 transition-colors"
+                                    >
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-base">💸</span>
+                                            <p className="text-xs font-bold uppercase tracking-widest text-[var(--text-muted)]">Payment Gaps</p>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${reconData.paymentGaps.length > 0 ? 'bg-yellow-100 text-yellow-750' : 'bg-green-100 text-green-700'}`}>
+                                                {reconData.paymentGaps.length} gaps
+                                            </span>
+                                            <span className="text-xs text-gray-400">{isPaymentGapsExpanded ? '▼' : '▶'}</span>
+                                        </div>
+                                    </button>
+                                    
+                                    {isPaymentGapsExpanded && (
+                                        <div className="p-4 border-t border-gray-100 space-y-2 bg-white animate-slide-down">
+                                            <p className="text-[10px] text-[var(--text-muted)] mb-2">Card orders with payment still pending (not yet settled).</p>
+                                            {reconData.paymentGaps.length === 0 ? (
+                                                <p className="text-sm text-[var(--text-muted)]">All paid orders are reconciled.</p>
+                                            ) : (
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                                    {reconData.paymentGaps.map(o => (
+                                                        <div key={o.id} className="flex justify-between items-center p-3 bg-yellow-50/60 rounded-xl border border-yellow-100">
+                                                            <div className="min-w-0 pr-4">
+                                                                <p className="text-xs font-bold text-[var(--text-main)]">#{o.id.substr(0, 8)}</p>
+                                                                <p className="text-[10px] text-[var(--text-muted)] truncate">{o.customerName}</p>
+                                                            </div>
+                                                            <span className="text-xs font-black text-yellow-750 shrink-0">${o.total.toFixed(2)}</span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Price Integrity Accordion */}
+                                <div className="bg-white rounded-2xl border border-[var(--glass-border)] shadow-sm overflow-hidden transition-all duration-300">
+                                    <button 
+                                        onClick={() => setIsPriceIntegrityExpanded(!isPriceIntegrityExpanded)}
+                                        className="w-full flex items-center justify-between p-4 bg-gray-50/50 hover:bg-gray-50 transition-colors"
+                                    >
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-base">🛡️</span>
+                                            <p className="text-xs font-bold uppercase tracking-widest text-[var(--text-muted)]">Price Integrity (Last 10 Orders)</p>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${reconData.integrityIssues.length > 0 ? 'bg-red-100 text-red-750' : 'bg-green-100 text-green-700'}`}>
+                                                {reconData.integrityIssues.length} alerts
+                                            </span>
+                                            <span className="text-xs text-gray-400">{isPriceIntegrityExpanded ? '▼' : '▶'}</span>
+                                        </div>
+                                    </button>
+                                    
+                                    {isPriceIntegrityExpanded && (
+                                        <div className="p-4 border-t border-gray-100 space-y-2 bg-white animate-slide-down">
+                                            {reconData.integrityIssues.length === 0 ? (
+                                                <p className="text-sm text-[var(--text-muted)]">No price discrepancies detected in recent orders.</p>
+                                            ) : (
+                                                <div className="space-y-2">
+                                                    {reconData.integrityIssues.map(({ orderId, issues }) => (
+                                                        <div key={orderId} className="p-3 bg-red-50/60 rounded-xl border border-red-100">
+                                                            <p className="text-xs font-bold text-red-750 mb-1">Order #{orderId.substr(0, 8)}</p>
+                                                            <ul className="space-y-1">
+                                                                {issues.map((issue, i) => (
+                                                                    <li key={i} className="text-[10px] text-red-600 font-medium">• {issue}</li>
+                                                                ))}
+                                                            </ul>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Account Ledger Section */}
+                            <div className="bg-white rounded-2xl border border-[var(--glass-border)] shadow-sm overflow-hidden flex flex-col">
+                                {/* Ledger Control Header */}
+                                <div className="p-4 md:p-5 border-b border-gray-100 bg-gray-50/50 flex flex-col gap-4">
+                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                        <div>
+                                            <h3 className="text-sm font-black text-[var(--text-main)] uppercase tracking-wide">Account Ledger & Bookkeeping Log</h3>
+                                            <p className="text-[10px] text-[var(--text-muted)] mt-0.5">Track, audit, and reconcile live payment payouts and fee deductions.</p>
+                                        </div>
+                                        <button
+                                            onClick={handleExportLedgerCSV}
+                                            className="px-4 py-2 bg-white hover:bg-gray-50 text-gray-700 hover:text-[var(--text-main)] border border-[var(--glass-border)] rounded-xl text-xs font-black shadow-sm transition-all duration-200 flex items-center justify-center gap-1.5 self-start sm:self-auto shrink-0 active:scale-95"
+                                        >
+                                            <span>📥</span> Export Ledger (CSV)
+                                        </button>
                                     </div>
-                                )}
+
+                                    {/* Interactive Filters Grid */}
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                        {/* Search */}
+                                        <div className="relative">
+                                            <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400 pointer-events-none text-xs">🔍</span>
+                                            <input
+                                                type="text"
+                                                value={ledgerSearch}
+                                                onChange={(e) => setLedgerSearch(e.target.value)}
+                                                placeholder="Search Order ID or customer..."
+                                                className="w-full h-10 bg-white border border-[var(--glass-border)] rounded-xl pl-9 pr-3 text-xs focus:ring-1 focus:ring-[var(--brand-primary)] outline-none text-[var(--text-main)]"
+                                            />
+                                        </div>
+
+                                        {/* Date Selector */}
+                                        <div className="flex bg-white border border-[var(--glass-border)] p-0.5 rounded-xl">
+                                            {[
+                                                { id: 'all', label: 'All' },
+                                                { id: '7d', label: '7D' },
+                                                { id: '30d', label: '30D' },
+                                                { id: 'this_month', label: 'Month' }
+                                            ].map(opt => (
+                                                <button
+                                                    key={opt.id}
+                                                    type="button"
+                                                    onClick={() => setLedgerDateRange(opt.id as any)}
+                                                    className={`flex-1 py-1 text-[10px] font-black rounded-lg transition-all ${ledgerDateRange === opt.id ? 'bg-[var(--brand-primary)] text-white shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}`}
+                                                >
+                                                    {opt.label}
+                                                </button>
+                                            ))}
+                                        </div>
+
+                                        {/* Order Type Dropdown */}
+                                        <select
+                                            value={ledgerOrderType}
+                                            onChange={(e) => setLedgerOrderType(e.target.value as any)}
+                                            className="h-10 bg-white border border-[var(--glass-border)] rounded-xl px-3 text-xs focus:ring-1 focus:ring-[var(--brand-primary)] outline-none text-[var(--text-main)] cursor-pointer"
+                                        >
+                                            <option value="all">All Fulfillment / Payment Methods</option>
+                                            <option value="card">💳 Online Card Only</option>
+                                            <option value="in_store">💵 In-Store Cash Only</option>
+                                            <option value="delivery">🛵 Delivery Orders</option>
+                                            <option value="pickup">🛍️ Pickup Orders</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                {/* Ledger High-Density Table */}
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-left border-collapse">
+                                        <thead>
+                                            <tr className="bg-gray-50 border-b border-gray-100 text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">
+                                                <th className="py-3 px-4">Date & Reference</th>
+                                                <th className="py-3 px-4">Shopper</th>
+                                                <th className="py-3 px-4">Type</th>
+                                                <th className="py-3 px-4 text-right">Breakdown</th>
+                                                <th className="py-3 px-4 text-right">Refunds</th>
+                                                <th className="py-3 px-4 text-right">Platform Fee</th>
+                                                <th className="py-3 px-4 text-right">Net Payout</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-gray-100 text-xs">
+                                            {ledgerTransactions.length === 0 ? (
+                                                <tr>
+                                                    <td colSpan={7} className="py-12 text-center text-[var(--text-muted)] opacity-60">
+                                                        <div className="text-3xl mb-2 opacity-30">📂</div>
+                                                        No transactions found for current filter settings
+                                                    </td>
+                                                </tr>
+                                            ) : (
+                                                ledgerTransactions.map(o => {
+                                                    const isCard = o.paymentMethod === 'card';
+                                                    const refunded = (o.paymentStatus === 'refunded')
+                                                        ? (o.refundedAmount || o.refundingAmount || o.total || 0)
+                                                        : (['partially_refunded', 'refunding'].includes(o.paymentStatus) ? (o.refundedAmount || o.refundingAmount || 0) : 0);
+                                                    
+                                                    let platformFee = 0;
+                                                    if (isCard) {
+                                                        if (o.paymentStatus === 'paid') {
+                                                            platformFee = 0.05 * o.total + 0.30;
+                                                        } else if (['partially_refunded', 'refunded', 'refunding'].includes(o.paymentStatus)) {
+                                                            platformFee = Math.max(0, 0.05 * (o.total - refunded) + 0.30);
+                                                        }
+                                                    }
+                                                    
+                                                    const netPayout = (o.total - refunded) - platformFee;
+
+                                                    return (
+                                                        <tr 
+                                                            key={o.id} 
+                                                            onClick={() => setSelectedOrder(o)}
+                                                            className="hover:bg-gray-50/80 transition-colors cursor-pointer group"
+                                                        >
+                                                            {/* Date & ID */}
+                                                            <td className="py-3.5 px-4">
+                                                                <div className="font-bold text-[var(--text-main)] group-hover:text-[var(--brand-primary)] transition-colors">
+                                                                    #{o.id.substr(0, 8)}
+                                                                </div>
+                                                                <div className="text-[10px] text-[var(--text-muted)] mt-0.5">
+                                                                    {new Date(o.date).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
+                                                                </div>
+                                                            </td>
+
+                                                            {/* Shopper */}
+                                                            <td className="py-3.5 px-4 font-medium text-[var(--text-main)]">
+                                                                <div>{o.customerName}</div>
+                                                                <div className="text-[9px] text-[var(--text-muted)] mt-0.5">{o.customerPhone || 'No contact'}</div>
+                                                            </td>
+
+                                                            {/* Type Indicators */}
+                                                            <td className="py-3.5 px-4 whitespace-nowrap">
+                                                                <div className="flex items-center gap-1.5">
+                                                                    {o.deliveryAddress ? (
+                                                                        <span className="px-2 py-0.5 bg-purple-50 text-purple-700 border border-purple-100 rounded-md text-[10px] font-bold">🛵 Del.</span>
+                                                                    ) : (
+                                                                        <span className="px-2 py-0.5 bg-blue-50 text-blue-700 border border-blue-100 rounded-md text-[10px] font-bold">🛍️ Pick.</span>
+                                                                    )}
+                                                                    {isCard ? (
+                                                                        <span className="px-1.5 py-0.5 bg-slate-100 text-slate-700 rounded-md text-[9px] font-medium" title="Online Stripe Payment">💳 Card</span>
+                                                                    ) : (
+                                                                        <span className="px-1.5 py-0.5 bg-amber-50 text-amber-700 rounded-md text-[9px] font-medium" title="Paid Cash In-Store">💵 Cash</span>
+                                                                    )}
+                                                                </div>
+                                                            </td>
+
+                                                            {/* Breakdown */}
+                                                            <td className="py-3.5 px-4 text-right whitespace-nowrap">
+                                                                <div className="font-bold text-[var(--text-main)]">${o.total.toFixed(2)}</div>
+                                                                <div className="text-[9px] text-[var(--text-muted)] mt-0.5">
+                                                                    Sub: ${o.subtotal.toFixed(2)} | Tax: ${o.tax.toFixed(2)}
+                                                                </div>
+                                                            </td>
+
+                                                            {/* Refunds */}
+                                                            <td className="py-3.5 px-4 text-right font-semibold">
+                                                                {refunded > 0 ? (
+                                                                    <div className="text-red-500 font-extrabold animate-fade-in">
+                                                                        -${refunded.toFixed(2)}
+                                                                        <span className="block text-[8px] text-red-400 font-normal uppercase tracking-wider mt-0.5">
+                                                                            {o.paymentStatus === 'refunded' ? 'Full' : 'Partial'}
+                                                                        </span>
+                                                                    </div>
+                                                                ) : (
+                                                                    <span className="text-gray-300">-</span>
+                                                                )}
+                                                            </td>
+
+                                                            {/* Platform Fees */}
+                                                            <td className="py-3.5 px-4 text-right">
+                                                                {platformFee > 0 ? (
+                                                                    <span className="text-orange-500 font-medium">${platformFee.toFixed(2)}</span>
+                                                                ) : (
+                                                                    <span className="text-gray-400 italic text-[10px]">Cash ($0)</span>
+                                                                )}
+                                                            </td>
+
+                                                            {/* Net Payout */}
+                                                            <td className="py-3.5 px-4 text-right font-black text-[var(--brand-primary)]">
+                                                                ${netPayout.toFixed(2)}
+                                                            </td>
+                                                        </tr>
+                                                    );
+                                                })
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
                         </>
                     )}
@@ -898,6 +1578,67 @@ const MerchantOrders: React.FC = () => {
                                             </div>
                                         )}
                                     </div>
+
+                                    {/* Delivery Evidence Display Card in Merchant Sidebar */}
+                                    {selectedOrder.deliveryEvidence && (
+                                        <div className="bg-green-50 border border-green-200/60 rounded-2xl p-4 space-y-4 text-xs shadow-sm overflow-hidden relative font-sans text-gray-800">
+                                            <div className="absolute top-0 inset-x-0 h-1 bg-green-500"></div>
+                                            <div className="flex items-center gap-1.5 font-black text-green-700 uppercase tracking-widest text-[9px]">
+                                                <span>✅ FULFILLMENT VERIFIED</span>
+                                            </div>
+                                            
+                                            {selectedOrder.deliveryEvidence.evidenceType === 'signature' && (
+                                                <div className="space-y-3">
+                                                    <div className="flex justify-between items-center">
+                                                        <span className="text-gray-500 font-bold">Signed For By:</span>
+                                                        <span className="font-extrabold text-[var(--text-main)] bg-white px-2 py-0.5 rounded border">{selectedOrder.deliveryEvidence.signatureName}</span>
+                                                    </div>
+                                                    {selectedOrder.deliveryEvidence.signatureData && (
+                                                        <div className="bg-white rounded-xl p-2.5 border border-green-100 flex flex-col items-center shadow-inner">
+                                                            <img 
+                                                                src={selectedOrder.deliveryEvidence.signatureData} 
+                                                                alt="Signature" 
+                                                                className="h-16 object-contain" 
+                                                            />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+
+                                            {selectedOrder.deliveryEvidence.evidenceType === 'photo' && (
+                                                <div className="space-y-3">
+                                                    <div className="text-gray-500 font-bold mb-1">Proof Photo:</div>
+                                                    {selectedOrder.deliveryEvidence.photoUrl && (
+                                                        <div className="bg-white rounded-xl overflow-hidden border border-green-150 shadow-inner">
+                                                            <img 
+                                                                src={selectedOrder.deliveryEvidence.photoUrl} 
+                                                                alt="Drop-off Proof" 
+                                                                className="w-full h-32 object-cover" 
+                                                            />
+                                                            {selectedOrder.deliveryEvidence.note && (
+                                                                <p className="text-[10px] text-gray-600 italic p-2 bg-gray-50 border-t border-gray-100 leading-relaxed">
+                                                                    💬 "{selectedOrder.deliveryEvidence.note}"
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+
+                                            {selectedOrder.deliveryEvidence.evidenceType === 'none' && selectedOrder.deliveryEvidence.note && (
+                                                <div className="space-y-1.5">
+                                                    <span className="text-gray-500 font-bold">Verification Note:</span>
+                                                    <p className="bg-white p-2.5 rounded-xl border border-green-100 italic text-gray-700 leading-relaxed">
+                                                        💬 "{selectedOrder.deliveryEvidence.note}"
+                                                    </p>
+                                                </div>
+                                            )}
+                                            
+                                            <div className="text-[8px] text-gray-400 font-bold uppercase tracking-wider text-right border-t border-dashed border-green-200/50 pt-2">
+                                                Captured {new Date(selectedOrder.deliveryEvidence.capturedAt).toLocaleDateString()} {new Date(selectedOrder.deliveryEvidence.capturedAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Actions Panel - Mobile Optimized */}
@@ -925,13 +1666,19 @@ const MerchantOrders: React.FC = () => {
                                             <div className="space-y-2">
                                                 <label className="text-[9px] font-black uppercase tracking-widest text-[var(--text-muted)] ml-1">Est. Prep Time</label>
                                                 <div className="flex gap-2 h-11">
-                                                    <input
-                                                        type="text"
+                                                    <select
                                                         value={estTimeInput}
                                                         onChange={(e) => setEstTimeInput(e.target.value)}
-                                                        placeholder="e.g. 15 min"
-                                                        className="flex-1 bg-white border border-[var(--glass-border)] rounded-xl px-4 text-sm focus:ring-1 focus:ring-[var(--brand-primary)] outline-none text-[var(--text-main)] placeholder:text-[var(--text-muted)]/50"
-                                                    />
+                                                        className="flex-1 bg-white border border-[var(--glass-border)] rounded-xl px-3 text-sm focus:ring-1 focus:ring-[var(--brand-primary)] outline-none text-[var(--text-main)] cursor-pointer"
+                                                    >
+                                                        <option value="" disabled>Select prep time...</option>
+                                                        <option value="15 min">15 min</option>
+                                                        <option value="30 min">30 min</option>
+                                                        <option value="45 min">45 min</option>
+                                                        <option value="1 H">1 H</option>
+                                                        <option value="2H">2H</option>
+                                                        <option value="4H">4H</option>
+                                                    </select>
                                                     <button 
                                                         onClick={() => handleSaveET(selectedOrder.id)} 
                                                         className="px-5 bg-[var(--brand-primary)] text-white hover:bg-[var(--brand-primary-dark)] text-[11px] font-black rounded-xl active:scale-95 transition-all shrink-0 shadow-md shadow-[var(--brand-primary)]/10"
@@ -944,13 +1691,19 @@ const MerchantOrders: React.FC = () => {
                                             <div className="pt-4 border-t border-[var(--glass-border)]">
                                                 <label className="text-[9px] font-black uppercase tracking-widest text-[var(--text-muted)] ml-1">Cancel / Reject</label>
                                                 <div className="flex gap-2 mt-2 h-11">
-                                                    <input
-                                                        type="text"
+                                                    <select
                                                         value={rejectionReason}
                                                         onChange={(e) => setRejectionReason(e.target.value)}
-                                                        placeholder="Reason..."
-                                                        className="flex-1 bg-white border border-[var(--glass-border)] rounded-xl px-4 text-sm focus:ring-1 focus:ring-red-500 outline-none text-[var(--text-main)] placeholder:text-[var(--text-muted)]/50"
-                                                    />
+                                                        className="flex-1 bg-white border border-[var(--glass-border)] rounded-xl px-3 text-sm focus:ring-1 focus:ring-red-500 outline-none text-[var(--text-main)] cursor-pointer"
+                                                    >
+                                                        <option value="" disabled>Select cancellation reason...</option>
+                                                        <option value="Customer requested cancellation">🙋‍♂️ Customer Request</option>
+                                                        <option value="Out of stock / Sold out">📦 Out of Stock</option>
+                                                        <option value="Store closing early">🚫 Store Closing Early</option>
+                                                        <option value="Incorrect pricing on item">🏷️ Incorrect Pricing</option>
+                                                        <option value="Store too busy / Capacity reached">⏳ Store Too Busy</option>
+                                                        <option value="Courier / Delivery issue">🚚 Delivery/Courier Issue</option>
+                                                    </select>
                                                     <button 
                                                         onClick={() => handleCancelOrder(selectedOrder.id)} 
                                                         className="px-5 bg-red-50 text-red-650 hover:bg-red-100/50 border border-red-200 text-[11px] font-black rounded-xl active:scale-95 transition-all shrink-0"
@@ -1359,6 +2112,268 @@ const MerchantOrders: React.FC = () => {
                     </div>
                 </div>
             )}
+
+            {/* Delivery Proof Wizard Modal Overlay */}
+            {isEvidenceModalOpen && evidenceOrder && (() => {
+                const isDelivery = !!evidenceOrder.deliveryAddress;
+                
+                const deliveryPresets = [
+                    { id: 'door', label: '📦 Front Door', url: 'https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=600&q=80' },
+                    { id: 'mailbox', label: '📬 Mailbox', url: 'https://images.unsplash.com/photo-1590247813693-5541f1c609fd?auto=format&fit=crop&w=600&q=80' },
+                    { id: 'hand', label: '🤝 Handed Over', url: 'https://images.unsplash.com/photo-1616077168079-7e09a677fb2c?auto=format&fit=crop&w=600&q=80' }
+                ];
+
+                const pickupPresets = [
+                    { id: 'hand', label: '🤝 Handed to Customer', url: 'https://images.unsplash.com/photo-1616077168079-7e09a677fb2c?auto=format&fit=crop&w=600&q=80' },
+                    { id: 'counter', label: '🏪 Counter Pickup', url: 'https://images.unsplash.com/photo-1578916171728-46686eac8d58?auto=format&fit=crop&w=600&q=80' },
+                    { id: 'curbside', label: '🚗 Curbside Handoff', url: 'https://images.unsplash.com/photo-1563013544-824ae1d704d3?auto=format&fit=crop&w=600&q=80' }
+                ];
+
+                const activePresets = isDelivery ? deliveryPresets : pickupPresets;
+
+                return (
+                    <div 
+                        className="fixed inset-0 bg-black/35 backdrop-blur-sm flex items-center justify-center z-[70] p-4 animate-fade-in font-sans"
+                        onClick={() => {
+                            if (!isEvidenceSubmitting) {
+                                setIsEvidenceModalOpen(false);
+                                setEvidenceOrder(null);
+                            }
+                        }}
+                    >
+                        <div 
+                            className="bg-white border border-[var(--glass-border)] rounded-3xl w-full max-w-lg p-6 shadow-2xl relative overflow-hidden text-[var(--text-main)] flex flex-col max-h-[95vh] animate-scale-in"
+                            onClick={e => e.stopPropagation()}
+                        >
+                            {/* Accent Glow Strip */}
+                            <div className="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-emerald-400 via-green-500 to-teal-500"></div>
+
+                            {/* Header */}
+                            <div className="flex justify-between items-start mb-5">
+                                <div>
+                                    <span className="text-[9px] font-black uppercase tracking-widest bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full border border-emerald-200/50">
+                                        Fulfillment Verification
+                                    </span>
+                                    <h3 className="text-xl font-extrabold text-gray-900 mt-2.5">Provide Delivery Evidence</h3>
+                                    <p className="text-xs text-gray-500 mt-1 font-medium">Order #{evidenceOrder.id.substr(0, 8)} • {evidenceOrder.customerName}</p>
+                                </div>
+                                <button 
+                                    onClick={() => {
+                                        setIsEvidenceModalOpen(false);
+                                        setEvidenceOrder(null);
+                                    }}
+                                    disabled={isEvidenceSubmitting}
+                                    className="text-gray-400 hover:text-gray-600 text-lg w-8 h-8 rounded-full bg-gray-50 border border-gray-200 flex items-center justify-center transition-colors disabled:opacity-50"
+                                >
+                                    ✕
+                                </button>
+                            </div>
+
+                            {/* Tabs selector */}
+                            <div className="bg-gray-100 p-1 rounded-2xl flex gap-1 border border-gray-200/80 mb-5 shrink-0">
+                                <button
+                                    type="button"
+                                    onClick={() => setEvidenceType('signature')}
+                                    disabled={isEvidenceSubmitting}
+                                    className={`flex-1 py-2 text-xs font-black rounded-xl transition-all flex items-center justify-center gap-1.5 ${evidenceType === 'signature' ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/15' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-255/55 disabled:opacity-50'}`}
+                                >
+                                    ✍️ Signature
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setEvidenceType('photo')}
+                                    disabled={isEvidenceSubmitting}
+                                    className={`flex-1 py-2 text-xs font-black rounded-xl transition-all flex items-center justify-center gap-1.5 ${evidenceType === 'photo' ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/15' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-255/55 disabled:opacity-50'}`}
+                                >
+                                    📸 {isDelivery ? 'Drop-off Photo' : 'Pickup Photo'}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setEvidenceType('none')}
+                                    disabled={isEvidenceSubmitting}
+                                    className={`flex-1 py-2 text-xs font-black rounded-xl transition-all flex items-center justify-center gap-1.5 ${evidenceType === 'none' ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/15' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-255/55 disabled:opacity-50'}`}
+                                >
+                                    ✅ Notes Only
+                                </button>
+                            </div>
+
+                            {/* Tab Contents */}
+                            <div className="flex-1 overflow-y-auto min-h-0 space-y-4 pr-1">
+                                {evidenceType === 'signature' && (
+                                    <div className="space-y-4 animate-fade-in">
+                                        <div className="space-y-1.5">
+                                            <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1">
+                                                Received By (Name)
+                                            </label>
+                                            <input 
+                                                type="text"
+                                                value={signatureName}
+                                                onChange={e => setSignatureName(e.target.value)}
+                                                placeholder="Enter recipient's name"
+                                                className="w-full bg-gray-50 border border-gray-200 rounded-2xl px-4 py-3 text-sm font-extrabold outline-none text-gray-800 focus:bg-white focus:border-emerald-500 transition-all"
+                                            />
+                                        </div>
+
+                                        <div className="space-y-1.5">
+                                            <div className="flex justify-between items-center ml-1">
+                                                <label className="text-[10px] font-black uppercase tracking-widest text-gray-500">
+                                                    Signature Drawing Board
+                                                </label>
+                                                <button
+                                                    type="button"
+                                                    onClick={clearCanvas}
+                                                    className="text-[10px] text-emerald-600 font-extrabold hover:underline"
+                                                >
+                                                    🧹 Clear Board
+                                                </button>
+                                            </div>
+                                            <div className="relative border border-gray-200 rounded-3xl overflow-hidden bg-gray-50">
+                                                <canvas
+                                                    ref={canvasRef}
+                                                    width={800}
+                                                    height={384}
+                                                    onMouseDown={startDrawing}
+                                                    onMouseMove={draw}
+                                                    onMouseUp={stopDrawing}
+                                                    onMouseLeave={stopDrawing}
+                                                    onTouchStart={startDrawing}
+                                                    onTouchMove={draw}
+                                                    onTouchEnd={stopDrawing}
+                                                    className="w-full h-48 bg-white cursor-crosshair touch-none"
+                                                />
+                                                {!signatureData && (
+                                                    <div className="absolute inset-0 pointer-events-none flex items-center justify-center text-center p-6 text-gray-400 text-xs font-semibold leading-relaxed">
+                                                        Draw customer signature here<br/>(supports touch & pointer)
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {evidenceType === 'photo' && (
+                                    <div className="space-y-4 animate-fade-in">
+                                        <div className="space-y-1.5">
+                                            <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1">
+                                                Choose {isDelivery ? 'Drop-off' : 'Pickup'} Photo Template
+                                            </label>
+                                            <div className="grid grid-cols-3 gap-3">
+                                                {activePresets.map(preset => (
+                                                    <div
+                                                        key={preset.id}
+                                                        onClick={() => {
+                                                            setPhotoPreset(preset.id);
+                                                            setPhotoUrl(preset.url);
+                                                        }}
+                                                        className={`bg-white border rounded-2xl overflow-hidden cursor-pointer hover:shadow-md transition-all flex flex-col group relative ${photoPreset === preset.id ? 'border-emerald-500 ring-2 ring-emerald-500/20' : 'border-gray-200'}`}
+                                                    >
+                                                        <img 
+                                                            src={preset.url} 
+                                                            alt={preset.label} 
+                                                            className="h-16 w-full object-cover" 
+                                                        />
+                                                        <div className="p-2 text-[10px] font-black text-center text-gray-700 bg-gray-50 group-hover:bg-white truncate">
+                                                            {preset.label}
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        <div className="relative">
+                                            <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-150"></div></div>
+                                            <div className="relative flex justify-center text-[10px] font-black uppercase tracking-wider"><span className="px-3 bg-white text-gray-400">Or Upload Real Photo</span></div>
+                                        </div>
+
+                                        {/* File Uploader */}
+                                        <div className="space-y-1.5">
+                                            <div className="border-2 border-dashed border-gray-200 rounded-3xl p-5 flex flex-col items-center justify-center bg-gray-50/50 hover:bg-gray-50 transition-all cursor-pointer relative overflow-hidden group">
+                                                {customPhotoData && photoPreset === 'custom' ? (
+                                                    <div className="w-full relative h-28 rounded-2xl overflow-hidden">
+                                                        <img src={customPhotoData} alt="Uploaded Proof" className="w-full h-full object-cover" />
+                                                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                                            <span className="text-white text-xs font-black">Replace Photo</span>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <>
+                                                        <span className="text-3xl mb-1.5">📸</span>
+                                                        <span className="text-xs font-extrabold text-gray-700">Upload Live Proof Photo</span>
+                                                        <span className="text-[9px] text-gray-400 font-bold mt-1 uppercase tracking-wider">Drag & drop or click to choose file</span>
+                                                    </>
+                                                )}
+                                                <input 
+                                                    type="file" 
+                                                    accept="image/*" 
+                                                    onChange={(e) => {
+                                                        handlePhotoUpload(e);
+                                                        setPhotoPreset('custom');
+                                                    }} 
+                                                    className="absolute inset-0 opacity-0 cursor-pointer" 
+                                                />
+                                            </div>
+                                        </div>
+
+                                        {/* Optional details note */}
+                                        <div className="space-y-1.5">
+                                            <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1">
+                                                Remarks / Location Details (Optional)
+                                            </label>
+                                            <input 
+                                                type="text"
+                                                value={evidenceNote}
+                                                onChange={e => setEvidenceNote(e.target.value)}
+                                                placeholder={isDelivery ? "e.g. Behind the flower planter, at door buzzer #12" : "e.g. Verified photo ID matching customer record"}
+                                                className="w-full bg-gray-50 border border-gray-200 rounded-2xl px-4 py-3 text-xs font-extrabold outline-none text-gray-800 focus:bg-white focus:border-emerald-500 transition-all"
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+
+                                {evidenceType === 'none' && (
+                                    <div className="space-y-4 animate-fade-in">
+                                        <div className="space-y-1.5">
+                                            <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1">
+                                                Verification Notes
+                                            </label>
+                                            <textarea 
+                                                value={evidenceNote}
+                                                onChange={e => setEvidenceNote(e.target.value)}
+                                                placeholder={isDelivery ? "Provide drop-off location or courier comments (e.g. Left safe in front porch, mailbox full...)" : "Provide staff pickup comments (e.g. Handed to customer after ID check...)"}
+                                                rows={4}
+                                                className="w-full bg-gray-50 border border-gray-200 rounded-2xl px-4 py-3.5 text-sm font-extrabold outline-none text-gray-800 focus:bg-white focus:border-emerald-500 transition-all resize-none leading-relaxed"
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Modal Footer Controls */}
+                            <div className="border-t border-gray-150 pt-5 mt-5 flex gap-3 shrink-0">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setIsEvidenceModalOpen(false);
+                                        setEvidenceOrder(null);
+                                    }}
+                                    disabled={isEvidenceSubmitting}
+                                    className="flex-1 py-4 border border-gray-250 text-gray-500 hover:bg-gray-50 text-sm font-black rounded-2xl transition-colors disabled:opacity-50"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={handleSubmitEvidence}
+                                    disabled={isEvidenceSubmitting}
+                                    className="flex-1 py-4 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-black rounded-2xl transition-all shadow-lg shadow-emerald-600/15 active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2"
+                                >
+                                    {isEvidenceSubmitting ? 'Finalizing...' : 'Save & Complete'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            })()}
         </div>
     );
 };

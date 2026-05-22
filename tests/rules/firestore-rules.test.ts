@@ -13,7 +13,7 @@ import {
     assertSucceeds,
     type RulesTestEnvironment,
 } from '@firebase/rules-unit-testing';
-import { setDoc, doc } from 'firebase/firestore';
+import { setDoc, doc, updateDoc } from 'firebase/firestore';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { beforeAll, afterEach, afterAll, describe, it } from 'vitest';
@@ -55,6 +55,12 @@ async function seedStore(storeId: string, data: Record<string, unknown>) {
     });
 }
 
+async function seedOrder(orderId: string, data: Record<string, unknown>) {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+        await setDoc(doc(ctx.firestore(), 'orders', orderId), data);
+    });
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // 1. Orders — server-side only (allow create: if false)
 // ─────────────────────────────────────────────────────────────────────────────
@@ -71,6 +77,53 @@ describe('orders', () => {
         const db = testEnv.authenticatedContext('admin-1').firestore();
         await assertFails(
             setDoc(doc(db, 'orders', 'order-1'), { total: 10, storeId: 'store-1' })
+        );
+    });
+
+    it('merchant can update order status and deliveryEvidence for their own store', async () => {
+        await seedUser('merchant-1', { role: 'merchant', storeId: 'store-a' });
+        await seedOrder('order-1', { storeId: 'store-a', status: 'out_for_delivery', paymentStatus: 'unpaid' });
+        const db = testEnv.authenticatedContext('merchant-1').firestore();
+        
+        await assertSucceeds(
+            updateDoc(doc(db, 'orders', 'order-1'), {
+                status: 'delivered',
+                deliveryEvidence: {
+                    evidenceType: 'signature',
+                    capturedAt: new Date().toISOString(),
+                    signatureName: 'Shahbaz',
+                    signatureData: 'data:image/png;base64,...'
+                }
+            })
+        );
+    });
+
+    it('merchant can update order payment status for their own store', async () => {
+        await seedUser('merchant-1', { role: 'merchant', storeId: 'store-a' });
+        await seedOrder('order-1', { storeId: 'store-a', status: 'delivered', paymentStatus: 'unpaid' });
+        const db = testEnv.authenticatedContext('merchant-1').firestore();
+        
+        await assertSucceeds(
+            updateDoc(doc(db, 'orders', 'order-1'), {
+                paymentStatus: 'paid',
+                paymentCollectedBy: {
+                    id: 'merchant-1',
+                    name: 'Merchant One',
+                    timestamp: new Date().toISOString()
+                }
+            })
+        );
+    });
+
+    it('merchant cannot update order total or customerId', async () => {
+        await seedUser('merchant-1', { role: 'merchant', storeId: 'store-a' });
+        await seedOrder('order-1', { storeId: 'store-a', status: 'out_for_delivery', total: 20 });
+        const db = testEnv.authenticatedContext('merchant-1').firestore();
+        
+        await assertFails(
+            updateDoc(doc(db, 'orders', 'order-1'), {
+                total: 50
+            })
         );
     });
 });

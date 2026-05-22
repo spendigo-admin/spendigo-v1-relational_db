@@ -42,6 +42,15 @@ export interface OrderItem {
     image?: string;
 }
 
+export interface DeliveryEvidence {
+    evidenceType: 'photo' | 'signature' | 'none';
+    photoUrl?: string;
+    signatureName?: string;
+    signatureData?: string; // base64 representation of canvas signature
+    note?: string;
+    capturedAt: string;
+}
+
 export interface Order {
     id: string; // Firestore Doc ID
     date: string;
@@ -67,6 +76,7 @@ export interface Order {
     refundingAmount?: number; // New
     refundReason?: string; // New
     deliveryAddress?: Address;
+    deliveryEvidence?: DeliveryEvidence;
 }
 
 export interface UserProfile {
@@ -82,7 +92,7 @@ interface OrderContextType {
     profile: UserProfile;
     addOrder: (order: Omit<Order, 'id' | 'date' | 'customerName' | 'customerId'>) => Promise<string>;
     createBatchOrders: (orders: (Omit<Order, 'id' | 'date' | 'customerName' | 'customerId'> & { id?: string })[]) => Promise<string[]>;
-    updateOrderStatus: (orderId: string, status: Order['status'], reason?: string) => Promise<void>;
+    updateOrderStatus: (orderId: string, status: Order['status'], reason?: string, deliveryEvidence?: DeliveryEvidence, estimatedTime?: string) => Promise<void>;
     updateEstimatedTime: (orderId: string, time: string) => Promise<void>;
     updatePaymentStatus: (orderId: string, status: Order['paymentStatus'], auditData?: { id: string; name: string; timestamp: string }) => Promise<void>;
     cancelOrder: (orderId: string, reason?: string) => Promise<void>;
@@ -241,12 +251,14 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         }
     };
 
-    const updateOrderStatus = async (orderId: string, status: Order['status'], reason?: string) => {
+    const updateOrderStatus = async (orderId: string, status: Order['status'], reason?: string, deliveryEvidence?: DeliveryEvidence, estimatedTime?: string) => {
         const order = orders.find(o => o.id === orderId);
         const orderRef = doc(db, 'orders', orderId);
         await updateDoc(orderRef, {
             status,
-            ...(reason && { rejectionReason: reason })
+            ...(reason && { rejectionReason: reason }),
+            ...(deliveryEvidence && { deliveryEvidence }),
+            ...(estimatedTime && { estimatedTime })
         });
 
         auditBridge.emit('ORDER_STATUS_UPDATE', {

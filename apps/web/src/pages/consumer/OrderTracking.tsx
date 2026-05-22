@@ -176,6 +176,84 @@ const OrderTracking: React.FC = () => {
 
             {/* Order Details */}
             <div className="max-w-3xl mx-auto px-4 space-y-4">
+                {/* Delivery Evidence Verified Panel */}
+                {isDelivered && order.deliveryEvidence && (
+                    <div className="bg-emerald-50 border border-emerald-200/60 rounded-2xl p-5 space-y-4 shadow-sm overflow-hidden relative text-gray-800 animate-fade-in">
+                        <div className="absolute top-0 inset-x-0 h-1 bg-emerald-500"></div>
+                        <div className="flex justify-between items-center">
+                            <div className="flex items-center gap-2">
+                                <span className="text-xl">✨</span>
+                                <div>
+                                    <h3 className="font-bold text-[var(--text-main)] text-sm tracking-wide uppercase">
+                                        {order.deliveryAddress ? 'Delivery Verified' : 'Pickup Verified'}
+                                    </h3>
+                                    <p className="text-[10px] text-gray-500">Your order has been completed successfully</p>
+                                </div>
+                            </div>
+                            <span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
+                                Secure Proof
+                            </span>
+                        </div>
+
+                        {order.deliveryEvidence.evidenceType === 'signature' && (
+                            <div className="space-y-3 bg-white/50 rounded-xl p-3.5 border border-emerald-100/80">
+                                <div className="flex justify-between items-center border-b border-dashed border-emerald-200/50 pb-2">
+                                    <span className="text-xs text-gray-500 font-bold">Received & Signed By:</span>
+                                    <span className="font-extrabold text-sm text-[var(--text-main)] bg-white px-2.5 py-0.5 rounded-lg border border-emerald-100 shadow-sm">{order.deliveryEvidence.signatureName}</span>
+                                </div>
+                                {order.deliveryEvidence.signatureData && (
+                                    <div className="bg-white rounded-xl p-3 border border-emerald-100/50 flex flex-col items-center shadow-inner relative group">
+                                        <img 
+                                            src={order.deliveryEvidence.signatureData} 
+                                            alt="Signature Proof" 
+                                            className="h-20 object-contain mix-blend-multiply" 
+                                        />
+                                        <span className="text-[9px] text-gray-400 mt-1 uppercase tracking-wider font-semibold">Digital Signature Pad</span>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {order.deliveryEvidence.evidenceType === 'photo' && (
+                            <div className="space-y-3 bg-white/50 rounded-xl p-3.5 border border-emerald-100/80">
+                                <div className="text-xs text-gray-500 font-bold mb-1">Fulfillment Proof Photo:</div>
+                                {order.deliveryEvidence.photoUrl && (
+                                    <div className="bg-white rounded-xl overflow-hidden border border-emerald-150 shadow-sm">
+                                        <img 
+                                            src={order.deliveryEvidence.photoUrl} 
+                                            alt="Proof of Delivery" 
+                                            className="w-full h-48 md:h-64 object-cover" 
+                                        />
+                                        {order.deliveryEvidence.note && (
+                                            <div className="text-xs text-gray-700 italic p-3 bg-gray-50/80 border-t border-gray-150/50 leading-relaxed flex gap-2 items-start">
+                                                <span className="text-sm">💬</span>
+                                                <div>
+                                                    <span className="font-bold text-gray-500 text-[10px] block uppercase tracking-wider not-italic mb-0.5">Courier Notes</span>
+                                                    "{order.deliveryEvidence.note}"
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {order.deliveryEvidence.evidenceType === 'none' && order.deliveryEvidence.note && (
+                            <div className="space-y-2 bg-white/50 rounded-xl p-3.5 border border-emerald-100/80">
+                                <span className="text-xs text-gray-500 font-bold block">Fulfillment Confirmation Notes:</span>
+                                <p className="bg-white p-3 rounded-xl border border-emerald-100/50 italic text-sm text-gray-700 leading-relaxed flex gap-2 items-start">
+                                    <span className="text-sm">💬</span>
+                                    "{order.deliveryEvidence.note}"
+                                </p>
+                            </div>
+                        )}
+
+                        <div className="text-[9px] text-gray-400 font-bold uppercase tracking-wider text-right border-t border-dashed border-emerald-200/50 pt-2.5">
+                            Verified on {new Date(order.deliveryEvidence.capturedAt).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} at {new Date(order.deliveryEvidence.capturedAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                        </div>
+                    </div>
+                )}
+
                 {/* Store Info */}
                 <div className="bg-white rounded-xl border border-[var(--glass-border)] p-4">
                     <h3 className="font-bold text-[var(--text-main)] mb-3">{t('orderFromStore', { storeName: order.storeName })}</h3>

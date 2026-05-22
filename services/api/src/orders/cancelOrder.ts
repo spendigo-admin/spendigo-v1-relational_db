@@ -110,7 +110,13 @@ export const cancelOrder = functions
                 status: 'cancelled',
                 rejectionReason: reason || 'Cancelled by user',
                 cancelledAt: FieldValue.serverTimestamp(),
-                ...(refundId && { paymentStatus: 'refunding', refundId })
+                ...(refundId && {
+                    paymentStatus: 'refunded',
+                    refundId,
+                    refundedAmount: order?.total || 0,
+                    refundedAt: FieldValue.serverTimestamp(),
+                    refundReason: reason || 'Customer Request'
+                })
             });
 
             // 2. Restore Stock
