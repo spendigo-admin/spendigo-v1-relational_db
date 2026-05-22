@@ -297,6 +297,12 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
+    // BILLING LEDGER — subscription charges & proration refunds recorded by Stripe Webhook (Admin SDK)
+    match /billing_ledger/{ledgerId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
     // AUDIT LOG META — singleton doc that serializes concurrent chain writes.
     match /audit_logs_meta/{docId} {
       allow read: if isAdmin();

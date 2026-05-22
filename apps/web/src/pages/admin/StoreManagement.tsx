@@ -265,30 +265,6 @@ const StoreManagement: React.FC = () => {
                 addNotification({ type: 'system', title: 'Store Created', message: `${formData.name} added to marketplace.` });
             }
 
-            // --- Subscription Update Logic ---
-            if (editingStoreId) {
-                const storeOwners = merchantDataMap.byStoreId[editingStoreId];
-                const emailKey = formData.merchantEmail?.toLowerCase();
-                const owner = storeOwners?.find(u => u.merchantRole === 'OWNER') || storeOwners?.[0] || merchantDataMap.byEmail[emailKey];
-
-                if (owner && owner.uid) {
-                    const userRef = doc(db, 'users', owner.uid);
-                    await updateDoc(userRef, {
-                        subscriptionTier: formData.subscriptionTier,
-                        subscriptionStatus: formData.subscriptionStatus,
-                        subscriptionEnd: formData.subscriptionEnd,
-                        manualOverride: true,
-                        lastAdminEdit: new Date().toISOString()
-                    });
-                    await logEvent('SUBSCRIPTION_OVERRIDE', {
-                        targetUserId: owner.uid,
-                        storeId: editingStoreId,
-                        newTier: formData.subscriptionTier,
-                        newStatus: formData.subscriptionStatus
-                    }, `users/${owner.uid}`);
-                }
-            }
-
             setIsModalOpen(false);
             resetForm();
         } catch (error) {
@@ -326,7 +302,7 @@ const StoreManagement: React.FC = () => {
             postalCode: store.postalCode || '',
             subscriptionTier: subData.tier || 'free',
             subscriptionStatus: subData.status || 'inactive',
-            subscriptionEnd: subData.end || ''
+            subscriptionEnd: subData.end ? subData.end.split('T')[0] : ''
         });
         setEditingStoreId(store.id);
         setSelectedStoreLegal(store.legal || null);
@@ -1053,9 +1029,9 @@ const StoreManagement: React.FC = () => {
                                         <div>
                                             <label className="block text-xs font-bold text-gray-700 mb-1 uppercase">Subscription Tier</label>
                                             <select
-                                                className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white font-medium"
+                                                className="w-full p-2.5 border border-gray-300 rounded-lg bg-slate-50 border-slate-200 text-slate-500 cursor-not-allowed font-medium"
                                                 value={formData.subscriptionTier}
-                                                onChange={e => setFormData({ ...formData, subscriptionTier: e.target.value })}
+                                                disabled
                                             >
                                                 <option value="free">Free Starter</option>
                                                 <option value="core">Core Professional</option>
@@ -1066,9 +1042,9 @@ const StoreManagement: React.FC = () => {
                                         <div>
                                             <label className="block text-xs font-bold text-gray-700 mb-1 uppercase">Billing Status</label>
                                             <select
-                                                className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white font-medium"
+                                                className="w-full p-2.5 border border-gray-300 rounded-lg bg-slate-50 border-slate-200 text-slate-500 cursor-not-allowed font-medium"
                                                 value={formData.subscriptionStatus}
-                                                onChange={e => setFormData({ ...formData, subscriptionStatus: e.target.value })}
+                                                disabled
                                             >
                                                 <option value="active">Active</option>
                                                 <option value="trialing">Trialing</option>
@@ -1080,11 +1056,11 @@ const StoreManagement: React.FC = () => {
                                             <label className="block text-xs font-bold text-gray-700 mb-1 uppercase">Expiration Date</label>
                                             <input
                                                 type="date"
-                                                className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                                                className="w-full p-2.5 border border-gray-300 rounded-lg bg-slate-50 border-slate-200 text-slate-500 cursor-not-allowed outline-none transition-all"
                                                 value={formData.subscriptionEnd}
-                                                onChange={e => setFormData({ ...formData, subscriptionEnd: e.target.value })}
+                                                disabled
                                             />
-                                            <p className="text-[10px] text-blue-600/70 mt-1 italic">Note: Manual changes will set the "Manual Override" flag on the merchant record.</p>
+                                            <p className="text-[10px] text-blue-600/70 mt-1 italic">Note: Managed via Stripe Connect. Manual changes are disabled to protect the source of truth.</p>
                                         </div>
                                     </div>
                                 </div>

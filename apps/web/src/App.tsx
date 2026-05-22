@@ -104,6 +104,8 @@ const AdminInsights = lazyWithRetry(() => import('./pages/admin/StoreInsights'))
 const AdminSystemHealth = lazyWithRetry(() => import('./pages/admin/SystemHealth'));
 const AdminFlyerIngestion = lazyWithRetry(() => import('./pages/admin/FlyerIngestion'));
 const AdminNotifications = lazyWithRetry(() => import('./pages/admin/AdminNotifications'));
+const AdminBillingLedger = lazyWithRetry(() => import('./pages/admin/BillingLedger'));
+
 
 import { useState, useEffect } from 'react';
 import { doc, onSnapshot } from 'firebase/firestore';
@@ -258,6 +260,7 @@ function App() {
                                                                     <Route path="/admin/health" element={<AdminSystemHealth />} />
                                                                     <Route path="/admin/flyer-ingestion" element={<AdminFlyerIngestion />} />
                                                                     <Route path="/admin/notifications" element={<AdminNotifications />} />
+                                                                    <Route path="/admin/billing-ledger" element={<AdminBillingLedger />} />
                                                                 </Route>
 
                                                                     {/* Base Redirects */}

@@ -96,7 +96,7 @@ const Subscription: React.FC = () => {
         },
         {
             id: 'core',
-            name: 'Core Store',
+            name: 'Core',
             basePrice: '$49',
             period: '/month',
             description: 'Recommended for active stores.',
@@ -157,19 +157,19 @@ const Subscription: React.FC = () => {
 
         if (isFree) {
             confirmOptions = {
-                title: 'Confirm Downgrade',
-                message: "Downgrade to Free tier? Your current plan will remain active until the end of the billing period.",
-                confirmText: 'Confirm Cancellation',
+                title: 'Confirm Cancellation',
+                message: "Downgrade to Free tier? Your subscription will be cancelled immediately and you will receive a prorated refund for the remaining days of the current month.",
+                confirmText: 'Cancel Subscription',
                 type: 'warning'
             };
         } else if (user?.subscriptionStatus === 'active') {
             const isUpgrade = (TIER_ORDER[tierId] ?? 0) > (TIER_ORDER[user?.subscriptionTier ?? 'free'] ?? 0);
             confirmOptions = {
-                title: isUpgrade ? 'Confirm Upgrade' : 'Confirm Plan Change',
+                title: isUpgrade ? 'Confirm Upgrade' : 'Confirm Downgrade',
                 message: isUpgrade
-                    ? `Upgrade to ${tierId}? You will be charged the difference immediately.`
-                    : `Switch to ${tierId}? This change will take effect at the start of your next billing cycle.`,
-                confirmText: isUpgrade ? 'Upgrade Now' : 'Switch Plan',
+                    ? `Upgrade to ${tierId === 'core' ? 'Core' : tierId === 'growth' ? 'Growth' : 'Pro'}? You will be charged the prorated difference for the remaining days of this month immediately.`
+                    : `Downgrade to ${tierId === 'core' ? 'Core' : tierId === 'growth' ? 'Growth' : 'Pro'}? You will be refunded the prorated difference directly to your card immediately.`,
+                confirmText: isUpgrade ? 'Upgrade Now' : 'Downgrade Now',
                 type: 'info'
             };
         }
@@ -186,7 +186,7 @@ const Subscription: React.FC = () => {
                     const updateSubscriptionPlan = httpsCallable(functions, 'updateSubscriptionPlan');
                     const result: any = await updateSubscriptionPlan({ newTier: tierId });
                     if (result.data.success) {
-                        addNotification({ type: 'system', title: 'Start Updated', message: result.data.message });
+                        addNotification({ type: 'system', title: 'Subscription Updated', message: result.data.message });
                     }
                     setProcessingId(null);
                     return;
@@ -382,18 +382,57 @@ const Subscription: React.FC = () => {
                                             <th className="p-4 text-xs font-bold text-[var(--text-muted)] uppercase">Date</th>
                                             <th className="p-4 text-xs font-bold text-[var(--text-muted)] uppercase">Plan</th>
                                             <th className="p-4 text-xs font-bold text-[var(--text-muted)] uppercase">Amount</th>
+                                            <th className="p-4 text-xs font-bold text-[var(--text-muted)] uppercase">Invoice / Receipt</th>
                                             <th className="p-4 text-xs font-bold text-[var(--text-muted)] uppercase">Status</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-[var(--glass-border)]">
-                                        {payments.map((payment) => (
-                                            <tr key={payment.id} className="hover:bg-gray-50/50">
-                                                <td className="p-4 text-sm">{new Date(payment.date).toLocaleDateString()}</td>
-                                                <td className="p-4 text-sm capitalize">{payment.tier}</td>
-                                                <td className="p-4 text-sm font-bold">${payment.amount.toFixed(2)}</td>
-                                                <td className="p-4"><span className="px-2 py-1 bg-green-100 text-green-700 text-[10px] font-bold rounded-full">{payment.status}</span></td>
-                                            </tr>
-                                        ))}
+                                        {payments.map((payment) => {
+                                            const isRefund = payment.type === 'refund' || payment.amount < 0;
+                                            return (
+                                                <tr key={payment.id} className="hover:bg-gray-50/50">
+                                                    <td className="p-4 text-sm text-[var(--text-secondary)]">
+                                                        {new Date(payment.date).toLocaleDateString(undefined, {
+                                                            year: 'numeric',
+                                                            month: 'short',
+                                                            day: 'numeric'
+                                                        })}
+                                                    </td>
+                                                    <td className="p-4 text-sm capitalize text-[var(--text-main)] font-medium">
+                                                        {payment.tier}
+                                                    </td>
+                                                    <td className={`p-4 text-sm font-bold ${isRefund ? 'text-rose-600' : 'text-emerald-600'}`}>
+                                                        {isRefund ? `-$${Math.abs(payment.amount).toFixed(2)}` : `$${payment.amount.toFixed(2)}`}
+                                                    </td>
+                                                    <td className="p-4 text-sm">
+                                                        {payment.pdf ? (
+                                                            <a 
+                                                                href={payment.pdf} 
+                                                                target="_blank" 
+                                                                rel="noopener noreferrer" 
+                                                                className="text-indigo-600 hover:text-indigo-800 font-semibold hover:underline inline-flex items-center gap-1.5 transition-colors"
+                                                            >
+                                                                <span>📄</span>
+                                                                <span>{isRefund ? 'Receipt' : 'Invoice'}</span>
+                                                            </a>
+                                                        ) : (
+                                                            <span className="text-gray-400">—</span>
+                                                        )}
+                                                    </td>
+                                                    <td className="p-4">
+                                                        <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold border capitalize transition-all ${
+                                                            isRefund 
+                                                                ? 'bg-rose-50 text-rose-700 border-rose-200/50' 
+                                                                : payment.status === 'partially refunded'
+                                                                ? 'bg-amber-50 text-amber-700 border-amber-200/50'
+                                                                : 'bg-emerald-50 text-emerald-700 border-emerald-200/50'
+                                                        }`}>
+                                                            {payment.status}
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
                                     </tbody>
                                 </table>
                             </div>

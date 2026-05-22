@@ -552,7 +552,7 @@ const Checkout: React.FC = () => {
     }
 
     return (
-        <div className="animate-fade-in pb-40">
+        <div className="animate-fade-in pb-12">
             <SEO title="Checkout" description="Complete your order and confirm reservations on Spendigo." path="/checkout" noIndex />
             <div className="max-w-3xl mx-auto px-4 py-6">
                 <h1 className="text-3xl font-bold text-[var(--text-main)] mb-6">{t('checkoutTitle')}</h1>
@@ -669,6 +669,27 @@ const Checkout: React.FC = () => {
                                         {(tier === 'free' || (!deliveryEnabled && !groupedItems[storeId].distanceViolation)) && <span className="text-[8px] border border-gray-300 px-1 rounded">{t('unavailableLabel')}</span>}
                                     </button>
                                 </div>
+
+                                {/* Distance Violation Warning */}
+                                {groupedItems[storeId].distanceViolation && (
+                                    <div className="mb-4 text-xs text-red-700 bg-red-50 p-4 rounded-2xl border border-red-200 flex items-start gap-3 animate-fade-in font-medium shadow-sm">
+                                        <span className="text-lg shrink-0 mt-0.5">📍</span>
+                                        <div className="flex-1">
+                                            <p className="font-extrabold text-red-800 text-sm">
+                                                Delivery Too Far
+                                            </p>
+                                            <p className="text-[11px] text-red-650 mt-1 leading-relaxed">
+                                                Delivery Too Far - make sure your delivery location is correctly configured in your profile addresses.
+                                            </p>
+                                            <Link 
+                                                to="/profile/addresses" 
+                                                className="inline-flex items-center gap-1.5 mt-3 text-[10px] font-black uppercase tracking-wider text-red-700 hover:text-white bg-white hover:bg-red-600 border border-red-200 hover:border-red-600 px-3.5 py-1.5 rounded-xl transition-all shadow-sm hover:shadow active:scale-95"
+                                            >
+                                                <span>⚙️ Manage Addresses</span>
+                                            </Link>
+                                        </div>
+                                    </div>
+                                )}
 
                                 {/* Payment Method Toggle */}
                                 <div className="mb-4">
@@ -808,8 +829,8 @@ const Checkout: React.FC = () => {
                 </div>
             )}
 
-            {/* FIXED ACTION BUTTON */}
-            < div className="fixed bottom-20 left-0 right-0 p-4 bg-[var(--surface-0)] border-t border-[var(--glass-border)]" >
+            {/* CHECKOUT ACTION PANEL */}
+            <div className="mt-8 p-6 bg-[var(--surface-0)] border border-[var(--glass-border)] rounded-3xl shadow-[0_4px_20px_rgba(0,0,0,0.02)]">
                 <div className="max-w-3xl mx-auto">
                     {(() => {
                         // Check if ANY store blocks the entire checkout

@@ -20,8 +20,9 @@ Spendigo utilizes **Stripe** as the primary financial engine for merchant subscr
 
 ### Specialized Promotional Rates
 - **Code: `WELCOME2026`**:
-  - **Core Plan**: 100% OFF for 1 Year ($0/mo).
+  - **Core Plan**: 90% OFF for 1 Year ($4.99/mo).
   - **Growth Plan**: 90% OFF for 1 Year ($9.90/mo).
+  - **Pro Plan**: 90% OFF for 1 Year ($14.90/mo).
 
 ---
 

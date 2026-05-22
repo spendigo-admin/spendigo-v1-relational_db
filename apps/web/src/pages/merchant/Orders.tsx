@@ -1650,7 +1650,8 @@ const MerchantOrders: React.FC = () => {
                                             <div className="grid grid-cols-2 gap-3">
                                                 <button 
                                                     onClick={() => handleUpdateStatus(selectedOrder.id, selectedOrder.status === 'on_hold' ? 'preparing' : 'on_hold')} 
-                                                    className={`p-3 rounded-2xl text-[11px] font-black transition-all border flex items-center justify-center gap-2 ${selectedOrder.status === 'on_hold' ? 'bg-orange-500 text-white border-orange-400' : 'bg-white text-[var(--text-main)] border-[var(--glass-border)] hover:bg-gray-50 shadow-sm active:scale-95'}`}
+                                                    disabled={['out_for_delivery', 'delivered', 'completed', 'cancelled'].includes(selectedOrder.status)}
+                                                    className={`p-3 rounded-2xl text-[11px] font-black transition-all border flex items-center justify-center gap-2 ${selectedOrder.status === 'on_hold' ? 'bg-orange-500 text-white border-orange-400' : 'bg-white text-[var(--text-main)] border-[var(--glass-border)] hover:bg-gray-50 shadow-sm active:scale-95'} disabled:opacity-50 disabled:cursor-not-allowed`}
                                                 >
                                                     {selectedOrder.status === 'on_hold' ? '▶️ Resume' : '⏳ Hold'}
                                                 </button>
@@ -1669,7 +1670,8 @@ const MerchantOrders: React.FC = () => {
                                                     <select
                                                         value={estTimeInput}
                                                         onChange={(e) => setEstTimeInput(e.target.value)}
-                                                        className="flex-1 bg-white border border-[var(--glass-border)] rounded-xl px-3 text-sm focus:ring-1 focus:ring-[var(--brand-primary)] outline-none text-[var(--text-main)] cursor-pointer"
+                                                        disabled={['out_for_delivery', 'delivered', 'completed', 'cancelled'].includes(selectedOrder.status)}
+                                                        className="flex-1 bg-white border border-[var(--glass-border)] rounded-xl px-3 text-sm focus:ring-1 focus:ring-[var(--brand-primary)] outline-none text-[var(--text-main)] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                                                     >
                                                         <option value="" disabled>Select prep time...</option>
                                                         <option value="15 min">15 min</option>
@@ -1681,7 +1683,8 @@ const MerchantOrders: React.FC = () => {
                                                     </select>
                                                     <button 
                                                         onClick={() => handleSaveET(selectedOrder.id)} 
-                                                        className="px-5 bg-[var(--brand-primary)] text-white hover:bg-[var(--brand-primary-dark)] text-[11px] font-black rounded-xl active:scale-95 transition-all shrink-0 shadow-md shadow-[var(--brand-primary)]/10"
+                                                        disabled={!estTimeInput || ['out_for_delivery', 'delivered', 'completed', 'cancelled'].includes(selectedOrder.status)}
+                                                        className="px-5 bg-[var(--brand-primary)] text-white hover:bg-[var(--brand-primary-dark)] text-[11px] font-black rounded-xl active:scale-95 transition-all shrink-0 shadow-md shadow-[var(--brand-primary)]/10 disabled:opacity-50 disabled:cursor-not-allowed"
                                                     >
                                                         Save
                                                     </button>
@@ -1694,7 +1697,8 @@ const MerchantOrders: React.FC = () => {
                                                     <select
                                                         value={rejectionReason}
                                                         onChange={(e) => setRejectionReason(e.target.value)}
-                                                        className="flex-1 bg-white border border-[var(--glass-border)] rounded-xl px-3 text-sm focus:ring-1 focus:ring-red-500 outline-none text-[var(--text-main)] cursor-pointer"
+                                                        disabled={['out_for_delivery', 'delivered', 'completed', 'cancelled'].includes(selectedOrder.status)}
+                                                        className="flex-1 bg-white border border-[var(--glass-border)] rounded-xl px-3 text-sm focus:ring-1 focus:ring-red-500 outline-none text-[var(--text-main)] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                                                     >
                                                         <option value="" disabled>Select cancellation reason...</option>
                                                         <option value="Customer requested cancellation">🙋‍♂️ Customer Request</option>
@@ -1706,9 +1710,10 @@ const MerchantOrders: React.FC = () => {
                                                     </select>
                                                     <button 
                                                         onClick={() => handleCancelOrder(selectedOrder.id)} 
-                                                        className="px-5 bg-red-50 text-red-650 hover:bg-red-100/50 border border-red-200 text-[11px] font-black rounded-xl active:scale-95 transition-all shrink-0"
+                                                        disabled={!rejectionReason || ['out_for_delivery', 'delivered', 'completed', 'cancelled'].includes(selectedOrder.status)}
+                                                        className="px-5 bg-red-50 text-red-650 hover:bg-red-100/50 border border-red-200 text-[11px] font-black rounded-xl active:scale-95 transition-all shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
                                                     >
-                                                        REJ.
+                                                        Cancel Order
                                                     </button>
                                                 </div>
                                             </div>

@@ -59,7 +59,11 @@ export const createCheckoutSession = functions
 
         // --- PROMO CODE LOGIC ---
         let subscriptionData: any = {};
-        if (promoCode === 'FIRST100') {
+        let discounts: any[] | undefined = undefined;
+
+        const normalizedPromo = (promoCode || '').trim().toUpperCase();
+
+        if (normalizedPromo === 'FIRST100') {
             // Check if we are within the first 100 merchants
             const storesSnapshot = await db.collection('stores').count().get();
             const storeCount = storesSnapshot.data().count;
@@ -70,6 +74,16 @@ export const createCheckoutSession = functions
                     trial_period_days: 90
                 };
             }
+        } else if (normalizedPromo === 'WELCOME2026') {
+            // Apply 90% OFF 12 Months Coupon created in Stripe
+            discounts = [{ coupon: 'WELCOME2026' }];
+        }
+
+        // Align billing cycle to the 1st of the next month (except if we have an active trial)
+        const currentDate = new Date();
+        if (currentDate.getUTCDate() !== 1 && !subscriptionData.trial_period_days) {
+            const nextMonth = new Date(Date.UTC(currentDate.getUTCFullYear(), currentDate.getUTCMonth() + 1, 1, 0, 0, 0));
+            subscriptionData.billing_cycle_anchor = Math.floor(nextMonth.getTime() / 1000);
         }
 
         // 3. Create Checkout Session
@@ -85,12 +99,13 @@ export const createCheckoutSession = functions
                 },
             ],
             subscription_data: subscriptionData,
+            discounts: discounts,
             success_url: `${appUrl}/merchant/subscription?session_id={CHECKOUT_SESSION_ID}`,
             cancel_url: `${appUrl}/merchant/subscription`,
             metadata: {
                 firebaseUID: userId,
                 targetTier: tier,
-                appliedPromo: promoCode || 'none'
+                appliedPromo: normalizedPromo || 'none'
             }
         });
 
