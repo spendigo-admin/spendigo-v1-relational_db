@@ -76,7 +76,7 @@ const Subscription: React.FC = () => {
             addNotification({ type: 'system', title: 'Offer Applied', message: '3-Month Free Trial applied!' });
         } else if (code === '') {
             setActivePromo('');
-            addNotification({ type: 'info', title: 'Promo Cleared', message: 'Promo code cleared.' });
+            addNotification({ type: 'system', title: 'Promo Cleared', message: 'Promo code cleared.' });
         } else {
             setActivePromo('');
             addNotification({ type: 'alert', title: 'Invalid Code', message: 'Code not recognized.' });
@@ -86,7 +86,7 @@ const Subscription: React.FC = () => {
     const handleRemovePromo = () => {
         setActivePromo('');
         setPromoCode('');
-        addNotification({ type: 'info', title: 'Promo Removed', message: 'Returned to standard pricing.' });
+        addNotification({ type: 'system', title: 'Promo Removed', message: 'Returned to standard pricing.' });
     };
 
     const TIER_ORDER: Record<string, number> = { free: 0, core: 1, growth: 2, pro: 3 };
