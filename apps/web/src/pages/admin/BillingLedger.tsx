@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { collection, query, orderBy, onSnapshot, where } from 'firebase/firestore';
-import { db } from '../../lib/firebase';
+import { db, functions } from '../../lib/firebase';
+import { httpsCallable } from 'firebase/functions';
 import '../../styles/design-system.css';
 import { useMarketplace } from '../../context/MarketplaceContext';
 import { useNotifications } from '../../context/NotificationContext';
@@ -33,19 +34,49 @@ interface MerchantSubInfo {
     bn?: string;
 }
 
+interface PromoCodeEntry {
+    code: string;
+    percentOff: number | null;
+    amountOff: number | null;
+    duration: 'once' | 'repeating' | 'forever';
+    durationInMonths: number | null;
+    maxRedemptions: number | null;
+    expiresAt: string | null;
+    active: boolean;
+    stripeCouponId: string;
+    stripePromoCodeId: string;
+    createdAt: any;
+}
+
 const BillingLedger: React.FC = () => {
     const { stores } = useMarketplace();
     const { addNotification } = useNotifications();
     const storeList = Object.values(stores);
 
-    // Tab management: 'ledger' or 'subscriptions'
-    const [activeTab, setActiveTab] = useState<'ledger' | 'subscriptions'>('ledger');
+    // Tab management: 'ledger' or 'subscriptions' or 'promocodes'
+    const [activeTab, setActiveTab] = useState<'ledger' | 'subscriptions' | 'promocodes'>('ledger');
 
     // States
     const [ledger, setLedger] = useState<LedgerEntry[]>([]);
     const [merchants, setMerchants] = useState<Record<string, MerchantSubInfo[]>>({});
+    const [promoCodes, setPromoCodes] = useState<PromoCodeEntry[]>([]);
     const [loadingLedger, setLoadingLedger] = useState(true);
     const [loadingMerchants, setLoadingMerchants] = useState(true);
+    const [loadingPromos, setLoadingPromos] = useState(true);
+
+    // Promo Creation Form States
+    const [showCreateModal, setShowCreateModal] = useState(false);
+    const [createLoading, setCreateLoading] = useState(false);
+    const [deleteLoadingCode, setDeleteLoadingCode] = useState<string | null>(null);
+    const [promoForm, setPromoForm] = useState({
+        code: '',
+        discountType: 'percent' as 'percent' | 'amount',
+        value: '',
+        duration: 'once' as 'once' | 'repeating' | 'forever',
+        durationInMonths: '12',
+        maxRedemptions: '',
+        expiresAt: ''
+    });
 
     // Filters
     const [searchTerm, setSearchTerm] = useState('');
@@ -121,6 +152,151 @@ const BillingLedger: React.FC = () => {
 
         return () => unsubscribe();
     }, []);
+
+    // 3. Fetch Promo Codes in Real Time
+    useEffect(() => {
+        const q = query(collection(db, 'promo_codes'));
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const promos: PromoCodeEntry[] = [];
+            snapshot.forEach((doc) => {
+                const data = doc.data();
+                promos.push({
+                    code: doc.id,
+                    percentOff: data.percentOff,
+                    amountOff: data.amountOff,
+                    duration: data.duration,
+                    durationInMonths: data.durationInMonths,
+                    maxRedemptions: data.maxRedemptions || null,
+                    expiresAt: data.expiresAt || null,
+                    active: data.active !== false,
+                    stripeCouponId: data.stripeCouponId || '',
+                    stripePromoCodeId: data.stripePromoCodeId || '',
+                    createdAt: data.createdAt
+                });
+            });
+            // Sort by createdAt descending locally
+            promos.sort((a, b) => {
+                const t1 = a.createdAt?.seconds || 0;
+                const t2 = b.createdAt?.seconds || 0;
+                return t2 - t1;
+            });
+            setPromoCodes(promos);
+            setLoadingPromos(false);
+        }, (error) => {
+            console.error("Failed to load promo codes:", error);
+            setLoadingPromos(false);
+        });
+
+        return () => unsubscribe();
+    }, []);
+
+    const handleCreatePromoCode = async (e: React.FormEvent) => {
+        e.preventDefault();
+        
+        const code = promoForm.code.trim().toUpperCase();
+        if (!code) {
+            addNotification({ type: 'alert', title: 'Validation Error', message: 'Promo code is required.' });
+            return;
+        }
+
+        const valueNum = parseFloat(promoForm.value);
+        if (isNaN(valueNum) || valueNum <= 0) {
+            addNotification({ type: 'alert', title: 'Validation Error', message: 'Discount value must be a positive number.' });
+            return;
+        }
+
+        if (promoForm.discountType === 'percent' && valueNum > 100) {
+            addNotification({ type: 'alert', title: 'Validation Error', message: 'Percentage off cannot exceed 100%.' });
+            return;
+        }
+
+        const monthsNum = parseInt(promoForm.durationInMonths);
+        if (promoForm.duration === 'repeating' && (isNaN(monthsNum) || monthsNum <= 0)) {
+            addNotification({ type: 'alert', title: 'Validation Error', message: 'Duration in months is required and must be positive.' });
+            return;
+        }
+
+        const maxRedsNum = promoForm.maxRedemptions ? parseInt(promoForm.maxRedemptions) : undefined;
+        if (promoForm.maxRedemptions && (isNaN(maxRedsNum as number) || (maxRedsNum as number) <= 0)) {
+            addNotification({ type: 'alert', title: 'Validation Error', message: 'Max redemptions must be a positive integer.' });
+            return;
+        }
+
+        if (promoForm.expiresAt) {
+            const expTime = new Date(promoForm.expiresAt).getTime();
+            if (isNaN(expTime) || expTime <= Date.now()) {
+                addNotification({ type: 'alert', title: 'Validation Error', message: 'Expiration date must be a valid future date.' });
+                return;
+            }
+        }
+
+        setCreateLoading(true);
+        try {
+            const createPromoCodeFn = httpsCallable<any, any>(functions, 'createPromoCode');
+            await createPromoCodeFn({
+                code: code,
+                percentOff: promoForm.discountType === 'percent' ? valueNum : undefined,
+                amountOff: promoForm.discountType === 'amount' ? valueNum : undefined,
+                duration: promoForm.duration,
+                durationInMonths: promoForm.duration === 'repeating' ? monthsNum : undefined,
+                maxRedemptions: maxRedsNum,
+                expiresAt: promoForm.expiresAt ? new Date(promoForm.expiresAt).toISOString() : undefined
+            });
+
+            addNotification({
+                type: 'system',
+                title: 'Promo Code Created 🎟️',
+                message: `Successfully created Stripe promo code ${code}.`
+            });
+            
+            setShowCreateModal(false);
+            setPromoForm({
+                code: '',
+                discountType: 'percent',
+                value: '',
+                duration: 'once',
+                durationInMonths: '12',
+                maxRedemptions: '',
+                expiresAt: ''
+            });
+        } catch (error: any) {
+            console.error('[createPromoCode] Error:', error);
+            addNotification({
+                type: 'alert',
+                title: 'Creation Failed',
+                message: error.message || 'Failed to create Stripe coupon. Please try again.'
+            });
+        } finally {
+            setCreateLoading(false);
+        }
+    };
+
+    const handleDeletePromoCode = async (code: string) => {
+        if (!window.confirm(`Are you sure you want to permanently delete promo code "${code}"? This will deactivate it on Stripe and delete it from Spendigo.`)) {
+            return;
+        }
+
+        setDeleteLoadingCode(code);
+        try {
+            const deletePromoCodeFn = httpsCallable<any, any>(functions, 'deletePromoCode');
+            await deletePromoCodeFn({ code });
+
+            addNotification({
+                type: 'system',
+                title: 'Promo Code Deleted 🗑️',
+                message: `Successfully deleted promo code ${code}.`
+            });
+        } catch (error: any) {
+            console.error('[deletePromoCode] Error:', error);
+            addNotification({
+                type: 'alert',
+                title: 'Deletion Failed',
+                message: error.message || 'Failed to delete promo code. Please try again.'
+            });
+        } finally {
+            setDeleteLoadingCode(null);
+        }
+    };
 
     // Helper for date formatting
     const formatTimestamp = (ts: any) => {
@@ -317,13 +493,22 @@ const BillingLedger: React.FC = () => {
                     <p className="text-slate-500 text-sm">Monitor Monthly Recurring Revenue (MRR), proration refunds, active tiers and transactional history</p>
                 </div>
                 <div className="flex gap-2">
-                    <button
-                        onClick={handleExportCSV}
-                        disabled={activeTab === 'ledger' ? filteredLedger.length === 0 : filteredSubscriptions.length === 0}
-                        className="px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shadow-sm transition-all"
-                    >
-                        📥 Export CSV Ledger
-                    </button>
+                    {activeTab === 'promocodes' ? (
+                        <button
+                            onClick={() => setShowCreateModal(true)}
+                            className="px-4 py-2.5 bg-slate-950 hover:bg-slate-800 text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-md transition-all animate-fade-in"
+                        >
+                            ➕ Create Promo Code
+                        </button>
+                    ) : (
+                        <button
+                            onClick={handleExportCSV}
+                            disabled={activeTab === 'ledger' ? filteredLedger.length === 0 : filteredSubscriptions.length === 0}
+                            className="px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shadow-sm transition-all"
+                        >
+                            📥 Export CSV Ledger
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -413,45 +598,57 @@ const BillingLedger: React.FC = () => {
                 >
                     🏢 Active Store Subscriptions ({filteredSubscriptions.length})
                 </button>
+                <button
+                    onClick={() => setActiveTab('promocodes')}
+                    className={`pb-4 text-sm font-bold border-b-2 transition-all relative ${
+                        activeTab === 'promocodes'
+                            ? 'border-slate-950 text-slate-950 font-black'
+                            : 'border-transparent text-slate-400 hover:text-slate-600'
+                    }`}
+                >
+                    🎟️ Promo Codes ({promoCodes.length})
+                </button>
             </div>
 
             {/* Filters Row */}
-            <div className="flex flex-col sm:flex-row gap-4 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
-                <div className="flex-1 relative">
-                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs">🔍</span>
-                    <input
-                        type="text"
-                        placeholder={activeTab === 'ledger' ? "Search ledger by Store, Email, Charge ID..." : "Search subscriptions by Store Name, Email, Stripe ID..."}
-                        className="w-full pl-9 pr-4 py-2.5 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-slate-900 bg-slate-50/50"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                </div>
+            {activeTab !== 'promocodes' && (
+                <div className="flex flex-col sm:flex-row gap-4 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
+                    <div className="flex-1 relative">
+                        <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs">🔍</span>
+                        <input
+                            type="text"
+                            placeholder={activeTab === 'ledger' ? "Search ledger by Store, Email, Charge ID..." : "Search subscriptions by Store Name, Email, Stripe ID..."}
+                            className="w-full pl-9 pr-4 py-2.5 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-slate-900 bg-slate-50/50"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                    </div>
 
-                {activeTab === 'ledger' && (
+                    {activeTab === 'ledger' && (
+                        <select
+                            className="px-3 py-2.5 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-slate-900 bg-white font-medium"
+                            value={typeFilter}
+                            onChange={(e) => setTypeFilter(e.target.value as any)}
+                        >
+                            <option value="all">All Types</option>
+                            <option value="charge">Charges / Payments Only</option>
+                            <option value="refund">Refunds Only</option>
+                        </select>
+                    )}
+
                     <select
                         className="px-3 py-2.5 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-slate-900 bg-white font-medium"
-                        value={typeFilter}
-                        onChange={(e) => setTypeFilter(e.target.value as any)}
+                        value={tierFilter}
+                        onChange={(e) => setTierFilter(e.target.value as any)}
                     >
-                        <option value="all">All Types</option>
-                        <option value="charge">Charges / Payments Only</option>
-                        <option value="refund">Refunds Only</option>
+                        <option value="all">All Plan Tiers</option>
+                        <option value="free">Starter (Free)</option>
+                        <option value="core">Core</option>
+                        <option value="growth">Growth</option>
+                        <option value="pro">Pro</option>
                     </select>
-                )}
-
-                <select
-                    className="px-3 py-2.5 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-slate-900 bg-white font-medium"
-                    value={tierFilter}
-                    onChange={(e) => setTierFilter(e.target.value as any)}
-                >
-                    <option value="all">All Plan Tiers</option>
-                    <option value="free">Starter (Free)</option>
-                    <option value="core">Core</option>
-                    <option value="growth">Growth</option>
-                    <option value="pro">Pro</option>
-                </select>
-            </div>
+                </div>
+            )}
 
             {/* Content Lists */}
             <div className="glass-panel overflow-hidden bg-white border border-slate-100 rounded-2xl shadow-sm">
@@ -647,6 +844,127 @@ const BillingLedger: React.FC = () => {
                         </table>
                     </div>
                 )}
+
+                {activeTab === 'promocodes' && (
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse">
+                            <thead>
+                                <tr className="bg-slate-50 border-b border-slate-100 text-slate-400 text-[10px] font-black uppercase tracking-wider">
+                                    <th className="p-4">Promo Code</th>
+                                    <th className="p-4">Discount</th>
+                                    <th className="p-4">Duration</th>
+                                    <th className="p-4">Stripe Coupon ID</th>
+                                    <th className="p-4">Stripe Promo ID</th>
+                                    <th className="p-4">Created At</th>
+                                    <th className="p-4 text-center">Status</th>
+                                    <th className="p-4 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100 text-xs">
+                                {loadingPromos ? (
+                                    <tr>
+                                        <td colSpan={8} className="p-12 text-center text-slate-400 font-medium">
+                                            <div className="flex flex-col items-center gap-2">
+                                                <div className="w-6 h-6 border-2 border-slate-950 border-t-transparent rounded-full animate-spin"></div>
+                                                Synchronizing promo codes list...
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ) : promoCodes.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={8} className="p-12 text-center text-slate-400 font-bold italic">
+                                            No platform promo codes created yet. Click "+ Create Promo Code" above to generate one.
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    promoCodes.map((promo) => (
+                                        <tr key={promo.code} className="hover:bg-slate-50/50 transition-colors">
+                                            <td className="p-4">
+                                                <div className="font-bold text-slate-900">{promo.code}</div>
+                                                {(promo.maxRedemptions || promo.expiresAt) && (
+                                                    <div className="flex flex-wrap gap-1 mt-1">
+                                                        {promo.maxRedemptions && (
+                                                            <span className="text-[9px] font-mono text-slate-500 bg-slate-100 border border-slate-200/50 px-1 py-0.2 rounded" title="Global Usage Cap">
+                                                                Max: {promo.maxRedemptions}
+                                                            </span>
+                                                        )}
+                                                        {promo.expiresAt && (
+                                                            <span className="text-[9px] font-mono text-rose-600 bg-rose-50 border border-rose-100 px-1 py-0.2 rounded" title="Expiration Bounds">
+                                                                Expires: {new Date(promo.expiresAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: '2-digit' })}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </td>
+                                            <td className="p-4">
+                                                {promo.percentOff ? (
+                                                    <span className="px-2.5 py-1 bg-green-50 text-green-700 font-extrabold rounded-lg border border-green-200">
+                                                        {promo.percentOff}% OFF
+                                                    </span>
+                                                ) : promo.amountOff ? (
+                                                    <span className="px-2.5 py-1 bg-blue-50 text-blue-700 font-extrabold rounded-lg border border-blue-200">
+                                                        ${promo.amountOff.toFixed(2)} OFF
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-slate-400 italic">None</span>
+                                                )}
+                                            </td>
+                                            <td className="p-4 font-medium capitalize text-slate-600">
+                                                {promo.duration === 'repeating' ? (
+                                                    <span className="bg-slate-100 text-slate-700 px-2 py-0.5 rounded font-mono">
+                                                        {promo.durationInMonths} Months
+                                                    </span>
+                                                ) : (
+                                                    promo.duration
+                                                )}
+                                            </td>
+                                            <td className="p-4">
+                                                <span className="font-mono text-[10px] text-slate-500 bg-slate-50 border border-slate-100 px-2 py-0.5 rounded">
+                                                    {promo.stripeCouponId || 'N/A'}
+                                                </span>
+                                            </td>
+                                            <td className="p-4">
+                                                <span className="font-mono text-[10px] text-slate-500 bg-slate-50 border border-slate-100 px-2 py-0.5 rounded">
+                                                    {promo.stripePromoCodeId || 'N/A'}
+                                                </span>
+                                            </td>
+                                            <td className="p-4 text-slate-500">
+                                                {formatTimestamp(promo.createdAt)}
+                                            </td>
+                                            <td className="p-4 text-center">
+                                                <span className={`px-2.5 py-0.5 rounded-full font-bold text-[9px] uppercase border ${
+                                                    promo.active
+                                                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                                        : 'bg-rose-50 text-rose-700 border-rose-200'
+                                                }`}>
+                                                    {promo.active ? 'Active' : 'Inactive'}
+                                                </span>
+                                            </td>
+                                            <td className="p-4 text-right">
+                                                <button
+                                                    onClick={() => handleDeletePromoCode(promo.code)}
+                                                    disabled={deleteLoadingCode === promo.code}
+                                                    className="px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 hover:text-rose-800 rounded-lg text-[10px] font-bold tracking-wider uppercase border border-rose-200/50 hover:border-rose-300 transition-all inline-flex items-center gap-1.5 disabled:opacity-50 animate-fade-in"
+                                                >
+                                                    {deleteLoadingCode === promo.code ? (
+                                                        <>
+                                                            <div className="w-3 h-3 border-2 border-rose-600 border-t-transparent rounded-full animate-spin"></div>
+                                                            Deleting...
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <span>🗑️</span> Delete
+                                                        </>
+                                                    )}
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
             </div>
 
             {/* Informational Footer Section */}
@@ -669,6 +987,159 @@ const BillingLedger: React.FC = () => {
                     </li>
                 </ul>
             </div>
+
+            {/* Create Promo Code Modal */}
+            {showCreateModal && (
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in text-slate-905">
+                    <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl border border-slate-100 overflow-hidden text-left">
+                        <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                            <div>
+                                <h3 className="text-lg font-black text-slate-950 flex items-center gap-1.5">
+                                    🎟️ Create Promo Code
+                                </h3>
+                                <p className="text-xs text-slate-400 mt-0.5">Creates a coupon in Stripe and saves it to Firestore</p>
+                            </div>
+                            <button
+                                onClick={() => setShowCreateModal(false)}
+                                className="w-8 h-8 rounded-full border border-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center hover:bg-slate-100 transition-colors"
+                            >
+                                ✕
+                            </button>
+                        </div>
+
+                        <form onSubmit={handleCreatePromoCode} className="p-6 space-y-4">
+                            <div>
+                                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Code</label>
+                                <input
+                                    type="text"
+                                    required
+                                    placeholder="e.g. SAVE50"
+                                    value={promoForm.code}
+                                    onChange={e => setPromoForm({ ...promoForm, code: e.target.value.toUpperCase() })}
+                                    className="w-full px-3 py-2.5 border border-slate-200 rounded-xl outline-none focus:border-slate-950 font-bold tracking-wider placeholder-slate-300 bg-slate-50/50"
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Type</label>
+                                    <select
+                                        value={promoForm.discountType}
+                                        onChange={e => setPromoForm({ ...promoForm, discountType: e.target.value as any })}
+                                        className="w-full px-3 py-2.5 border border-slate-200 rounded-xl outline-none bg-slate-50/50 font-medium"
+                                    >
+                                        <option value="percent">Percentage Off</option>
+                                        <option value="amount">Fixed CAD Off</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Value</label>
+                                    <div className="relative">
+                                        <input
+                                            type="number"
+                                            required
+                                            step="any"
+                                            placeholder={promoForm.discountType === 'percent' ? '50' : '10.00'}
+                                            value={promoForm.value}
+                                            onChange={e => setPromoForm({ ...promoForm, value: e.target.value })}
+                                            className="w-full px-3 py-2.5 border border-slate-200 rounded-xl outline-none focus:border-slate-950 font-bold bg-slate-50/50"
+                                        />
+                                        <span className="absolute right-3.5 top-1/2 -translate-y-1/2 font-bold text-slate-400 text-sm">
+                                            {promoForm.discountType === 'percent' ? '%' : '$'}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Duration</label>
+                                    <select
+                                        value={promoForm.duration}
+                                        onChange={e => setPromoForm({ ...promoForm, duration: e.target.value as any })}
+                                        className="w-full px-3 py-2.5 border border-slate-200 rounded-xl outline-none bg-slate-50/50 font-medium text-xs"
+                                    >
+                                        <option value="once">Once</option>
+                                        <option value="repeating">Repeating</option>
+                                        <option value="forever">Forever</option>
+                                    </select>
+                                </div>
+                                {promoForm.duration === 'repeating' ? (
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Months</label>
+                                        <input
+                                            type="number"
+                                            required
+                                            min="1"
+                                            placeholder="12"
+                                            value={promoForm.durationInMonths}
+                                            onChange={e => setPromoForm({ ...promoForm, durationInMonths: e.target.value })}
+                                            className="w-full px-3 py-2.5 border border-slate-200 rounded-xl outline-none focus:border-slate-950 font-bold bg-slate-50/50 text-xs"
+                                        />
+                                    </div>
+                                ) : (
+                                    <div className="opacity-40">
+                                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Months</label>
+                                        <input
+                                            type="text"
+                                            disabled
+                                            placeholder="N/A"
+                                            className="w-full px-3 py-2.5 border border-slate-100 rounded-xl bg-slate-50 cursor-not-allowed text-xs font-bold"
+                                        />
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Max Redemptions</label>
+                                    <input
+                                        type="number"
+                                        min="1"
+                                        placeholder="e.g. 100 (Optional)"
+                                        value={promoForm.maxRedemptions}
+                                        onChange={e => setPromoForm({ ...promoForm, maxRedemptions: e.target.value })}
+                                        className="w-full px-3 py-2.5 border border-slate-200 rounded-xl outline-none focus:border-slate-950 font-bold bg-slate-50/50 text-xs"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Expiration Date</label>
+                                    <input
+                                        type="datetime-local"
+                                        value={promoForm.expiresAt}
+                                        onChange={e => setPromoForm({ ...promoForm, expiresAt: e.target.value })}
+                                        className="w-full px-3 py-2.5 border border-slate-200 rounded-xl outline-none focus:border-slate-950 font-bold bg-slate-50/50 text-xs"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="pt-4 flex gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowCreateModal(false)}
+                                    className="flex-1 py-2.5 bg-white border border-slate-200 text-slate-700 font-bold rounded-xl hover:bg-slate-50 transition-colors text-sm"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={createLoading}
+                                    className="flex-1 py-2.5 bg-slate-950 text-white font-bold rounded-xl hover:bg-slate-800 transition-colors text-sm flex items-center justify-center gap-2 shadow-lg disabled:opacity-50"
+                                >
+                                    {createLoading ? (
+                                        <>
+                                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                            Creating...
+                                        </>
+                                    ) : (
+                                        'Create Coupon'
+                                    )}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

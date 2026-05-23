@@ -213,7 +213,7 @@ const MerchantAnalytics: React.FC = () => {
         );
     };
 
-    if (!user?.subscriptionTier || user.subscriptionTier === 'free') {
+    if (!user?.subscriptionTier || user.subscriptionTier === 'free' || user.subscriptionTier === 'core') {
         return (
             <div className="p-4 md:p-8 min-h-[calc(100vh-64px)] flex items-center justify-center bg-gradient-to-tr from-slate-50 via-indigo-50/10 to-blue-50/30">
                 <div className="max-w-xl w-full bg-white/80 backdrop-blur-md rounded-3xl p-8 border border-[var(--glass-border)] shadow-xl text-center space-y-6 animate-fade-in relative overflow-hidden group">
@@ -226,9 +226,13 @@ const MerchantAnalytics: React.FC = () => {
                     </div>
 
                     <div className="space-y-2 relative z-10">
-                        <h2 className="text-2xl font-black text-[var(--text-main)]">Unlock Store Analytics</h2>
+                        <h2 className="text-2xl font-black text-[var(--text-main)]">
+                            {user?.subscriptionTier === 'core' ? 'Upgrade to Advanced Analytics' : 'Unlock Store Analytics'}
+                        </h2>
                         <p className="text-sm text-[var(--text-muted)] max-w-md mx-auto">
-                            Transform raw order data into actionable business intelligence. Upgrade your plan to get deep analytical insights.
+                            {user?.subscriptionTier === 'core' 
+                                ? 'Your Core plan includes basic analytics on the Dashboard. Upgrade to Growth or Pro to unlock premium interactive charts, conversion tracking, traffic logs, and historical peaks.'
+                                : 'Transform raw order data into actionable business intelligence. Upgrade your plan to get deep analytical insights.'}
                         </p>
                     </div>
 

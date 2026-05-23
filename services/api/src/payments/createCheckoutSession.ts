@@ -74,9 +74,19 @@ export const createCheckoutSession = functions
                     trial_period_days: 90
                 };
             }
-        } else if (normalizedPromo === 'WELCOME2026') {
-            // Apply 90% OFF 12 Months Coupon created in Stripe
-            discounts = [{ coupon: 'WELCOME2026' }];
+        } else if (normalizedPromo) {
+            // Dynamically look up the promo code in Firestore
+            const promoSnap = await db.collection('promo_codes').doc(normalizedPromo).get();
+            if (promoSnap.exists) {
+                const promoData = promoSnap.data();
+                if (promoData && promoData.active && promoData.stripeCouponId) {
+                    discounts = [{ coupon: promoData.stripeCouponId }];
+                } else {
+                    throw new functions.https.HttpsError('invalid-argument', 'The provided promo code is inactive or invalid.');
+                }
+            } else {
+                throw new functions.https.HttpsError('not-found', 'The provided promo code does not exist.');
+            }
         }
 
         // Align billing cycle to the 1st of the next month (except if we have an active trial)

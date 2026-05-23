@@ -54,3 +54,5 @@ export { onKybDocumentUploaded } from './triggers/kybDocTrigger';
 export { getKybDocUrl } from './admin/getKybDocUrl';
 export { onFlyerDealCreated } from './triggers/flyerImageMirror';
 export { rebuildActiveDealsJson } from './admin/rebuildActiveDealsJson';
+export { createPromoCode } from './admin/createPromoCode';
+export { deletePromoCode } from './admin/deletePromoCode';

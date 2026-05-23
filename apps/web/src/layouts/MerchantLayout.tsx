@@ -133,9 +133,16 @@ const MerchantLayout: React.FC = () => {
                             {can('analytics:read') && (
                                 <NavLink
                                     to="/merchant/analytics"
-                                    className={({ isActive }) => `flex items-center gap-3 p-3 rounded-lg font-medium transition-all ${isActive ? 'bg-[var(--brand-primary)] text-white shadow-lg shadow-[var(--brand-primary)]/30' : 'text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text-main)]'}`}
+                                    className={({ isActive }) => `flex items-center justify-between p-3 rounded-lg font-medium transition-all ${isActive ? 'bg-[var(--brand-primary)] text-white shadow-lg shadow-[var(--brand-primary)]/30' : 'text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text-main)]'}`}
                                 >
-                                    <span>📈</span> Analytics
+                                    <div className="flex items-center gap-3">
+                                        <span>📈</span> Advanced Analytics
+                                    </div>
+                                    {(user?.subscriptionTier === 'free' || user?.subscriptionTier === 'core') && (
+                                        <span className="text-[9px] font-black uppercase tracking-wider bg-amber-500/10 text-amber-600 px-1.5 py-0.5 rounded border border-amber-500/20 whitespace-nowrap shrink-0">
+                                            🔒 Growth+
+                                        </span>
+                                    )}
                                 </NavLink>
                             )}
                         </div>

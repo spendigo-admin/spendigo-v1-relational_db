@@ -303,6 +303,13 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // PROMO CODES — dynamic discounts register
+    match /promo_codes/{code} {
+      allow get: if isAuthenticated();
+      allow list: if isAdmin();
+      allow write: if isAdmin();
+    }
+
     // AUDIT LOG META — singleton doc that serializes concurrent chain writes.
     match /audit_logs_meta/{docId} {
       allow read: if isAdmin();

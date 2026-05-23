@@ -4,6 +4,8 @@ import { useSearchParams } from 'react-router-dom';
 import { useNotifications } from '../../context/NotificationContext';
 import { useMarketplace } from '../../context/MarketplaceContext';
 import { useConfirmation } from '../../context/ConfirmationContext';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../../lib/firebase';
 import '../../styles/design-system.css';
 
 const Subscription: React.FC = () => {
@@ -26,6 +28,7 @@ const Subscription: React.FC = () => {
     // Promo Code Logic
     const [promoCode, setPromoCode] = React.useState('');
     const [activePromo, setActivePromo] = React.useState(''); // None applied by default
+    const [customPromoData, setCustomPromoData] = React.useState<any>(null);
 
     // 1. Check for success from Stripe
     React.useEffect(() => {
@@ -66,26 +69,59 @@ const Subscription: React.FC = () => {
         }
     }, [currentTier, processingId]);
 
-    const handleApplyPromo = () => {
+    const handleApplyPromo = async () => {
         const code = promoCode.trim().toUpperCase();
-        if (code === 'WELCOME2026') {
-            setActivePromo('WELCOME2026');
-            addNotification({ type: 'system', title: 'Offer Applied', message: '90% OFF promo code applied!' });
-        } else if (code === 'FIRST100') {
-            setActivePromo('FIRST100');
-            addNotification({ type: 'system', title: 'Offer Applied', message: '3-Month Free Trial applied!' });
-        } else if (code === '') {
+        if (code === '') {
             setActivePromo('');
+            setCustomPromoData(null);
             addNotification({ type: 'system', title: 'Promo Cleared', message: 'Promo code cleared.' });
-        } else {
-            setActivePromo('');
-            addNotification({ type: 'alert', title: 'Invalid Code', message: 'Code not recognized.' });
+            return;
+        }
+
+
+
+        if (code === 'FIRST100') {
+            setActivePromo('FIRST100');
+            setCustomPromoData(null);
+            addNotification({ type: 'system', title: 'Offer Applied', message: '3-Month Free Trial applied!' });
+            return;
+        }
+
+        // Dynamic Lookup from Firestore
+        try {
+            const promoRef = doc(db, 'promo_codes', code);
+            const promoSnap = await getDoc(promoRef);
+
+            if (promoSnap.exists()) {
+                const promoData = promoSnap.data();
+                if (promoData && promoData.active) {
+                    setActivePromo(code);
+                    setCustomPromoData(promoData);
+                    addNotification({
+                        type: 'system',
+                        title: 'Promo Applied 🎟️',
+                        message: `Stripe coupon '${code}' applied successfully!`
+                    });
+                } else {
+                    setActivePromo('');
+                    setCustomPromoData(null);
+                    addNotification({ type: 'alert', title: 'Inactive Promo', message: 'This promo code is no longer active.' });
+                }
+            } else {
+                setActivePromo('');
+                setCustomPromoData(null);
+                addNotification({ type: 'alert', title: 'Invalid Code', message: 'Code not recognized.' });
+            }
+        } catch (error: any) {
+            console.error("Error validating promo code:", error);
+            addNotification({ type: 'alert', title: 'Verification Error', message: 'Failed to verify promo code. Please try again.' });
         }
     };
 
     const handleRemovePromo = () => {
         setActivePromo('');
         setPromoCode('');
+        setCustomPromoData(null);
         addNotification({ type: 'system', title: 'Promo Removed', message: 'Returned to standard pricing.' });
     };
 
@@ -255,21 +291,25 @@ const Subscription: React.FC = () => {
                         let originalPrice = null;
                         let trialText = '';
 
-                        if (activePromo === 'WELCOME2026') {
-                            if (tier.id === 'core') {
-                                originalPrice = tier.basePrice;
-                                displayPrice = '$4.99';
-                            } else if (tier.id === 'growth') {
-                                originalPrice = tier.basePrice;
-                                displayPrice = '$9.90';
-                            } else if (tier.id === 'pro') {
-                                originalPrice = tier.basePrice;
-                                displayPrice = '$14.90';
-                            }
-                        } else if (activePromo === 'FIRST100') {
+                        if (activePromo === 'FIRST100') {
                             originalPrice = tier.basePrice;
                             displayPrice = '$0.00';
                             trialText = 'first 3 months';
+                        } else if (customPromoData) {
+                            originalPrice = tier.basePrice;
+                            const priceVal = tier.id === 'core' ? 49 : tier.id === 'growth' ? 99 : 149;
+                            if (customPromoData.percentOff) {
+                                const discounted = priceVal * (1 - customPromoData.percentOff / 100);
+                                displayPrice = `$${discounted.toFixed(2)}`;
+                            } else if (customPromoData.amountOff) {
+                                const discounted = Math.max(0, priceVal - customPromoData.amountOff);
+                                displayPrice = `$${discounted.toFixed(2)}`;
+                            }
+                            if (customPromoData.duration === 'repeating') {
+                                trialText = `for ${customPromoData.durationInMonths} mos`;
+                            } else if (customPromoData.duration === 'once') {
+                                trialText = '1st month';
+                            }
                         }
 
                         return (
@@ -373,26 +413,7 @@ const Subscription: React.FC = () => {
                             Apply
                         </button>
                     </div>
-                    {activePromo === 'WELCOME2026' && (
-                        <div className="mt-4 bg-green-50 text-green-800 p-4 rounded-xl text-sm border border-green-200 max-w-sm mx-auto">
-                            <div className="flex items-center justify-between gap-4 mb-2">
-                                <p className="font-bold text-green-900 flex items-center gap-1.5">
-                                    <span className="text-base">✅</span> 'WELCOME2026' Applied!
-                                </p>
-                                <button
-                                    onClick={handleRemovePromo}
-                                    className="text-xs px-2 py-1 bg-red-100 hover:bg-red-200 text-red-800 rounded-lg font-bold transition-all cursor-pointer border border-red-300/30"
-                                >
-                                    Remove
-                                </button>
-                            </div>
-                            <ul className="text-left mt-1 list-disc list-inside space-y-1 text-green-700">
-                                <li><strong>Core Plan:</strong> 90% OFF for 1 Year ($4.99/mo)</li>
-                                <li><strong>Growth Plan:</strong> 90% OFF for 1 Year ($9.90/mo)</li>
-                                <li><strong>Pro Plan:</strong> 90% OFF for 1 Year ($14.90/mo)</li>
-                            </ul>
-                        </div>
-                    )}
+
                     {activePromo === 'FIRST100' && (
                         <div className="mt-4 bg-green-50 text-green-800 p-4 rounded-xl text-sm border border-green-200 max-w-sm mx-auto">
                             <div className="flex items-center justify-between gap-4 mb-2">
@@ -409,6 +430,36 @@ const Subscription: React.FC = () => {
                             <ul className="text-left mt-1 list-disc list-inside space-y-1 text-green-700">
                                 <li><strong>All Plans:</strong> 3-Month Free Trial ($0.00 for the first 3 months)</li>
                             </ul>
+                        </div>
+                    )}
+                    {customPromoData && (
+                        <div className="mt-4 bg-green-50 text-green-800 p-4 rounded-xl text-sm border border-green-200 max-w-sm mx-auto animate-fade-in">
+                            <div className="flex items-center justify-between gap-4 mb-2">
+                                <p className="font-bold text-green-900 flex items-center gap-1.5">
+                                    <span className="text-base">✅</span> '{activePromo}' Applied!
+                                </p>
+                                <button
+                                    onClick={handleRemovePromo}
+                                    className="text-xs px-2 py-1 bg-red-100 hover:bg-red-200 text-red-800 rounded-lg font-bold transition-all cursor-pointer border border-red-300/30"
+                                >
+                                    Remove
+                                </button>
+                            </div>
+                            <div className="text-left mt-1 text-green-700 space-y-1">
+                                <p><strong>Offer details:</strong></p>
+                                <ul className="list-disc list-inside space-y-0.5 pl-1">
+                                    <li>
+                                        Discount: {customPromoData.percentOff 
+                                            ? `${customPromoData.percentOff}% Off` 
+                                            : `CA$${customPromoData.amountOff?.toFixed(2)} Off`
+                                        }
+                                    </li>
+                                    <li>
+                                        Duration: <span className="capitalize">{customPromoData.duration}</span>
+                                        {customPromoData.duration === 'repeating' && ` (${customPromoData.durationInMonths} Months)`}
+                                    </li>
+                                </ul>
+                            </div>
                         </div>
                     )}
                 </div>

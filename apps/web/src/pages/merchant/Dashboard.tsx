@@ -414,22 +414,20 @@ const MerchantDashboard: React.FC = () => {
                 </div>
             )}
 
-            {/* Hero Section - Ultra Slim Redesign */}
-            <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-[var(--brand-primary)] to-blue-500 p-3 md:p-4 text-white shadow-md group transition-all duration-300 hover:shadow-lg">
-                {/* Subtle Decorative Blobs - Scaled Down */}
-                <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full blur-2xl -mr-12 -mt-12"></div>
+            {/* Hero Section - Clean Modern Redesign */}
+            <div className="relative overflow-hidden rounded-xl bg-white border border-[var(--glass-border)] p-3 md:p-4 text-[var(--text-main)] shadow-sm group transition-all duration-300 hover:shadow-md">
                 
                 <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
                     <div className="flex items-center gap-3">
                         <div>
-                            <h1 className="page-headline text-white flex items-center gap-2">
+                            <h1 className="page-headline text-[var(--text-main)] flex items-center gap-2">
                                 Welcome back, 
-                                <span className="text-white font-black italic">
+                                <span className="text-[var(--brand-primary)] font-black italic">
                                     {store?.name || 'Asian Grocers'}
                                 </span>
                             </h1>
-                            <p className={`text-white/70 text-[9px] md:text-[10px] font-bold uppercase tracking-widest flex items-center gap-2`}>
-                                <span className={`w-1.5 h-1.5 ${store?.status === 'suspended' || store?.status === 'pending_deletion' ? 'bg-red-400' : 'bg-green-400'} rounded-full animate-pulse`}></span>
+                            <p className={`text-[var(--text-muted)] text-[9px] md:text-[10px] font-bold uppercase tracking-widest flex items-center gap-2`}>
+                                <span className={`w-1.5 h-1.5 ${store?.status === 'suspended' || store?.status === 'pending_deletion' ? 'bg-red-500' : 'bg-green-500'} rounded-full animate-pulse`}></span>
                                 {store?.status === 'suspended' ? 'Currently Suspended' : store?.status === 'pending_deletion' ? 'Pending Deletion' : 'Live & Accepting Orders'}
                             </p>
                         </div>
@@ -437,17 +435,19 @@ const MerchantDashboard: React.FC = () => {
 
                     <div className="flex items-center gap-2 w-full md:w-auto">
                         {/* Ultra Compact Stats */}
-                        <div className="flex-1 md:flex-none bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/10 flex items-center gap-2">
-                            <span className="text-[9px] font-black opacity-60 uppercase">Status</span>
-                            <span className="text-[10px] font-black">{store?.status === 'suspended' || store?.status === 'pending_deletion' ? 'OFFLINE' : 'ONLINE'}</span>
+                        <div className="flex-1 md:flex-none bg-[var(--surface-1)] px-3 py-1.5 rounded-lg border border-[var(--glass-border)] flex items-center gap-2">
+                            <span className="text-[9px] font-black text-[var(--text-muted)] uppercase">Status</span>
+                            <span className={`text-[10px] font-black ${store?.status === 'suspended' || store?.status === 'pending_deletion' ? 'text-red-600' : 'text-green-600'}`}>
+                                {store?.status === 'suspended' || store?.status === 'pending_deletion' ? 'OFFLINE' : 'ONLINE'}
+                            </span>
                         </div>
-                        <div className="flex-1 md:flex-none bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/10 flex items-center gap-2">
-                            <span className="text-[9px] font-black opacity-60 uppercase">Deals</span>
-                            <span className="text-[10px] font-black">{activeDealsCount}</span>
+                        <div className="flex-1 md:flex-none bg-[var(--surface-1)] px-3 py-1.5 rounded-lg border border-[var(--glass-border)] flex items-center gap-2">
+                            <span className="text-[9px] font-black text-[var(--text-muted)] uppercase">Deals</span>
+                            <span className="text-[10px] font-black text-[var(--text-main)]">{activeDealsCount}</span>
                         </div>
                         <button 
                             onClick={() => navigate('/merchant/settings')}
-                            className="p-1.5 bg-white/20 hover:bg-white/30 rounded-lg transition-colors text-base"
+                            className="p-1.5 bg-[var(--surface-2)] hover:bg-[var(--surface-3)] active:scale-95 text-[var(--text-main)] rounded-lg transition-all text-base"
                             title="Quick Settings"
                         >
                             ⚙️
