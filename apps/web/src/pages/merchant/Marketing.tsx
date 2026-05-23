@@ -261,12 +261,17 @@ const MerchantMarketing: React.FC = () => {
                     {/* Send Campaign */}
                     <div className="bg-white p-6 rounded-2xl border border-[var(--glass-border)] shadow-sm relative overflow-hidden">
                         {user?.subscriptionTier !== 'pro' && (
-                            <div className="absolute inset-0 z-10 bg-white/90 backdrop-blur-sm flex flex-col items-center justify-center rounded-2xl p-6 text-center">
-                                <div className="text-4xl mb-3">🔒</div>
-                                <h4 className="font-bold text-lg text-[var(--text-main)] mb-1">Pro Feature</h4>
-                                <p className="text-sm text-[var(--text-muted)] mb-4">Push campaigns are available on the <strong>Pro plan</strong> ($149/mo). Reach customers directly on their devices.</p>
-                                <a href="/merchant/subscription" className="px-5 py-2 bg-amber-500 text-white text-sm font-bold rounded-xl hover:bg-amber-600 transition-colors shadow-md">
-                                    Upgrade to Pro →
+                            <div className="absolute inset-0 z-10 bg-white/95 backdrop-blur-md flex flex-col items-center justify-center rounded-2xl p-6 text-center border border-[var(--glass-border)] shadow-inner">
+                                <div className="text-3xl mb-2 animate-bounce">🔒</div>
+                                <h4 className="font-black text-lg text-[var(--text-main)] mb-1">Starter Plan: Restricted Access</h4>
+                                <p className="text-xs text-[var(--text-muted)] mb-4 max-w-xs mx-auto">
+                                    Custom Push Campaigns and smart client retention blasts are restricted on your current plan. Upgrade to the <strong>Pro Plan</strong> to run push marketing.
+                                </p>
+                                <a 
+                                    href="/merchant/subscription" 
+                                    className="px-5 py-2.5 bg-[var(--brand-primary)] text-white text-xs font-bold rounded-xl hover:brightness-110 transition-all shadow-md shadow-[var(--brand-primary)]/20"
+                                >
+                                    Upgrade to Pro Plan
                                 </a>
                             </div>
                         )}

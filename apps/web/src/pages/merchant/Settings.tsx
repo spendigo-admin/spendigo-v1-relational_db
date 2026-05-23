@@ -1374,6 +1374,14 @@ const MerchantSettings: React.FC = () => {
 
         // --- STRIPE CONNECT LOGIC ---
         const handleConnectStripe = async () => {
+            if (!user?.subscriptionTier || user.subscriptionTier === 'free') {
+                addNotification({
+                    type: 'alert',
+                    title: 'Feature Locked',
+                    message: 'Stripe Payout integration is a premium feature. Please upgrade your subscription.'
+                });
+                return;
+            }
             setIsSaving(true);
             try {
                 const functions = getFunctions();
@@ -1441,7 +1449,33 @@ const MerchantSettings: React.FC = () => {
                 <section className="bg-white p-6 rounded-xl border border-[var(--glass-border)] shadow-sm">
                     <h2 className="text-lg font-bold text-[var(--text-main)] mb-4">Payout Configuration</h2>
 
-                    {isConnected ? (
+                    {(!user?.subscriptionTier || user.subscriptionTier === 'free') ? (
+                        <div className="space-y-4">
+                            <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 flex items-start gap-3 text-left">
+                                <span className="text-2xl">🔒</span>
+                                <div>
+                                    <h3 className="font-bold text-orange-800">Stripe Payouts are a Premium Feature</h3>
+                                    <p className="text-sm text-orange-700 mb-2">Upgrade to Core, Growth, or Pro to enable custom payouts and receive customer credit card payments directly to your bank account.</p>
+                                    <a href="/merchant/subscription" className="text-sm font-bold text-orange-900 underline">View Plans & Upgrade</a>
+                                </div>
+                            </div>
+                            
+                            <div className="opacity-40 pointer-events-none select-none grayscale flex flex-col md:flex-row items-center gap-6 p-6 bg-gray-50 border border-gray-200 rounded-xl">
+                                <div className="w-16 h-16 bg-[#635BFF] rounded-xl flex items-center justify-center text-white text-3xl shadow-lg shrink-0">
+                                    S
+                                </div>
+                                <div className="flex-1 text-center md:text-left">
+                                    <h3 className="text-xl font-bold text-gray-900 mb-2">Connect with Stripe</h3>
+                                    <p className="text-gray-600 mb-4">
+                                        To start selling on Spendigo, you must connect a Stripe account. This allows us to securely transfer earnings to your bank account automatically.
+                                    </p>
+                                </div>
+                                <button className="px-6 py-3 bg-[#635BFF] text-white font-bold rounded-lg whitespace-nowrap">
+                                    Connect Stripe Account
+                                </button>
+                            </div>
+                        </div>
+                    ) : isConnected ? (
                         /* Connected State */
                         <div className="flex items-center gap-4 p-5 bg-green-50 border border-green-200 rounded-lg mb-6">
                             <div className="w-12 h-12 rounded-full bg-green-200 flex items-center justify-center text-green-700 font-bold text-xl">✓</div>

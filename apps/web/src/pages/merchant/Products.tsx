@@ -123,6 +123,7 @@ const MerchantProducts: React.FC = () => {
     const hasWriteAccess = can('products:write') && !isLocked;
 
     const { products, loading } = useStoreProducts(storeId);
+    const isProductLimitReached = (user?.subscriptionTier || 'free') === 'free' && products.length >= 10;
 
     // UI State
     const [showAddModal, setShowAddModal] = useState(false);
@@ -294,6 +295,10 @@ const MerchantProducts: React.FC = () => {
 
     const handleAddProduct = async () => {
         if (!storeId || !selectedMasterItem) return;
+        if (isProductLimitReached) {
+            addNotification({ type: 'alert', title: 'Limit Reached', message: 'Starter plan is limited to 10 products. Please upgrade to add more.' });
+            return;
+        }
 
         try {
             await addMerchantProduct(storeId, selectedMasterItem.id, parseFloat(form.price) || 0, parseInt(form.stock) || 0, { is_canadian_local: form.isCanadianLocal });
@@ -369,6 +374,10 @@ const MerchantProducts: React.FC = () => {
     };
 
     const handleBulkUpload = async () => {
+        if (isProductLimitReached) {
+            addNotification({ type: 'alert', title: 'Limit Reached', message: 'Starter plan is limited to 10 products. Please upgrade to add more.' });
+            return;
+        }
         if (!bulkText.trim()) return;
         const lines = bulkText.split('\n');
         const items = [];
@@ -498,14 +507,36 @@ const MerchantProducts: React.FC = () => {
                     {hasWriteAccess && (
                         <>
                             <button
-                                onClick={() => { setView('bulk_upload'); setShowAddModal(true); }}
-                                className="flex-1 sm:flex-none px-4 py-2 border border-gray-200 text-gray-700 font-medium rounded-lg hover:bg-gray-50 flex items-center justify-center gap-2"
+                                onClick={() => {
+                                    if (isProductLimitReached) {
+                                        addNotification({
+                                            type: 'alert',
+                                            title: 'Product Limit Reached',
+                                            message: 'Starter plan is limited to 10 products. Please upgrade your subscription to add more products.'
+                                        });
+                                        return;
+                                    }
+                                    setView('bulk_upload');
+                                    setShowAddModal(true);
+                                }}
+                                className={`flex-1 sm:flex-none px-4 py-2 border border-gray-200 text-gray-700 font-medium rounded-lg hover:bg-gray-50 flex items-center justify-center gap-2 ${isProductLimitReached ? 'opacity-50' : ''}`}
                             >
                                 <span>📄</span> <span className="hidden sm:inline">Bulk</span> <span className="sm:hidden">Bulk Upload</span>
                             </button>
                             <button
-                                onClick={() => { setView('search_master'); setShowAddModal(true); }}
-                                className="flex-[2] sm:flex-none px-4 py-2 bg-[var(--brand-primary)] text-white font-medium rounded-lg hover:brightness-110 shadow-lg shadow-[var(--brand-primary)]/20 text-center"
+                                onClick={() => {
+                                    if (isProductLimitReached) {
+                                        addNotification({
+                                            type: 'alert',
+                                            title: 'Product Limit Reached',
+                                            message: 'Starter plan is limited to 10 products. Please upgrade your subscription to add more products.'
+                                        });
+                                        return;
+                                    }
+                                    setView('search_master');
+                                    setShowAddModal(true);
+                                }}
+                                className={`flex-[2] sm:flex-none px-4 py-2 bg-[var(--brand-primary)] text-white font-medium rounded-lg hover:brightness-110 shadow-lg shadow-[var(--brand-primary)]/20 text-center ${isProductLimitReached ? 'opacity-50' : ''}`}
                             >
                                 + Add Product
                             </button>

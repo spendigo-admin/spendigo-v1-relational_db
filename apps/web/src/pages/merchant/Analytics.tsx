@@ -213,6 +213,63 @@ const MerchantAnalytics: React.FC = () => {
         );
     };
 
+    if (!user?.subscriptionTier || user.subscriptionTier === 'free') {
+        return (
+            <div className="p-4 md:p-8 min-h-[calc(100vh-64px)] flex items-center justify-center bg-gradient-to-tr from-slate-50 via-indigo-50/10 to-blue-50/30">
+                <div className="max-w-xl w-full bg-white/80 backdrop-blur-md rounded-3xl p-8 border border-[var(--glass-border)] shadow-xl text-center space-y-6 animate-fade-in relative overflow-hidden group">
+                    {/* Floating Glow Orbs */}
+                    <div className="absolute -top-12 -right-12 w-40 h-40 bg-[var(--brand-primary)]/10 rounded-full blur-2xl group-hover:scale-110 transition-transform duration-500"></div>
+                    <div className="absolute -bottom-12 -left-12 w-40 h-40 bg-purple-600/10 rounded-full blur-2xl"></div>
+
+                    <div className="relative w-16 h-16 bg-indigo-50 text-[var(--brand-primary)] rounded-2xl flex items-center justify-center text-3xl mx-auto shadow-md shadow-indigo-100/50 animate-bounce-in">
+                        📊
+                    </div>
+
+                    <div className="space-y-2 relative z-10">
+                        <h2 className="text-2xl font-black text-[var(--text-main)]">Unlock Store Analytics</h2>
+                        <p className="text-sm text-[var(--text-muted)] max-w-md mx-auto">
+                            Transform raw order data into actionable business intelligence. Upgrade your plan to get deep analytical insights.
+                        </p>
+                    </div>
+
+                    {/* Value Propositions */}
+                    <div className="bg-slate-50/50 rounded-2xl p-4 text-left border border-slate-100 space-y-3 relative z-10">
+                        <div className="flex gap-3 items-start">
+                            <span className="text-lg">💰</span>
+                            <div>
+                                <h4 className="text-xs font-bold text-[var(--text-main)]">Real-time Revenue & Fulfillment Tracking</h4>
+                                <p className="text-[10px] text-[var(--text-muted)]">Monitor total sales, average order value, and completion metrics.</p>
+                            </div>
+                        </div>
+                        <div className="flex gap-3 items-start">
+                            <span className="text-lg">👁️</span>
+                            <div>
+                                <h4 className="text-xs font-bold text-[var(--text-main)]">Store Traffic & Conversion Funnels</h4>
+                                <p className="text-[10px] text-[var(--text-muted)]">Understand how many consumers view your store and make purchases.</p>
+                            </div>
+                        </div>
+                        <div className="flex gap-3 items-start">
+                            <span className="text-lg">📈</span>
+                            <div>
+                                <h4 className="text-xs font-bold text-[var(--text-main)]">Product Performance Intelligence</h4>
+                                <p className="text-[10px] text-[var(--text-muted)]">Discover your top-selling products and peak sales windows.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="pt-4 relative z-10">
+                        <a 
+                            href="/merchant/subscription" 
+                            className="inline-block w-full py-3.5 bg-[var(--brand-primary)] text-white font-bold rounded-xl hover:brightness-110 shadow-lg shadow-[var(--brand-primary)]/20 transition-all text-center"
+                        >
+                            View Plans & Upgrade
+                        </a>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="p-4 md:p-8 animate-fade-in space-y-8 pb-20">
             {/* Header */}

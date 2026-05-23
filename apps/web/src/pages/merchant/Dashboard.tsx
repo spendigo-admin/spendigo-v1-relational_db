@@ -287,6 +287,78 @@ const MerchantDashboard: React.FC = () => {
         time: formatNotificationTime(o.date)
     }));
 
+    if (!user?.subscriptionTier || user.subscriptionTier === 'free') {
+        return (
+            <div className="p-4 md:p-8 min-h-[calc(100vh-64px)] flex items-center justify-center bg-gradient-to-tr from-slate-50 via-indigo-50/10 to-blue-50/30 animate-fade-in pb-20">
+                <SEO title="Merchant Dashboard" noIndex path="/merchant/dashboard" />
+                <div className="max-w-xl w-full bg-white/80 backdrop-blur-md rounded-3xl p-8 border border-[var(--glass-border)] shadow-xl text-center space-y-6 relative overflow-hidden group">
+                    {/* Floating Glow Orbs */}
+                    <div className="absolute -top-12 -right-12 w-40 h-40 bg-[var(--brand-primary)]/10 rounded-full blur-2xl group-hover:scale-110 transition-transform duration-500"></div>
+                    <div className="absolute -bottom-12 -left-12 w-40 h-40 bg-blue-600/10 rounded-full blur-2xl"></div>
+
+                    <div className="relative w-16 h-16 bg-blue-50 text-[var(--brand-primary)] rounded-2xl flex items-center justify-center text-3xl mx-auto shadow-md shadow-blue-100/50 animate-bounce-in">
+                        🖥️
+                    </div>
+
+                    <div className="space-y-2 relative z-10">
+                        <h2 className="text-2xl font-black text-[var(--text-main)]">Paid Feature: Order Dashboard</h2>
+                        <p className="text-sm text-[var(--text-muted)] max-w-md mx-auto">
+                            Unlock live order management, automated fulfillment tracking, and advanced store metrics. Upgrade your plan to get started.
+                        </p>
+                    </div>
+
+                    {/* Value Propositions */}
+                    <div className="bg-slate-50/50 rounded-2xl p-4 text-left border border-slate-100 space-y-3 relative z-10">
+                        <div className="flex gap-3 items-start">
+                            <span className="text-lg">流</span>
+                            <div>
+                                <h4 className="text-xs font-bold text-[var(--text-main)]">Live Orders & Audio Notifications</h4>
+                                <p className="text-[10px] text-[var(--text-muted)]">Receive orders from customers in real-time with visual status alerts.</p>
+                            </div>
+                        </div>
+                        <div className="flex gap-3 items-start">
+                            <span className="text-lg">👨‍🍳</span>
+                            <div>
+                                <h4 className="text-xs font-bold text-[var(--text-main)]">Fulfillment Workflow Controls</h4>
+                                <p className="text-[10px] text-[var(--text-muted)]">Mark orders as preparing, ready for pickup, or out for delivery.</p>
+                            </div>
+                        </div>
+                        <div className="flex gap-3 items-start">
+                            <span className="text-lg">⚡</span>
+                            <div>
+                                <h4 className="text-xs font-bold text-[var(--text-main)]">Quick Actions & Shortcuts</h4>
+                                <p className="text-[10px] text-[var(--text-muted)]">Manage weekly flyers, promotions, deals, and team settings from a single view.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="pt-4 relative z-10 flex flex-col gap-3">
+                        <a 
+                            href="/merchant/subscription" 
+                            className="inline-block w-full py-3.5 bg-[var(--brand-primary)] text-white font-bold rounded-xl hover:brightness-110 shadow-lg shadow-[var(--brand-primary)]/20 transition-all text-center text-sm"
+                        >
+                            View Plans & Upgrade
+                        </a>
+                        <div className="flex gap-2">
+                            <a 
+                                href="/merchant/products" 
+                                className="flex-1 py-2.5 bg-white border border-gray-200 text-gray-700 font-bold rounded-lg hover:bg-gray-50 transition-colors text-center text-xs"
+                            >
+                                Manage Products
+                            </a>
+                            <a 
+                                href="/merchant/settings" 
+                                className="flex-1 py-2.5 bg-white border border-gray-200 text-gray-700 font-bold rounded-lg hover:bg-gray-50 transition-colors text-center text-xs"
+                            >
+                                Store Settings
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="p-4 md:p-6 animate-fade-in pb-20 space-y-6">
             <SEO title="Merchant Dashboard" noIndex path="/merchant/dashboard" />

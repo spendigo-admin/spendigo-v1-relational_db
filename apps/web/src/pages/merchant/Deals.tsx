@@ -549,14 +549,35 @@ const MerchantDeals: React.FC = () => {
                 )}
             </div>
             {isRestrictedPlan ? (
+                <div className="text-center py-16 bg-slate-50/50 backdrop-blur-md rounded-3xl border border-[var(--glass-border)] shadow-xl p-8 max-w-xl mx-auto space-y-6 animate-fade-in my-10 relative overflow-hidden group">
+                    <div className="absolute -top-12 -right-12 w-40 h-40 bg-[var(--brand-primary)]/10 rounded-full blur-2xl group-hover:scale-110 transition-transform duration-500"></div>
+                    <div className="absolute -bottom-12 -left-12 w-40 h-40 bg-blue-600/10 rounded-full blur-2xl"></div>
 
-                <div className="text-center py-20 bg-gray-50 rounded-xl border border-dashed border-gray-300">
-                    <div className="text-6xl mb-4 grayscale opacity-50">🏷️</div>
-                    <h3 className="text-xl font-bold text-gray-800 mb-2">Upgrade to Create Deals</h3>
-                    <p className="text-gray-500 mb-6 max-w-md mx-auto">Deals and Flash Sales are premium features available exclusively on the Pro plan. Upgrade your subscription to engage more customers.</p>
-                    <a href="/merchant/subscription" className="px-6 py-2 bg-[var(--brand-primary)] text-white font-bold rounded-lg hover:brightness-110 shadow-lg shadow-[var(--brand-primary)]/20 inline-block">
-                        View Plans & Upgrade
-                    </a>
+                    <div className="relative w-16 h-16 bg-blue-50 text-[var(--brand-primary)] rounded-2xl flex items-center justify-center text-3xl mx-auto shadow-md shadow-blue-100/50">
+                        🏷️
+                    </div>
+
+                    <div className="space-y-2 relative z-10">
+                        <h2 className="text-2xl font-black text-[var(--text-main)]">Starter Plan: Restricted Access</h2>
+                        <p className="text-sm text-[var(--text-muted)] max-w-md mx-auto">
+                            Custom Promotions, BOGOs, and Flash Sales are restricted on the Starter plan. Upgrade to the <strong>Pro Plan</strong> to run unlimited deals and attract local customers.
+                        </p>
+                    </div>
+
+                    <div className="pt-4 relative z-10 flex flex-col gap-3">
+                        <a 
+                            href="/merchant/subscription" 
+                            className="inline-block w-full py-3 bg-[var(--brand-primary)] text-white font-bold rounded-xl hover:brightness-110 shadow-lg shadow-[var(--brand-primary)]/20 transition-all text-center text-sm"
+                        >
+                            Upgrade to Pro Plan
+                        </a>
+                        <a 
+                            href="/merchant/products" 
+                            className="inline-block w-full py-2 bg-white border border-gray-200 text-gray-700 font-bold rounded-xl hover:bg-gray-50 transition-colors text-center text-xs"
+                        >
+                            Return to Inventory
+                        </a>
+                    </div>
                 </div>
             ) : (
                 <>

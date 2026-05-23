@@ -254,6 +254,10 @@ const MerchantOrders: React.FC = () => {
             ['paid', 'refunded', 'partially_refunded', 'refunding'].includes(o.paymentStatus)
         );
 
+        if ((user?.subscriptionTier || 'free') === 'free') {
+            list = list.filter(o => !o.deliveryAddress); // only show pickup orders for free plan
+        }
+
         // Date Range Filtering
         if (ledgerDateRange !== 'all') {
             const nowTime = new Date().getTime();
@@ -441,10 +445,12 @@ const MerchantOrders: React.FC = () => {
     }
 
     // Filter
-    const filteredOrders = contextOrders.filter(o =>
-        o.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        o.customerName.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const filteredOrders = contextOrders
+        .filter(o => !((user?.subscriptionTier || 'free') === 'free' && o.deliveryAddress)) // filter out delivery orders for free/starter plan
+        .filter(o =>
+            o.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            o.customerName.toLowerCase().includes(searchQuery.toLowerCase())
+        );
 
     // Helpers
     const getTimeElapsedLabel = (dateStr: string) => {
@@ -858,6 +864,26 @@ const MerchantOrders: React.FC = () => {
 
     return (
         <div className="flex flex-col h-full w-full overflow-hidden bg-[var(--surface-1)]">
+            {/* Starter Plan Banner */}
+            {(user?.subscriptionTier || 'free') === 'free' && (
+                <div className="px-4 md:px-6 pt-4 shrink-0">
+                    <div className="bg-gradient-to-r from-blue-500/10 to-indigo-500/10 backdrop-blur-md border border-blue-200/50 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm animate-fade-in">
+                        <div className="flex items-center gap-3">
+                            <span className="text-2xl animate-pulse">🛍️</span>
+                            <div className="text-left">
+                                <h4 className="text-sm font-bold text-slate-800">Starter Plan — Pickup Orders Only</h4>
+                                <p className="text-xs text-slate-600">Your store is configured for pickup-only orders. Delivery orders and advanced courier routing are restricted to paid tiers.</p>
+                            </div>
+                        </div>
+                        <a 
+                            href="/merchant/subscription" 
+                            className="w-full sm:w-auto px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold rounded-xl text-xs hover:brightness-110 shadow-md shadow-blue-600/20 text-center transition-all shrink-0 font-medium"
+                        >
+                            Upgrade to Support Delivery
+                        </a>
+                    </div>
+                </div>
+            )}
             {/* Header with Stats */}
             <div className="p-4 md:p-6 pb-2 shrink-0">
                 <div className="flex items-center justify-between mb-4 md:mb-6">
