@@ -68,7 +68,7 @@ const PriceCompare = () => {
                     
                     const matchesList = listTerms.some(term => {
                         return lowerName.includes(term) || term.includes(lowerName) ||
-                               term.split(' ').some(word => word.length > 3 && new RegExp(`\\b${word}\\b`).test(lowerName));
+                               term.split(' ').some(word => word.length > 3 && lowerName.includes(word));
                     });
                     
                     return matchesList;
@@ -94,16 +94,16 @@ const PriceCompare = () => {
 
     // Group flyer deals by wishlist item
     const groupedDeals = useMemo(() => {
-        if (!deals || deals.length === 0) return [];
+        const safeDeals = deals || [];
 
         const groups = wishlistItems.map(item => {
             const term = item.name.toLowerCase().trim();
             const termWords = term.split(' ').filter(w => w.length > 3);
 
-            const matchingDeals = deals.filter(deal => {
+            const matchingDeals = safeDeals.filter(deal => {
                 const lowerName = (deal.name || '').toLowerCase();
                 return lowerName.includes(term) || term.includes(lowerName) ||
-                       termWords.some(word => new RegExp(`\\b${word}\\b`).test(lowerName));
+                       termWords.some(word => lowerName.includes(word));
             });
 
             // Sort deals by parsed price

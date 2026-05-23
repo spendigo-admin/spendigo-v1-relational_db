@@ -167,28 +167,29 @@ const AdminDashboard: React.FC = () => {
     return (
         <div className="p-4 md:p-6 animate-fade-in pb-20">
             <SEO title="Admin Dashboard" noIndex path="/admin/dashboard" />
-            {/* Platform Hero - Ultra Slim Redesign */}
-            <div className="mb-6 relative overflow-hidden rounded-xl bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-primary-dark)] p-3 md:p-4 text-white shadow-md group transition-all duration-300 hover:shadow-lg">
+            {/* Platform Hero - Clean Modern Redesign */}
+            <div className="mb-6 relative overflow-hidden rounded-xl bg-white border border-[var(--glass-border)] p-3 md:p-4 text-[var(--text-main)] shadow-sm group transition-all duration-300 hover:shadow-md">
                 {/* Subtle Decorative Blobs - Scaled Down */}
-                <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full blur-2xl -mr-12 -mt-12"></div>
+                <div className="absolute top-0 right-0 w-24 h-24 bg-[var(--brand-primary)]/5 rounded-full blur-2xl -mr-12 -mt-12"></div>
                 
                 <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
                     <div className="flex items-center gap-3">
                         <div>
-                            <h1 className="page-headline text-white flex items-center gap-2">
-                                🛡️ Welcome, {user?.name || 'Administrator'}
+                            <h1 className="page-headline text-[var(--text-main)] flex items-center gap-2">
+                                🛡️ Welcome, <span className="text-[var(--brand-primary)] font-black italic">{user?.name || 'System Admin'}</span>
                             </h1>
-                            <p className="text-white/70 text-[9px] md:text-[10px] font-bold uppercase tracking-widest flex items-center gap-2">
+                            <p className="text-[var(--text-muted)] text-[9px] md:text-[10px] font-bold uppercase tracking-widest flex items-center gap-2">
+                                <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>
                                 Monitoring platform health and activities
                             </p>
                         </div>
                     </div>
 
                     <div className="flex items-center gap-2 w-full md:w-auto">
-                        <div className="flex-1 md:flex-none bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/10 flex items-center gap-2">
-                            <span className="text-[9px] font-black opacity-60 uppercase">System Status</span>
-                            <span className="text-[10px] font-black text-green-400 flex items-center gap-1.5">
-                                <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse shadow-[0_0_5px_rgba(74,222,128,0.5)]"></span>
+                        <div className="flex-1 md:flex-none bg-[var(--surface-1)] px-3 py-1.5 rounded-lg border border-[var(--glass-border)] flex items-center gap-2">
+                            <span className="text-[9px] font-black text-[var(--text-muted)] uppercase">System Status</span>
+                            <span className="text-[10px] font-black text-green-600 flex items-center gap-1.5">
+                                <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse shadow-[0_0_5px_rgba(34,197,94,0.4)]"></span>
                                 OPERATIONAL
                             </span>
                         </div>

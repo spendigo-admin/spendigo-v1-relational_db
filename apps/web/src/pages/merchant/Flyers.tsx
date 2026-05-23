@@ -52,7 +52,7 @@ const MerchantFlyers: React.FC = () => {
     const isLocked = stores[storeId]?.status === 'pending_deletion';
     const { products: availableProducts } = useStoreProducts(storeId);
     const hasWriteAccess = !isLocked;
-    const isRestrictedPlan = (user?.subscriptionTier || 'free') !== 'growth';
+    const isRestrictedPlan = (user?.subscriptionTier || 'free') === 'free' || (user?.subscriptionTier || 'free') === 'core';
 
     const [flyers, setFlyers] = useState<Flyer[]>([]);
     const [view, setView] = useState<'list' | 'editor'>('list');
@@ -660,9 +660,13 @@ const MerchantFlyers: React.FC = () => {
                     </div>
 
                     <div className="space-y-2 relative z-10">
-                        <h2 className="text-2xl font-black text-[var(--text-main)]">Starter Plan: Restricted Access</h2>
+                        <h2 className="text-2xl font-black text-[var(--text-main)]">
+                            {user?.subscriptionTier === 'core' ? 'Core Plan: Restricted Access' : 'Starter Plan: Restricted Access'}
+                        </h2>
                         <p className="text-sm text-[var(--text-muted)] max-w-md mx-auto">
-                            Digital Flyers and Catalog Ingestions are restricted on your current plan. Upgrade to the <strong>Growth Plan</strong> or above to publish weekly flyers and reach shoppers.
+                            {user?.subscriptionTier === 'core'
+                                ? 'Digital Flyers and Catalog Ingestions are restricted on your Core plan. Upgrade to the Growth Plan or above to publish weekly flyers and reach shoppers.'
+                                : 'Digital Flyers and Catalog Ingestions are restricted on your current plan. Upgrade to the Growth Plan or above to publish weekly flyers and reach shoppers.'}
                         </p>
                     </div>
 

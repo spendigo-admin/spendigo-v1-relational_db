@@ -44,11 +44,11 @@ const AdminLayout: React.FC = () => {
             items: [
                 { 
                     icon: (
-                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-                            <rect width="7" height="9" x="3" y="3" rx="1.5" />
-                            <rect width="7" height="5" x="14" y="3" rx="1.5" />
-                            <rect width="7" height="9" x="14" y="12" rx="1.5" />
-                            <rect width="7" height="5" x="3" y="16" rx="1.5" />
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                            <rect x="3" y="3" width="7" height="9" rx="1.5" fill="currentColor" fillOpacity="0.12" />
+                            <rect x="14" y="3" width="7" height="5" rx="1.5" />
+                            <rect x="14" y="12" width="7" height="9" rx="1.5" />
+                            <rect x="3" y="16" width="7" height="5" rx="1.5" />
                         </svg>
                     ), 
                     label: 'Dashboard', 
@@ -57,8 +57,9 @@ const AdminLayout: React.FC = () => {
                 {
                     icon: (
                         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-                            <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" />
-                            <polyline points="16 7 22 7 22 13" />
+                            <path d="M3 3v18h18" />
+                            <path d="m19 9-5 5-4-4-3 3" fill="none" />
+                            <circle cx="19" cy="9" r="2.5" fill="currentColor" fillOpacity="0.12" />
                         </svg>
                     ),
                     label: 'Store Insights',
@@ -67,7 +68,7 @@ const AdminLayout: React.FC = () => {
                 { 
                     icon: (
                         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
+                            <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" fill="currentColor" fillOpacity="0.12" />
                             <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
                         </svg>
                     ), 
@@ -82,7 +83,7 @@ const AdminLayout: React.FC = () => {
                 {
                     icon: (
                         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-                            <path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7" />
+                            <path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7" fill="currentColor" fillOpacity="0.12" />
                             <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
                             <path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4" />
                             <path d="M2 7h20" />
@@ -94,8 +95,9 @@ const AdminLayout: React.FC = () => {
                 {
                     icon: (
                         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-                            <line x1="12" x2="12" y1="2" y2="22" />
-                            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                            <rect x="2" y="5" width="20" height="14" rx="2.5" fill="currentColor" fillOpacity="0.12" />
+                            <line x1="2" x2="22" y1="10" y2="10" />
+                            <path d="M12 14v2m-2-2h4" />
                         </svg>
                     ),
                     label: 'Billing Ledger',
@@ -104,8 +106,8 @@ const AdminLayout: React.FC = () => {
                 {
                     icon: (
                         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
-                            <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+                            <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z" fill="currentColor" fillOpacity="0.12" />
+                            <path d="M6 6h10M6 10h10" />
                         </svg>
                     ),
                     label: 'Master Catalog',
@@ -119,9 +121,9 @@ const AdminLayout: React.FC = () => {
                 {
                     icon: (
                         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-                            <rect width="12" height="12" x="3" y="3" rx="2" />
-                            <path d="M19 7v10c0 .6-.4 1-1 1H8" />
-                            <path d="M21 11v6c0 .6-.4 1-1 1h-6" />
+                            <rect x="2" y="3" width="20" height="14" rx="2.5" fill="currentColor" fillOpacity="0.12" />
+                            <line x1="8" y1="21" x2="16" y2="21" />
+                            <line x1="12" y1="17" x2="12" y2="21" />
                         </svg>
                     ),
                     label: 'Carousel Ads',
@@ -130,11 +132,9 @@ const AdminLayout: React.FC = () => {
                 {
                     icon: (
                         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-                            <rect width="8" height="4" x="8" y="2" rx="1.5" ry="1.5" />
-                            <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
-                            <path d="M9 12h6" />
-                            <path d="M9 16h6" />
-                            <path d="M9 8h6" />
+                            <rect x="3" y="4" width="18" height="16" rx="2.5" fill="currentColor" fillOpacity="0.12" />
+                            <path d="m9 11 2 2 4-4" />
+                            <line x1="8" x2="16" y1="7" y2="7" />
                         </svg>
                     ),
                     label: 'Survey Board',
@@ -143,7 +143,7 @@ const AdminLayout: React.FC = () => {
                 { 
                     icon: (
                         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" fill="currentColor" fillOpacity="0.12" />
                             <circle cx="9" cy="7" r="4" />
                             <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
                             <path d="M16 3.13a4 4 0 0 1 0 7.75" />
@@ -155,10 +155,9 @@ const AdminLayout: React.FC = () => {
                 {
                     icon: (
                         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" />
-                            <path d="M14 2v4a2 2 0 0 0 2 2h4" />
-                            <path d="M12 18v-6" />
-                            <path d="m9 15 3 3 3-3" />
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                            <polyline points="7 10 12 15 17 10" fill="currentColor" fillOpacity="0.12" />
+                            <line x1="12" x2="12" y1="15" y2="3" />
                         </svg>
                     ),
                     label: 'Flyer Ingestion',
@@ -167,8 +166,8 @@ const AdminLayout: React.FC = () => {
                 {
                     icon: (
                         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M16 20V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
-                            <rect width="20" height="14" x="2" y="6" rx="2" />
+                            <rect x="2" y="7" width="20" height="14" rx="2.5" fill="currentColor" fillOpacity="0.12" />
+                            <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
                         </svg>
                     ),
                     label: 'Careers',
@@ -182,7 +181,8 @@ const AdminLayout: React.FC = () => {
                 {
                     icon: (
                         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-                            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+                            <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+                            <circle cx="12" cy="12" r="3" fill="currentColor" fillOpacity="0.05" stroke="none" />
                         </svg>
                     ),
                     label: 'System Health',
@@ -191,8 +191,8 @@ const AdminLayout: React.FC = () => {
                 { 
                     icon: (
                         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M20 13c0 5-3.5 7.5-7.66 9.7a1 1 0 0 1-.68 0C7.5 20.5 4 18 4 13V6a1 1 0 0 1 .76-.97l8-2a1 1 0 0 1 .48 0l8 2A1 1 0 0 1 20 6v7z" />
-                            <polyline points="9 11 11 13 15 9" />
+                            <path d="M20 13c0 5-3.5 7.5-7.66 9.7a1 1 0 0 1-.68 0C7.5 20.5 4 18 4 13V6a1 1 0 0 1 .76-.97l8-2a1 1 0 0 1 .48 0l8 2A1 1 0 0 1 20 6v7z" fill="currentColor" fillOpacity="0.12" />
+                            <path d="m9 12 2 2 4-4" />
                         </svg>
                     ), 
                     label: 'Audit Logs', 
@@ -201,8 +201,9 @@ const AdminLayout: React.FC = () => {
                 {
                     icon: (
                         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-                            <polyline points="4 17 10 11 4 5" />
-                            <line x1="12" x2="20" y1="19" y2="19" />
+                            <rect x="3" y="3" width="18" height="18" rx="2.5" fill="currentColor" fillOpacity="0.12" />
+                            <path d="m7 8 3 3-3 3" />
+                            <line x1="12" x2="16" y1="14" y2="14" />
                         </svg>
                     ),
                     label: 'System Tools',
@@ -211,7 +212,7 @@ const AdminLayout: React.FC = () => {
                 {
                     icon: (
                         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-                            <circle cx="12" cy="12" r="3" />
+                            <circle cx="12" cy="12" r="3" fill="currentColor" fillOpacity="0.12" />
                             <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
                         </svg>
                     ),
@@ -265,12 +266,15 @@ const AdminLayout: React.FC = () => {
                 ${isSidebarOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'}
             `}>
                 {/* Logo */}
-                <div className="h-16 px-6 border-b border-[var(--glass-border)] hidden md:flex items-center shrink-0">
+                <div className="h-20 px-6 border-b border-[var(--glass-border)] hidden md:flex items-center shrink-0">
                     <Link to="/admin/dashboard" className="flex items-center gap-3 group">
-                        <img src="/logo-app.png" alt="Spendigo Logo" style={{width: 36, height: 36, borderRadius: 8}} className="group-hover:scale-105 transition-transform" />
+                        <div className="relative">
+                            <img src="/logo-app.png" alt="Spendigo Logo" style={{width: 38, height: 38, borderRadius: 10}} className="group-hover:scale-105 transition-transform duration-300 shadow-md border border-[var(--glass-border)]" />
+                            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-white animate-pulse"></span>
+                        </div>
                         <div className="flex flex-col">
-                            <span className="text-2xl font-black text-gray-900 leading-tight group-hover:text-blue-600 transition-colors italic tracking-tighter">Spendigo</span>
-                            <span className="text-[10px] font-semibold text-[var(--text-muted)] tracking-wider uppercase">ADMIN</span>
+                            <span className="text-xl font-black text-gray-900 leading-tight group-hover:text-[var(--brand-primary)] transition-colors italic tracking-tighter">Spendigo</span>
+                            <span className="text-[9px] font-bold text-[var(--text-muted)] tracking-[0.15em] uppercase opacity-80">Admin Console</span>
                         </div>
                     </Link>
                 </div>
@@ -282,8 +286,9 @@ const AdminLayout: React.FC = () => {
                 <nav className="flex-1 p-4 space-y-6 overflow-y-auto scrollbar-hide pb-24">
                     {menuGroups.map((group, idx) => (
                         <div key={idx}>
-                            <h3 className="px-4 text-[9px] font-black uppercase tracking-[0.2em] text-[var(--text-muted)] mb-2 opacity-50">
-                                {group.title}
+                            <h3 className="px-4 text-[10px] font-bold uppercase tracking-[0.15em] text-[var(--text-muted)]/70 mb-3 flex items-center justify-between">
+                                <span>{group.title}</span>
+                                <span className="h-[1px] flex-1 bg-[var(--glass-border)] ml-3 opacity-40"></span>
                             </h3>
                             <div className="space-y-1">
                                 {group.items.map((item) => {
@@ -292,13 +297,13 @@ const AdminLayout: React.FC = () => {
                                         <Link
                                             key={item.path}
                                             to={item.path}
-                                            className={`group flex items-center justify-between px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 ${isActive
-                                                ? 'bg-[#112244] text-white shadow-xl shadow-slate-200'
-                                                : 'text-[var(--text-muted)] hover:bg-[var(--surface-1)] hover:text-[var(--brand-primary)]'
+                                            className={`group flex items-center justify-between px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] ${isActive
+                                                ? 'bg-gradient-to-r from-[var(--brand-navy)] to-[#1E3A70] text-white shadow-[0_8px_20px_-6px_rgba(17,34,68,0.35)]'
+                                                : 'text-[var(--text-muted)] hover:bg-[var(--surface-1)] hover:text-[var(--brand-navy)]'
                                                 }`}
                                         >
                                             <div className="flex items-center gap-3">
-                                                <div className={`p-2 rounded-lg transition-all duration-300 ${isActive ? 'bg-white/10 text-white scale-110' : 'bg-gray-50 text-[var(--text-muted)] group-hover:bg-[var(--brand-primary-light)] group-hover:text-[var(--brand-primary)]'}`}>
+                                                <div className={`p-2 rounded-lg transition-all duration-300 ${isActive ? 'bg-[var(--brand-primary)] text-white scale-110 shadow-[0_2px_8px_rgba(0,122,255,0.4)]' : 'bg-gray-50 text-[var(--text-muted)] group-hover:bg-[var(--brand-primary-light)] group-hover:text-[var(--brand-primary)] group-hover:scale-105'}`}>
                                                     {item.icon}
                                                 </div>
                                                 <span className={`transition-all duration-200 ${isActive ? 'translate-x-0' : 'group-hover:translate-x-1'}`}>{item.label}</span>
@@ -319,14 +324,16 @@ const AdminLayout: React.FC = () => {
                 </nav>
 
                 {/* Footer User Profile */}
-                <div className="p-4 border-t border-[var(--glass-border)] pb-safe">
-                    <div className="flex items-center gap-3 p-3 rounded-xl bg-[var(--surface-1)]">
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-primary-dark)] flex items-center justify-center text-white text-xs font-bold shadow-sm">
+                <div className="p-4 border-t border-[var(--glass-border)] pb-safe bg-gradient-to-b from-transparent to-[var(--surface-1)]/40">
+                    <div className="flex items-center gap-3 p-3 rounded-2xl bg-white border border-[var(--glass-border)] shadow-[0_2px_8px_rgba(0,0,0,0.02)] hover:shadow-md transition-all duration-300">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[var(--brand-primary)] to-[var(--brand-primary-dark)] flex items-center justify-center text-white text-xs font-black shadow-[0_4px_10px_rgba(0,122,255,0.25)]">
                             {user?.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
                         </div>
                         <div className="flex-1 overflow-hidden">
-                            <p className="text-sm font-bold text-[var(--text-main)] truncate">{user?.name || 'System Admin'}</p>
-                            <p className="text-[10px] text-[var(--text-muted)] truncate">{user?.email}</p>
+                            <p className="text-xs font-black text-[var(--text-main)] truncate leading-none mb-1">{user?.name || 'System Admin'}</p>
+                            <span className="inline-block text-[9px] font-black text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded uppercase tracking-wider scale-90 -translate-x-1.5 leading-none">
+                                {user?.adminRole || 'Super Admin'}
+                            </span>
                         </div>
                         <button onClick={handleLogout} className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--text-muted)] hover:text-red-500 hover:bg-red-50 transition-colors">
                             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">

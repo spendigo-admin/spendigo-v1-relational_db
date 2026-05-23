@@ -558,9 +558,19 @@ const MerchantDeals: React.FC = () => {
                     </div>
 
                     <div className="space-y-2 relative z-10">
-                        <h2 className="text-2xl font-black text-[var(--text-main)]">Starter Plan: Restricted Access</h2>
+                        <h2 className="text-2xl font-black text-[var(--text-main)]">
+                            {user?.subscriptionTier === 'core' 
+                                ? 'Core Plan: Restricted Access' 
+                                : user?.subscriptionTier === 'growth' 
+                                ? 'Growth Plan: Restricted Access' 
+                                : 'Starter Plan: Restricted Access'}
+                        </h2>
                         <p className="text-sm text-[var(--text-muted)] max-w-md mx-auto">
-                            Custom Promotions, BOGOs, and Flash Sales are restricted on the Starter plan. Upgrade to the <strong>Pro Plan</strong> to run unlimited deals and attract local customers.
+                            {user?.subscriptionTier === 'core'
+                                ? 'Custom Promotions, BOGOs, and Flash Sales are restricted on the Core plan. Upgrade to the Pro Plan to run unlimited deals and attract local customers.'
+                                : user?.subscriptionTier === 'growth'
+                                ? 'Custom Promotions, BOGOs, and Flash Sales are restricted on the Growth plan. Upgrade to the Pro Plan to run unlimited deals and attract local customers.'
+                                : 'Custom Promotions, BOGOs, and Flash Sales are restricted on the Starter plan. Upgrade to the Pro Plan to run unlimited deals and attract local customers.'}
                         </p>
                     </div>
 

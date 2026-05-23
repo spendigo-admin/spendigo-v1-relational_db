@@ -176,17 +176,31 @@ const MerchantLayout: React.FC = () => {
                             {can('flyers:write') && (
                                 <NavLink
                                     to="/merchant/flyers"
-                                    className={({ isActive }) => `flex items-center gap-3 p-3 rounded-lg font-medium transition-all ${isActive ? 'bg-[var(--brand-primary)] text-white shadow-lg shadow-[var(--brand-primary)]/30' : 'text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text-main)]'}`}
+                                    className={({ isActive }) => `flex items-center justify-between p-3 rounded-lg font-medium transition-all ${isActive ? 'bg-[var(--brand-primary)] text-white shadow-lg shadow-[var(--brand-primary)]/30' : 'text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text-main)]'}`}
                                 >
-                                    <span>📰</span> Flyers
+                                    <div className="flex items-center gap-3">
+                                        <span>📰</span> Flyers
+                                    </div>
+                                    {(user?.subscriptionTier === 'free' || user?.subscriptionTier === 'core') && (
+                                        <span className="text-[9px] font-black uppercase tracking-wider bg-amber-500/10 text-amber-600 px-1.5 py-0.5 rounded border border-amber-500/20 whitespace-nowrap shrink-0">
+                                            🔒 Growth+
+                                        </span>
+                                    )}
                                 </NavLink>
                             )}
                             {can('deals:write') && (
                                 <NavLink
                                     to="/merchant/deals"
-                                    className={({ isActive }) => `flex items-center gap-3 p-3 rounded-lg font-medium transition-all ${isActive ? 'bg-[var(--brand-primary)] text-white shadow-lg shadow-[var(--brand-primary)]/30' : 'text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text-main)]'}`}
+                                    className={({ isActive }) => `flex items-center justify-between p-3 rounded-lg font-medium transition-all ${isActive ? 'bg-[var(--brand-primary)] text-white shadow-lg shadow-[var(--brand-primary)]/30' : 'text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text-main)]'}`}
                                 >
-                                    <span>🏷️</span> Deals
+                                    <div className="flex items-center gap-3">
+                                        <span>🏷️</span> Deals
+                                    </div>
+                                    {(user?.subscriptionTier === 'free' || user?.subscriptionTier === 'core' || user?.subscriptionTier === 'growth') && (
+                                        <span className="text-[9px] font-black uppercase tracking-wider bg-purple-500/10 text-purple-600 px-1.5 py-0.5 rounded border border-purple-500/20 whitespace-nowrap shrink-0">
+                                            🔒 Pro
+                                        </span>
+                                    )}
                                 </NavLink>
                             )}
                             <NavLink
