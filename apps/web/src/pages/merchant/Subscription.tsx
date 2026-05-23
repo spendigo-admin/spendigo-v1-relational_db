@@ -24,8 +24,8 @@ const Subscription: React.FC = () => {
     const [loadingPayments, setLoadingPayments] = React.useState(true);
 
     // Promo Code Logic
-    const [promoCode, setPromoCode] = React.useState('WELCOME2026');
-    const [activePromo, setActivePromo] = React.useState('WELCOME2026'); // Default applied
+    const [promoCode, setPromoCode] = React.useState('');
+    const [activePromo, setActivePromo] = React.useState(''); // None applied by default
 
     // 1. Check for success from Stripe
     React.useEffect(() => {
@@ -67,13 +67,26 @@ const Subscription: React.FC = () => {
     }, [currentTier, processingId]);
 
     const handleApplyPromo = () => {
-        if (promoCode === 'WELCOME2026') {
+        const code = promoCode.trim().toUpperCase();
+        if (code === 'WELCOME2026') {
             setActivePromo('WELCOME2026');
-            addNotification({ type: 'system', title: 'Offer Applied', message: 'New Merchant prices loaded.' });
+            addNotification({ type: 'system', title: 'Offer Applied', message: '90% OFF promo code applied!' });
+        } else if (code === 'FIRST100') {
+            setActivePromo('FIRST100');
+            addNotification({ type: 'system', title: 'Offer Applied', message: '3-Month Free Trial applied!' });
+        } else if (code === '') {
+            setActivePromo('');
+            addNotification({ type: 'info', title: 'Promo Cleared', message: 'Promo code cleared.' });
         } else {
             setActivePromo('');
             addNotification({ type: 'alert', title: 'Invalid Code', message: 'Code not recognized.' });
         }
+    };
+
+    const handleRemovePromo = () => {
+        setActivePromo('');
+        setPromoCode('');
+        addNotification({ type: 'info', title: 'Promo Removed', message: 'Returned to standard pricing.' });
     };
 
     const TIER_ORDER: Record<string, number> = { free: 0, core: 1, growth: 2, pro: 3 };
@@ -240,6 +253,7 @@ const Subscription: React.FC = () => {
                         // Calculate Display Price
                         let displayPrice = tier.basePrice;
                         let originalPrice = null;
+                        let trialText = '';
 
                         if (activePromo === 'WELCOME2026') {
                             if (tier.id === 'core') {
@@ -252,6 +266,10 @@ const Subscription: React.FC = () => {
                                 originalPrice = tier.basePrice;
                                 displayPrice = '$14.90';
                             }
+                        } else if (activePromo === 'FIRST100') {
+                            originalPrice = tier.basePrice;
+                            displayPrice = '$0.00';
+                            trialText = 'first 3 months';
                         }
 
                         return (
@@ -279,7 +297,9 @@ const Subscription: React.FC = () => {
                                     <span className={`text-3xl font-bold ${originalPrice ? 'text-green-600' : 'text-[var(--text-main)]'}`}>
                                         {displayPrice}
                                     </span>
-                                    <span className="text-[var(--text-muted)]">{tier.period}</span>
+                                    <span className="text-[var(--text-muted)]">
+                                        {trialText ? `${tier.period} (${trialText})` : tier.period}
+                                    </span>
                                 </div>
                                 <p className="text-sm text-[var(--text-muted)] mb-6 h-10">{tier.description}</p>
 
@@ -354,12 +374,40 @@ const Subscription: React.FC = () => {
                         </button>
                     </div>
                     {activePromo === 'WELCOME2026' && (
-                        <div className="mt-4 bg-green-100 text-green-800 p-3 rounded-lg text-sm animate-pulse border border-green-200">
-                            <p className="font-bold">✅ 'WELCOME2026' Applied!</p>
-                            <ul className="text-left mt-1 list-disc list-inside space-y-1 inline-block">
+                        <div className="mt-4 bg-green-50 text-green-800 p-4 rounded-xl text-sm border border-green-200 max-w-sm mx-auto">
+                            <div className="flex items-center justify-between gap-4 mb-2">
+                                <p className="font-bold text-green-900 flex items-center gap-1.5">
+                                    <span className="text-base">✅</span> 'WELCOME2026' Applied!
+                                </p>
+                                <button
+                                    onClick={handleRemovePromo}
+                                    className="text-xs px-2 py-1 bg-red-100 hover:bg-red-200 text-red-800 rounded-lg font-bold transition-all cursor-pointer border border-red-300/30"
+                                >
+                                    Remove
+                                </button>
+                            </div>
+                            <ul className="text-left mt-1 list-disc list-inside space-y-1 text-green-700">
                                 <li><strong>Core Plan:</strong> 90% OFF for 1 Year ($4.99/mo)</li>
                                 <li><strong>Growth Plan:</strong> 90% OFF for 1 Year ($9.90/mo)</li>
                                 <li><strong>Pro Plan:</strong> 90% OFF for 1 Year ($14.90/mo)</li>
+                            </ul>
+                        </div>
+                    )}
+                    {activePromo === 'FIRST100' && (
+                        <div className="mt-4 bg-green-50 text-green-800 p-4 rounded-xl text-sm border border-green-200 max-w-sm mx-auto">
+                            <div className="flex items-center justify-between gap-4 mb-2">
+                                <p className="font-bold text-green-900 flex items-center gap-1.5">
+                                    <span className="text-base">✅</span> 'FIRST100' Applied!
+                                </p>
+                                <button
+                                    onClick={handleRemovePromo}
+                                    className="text-xs px-2 py-1 bg-red-100 hover:bg-red-200 text-red-800 rounded-lg font-bold transition-all cursor-pointer border border-red-300/30"
+                                >
+                                    Remove
+                                </button>
+                            </div>
+                            <ul className="text-left mt-1 list-disc list-inside space-y-1 text-green-700">
+                                <li><strong>All Plans:</strong> 3-Month Free Trial ($0.00 for the first 3 months)</li>
                             </ul>
                         </div>
                     )}
