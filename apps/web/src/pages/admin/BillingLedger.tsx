@@ -5,6 +5,7 @@ import { httpsCallable } from 'firebase/functions';
 import '../../styles/design-system.css';
 import { useMarketplace } from '../../context/MarketplaceContext';
 import { useNotifications } from '../../context/NotificationContext';
+import { useConfirmation } from '../../context/ConfirmationContext';
 import SEO from '../../components/SEO';
 
 interface LedgerEntry {
@@ -51,6 +52,7 @@ interface PromoCodeEntry {
 const BillingLedger: React.FC = () => {
     const { stores } = useMarketplace();
     const { addNotification } = useNotifications();
+    const { confirm } = useConfirmation();
     const storeList = Object.values(stores);
 
     // Tab management: 'ledger' or 'subscriptions' or 'promocodes'
@@ -272,7 +274,14 @@ const BillingLedger: React.FC = () => {
     };
 
     const handleDeletePromoCode = async (code: string) => {
-        if (!window.confirm(`Are you sure you want to permanently delete promo code "${code}"? This will deactivate it on Stripe and delete it from Spendigo.`)) {
+        const confirmed = await confirm({
+            title: 'Confirm Deletion',
+            message: `Are you sure you want to permanently delete promo code "${code}"? This will deactivate it on Stripe and delete it from Spendigo.`,
+            confirmText: 'Delete Code',
+            type: 'danger'
+        });
+
+        if (!confirmed) {
             return;
         }
 

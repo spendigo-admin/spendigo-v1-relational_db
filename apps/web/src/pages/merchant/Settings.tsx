@@ -1415,15 +1415,16 @@ const MerchantSettings: React.FC = () => {
             if (await confirm({ title: 'Disconnect Stripe?', message: 'You will stop receiving payouts until you reconnect.', confirmText: 'Disconnect', type: 'danger' })) {
                 setIsSaving(true);
                 try {
-                    await updateStore(storeId, {
-                        stripeAccountId: null,
-                        stripeOnboardingStatus: null,
-                        stripeConnectedAt: null
-                    });
+                    const { getFunctions, httpsCallable } = await import('firebase/functions');
+                    const functions = getFunctions();
+                    const disconnectStripeFn = httpsCallable(functions, 'disconnectStripe');
+                    await disconnectStripeFn({ storeId });
+
                     auditBridge.emit('STORE_STRIPE_DISCONNECT', { storeId }, `stores/${storeId}`);
                     addNotification({ type: 'system', title: 'Disconnected', message: 'Stripe account unlinked.' });
-                } catch (err) {
-                    addNotification({ type: 'alert', title: 'Error', message: 'Failed to disconnect.' });
+                } catch (err: any) {
+                    console.error('[disconnectStripe] Error:', err);
+                    addNotification({ type: 'alert', title: 'Error', message: err.message || 'Failed to disconnect.' });
                 } finally {
                     setIsSaving(false);
                 }

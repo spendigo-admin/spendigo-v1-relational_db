@@ -56,3 +56,4 @@ export { onFlyerDealCreated } from './triggers/flyerImageMirror';
 export { rebuildActiveDealsJson } from './admin/rebuildActiveDealsJson';
 export { createPromoCode } from './admin/createPromoCode';
 export { deletePromoCode } from './admin/deletePromoCode';
+export { disconnectStripe } from './payments/disconnectStripe';
