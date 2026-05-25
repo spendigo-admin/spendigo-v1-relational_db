@@ -166,10 +166,11 @@ service cloud.firestore {
                   .hasAny(['subscriptionTier', 'status', 'stripeAccountId',
                            'stripeOnboardingStatus', 'ownerId']))
               ||
-              // 2. Deletion Requests (Merchants ARE allowed to move status to 'pending_deletion')
+              // 2. Deletion Requests (Store OWNER only is allowed to move status to 'pending_deletion')
               (request.resource.data.status == 'pending_deletion'
                && !request.resource.data.diff(resource.data).affectedKeys()
-                   .hasAny(['subscriptionTier', 'stripeAccountId', 'stripeOnboardingStatus', 'ownerId']))
+                   .hasAny(['subscriptionTier', 'stripeAccountId', 'stripeOnboardingStatus', 'ownerId'])
+               && getMerchantRole() == 'OWNER')
               ||
               // 3. KYB Document Submission (store OWNER only — not MANAGER/STAFF/MARKETING)
               (request.resource.data.diff(resource.data).affectedKeys()
