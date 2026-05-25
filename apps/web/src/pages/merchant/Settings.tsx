@@ -1936,43 +1936,45 @@ const MerchantSettings: React.FC = () => {
                 </div>
             </section>
 
-            <section className="p-6 rounded-xl border border-red-200 bg-red-50">
-                <h2 className="text-lg font-bold text-red-700 mb-2">Danger Zone</h2>
-                <p className="text-sm text-red-600 mb-4">These actions can affect your store's visibility.</p>
-                <div className="flex gap-4">
-                    <button
-                        onClick={async () => {
-                            const confirmed = await confirm({
-                                title: 'Pause Store Operations?',
-                                message: 'This will pause your store operations.\n\nYour store will be hidden from customers and new orders will be disabled.\n\nYou can resume operations at any time.',
-                                confirmText: 'Pause Store',
-                                type: 'warning'
-                            });
-
-                            if (confirmed) {
-                                await updateStore(storeId, { status: 'suspended' });
-                                auditBridge.emit('STORE_PAUSED', { storeId }, `stores/${storeId}`);
-                                addNotification({
-                                    type: 'system',
-                                    title: 'Store Paused',
-                                    message: 'Your store is now hidden from the marketplace. Contact support to resume.'
+            {user?.merchantRole === 'OWNER' && (
+                <section className="p-6 rounded-xl border border-red-200 bg-red-50">
+                    <h2 className="text-lg font-bold text-red-700 mb-2">Danger Zone</h2>
+                    <p className="text-sm text-red-600 mb-4">These actions can affect your store's visibility.</p>
+                    <div className="flex gap-4">
+                        <button
+                            onClick={async () => {
+                                const confirmed = await confirm({
+                                    title: 'Pause Store Operations?',
+                                    message: 'This will pause your store operations.\n\nYour store will be hidden from customers and new orders will be disabled.\n\nYou can resume operations at any time.',
+                                    confirmText: 'Pause Store',
+                                    type: 'warning'
                                 });
-                            }
-                        }}
-                        disabled={isLocked}
-                        className="px-4 py-2 border border-red-300 text-red-700 rounded-lg hover:bg-red-100 font-medium transition-colors disabled:opacity-50"
-                    >
-                        Pause Store Operations
-                    </button>
-                    <button
-                        onClick={() => setShowCloseStoreModal(true)}
-                        disabled={stores[storeId]?.status === 'pending_deletion'}
-                        className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium transition-colors shadow-sm disabled:opacity-50"
-                    >
-                        {stores[storeId]?.status === 'pending_deletion' ? 'Deletion Pending...' : 'Close Store Permanently'}
-                    </button>
-                </div>
-            </section>
+
+                                if (confirmed) {
+                                    await updateStore(storeId, { status: 'suspended' });
+                                    auditBridge.emit('STORE_PAUSED', { storeId }, `stores/${storeId}`);
+                                    addNotification({
+                                        type: 'system',
+                                        title: 'Store Paused',
+                                        message: 'Your store is now hidden from the marketplace. Contact support to resume.'
+                                    });
+                                }
+                            }}
+                            disabled={isLocked}
+                            className="px-4 py-2 border border-red-300 text-red-700 rounded-lg hover:bg-red-100 font-medium transition-colors disabled:opacity-50"
+                        >
+                            Pause Store Operations
+                        </button>
+                        <button
+                            onClick={() => setShowCloseStoreModal(true)}
+                            disabled={stores[storeId]?.status === 'pending_deletion'}
+                            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium transition-colors shadow-sm disabled:opacity-50"
+                        >
+                            {stores[storeId]?.status === 'pending_deletion' ? 'Deletion Pending...' : 'Close Store Permanently'}
+                        </button>
+                    </div>
+                </section>
+            )}
         </div>
     );
 
