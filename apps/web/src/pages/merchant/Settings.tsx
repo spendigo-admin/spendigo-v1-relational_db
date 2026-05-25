@@ -9,7 +9,7 @@ import { useFileUpload } from '../../hooks/useFileUpload';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { ref as storageRef, uploadBytes } from 'firebase/storage';
 import { db, auth, storage } from '../../lib/firebase';
-import { collection, query, where, onSnapshot, arrayUnion } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, arrayUnion, doc, updateDoc } from 'firebase/firestore';
 import { auditBridge } from '../../utils/auditBridge';
 import { BUSINESS_TYPES } from '../../data/businessTypes';
 
@@ -82,11 +82,11 @@ const MerchantSettings: React.FC = () => {
         { id: 'team', label: 'Team Roles', icon: '👥', visible: hasTeamAccess },
         { id: 'payments', label: 'Payments', icon: '💳', visible: hasSettingsAccess },
         { id: 'notifications', label: 'Alerts', icon: '🔔', visible: true },
-        { id: 'verification', label: 'Verification', icon: '🪪', visible: user?.merchantRole !== 'STAFF' }
+        { id: 'verification', label: 'Verification', icon: '🪪', visible: user?.merchantRole === 'OWNER' }
     ];
 
     const handleTabChange = (tabId: string) => {
-        if (tabId === 'verification' && user?.merchantRole === 'STAFF') return;
+        if (tabId === 'verification' && user?.merchantRole !== 'OWNER') return;
         setActiveTab(tabId as any);
         setSearchParams({ tab: tabId });
     };
@@ -94,7 +94,7 @@ const MerchantSettings: React.FC = () => {
     useEffect(() => {
         const tab = searchParams.get('tab');
         if (tab && ['profile', 'operations', 'team', 'payments', 'notifications', 'verification'].includes(tab)) {
-            if (tab === 'verification' && user?.merchantRole === 'STAFF') {
+            if (tab === 'verification' && user?.merchantRole !== 'OWNER') {
                 setActiveTab('profile');
                 return;
             }
@@ -192,6 +192,12 @@ const MerchantSettings: React.FC = () => {
     const [inviteSuccess, setInviteSuccess] = useState<{ name: string, email: string, password: string } | null>(null);
     const [inviteForm, setInviteForm] = useState({ name: '', email: '', role: 'STAFF' as MerchantRole });
     const [inviteError, setInviteError] = useState('');
+
+    // Change Role State
+    const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
+    const [newRole, setNewRole] = useState<MerchantRole>('STAFF');
+    const [isUpdatingRole, setIsUpdatingRole] = useState(false);
+    const [updateRoleError, setUpdateRoleError] = useState('');
 
     // NEW: Check Stripe status when returning from Stripe
     useEffect(() => {
@@ -577,6 +583,50 @@ const MerchantSettings: React.FC = () => {
         }
     };
 
+    const handleChangeRole = async () => {
+        if (!selectedMember) return;
+        setIsUpdatingRole(true);
+        setUpdateRoleError('');
+
+        try {
+            const userDocRef = doc(db, 'users', selectedMember.id);
+            await updateDoc(userDocRef, {
+                merchantRole: newRole
+            });
+
+            // Emit audit event log
+            auditBridge.emit(
+                'STORE_TEAM_ROLE_CHANGE',
+                {
+                    storeId,
+                    targetUserId: selectedMember.id,
+                    targetUserEmail: selectedMember.email,
+                    oldRole: selectedMember.role,
+                    newRole
+                },
+                `users/${selectedMember.id}`
+            );
+
+            addNotification({
+                type: 'system',
+                title: 'Role Updated',
+                message: `Successfully changed role of ${selectedMember.name} to ${ROLE_INFO[newRole].label}.`
+            });
+            setSelectedMember(null);
+        } catch (error: any) {
+            console.error('Error changing member role:', error);
+            const errMsg = error.message || 'Could not change member role';
+            setUpdateRoleError(errMsg);
+            addNotification({
+                type: 'alert',
+                title: 'Update Failed',
+                message: errMsg
+            });
+        } finally {
+            setIsUpdatingRole(false);
+        }
+    };
+
     const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (!e.target.files || !e.target.files[0] || !uploadTarget) return;
 
@@ -663,14 +713,28 @@ const MerchantSettings: React.FC = () => {
                                 </td>
                                 <td className="p-4 text-xs text-[var(--text-muted)]">{member.lastActive}</td>
                                 <td className="p-4 text-right">
-                                    {member.role !== 'OWNER' && (
-                                        <button
-                                            onClick={() => removeMember(member.id)}
-                                            className="text-xs font-bold text-red-600 hover:bg-red-50 px-2 py-1 rounded transition-colors"
-                                        >
-                                            Remove
-                                        </button>
-                                    )}
+                                    <div className="flex items-center justify-end gap-2">
+                                        {user?.merchantRole === 'OWNER' && member.role !== 'OWNER' && (
+                                            <button
+                                                onClick={() => {
+                                                    setSelectedMember(member);
+                                                    setNewRole(member.role);
+                                                    setUpdateRoleError('');
+                                                }}
+                                                className="text-xs font-bold text-blue-600 hover:bg-blue-50 px-2.5 py-1 rounded transition-colors"
+                                            >
+                                                Change Role
+                                            </button>
+                                        )}
+                                        {member.role !== 'OWNER' && (
+                                            <button
+                                                onClick={() => removeMember(member.id)}
+                                                className="text-xs font-bold text-red-600 hover:bg-red-50 px-2.5 py-1 rounded transition-colors"
+                                            >
+                                                Remove
+                                            </button>
+                                        )}
+                                    </div>
                                 </td>
                             </tr>
                         ))}
@@ -891,6 +955,110 @@ const MerchantSettings: React.FC = () => {
                         >
                             Done
                         </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Change Role Modal / Wizard */}
+            {selectedMember && (
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center animate-fade-in p-4 backdrop-blur-sm">
+                    <div className="bg-white p-6 rounded-2xl w-full max-w-xl shadow-2xl transition-all duration-300 animate-scale-in">
+                        {/* Header */}
+                        <div className="mb-6">
+                            <h2 className="text-xl font-black text-[var(--text-main)]">Manage Your Store Team</h2>
+                            <p className="text-xs text-[var(--text-muted)] mt-1 font-semibold">
+                                Assign roles to restrict access based on job function.
+                            </p>
+                            
+                            {/* Selected Member Info */}
+                            <div className="mt-4 p-3 bg-gray-50 rounded-xl border border-[var(--glass-border)] flex items-center justify-between">
+                                <div>
+                                    <div className="text-xs font-bold text-gray-400 uppercase tracking-wider">Modifying Member</div>
+                                    <div className="text-sm font-bold text-[var(--text-main)]">{selectedMember.name}</div>
+                                    <div className="text-xs text-[var(--text-muted)]">{selectedMember.email}</div>
+                                </div>
+                                <span className={`text-[10px] font-black px-2 py-0.5 rounded border uppercase tracking-wider ${ROLE_INFO[selectedMember.role].color}`}>
+                                    Current: {ROLE_INFO[selectedMember.role].label}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div className="space-y-4">
+                            <label className="block text-sm font-bold text-[var(--text-main)] mb-2">Select New Access Role</label>
+                            
+                            <div className="grid grid-cols-1 gap-3 max-h-[300px] overflow-y-auto pr-1">
+                                {(Object.keys(ROLE_INFO) as MerchantRole[]).filter(roleKey => roleKey !== 'OWNER').map((roleKey) => {
+                                    const role = ROLE_INFO[roleKey];
+                                    const isSelected = newRole === roleKey;
+                                    return (
+                                        <div
+                                            key={roleKey}
+                                            onClick={() => setNewRole(roleKey)}
+                                            className={`p-4 rounded-xl border-2 cursor-pointer transition-all hover:bg-gray-50/50 flex items-center justify-between ${
+                                                isSelected 
+                                                    ? 'border-[var(--brand-primary)] bg-blue-50/5 shadow-md shadow-blue-500/5' 
+                                                    : 'border-[var(--glass-border)] bg-white'
+                                            }`}
+                                        >
+                                            <div className="flex-1 pr-4">
+                                                <div className="flex items-center gap-2 mb-1.5">
+                                                    <span className={`text-[9px] font-black px-2 py-0.5 rounded border uppercase tracking-wider ${role.color}`}>
+                                                        {role.label}
+                                                    </span>
+                                                </div>
+                                                <p className="text-xs font-bold text-[var(--text-main)] mb-0.5">
+                                                    {roleKey === 'STAFF' ? 'Staff / Picker' : role.label}
+                                                </p>
+                                                <p className="text-[11px] text-[var(--text-muted)] leading-relaxed">
+                                                    {role.desc}
+                                                </p>
+                                            </div>
+                                            <div className="flex items-center justify-center shrink-0">
+                                                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
+                                                    isSelected 
+                                                        ? 'bg-[var(--brand-primary)] border-[var(--brand-primary)] text-white' 
+                                                        : 'border-gray-300 bg-white'
+                                                }`}>
+                                                    {isSelected && <span className="text-xs font-bold">✓</span>}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+
+                            {updateRoleError && (
+                                <div className="p-3 bg-red-50 text-red-700 text-xs rounded-xl border border-red-200">
+                                    {updateRoleError}
+                                </div>
+                            )}
+
+                            <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-[var(--glass-border)]">
+                                <button 
+                                    type="button" 
+                                    disabled={isUpdatingRole} 
+                                    onClick={() => setSelectedMember(null)} 
+                                    className="px-5 py-2.5 font-bold text-gray-500 hover:bg-gray-100 rounded-xl disabled:opacity-50 transition-all text-sm"
+                                >
+                                    Cancel
+                                </button>
+                                <button 
+                                    type="button"
+                                    disabled={isUpdatingRole || newRole === selectedMember.role} 
+                                    onClick={handleChangeRole}
+                                    className="px-5 py-2.5 bg-[var(--brand-primary)] text-white font-bold rounded-xl hover:brightness-110 disabled:opacity-50 flex justify-center items-center gap-2 min-w-[130px] transition-all shadow-md shadow-blue-500/10 text-sm"
+                                >
+                                    {isUpdatingRole ? (
+                                        <>
+                                            <span className="inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></span>
+                                            Saving...
+                                        </>
+                                    ) : (
+                                        'Save Role'
+                                    )}
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             )}

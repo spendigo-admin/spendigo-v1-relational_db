@@ -134,6 +134,11 @@ service cloud.firestore {
           && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['storeId']) || request.resource.data.storeId == 'store-' + userId)
           && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['status'])
               || (resource.data.status == 'pending_invite' && request.resource.data.status == 'active'))
+           )
+        || (isMerchant() && getMerchantRole() == 'OWNER' && resource.data.storeId == getMerchantStoreId()
+          && request.resource.data.storeId == resource.data.storeId
+          && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'adminRole', 'email', 'storeId'])
+          && request.resource.data.merchantRole in ['OWNER', 'MANAGER', 'STAFF', 'MARKETING']
            );
       allow delete: if isAdmin();
     }

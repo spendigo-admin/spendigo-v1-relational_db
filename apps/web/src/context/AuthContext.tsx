@@ -77,7 +77,7 @@ const ROLE_PERMISSIONS: Record<string, Permission[]> = {
     OWNER: ['products:write', 'orders:read', 'orders:write', 'flyers:write', 'deals:write', 'settings:write', 'team:manage', 'delivery:manage', 'analytics:read'],
     MANAGER: ['products:write', 'orders:read', 'orders:write', 'flyers:write', 'deals:write', 'settings:write', 'delivery:manage', 'analytics:read'],
     STAFF: ['orders:read', 'orders:write', 'delivery:manage'],
-    MARKETING: ['flyers:write', 'deals:write', 'analytics:read'],
+    MARKETING: ['products:write', 'flyers:write', 'deals:write', 'analytics:read'],
     // Admin Roles
     SUPER_ADMIN: ['admin:all', 'admin:users', 'admin:stores', 'admin:audit'],
     MODERATOR: ['admin:users', 'admin:stores'],

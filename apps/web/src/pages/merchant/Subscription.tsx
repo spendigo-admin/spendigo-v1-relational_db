@@ -177,7 +177,7 @@ const Subscription: React.FC = () => {
         }
     ];
 
-    const isViewOnly = user?.merchantRole === 'STAFF' || isLocked;
+    const isViewOnly = user?.merchantRole === 'STAFF' || user?.merchantRole === 'MARKETING' || isLocked;
 
     const handleUpgrade = async (tierId: string, price: string) => {
         const isFree = tierId === 'free';
