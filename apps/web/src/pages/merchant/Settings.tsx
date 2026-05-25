@@ -78,7 +78,7 @@ const MerchantSettings: React.FC = () => {
 
     const TABS = [
         { id: 'profile', label: 'Store Profile', icon: '🏪', visible: true },
-        { id: 'operations', label: 'Operations', icon: '⚙️', visible: hasSettingsAccess },
+        { id: 'operations', label: 'Operations', icon: '⚙️', visible: hasSettingsAccess || user?.merchantRole === 'STAFF' },
         { id: 'team', label: 'Team Roles', icon: '👥', visible: hasTeamAccess },
         { id: 'payments', label: 'Payments', icon: '💳', visible: hasSettingsAccess },
         { id: 'notifications', label: 'Alerts', icon: '🔔', visible: true },
@@ -1153,9 +1153,22 @@ const MerchantSettings: React.FC = () => {
 
     const renderOperations = () => (
         <div className="space-y-6 animate-fade-in">
-            {/* Delivery & Fees */}
-            <section className="bg-white p-6 rounded-xl border border-[var(--glass-border)] shadow-sm">
-                <h2 className="text-lg font-bold text-[var(--text-main)] mb-4">Delivery Configuration</h2>
+            {user?.merchantRole === 'STAFF' && (
+                <div className="bg-orange-50 border border-orange-200 rounded-2xl p-4 flex items-start gap-3 shadow-sm">
+                    <span className="text-2xl shrink-0">🔒</span>
+                    <div>
+                        <h3 className="font-black text-orange-900 text-sm">Read-Only Access</h3>
+                        <p className="text-xs text-orange-700 mt-0.5 font-medium leading-relaxed">
+                            Staff and Picker accounts have read-only access to Store Operations. Please contact your store manager or owner if updates are required.
+                        </p>
+                    </div>
+                </div>
+            )}
+
+            <fieldset disabled={user?.merchantRole === 'STAFF'} className="space-y-6 disabled:opacity-90">
+                {/* Delivery & Fees */}
+                <section className="bg-white p-6 rounded-xl border border-[var(--glass-border)] shadow-sm">
+                    <h2 className="text-lg font-bold text-[var(--text-main)] mb-4">Delivery Configuration</h2>
 
                 {(!user?.subscriptionTier || user.subscriptionTier === 'free') && (
                     <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-4 flex items-start gap-3">
@@ -1497,6 +1510,7 @@ const MerchantSettings: React.FC = () => {
                         {/* Toggle: Local Delivery */}
                         <div 
                             onClick={() => {
+                                if (user?.merchantRole === 'STAFF') return;
                                 if (!user?.subscriptionTier || user.subscriptionTier === 'free') return;
                                 setOperations(o => ({ ...o, deliveryEnabled: !o.deliveryEnabled }));
                             }}
@@ -1525,7 +1539,10 @@ const MerchantSettings: React.FC = () => {
 
                         {/* Toggle: Pickup */}
                         <div 
-                            onClick={() => setOperations(o => ({ ...o, pickupEnabled: !o.pickupEnabled }))}
+                            onClick={() => {
+                                if (user?.merchantRole === 'STAFF') return;
+                                setOperations(o => ({ ...o, pickupEnabled: !o.pickupEnabled }));
+                            }}
                             className={`flex items-center justify-between p-4 rounded-xl border border-[var(--glass-border)] transition-all hover:bg-gray-50/50 cursor-pointer ${
                                 operations.pickupEnabled ? 'bg-blue-50/10' : 'bg-white'
                             }`}
@@ -1630,6 +1647,7 @@ const MerchantSettings: React.FC = () => {
                     ))}
                 </div>
             </section>
+            </fieldset>
         </div>
     );
 
