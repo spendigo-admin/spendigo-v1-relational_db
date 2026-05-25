@@ -9,6 +9,7 @@ import { filterActiveDeals } from '../../utils/date-helpers';
 import { useAuth } from '../../context/AuthContext';
 import { useTranslation } from 'react-i18next';
 import SEO from '../../components/SEO';
+import { BUSINESS_TYPES } from '../../data/businessTypes';
 
 const StoreCardSkeleton = () => (
     <div className="bg-white rounded-3xl overflow-hidden shadow-sm border border-gray-100 p-4">
@@ -502,7 +503,7 @@ const StoreList: React.FC = () => {
                                     )}
 
                                     <span className="bg-[#112244] text-white px-2 sm:px-3 md:px-6 py-1 md:py-2 rounded-full text-[9px] sm:text-[10px] md:text-[10px] font-black uppercase tracking-[0.2em] whitespace-nowrap">
-                                        {activeCategory === 'Offers' ? t('badgeFeaturedOffer') : (store.business_category || store.category || t('badgeLocalShop'))}
+                                        {activeCategory === 'Offers' ? t('badgeFeaturedOffer') : ((store.business_category && BUSINESS_TYPES[store.business_category]?.label) || (store.category && BUSINESS_TYPES[store.category]?.label) || store.business_category || store.category || t('badgeLocalShop'))}
                                     </span>
                                 </div>
                                 <div className="hidden md:block pr-6">

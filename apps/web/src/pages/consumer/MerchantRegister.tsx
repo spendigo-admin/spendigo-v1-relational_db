@@ -4,7 +4,7 @@ import '../../styles/design-system.css';
 import { useAuth } from '../../context/AuthContext';
 import { useTranslation } from 'react-i18next';
 import SEO from '../../components/SEO';
-import { BUSINESS_TYPES } from '../merchant/Settings';
+import { BUSINESS_TYPES } from '../../data/businessTypes';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 
@@ -268,7 +268,7 @@ const MerchantRegister: React.FC = () => {
                                         disabled={isLoading}
                                     >
                                         {Object.keys(BUSINESS_TYPES).map(type => (
-                                            <option key={type} value={type}>{type}</option>
+                                            <option key={type} value={type}>{BUSINESS_TYPES[type].label || type}</option>
                                         ))}
                                     </select>
                                 </div>

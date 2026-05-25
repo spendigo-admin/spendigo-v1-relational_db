@@ -11,6 +11,7 @@ import { ref as storageRef, uploadBytes } from 'firebase/storage';
 import { db, auth, storage } from '../../lib/firebase';
 import { collection, query, where, onSnapshot, arrayUnion } from 'firebase/firestore';
 import { auditBridge } from '../../utils/auditBridge';
+import { BUSINESS_TYPES } from '../../data/businessTypes';
 
 // --- TYPES ---
 type MerchantRole = 'OWNER' | 'MANAGER' | 'STAFF' | 'MARKETING';
@@ -48,160 +49,6 @@ const ROLE_INFO: Record<MerchantRole, { label: string; desc: string; permissions
         desc: 'Can create Flyers and Deals. No access to orders or store settings.',
         permissions: ['flyers:write', 'deals:write'],
         color: 'bg-pink-100 text-pink-700 border-pink-200'
-    }
-};
-
-
-export const BUSINESS_TYPES: Record<string, { logo: string; cover: string; tagline: string }> = {
-    'Grocery Store': {
-        logo: '/defaults/branding/grocery_logo.png?v=6',
-        cover: '/defaults/branding/grocery_cover.png?v=5',
-        tagline: 'Fresh groceries and daily essentials.'
-    },
-    'Convenience Store': {
-        logo: '/defaults/branding/convenience_logo.png?v=5',
-        cover: '/defaults/branding/convenience_cover.png?v=5',
-        tagline: 'Quick stops for all your immediate needs.'
-    },
-    'Discount / Dollar Store': {
-        logo: '/defaults/branding/discount_logo.png?v=5',
-        cover: '/defaults/branding/discount_cover.png?v=5',
-        tagline: 'Great deals and everyday value.'
-    },
-    'Ethnic / Specialty Grocery': {
-        logo: '/defaults/branding/ethnic_logo.png?v=5',
-        cover: '/defaults/branding/ethnic_cover.png?v=5',
-        tagline: 'Authentic flavors, spices and traditional ingredients.'
-    },
-    'Ethnic Speciality Grocery': {
-        logo: '/defaults/branding/ethnic_logo.png?v=5',
-        cover: '/defaults/branding/ethnic_cover.png?v=5',
-        tagline: 'Authentic flavors, spices and traditional ingredients.'
-    },
-    'Asian Grocers': {
-        logo: '/defaults/branding/asian_logo.jpg?v=5',
-        cover: '/defaults/branding/asian_cover.jpg?v=5',
-        tagline: 'Fresh Asian produce, spices, and specialty goods.'
-    },
-    'Indo-Pak / Desi Grocery': {
-        logo: '/defaults/branding/desi_logo.jpg?v=5',
-        cover: '/defaults/branding/desi_cover.jpg?v=5',
-        tagline: 'Authentic South Asian groceries and spices.'
-    },
-    'Farmers Market Vendor': {
-        logo: '/defaults/branding/farmers_logo.png?v=5',
-        cover: '/defaults/branding/farmers_cover.png?v=5',
-        tagline: 'Fresh, local, and direct from the farm.'
-    },
-    'Organic / Health Food Store': {
-        logo: '/defaults/branding/organic_logo.png?v=5',
-        cover: '/defaults/branding/organic_cover.png?v=5',
-        tagline: 'Healthy, organic, and locally sourced goodness.'
-    },
-    'Artisan Bakery': {
-        logo: '/defaults/branding/bakery_logo.png?v=5',
-        cover: '/defaults/branding/bakery_cover.png?v=5',
-        tagline: 'Freshly baked breads and sweet treats daily.'
-    },
-    'Butcher Shop': {
-        logo: '/defaults/branding/butcher_logo.png?v=5',
-        cover: '/defaults/branding/butcher_cover.png?v=5',
-        tagline: 'Quality cuts and fresh meats.'
-    },
-    'Fishmonger / Seafood Shop': {
-        logo: '/defaults/branding/seafood_logo.png?v=5',
-        cover: '/defaults/branding/seafood_cover.png?v=5',
-        tagline: 'Fresh catches from the sea.'
-    },
-    'Deli / Prepared Foods': {
-        logo: '/defaults/branding/deli_logo.png?v=5',
-        cover: '/defaults/branding/deli_cover.png?v=5',
-        tagline: 'Ready-to-eat meals and deli meats.'
-    },
-    'Restaurant': {
-        logo: '/defaults/branding/restaurant_logo.png?v=5',
-        cover: '/defaults/branding/restaurant_cover.png?v=5',
-        tagline: 'Delicious meals made to order.'
-    },
-    'Local Café / Coffee Shop': {
-        logo: '/defaults/branding/cafe_logo.png?v=5',
-        cover: '/defaults/branding/cafe_cover.png?v=5',
-        tagline: 'Premium coffee and cozy vibes.'
-    },
-    'Dessert & Sweets Shop': {
-        logo: '/defaults/branding/sweets_logo.png?v=5',
-        cover: '/defaults/branding/sweets_cover.png?v=5',
-        tagline: 'Treat yourself to something sweet.'
-    },
-    'Meal Prep / Tiffin Service': {
-        logo: '/defaults/branding/tiffin_logo.png?v=5',
-        cover: '/defaults/branding/tiffin_cover.png?v=5',
-        tagline: 'Home-cooked meals delivered fresh.'
-    },
-    'Pharmacy / Health Store': {
-        logo: '/defaults/branding/pharmacy_logo.png?v=5',
-        cover: '/defaults/branding/pharmacy_cover.png?v=5',
-        tagline: 'Health, wellness, and prescriptions.'
-    },
-    'Pet Store': {
-        logo: '/defaults/branding/pet_logo.png?v=5',
-        cover: '/defaults/branding/pet_cover.png?v=5',
-        tagline: 'Everything your furry friends need.'
-    },
-    'Florist': {
-        logo: '/defaults/branding/florist_logo.png?v=5',
-        cover: '/defaults/branding/florist_cover.png?v=5',
-        tagline: 'Beautiful blooms for every occasion.'
-    },
-    'Home & Garden Store': {
-        logo: '/defaults/branding/home_garden_logo.png?v=5',
-        cover: '/defaults/branding/home_garden_cover.png?v=5',
-        tagline: 'Everything to make your house a home.'
-    },
-    'Hardware Store': {
-        logo: '/defaults/branding/hardware_logo.png?v=5',
-        cover: '/defaults/branding/hardware_cover.png?v=5',
-        tagline: 'Tools and supplies for every project.'
-    },
-    'Bookstore / Stationery': {
-        logo: '/defaults/branding/books_logo.png?v=5',
-        cover: '/defaults/branding/books_cover.png?v=5',
-        tagline: 'Books, supplies, and inspiration.'
-    },
-    'Craft / Handmade Goods Store': {
-        logo: '/defaults/branding/craft_logo.png?v=5',
-        cover: '/defaults/branding/craft_cover.png?v=5',
-        tagline: 'Unique, handmade goods and crafts.'
-    },
-    'Clothing / Boutique': {
-        logo: '/defaults/branding/clothing_logo.png?v=5',
-        cover: '/defaults/branding/clothing_cover.png?v=5',
-        tagline: 'Apparel and accessories for every style.'
-    },
-    'Toy & Gift Store': {
-        logo: '/defaults/branding/toys_logo.png?v=5',
-        cover: '/defaults/branding/toys_cover.png?v=5',
-        tagline: 'Fun toys and perfect gifts.'
-    },
-    'Electronics / Mobile Accessories': {
-        logo: '/defaults/branding/electronics_logo.png?v=5',
-        cover: '/defaults/branding/electronics_cover.png?v=5',
-        tagline: 'Tech gadgets and accessories.'
-    },
-    'Thrift / Second-Hand Store': {
-        logo: '/defaults/branding/thrift_logo.png?v=5',
-        cover: '/defaults/branding/thrift_cover.png?v=5',
-        tagline: 'Pre-loved goods and hidden treasures.'
-    },
-    'General Retail': {
-        logo: '/defaults/branding/general_logo.png?v=5',
-        cover: '/defaults/branding/general_cover.png?v=5',
-        tagline: 'Quality goods and services.'
-    },
-    'Specialty Retail': {
-        logo: '/defaults/branding/specialty_logo.png?v=5',
-        cover: '/defaults/branding/specialty_cover.png?v=5',
-        tagline: 'Unique specialty items and goods.'
     }
 };
 
@@ -1039,7 +886,7 @@ const MerchantSettings: React.FC = () => {
                             className="w-full p-2 border rounded-lg bg-white/50 focus:ring-2 ring-[var(--brand-primary)] outline-none text-[var(--text-main)] font-semibold cursor-not-allowed opacity-75"
                         >
                             {Object.keys(BUSINESS_TYPES).map(type => (
-                                <option key={type} value={type}>{type}</option>
+                                <option key={type} value={type}>{BUSINESS_TYPES[type].label || type}</option>
                             ))}
                         </select>
                         <p className="text-xs text-blue-700 mt-2 font-medium">

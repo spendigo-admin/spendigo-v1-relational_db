@@ -318,6 +318,10 @@ Check the following properties:
 * `orphans.merchantProductsMissingStore`: Identifies merchant products that reference non-existent stores.
 * `orphans.merchantProductsMissingMaster`: Identifies merchant products referencing non-existent master products.
 * `orphans.ordersMissingCustomer` & `orphans.ordersMissingStore`: Identifies orders that reference deleted users or stores.
+* `orphans.jobApplicationsMissingJob`: Identifies applications submitted for deleted career postings.
+* `orphans.scheduledIngestionsMissingStore`: Identifies ingestion scraper tasks referencing non-existent stores.
+* `orphans.campaignLogsMissingStore`: Identifies FCM campaigns targeting deleted stores.
+* `orphans.billingLedgerMissingStore` & `orphans.billingLedgerMissingUser`: Identifies billing transacts referencing missing users or stores.
 
 > [!WARNING]
 > If the audit reveals high volume of records referencing non-existent parent IDs, you must determine whether to:
@@ -348,12 +352,13 @@ npx ts-node scripts/backfillMigration.ts
 ```
 
 Monitor the logs:
-1. **Users Migration**: Watch for successful user insertions.
-2. **Stores Migration**: Watch for successful store insertions.
-3. **Master Products Migration**: Watch for global product catalog indexing.
-4. **Circular Reference Updates**: Drizzle updates the `users.storeId` properties for store owners.
-5. **Merchant Products Migration**: Migrates individual inventory prices with compound keys.
-6. **Orders & Order Items Migration**: Processes and flattens orders while logging and skipping orphans.
+1. **SSoT Reference Seeding**: Seeds the `ref_business_types` and `ref_categories` from frontend constants, and initializes enums.
+2. **Users Migration**: Watch for user records (with spend totals converted to integer cents).
+3. **Stores Migration**: Watch for store records (with fee variables converted to cents).
+4. **Master Products Migration**: Global catalog indexing and category linkages.
+5. **Circular Reference Updates**: Drizzle resolves store owner FKs in users.
+6. **Merchant Products Migration**: Compounds composite primary keys and sets pricing cents.
+7. **Orders & Order Items Migration**: Transacts checkout records and flattens items.
 
 ---
 
@@ -380,10 +385,10 @@ SELECT COUNT(*) FROM orders;
 ```
 
 #### Check 2: Financial Sum Reconciliation
-To ensure no transaction records are corrupted or missing currency figures, verify the complete checkout volume:
+To ensure no transaction records are corrupted or missing currency figures, verify the complete checkout volume. Since PostgreSQL stores pricing as integers in cents, divide the sum by 100.0 to compare with Firestore's decimal float values:
 ```sql
--- Compute the sum total of all orders
-SELECT SUM(total) as postgres_checkout_total, SUM(tax) as postgres_tax_total FROM orders;
+-- Compute the decimal dollar sum total of all orders
+SELECT (SUM(total) / 100.0) as postgres_checkout_total, (SUM(tax) / 100.0) as postgres_tax_total FROM orders;
 ```
 *Compare the return values with an aggregation query run on your Firestore `orders` collection.*
 

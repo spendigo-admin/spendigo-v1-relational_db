@@ -7,7 +7,7 @@ import { useMarketplace } from '../../context/MarketplaceContext';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 
-import { BUSINESS_TYPES } from './Settings';
+import { BUSINESS_TYPES } from '../../data/businessTypes';
 import { useAudit } from '../../context/AuditContext';
 
 const MARKETPLACE_AGREEMENT_V1 = `
@@ -237,7 +237,7 @@ const MerchantOnboarding: React.FC = () => {
                                 onChange={e => setFormData({ ...formData, businessType: e.target.value })}
                             >
                                 {Object.keys(BUSINESS_TYPES).map(type => (
-                                    <option key={type} value={type}>{type}</option>
+                                    <option key={type} value={type}>{BUSINESS_TYPES[type].label || type}</option>
                                 ))}
                             </select>
                             <p className="text-xs text-[var(--text-muted)] mt-2">
@@ -283,22 +283,49 @@ const MerchantOnboarding: React.FC = () => {
                     <div className="text-center space-y-6 animate-fade-in">
                         <div className="w-16 h-16 mx-auto rounded-full bg-green-100 flex items-center justify-center text-2xl">✅</div>
                         <h2 className="text-xl font-bold">Store Created Successfully!</h2>
-                        <div className="p-4 bg-[var(--surface-0)] rounded-xl border border-[var(--glass-border)] text-left">
-                            <h3 className="font-bold text-sm text-[var(--text-muted)] uppercase mb-2">Next Step: Payouts</h3>
-                            <p className="text-sm">Connect your bank account via Stripe to receive your payouts. You can do this later from Settings.</p>
-                        </div>
+                        
+                        {(user?.subscriptionTier || 'free') === 'free' ? (
+                            <>
+                                <div className="p-5 bg-blue-50/50 rounded-2xl border border-blue-100 text-left space-y-2">
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-lg">🏪</span>
+                                        <h3 className="font-black text-sm text-blue-900 uppercase tracking-wider">Plan: Starter (Free)</h3>
+                                    </div>
+                                    <p className="text-sm text-blue-800 leading-relaxed font-medium">
+                                        Your store is active on the <strong>Starter plan</strong> (up to 10 products). Online credit card payments and Stripe payouts are reserved for premium plans. 
+                                    </p>
+                                    <p className="text-xs text-blue-700 italic">
+                                        💡 You can upgrade to a premium plan (Core, Growth, or Pro) at any time from your billing settings to accept online payments.
+                                    </p>
+                                </div>
 
-                        <button
-                            onClick={handleStripeConnect}
-                            className="w-full py-4 rounded-[var(--radius-md)] bg-[#635BFF] text-white font-bold hover:brightness-110 flex items-center justify-center gap-2"
-                        >
-                            <span>Connect with</span>
-                            <span className="font-bold italic">Stripe</span>
-                        </button>
+                                <button
+                                    onClick={() => navigate('/merchant/dashboard')}
+                                    className="w-full py-4 rounded-[var(--radius-md)] bg-[var(--brand-primary)] text-white font-bold hover:brightness-110 flex items-center justify-center gap-2 shadow-lg shadow-blue-500/10"
+                                >
+                                    Go to Merchant Dashboard
+                                </button>
+                            </>
+                        ) : (
+                            <>
+                                <div className="p-4 bg-[var(--surface-0)] rounded-xl border border-[var(--glass-border)] text-left">
+                                    <h3 className="font-bold text-sm text-[var(--text-muted)] uppercase mb-2">Next Step: Payouts</h3>
+                                    <p className="text-sm">Connect your bank account via Stripe to receive your payouts. You can do this later from Settings.</p>
+                                </div>
 
-                        <button onClick={() => navigate('/merchant/dashboard')} className="text-sm text-[var(--text-muted)] hover:underline">
-                            Skip for now, go to Dashboard
-                        </button>
+                                <button
+                                    onClick={handleStripeConnect}
+                                    className="w-full py-4 rounded-[var(--radius-md)] bg-[#635BFF] text-white font-bold hover:brightness-110 flex items-center justify-center gap-2"
+                                >
+                                    <span>Connect with</span>
+                                    <span className="font-bold italic">Stripe</span>
+                                </button>
+
+                                <button onClick={() => navigate('/merchant/dashboard')} className="text-sm text-[var(--text-muted)] hover:underline">
+                                    Skip for now, go to Dashboard
+                                </button>
+                            </>
+                        )}
                     </div>
                 )}
 

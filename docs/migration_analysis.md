@@ -178,3 +178,72 @@ This document establishes the definitive **Reference Map** of all Firestore data
 3. **Orphan Documents**:
    - In Firestore, several merchant products still reference store IDs that no longer exist (deleted stores). Similarly, old orders link to consumers who have deleted their accounts.
    - **Resolution**: Our script `preMigrationAudit.ts` scans and logs these orphaned items first, preventing them from violating PostgreSQL foreign key constraints during execution.
+
+---
+
+## 5. Administrative & Core Operational Entities (Platform Tier)
+
+To ensure a smooth scratch rollout, the following 11 collections used in backend cloud functions and administrative pages must be mapped into relational Postgres tables.
+
+### 5.1 `careers` & `job_applications` (Recruiting Portal)
+* **Firestore Locations**: `/careers/{jobId}` and `/job_applications/{appId}`
+* **Relational Mapping**: Tables `careers` and `job_applications`
+* **Attributes**:
+  - `careers`: `id` (PK), `title` (VARCHAR(255) NOT NULL), `department` (VARCHAR(100)), `location` (VARCHAR(100)), `type` (VARCHAR(50)), `description` (TEXT), `requirements` (TEXT), `created_at` (TIMESTAMP).
+  - `job_applications`: `id` (PK), `job_id` (FK REFERENCES `careers.id` ON DELETE CASCADE), `candidate_name` (VARCHAR(255) NOT NULL), `candidate_email` (VARCHAR(255) NOT NULL), `resume_url` (TEXT), `status` (ENUM('new', 'reviewed', 'interviewing', 'rejected', 'hired') DEFAULT 'new'), `created_at` (TIMESTAMP).
+
+### 5.2 `ads` (Platform Promotional Banners)
+* **Firestore Location**: `/ads/{adId}`
+* **Relational Mapping**: Table `ads`
+* **Attributes**:
+  - `id` (PK), `title` (VARCHAR(255) NOT NULL), `image_url` (TEXT NOT NULL), `link` (TEXT), `priority` (INTEGER DEFAULT 0), `status` (ENUM('active', 'inactive') DEFAULT 'active'), `store_id` (FK REFERENCES `stores.id` ON DELETE SET NULL), `created_at` (TIMESTAMP).
+
+### 5.3 `surveys` & `survey_responses` (Feedback Mechanism)
+* **Firestore Locations**: `/surveys/{surveyId}` and `/surveys/{surveyId}/responses/{userId}`
+* **Relational Mapping**: Tables `surveys` and `survey_responses`
+* **Attributes**:
+  - `surveys`: `id` (PK), `title` (VARCHAR(255) NOT NULL), `description` (TEXT), `questions` (JSONB), `status` (ENUM('active', 'inactive') DEFAULT 'active'), `created_at` (TIMESTAMP).
+  - `survey_responses`: `survey_id` (FK REFERENCES `surveys.id` ON DELETE CASCADE), `user_id` (FK REFERENCES `users.id` ON DELETE CASCADE), `answers` (JSONB NOT NULL), `created_at` (TIMESTAMP). Primary Key: `(survey_id, user_id)`.
+
+### 5.4 `promo_codes` (Discount Management)
+* **Firestore Location**: `/promo_codes/{codeId}`
+* **Relational Mapping**: Table `promo_codes`
+* **Attributes**:
+  - `id` (PK), `code` (VARCHAR(50) UNIQUE NOT NULL), `discount_percent` (INTEGER NOT NULL), `max_uses` (INTEGER), `uses_count` (INTEGER DEFAULT 0), `expires_at` (TIMESTAMP), `status` (ENUM('active', 'inactive') DEFAULT 'active').
+
+### 5.5 `scheduled_ingestion` (OSM / Scraping Automation)
+* **Firestore Location**: `/scheduled_ingestion/{jobId}`
+* **Relational Mapping**: Table `scheduled_ingestions`
+* **Attributes**:
+  - `id` (PK), `merchant_id` (FK REFERENCES `stores.id` ON DELETE CASCADE), `flyer_url` (TEXT), `status` (ENUM('pending', 'processing', 'completed', 'failed') DEFAULT 'pending'), `log_content` (TEXT), `created_at` (TIMESTAMP).
+
+### 5.6 `staff` (Admin Staff RBAC Profiles)
+* **Firestore Location**: `/staff/{uid}`
+* **Relational Mapping**: Table `staff`
+* **Attributes**:
+  - `id` (PK -> Firebase UID), `email` (VARCHAR(255) UNIQUE NOT NULL), `name` (VARCHAR(255)), `role` (ENUM('admin', 'moderator') DEFAULT 'moderator'), `created_at` (TIMESTAMP).
+
+### 5.7 `mail` (Trigger Email Queue)
+* **Firestore Location**: `/mail/{mailId}`
+* **Relational Mapping**: Table `mail`
+* **Attributes**:
+  - `id` (PK), `to` (TEXT[] NOT NULL), `message` (JSONB NOT NULL), `status` (JSONB), `created_at` (TIMESTAMP).
+
+### 5.8 `payments` (Stripe Checkout Intent Webhook Capture)
+* **Firestore Location**: `/payments/{paymentIntentId}`
+* **Relational Mapping**: Table `payments`
+* **Attributes**:
+  - `id` (PK -> Stripe PaymentIntent ID), `status` (VARCHAR(50) NOT NULL), `order_id` (VARCHAR(128)), `metadata` (JSONB), `created_at` (TIMESTAMP).
+
+### 5.9 `billing_ledger` (Subscription Invoicing Audit Trail)
+* **Firestore Location**: `/billing_ledger/{ledgerId}`
+* **Relational Mapping**: Table `billing_ledger`
+* **Attributes**:
+  - `id` (PK), `store_id` (VARCHAR(128) REFERENCES `stores.id`), `store_name` (VARCHAR(255)), `user_id` (VARCHAR(128) REFERENCES `users.id`), `user_email` (VARCHAR(255)), `type` (VARCHAR(50)), `amount` (DOUBLE PRECISION), `tier` (VARCHAR(50)), `stripe_charge_id` (VARCHAR(255)), `stripe_invoice_id` (VARCHAR(255)), `billing_reason` (VARCHAR(100)), `timestamp` (TIMESTAMP), `status` (VARCHAR(50)), `description` (TEXT).
+
+### 5.10 `smartcart_optimizer_cache` (Algolia Optimization Caching)
+* **Firestore Location**: `/smartcart_optimizer_cache/{cacheKey}`
+* **Relational Mapping**: Table `smartcart_optimizer_cache`
+* **Attributes**:
+  - `cache_key` (VARCHAR(64) PRIMARY KEY), `data_signature` (VARCHAR(64) NOT NULL), `response` (JSONB NOT NULL), `created_at` (TIMESTAMP), `expires_at` (TIMESTAMP).
+

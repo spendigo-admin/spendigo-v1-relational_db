@@ -1,0 +1,211 @@
+# --- Firebase SQL Connect GraphQL Schema (schema.gql) ---
+# Defines the relational mappings, enums, tables, and types for Spendigo's transition to PostgreSQL.
+
+scalar Vector # 768-Dimension vector embedding scalar mapping to pgvector
+
+enum UserRole {
+  consumer
+  merchant
+  admin
+}
+
+enum MerchantSubRole {
+  OWNER
+  MANAGER
+  STAFF
+  MARKETING
+}
+
+enum UserStatus {
+  pending_invite
+  active
+  suspended
+}
+
+enum ProductStatus {
+  active
+  deprecated
+  blocked
+}
+
+enum VerificationStatus {
+  unverified
+  verified
+  manufacturer_verified
+}
+
+enum StoreStatus {
+  active
+  pending
+  suspended
+  pending_deletion
+}
+
+# --- 1. Single Source of Truth (SSoT) REFERENCE TABLES ---
+type RefBusinessType @table(name: "ref_business_types") {
+  id: String! @primaryKey
+  label: String!
+  logo: String
+  cover: String
+  tagline: String!
+}
+
+type RefCategory @table(name: "ref_categories") {
+  id: String! @primaryKey
+  name: String!
+}
+
+type RefOrderStatus @table(name: "ref_order_statuses") {
+  id: String! @primaryKey
+}
+
+type RefPaymentStatus @table(name: "ref_payment_statuses") {
+  id: String! @primaryKey
+}
+
+# --- 2. CORE USERS & STORES ---
+type User @table(name: "users") {
+  id: String! @primaryKey # Firebase UID
+  email: String! @unique
+  name: String
+  role: UserRole! @default(value: "consumer")
+  merchantRole: MerchantSubRole
+  storeId: String @col(references: "Store")
+  status: UserStatus! @default(value: "active")
+  addresses: Json @default(value: "[]")
+  totalOrders: Int! @default(value: 0)
+  totalSpend: Int! @default(value: 0) # Currencies stored as integer cents
+  lastOrderDate: Timestamp
+  createdAt: Timestamp! @default(expr: "now()")
+  lastActive: Timestamp! @default(expr: "now()")
+}
+
+type Store @table(name: "stores") {
+  id: String! @primaryKey
+  name: String!
+  logo: String
+  address: String
+  province: String! @default(value: "ON")
+  postalCode: String
+  latitude: Float
+  longitude: Float
+  deliveryFee: Int! @default(value: 0) # Stored in integer cents
+  freeDeliveryThreshold: Int # Stored in integer cents
+  pickupEnabled: Boolean! @default(value: true)
+  deliveryEnabled: Boolean! @default(value: false)
+  maxDeliveryRadiusKm: Float! @default(value: 10.0)
+  subscriptionTier: String! @default(value: "starter")
+  status: StoreStatus! @default(value: "pending")
+  suspensionReason: String
+  ownerId: String! @col(references: "User")
+  stripeAccountId: String
+  stripeOnboardingStatus: String
+  kybStatus: String! @default(value: "not_submitted")
+  kybDocuments: Json @default(value: "[]")
+  updatedAt: Timestamp! @default(expr: "now()")
+}
+
+# --- 3. MASTER & MERCHANT PRODUCT CATALOGS ---
+type MasterProduct @table(name: "master_products") {
+  id: String! @primaryKey
+  productName: String!
+  brandName: String
+  upcGtin: String @unique
+  isSoldByWeight: Boolean! @default(value: false)
+  netQuantityValue: Float
+  netQuantityUnit: String
+  packageCount: Int @default(value: 1)
+  primaryImageUrl: String
+  secondaryImageUrls: Json @default(value: "[]")
+  categoryId: String! @col(references: "RefCategory")
+  productType: String
+  storageType: String
+  taxCategoryId: String
+  suggestedRetailPrice: Int # Stored in integer cents
+  substitutionGroupId: String
+  ageRestricted: Boolean! @default(value: false)
+  isCanadianLocal: Boolean! @default(value: false)
+  status: ProductStatus! @default(value: "active")
+  verificationStatus: VerificationStatus! @default(value: "unverified")
+  updatedAt: Timestamp! @default(expr: "now()")
+}
+
+type ProductEmbedding @table(name: "product_embeddings") {
+  id: String! @primaryKey @col(references: "MasterProduct")
+  embedding: Vector!
+}
+
+type MerchantProduct @table(name: "merchant_products") {
+  storeId: String! @col(references: "Store")
+  masterProductId: String! @col(references: "MasterProduct")
+  price: Int! # Stored in integer cents
+  currency: String! @default(value: "CAD")
+  availableQuantity: Int! @default(value: 0)
+  merchantSku: String
+  originalPrice: Int # Stored in integer cents
+  discountLabel: String
+  discountValidUntil: Timestamp
+  isActive: Boolean! @default(value: true)
+  isCanadianLocal: Boolean! @default(value: false)
+  updatedAt: Timestamp! @default(expr: "now()")
+}
+
+# --- 4. CHECKOUT TRANSACTIONS & ORDERS ---
+type Order @table(name: "orders") {
+  id: String! @primaryKey
+  customerId: String! @col(references: "User")
+  storeId: String! @col(references: "Store")
+  storeName: String!
+  customerName: String!
+  customerEmail: String!
+  subtotal: Int! # Stored in integer cents
+  deliveryFee: Int! @default(value: 0) # Stored in integer cents
+  tax: Int! # Stored in integer cents
+  total: Int! # Stored in integer cents
+  paymentMethod: String! @default(value: "card")
+  paymentStatus: String! @col(references: "RefPaymentStatus")
+  paymentIntentId: String
+  deliveryAddress: Json!
+  status: String! @col(references: "RefOrderStatus")
+  rejectionReason: String
+  estimatedTime: String
+  paymentCollectedBy: String
+  emailQueued: Boolean! @default(value: false)
+  emailQueuedAt: Timestamp
+  cancelledAt: Timestamp
+  createdAt: Timestamp! @default(expr: "now()")
+}
+
+type OrderItem @table(name: "order_items") {
+  id: String! @primaryKey
+  orderId: String! @col(references: "Order")
+  masterProductId: String! @col(references: "MasterProduct")
+  productName: String!
+  effectivePrice: Int! # Stored in integer cents
+  quantity: Int!
+  substitutionGroupId: String
+  taxable: Boolean! @default(value: true)
+}
+
+# --- 5. COMPLIANCE & SECURITY LEDGERS ---
+type AuditLog @table(name: "audit_logs") {
+  id: String! @primaryKey
+  timestamp: Timestamp! @default(expr: "now()")
+  actorId: String!
+  actorEmail: String!
+  actorIp: String!
+  action: String!
+  resource: String
+  metadata: Json
+  prevHash: String! @unique
+  hash: String! @unique
+}
+
+type ConsentLog @table(name: "consent_logs") {
+  id: String! @primaryKey
+  userId: String! @col(references: "User")
+  consentType: String!
+  acceptedAt: Timestamp! @default(expr: "now()")
+  ipAddress: String!
+  userAgent: String!
+}

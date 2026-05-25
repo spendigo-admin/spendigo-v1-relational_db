@@ -32,6 +32,18 @@ const categoriesToUpdate: Record<string, Branding> = {
         logo: '/defaults/branding/ethnic_logo.png?v=5',
         cover: '/defaults/branding/ethnic_cover.png?v=5'
     },
+    'Ethnic Speciality Grocery': {
+        logo: '/defaults/branding/ethnic_logo.png?v=5',
+        cover: '/defaults/branding/ethnic_cover.png?v=5'
+    },
+    'Asian Grocers': {
+        logo: '/defaults/branding/asian_logo.jpg?v=5',
+        cover: '/defaults/branding/asian_cover.jpg?v=5'
+    },
+    'Indo-Pak / Desi Grocery': {
+        logo: '/defaults/branding/desi_logo.jpg?v=5',
+        cover: '/defaults/branding/desi_cover.jpg?v=5'
+    },
     'Farmers Market Vendor': {
         logo: '/defaults/branding/farmers_logo.png?v=5',
         cover: '/defaults/branding/farmers_cover.png?v=5'

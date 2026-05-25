@@ -9,7 +9,7 @@ import { useAudit } from '../../context/AuditContext';
 import { useMarketplace } from '../../context/MarketplaceContext';
 import { useNotifications } from '../../context/NotificationContext';
 import { useConfirmation } from '../../context/ConfirmationContext';
-import { BUSINESS_TYPES } from '../merchant/Settings';
+import { BUSINESS_TYPES } from '../../data/businessTypes';
 
 const SUSPENSION_REASONS = [
     'Compliance Issue',
@@ -565,17 +565,102 @@ const StoreManagement: React.FC = () => {
                                                                         message: {
                                                                             subject: 'Your Spendigo Store is Approved! 🚀',
                                                                             html: `
-                                                                                <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
-                                                                                    <h2 style="color: #2563eb;">Congratulations!</h2>
-                                                                                    <p>Hi ${store.name},</p>
-                                                                                    <p>We are happy to inform you that your merchant application has been <strong>approved</strong>. Your store is now live in the Spendigo marketplace!</p>
-                                                                                    <p>You can now start managing your products, flyers, and deals to attract nearby shoppers.</p>
-                                                                                    <div style="margin: 30px 0; text-align: center;">
-                                                                                        <a href="${window.location.origin}/merchant/dashboard" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Go to Merchant Dashboard</a>
+                                                                                <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; color: #1e293b; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 24px;">
+                                                                                    <!-- Header/Branding -->
+                                                                                    <div style="text-align: center; margin-bottom: 24px;">
+                                                                                        <span style="font-size: 28px; font-weight: 900; color: #112244; letter-spacing: -0.05em;">Spendigo</span>
+                                                                                        <span style="display: block; font-size: 9px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.2em; color: #007AFF; margin-top: 4px;">Partner Network</span>
                                                                                     </div>
-                                                                                    <p><strong>Pro Tip:</strong> Want to jumpstart your sales? Share your local deals with your current customers and promote your Spendigo presence on social media!</p>
-                                                                                    <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
-                                                                                    <p style="font-size: 12px; color: #666;">If you have any questions, feel free to contact our support team at support@spendigo.ca.</p>
+
+                                                                                    <!-- Hero Announcement -->
+                                                                                    <div style="background-color: #ffffff; border: 1px solid #f1f5f9; border-radius: 20px; padding: 32px; text-align: center; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
+                                                                                        <div style="font-size: 40px; margin-bottom: 12px;">🎉</div>
+                                                                                        <h2 style="color: #1e1b4b; font-size: 24px; font-weight: 900; margin: 0 0 8px 0; letter-spacing: -0.03em;">Congratulations!</h2>
+                                                                                        <p style="color: #64748b; font-size: 14px; margin: 0 0 16px 0; font-weight: 500;">Hi ${store.name},</p>
+                                                                                        <p style="color: #334155; font-size: 15px; line-height: 1.6; margin: 0; font-weight: 500;">
+                                                                                            We are happy to inform you that your merchant application has been <strong>approved</strong>. Your store is now live in the Spendigo marketplace!
+                                                                                        </p>
+                                                                                    </div>
+
+                                                                                    <!-- What Next / Quick Action -->
+                                                                                    <div style="margin: 24px 0; text-align: center;">
+                                                                                        <p style="color: #475569; font-size: 14px; margin-bottom: 16px; font-weight: 600;">You can now start managing your products, flyers, and deals to attract nearby shoppers.</p>
+                                                                                        <a href="${window.location.origin}/merchant/dashboard" style="background-color: #007AFF; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 12px; font-weight: 900; font-size: 13px; text-transform: uppercase; letter-spacing: 0.1em; display: inline-block; box-shadow: 0 10px 15px -3px rgba(0, 122, 255, 0.2);">Go to Merchant Dashboard</a>
+                                                                                    </div>
+
+                                                                                    <!-- Subscription Plans Section -->
+                                                                                    <div style="background-color: #ffffff; border: 1px solid #f1f5f9; border-radius: 20px; padding: 24px; margin-bottom: 24px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
+                                                                                        <h3 style="color: #1e1b4b; font-size: 16px; font-weight: 800; margin-top: 0; margin-bottom: 16px; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px;">🚀 Grow Your Store with Spendigo Plans</h3>
+                                                                                        <p style="color: #64748b; font-size: 13px; line-height: 1.5; margin-bottom: 20px; font-weight: 500;">
+                                                                                            By default, your store is on our <strong>Starter (Free) Plan</strong> (up to 10 products). Upgrade your plan anytime via your billing dashboard to unlock advanced tools and boost visibility:
+                                                                                        </p>
+
+                                                                                        <!-- Core Plan -->
+                                                                                        <div style="background-color: #f0f7ff; border: 1px solid #bfdbfe; border-radius: 12px; padding: 16px; margin-bottom: 12px;">
+                                                                                            <table style="width: 100%; border-collapse: collapse; margin-bottom: 6px;">
+                                                                                                <tr>
+                                                                                                    <td style="font-weight: 800; color: #1e3a8a; font-size: 14px; text-align: left; padding: 0;">🔹 Core Plan</td>
+                                                                                                    <td style="font-weight: 800; color: #1d4ed8; font-size: 14px; text-align: right; padding: 0;">$49<span style="font-size: 10px; font-weight: 500; color: #60a5fa;">/mo</span></td>
+                                                                                                </tr>
+                                                                                            </table>
+                                                                                            <p style="margin: 0 0 8px 0; font-size: 12px; color: #1e40af; font-weight: 600;">Recommended for active stores starting out.</p>
+                                                                                            <ul style="margin: 0; padding-left: 18px; font-size: 12px; color: #3b82f6; line-height: 1.6; font-weight: 500;">
+                                                                                                <li>Unlimited product listings</li>
+                                                                                                <li>Pickup + Delivery Toggle integration</li>
+                                                                                                <li>Full Order Management Dashboard</li>
+                                                                                                <li>Basic store analytics</li>
+                                                                                            </ul>
+                                                                                        </div>
+
+                                                                                        <!-- Growth Plan -->
+                                                                                        <div style="background-color: #faf5ff; border: 1px solid #e9d5ff; border-radius: 12px; padding: 16px; margin-bottom: 12px;">
+                                                                                            <table style="width: 100%; border-collapse: collapse; margin-bottom: 6px;">
+                                                                                                <tr>
+                                                                                                    <td style="font-weight: 800; color: #581c87; font-size: 14px; text-align: left; padding: 0;">⚡ Growth Plan</td>
+                                                                                                    <td style="font-weight: 800; color: #7e22ce; font-size: 14px; text-align: right; padding: 0;">$99<span style="font-size: 10px; font-weight: 500; color: #c084fc;">/mo</span></td>
+                                                                                                </tr>
+                                                                                            </table>
+                                                                                            <p style="margin: 0 0 8px 0; font-size: 12px; color: #6b21a8; font-weight: 600;">Maximize your local sales and shopper visibility.</p>
+                                                                                            <ul style="margin: 0; padding-left: 18px; font-size: 12px; color: #a855f7; line-height: 1.6; font-weight: 500;">
+                                                                                                <li><strong>Everything in Core included</strong></li>
+                                                                                                <li>Weekly Flyer Highlighting in search results</li>
+                                                                                                <li>Advanced analytics and user traffic insights</li>
+                                                                                            </ul>
+                                                                                        </div>
+
+                                                                                        <!-- Pro Plan -->
+                                                                                        <div style="background-color: #fffbeb; border: 1px solid #fde68a; border-radius: 12px; padding: 16px;">
+                                                                                            <table style="width: 100%; border-collapse: collapse; margin-bottom: 6px;">
+                                                                                                <tr>
+                                                                                                    <td style="font-weight: 800; color: #78350f; font-size: 14px; text-align: left; padding: 0;">🏆 Pro Plan</td>
+                                                                                                    <td style="font-weight: 800; color: #b45309; font-size: 14px; text-align: right; padding: 0;">$149<span style="font-size: 10px; font-weight: 500; color: #fbbf24;">/mo</span></td>
+                                                                                                </tr>
+                                                                                            </table>
+                                                                                            <p style="margin: 0 0 8px 0; font-size: 12px; color: #92400e; font-weight: 600;">Full digital marketing suite for ambitious local brands.</p>
+                                                                                            <ul style="margin: 0; padding-left: 18px; font-size: 12px; color: #d97706; line-height: 1.6; font-weight: 500;">
+                                                                                                <li><strong>Everything in Growth included</strong></li>
+                                                                                                <li>Deals & Flash Sales (attract instant attention)</li>
+                                                                                                <li>Featured placement in top shopper categories</li>
+                                                                                                <li>Direct Push Campaign access (reach shoppers on their phones)</li>
+                                                                                                <li>Lowest commission rate (1%) for platform payouts</li>
+                                                                                            </ul>
+                                                                                        </div>
+                                                                                    </div>
+
+                                                                                    <!-- Pro Tip & Support Footer -->
+                                                                                    <div style="background-color: #f1f5f9; border-radius: 16px; padding: 20px; margin-bottom: 24px;">
+                                                                                        <span style="font-size: 12px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.1em; color: #0f172a; display: block; margin-bottom: 6px;">💡 Pro Tip</span>
+                                                                                        <p style="color: #334155; font-size: 13px; line-height: 1.5; margin: 0; font-weight: 500;">
+                                                                                            Want to jumpstart your sales? Share your local deals with your current customers and promote your Spendigo presence on social media!
+                                                                                        </p>
+                                                                                    </div>
+
+                                                                                    <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;" />
+
+                                                                                    <div style="text-align: center; color: #94a3b8; font-size: 11px; font-weight: 500;">
+                                                                                        <p style="margin: 0 0 4px 0;">If you have any questions, feel free to contact our support team at <a href="mailto:support@spendigo.ca" style="color: #007AFF; text-decoration: none; font-weight: 700;">support@spendigo.ca</a>.</p>
+                                                                                        <p style="margin: 0;">Spendigo Canada Inc.</p>
+                                                                                    </div>
                                                                                 </div>
                                                                             `
                                                                         }
@@ -930,7 +1015,7 @@ const StoreManagement: React.FC = () => {
                                                 onChange={e => setFormData({ ...formData, type: e.target.value })}
                                             >
                                                 {Object.keys(BUSINESS_TYPES).sort().map(type => (
-                                                    <option key={type} value={type}>{type}</option>
+                                                    <option key={type} value={type}>{BUSINESS_TYPES[type].label || type}</option>
                                                 ))}
                                             </select>
                                         </div>
