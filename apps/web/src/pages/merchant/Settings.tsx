@@ -82,10 +82,11 @@ const MerchantSettings: React.FC = () => {
         { id: 'team', label: 'Team Roles', icon: '👥', visible: hasTeamAccess },
         { id: 'payments', label: 'Payments', icon: '💳', visible: hasSettingsAccess },
         { id: 'notifications', label: 'Alerts', icon: '🔔', visible: true },
-        { id: 'verification', label: 'Verification', icon: '🪪', visible: true }
+        { id: 'verification', label: 'Verification', icon: '🪪', visible: user?.merchantRole !== 'STAFF' }
     ];
 
     const handleTabChange = (tabId: string) => {
+        if (tabId === 'verification' && user?.merchantRole === 'STAFF') return;
         setActiveTab(tabId as any);
         setSearchParams({ tab: tabId });
     };
@@ -93,9 +94,13 @@ const MerchantSettings: React.FC = () => {
     useEffect(() => {
         const tab = searchParams.get('tab');
         if (tab && ['profile', 'operations', 'team', 'payments', 'notifications', 'verification'].includes(tab)) {
+            if (tab === 'verification' && user?.merchantRole === 'STAFF') {
+                setActiveTab('profile');
+                return;
+            }
             setActiveTab(tab as any);
         }
-    }, [searchParams]);
+    }, [searchParams, user]);
 
     // Profile State
     const [storeInfo, setStoreInfo] = useState({
@@ -604,6 +609,7 @@ const MerchantSettings: React.FC = () => {
     };
 
     const triggerUpload = (target: 'logo' | 'cover') => {
+        if (user?.merchantRole === 'STAFF') return;
         setUploadTarget(target);
         fileInputRef.current?.click();
     };
@@ -893,6 +899,18 @@ const MerchantSettings: React.FC = () => {
 
     const renderProfile = () => (
         <div className="space-y-6 animate-fade-in">
+            {user?.merchantRole === 'STAFF' && (
+                <div className="bg-orange-50 border border-orange-200 rounded-2xl p-4 flex items-start gap-3 shadow-sm">
+                    <span className="text-2xl shrink-0">🔒</span>
+                    <div>
+                        <h3 className="font-black text-orange-900 text-sm">Read-Only Access</h3>
+                        <p className="text-xs text-orange-700 mt-0.5 font-medium leading-relaxed">
+                            Staff and Picker accounts have read-only access to the Store Profile. Please contact your store manager or owner if updates are required.
+                        </p>
+                    </div>
+                </div>
+            )}
+
             {/* Branding */}
             <section className="bg-white p-6 rounded-xl border border-[var(--glass-border)] shadow-sm">
                 <h2 className="text-lg font-bold text-[var(--text-main)] mb-4">Branding & Appearance</h2>
@@ -904,8 +922,8 @@ const MerchantSettings: React.FC = () => {
                             <div>
                                 <button
                                     onClick={() => triggerUpload('logo')}
-                                    disabled={uploading}
-                                    className="px-4 py-2 border border-[var(--glass-border)] rounded-lg text-sm font-medium hover:bg-gray-50 mb-1 disabled:opacity-50"
+                                    disabled={uploading || user?.merchantRole === 'STAFF'}
+                                    className="px-4 py-2 border border-[var(--glass-border)] rounded-lg text-sm font-medium hover:bg-gray-50 mb-1 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     {uploading && uploadTarget === 'logo' ? 'Uploading...' : 'Upload New Logo'}
                                 </button>
@@ -916,13 +934,17 @@ const MerchantSettings: React.FC = () => {
                     <div>
                         <label className="block text-sm font-medium text-[var(--text-muted)] mb-2">Cover Image</label>
                         <div
-                            onClick={() => !uploading && triggerUpload('cover')}
-                            className="h-20 w-full rounded-lg overflow-hidden relative group cursor-pointer border-2 border-[var(--surface-2)] transition-colors hover:border-[var(--brand-primary)]"
+                            onClick={() => !uploading && user?.merchantRole !== 'STAFF' && triggerUpload('cover')}
+                            className={`h-20 w-full rounded-lg overflow-hidden relative group border-2 border-[var(--surface-2)] transition-colors ${
+                                user?.merchantRole === 'STAFF' ? 'cursor-not-allowed opacity-75' : 'cursor-pointer hover:border-[var(--brand-primary)]'
+                            }`}
                         >
                             <img src={storeInfo.coverUrl} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" alt="Cover" />
-                            <div className="absolute inset-0 flex items-center justify-center bg-black/10 group-hover:bg-black/20 text-white font-medium text-sm">
-                                {uploading && uploadTarget === 'cover' ? 'Uploading...' : 'Change Cover'}
-                            </div>
+                            {user?.merchantRole !== 'STAFF' && (
+                                <div className="absolute inset-0 flex items-center justify-center bg-black/10 group-hover:bg-black/20 text-white font-medium text-sm">
+                                    {uploading && uploadTarget === 'cover' ? 'Uploading...' : 'Change Cover'}
+                                </div>
+                            )}
                         </div>
                     </div>
 
@@ -963,7 +985,8 @@ const MerchantSettings: React.FC = () => {
                             type="text"
                             value={storeInfo.name}
                             onChange={e => setStoreInfo({ ...storeInfo, name: e.target.value })}
-                            className="w-full p-3 border border-[var(--glass-border)] rounded-lg font-medium text-lg"
+                            disabled={user?.merchantRole === 'STAFF'}
+                            className="w-full p-3 border border-[var(--glass-border)] rounded-lg font-medium text-lg disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed"
                         />
                     </div>
                     <div className="md:col-span-2">
@@ -972,7 +995,8 @@ const MerchantSettings: React.FC = () => {
                             type="text"
                             value={storeInfo.tagline}
                             onChange={e => setStoreInfo({ ...storeInfo, tagline: e.target.value })}
-                            className="w-full p-3 border border-[var(--glass-border)] rounded-lg"
+                            disabled={user?.merchantRole === 'STAFF'}
+                            className="w-full p-3 border border-[var(--glass-border)] rounded-lg disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed"
                             placeholder="e.g. Fresh groceries, delivered fast."
                         />
                     </div>
@@ -982,7 +1006,8 @@ const MerchantSettings: React.FC = () => {
                             type="tel"
                             value={storeInfo.phone}
                             onChange={e => setStoreInfo({ ...storeInfo, phone: e.target.value })}
-                            className="w-full p-3 border border-[var(--glass-border)] rounded-lg"
+                            disabled={user?.merchantRole === 'STAFF'}
+                            className="w-full p-3 border border-[var(--glass-border)] rounded-lg disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed"
                         />
                     </div>
                     <div>
@@ -991,7 +1016,8 @@ const MerchantSettings: React.FC = () => {
                             type="email"
                             value={storeInfo.email}
                             onChange={e => setStoreInfo({ ...storeInfo, email: e.target.value })}
-                            className="w-full p-3 border border-[var(--glass-border)] rounded-lg"
+                            disabled={user?.merchantRole === 'STAFF'}
+                            className="w-full p-3 border border-[var(--glass-border)] rounded-lg disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed"
                         />
                     </div>
                     <div className="md:col-span-2 mt-2 pt-4 border-t border-[var(--glass-border)] flex items-center justify-between">
@@ -1001,16 +1027,18 @@ const MerchantSettings: React.FC = () => {
                         </div>
                         <button
                             onClick={handleGeocode}
-                            disabled={isLocatingStatus === 'loading'}
+                            disabled={isLocatingStatus === 'loading' || user?.merchantRole === 'STAFF'}
                             className={`px-4 py-2 rounded-lg font-bold transition-all flex items-center gap-2 ${isLocatingStatus === 'success' ? 'bg-green-100 text-green-700' :
                                 isLocatingStatus === 'error' ? 'bg-red-100 text-red-700' :
-                                    'bg-blue-600 text-white hover:brightness-110 shadow-md'
+                                    user?.merchantRole === 'STAFF' ? 'bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed' :
+                                        'bg-blue-600 text-white hover:brightness-110 shadow-md'
                                 }`}
                         >
                             {isLocatingStatus === 'loading' ? '⏳ Verifying...' :
                                 isLocatingStatus === 'success' ? '✅ Address Verified' :
                                     isLocatingStatus === 'error' ? '❌ Address Not Found' :
-                                        '📍 Verify Address & Locate'}
+                                        user?.merchantRole === 'STAFF' ? '🔒 View Only' :
+                                            '📍 Verify Address & Locate'}
                         </button>
                     </div>
 
@@ -1020,7 +1048,8 @@ const MerchantSettings: React.FC = () => {
                             type="text"
                             value={storeInfo.address}
                             onChange={e => setStoreInfo({ ...storeInfo, address: e.target.value })}
-                            className="w-full p-3 border border-[var(--glass-border)] rounded-lg"
+                            disabled={user?.merchantRole === 'STAFF'}
+                            className="w-full p-3 border border-[var(--glass-border)] rounded-lg disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed"
                             placeholder="e.g. 123 Main St"
                         />
                     </div>
@@ -1030,7 +1059,8 @@ const MerchantSettings: React.FC = () => {
                             type="text"
                             value={storeInfo.city}
                             onChange={e => setStoreInfo({ ...storeInfo, city: e.target.value })}
-                            className="w-full p-3 border border-[var(--glass-border)] rounded-lg"
+                            disabled={user?.merchantRole === 'STAFF'}
+                            className="w-full p-3 border border-[var(--glass-border)] rounded-lg disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed"
                             placeholder="e.g. Toronto"
                         />
                     </div>
@@ -1039,7 +1069,8 @@ const MerchantSettings: React.FC = () => {
                         <select
                             value={storeInfo.province}
                             onChange={e => setStoreInfo({ ...storeInfo, province: e.target.value })}
-                            className="w-full p-3 border border-[var(--glass-border)] rounded-lg bg-white"
+                            disabled={user?.merchantRole === 'STAFF'}
+                            className="w-full p-3 border border-[var(--glass-border)] rounded-lg bg-white disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed"
                         >
                             <option value="ON">ON - Ontario (13% HST)</option>
                             <option value="BC">BC - British Columbia (12%)</option>
@@ -1062,7 +1093,8 @@ const MerchantSettings: React.FC = () => {
                             type="text"
                             value={storeInfo.postalCode}
                             onChange={e => setStoreInfo({ ...storeInfo, postalCode: e.target.value })}
-                            className="w-full p-3 border border-[var(--glass-border)] rounded-lg"
+                            disabled={user?.merchantRole === 'STAFF'}
+                            className="w-full p-3 border border-[var(--glass-border)] rounded-lg disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed"
                             placeholder="e.g. M5V 2H1"
                         />
                     </div>
@@ -1082,7 +1114,8 @@ const MerchantSettings: React.FC = () => {
                         <textarea
                             value={storeInfo.description}
                             onChange={e => setStoreInfo({ ...storeInfo, description: e.target.value })}
-                            className="w-full p-3 border border-[var(--glass-border)] rounded-lg h-24 resize-none"
+                            disabled={user?.merchantRole === 'STAFF'}
+                            className="w-full p-3 border border-[var(--glass-border)] rounded-lg h-24 resize-none disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed"
                             placeholder="Tell customers about your store..."
                         />
                     </div>
@@ -1097,8 +1130,8 @@ const MerchantSettings: React.FC = () => {
                 </p>
                 <button
                     onClick={handleExportData}
-                    disabled={isExporting}
-                    className="flex items-center gap-2 px-4 py-2 border border-[var(--glass-border)] rounded-lg text-sm font-bold hover:bg-gray-50 disabled:opacity-50 transition-all"
+                    disabled={isExporting || user?.merchantRole === 'STAFF'}
+                    className="flex items-center gap-2 px-4 py-2 border border-[var(--glass-border)] rounded-lg text-sm font-bold hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                 >
                     {isExporting ? (
                         <>

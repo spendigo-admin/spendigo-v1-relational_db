@@ -46,6 +46,25 @@ const MerchantMarketing: React.FC = () => {
     const { stores, getStore } = useMarketplace();
     const { user } = useAuth();
     const { addNotification } = useNotifications();
+
+    if (user?.merchantRole === 'STAFF') {
+        return (
+            <div className="p-6 max-w-xl mx-auto text-center mt-16 space-y-6 animate-fade-in">
+                <div className="text-6xl animate-pulse">🛡️</div>
+                <h2 className="text-2xl font-black text-[var(--text-main)]">Access Restricted</h2>
+                <p className="text-[var(--text-muted)] text-sm leading-relaxed">
+                    Digital Marketing features are restricted to Store Owners, Managers, and Marketing Specialists. Staff and Picker accounts are not authorized to view or manage marketing campaigns.
+                </p>
+                <button
+                    onClick={() => window.history.back()}
+                    className="px-6 py-2.5 bg-[var(--brand-primary)] text-white font-bold rounded-xl shadow-lg shadow-[var(--brand-primary)]/20 hover:brightness-110 active:scale-95 transition-all"
+                >
+                    Go Back
+                </button>
+            </div>
+        );
+    }
+
     const storeId = user?.storeId || '1';
     const store = getStore(storeId);
     const isLocked = stores[storeId]?.status === 'pending_deletion';

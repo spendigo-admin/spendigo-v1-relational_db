@@ -203,12 +203,14 @@ const MerchantLayout: React.FC = () => {
                                     )}
                                 </NavLink>
                             )}
-                            <NavLink
-                                to="/merchant/marketing"
-                                className={({ isActive }) => `flex items-center gap-3 p-3 rounded-lg font-medium transition-all ${isActive ? 'bg-[var(--brand-primary)] text-white shadow-lg shadow-[var(--brand-primary)]/30' : 'text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text-main)]'}`}
-                            >
-                                <span>📢</span> Digital Marketing
-                            </NavLink>
+                            {user?.merchantRole !== 'STAFF' && (
+                                <NavLink
+                                    to="/merchant/marketing"
+                                    className={({ isActive }) => `flex items-center gap-3 p-3 rounded-lg font-medium transition-all ${isActive ? 'bg-[var(--brand-primary)] text-white shadow-lg shadow-[var(--brand-primary)]/30' : 'text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text-main)]'}`}
+                                >
+                                    <span>📢</span> Digital Marketing
+                                </NavLink>
+                            )}
                         </div>
                     </div>
 
