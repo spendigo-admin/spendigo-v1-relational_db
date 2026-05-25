@@ -68,7 +68,7 @@ const MerchantSettings: React.FC = () => {
     const fileInputRef = React.useRef<HTMLInputElement>(null);
     const [uploadTarget, setUploadTarget] = useState<'logo' | 'cover' | null>(null);
 
-    const [searchParams] = useSearchParams();
+    const [searchParams, setSearchParams] = useSearchParams();
     const [activeTab, setActiveTab] = useState<'profile' | 'operations' | 'team' | 'payments' | 'notifications' | 'verification'>((searchParams.get('tab') as any) || 'profile');
     const [isSaving, setIsSaving] = useState(false);
     const [isExporting, setIsExporting] = useState(false);
@@ -85,53 +85,15 @@ const MerchantSettings: React.FC = () => {
         { id: 'verification', label: 'Verification', icon: '🪪', visible: true }
     ];
 
-    // Scroll Sync for Settings Sections
-    const settingsContainerRef = useRef<HTMLDivElement>(null);
-    const isScrollingRef = useRef(false); // To prevent observer from triggering while we are programmatic scrolling
-
-    useEffect(() => {
-        const observerOptions = {
-            root: null, // Use viewport
-            rootMargin: '-10% 0px -80% 0px', // Trigger when section is near top
-            threshold: 0
-        };
-
-        const observer = new IntersectionObserver((entries) => {
-            if (isScrollingRef.current) return;
-            
-            entries.forEach((entry) => {
-                if (entry.isIntersecting) {
-                    const tabId = entry.target.id.replace('section-', '');
-                    setActiveTab(tabId as any);
-                }
-            });
-        }, observerOptions);
-
-        const sections = document.querySelectorAll('[id^="section-"]');
-        sections.forEach((sec) => observer.observe(sec));
-
-        return () => observer.disconnect();
-    }, []);
-
-    const scrollToSection = (id: string) => {
-        const element = document.getElementById(`section-${id}`);
-        if (element) {
-            isScrollingRef.current = true;
-            setActiveTab(id as any);
-            element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            
-            // Re-enable observer after scroll finishes
-            setTimeout(() => {
-                isScrollingRef.current = false;
-            }, 800);
-        }
+    const handleTabChange = (tabId: string) => {
+        setActiveTab(tabId as any);
+        setSearchParams({ tab: tabId });
     };
 
     useEffect(() => {
         const tab = searchParams.get('tab');
         if (tab && ['profile', 'operations', 'team', 'payments', 'notifications', 'verification'].includes(tab)) {
             setActiveTab(tab as any);
-            setTimeout(() => scrollToSection(tab), 100);
         }
     }, [searchParams]);
 
@@ -221,6 +183,7 @@ const MerchantSettings: React.FC = () => {
     // const team = (stores[storeId]?.team as TeamMember[]) || []; // Deprecated
     const [realTeam, setRealTeam] = useState<TeamMember[]>([]);
     const [showInviteModal, setShowInviteModal] = useState(false);
+    const [inviteStep, setInviteStep] = useState(1);
     const [inviteSuccess, setInviteSuccess] = useState<{ name: string, email: string, password: string } | null>(null);
     const [inviteForm, setInviteForm] = useState({ name: '', email: '', role: 'STAFF' as MerchantRole });
     const [inviteError, setInviteError] = useState('');
@@ -509,7 +472,10 @@ const MerchantSettings: React.FC = () => {
                 deliveryEnabled: operations.deliveryEnabled,
                 deliveryTime: operations.deliveryTime,
                 hours: hours,
-                notificationPreferences: notifications,
+                notificationPreferences: {
+                    ...(currentStore?.notificationPreferences || {}),
+                    ...notifications
+                },
                 // Legacy/Display Fields
                 deliveryFee: displayFee
             });
@@ -651,7 +617,10 @@ const MerchantSettings: React.FC = () => {
                     <p className="text-sm text-blue-800">Assign roles to restrict access based on job function.</p>
                 </div>
                 <button
-                    onClick={() => setShowInviteModal(true)}
+                    onClick={() => {
+                        setInviteStep(1);
+                        setShowInviteModal(true);
+                    }}
                     className="bg-blue-600 text-white px-4 py-2 rounded-lg font-bold shadow hover:bg-blue-700 transition-colors"
                 >
                     + Add Member
@@ -717,53 +686,147 @@ const MerchantSettings: React.FC = () => {
 
             {/* Invite Modal */}
             {showInviteModal && (
-                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center animate-fade-in p-4">
-                    <div className="bg-white p-6 rounded-2xl w-full max-w-md shadow-2xl">
-                        <h2 className="text-xl font-bold mb-4">Invite Team Member</h2>
-                        <form onSubmit={handleInvite} className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium mb-1">Full Name</label>
-                                <input
-                                    required
-                                    className="w-full p-2 border rounded-lg focus:ring-2 ring-[var(--brand-primary)] outline-none"
-                                    value={inviteForm.name} onChange={e => setInviteForm({ ...inviteForm, name: e.target.value })}
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center animate-fade-in p-4 backdrop-blur-sm">
+                    <div className={`bg-white p-6 rounded-2xl w-full shadow-2xl transition-all duration-300 ${inviteStep === 2 ? 'max-w-2xl' : 'max-w-md'}`}>
+                        {/* Progress Header */}
+                        <div className="mb-6">
+                            <h2 className="text-xl font-black text-[var(--text-main)]">Invite Team Member</h2>
+                            <p className="text-xs text-[var(--text-muted)] mt-1 font-semibold">
+                                {inviteStep === 1 ? 'Step 1 of 2: Contact Information' : 'Step 2 of 2: Access & Roles'}
+                            </p>
+                            
+                            {/* Visual Progress Bar */}
+                            <div className="w-full bg-gray-100 h-1.5 rounded-full mt-4 overflow-hidden">
+                                <div 
+                                    className="bg-[var(--brand-primary)] h-full transition-all duration-500 rounded-full"
+                                    style={{ width: inviteStep === 1 ? '50%' : '100%' }}
                                 />
                             </div>
-                            <div>
-                                <label className="block text-sm font-medium mb-1">Email Address</label>
-                                <input
-                                    type="email" required
-                                    className="w-full p-2 border rounded-lg focus:ring-2 ring-[var(--brand-primary)] outline-none"
-                                    value={inviteForm.email} onChange={e => setInviteForm({ ...inviteForm, email: e.target.value })}
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium mb-1">Role</label>
-                                <select
-                                    className="w-full p-2 border rounded-lg focus:ring-2 ring-[var(--brand-primary)] outline-none bg-white"
-                                    value={inviteForm.role} onChange={e => setInviteForm({ ...inviteForm, role: e.target.value as MerchantRole })}
-                                >
-                                    {Object.keys(ROLE_INFO).map(role => (
-                                        <option key={role} value={role}>{ROLE_INFO[role as MerchantRole].label}</option>
-                                    ))}
-                                </select>
-                                <p className="text-xs text-[var(--text-muted)] mt-2 bg-gray-50 p-2 rounded">
-                                    Access: {ROLE_INFO[inviteForm.role].desc}
-                                </p>
-                            </div>
+                        </div>
 
-                            {inviteError && (
-                                <div className="p-3 bg-red-50 text-red-700 text-sm rounded-lg border border-red-200">
-                                    {inviteError}
+                        <form onSubmit={(e) => {
+                            if (inviteStep === 1) {
+                                e.preventDefault();
+                                setInviteStep(2);
+                            } else {
+                                handleInvite(e);
+                            }
+                        }} className="space-y-4">
+                            {inviteStep === 1 && (
+                                <div className="space-y-4 animate-fade-in">
+                                    <div>
+                                        <label className="block text-sm font-bold text-[var(--text-main)] mb-1">Full Name</label>
+                                        <input
+                                            required
+                                            type="text"
+                                            placeholder="e.g. John Doe"
+                                            className="w-full p-3 border border-[var(--glass-border)] rounded-xl focus:ring-2 ring-[var(--brand-primary)] outline-none font-semibold bg-gray-50/30"
+                                            value={inviteForm.name} 
+                                            onChange={e => setInviteForm({ ...inviteForm, name: e.target.value })}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-bold text-[var(--text-main)] mb-1">Email Address</label>
+                                        <input
+                                            required
+                                            type="email" 
+                                            placeholder="e.g. john.doe@example.com"
+                                            className="w-full p-3 border border-[var(--glass-border)] rounded-xl focus:ring-2 ring-[var(--brand-primary)] outline-none font-semibold bg-gray-50/30"
+                                            value={inviteForm.email} 
+                                            onChange={e => setInviteForm({ ...inviteForm, email: e.target.value })}
+                                        />
+                                    </div>
+
+                                    <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-[var(--glass-border)]">
+                                        <button 
+                                            type="button" 
+                                            onClick={() => setShowInviteModal(false)} 
+                                            className="px-5 py-2.5 font-bold text-gray-500 hover:bg-gray-100 rounded-xl transition-all"
+                                        >
+                                            Cancel
+                                        </button>
+                                        <button 
+                                            type="submit" 
+                                            disabled={!inviteForm.name.trim() || !inviteForm.email.trim() || !inviteForm.email.includes('@')}
+                                            className="px-5 py-2.5 bg-[var(--brand-primary)] text-white font-bold rounded-xl hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-1.5 shadow-md shadow-blue-500/10"
+                                        >
+                                            Next Step →
+                                        </button>
+                                    </div>
                                 </div>
                             )}
 
-                            <div className="flex justify-end gap-3 mt-6">
-                                <button type="button" disabled={isSaving} onClick={() => setShowInviteModal(false)} className="px-4 py-2 font-bold text-gray-500 hover:bg-gray-100 rounded-lg disabled:opacity-50">Cancel</button>
-                                <button type="submit" disabled={isSaving} className="px-4 py-2 bg-[var(--brand-primary)] text-white font-bold rounded-lg hover:brightness-110 disabled:opacity-50 flex justify-center items-center min-w-[120px]">
-                                    {isSaving ? 'Sending...' : 'Send Invite'}
-                                </button>
-                            </div>
+                            {inviteStep === 2 && (
+                                <div className="space-y-4 animate-fade-in">
+                                    <label className="block text-sm font-bold text-[var(--text-main)] mb-2">Select Access Role</label>
+                                    
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[350px] overflow-y-auto pr-1">
+                                        {(Object.keys(ROLE_INFO) as MerchantRole[]).map((roleKey) => {
+                                            const role = ROLE_INFO[roleKey];
+                                            const isSelected = inviteForm.role === roleKey;
+                                            return (
+                                                <div
+                                                    key={roleKey}
+                                                    onClick={() => setInviteForm({ ...inviteForm, role: roleKey })}
+                                                    className={`p-4 rounded-xl border-2 cursor-pointer transition-all hover:bg-gray-50/50 flex flex-col justify-between ${
+                                                        isSelected 
+                                                            ? 'border-[var(--brand-primary)] bg-blue-50/5 shadow-md shadow-blue-500/5' 
+                                                            : 'border-[var(--glass-border)] bg-white'
+                                                    }`}
+                                                >
+                                                    <div>
+                                                        <div className="flex items-center justify-between mb-2">
+                                                            <span className={`text-[10px] font-black px-2 py-0.5 rounded border uppercase tracking-wider ${role.color}`}>
+                                                                {role.label}
+                                                            </span>
+                                                            {isSelected && (
+                                                                <span className="w-5 h-5 rounded-full bg-[var(--brand-primary)] text-white flex items-center justify-center text-xs font-bold animate-scale-in">✓</span>
+                                                            )}
+                                                        </div>
+                                                        <p className="text-xs font-semibold text-[var(--text-main)] mb-1">
+                                                            {roleKey === 'STAFF' ? 'Staff / Picker' : role.label}
+                                                        </p>
+                                                        <p className="text-[11px] text-[var(--text-muted)] leading-relaxed">
+                                                            {role.desc}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+
+                                    {inviteError && (
+                                        <div className="p-3 bg-red-50 text-red-700 text-xs rounded-xl border border-red-200">
+                                            {inviteError}
+                                        </div>
+                                    )}
+
+                                    <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-[var(--glass-border)]">
+                                        <button 
+                                            type="button" 
+                                            disabled={isSaving} 
+                                            onClick={() => setInviteStep(1)} 
+                                            className="px-5 py-2.5 font-bold text-gray-500 hover:bg-gray-100 rounded-xl disabled:opacity-50 transition-all"
+                                        >
+                                            ← Back
+                                        </button>
+                                        <button 
+                                            type="submit" 
+                                            disabled={isSaving} 
+                                            className="px-5 py-2.5 bg-[var(--brand-primary)] text-white font-bold rounded-xl hover:brightness-110 disabled:opacity-50 flex justify-center items-center gap-2 min-w-[130px] transition-all shadow-md shadow-blue-500/10"
+                                        >
+                                            {isSaving ? (
+                                                <>
+                                                    <span className="inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></span>
+                                                    Sending...
+                                                </>
+                                            ) : (
+                                                'Send Invite'
+                                            )}
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
                         </form>
                     </div>
                 </div>
@@ -1073,89 +1136,384 @@ const MerchantSettings: React.FC = () => {
                 )}
 
                 <div className={`grid grid-cols-1 md:grid-cols-2 gap-6 relative ${(!user?.subscriptionTier || user.subscriptionTier === 'free') ? 'opacity-50 pointer-events-none select-none grayscale' : ''}`}>
-                    <div>
-                        <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">Delivery Radius (km)</label>
-                        <input
-                            type="number"
-                            value={operations.deliveryRadiusKm}
-                            onChange={e => setOperations({ ...operations, deliveryRadiusKm: Number(e.target.value) })}
-                            className="w-full p-3 border border-[var(--glass-border)] rounded-lg"
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">Base Delivery Fee ($)</label>
-                        <input
-                            type="number"
-                            step="0.01"
-                            value={operations.deliveryFee}
-                            onChange={e => setOperations({ ...operations, deliveryFee: Number(e.target.value) })}
-                            className="w-full p-3 border border-[var(--glass-border)] rounded-lg"
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">Free Delivery Threshold ($)</label>
-                        <input
-                            type="number"
-                            value={operations.freeDeliveryThreshold}
-                            onChange={e => setOperations({ ...operations, freeDeliveryThreshold: Number(e.target.value) })}
-                            className="w-full p-3 border border-[var(--glass-border)] rounded-lg"
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">Minimum Order Amount ($)</label>
-                        <input
-                            type="number"
-                            value={operations.minOrder}
-                            onChange={e => setOperations({ ...operations, minOrder: Number(e.target.value) })}
-                            className="w-full p-3 border border-[var(--glass-border)] rounded-lg"
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">Default Prep Time (mins)</label>
-                        <input
-                            type="number"
-                            value={operations.defaultPrepTime}
-                            onChange={e => setOperations({ ...operations, defaultPrepTime: Number(e.target.value) })}
-                            className="w-full p-3 border border-[var(--glass-border)] rounded-lg"
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">Displayed Delivery Time</label>
-                        <input
-                            type="text"
-                            value={operations.deliveryTime}
-                            onChange={e => setOperations({ ...operations, deliveryTime: e.target.value })}
-                            className="w-full p-3 border border-[var(--glass-border)] rounded-lg"
-                            placeholder="e.g. 45-60 min"
-                        />
-                        <p className="text-xs text-[var(--text-muted)] mt-1">This text is shown to customers on the store list.</p>
-                    </div>
-                    <div className="md:col-span-2 pt-2 border-t border-[var(--glass-border)] mt-2 space-y-3">
-                        <label className="flex items-center gap-3 cursor-pointer p-2 hover:bg-gray-50 rounded-lg">
+                    {/* Delivery Radius */}
+                    <div className="bg-gray-50/50 p-4 rounded-xl border border-[var(--glass-border)] flex flex-col justify-between transition-all hover:shadow-sm">
+                        <div className="flex justify-between items-center mb-2">
+                            <label className="block text-sm font-bold text-[var(--text-main)]">Delivery Radius</label>
+                            <span className="text-xs font-black bg-[var(--brand-primary)]/10 text-[var(--brand-primary)] px-2 py-0.5 rounded-full">
+                                {operations.deliveryRadiusKm} km
+                            </span>
+                        </div>
+                        <p className="text-xs text-[var(--text-muted)] mb-3">Define the distance within which your store will deliver.</p>
+                        
+                        <div className="flex items-center gap-3 mb-4">
+                            <button
+                                type="button"
+                                onClick={() => setOperations(o => ({ ...o, deliveryRadiusKm: Math.max(1, o.deliveryRadiusKm - 1) }))}
+                                className="w-10 h-10 rounded-lg bg-white border border-[var(--glass-border)] flex items-center justify-center font-bold text-gray-600 hover:bg-gray-100 hover:text-[var(--brand-primary)] active:scale-95 transition-all shadow-sm"
+                            >
+                                −
+                            </button>
                             <input
-                                type="checkbox"
-                                checked={operations.deliveryEnabled}
-                                onChange={e => setOperations({ ...operations, deliveryEnabled: e.target.checked })}
-                                className="w-5 h-5 accent-[var(--brand-primary)]"
+                                type="range"
+                                min="1"
+                                max="50"
+                                value={operations.deliveryRadiusKm}
+                                onChange={e => setOperations({ ...operations, deliveryRadiusKm: Number(e.target.value) })}
+                                className="flex-1 h-2 rounded-lg appearance-none cursor-pointer bg-gray-200 accent-[var(--brand-primary)] transition-all"
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setOperations(o => ({ ...o, deliveryRadiusKm: Math.min(50, o.deliveryRadiusKm + 1) }))}
+                                className="w-10 h-10 rounded-lg bg-white border border-[var(--glass-border)] flex items-center justify-center font-bold text-gray-600 hover:bg-gray-100 hover:text-[var(--brand-primary)] active:scale-95 transition-all shadow-sm"
+                            >
+                                +
+                            </button>
+                        </div>
+
+                        <div className="flex flex-wrap gap-2">
+                            {[2, 5, 10, 15, 20, 30].map(val => (
+                                <button
+                                    key={val}
+                                    type="button"
+                                    onClick={() => setOperations({ ...operations, deliveryRadiusKm: val })}
+                                    className={`px-3 py-1 text-xs font-semibold rounded-full border transition-all ${
+                                        operations.deliveryRadiusKm === val
+                                            ? 'bg-[var(--brand-primary)] text-white border-[var(--brand-primary)] shadow-sm'
+                                            : 'bg-white text-gray-600 border-[var(--glass-border)] hover:bg-gray-50'
+                                    }`}
+                                >
+                                    {val} km
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Base Delivery Fee */}
+                    <div className="bg-gray-50/50 p-4 rounded-xl border border-[var(--glass-border)] flex flex-col justify-between transition-all hover:shadow-sm">
+                        <div className="flex justify-between items-center mb-2">
+                            <label className="block text-sm font-bold text-[var(--text-main)]">Base Delivery Fee</label>
+                            <span className="text-xs font-black bg-[var(--brand-primary)]/10 text-[var(--brand-primary)] px-2 py-0.5 rounded-full">
+                                {operations.deliveryFee === 0 ? 'Free' : `$${operations.deliveryFee.toFixed(2)}`}
+                            </span>
+                        </div>
+                        <p className="text-xs text-[var(--text-muted)] mb-3">Starting fee charged to customers for local deliveries.</p>
+                        
+                        <div className="flex items-center gap-3 mb-4">
+                            <button
+                                type="button"
+                                onClick={() => setOperations(o => ({ ...o, deliveryFee: Math.max(0, Number((o.deliveryFee - 0.50).toFixed(2))) }))}
+                                className="w-10 h-10 rounded-lg bg-white border border-[var(--glass-border)] flex items-center justify-center font-bold text-gray-600 hover:bg-gray-100 hover:text-[var(--brand-primary)] active:scale-95 transition-all shadow-sm"
+                            >
+                                −
+                            </button>
+                            <div className="relative flex-1">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-sm">$</span>
+                                <input
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    value={operations.deliveryFee}
+                                    onChange={e => setOperations({ ...operations, deliveryFee: Math.max(0, Number(e.target.value)) })}
+                                    className="w-full pl-7 pr-3 py-2.5 border border-[var(--glass-border)] rounded-lg text-sm font-bold bg-white text-gray-800 focus:ring-2 focus:ring-[var(--brand-primary)]/20 focus:border-[var(--brand-primary)] outline-none"
+                                />
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setOperations(o => ({ ...o, deliveryFee: Number((o.deliveryFee + 0.50).toFixed(2)) }))}
+                                className="w-10 h-10 rounded-lg bg-white border border-[var(--glass-border)] flex items-center justify-center font-bold text-gray-600 hover:bg-gray-100 hover:text-[var(--brand-primary)] active:scale-95 transition-all shadow-sm"
+                            >
+                                +
+                            </button>
+                        </div>
+
+                        <div className="flex flex-wrap gap-2">
+                            {[0, 2.99, 3.99, 4.99, 5.00, 7.50].map(val => (
+                                <button
+                                    key={val}
+                                    type="button"
+                                    onClick={() => setOperations({ ...operations, deliveryFee: val })}
+                                    className={`px-3 py-1 text-xs font-semibold rounded-full border transition-all ${
+                                        operations.deliveryFee === val
+                                            ? 'bg-[var(--brand-primary)] text-white border-[var(--brand-primary)] shadow-sm'
+                                            : 'bg-white text-gray-600 border-[var(--glass-border)] hover:bg-gray-50'
+                                    }`}
+                                >
+                                    {val === 0 ? 'Free' : `$${val}`}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Free Delivery Threshold */}
+                    <div className="bg-gray-50/50 p-4 rounded-xl border border-[var(--glass-border)] flex flex-col justify-between transition-all hover:shadow-sm">
+                        <div className="flex justify-between items-center mb-2">
+                            <label className="block text-sm font-bold text-[var(--text-main)]">Free Delivery Threshold</label>
+                            <span className="text-xs font-black bg-[var(--brand-primary)]/10 text-[var(--brand-primary)] px-2 py-0.5 rounded-full">
+                                {operations.freeDeliveryThreshold === 0 ? 'Disabled' : `Over $${operations.freeDeliveryThreshold}`}
+                            </span>
+                        </div>
+                        <p className="text-xs text-[var(--text-muted)] mb-3">Order total above which delivery fee is waived (0 to disable).</p>
+                        
+                        <div className="flex items-center gap-3 mb-4">
+                            <button
+                                type="button"
+                                onClick={() => setOperations(o => ({ ...o, freeDeliveryThreshold: Math.max(0, o.freeDeliveryThreshold - 5) }))}
+                                className="w-10 h-10 rounded-lg bg-white border border-[var(--glass-border)] flex items-center justify-center font-bold text-gray-600 hover:bg-gray-100 hover:text-[var(--brand-primary)] active:scale-95 transition-all shadow-sm"
+                            >
+                                −
+                            </button>
+                            <div className="relative flex-1">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-sm">$</span>
+                                <input
+                                    type="number"
+                                    min="0"
+                                    value={operations.freeDeliveryThreshold}
+                                    onChange={e => setOperations({ ...operations, freeDeliveryThreshold: Math.max(0, Number(e.target.value)) })}
+                                    className="w-full pl-7 pr-3 py-2.5 border border-[var(--glass-border)] rounded-lg text-sm font-bold bg-white text-gray-800 focus:ring-2 focus:ring-[var(--brand-primary)]/20 focus:border-[var(--brand-primary)] outline-none"
+                                />
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setOperations(o => ({ ...o, freeDeliveryThreshold: o.freeDeliveryThreshold + 5 }))}
+                                className="w-10 h-10 rounded-lg bg-white border border-[var(--glass-border)] flex items-center justify-center font-bold text-gray-600 hover:bg-gray-100 hover:text-[var(--brand-primary)] active:scale-95 transition-all shadow-sm"
+                            >
+                                +
+                            </button>
+                        </div>
+
+                        <div className="flex flex-wrap gap-2">
+                            {[0, 25, 35, 50, 75, 100].map(val => (
+                                <button
+                                    key={val}
+                                    type="button"
+                                    onClick={() => setOperations({ ...operations, freeDeliveryThreshold: val })}
+                                    className={`px-3 py-1 text-xs font-semibold rounded-full border transition-all ${
+                                        operations.freeDeliveryThreshold === val
+                                            ? 'bg-[var(--brand-primary)] text-white border-[var(--brand-primary)] shadow-sm'
+                                            : 'bg-white text-gray-600 border-[var(--glass-border)] hover:bg-gray-50'
+                                    }`}
+                                >
+                                    {val === 0 ? 'No Limit' : `$${val}`}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Minimum Order Amount */}
+                    <div className="bg-gray-50/50 p-4 rounded-xl border border-[var(--glass-border)] flex flex-col justify-between transition-all hover:shadow-sm">
+                        <div className="flex justify-between items-center mb-2">
+                            <label className="block text-sm font-bold text-[var(--text-main)]">Minimum Order Amount</label>
+                            <span className="text-xs font-black bg-[var(--brand-primary)]/10 text-[var(--brand-primary)] px-2 py-0.5 rounded-full">
+                                {operations.minOrder === 0 ? 'No Minimum' : `$${operations.minOrder}`}
+                            </span>
+                        </div>
+                        <p className="text-xs text-[var(--text-muted)] mb-3">Minimum total checkout value required to place an order.</p>
+                        
+                        <div className="flex items-center gap-3 mb-4">
+                            <button
+                                type="button"
+                                onClick={() => setOperations(o => ({ ...o, minOrder: Math.max(0, o.minOrder - 5) }))}
+                                className="w-10 h-10 rounded-lg bg-white border border-[var(--glass-border)] flex items-center justify-center font-bold text-gray-600 hover:bg-gray-100 hover:text-[var(--brand-primary)] active:scale-95 transition-all shadow-sm"
+                            >
+                                −
+                            </button>
+                            <div className="relative flex-1">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-sm">$</span>
+                                <input
+                                    type="number"
+                                    min="0"
+                                    value={operations.minOrder}
+                                    onChange={e => setOperations({ ...operations, minOrder: Math.max(0, Number(e.target.value)) })}
+                                    className="w-full pl-7 pr-3 py-2.5 border border-[var(--glass-border)] rounded-lg text-sm font-bold bg-white text-gray-800 focus:ring-2 focus:ring-[var(--brand-primary)]/20 focus:border-[var(--brand-primary)] outline-none"
+                                />
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setOperations(o => ({ ...o, minOrder: o.minOrder + 5 }))}
+                                className="w-10 h-10 rounded-lg bg-white border border-[var(--glass-border)] flex items-center justify-center font-bold text-gray-600 hover:bg-gray-100 hover:text-[var(--brand-primary)] active:scale-95 transition-all shadow-sm"
+                            >
+                                +
+                            </button>
+                        </div>
+
+                        <div className="flex flex-wrap gap-2">
+                            {[0, 10, 15, 20, 25, 35, 50].map(val => (
+                                <button
+                                    key={val}
+                                    type="button"
+                                    onClick={() => setOperations({ ...operations, minOrder: val })}
+                                    className={`px-3 py-1 text-xs font-semibold rounded-full border transition-all ${
+                                        operations.minOrder === val
+                                            ? 'bg-[var(--brand-primary)] text-white border-[var(--brand-primary)] shadow-sm'
+                                            : 'bg-white text-gray-600 border-[var(--glass-border)] hover:bg-gray-50'
+                                    }`}
+                                >
+                                    {val === 0 ? 'No Min' : `$${val}`}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Default Prep Time */}
+                    <div className="bg-gray-50/50 p-4 rounded-xl border border-[var(--glass-border)] flex flex-col justify-between transition-all hover:shadow-sm">
+                        <div className="flex justify-between items-center mb-2">
+                            <label className="block text-sm font-bold text-[var(--text-main)]">Default Prep Time</label>
+                            <span className="text-xs font-black bg-[var(--brand-primary)]/10 text-[var(--brand-primary)] px-2 py-0.5 rounded-full">
+                                {operations.defaultPrepTime} mins
+                            </span>
+                        </div>
+                        <p className="text-xs text-[var(--text-muted)] mb-3">Estimated time required to prepare and pack an order.</p>
+                        
+                        <div className="flex items-center gap-3 mb-4">
+                            <button
+                                type="button"
+                                onClick={() => setOperations(o => ({ ...o, defaultPrepTime: Math.max(5, o.defaultPrepTime - 5) }))}
+                                className="w-10 h-10 rounded-lg bg-white border border-[var(--glass-border)] flex items-center justify-center font-bold text-gray-600 hover:bg-gray-100 hover:text-[var(--brand-primary)] active:scale-95 transition-all shadow-sm"
+                            >
+                                −
+                            </button>
+                            <input
+                                type="range"
+                                min="5"
+                                max="180"
+                                step="5"
+                                value={operations.defaultPrepTime}
+                                onChange={e => setOperations({ ...operations, defaultPrepTime: Number(e.target.value) })}
+                                className="flex-1 h-2 rounded-lg appearance-none cursor-pointer bg-gray-200 accent-[var(--brand-primary)] transition-all"
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setOperations(o => ({ ...o, defaultPrepTime: Math.min(180, o.defaultPrepTime + 5) }))}
+                                className="w-10 h-10 rounded-lg bg-white border border-[var(--glass-border)] flex items-center justify-center font-bold text-gray-600 hover:bg-gray-100 hover:text-[var(--brand-primary)] active:scale-95 transition-all shadow-sm"
+                            >
+                                +
+                            </button>
+                        </div>
+
+                        <div className="flex flex-wrap gap-2">
+                            {[15, 20, 30, 45, 60, 90].map(val => (
+                                <button
+                                    key={val}
+                                    type="button"
+                                    onClick={() => setOperations({ ...operations, defaultPrepTime: val })}
+                                    className={`px-3 py-1 text-xs font-semibold rounded-full border transition-all ${
+                                        operations.defaultPrepTime === val
+                                            ? 'bg-[var(--brand-primary)] text-white border-[var(--brand-primary)] shadow-sm'
+                                            : 'bg-white text-gray-600 border-[var(--glass-border)] hover:bg-gray-50'
+                                    }`}
+                                >
+                                    {val} min
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Displayed Delivery Time */}
+                    <div className="bg-gray-50/50 p-4 rounded-xl border border-[var(--glass-border)] flex flex-col justify-between transition-all hover:shadow-sm">
+                        <div className="flex justify-between items-center mb-2">
+                            <label className="block text-sm font-bold text-[var(--text-main)]">Displayed Delivery Time</label>
+                            <span className="text-xs font-black bg-[var(--brand-primary)]/10 text-[var(--brand-primary)] px-2 py-0.5 rounded-full truncate max-w-[120px]">
+                                {operations.deliveryTime || 'None'}
+                            </span>
+                        </div>
+                        <p className="text-xs text-[var(--text-muted)] mb-3">The time estimate displayed to customers on the store list.</p>
+                        
+                        <div className="flex items-center gap-2 mb-4">
+                            <input
+                                type="text"
+                                value={operations.deliveryTime}
+                                onChange={e => setOperations({ ...operations, deliveryTime: e.target.value })}
+                                className="w-full p-2.5 border border-[var(--glass-border)] rounded-lg text-sm font-bold bg-white text-gray-800 focus:ring-2 focus:ring-[var(--brand-primary)]/20 focus:border-[var(--brand-primary)] outline-none"
+                                placeholder="e.g. 45-60 min"
+                            />
+                            {operations.defaultPrepTime && (
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        const minTime = Math.max(15, Math.floor((operations.defaultPrepTime + 10) / 5) * 5);
+                                        const maxTime = Math.max(minTime + 15, Math.ceil((operations.defaultPrepTime + 25) / 5) * 5);
+                                        setOperations(o => ({ ...o, deliveryTime: `${minTime}-${maxTime} min` }));
+                                    }}
+                                    title="Auto-calculate based on current prep time"
+                                    className="px-3 py-2 bg-blue-50 hover:bg-blue-100 hover:border-[var(--brand-primary)]/40 text-[var(--brand-primary)] font-bold text-xs rounded-lg border border-[var(--glass-border)] whitespace-nowrap transition-all active:scale-95 shadow-sm"
+                                >
+                                    ⚡️ Suggest
+                                </button>
+                            )}
+                        </div>
+
+                        <div className="flex flex-wrap gap-2">
+                            {['15-30 min', '30-45 min', '45-60 min', '60-75 min', '75-90 min'].map(val => (
+                                <button
+                                    key={val}
+                                    type="button"
+                                    onClick={() => setOperations({ ...operations, deliveryTime: val })}
+                                    className={`px-3 py-1 text-xs font-semibold rounded-full border transition-all ${
+                                        operations.deliveryTime === val
+                                            ? 'bg-[var(--brand-primary)] text-white border-[var(--brand-primary)] shadow-sm'
+                                            : 'bg-white text-gray-600 border-[var(--glass-border)] hover:bg-gray-50'
+                                    }`}
+                                >
+                                    {val}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                    <div className="md:col-span-2 pt-4 border-t border-[var(--glass-border)] mt-4 space-y-4">
+                        {/* Toggle: Local Delivery */}
+                        <div 
+                            onClick={() => {
+                                if (!user?.subscriptionTier || user.subscriptionTier === 'free') return;
+                                setOperations(o => ({ ...o, deliveryEnabled: !o.deliveryEnabled }));
+                            }}
+                            className={`flex items-center justify-between p-4 rounded-xl border border-[var(--glass-border)] transition-all hover:bg-gray-50/50 cursor-pointer ${
+                                operations.deliveryEnabled ? 'bg-blue-50/10' : 'bg-white'
+                            }`}
+                        >
+                            <div className="flex-1 pr-4">
+                                <div className="font-bold text-sm text-[var(--text-main)]">Enable Local Delivery</div>
+                                <div className="text-xs text-[var(--text-muted)] mt-0.5">Offer local delivery within your radius. (Core/Growth only)</div>
+                            </div>
+                            <button
+                                type="button"
                                 disabled={(!user?.subscriptionTier || user.subscriptionTier === 'free')}
-                            />
-                            <div>
-                                <div className="font-medium text-[var(--text-main)]">Enable Local Delivery</div>
-                                <div className="text-xs text-[var(--text-muted)]">Offer local delivery within your radius. (Core/Growth only)</div>
+                                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out outline-none ring-2 ring-transparent focus:ring-[var(--brand-primary)]/20 ${
+                                    operations.deliveryEnabled ? 'bg-[var(--brand-primary)]' : 'bg-gray-200'
+                                } ${(!user?.subscriptionTier || user.subscriptionTier === 'free') ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            >
+                                <span
+                                    className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
+                                        operations.deliveryEnabled ? 'translate-x-5' : 'translate-x-0'
+                                    }`}
+                                />
+                            </button>
+                        </div>
+
+                        {/* Toggle: Pickup */}
+                        <div 
+                            onClick={() => setOperations(o => ({ ...o, pickupEnabled: !o.pickupEnabled }))}
+                            className={`flex items-center justify-between p-4 rounded-xl border border-[var(--glass-border)] transition-all hover:bg-gray-50/50 cursor-pointer ${
+                                operations.pickupEnabled ? 'bg-blue-50/10' : 'bg-white'
+                            }`}
+                        >
+                            <div className="flex-1 pr-4">
+                                <div className="font-bold text-sm text-[var(--text-main)]">Enable Store Pickup / Click & Collect</div>
+                                <div className="text-xs text-[var(--text-muted)] mt-0.5">Allow customers to order online and pick up in store.</div>
                             </div>
-                        </label>
-                        <label className="flex items-center gap-3 cursor-pointer p-2 hover:bg-gray-50 rounded-lg">
-                            <input
-                                type="checkbox"
-                                checked={operations.pickupEnabled}
-                                onChange={e => setOperations({ ...operations, pickupEnabled: e.target.checked })}
-                                className="w-5 h-5 accent-[var(--brand-primary)]"
-                            />
-                            <div>
-                                <div className="font-medium text-[var(--text-main)]">Enable Store Pickup / Click & Collect</div>
-                                <div className="text-xs text-[var(--text-muted)]">Allow customers to order online and pick up in store.</div>
-                            </div>
-                        </label>
+                            <button
+                                type="button"
+                                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out outline-none ring-2 ring-transparent focus:ring-[var(--brand-primary)]/20 ${
+                                    operations.pickupEnabled ? 'bg-[var(--brand-primary)]' : 'bg-gray-200'
+                                }`}
+                            >
+                                <span
+                                    className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
+                                        operations.pickupEnabled ? 'translate-x-5' : 'translate-x-0'
+                                    }`}
+                                />
+                            </button>
+                        </div>
                     </div>
                 </div>
             </section>
@@ -1165,48 +1523,75 @@ const MerchantSettings: React.FC = () => {
                 <h2 className="text-lg font-bold text-[var(--text-main)] mb-4">Business Hours</h2>
                 <div className="space-y-1">
                     {hours.map((day, idx) => (
-                        <div key={idx} className="flex items-center gap-4 py-2 border-b border-[var(--surface-1)] last:border-0 hover:bg-[var(--surface-1)] px-2 rounded-lg transition-colors">
-                            <div className="w-32 font-medium text-[var(--text-main)]">{day.day}</div>
-                            <div className="flex-1 flex items-center gap-4">
-                                <label className="flex items-center gap-2 cursor-pointer">
-                                    <input
-                                        type="checkbox"
-                                        checked={day.closed}
-                                        onChange={e => {
+                        <div key={idx} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-3 border-b border-[var(--surface-1)] last:border-0 hover:bg-[var(--surface-1)]/30 px-3 rounded-xl transition-all duration-200">
+                            {/* Day and Status Indicator */}
+                            <div className="flex items-center gap-3 min-w-[145px]">
+                                <div className="font-bold text-sm text-[var(--text-main)] w-24">{day.day}</div>
+                                <span className={`text-[10px] font-black px-2.5 py-0.5 rounded-full border tracking-wide uppercase ${
+                                    day.closed 
+                                        ? 'bg-red-50 text-red-600 border-red-100' 
+                                        : 'bg-green-50 text-green-600 border-green-100'
+                                }`}>
+                                    {day.closed ? 'Closed' : 'Open'}
+                                </span>
+                            </div>
+
+                            {/* Controls: Switch + Hours */}
+                            <div className="flex-1 flex items-center justify-end gap-6 flex-wrap">
+                                {/* Small Slider Switch */}
+                                <div className="flex items-center gap-2">
+                                    <span className="text-xs text-[var(--text-muted)] font-medium">Status:</span>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
                                             const newHours = [...hours];
-                                            newHours[idx].closed = e.target.checked;
+                                            newHours[idx].closed = !day.closed;
                                             setHours(newHours);
                                         }}
-                                        className="accent-[var(--brand-primary)]"
-                                    />
-                                    <span className="text-sm text-[var(--text-muted)]">Closed</span>
-                                </label>
+                                        className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border border-transparent transition-colors duration-200 ease-in-out outline-none focus:ring-2 focus:ring-[var(--brand-primary)]/20 ${
+                                            !day.closed ? 'bg-green-500' : 'bg-gray-300'
+                                        }`}
+                                    >
+                                        <span
+                                            className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-md transition duration-200 ease-in-out ${
+                                                !day.closed ? 'translate-x-4' : 'translate-x-0'
+                                            }`}
+                                        />
+                                    </button>
+                                </div>
 
-                                {!day.closed && (
-                                    <>
-                                        <input
-                                            type="time"
-                                            value={day.open}
-                                            onChange={e => {
-                                                const newHours = [...hours];
-                                                newHours[idx].open = e.target.value;
-                                                setHours(newHours);
-                                            }}
-                                            className="p-2 border border-[var(--glass-border)] rounded-md text-sm bg-gray-50"
-                                        />
-                                        <span className="text-[var(--text-muted)]">-</span>
-                                        <input
-                                            type="time"
-                                            value={day.close}
-                                            onChange={e => {
-                                                const newHours = [...hours];
-                                                newHours[idx].close = e.target.value;
-                                                setHours(newHours);
-                                            }}
-                                            className="p-2 border border-[var(--glass-border)] rounded-md text-sm bg-gray-50"
-                                        />
-                                    </>
-                                )}
+                                {/* Hours Inputs */}
+                                <div className="flex items-center gap-2 min-w-[210px] justify-end">
+                                    {day.closed ? (
+                                        <span className="text-xs font-semibold text-[var(--text-muted)] italic py-2 bg-gray-50 px-3 rounded-lg border border-gray-100 w-full text-center">
+                                            Store closed all day
+                                        </span>
+                                    ) : (
+                                        <div className="flex items-center gap-2 w-full justify-end animate-fade-in">
+                                            <input
+                                                type="time"
+                                                value={day.open}
+                                                onChange={e => {
+                                                    const newHours = [...hours];
+                                                    newHours[idx].open = e.target.value;
+                                                    setHours(newHours);
+                                                }}
+                                                className="p-1.5 border border-[var(--glass-border)] rounded-lg text-xs font-bold bg-white text-gray-800 focus:ring-2 focus:ring-[var(--brand-primary)]/20 outline-none w-24 text-center shadow-sm"
+                                            />
+                                            <span className="text-xs font-bold text-[var(--text-muted)]">to</span>
+                                            <input
+                                                type="time"
+                                                value={day.close}
+                                                onChange={e => {
+                                                    const newHours = [...hours];
+                                                    newHours[idx].close = e.target.value;
+                                                    setHours(newHours);
+                                                }}
+                                                className="p-1.5 border border-[var(--glass-border)] rounded-lg text-xs font-bold bg-white text-gray-800 focus:ring-2 focus:ring-[var(--brand-primary)]/20 outline-none w-24 text-center shadow-sm"
+                                            />
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     ))}
@@ -1466,23 +1851,37 @@ const MerchantSettings: React.FC = () => {
                 <div className="space-y-4">
                     {[
                         { key: 'emailOrderAlerts', title: 'Email Order Alerts', desc: 'Receive an email immediately when a new order is placed.' },
-
                         { key: 'dailyReports', title: 'Daily Business Reports', desc: 'Receive a daily summary of sales and orders each morning.' },
                         { key: 'marketingEmails', title: 'Marketing Communications', desc: 'Receive tips, trends, and promotional offers from Spendigo.' },
-                    ].map((item) => (
-                        <div key={item.key} className="flex items-start gap-3 pb-4 border-b border-[var(--glass-border)] last:border-0 last:pb-0">
-                            <input
-                                type="checkbox"
-                                checked={(notifications as any)[item.key]}
-                                onChange={e => setNotifications({ ...notifications, [item.key]: e.target.checked })}
-                                className="w-5 h-5 mt-1 accent-[var(--brand-primary)]"
-                            />
-                            <div>
-                                <div className="font-medium text-[var(--text-main)]">{item.title}</div>
-                                <div className="text-sm text-[var(--text-muted)]">{item.desc}</div>
+                    ].map((item) => {
+                        const isChecked = (notifications as any)[item.key];
+                        return (
+                            <div 
+                                key={item.key}
+                                onClick={() => setNotifications({ ...notifications, [item.key]: !isChecked })}
+                                className={`flex items-center justify-between p-4 rounded-xl border border-[var(--glass-border)] transition-all hover:bg-gray-50/50 cursor-pointer ${
+                                    isChecked ? 'bg-blue-50/10' : 'bg-white'
+                                }`}
+                            >
+                                <div className="flex-1 pr-4">
+                                    <div className="font-bold text-sm text-[var(--text-main)]">{item.title}</div>
+                                    <div className="text-xs text-[var(--text-muted)] mt-0.5">{item.desc}</div>
+                                </div>
+                                <button
+                                    type="button"
+                                    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out outline-none ring-2 ring-transparent focus:ring-[var(--brand-primary)]/20 ${
+                                        isChecked ? 'bg-[var(--brand-primary)]' : 'bg-gray-200'
+                                    }`}
+                                >
+                                    <span
+                                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
+                                            isChecked ? 'translate-x-5' : 'translate-x-0'
+                                        }`}
+                                    />
+                                </button>
                             </div>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
             </section>
 
@@ -1750,7 +2149,7 @@ const MerchantSettings: React.FC = () => {
                     {TABS.filter(t => t.visible).map(tab => (
                         <button
                             key={tab.id}
-                            onClick={() => scrollToSection(tab.id as any)}
+                            onClick={() => handleTabChange(tab.id)}
                             className={`flex-1 min-w-[70px] md:min-w-[120px] px-1 py-2 md:py-3 rounded-xl text-[9px] md:text-sm font-black whitespace-nowrap transition-all flex flex-col items-center gap-1 ${activeTab === tab.id
                                 ? 'bg-white shadow-md text-[var(--brand-primary)] scale-100'
                                 : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
@@ -1764,54 +2163,66 @@ const MerchantSettings: React.FC = () => {
                 </div>
             </div>
 
-            <div className="space-y-16">
-                <div id="section-profile" className="scroll-mt-48">
-                    <h3 className="text-xl font-black text-[var(--brand-primary)] mb-6 flex items-center gap-3 bg-[var(--surface-2)] p-4 rounded-2xl border border-[var(--glass-border)]">
-                        <span className="text-2xl">🏪</span>
-                        Store Profile & Branding
-                    </h3>
-                    {renderProfile()}
-                </div>
+            <div className="animate-fade-in duration-300">
+                {activeTab === 'profile' && (
+                    <div id="section-profile">
+                        <h3 className="text-xl font-black text-[var(--brand-primary)] mb-6 flex items-center gap-3 bg-[var(--surface-2)] p-4 rounded-2xl border border-[var(--glass-border)]">
+                            <span className="text-2xl">🏪</span>
+                            Store Profile & Branding
+                        </h3>
+                        {renderProfile()}
+                    </div>
+                )}
 
-                <div id="section-operations" className="scroll-mt-48">
-                    <h3 className="text-xl font-black text-[var(--brand-primary)] mb-6 flex items-center gap-3 bg-[var(--surface-2)] p-4 rounded-2xl border border-[var(--glass-border)]">
-                        <span className="text-2xl">⚙️</span>
-                        Store Operations & Logistics
-                    </h3>
-                    {renderOperations()}
-                </div>
+                {activeTab === 'operations' && (
+                    <div id="section-operations">
+                        <h3 className="text-xl font-black text-[var(--brand-primary)] mb-6 flex items-center gap-3 bg-[var(--surface-2)] p-4 rounded-2xl border border-[var(--glass-border)]">
+                            <span className="text-2xl">⚙️</span>
+                            Store Operations & Logistics
+                        </h3>
+                        {renderOperations()}
+                    </div>
+                )}
 
-                <div id="section-team" className="scroll-mt-48">
-                    <h2 className="text-xl font-black text-[var(--brand-primary)] mb-6 flex items-center gap-3 bg-[var(--surface-2)] p-4 rounded-2xl border border-[var(--glass-border)]">
-                        <span className="text-2xl">👥</span>
-                        Team & User Management
-                    </h2>
-                    {renderTeam()}
-                </div>
+                {activeTab === 'team' && (
+                    <div id="section-team">
+                        <h2 className="text-xl font-black text-[var(--brand-primary)] mb-6 flex items-center gap-3 bg-[var(--surface-2)] p-4 rounded-2xl border border-[var(--glass-border)]">
+                            <span className="text-2xl">👥</span>
+                            Team & User Management
+                        </h2>
+                        {renderTeam()}
+                    </div>
+                )}
 
-                <div id="section-payments" className="scroll-mt-48">
-                    <h2 className="text-xl font-black text-[var(--brand-primary)] mb-6 flex items-center gap-3 bg-[var(--surface-2)] p-4 rounded-2xl border border-[var(--glass-border)]">
-                        <span className="text-2xl">💳</span>
-                        Payments & Payouts
-                    </h2>
-                    {renderPayments()}
-                </div>
+                {activeTab === 'payments' && (
+                    <div id="section-payments">
+                        <h2 className="text-xl font-black text-[var(--brand-primary)] mb-6 flex items-center gap-3 bg-[var(--surface-2)] p-4 rounded-2xl border border-[var(--glass-border)]">
+                            <span className="text-2xl">💳</span>
+                            Payments & Payouts
+                        </h2>
+                        {renderPayments()}
+                    </div>
+                )}
 
-                <div id="section-notifications" className="scroll-mt-48">
-                    <h2 className="text-xl font-black text-[var(--brand-primary)] mb-6 flex items-center gap-3 bg-[var(--surface-2)] p-4 rounded-2xl border border-[var(--glass-border)]">
-                        <span className="text-2xl">🔔</span>
-                        Notification Preferences
-                    </h2>
-                    {renderNotifications()}
-                </div>
+                {activeTab === 'notifications' && (
+                    <div id="section-notifications">
+                        <h2 className="text-xl font-black text-[var(--brand-primary)] mb-6 flex items-center gap-3 bg-[var(--surface-2)] p-4 rounded-2xl border border-[var(--glass-border)]">
+                            <span className="text-2xl">🔔</span>
+                            Notification Preferences
+                        </h2>
+                        {renderNotifications()}
+                    </div>
+                )}
 
-                <div id="section-verification" className="scroll-mt-48">
-                    <h2 className="text-xl font-black text-[var(--brand-primary)] mb-6 flex items-center gap-3 bg-[var(--surface-2)] p-4 rounded-2xl border border-[var(--glass-border)]">
-                        <span className="text-2xl">🪪</span>
-                        Business Verification
-                    </h2>
-                    {renderVerification()}
-                </div>
+                {activeTab === 'verification' && (
+                    <div id="section-verification">
+                        <h2 className="text-xl font-black text-[var(--brand-primary)] mb-6 flex items-center gap-3 bg-[var(--surface-2)] p-4 rounded-2xl border border-[var(--glass-border)]">
+                            <span className="text-2xl">🪪</span>
+                            Business Verification
+                        </h2>
+                        {renderVerification()}
+                    </div>
+                )}
             </div>
 
             {/* Close Store Modal */}

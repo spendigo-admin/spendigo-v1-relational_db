@@ -84,7 +84,17 @@ const MerchantNotifications: React.FC = () => {
         if (!user?.storeId) return;
         setSavingPrefs(true);
         try {
-            await updateDoc(doc(db, 'stores', user.storeId), { notificationPreferences: updated });
+            const docRef = doc(db, 'stores', user.storeId);
+            const snap = await getDoc(docRef);
+            const currentPrefs = snap.data()?.notificationPreferences || {};
+            await updateDoc(docRef, {
+                notificationPreferences: {
+                    ...currentPrefs,
+                    ...updated
+                }
+            });
+        } catch (error) {
+            console.error("Failed to save alert preferences:", error);
         } finally {
             setSavingPrefs(false);
         }
@@ -230,32 +240,44 @@ const MerchantNotifications: React.FC = () => {
             {/* Preferences */}
             <div className="bg-white rounded-[2rem] border border-[var(--glass-border)] p-6 shadow-sm">
                 <div className="flex items-center gap-3 mb-6">
-                    <div className="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl">⚙️</div>
+                    <div className="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl animate-pulse">⚙️</div>
                     <div>
-                        <h3 className="font-bold text-sm text-[var(--text-main)]">Alert Preferences</h3>
-                        <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">
-                            {savingPrefs ? 'Saving...' : 'Configure Alerts'}
+                        <h3 className="font-black text-base text-[var(--text-main)]">Alert Preferences</h3>
+                        <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-wider">
+                            {savingPrefs ? '⏳ Saving Alerts...' : 'Configure Alerts'}
                         </p>
                     </div>
                 </div>
-                <div className="space-y-5">
-                    {prefItems.map(pref => (
-                        <div key={pref.key} className="flex items-center justify-between group">
-                            <div className="min-w-0 pr-4">
-                                <p className="text-sm font-bold text-[var(--text-main)]">{pref.label}</p>
-                                <p className="text-[11px] text-[var(--text-muted)] line-clamp-1 group-hover:text-[var(--text-main)] transition-colors">{pref.desc}</p>
-                            </div>
-                            <button
+                <div className="space-y-4">
+                    {prefItems.map(pref => {
+                        const isChecked = prefs[pref.key];
+                        return (
+                            <div 
+                                key={pref.key} 
                                 onClick={() => togglePref(pref.key)}
-                                className={`w-11 h-6 rounded-full transition-all relative shrink-0 ${prefs[pref.key]
-                                    ? 'bg-[var(--brand-primary)] shadow-[0_4px_12px_rgba(37,99,235,0.3)]'
-                                    : 'bg-[var(--surface-3)]'
+                                className={`flex items-center justify-between p-4 rounded-xl border border-[var(--glass-border)] transition-all hover:bg-gray-50/50 cursor-pointer ${
+                                    isChecked ? 'bg-blue-50/10' : 'bg-white'
                                 }`}
                             >
-                                <span className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow-sm transition-all ${prefs[pref.key] ? 'left-6' : 'left-1'}`}></span>
-                            </button>
-                        </div>
-                    ))}
+                                <div className="flex-1 pr-4">
+                                    <div className="font-bold text-sm text-[var(--text-main)]">{pref.label}</div>
+                                    <div className="text-xs text-[var(--text-muted)] mt-0.5 leading-relaxed">{pref.desc}</div>
+                                </div>
+                                <button
+                                    type="button"
+                                    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out outline-none ring-2 ring-transparent focus:ring-[var(--brand-primary)]/20 ${
+                                        isChecked ? 'bg-[var(--brand-primary)]' : 'bg-gray-200'
+                                    }`}
+                                >
+                                    <span
+                                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
+                                            isChecked ? 'translate-x-5' : 'translate-x-0'
+                                        }`}
+                                    />
+                                </button>
+                            </div>
+                        );
+                    })}
                 </div>
             </div>
         </div>
