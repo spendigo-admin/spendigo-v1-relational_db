@@ -31,8 +31,30 @@ const AdminLayout: React.FC = () => {
 
         if (!user.mfaEnrolled && location.pathname !== '/admin/mfa-setup') {
             navigate('/admin/mfa-setup');
+            return;
         }
-    }, [user, location.pathname, navigate]);
+
+        // Sub-role permission check — blocks direct URL access to restricted routes
+        const ROUTE_PERMISSIONS: Record<string, string> = {
+            '/admin/stores':          'admin:stores',
+            '/admin/insights':        'admin:stores',
+            '/admin/billing-ledger':  'admin:billing',
+            '/admin/catalog':         'admin:catalog',
+            '/admin/ads':             'admin:marketing',
+            '/admin/surveys':         'admin:marketing',
+            '/admin/flyer-ingestion': 'admin:marketing',
+            '/admin/careers':         'admin:marketing',
+            '/admin/users':           'admin:users',
+            '/admin/audit-logs':      'admin:audit',
+            '/admin/tools':           'admin:system',
+            '/admin/settings':        'admin:system',
+        };
+        const requiredPerm = Object.entries(ROUTE_PERMISSIONS)
+            .find(([path]) => location.pathname.startsWith(path))?.[1];
+        if (requiredPerm && !can(requiredPerm as any)) {
+            navigate('/admin/dashboard');
+        }
+    }, [user, location.pathname, navigate, can]);
 
     if (!user || user.role !== 'admin') {
         return null;
