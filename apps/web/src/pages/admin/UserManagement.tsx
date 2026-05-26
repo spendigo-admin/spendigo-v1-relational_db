@@ -58,7 +58,7 @@ const UserManagement: React.FC = () => {
     const { logEvent } = useAudit();
     const { addNotification } = useNotifications();
     const { confirm } = useConfirmation();
-    const [activeTab, setActiveTab] = useState<'staff' | 'users'>('staff');
+    const [activeTab, setActiveTab] = useState<'staff' | 'users' | 'roles'>('staff');
     const [staff, setStaff] = useState<AdminStaff[]>([]);
     const [users, setUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
@@ -344,6 +344,12 @@ const UserManagement: React.FC = () => {
                     >
                         👥 Platform Users
                     </button>
+                    <button
+                        onClick={() => setActiveTab('roles')}
+                        className={`px-6 py-2 rounded-lg font-medium text-sm transition-all ${activeTab === 'roles' ? 'bg-white shadow-sm text-[var(--brand-primary)]' : 'text-[var(--text-muted)] hover:bg-white/50'}`}
+                    >
+                        🔐 Roles & Permissions
+                    </button>
                 </div>
 
 
@@ -386,7 +392,7 @@ const UserManagement: React.FC = () => {
                 </div>
             )}
 
-            {activeTab === 'staff' ? (
+            {activeTab === 'staff' && (
                 <div className="bg-white rounded-2xl border border-[var(--glass-border)] overflow-hidden shadow-sm">
                     {/* Desktop Table */}
                     <table className="hidden md:table w-full text-left">
@@ -492,7 +498,8 @@ const UserManagement: React.FC = () => {
                         )}
                     </div>
                 </div>
-            ) : (
+            )}
+            {activeTab === 'users' && (
                 /* Platform Users View */
                 <div className="bg-white rounded-2xl border border-[var(--glass-border)] overflow-hidden shadow-sm">
                     {/* Desktop Table */}
@@ -598,7 +605,228 @@ const UserManagement: React.FC = () => {
                 </div>
             )}
 
+            {/* ── Roles & Permissions Matrix ── */}
+            {activeTab === 'roles' && (() => {
+                type AccessLevel = 'full' | 'read' | 'partial' | 'none';
+                interface MatrixRow { label: string; access: AccessLevel[]; pending?: boolean; note?: string; }
+                interface MatrixSection { category: string; permission?: string; newPerm?: boolean; rows: MatrixRow[]; }
+
+                const ROLE_COLS = [
+                    { id: 'SUPER_ADMIN', label: 'Super Admin', icon: '👑', color: 'text-red-700' },
+                    { id: 'MODERATOR',   label: 'Moderator',   icon: '🛡️', color: 'text-purple-700' },
+                    { id: 'SUPPORT',     label: 'Support',     icon: '🎧', color: 'text-blue-700' },
+                    { id: 'AUDITOR',     label: 'Auditor',     icon: '📋', color: 'text-amber-700' },
+                ];
+
+                const ROLE_CARDS = [
+                    { id: 'SUPER_ADMIN', label: 'Super Admin', icon: '👑', border: 'border-red-200',    bg: 'bg-red-50',    badge: 'bg-red-100 text-red-800',       desc: 'Full platform control. Authorizes staff, manages billing, and can perform any admin action.', perms: ['admin:all', 'admin:users', 'admin:stores', 'admin:audit'] },
+                    { id: 'MODERATOR',   label: 'Moderator',   icon: '🛡️', border: 'border-purple-200', bg: 'bg-purple-50', badge: 'bg-purple-100 text-purple-800', desc: 'User and store management. Reviews merchant applications, resolves disputes, manages content.', perms: ['admin:users', 'admin:stores'] },
+                    { id: 'SUPPORT',     label: 'Support',     icon: '🎧', border: 'border-blue-200',   bg: 'bg-blue-50',   badge: 'bg-blue-100 text-blue-800',     desc: 'Customer service. Can look up user accounts and perform soft support actions.', perms: ['admin:users'] },
+                    { id: 'AUDITOR',     label: 'Auditor',     icon: '📋', border: 'border-amber-200',  bg: 'bg-amber-50',  badge: 'bg-amber-100 text-amber-800',   desc: 'Compliance and read-only audit access. Can verify the SHA-256 chain but cannot modify any data.', perms: ['admin:audit'] },
+                ];
+
+                const MATRIX: MatrixSection[] = [
+                    {
+                        category: '📊 Dashboard & Monitoring',
+                        rows: [
+                            { label: 'Admin Dashboard',              access: ['full', 'full', 'full', 'full'] },
+                            { label: 'System Health Monitor',        access: ['full', 'full', 'read', 'read'] },
+                            { label: 'Store Insights & Analytics',   access: ['full', 'full', 'none', 'none'] },
+                        ],
+                    },
+                    {
+                        category: '👥 User Management', permission: 'admin:users',
+                        rows: [
+                            { label: 'View platform users',          access: ['full', 'full', 'full', 'none'] },
+                            { label: 'Suspend / ban users',          access: ['full', 'full', 'partial', 'none'], pending: true },
+                            { label: 'Delete user accounts',         access: ['full', 'none', 'none', 'none'],   pending: true },
+                            { label: 'Authorize admin staff',        access: ['full', 'none', 'none', 'none'],   pending: true },
+                        ],
+                    },
+                    {
+                        category: '🏪 Store Management', permission: 'admin:stores',
+                        rows: [
+                            { label: 'View stores',                  access: ['full', 'full', 'none', 'none'] },
+                            { label: 'Approve / suspend stores',     access: ['full', 'full', 'none', 'none'],   pending: true },
+                            { label: 'KYB document review',          access: ['full', 'full', 'none', 'none'],   pending: true },
+                            { label: 'Force delete store',           access: ['full', 'none', 'none', 'none'],   pending: true },
+                        ],
+                    },
+                    {
+                        category: '📦 Catalog Management', permission: 'admin:catalog', newPerm: true,
+                        rows: [
+                            { label: 'View / approve pending products', access: ['full', 'full', 'none', 'none'], pending: true },
+                            { label: 'Edit master products',            access: ['full', 'full', 'none', 'none'], pending: true },
+                            { label: 'Delete master products',          access: ['full', 'none', 'none', 'none'], pending: true },
+                        ],
+                    },
+                    {
+                        category: '📢 Marketing & Content', permission: 'admin:marketing', newPerm: true,
+                        rows: [
+                            { label: 'Ad placement management',      access: ['full', 'full', 'none', 'none'], pending: true },
+                            { label: 'Flyer ingestion & moderation', access: ['full', 'full', 'none', 'none'], pending: true },
+                            { label: 'Survey & career management',   access: ['full', 'full', 'none', 'none'], pending: true },
+                        ],
+                    },
+                    {
+                        category: '💳 Billing & Finance', permission: 'admin:billing', newPerm: true,
+                        rows: [
+                            { label: 'View billing ledger',          access: ['full', 'none', 'none', 'none'], pending: true },
+                            { label: 'Create / delete promo codes',  access: ['full', 'none', 'none', 'none'], pending: true },
+                            { label: 'Subscription overrides',       access: ['full', 'none', 'none', 'none'], pending: true },
+                        ],
+                    },
+                    {
+                        category: '⚙️ System Operations', permission: 'admin:system', newPerm: true,
+                        rows: [
+                            { label: 'Platform settings',                          access: ['full', 'none', 'none', 'none'], pending: true },
+                            { label: 'Database tools (orphan cleanup, migrations)', access: ['full', 'none', 'none', 'none'], pending: true },
+                            { label: 'Maintenance mode (maker-checker)',           access: ['full', 'none', 'none', 'none'], pending: true },
+                        ],
+                    },
+                    {
+                        category: '🔍 Audit & Compliance', permission: 'admin:audit',
+                        rows: [
+                            { label: 'View & verify audit log chain', access: ['full', 'none', 'none', 'read'] },
+                            { label: 'Export audit logs',             access: ['full', 'none', 'none', 'read'] },
+                        ],
+                    },
+                    {
+                        category: '🔔 Notifications',
+                        rows: [
+                            { label: 'Admin notifications inbox', access: ['full', 'full', 'full', 'full'], note: 'Own inbox only' },
+                        ],
+                    },
+                ];
+
+                const cellStyle = (level: AccessLevel, pending?: boolean) => {
+                    if (level === 'full')    return 'bg-green-100 text-green-800';
+                    if (level === 'read')    return 'bg-blue-100 text-blue-800';
+                    if (level === 'partial') return 'bg-orange-100 text-orange-800';
+                    return pending ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-400';
+                };
+                const cellLabel = (level: AccessLevel, pending?: boolean) => {
+                    if (level === 'full')    return '✅ Full';
+                    if (level === 'read')    return '🔍 Read';
+                    if (level === 'partial') return '⚡ Limited';
+                    return pending ? '⚠️ Open' : '—';
+                };
+
+                return (
+                    <div className="space-y-6 mt-2">
+                        {/* Page header */}
+                        <div className="bg-white rounded-2xl border border-[var(--glass-border)] p-6 shadow-sm flex items-start gap-4">
+                            <span className="text-3xl">🔐</span>
+                            <div>
+                                <h2 className="text-xl font-bold text-[var(--text-main)] mb-1">Admin Permission Matrix</h2>
+                                <p className="text-sm text-[var(--text-muted)] leading-relaxed">
+                                    Defines what each admin sub-role can see and do across the platform.
+                                    <span className="text-amber-700 font-medium"> ⚠️ Open</span> means the action is currently unblocked for all admins — enforcement is pending.
+                                    <span className="text-violet-700 font-medium"> 🔧</span> marks categories that require a new permission key in <code className="text-xs bg-gray-100 px-1 py-0.5 rounded">AuthContext.tsx</code> before they can be enforced.
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Role cards */}
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                            {ROLE_CARDS.map(r => (
+                                <div key={r.id} className={`rounded-2xl border p-5 ${r.bg} ${r.border}`}>
+                                    <div className="flex items-center gap-2 mb-3">
+                                        <span className="text-2xl">{r.icon}</span>
+                                        <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${r.badge}`}>{r.id}</span>
+                                    </div>
+                                    <h3 className="font-bold text-[var(--text-main)] mb-1 text-sm">{r.label}</h3>
+                                    <p className="text-xs text-[var(--text-muted)] leading-relaxed mb-3">{r.desc}</p>
+                                    <div className="space-y-1">
+                                        {r.perms.map(p => (
+                                            <div key={p} className="text-xs font-mono bg-white/70 rounded px-2 py-0.5 text-[var(--text-main)]">{p}</div>
+                                        ))}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Legend */}
+                        <div className="flex flex-wrap items-center gap-3 bg-white rounded-xl border border-[var(--glass-border)] px-5 py-3 text-xs">
+                            <span className="font-bold text-[var(--text-muted)] uppercase tracking-wider">Legend:</span>
+                            {([
+                                ['bg-green-100 text-green-800',   '✅ Full Access'],
+                                ['bg-blue-100 text-blue-800',     '🔍 Read Only'],
+                                ['bg-orange-100 text-orange-800', '⚡ Limited'],
+                                ['bg-gray-100 text-gray-400',     '— No Access'],
+                                ['bg-amber-100 text-amber-700',   '⚠️ Open (not enforced)'],
+                                ['bg-violet-100 text-violet-700', '🔧 Needs new permission'],
+                            ] as [string, string][]).map(([cls, lbl]) => (
+                                <span key={lbl} className={`px-2.5 py-1 rounded-full font-semibold ${cls}`}>{lbl}</span>
+                            ))}
+                        </div>
+
+                        {/* Matrix table */}
+                        <div className="bg-white rounded-2xl border border-[var(--glass-border)] overflow-hidden shadow-sm">
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-sm">
+                                    <thead className="bg-gray-50 border-b border-[var(--glass-border)]">
+                                        <tr>
+                                            <th className="p-4 text-left text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider w-72">Feature / Action</th>
+                                            {ROLE_COLS.map(col => (
+                                                <th key={col.id} className={`p-4 text-center text-xs font-bold uppercase tracking-wider ${col.color}`}>
+                                                    {col.icon} {col.label}
+                                                </th>
+                                            ))}
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-100">
+                                        {MATRIX.map(section => (
+                                            <React.Fragment key={section.category}>
+                                                <tr className="bg-gray-50">
+                                                    <td colSpan={5} className="px-4 py-2">
+                                                        <div className="flex items-center gap-3">
+                                                            <span className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">{section.category}</span>
+                                                            {section.permission && (
+                                                                <span className={`text-xs font-mono px-2 py-0.5 rounded-full ${section.newPerm ? 'bg-violet-100 text-violet-700' : 'bg-gray-200 text-gray-600'}`}>
+                                                                    {section.newPerm && '🔧 '}{section.permission}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                                {section.rows.map(row => (
+                                                    <tr key={row.label} className="hover:bg-gray-50/50 transition-colors">
+                                                        <td className="px-4 py-3 text-[var(--text-main)]">
+                                                            <span>{row.label}</span>
+                                                            {row.note && <span className="ml-1 text-xs text-[var(--text-muted)]">({row.note})</span>}
+                                                        </td>
+                                                        {row.access.map((level, i) => (
+                                                            <td key={i} className="px-4 py-3 text-center">
+                                                                <span className={`inline-block text-xs font-semibold px-2.5 py-1 rounded-full ${cellStyle(level, row.pending)}`}>
+                                                                    {cellLabel(level, row.pending)}
+                                                                </span>
+                                                            </td>
+                                                        ))}
+                                                    </tr>
+                                                ))}
+                                            </React.Fragment>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        {/* Footer note */}
+                        <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800 leading-relaxed flex gap-3 items-start">
+                            <span className="text-lg shrink-0">⚠️</span>
+                            <div>
+                                <strong>Pending enforcement:</strong> Rows marked ⚠️ Open define the intended model but have no role check in the UI or Firestore rules yet — any admin can currently perform these actions.
+                                Categories marked 🔧 additionally require new permission keys (<code className="bg-amber-100 px-1 rounded">admin:catalog</code>, <code className="bg-amber-100 px-1 rounded">admin:billing</code>, <code className="bg-amber-100 px-1 rounded">admin:system</code>, <code className="bg-amber-100 px-1 rounded">admin:marketing</code>) to be added to <code className="bg-amber-100 px-1 rounded">AuthContext.tsx</code>.
+                                See the <strong>Security &amp; Access Control — Admin RBAC Gaps</strong> section in TODO.md for the implementation backlog.
+                            </div>
+                        </div>
+                    </div>
+                );
+            })()}
+
             {/* Helper Section */}
+            {activeTab !== 'roles' && (
             <div className="mt-8 p-6 bg-gray-50 rounded-2xl border border-gray-200 flex gap-4 items-start">
                 <span className="text-2xl mt-1">💡</span>
                 <div>
@@ -610,6 +838,7 @@ const UserManagement: React.FC = () => {
                     </p>
                 </div>
             </div>
+            )}
 
             {/* Add Staff Modal */}
             {showStaffModal && (

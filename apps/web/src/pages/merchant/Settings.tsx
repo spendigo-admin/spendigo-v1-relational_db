@@ -86,7 +86,8 @@ const MerchantSettings: React.FC = () => {
     ];
 
     const handleTabChange = (tabId: string) => {
-        if (tabId === 'verification' && user?.merchantRole !== 'OWNER') return;
+        const targetTab = TABS.find(t => t.id === tabId);
+        if (!targetTab || !targetTab.visible) return;
         setActiveTab(tabId as any);
         setSearchParams({ tab: tabId });
     };
@@ -94,13 +95,20 @@ const MerchantSettings: React.FC = () => {
     useEffect(() => {
         const tab = searchParams.get('tab');
         if (tab && ['profile', 'operations', 'team', 'payments', 'notifications', 'verification'].includes(tab)) {
-            if (tab === 'verification' && user?.merchantRole !== 'OWNER') {
+            const targetTab = TABS.find(t => t.id === tab);
+            if (targetTab && targetTab.visible) {
+                setActiveTab(tab as any);
+            } else if (user) {
                 setActiveTab('profile');
-                return;
+                setSearchParams({ tab: 'profile' });
+                addNotification({
+                    type: 'alert',
+                    title: 'Access Restricted',
+                    message: 'You do not have permissions to access the requested settings panel.'
+                });
             }
-            setActiveTab(tab as any);
         }
-    }, [searchParams, user]);
+    }, [searchParams, user, hasSettingsAccess, hasTeamAccess]);
 
     // Profile State
     const [storeInfo, setStoreInfo] = useState({
@@ -2395,7 +2403,7 @@ const MerchantSettings: React.FC = () => {
                     </div>
                 )}
 
-                {activeTab === 'operations' && (
+                {activeTab === 'operations' && (hasSettingsAccess || user?.merchantRole === 'STAFF') && (
                     <div id="section-operations">
                         <h3 className="text-xl font-black text-[var(--brand-primary)] mb-6 flex items-center gap-3 bg-[var(--surface-2)] p-4 rounded-2xl border border-[var(--glass-border)]">
                             <span className="text-2xl">⚙️</span>
@@ -2405,17 +2413,189 @@ const MerchantSettings: React.FC = () => {
                     </div>
                 )}
 
-                {activeTab === 'team' && (
+                {activeTab === 'team' && hasTeamAccess && (
                     <div id="section-team">
                         <h2 className="text-xl font-black text-[var(--brand-primary)] mb-6 flex items-center gap-3 bg-[var(--surface-2)] p-4 rounded-2xl border border-[var(--glass-border)]">
                             <span className="text-2xl">👥</span>
                             Team & User Management
                         </h2>
                         {renderTeam()}
+
+                        {/* ── Role Permissions Reference ── */}
+                        {(() => {
+                            type AccessLevel = 'full' | 'read' | 'none';
+                            interface MRow { label: string; access: [AccessLevel, AccessLevel, AccessLevel, AccessLevel]; note?: string; }
+                            interface MSection { category: string; rows: MRow[]; }
+
+                            const COLS = [
+                                { key: 'OWNER',     label: 'Store Owner',     icon: '👑', badge: ROLE_INFO.OWNER.color },
+                                { key: 'MANAGER',   label: 'Store Manager',   icon: '🏢', badge: ROLE_INFO.MANAGER.color },
+                                { key: 'STAFF',     label: 'Staff / Picker',  icon: '📦', badge: ROLE_INFO.STAFF.color },
+                                { key: 'MARKETING', label: 'Marketing Spec',  icon: '📣', badge: ROLE_INFO.MARKETING.color },
+                            ];
+
+                            const MATRIX: MSection[] = [
+                                {
+                                    category: '🏪 Store Settings',
+                                    rows: [
+                                        { label: 'Edit store profile',             access: ['full', 'full', 'read', 'none'] },
+                                        { label: 'Operations settings',            access: ['full', 'full', 'read', 'none'] },
+                                        { label: 'Business verification (KYB)',    access: ['full', 'none', 'none', 'none'] },
+                                        { label: 'Export store data',              access: ['full', 'full', 'none', 'none'] },
+                                        { label: 'Request account deletion',       access: ['full', 'none', 'none', 'none'] },
+                                    ],
+                                },
+                                {
+                                    category: '📦 Products',
+                                    rows: [
+                                        { label: 'View products',                  access: ['full', 'full', 'full', 'full'] },
+                                        { label: 'Add / edit products',            access: ['full', 'full', 'none', 'full'] },
+                                        { label: 'Delete products',                access: ['full', 'full', 'none', 'full'] },
+                                    ],
+                                },
+                                {
+                                    category: '🧾 Orders & Delivery',
+                                    rows: [
+                                        { label: 'View orders',                    access: ['full', 'full', 'full', 'none'] },
+                                        { label: 'Update order status',            access: ['full', 'full', 'full', 'none'] },
+                                        { label: 'Process refunds',                access: ['full', 'full', 'full', 'none'] },
+                                        { label: 'Manage delivery',                access: ['full', 'full', 'full', 'none'] },
+                                    ],
+                                },
+                                {
+                                    category: '🗞️ Flyers & Deals',
+                                    rows: [
+                                        { label: 'Create / edit flyers',           access: ['full', 'full', 'none', 'full'] },
+                                        { label: 'Create / edit deals',            access: ['full', 'full', 'none', 'full'] },
+                                    ],
+                                },
+                                {
+                                    category: '📊 Analytics & Marketing',
+                                    rows: [
+                                        { label: 'View analytics dashboard',       access: ['full', 'full', 'none', 'full'] },
+                                        { label: 'Digital marketing campaigns',    access: ['full', 'full', 'none', 'full'] },
+                                    ],
+                                },
+                                {
+                                    category: '👥 Team Management',
+                                    rows: [
+                                        { label: 'View team roster',               access: ['full', 'none', 'none', 'none'] },
+                                        { label: 'Invite members',                 access: ['full', 'none', 'none', 'none'] },
+                                        { label: 'Change member roles',            access: ['full', 'none', 'none', 'none'] },
+                                        { label: 'Remove members',                 access: ['full', 'none', 'none', 'none'] },
+                                    ],
+                                },
+                                {
+                                    category: '💳 Subscription & Billing',
+                                    rows: [
+                                        { label: 'View subscription plan',         access: ['full', 'full', 'read', 'read'] },
+                                        { label: 'Upgrade / downgrade plan',       access: ['full', 'full', 'none', 'none'] },
+                                        { label: 'View payout settings',           access: ['full', 'full', 'none', 'none'] },
+                                    ],
+                                },
+                                {
+                                    category: '🔔 Notifications',
+                                    rows: [
+                                        { label: 'Manage notification preferences', access: ['full', 'full', 'full', 'full'], note: 'Own prefs only' },
+                                    ],
+                                },
+                            ];
+
+                            const cellCls = (level: AccessLevel) =>
+                                level === 'full' ? 'bg-green-100 text-green-800' :
+                                level === 'read' ? 'bg-blue-100 text-blue-800' :
+                                'bg-gray-100 text-gray-400';
+                            const cellLbl = (level: AccessLevel) =>
+                                level === 'full' ? '✅ Full' :
+                                level === 'read' ? '🔍 View' : '—';
+
+                            return (
+                                <div className="mt-8 space-y-5">
+                                    {/* Header */}
+                                    <div className="flex items-start gap-3 bg-[var(--surface-2)] p-4 rounded-2xl border border-[var(--glass-border)]">
+                                        <span className="text-2xl">🔐</span>
+                                        <div>
+                                            <h3 className="font-bold text-[var(--text-main)]">Role Permissions Reference</h3>
+                                            <p className="text-sm text-[var(--text-muted)]">What each team role can see and do in your merchant portal.</p>
+                                        </div>
+                                    </div>
+
+                                    {/* Role summary cards */}
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                        {COLS.map(col => {
+                                            const info = ROLE_INFO[col.key as keyof typeof ROLE_INFO];
+                                            return (
+                                                <div key={col.key} className="bg-white rounded-xl border border-[var(--glass-border)] p-4 shadow-sm">
+                                                    <div className="flex items-center gap-2 mb-2">
+                                                        <span className="text-xl">{col.icon}</span>
+                                                        <span className={`text-xs font-bold px-2 py-0.5 rounded-full border ${info.color}`}>{info.label}</span>
+                                                    </div>
+                                                    <p className="text-xs text-[var(--text-muted)] leading-relaxed">{info.desc}</p>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+
+                                    {/* Legend */}
+                                    <div className="flex flex-wrap items-center gap-3 bg-white rounded-xl border border-[var(--glass-border)] px-4 py-2.5 text-xs">
+                                        <span className="font-bold text-[var(--text-muted)] uppercase tracking-wider">Legend:</span>
+                                        <span className="px-2.5 py-1 rounded-full font-semibold bg-green-100 text-green-800">✅ Full Access</span>
+                                        <span className="px-2.5 py-1 rounded-full font-semibold bg-blue-100 text-blue-800">🔍 View Only</span>
+                                        <span className="px-2.5 py-1 rounded-full font-semibold bg-gray-100 text-gray-400">— No Access</span>
+                                    </div>
+
+                                    {/* Matrix table */}
+                                    <div className="bg-white rounded-xl border border-[var(--glass-border)] overflow-hidden shadow-sm">
+                                        <div className="overflow-x-auto">
+                                            <table className="w-full text-sm">
+                                                <thead className="bg-gray-50 border-b border-[var(--glass-border)]">
+                                                    <tr>
+                                                        <th className="p-3 text-left text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider w-56">Feature / Action</th>
+                                                        {COLS.map(col => (
+                                                            <th key={col.key} className="p-3 text-center text-xs font-bold uppercase tracking-wider">
+                                                                <span className={`px-2 py-0.5 rounded-full border ${ROLE_INFO[col.key as keyof typeof ROLE_INFO].color}`}>
+                                                                    {col.icon} {col.label}
+                                                                </span>
+                                                            </th>
+                                                        ))}
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-gray-100">
+                                                    {MATRIX.map(section => (
+                                                        <React.Fragment key={section.category}>
+                                                            <tr className="bg-gray-50">
+                                                                <td colSpan={5} className="px-3 py-2 text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">
+                                                                    {section.category}
+                                                                </td>
+                                                            </tr>
+                                                            {section.rows.map(row => (
+                                                                <tr key={row.label} className="hover:bg-gray-50/50 transition-colors">
+                                                                    <td className="px-3 py-2.5 text-[var(--text-main)]">
+                                                                        {row.label}
+                                                                        {row.note && <span className="ml-1 text-xs text-[var(--text-muted)]">({row.note})</span>}
+                                                                    </td>
+                                                                    {row.access.map((level, i) => (
+                                                                        <td key={i} className="px-3 py-2.5 text-center">
+                                                                            <span className={`inline-block text-xs font-semibold px-2 py-0.5 rounded-full ${cellCls(level)}`}>
+                                                                                {cellLbl(level)}
+                                                                            </span>
+                                                                        </td>
+                                                                    ))}
+                                                                </tr>
+                                                            ))}
+                                                        </React.Fragment>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })()}
                     </div>
                 )}
 
-                {activeTab === 'payments' && (
+                {activeTab === 'payments' && hasSettingsAccess && (
                     <div id="section-payments">
                         <h2 className="text-xl font-black text-[var(--brand-primary)] mb-6 flex items-center gap-3 bg-[var(--surface-2)] p-4 rounded-2xl border border-[var(--glass-border)]">
                             <span className="text-2xl">💳</span>
@@ -2435,7 +2615,7 @@ const MerchantSettings: React.FC = () => {
                     </div>
                 )}
 
-                {activeTab === 'verification' && (
+                {activeTab === 'verification' && user?.merchantRole === 'OWNER' && (
                     <div id="section-verification">
                         <h2 className="text-xl font-black text-[var(--brand-primary)] mb-6 flex items-center gap-3 bg-[var(--surface-2)] p-4 rounded-2xl border border-[var(--glass-border)]">
                             <span className="text-2xl">🪪</span>

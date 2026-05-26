@@ -237,6 +237,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             }
 
             const merchantRole = data.role === 'merchant' ? (data.merchantRole || 'OWNER') : undefined;
+            const storeData = storeDoc?.exists() ? storeDoc.data() : null;
+            const inheritedSubscriptionTier = finalRole === 'merchant' && storeData
+                ? (storeData.subscriptionTier || 'free')
+                : (data.subscriptionTier || 'free');
 
             // 5. Final State Update
             const finalUserData = {
@@ -246,7 +250,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 merchantRole: merchantRole,
                 adminRole: finalAdminRole,
                 emailVerified: emailVerified,
-                mfaEnrolled: mfaEnrolled
+                mfaEnrolled: mfaEnrolled,
+                subscriptionTier: inheritedSubscriptionTier
             } as User;
 
             console.log('[AuthContext] Setting user state:', uid, finalRole);

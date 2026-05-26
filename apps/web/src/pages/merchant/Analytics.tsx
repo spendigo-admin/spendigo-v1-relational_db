@@ -14,7 +14,7 @@ interface ChartPoint {
 }
 
 const MerchantAnalytics: React.FC = () => {
-    const { user } = useAuth();
+    const { user, can } = useAuth();
     const { orders } = useOrders();
     const storeId = user?.storeId || '1';
 
@@ -270,6 +270,24 @@ const MerchantAnalytics: React.FC = () => {
                         </a>
                     </div>
                 </div>
+            </div>
+        );
+    }
+
+    if (!can('analytics:read')) {
+        return (
+            <div className="p-6 max-w-xl mx-auto text-center mt-16 space-y-6 animate-fade-in">
+                <div className="text-6xl">📊</div>
+                <h2 className="text-2xl font-black text-[var(--text-main)]">Access Restricted</h2>
+                <p className="text-[var(--text-muted)] text-sm leading-relaxed">
+                    Analytics are available to Store Owners, Managers, and Marketing Specialists. Staff and Picker accounts do not have access to analytics data.
+                </p>
+                <button
+                    onClick={() => window.history.back()}
+                    className="px-6 py-2.5 bg-[var(--brand-primary)] text-white font-bold rounded-xl shadow-lg shadow-[var(--brand-primary)]/20 hover:brightness-110 active:scale-95 transition-all"
+                >
+                    Go Back
+                </button>
             </div>
         );
     }

@@ -33,6 +33,7 @@ interface MerchantSubInfo {
     ownerEmail: string;
     stripeCustomerId?: string;
     bn?: string;
+    merchantRole?: string;
 }
 
 interface PromoCodeEntry {
@@ -135,7 +136,8 @@ const BillingLedger: React.FC = () => {
                     end: data.subscriptionEnd || '',
                     ownerEmail: data.email || doc.id,
                     stripeCustomerId: data.stripeCustomerId,
-                    bn: data.businessRegistrationNumber || data.bn
+                    bn: data.businessRegistrationNumber || data.bn,
+                    merchantRole: data.merchantRole || ''
                 };
 
                 if (data.storeId) {
@@ -338,8 +340,10 @@ const BillingLedger: React.FC = () => {
     const storeSubscriptions = useMemo(() => {
         return storeList.map((store: any) => {
             const storeOwners = merchants[store.id] || [];
-            // Prefer owner role, fallback to first merchant
-            const owner = storeOwners.find(u => u.uid) || storeOwners[0];
+            // Prefer owner whose UID matches the store's ownerId, or has merchantRole === 'OWNER', fallback to first merchant
+            const owner = storeOwners.find(u => u.uid === store.ownerId) || 
+                          storeOwners.find(u => u.merchantRole === 'OWNER') || 
+                          storeOwners[0];
 
             return {
                 id: store.id,

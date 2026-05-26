@@ -6,6 +6,23 @@ Chronological record of shipped fixes, features, and cleanup tasks. Newest at th
 
 ## May 2026
 
+### Merchant Portal RBAC: Full Role-Enforcement Pass
+`apps/web/src/layouts/MerchantLayout.tsx`, `apps/web/src/pages/merchant/Settings.tsx`, `apps/web/src/pages/merchant/Marketing.tsx`, `apps/web/src/pages/merchant/Subscription.tsx`, `apps/web/src/context/AuthContext.tsx`, `firestore.rules`
+
+Five-commit batch completing role-based access enforcement across the entire merchant portal:
+
+1. **STAFF restrictions** — "Digital Marketing" nav link hidden in `MerchantLayout` for STAFF. `Marketing.tsx` renders a full-page "Access Restricted" block for STAFF (navigation guard + rendered block — defence in depth). Verification tab hidden in Settings; Operations tab made visible but read-only.
+
+2. **OWNER-only Danger Zone** — Account deletion, subscription cancellation, and other destructive Settings actions gated behind `user?.merchantRole === 'OWNER'` checks. Non-OWNER users see a read-only view with a lock overlay.
+
+3. **Firestore rule: `pending_deletion` restricted to OWNER** — The `stores` rule previously allowed any merchant to set `status: 'pending_deletion'`; tightened to `getMerchantRole() == 'OWNER'` in the deletion-request branch, consistent with the client-side gate.
+
+4. **Team role management wizard** — OWNER can now reassign team member roles (MANAGER / STAFF / MARKETING) via a modal in the Team Roles tab. Each change is written directly to the target user's Firestore doc and emits a `STORE_TEAM_ROLE_CHANGE` audit event via `auditBridge`. Firestore rule added: OWNERs may update `merchantRole` on users where `storeId` matches their store, but cannot change `role`, `adminRole`, `email`, or `storeId`. Valid `merchantRole` values are enforced via `in [...]` check in the rule.
+
+5. **Permission matrix corrections** — `MARKETING` role gained `products:write` (needed for flyer/deal product tagging). `MARKETING` and `STAFF` are now view-only on the Subscription page (`isViewOnly` flag extended).
+
+---
+
 ### CSP `unsafe-inline` Removal
 `firebase.json`, `apps/web/src/components/Game2048.tsx`, `apps/web/src/pages/Maintenance.tsx`, `apps/web/src/styles/design-system.css`
 

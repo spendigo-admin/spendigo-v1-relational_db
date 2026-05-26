@@ -58,7 +58,7 @@ const INITIAL_DEALS: Deal[] = [
 ];
 
 const MerchantDeals: React.FC = () => {
-    const { user } = useAuth();
+    const { user, can } = useAuth();
     const { stores, getStore, updateStoreDeals, subscribeToDeals, saveDeal, deleteDeal } = useMarketplace();
     const storeId = user?.storeId || '1';
     const isLocked = stores[storeId]?.status === 'pending_deletion';
@@ -66,7 +66,7 @@ const MerchantDeals: React.FC = () => {
     const store = getStore(storeId);
     // const availableProducts = useMemo(() => store?.products || [], [store?.products]);
     const { products: availableProducts } = useStoreProducts(storeId);
-    const hasWriteAccess = !isLocked;
+    const hasWriteAccess = can('deals:write') && !isLocked;
 
     const isRestrictedPlan = (user?.subscriptionTier || 'free') !== 'pro';
 
