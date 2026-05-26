@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { collection, query, orderBy, onSnapshot, doc, setDoc, deleteDoc, serverTimestamp, addDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
+import { useAuth } from '../../context/AuthContext';
 import { useNotifications } from '../../context/NotificationContext';
 import { useConfirmation } from '../../context/ConfirmationContext';
 import { auditBridge } from '../../utils/auditBridge';
@@ -8,6 +9,7 @@ import { auditBridge } from '../../utils/auditBridge';
 import { Job } from '../../data/careers';
 
 const CareerManagement: React.FC = () => {
+    const { can } = useAuth();
     const { addNotification } = useNotifications();
     const { confirm } = useConfirmation();
     const [jobs, setJobs] = useState<Job[]>([]);
@@ -106,6 +108,18 @@ const CareerManagement: React.FC = () => {
             console.error(err);
         }
     };
+
+    if (!can('admin:marketing')) {
+        return (
+            <div className="p-8 text-center space-y-4 mt-16 animate-fade-in">
+                <div className="text-5xl">🔒</div>
+                <h2 className="text-xl font-black text-[var(--text-main)]">Access Restricted</h2>
+                <p className="text-sm text-[var(--text-muted)] max-w-xs mx-auto">
+                    This section requires the <code className="bg-gray-100 px-1 rounded text-xs">admin:marketing</code> permission. Contact your Super Admin.
+                </p>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-6 animate-fade-in text-left">

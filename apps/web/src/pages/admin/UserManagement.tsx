@@ -54,7 +54,7 @@ const ROLE_DEFINITIONS: Record<AdminRole, { description: string; permissions: st
 };
 
 const UserManagement: React.FC = () => {
-    const { user: currentUser } = useAuth();
+    const { user: currentUser, can } = useAuth();
     const { logEvent } = useAudit();
     const { addNotification } = useNotifications();
     const { confirm } = useConfirmation();
@@ -63,6 +63,7 @@ const UserManagement: React.FC = () => {
     const [users, setUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
     const [showStaffModal, setShowStaffModal] = useState(false);
+    const [staffStep, setStaffStep] = useState(1);
     const [userFilter, setUserFilter] = useState<'all' | 'merchant' | 'consumer'>('all');
     const [searchTerm, setSearchTerm] = useState(''); // Search by Email/ID
     const [statusFilter, setStatusFilter] = useState('all'); // Filter by Status
@@ -155,6 +156,7 @@ const UserManagement: React.FC = () => {
             }
 
             setShowStaffModal(false);
+            setStaffStep(1);
             setNewStaff({ name: '', email: '', role: 'SUPPORT' });
 
             addNotification({
@@ -319,9 +321,12 @@ const UserManagement: React.FC = () => {
                     <h1 className="text-2xl font-bold text-[var(--text-main)]">Platform Governance</h1>
                     <p className="text-sm text-[var(--text-muted)]">Manage isolated staff and monitor external users.</p>
                 </div>
-                {activeTab === 'staff' && (
+                {activeTab === 'staff' && can('admin:all') && (
                     <button
-                        onClick={() => setShowStaffModal(true)}
+                        onClick={() => {
+                            setStaffStep(1);
+                            setShowStaffModal(true);
+                        }}
                         className="px-5 py-2.5 bg-black text-white font-bold rounded-xl shadow-xl hover:bg-gray-800 transition-all flex items-center gap-2"
                     >
                         <span className="text-lg">+</span> Add Admin Staff
@@ -535,6 +540,7 @@ const UserManagement: React.FC = () => {
                                         {user.joinedAt}
                                     </td>
                                     <td className="p-5 text-right whitespace-nowrap">
+                                        {can('admin:stores') && (
                                         <button
                                             onClick={() => toggleUserBan(user.id, user.status)}
                                             className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-all ${user.status === 'banned'
@@ -544,12 +550,15 @@ const UserManagement: React.FC = () => {
                                         >
                                             {user.status === 'banned' ? 'Un-ban' : 'Suspend'}
                                         </button>
+                                        )}
+                                        {can('admin:all') && (
                                         <button
                                             onClick={() => handleDeleteUser(user)}
                                             className="text-xs font-bold text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-lg ml-2 transition-all"
                                         >
                                             Delete
                                         </button>
+                                        )}
                                     </td>
                                 </tr>
                             )) : (
@@ -581,6 +590,7 @@ const UserManagement: React.FC = () => {
                                     <span>Joined {user.joinedAt}</span>
                                 </div>
                                 <div className="flex gap-2">
+                                    {can('admin:stores') && (
                                     <button
                                         onClick={() => toggleUserBan(user.id, user.status)}
                                         className={`flex-1 py-2 font-bold rounded-lg text-xs border transition-colors ${user.status === 'banned'
@@ -590,12 +600,15 @@ const UserManagement: React.FC = () => {
                                     >
                                         {user.status === 'banned' ? 'Restore Access' : 'Suspend User'}
                                     </button>
+                                    )}
+                                    {can('admin:all') && (
                                     <button
                                         onClick={() => handleDeleteUser(user)}
                                         className="flex-1 py-2 bg-red-500 text-white font-bold rounded-lg text-xs"
                                     >
                                         Delete Account
                                     </button>
+                                    )}
                                 </div>
                             </div>
                         )) : (
@@ -608,8 +621,8 @@ const UserManagement: React.FC = () => {
             {/* ── Roles & Permissions Matrix ── */}
             {activeTab === 'roles' && (() => {
                 type AccessLevel = 'full' | 'read' | 'partial' | 'none';
-                interface MatrixRow { label: string; access: AccessLevel[]; pending?: boolean; note?: string; }
-                interface MatrixSection { category: string; permission?: string; newPerm?: boolean; rows: MatrixRow[]; }
+                interface MatrixRow { label: string; access: AccessLevel[]; note?: string; }
+                interface MatrixSection { category: string; permission?: string; rows: MatrixRow[]; }
 
                 const ROLE_COLS = [
                     { id: 'SUPER_ADMIN', label: 'Super Admin', icon: '👑', color: 'text-red-700' },
@@ -619,8 +632,8 @@ const UserManagement: React.FC = () => {
                 ];
 
                 const ROLE_CARDS = [
-                    { id: 'SUPER_ADMIN', label: 'Super Admin', icon: '👑', border: 'border-red-200',    bg: 'bg-red-50',    badge: 'bg-red-100 text-red-800',       desc: 'Full platform control. Authorizes staff, manages billing, and can perform any admin action.', perms: ['admin:all', 'admin:users', 'admin:stores', 'admin:audit'] },
-                    { id: 'MODERATOR',   label: 'Moderator',   icon: '🛡️', border: 'border-purple-200', bg: 'bg-purple-50', badge: 'bg-purple-100 text-purple-800', desc: 'User and store management. Reviews merchant applications, resolves disputes, manages content.', perms: ['admin:users', 'admin:stores'] },
+                    { id: 'SUPER_ADMIN', label: 'Super Admin', icon: '👑', border: 'border-red-200',    bg: 'bg-red-50',    badge: 'bg-red-100 text-red-800',       desc: 'Full platform control. Authorizes staff, manages billing, and can perform any admin action.', perms: ['admin:all', 'admin:users', 'admin:stores', 'admin:audit', 'admin:catalog', 'admin:marketing', 'admin:billing', 'admin:system'] },
+                    { id: 'MODERATOR',   label: 'Moderator',   icon: '🛡️', border: 'border-purple-200', bg: 'bg-purple-50', badge: 'bg-purple-100 text-purple-800', desc: 'User and store management. Reviews merchant applications, resolves disputes, manages content.', perms: ['admin:users', 'admin:stores', 'admin:catalog', 'admin:marketing'] },
                     { id: 'SUPPORT',     label: 'Support',     icon: '🎧', border: 'border-blue-200',   bg: 'bg-blue-50',   badge: 'bg-blue-100 text-blue-800',     desc: 'Customer service. Can look up user accounts and perform soft support actions.', perms: ['admin:users'] },
                     { id: 'AUDITOR',     label: 'Auditor',     icon: '📋', border: 'border-amber-200',  bg: 'bg-amber-50',  badge: 'bg-amber-100 text-amber-800',   desc: 'Compliance and read-only audit access. Can verify the SHA-256 chain but cannot modify any data.', perms: ['admin:audit'] },
                 ];
@@ -638,50 +651,50 @@ const UserManagement: React.FC = () => {
                         category: '👥 User Management', permission: 'admin:users',
                         rows: [
                             { label: 'View platform users',          access: ['full', 'full', 'full', 'none'] },
-                            { label: 'Suspend / ban users',          access: ['full', 'full', 'partial', 'none'], pending: true },
-                            { label: 'Delete user accounts',         access: ['full', 'none', 'none', 'none'],   pending: true },
-                            { label: 'Authorize admin staff',        access: ['full', 'none', 'none', 'none'],   pending: true },
+                            { label: 'Suspend / ban users',          access: ['full', 'full', 'none', 'none'] },
+                            { label: 'Delete user accounts',         access: ['full', 'none', 'none', 'none'] },
+                            { label: 'Authorize admin staff',        access: ['full', 'none', 'none', 'none'] },
                         ],
                     },
                     {
                         category: '🏪 Store Management', permission: 'admin:stores',
                         rows: [
                             { label: 'View stores',                  access: ['full', 'full', 'none', 'none'] },
-                            { label: 'Approve / suspend stores',     access: ['full', 'full', 'none', 'none'],   pending: true },
-                            { label: 'KYB document review',          access: ['full', 'full', 'none', 'none'],   pending: true },
-                            { label: 'Force delete store',           access: ['full', 'none', 'none', 'none'],   pending: true },
+                            { label: 'Approve / suspend stores',     access: ['full', 'full', 'none', 'none'] },
+                            { label: 'KYB document review',          access: ['full', 'full', 'none', 'none'] },
+                            { label: 'Force delete store',           access: ['full', 'none', 'none', 'none'] },
                         ],
                     },
                     {
-                        category: '📦 Catalog Management', permission: 'admin:catalog', newPerm: true,
+                        category: '📦 Catalog Management', permission: 'admin:catalog',
                         rows: [
-                            { label: 'View / approve pending products', access: ['full', 'full', 'none', 'none'], pending: true },
-                            { label: 'Edit master products',            access: ['full', 'full', 'none', 'none'], pending: true },
-                            { label: 'Delete master products',          access: ['full', 'none', 'none', 'none'], pending: true },
+                            { label: 'View / approve pending products', access: ['full', 'full', 'none', 'none'] },
+                            { label: 'Edit master products',            access: ['full', 'full', 'none', 'none'] },
+                            { label: 'Delete master products',          access: ['full', 'none', 'none', 'none'] },
                         ],
                     },
                     {
-                        category: '📢 Marketing & Content', permission: 'admin:marketing', newPerm: true,
+                        category: '📢 Marketing & Content', permission: 'admin:marketing',
                         rows: [
-                            { label: 'Ad placement management',      access: ['full', 'full', 'none', 'none'], pending: true },
-                            { label: 'Flyer ingestion & moderation', access: ['full', 'full', 'none', 'none'], pending: true },
-                            { label: 'Survey & career management',   access: ['full', 'full', 'none', 'none'], pending: true },
+                            { label: 'Ad placement management',      access: ['full', 'full', 'none', 'none'] },
+                            { label: 'Flyer ingestion & moderation', access: ['full', 'full', 'none', 'none'] },
+                            { label: 'Survey & career management',   access: ['full', 'full', 'none', 'none'] },
                         ],
                     },
                     {
-                        category: '💳 Billing & Finance', permission: 'admin:billing', newPerm: true,
+                        category: '💳 Billing & Finance', permission: 'admin:billing',
                         rows: [
-                            { label: 'View billing ledger',          access: ['full', 'none', 'none', 'none'], pending: true },
-                            { label: 'Create / delete promo codes',  access: ['full', 'none', 'none', 'none'], pending: true },
-                            { label: 'Subscription overrides',       access: ['full', 'none', 'none', 'none'], pending: true },
+                            { label: 'View billing ledger',          access: ['full', 'none', 'none', 'none'] },
+                            { label: 'Create / delete promo codes',  access: ['full', 'none', 'none', 'none'] },
+                            { label: 'Subscription overrides',       access: ['full', 'none', 'none', 'none'] },
                         ],
                     },
                     {
-                        category: '⚙️ System Operations', permission: 'admin:system', newPerm: true,
+                        category: '⚙️ System Operations', permission: 'admin:system',
                         rows: [
-                            { label: 'Platform settings',                          access: ['full', 'none', 'none', 'none'], pending: true },
-                            { label: 'Database tools (orphan cleanup, migrations)', access: ['full', 'none', 'none', 'none'], pending: true },
-                            { label: 'Maintenance mode (maker-checker)',           access: ['full', 'none', 'none', 'none'], pending: true },
+                            { label: 'Platform settings',                          access: ['full', 'none', 'none', 'none'] },
+                            { label: 'Database tools (orphan cleanup, migrations)', access: ['full', 'none', 'none', 'none'] },
+                            { label: 'Maintenance mode (maker-checker)',           access: ['full', 'none', 'none', 'none'] },
                         ],
                     },
                     {
@@ -699,17 +712,17 @@ const UserManagement: React.FC = () => {
                     },
                 ];
 
-                const cellStyle = (level: AccessLevel, pending?: boolean) => {
+                const cellStyle = (level: AccessLevel) => {
                     if (level === 'full')    return 'bg-green-100 text-green-800';
                     if (level === 'read')    return 'bg-blue-100 text-blue-800';
                     if (level === 'partial') return 'bg-orange-100 text-orange-800';
-                    return pending ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-400';
+                    return 'bg-gray-100 text-gray-400';
                 };
-                const cellLabel = (level: AccessLevel, pending?: boolean) => {
+                const cellLabel = (level: AccessLevel) => {
                     if (level === 'full')    return '✅ Full';
                     if (level === 'read')    return '🔍 Read';
                     if (level === 'partial') return '⚡ Limited';
-                    return pending ? '⚠️ Open' : '—';
+                    return '—';
                 };
 
                 return (
@@ -720,9 +733,7 @@ const UserManagement: React.FC = () => {
                             <div>
                                 <h2 className="text-xl font-bold text-[var(--text-main)] mb-1">Admin Permission Matrix</h2>
                                 <p className="text-sm text-[var(--text-muted)] leading-relaxed">
-                                    Defines what each admin sub-role can see and do across the platform.
-                                    <span className="text-amber-700 font-medium"> ⚠️ Open</span> means the action is currently unblocked for all admins — enforcement is pending.
-                                    <span className="text-violet-700 font-medium"> 🔧</span> marks categories that require a new permission key in <code className="text-xs bg-gray-100 px-1 py-0.5 rounded">AuthContext.tsx</code> before they can be enforced.
+                                    Defines what each admin sub-role can see and do across the platform. All permissions are enforced at the UI and page level.
                                 </p>
                             </div>
                         </div>
@@ -754,8 +765,6 @@ const UserManagement: React.FC = () => {
                                 ['bg-blue-100 text-blue-800',     '🔍 Read Only'],
                                 ['bg-orange-100 text-orange-800', '⚡ Limited'],
                                 ['bg-gray-100 text-gray-400',     '— No Access'],
-                                ['bg-amber-100 text-amber-700',   '⚠️ Open (not enforced)'],
-                                ['bg-violet-100 text-violet-700', '🔧 Needs new permission'],
                             ] as [string, string][]).map(([cls, lbl]) => (
                                 <span key={lbl} className={`px-2.5 py-1 rounded-full font-semibold ${cls}`}>{lbl}</span>
                             ))}
@@ -783,8 +792,8 @@ const UserManagement: React.FC = () => {
                                                         <div className="flex items-center gap-3">
                                                             <span className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">{section.category}</span>
                                                             {section.permission && (
-                                                                <span className={`text-xs font-mono px-2 py-0.5 rounded-full ${section.newPerm ? 'bg-violet-100 text-violet-700' : 'bg-gray-200 text-gray-600'}`}>
-                                                                    {section.newPerm && '🔧 '}{section.permission}
+                                                                <span className="text-xs font-mono px-2 py-0.5 rounded-full bg-gray-200 text-gray-600">
+                                                                    {section.permission}
                                                                 </span>
                                                             )}
                                                         </div>
@@ -798,8 +807,8 @@ const UserManagement: React.FC = () => {
                                                         </td>
                                                         {row.access.map((level, i) => (
                                                             <td key={i} className="px-4 py-3 text-center">
-                                                                <span className={`inline-block text-xs font-semibold px-2.5 py-1 rounded-full ${cellStyle(level, row.pending)}`}>
-                                                                    {cellLabel(level, row.pending)}
+                                                                <span className={`inline-block text-xs font-semibold px-2.5 py-1 rounded-full ${cellStyle(level)}`}>
+                                                                    {cellLabel(level)}
                                                                 </span>
                                                             </td>
                                                         ))}
@@ -809,16 +818,6 @@ const UserManagement: React.FC = () => {
                                         ))}
                                     </tbody>
                                 </table>
-                            </div>
-                        </div>
-
-                        {/* Footer note */}
-                        <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800 leading-relaxed flex gap-3 items-start">
-                            <span className="text-lg shrink-0">⚠️</span>
-                            <div>
-                                <strong>Pending enforcement:</strong> Rows marked ⚠️ Open define the intended model but have no role check in the UI or Firestore rules yet — any admin can currently perform these actions.
-                                Categories marked 🔧 additionally require new permission keys (<code className="bg-amber-100 px-1 rounded">admin:catalog</code>, <code className="bg-amber-100 px-1 rounded">admin:billing</code>, <code className="bg-amber-100 px-1 rounded">admin:system</code>, <code className="bg-amber-100 px-1 rounded">admin:marketing</code>) to be added to <code className="bg-amber-100 px-1 rounded">AuthContext.tsx</code>.
-                                See the <strong>Security &amp; Access Control — Admin RBAC Gaps</strong> section in TODO.md for the implementation backlog.
                             </div>
                         </div>
                     </div>
@@ -843,61 +842,120 @@ const UserManagement: React.FC = () => {
             {/* Add Staff Modal */}
             {showStaffModal && (
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-fade-in">
-                    <div className="bg-white p-8 rounded-3xl w-full max-w-md shadow-2xl relative border border-[var(--glass-border)]">
+                    <div className={`bg-white p-8 rounded-3xl w-full shadow-2xl relative border border-[var(--glass-border)] transition-all duration-300 ${staffStep === 2 ? 'max-w-2xl' : 'max-w-md'}`}>
+                        
+                        {/* Progress Header */}
                         <div className="mb-6">
                             <h2 className="text-2xl font-bold text-[var(--text-main)] mb-1">Authorize New Staff</h2>
                             <p className="text-sm text-[var(--text-muted)]">Grant administrative privileges to an account.</p>
+                            
+                            {/* Visual Progress Bar */}
+                            <div className="w-full bg-gray-100 h-1.5 rounded-full mt-4 overflow-hidden">
+                                <div 
+                                    className="bg-[var(--brand-primary)] h-full transition-all duration-500 rounded-full"
+                                    style={{ width: staffStep === 1 ? '50%' : '100%' }}
+                                />
+                            </div>
                         </div>
 
-                        <form onSubmit={handleAddStaff} className="space-y-5">
-                            <div className="space-y-1.5">
-                                <label className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider ml-1">Staff Name</label>
-                                <input
-                                    required
-                                    placeholder="e.g. John Doe"
-                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:ring-4 ring-[var(--brand-primary)]/10 focus:border-[var(--brand-primary)] outline-none transition-all"
-                                    value={newStaff.name} onChange={e => setNewStaff({ ...newStaff, name: e.target.value })}
-                                />
-                            </div>
+                        {staffStep === 1 ? (
+                            <div className="space-y-5 animate-fade-in">
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider ml-1">Staff Name</label>
+                                    <input
+                                        required
+                                        placeholder="e.g. John Doe"
+                                        className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:ring-4 ring-[var(--brand-primary)]/10 focus:border-[var(--brand-primary)] outline-none transition-all"
+                                        value={newStaff.name} 
+                                        onChange={e => setNewStaff({ ...newStaff, name: e.target.value })}
+                                    />
+                                </div>
 
-                            <div className="space-y-1.5">
-                                <label className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider ml-1">Email Address (Auth ID)</label>
-                                <input
-                                    type="email" required
-                                    placeholder="admin@spendigo.ca"
-                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:ring-4 ring-[var(--brand-primary)]/10 focus:border-[var(--brand-primary)] outline-none transition-all"
-                                    value={newStaff.email} onChange={e => setNewStaff({ ...newStaff, email: e.target.value })}
-                                />
-                            </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider ml-1">Email Address (Auth ID)</label>
+                                    <input
+                                        type="email" 
+                                        required
+                                        placeholder="admin@spendigo.ca"
+                                        className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:ring-4 ring-[var(--brand-primary)]/10 focus:border-[var(--brand-primary)] outline-none transition-all"
+                                        value={newStaff.email} 
+                                        onChange={e => setNewStaff({ ...newStaff, email: e.target.value })}
+                                    />
+                                </div>
 
-                            <div className="space-y-1.5">
-                                <label className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider ml-1">Access Level</label>
-                                <select
-                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:ring-4 ring-[var(--brand-primary)]/10 focus:border-[var(--brand-primary)] outline-none transition-all bg-white cursor-pointer"
-                                    value={newStaff.role} onChange={e => setNewStaff({ ...newStaff, role: e.target.value as AdminRole })}
-                                >
-                                    {Object.keys(ROLE_DEFINITIONS).map(role => (
-                                        <option key={role} value={role}>{role}</option>
-                                    ))}
-                                </select>
+                                <div className="flex gap-3 pt-4">
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowStaffModal(false)}
+                                        className="flex-1 py-3 font-bold text-[var(--text-muted)] hover:bg-gray-100 rounded-xl transition-colors"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="button"
+                                        disabled={!newStaff.name.trim() || !newStaff.email.trim() || !newStaff.email.includes('@')}
+                                        onClick={() => setStaffStep(2)}
+                                        className="flex-1 py-3 bg-black text-white font-bold rounded-xl shadow-lg hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                                    >
+                                        Next Step →
+                                    </button>
+                                </div>
                             </div>
+                        ) : (
+                            <form onSubmit={handleAddStaff} className="space-y-5 animate-fade-in">
+                                <label className="block text-sm font-bold text-[var(--text-main)] mb-2">Select Administrative Role</label>
+                                
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[350px] overflow-y-auto pr-1">
+                                    {(Object.keys(ROLE_DEFINITIONS) as AdminRole[]).map((roleKey) => {
+                                        const role = ROLE_DEFINITIONS[roleKey];
+                                        const isSelected = newStaff.role === roleKey;
+                                        const icon = roleKey === 'SUPER_ADMIN' ? '👑' : roleKey === 'MODERATOR' ? '🛡️' : roleKey === 'SUPPORT' ? '🎧' : '🔍';
+                                        return (
+                                            <div
+                                                key={roleKey}
+                                                onClick={() => setNewStaff({ ...newStaff, role: roleKey })}
+                                                className={`p-4 rounded-xl border-2 cursor-pointer transition-all hover:bg-gray-50/50 flex flex-col justify-between ${
+                                                    isSelected 
+                                                        ? 'border-[var(--brand-primary)] bg-blue-50/5 shadow-md shadow-blue-500/5' 
+                                                        : 'border-[var(--glass-border)] bg-white'
+                                                }`}
+                                            >
+                                                <div>
+                                                    <div className="flex items-center justify-between mb-2">
+                                                        <span className={`text-[10px] font-black px-2 py-0.5 rounded border uppercase tracking-wider ${role.color}`}>
+                                                            {roleKey}
+                                                        </span>
+                                                        <span className="text-xl">{icon}</span>
+                                                    </div>
+                                                    <p className="text-xs font-semibold text-[var(--text-main)] mb-1">
+                                                        {roleKey === 'SUPER_ADMIN' ? 'Super Admin' : roleKey === 'MODERATOR' ? 'Moderator' : roleKey === 'SUPPORT' ? 'Support' : 'Auditor'}
+                                                    </p>
+                                                    <p className="text-[11px] text-[var(--text-muted)] leading-relaxed">
+                                                        {role.description}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
 
-                            <div className="flex gap-3 pt-4">
-                                <button
-                                    type="button"
-                                    onClick={() => setShowStaffModal(false)}
-                                    className="flex-1 py-3 font-bold text-[var(--text-muted)] hover:bg-gray-100 rounded-xl transition-colors"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    type="submit"
-                                    className="flex-1 py-3 bg-black text-white font-bold rounded-xl shadow-lg hover:bg-gray-800 transition-all font-bold"
-                                >
-                                    Authorize Access
-                                </button>
-                            </div>
-                        </form>
+                                <div className="flex gap-3 pt-4">
+                                    <button
+                                        type="button"
+                                        onClick={() => setStaffStep(1)}
+                                        className="flex-1 py-3 font-bold text-[var(--text-muted)] hover:bg-gray-100 rounded-xl transition-colors"
+                                    >
+                                        ← Back
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        className="flex-1 py-3 bg-[var(--brand-primary)] text-white font-bold rounded-xl shadow-lg hover:brightness-110 transition-all font-bold"
+                                    >
+                                        Authorize Access
+                                    </button>
+                                </div>
+                            </form>
+                        )}
                     </div>
                 </div>
             )}

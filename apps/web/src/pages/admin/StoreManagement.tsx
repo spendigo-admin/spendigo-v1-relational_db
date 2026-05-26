@@ -21,7 +21,7 @@ const SUSPENSION_REASONS = [
 ];
 
 const StoreManagement: React.FC = () => {
-    const { user } = useAuth();
+    const { user, can } = useAuth();
     const { logEvent } = useAudit();
     const { stores, updateStore, updateStoreStatus, addStore, requestDeleteStore, approveDeleteStore, cancelStoreDeletion, forceDeleteStore } = useMarketplace();
     const { addNotification } = useNotifications();
@@ -731,7 +731,7 @@ const StoreManagement: React.FC = () => {
                                                                     Approve
                                                                 </button>
                                                             )}
-                                                            {store.deletionApprovedAt && (
+                                                            {store.deletionApprovedAt && can('admin:all') && (
                                                                 <button
                                                                     onClick={async () => {
                                                                         if (await confirm({
@@ -912,7 +912,7 @@ const StoreManagement: React.FC = () => {
                                                             Approve
                                                         </button>
                                                     )}
-                                                    {store.deletionApprovedAt && (
+                                                    {store.deletionApprovedAt && can('admin:all') && (
                                                         <button
                                                             onClick={async () => {
                                                                 if (await confirm({

@@ -34,7 +34,7 @@ const ROLE_INFO: Record<MerchantRole, { label: string; desc: string; permissions
     },
     MANAGER: {
         label: 'Store Manager',
-        desc: 'Can manage products, orders, and operations settings. Cannot access payouts.',
+        desc: 'Can manage products, orders, and operations settings. Read-only access to payouts & subscriptions.',
         permissions: ['products:write', 'orders:write', 'settings:write'],
         color: 'bg-blue-100 text-blue-700 border-blue-200'
     },
@@ -750,18 +750,6 @@ const MerchantSettings: React.FC = () => {
                 </table>
             </div>
 
-            {/* Role Helper Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
-                {(Object.keys(ROLE_INFO) as MerchantRole[]).slice(1).map(role => (
-                    <div key={role} className="bg-white p-4 rounded-xl border border-[var(--glass-border)] opacity-75">
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded border uppercase ${ROLE_INFO[role].color}`}>
-                            {ROLE_INFO[role].label}
-                        </span>
-                        <p className="text-[10px] text-[var(--text-muted)] mt-2">{ROLE_INFO[role].desc}</p>
-                    </div>
-                ))}
-            </div>
-
             {/* Invite Modal */}
             {showInviteModal && (
                 <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center animate-fade-in p-4 backdrop-blur-sm">
@@ -839,7 +827,7 @@ const MerchantSettings: React.FC = () => {
                                     <label className="block text-sm font-bold text-[var(--text-main)] mb-2">Select Access Role</label>
                                     
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[350px] overflow-y-auto pr-1">
-                                        {(Object.keys(ROLE_INFO) as MerchantRole[]).map((roleKey) => {
+                                        {(Object.keys(ROLE_INFO) as MerchantRole[]).filter(roleKey => roleKey !== 'OWNER').map((roleKey) => {
                                             const role = ROLE_INFO[roleKey];
                                             const isSelected = inviteForm.role === roleKey;
                                             return (
@@ -1830,6 +1818,7 @@ const MerchantSettings: React.FC = () => {
     const renderPayments = () => {
         const store = stores[storeId];
         const isConnected = !!store?.stripeAccountId;
+        const isPayoutEditable = can('payouts:write') && !isLocked;
 
         // --- STRIPE CONNECT LOGIC ---
         const handleConnectStripe = async () => {
@@ -1948,9 +1937,11 @@ const MerchantSettings: React.FC = () => {
                                 <button className="px-4 py-2 bg-white border border-green-200 text-green-800 font-bold rounded-lg hover:bg-green-100 transition-colors shadow-sm">
                                     Manage in Stripe
                                 </button>
-                                <button onClick={handleDisconnectStripe} className="text-xs text-red-500 hover:underline text-right">
-                                    Disconnect
-                                </button>
+                                {isPayoutEditable && (
+                                    <button onClick={handleDisconnectStripe} className="text-xs text-red-500 hover:underline text-right">
+                                        Disconnect
+                                    </button>
+                                )}
                             </div>
                         </div>
                     ) : (
@@ -1973,8 +1964,8 @@ const MerchantSettings: React.FC = () => {
                                 </div>
                                 <button
                                     onClick={handleConnectStripe}
-                                    disabled={isSaving}
-                                    className="px-6 py-3 bg-[#635BFF] text-white font-bold rounded-lg hover:brightness-110 shadow-lg shadow-[#635BFF]/30 transition-all whitespace-nowrap"
+                                    disabled={isSaving || !isPayoutEditable}
+                                    className="px-6 py-3 bg-[#635BFF] text-white font-bold rounded-lg hover:brightness-110 shadow-lg shadow-[#635BFF]/30 transition-all whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     {isSaving ? 'Connecting...' : 'Connect Stripe Account'}
                                 </button>
@@ -2025,37 +2016,37 @@ const MerchantSettings: React.FC = () => {
                         <div>
                             <label className="block text-sm font-medium text-[var(--text-muted)] mb-2">Payout Schedule</label>
                             <select
-                                value={payments.payoutSchedule}
-                                onChange={e => setPayments({ ...payments, payoutSchedule: e.target.value })}
-                                className="w-full p-3 border border-[var(--glass-border)] rounded-lg bg-[var(--surface-1)]"
-                                disabled={!isConnected}
-                            >
-                                <option value="daily">Daily (Rolling 2 Day Window)</option>
-                                <option value="weekly">Weekly (Every Monday)</option>
-                                <option value="manual">Manual Payouts</option>
-                            </select>
-                            <p className="text-xs text-[var(--text-muted)] mt-2">
-                                Funds are typically available 2 business days after transaction.
-                            </p>
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-[var(--text-muted)] mb-2">Statement Descriptor</label>
-                            <input
-                                type="text"
-                                value={payments.statementDescriptor}
-                                onChange={e => setPayments({ ...payments, statementDescriptor: e.target.value.substring(0, 22) })}
-                                maxLength={22}
-                                disabled={!isConnected}
-                                placeholder={storeInfo.name.substring(0, 22)}
-                                className="w-full p-3 border border-[var(--glass-border)] rounded-lg bg-[var(--surface-1)] disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed"
-                            />
+                                    value={payments.payoutSchedule}
+                                    onChange={e => setPayments({ ...payments, payoutSchedule: e.target.value })}
+                                    className="w-full p-3 border border-[var(--glass-border)] rounded-lg bg-[var(--surface-1)]"
+                                    disabled={!isConnected || !isPayoutEditable}
+                                >
+                                    <option value="daily">Daily (Rolling 2 Day Window)</option>
+                                    <option value="weekly">Weekly (Every Monday)</option>
+                                    <option value="manual">Manual Payouts</option>
+                                </select>
+                                <p className="text-xs text-[var(--text-muted)] mt-2">
+                                    Funds are typically available 2 business days after transaction.
+                                </p>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-[var(--text-muted)] mb-2">Statement Descriptor</label>
+                                <input
+                                    type="text"
+                                    value={payments.statementDescriptor}
+                                    onChange={e => setPayments({ ...payments, statementDescriptor: e.target.value.substring(0, 22) })}
+                                    maxLength={22}
+                                    disabled={!isConnected || !isPayoutEditable}
+                                    placeholder={storeInfo.name.substring(0, 22)}
+                                    className="w-full p-3 border border-[var(--glass-border)] rounded-lg bg-[var(--surface-1)] disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed"
+                                />
                             <p className="text-xs text-[var(--text-muted)] mt-1 flex justify-between">
                                 <span>This is what customers will see on their bank statements.</span>
                                 <span className={payments.statementDescriptor.length >= 20 ? 'text-orange-500' : ''}>{payments.statementDescriptor.length}/22</span>
                             </p>
                         </div>
                     </div>
-                    {isConnected && (
+                    {isConnected && isPayoutEditable && (
                         <div className="flex justify-end mt-4">
                             <button
                                 onClick={handleSavePayoutConfig}
@@ -2488,9 +2479,9 @@ const MerchantSettings: React.FC = () => {
                                 {
                                     category: '💳 Subscription & Billing',
                                     rows: [
-                                        { label: 'View subscription plan',         access: ['full', 'full', 'read', 'read'] },
-                                        { label: 'Upgrade / downgrade plan',       access: ['full', 'full', 'none', 'none'] },
-                                        { label: 'View payout settings',           access: ['full', 'full', 'none', 'none'] },
+                                        { label: 'View subscription plan',         access: ['full', 'read', 'read', 'read'] },
+                                        { label: 'Upgrade / downgrade plan',       access: ['full', 'read', 'none', 'none'] },
+                                        { label: 'View payout settings',           access: ['full', 'read', 'none', 'none'] },
                                     ],
                                 },
                                 {
@@ -2601,6 +2592,14 @@ const MerchantSettings: React.FC = () => {
                             <span className="text-2xl">💳</span>
                             Payments & Payouts
                         </h2>
+                        {!can('payouts:write') && (
+                            <div className="mb-6 p-4 bg-orange-50 border border-orange-200 rounded-xl flex items-center gap-3 text-orange-800 text-sm animate-fade-in">
+                                <span className="text-xl">🔒</span>
+                                <span className="font-medium">
+                                    Payout settings are read-only. Editing or linking Stripe accounts is restricted to Owners.
+                                </span>
+                            </div>
+                        )}
                         {renderPayments()}
                     </div>
                 )}

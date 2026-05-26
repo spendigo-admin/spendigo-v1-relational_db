@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { collection, query, orderBy, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, getCountFromServer } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
+import { useAuth } from '../../context/AuthContext';
 import { useNotifications } from '../../context/NotificationContext';
 import { useConfirmation } from '../../context/ConfirmationContext';
 import { auditBridge } from '../../utils/auditBridge';
@@ -25,6 +26,7 @@ interface Survey {
 }
 
 const AdminSurveyManager: React.FC = () => {
+    const { can } = useAuth();
     const { addNotification } = useNotifications();
     const { confirm } = useConfirmation();
     const [surveys, setSurveys] = useState<Survey[]>([]);
@@ -155,6 +157,18 @@ const AdminSurveyManager: React.FC = () => {
         currentQuestions.splice(idx, 1);
         setEditingSurvey({ ...editingSurvey, questions: currentQuestions });
     };
+
+    if (!can('admin:marketing')) {
+        return (
+            <div className="p-8 text-center space-y-4 mt-16 animate-fade-in">
+                <div className="text-5xl">🔒</div>
+                <h2 className="text-xl font-black text-[var(--text-main)]">Access Restricted</h2>
+                <p className="text-sm text-[var(--text-muted)] max-w-xs mx-auto">
+                    This section requires the <code className="bg-gray-100 px-1 rounded text-xs">admin:marketing</code> permission. Contact your Super Admin.
+                </p>
+            </div>
+        );
+    }
 
     return (
         <div className="p-6 animate-fade-in">

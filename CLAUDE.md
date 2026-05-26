@@ -130,8 +130,8 @@ AuthProvider → AuditProvider → MaintenanceGuard → MarketplaceProvider → 
 
 **Permission system** (`AuthContext.tsx`):
 Merchant sub-roles grant specific permissions checked via `can(permission)` from `useAuth()`:
-- **OWNER**: products:write, orders:read, orders:write, flyers:write, deals:write, settings:write, team:manage, delivery:manage, analytics:read
-- **MANAGER**: same as OWNER except team:manage
+- **OWNER**: products:write, orders:read, orders:write, flyers:write, deals:write, settings:write, team:manage, delivery:manage, analytics:read, subscription:write, payouts:write
+- **MANAGER**: same as OWNER except team:manage, subscription:write, payouts:write (i.e. read-only access to payouts & subscriptions)
 - **STAFF**: orders:read, orders:write, delivery:manage
 - **MARKETING**: products:write, flyers:write, deals:write, analytics:read
 

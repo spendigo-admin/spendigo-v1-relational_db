@@ -67,20 +67,26 @@ export type Permission =
     | 'team:manage'
     | 'delivery:manage'
     | 'analytics:read'
+    | 'subscription:write'
+    | 'payouts:write'
     | 'admin:all'
     | 'admin:users'
     | 'admin:stores'
-    | 'admin:audit';
+    | 'admin:audit'
+    | 'admin:catalog'
+    | 'admin:marketing'
+    | 'admin:billing'
+    | 'admin:system';
 
 const ROLE_PERMISSIONS: Record<string, Permission[]> = {
     // Merchant Roles
-    OWNER: ['products:write', 'orders:read', 'orders:write', 'flyers:write', 'deals:write', 'settings:write', 'team:manage', 'delivery:manage', 'analytics:read'],
+    OWNER: ['products:write', 'orders:read', 'orders:write', 'flyers:write', 'deals:write', 'settings:write', 'team:manage', 'delivery:manage', 'analytics:read', 'subscription:write', 'payouts:write'],
     MANAGER: ['products:write', 'orders:read', 'orders:write', 'flyers:write', 'deals:write', 'settings:write', 'delivery:manage', 'analytics:read'],
     STAFF: ['orders:read', 'orders:write', 'delivery:manage'],
     MARKETING: ['products:write', 'flyers:write', 'deals:write', 'analytics:read'],
     // Admin Roles
-    SUPER_ADMIN: ['admin:all', 'admin:users', 'admin:stores', 'admin:audit'],
-    MODERATOR: ['admin:users', 'admin:stores'],
+    SUPER_ADMIN: ['admin:all', 'admin:users', 'admin:stores', 'admin:audit', 'admin:catalog', 'admin:marketing', 'admin:billing', 'admin:system'],
+    MODERATOR: ['admin:users', 'admin:stores', 'admin:catalog', 'admin:marketing'],
     SUPPORT: ['admin:users'],
     AUDITOR: ['admin:audit']
 };

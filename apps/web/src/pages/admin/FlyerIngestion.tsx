@@ -3,8 +3,10 @@ import { httpsCallable } from 'firebase/functions';
 import { doc, onSnapshot, collection, getDocs, addDoc, deleteDoc, query, orderBy, limit } from 'firebase/firestore';
 import { db, functions } from '../../lib/firebase';
 import { auditBridge } from '../../utils/auditBridge';
+import { useAuth } from '../../context/AuthContext';
 
 const FlyerIngestion = () => {
+    const { can } = useAuth();
     const [postalCode, setPostalCode] = useState('');
     const [status, setStatus] = useState<'idle' | 'scraping' | 'complete' | 'error'>('idle');
     const [progress, setProgress] = useState(0);
@@ -186,6 +188,18 @@ const FlyerIngestion = () => {
             console.error("Cancel failed", e);
         }
     };
+
+    if (!can('admin:marketing')) {
+        return (
+            <div className="p-8 text-center space-y-4 mt-16 animate-fade-in">
+                <div className="text-5xl">🔒</div>
+                <h2 className="text-xl font-black text-[var(--text-main)]">Access Restricted</h2>
+                <p className="text-sm text-[var(--text-muted)] max-w-xs mx-auto">
+                    This section requires the <code className="bg-gray-100 px-1 rounded text-xs">admin:marketing</code> permission. Contact your Super Admin.
+                </p>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-8 animate-fade-in pb-12">

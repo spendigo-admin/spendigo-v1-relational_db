@@ -9,7 +9,7 @@ import { db } from '../../lib/firebase';
 import '../../styles/design-system.css';
 
 const Subscription: React.FC = () => {
-    const { user } = useAuth();
+    const { user, can } = useAuth();
     const { stores } = useMarketplace();
     const { addNotification } = useNotifications();
     const { confirm } = useConfirmation();
@@ -177,7 +177,7 @@ const Subscription: React.FC = () => {
         }
     ];
 
-    const isViewOnly = user?.merchantRole === 'STAFF' || user?.merchantRole === 'MARKETING' || isLocked;
+    const isViewOnly = !can('subscription:write') || isLocked;
 
     const handleUpgrade = async (tierId: string, price: string) => {
         const isFree = tierId === 'free';
@@ -279,7 +279,7 @@ const Subscription: React.FC = () => {
                         <span className="font-medium">
                             {isLocked 
                                 ? 'Subscription management is disabled during the store deletion grace period.' 
-                                : 'Subscription management is restricted to Owners and Managers.'}
+                                : 'Subscription management is restricted to Owners.'}
                         </span>
                     </div>
                 )}

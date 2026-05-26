@@ -33,7 +33,7 @@ const AdManager: React.FC = () => {
     const { addNotification } = useNotifications();
     const { confirm } = useConfirmation();
     const { uploadFile, uploading } = useFileUpload();
-    const { user } = useAuth(); // for logging if needed
+    const { user, can } = useAuth(); // for logging if needed
 
     const [ads, setAds] = useState<AdCampaign[]>([]);
     const [isEditing, setIsEditing] = useState(false);
@@ -192,6 +192,18 @@ const AdManager: React.FC = () => {
             }
         }
     };
+
+    if (!can('admin:marketing')) {
+        return (
+            <div className="p-8 text-center space-y-4 mt-16 animate-fade-in">
+                <div className="text-5xl">🔒</div>
+                <h2 className="text-xl font-black text-[var(--text-main)]">Access Restricted</h2>
+                <p className="text-sm text-[var(--text-muted)] max-w-xs mx-auto">
+                    This section requires the <code className="bg-gray-100 px-1 rounded text-xs">admin:marketing</code> permission. Contact your Super Admin.
+                </p>
+            </div>
+        );
+    }
 
     return (
         <div className="p-6 animate-fade-in max-w-7xl mx-auto pb-20">

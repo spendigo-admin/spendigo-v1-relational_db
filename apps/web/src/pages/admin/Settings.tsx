@@ -7,7 +7,7 @@ import { useNotifications } from '../../context/NotificationContext';
 import '../../styles/design-system.css';
 
 const AdminSettings: React.FC = () => {
-    const { user } = useAuth();
+    const { user, can } = useAuth();
     const { logEvent } = useAudit();
     const { addNotification } = useNotifications();
     const [settings, setSettings] = useState<any>({
@@ -138,6 +138,18 @@ const AdminSettings: React.FC = () => {
     };
 
 
+
+    if (!can('admin:system')) {
+        return (
+            <div className="p-8 text-center space-y-4 mt-16 animate-fade-in">
+                <div className="text-5xl">🔒</div>
+                <h2 className="text-xl font-black text-[var(--text-main)]">Access Restricted</h2>
+                <p className="text-sm text-[var(--text-muted)] max-w-xs mx-auto">
+                    This section requires the <code className="bg-gray-100 px-1 rounded text-xs">admin:system</code> permission. Contact your Super Admin.
+                </p>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-6 animate-fade-in">

@@ -3,6 +3,7 @@ import { collection, query, orderBy, onSnapshot, where } from 'firebase/firestor
 import { db, functions } from '../../lib/firebase';
 import { httpsCallable } from 'firebase/functions';
 import '../../styles/design-system.css';
+import { useAuth } from '../../context/AuthContext';
 import { useMarketplace } from '../../context/MarketplaceContext';
 import { useNotifications } from '../../context/NotificationContext';
 import { useConfirmation } from '../../context/ConfirmationContext';
@@ -51,6 +52,7 @@ interface PromoCodeEntry {
 }
 
 const BillingLedger: React.FC = () => {
+    const { can } = useAuth();
     const { stores } = useMarketplace();
     const { addNotification } = useNotifications();
     const { confirm } = useConfirmation();
@@ -491,6 +493,18 @@ const BillingLedger: React.FC = () => {
             addNotification({ type: 'system', title: 'Export Successful', message: 'Subscriptions register CSV downloaded.' });
         }
     };
+
+    if (!can('admin:billing')) {
+        return (
+            <div className="p-8 text-center space-y-4 mt-16 animate-fade-in">
+                <div className="text-5xl">🔒</div>
+                <h2 className="text-xl font-black text-[var(--text-main)]">Access Restricted</h2>
+                <p className="text-sm text-[var(--text-muted)] max-w-xs mx-auto">
+                    This section requires the <code className="bg-gray-100 px-1 rounded text-xs">admin:billing</code> permission. Contact your Super Admin.
+                </p>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-6 animate-fade-in pb-12">

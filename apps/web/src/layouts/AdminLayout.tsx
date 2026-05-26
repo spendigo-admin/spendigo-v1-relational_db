@@ -8,7 +8,7 @@ import '../styles/design-system.css';
 const AdminLayout: React.FC = () => {
     const location = useLocation();
     const navigate = useNavigate();
-    const { user, logout } = useAuth();
+    const { user, logout, can } = useAuth();
     const { unreadCount } = useNotifications();
     const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
 
@@ -63,7 +63,8 @@ const AdminLayout: React.FC = () => {
                         </svg>
                     ),
                     label: 'Store Insights',
-                    path: '/admin/insights'
+                    path: '/admin/insights',
+                    visible: can('admin:stores')
                 },
                 { 
                     icon: (
@@ -90,7 +91,8 @@ const AdminLayout: React.FC = () => {
                         </svg>
                     ),
                     label: 'Stores',
-                    path: '/admin/stores'
+                    path: '/admin/stores',
+                    visible: can('admin:stores')
                 },
                 {
                     icon: (
@@ -101,7 +103,8 @@ const AdminLayout: React.FC = () => {
                         </svg>
                     ),
                     label: 'Billing Ledger',
-                    path: '/admin/billing-ledger'
+                    path: '/admin/billing-ledger',
+                    visible: can('admin:billing')
                 },
                 {
                     icon: (
@@ -111,7 +114,8 @@ const AdminLayout: React.FC = () => {
                         </svg>
                     ),
                     label: 'Master Catalog',
-                    path: '/admin/catalog'
+                    path: '/admin/catalog',
+                    visible: can('admin:catalog')
                 },
             ]
         },
@@ -127,7 +131,8 @@ const AdminLayout: React.FC = () => {
                         </svg>
                     ),
                     label: 'Carousel Ads',
-                    path: '/admin/ads'
+                    path: '/admin/ads',
+                    visible: can('admin:marketing')
                 },
                 {
                     icon: (
@@ -138,7 +143,8 @@ const AdminLayout: React.FC = () => {
                         </svg>
                     ),
                     label: 'Survey Board',
-                    path: '/admin/surveys'
+                    path: '/admin/surveys',
+                    visible: can('admin:marketing')
                 },
                 { 
                     icon: (
@@ -149,8 +155,9 @@ const AdminLayout: React.FC = () => {
                             <path d="M16 3.13a4 4 0 0 1 0 7.75" />
                         </svg>
                     ), 
-                    label: 'Users', 
-                    path: '/admin/users' 
+                    label: 'Users',
+                    path: '/admin/users',
+                    visible: can('admin:users')
                 },
                 {
                     icon: (
@@ -161,7 +168,8 @@ const AdminLayout: React.FC = () => {
                         </svg>
                     ),
                     label: 'Flyer Ingestion',
-                    path: '/admin/flyer-ingestion'
+                    path: '/admin/flyer-ingestion',
+                    visible: can('admin:marketing')
                 },
                 {
                     icon: (
@@ -171,7 +179,8 @@ const AdminLayout: React.FC = () => {
                         </svg>
                     ),
                     label: 'Careers',
-                    path: '/admin/careers'
+                    path: '/admin/careers',
+                    visible: can('admin:marketing')
                 },
             ]
         },
@@ -195,8 +204,9 @@ const AdminLayout: React.FC = () => {
                             <path d="m9 12 2 2 4-4" />
                         </svg>
                     ), 
-                    label: 'Audit Logs', 
-                    path: '/admin/audit-logs' 
+                    label: 'Audit Logs',
+                    path: '/admin/audit-logs',
+                    visible: can('admin:audit')
                 },
                 {
                     icon: (
@@ -207,7 +217,8 @@ const AdminLayout: React.FC = () => {
                         </svg>
                     ),
                     label: 'System Tools',
-                    path: '/admin/tools'
+                    path: '/admin/tools',
+                    visible: can('admin:system')
                 },
                 {
                     icon: (
@@ -217,7 +228,8 @@ const AdminLayout: React.FC = () => {
                         </svg>
                     ),
                     label: 'Settings',
-                    path: '/admin/settings'
+                    path: '/admin/settings',
+                    visible: can('admin:system')
                 },
             ]
         }
@@ -291,7 +303,7 @@ const AdminLayout: React.FC = () => {
                                 <span className="h-[1px] flex-1 bg-[var(--glass-border)] ml-3 opacity-40"></span>
                             </h3>
                             <div className="space-y-1">
-                                {group.items.map((item) => {
+                                {group.items.filter(item => (item as any).visible !== false).map((item) => {
                                     const isActive = location.pathname === item.path;
                                     return (
                                         <Link
