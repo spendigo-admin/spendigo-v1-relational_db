@@ -85,6 +85,7 @@ firestore.seed.rules
 
 # Service Account Credentials
 scripts/service-account.json
+scripts/service-account-prod.json
 
 # Terraform
 infra/.terraform/
@@ -93,3 +94,9 @@ infra/.terraform.lock.hcl
 
 # Firebase Functions build
 services/api/lib/
+
+# Agent state and scratchpads
+.agents/
+.claude/
+scratch/
+

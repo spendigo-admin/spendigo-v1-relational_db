@@ -24,7 +24,7 @@ This document establishes the definitive **Reference Map** of all Firestore data
   - `product_type` (VARCHAR(100) NULL)
   - `storage_type` (VARCHAR(100) NULL)
   - `tax_category_id` (VARCHAR(100) NULL)
-  - `suggested_retail_price` (DOUBLE PRECISION NULL)
+  - `suggested_retail_price` (INTEGER NULL) -> Stored in integer cents.
   - `substitution_group_id` (VARCHAR(128) NULL)
   - `age_restricted` (BOOLEAN DEFAULT FALSE)
   - `is_canadian_local` (BOOLEAN DEFAULT FALSE)
@@ -55,12 +55,13 @@ This document establishes the definitive **Reference Map** of all Firestore data
   - `email` (VARCHAR(255) UNIQUE NOT NULL)
   - `name` (VARCHAR(255) NULL)
   - `role` (ENUM('admin', 'merchant', 'consumer') NOT NULL)
+  - `adminRole` (ENUM('SUPER_ADMIN', 'SUPPORT', 'MODERATOR', 'AUDITOR') NULL)
   - `merchantRole` (ENUM('OWNER', 'MANAGER', 'STAFF', 'MARKETING') NULL)
   - `storeId` (VARCHAR(128) NULL) -> Reference to merchant's assigned store.
   - `status` (ENUM('pending_invite', 'active', 'suspended') DEFAULT 'active')
   - `addresses` (JSONB Array) -> Array of shipping addresses (nested maps).
   - `total_orders` (INTEGER DEFAULT 0) -> Incremented atomically via transactions.
-  - `total_spend` (DOUBLE PRECISION DEFAULT 0.0) -> Tracked for consumer metrics.
+  - `total_spend` (INTEGER DEFAULT 0) -> Tracked in integer cents for consumer metrics.
   - `last_order_date` (TIMESTAMP)
   - `createdAt` (TIMESTAMP)
   - `last_active` (TIMESTAMP)
@@ -86,8 +87,8 @@ This document establishes the definitive **Reference Map** of all Firestore data
   - `province` (VARCHAR(2) DEFAULT 'ON') -> Verified in `placeOrder.ts` for province tax rate.
   - `postalCode` (VARCHAR(7) NULL)
   - `location` -> Split into `latitude` (DOUBLE PRECISION) and `longitude` (DOUBLE PRECISION) for geospatial queries.
-  - `deliveryFee` (DOUBLE PRECISION NOT NULL)
-  - `freeDeliveryThreshold` (DOUBLE PRECISION NULL)
+  - `deliveryFee` (INTEGER NOT NULL) -> Stored in integer cents.
+  - `freeDeliveryThreshold` (INTEGER NULL) -> Stored in integer cents.
   - `pickupEnabled` (BOOLEAN DEFAULT TRUE)
   - `deliveryEnabled` (BOOLEAN DEFAULT FALSE)
   - `subscriptionTier` (VARCHAR(50) DEFAULT 'starter') -> Controls deal limits and features.
@@ -108,11 +109,11 @@ This document establishes the definitive **Reference Map** of all Firestore data
 * **Attributes Audited**:
   - `store_id` (VARCHAR(128) REFERENCES `stores.id`)
   - `master_product_id` (VARCHAR(128) REFERENCES `master_products.id`)
-  - `price` (DOUBLE PRECISION NOT NULL)
+  - `price` (INTEGER NOT NULL) -> Stored in integer cents.
   - `currency` (VARCHAR(3) DEFAULT 'CAD')
   - `available_quantity` (INTEGER DEFAULT 0) -> Monitored and decremented atomically in `placeOrder` transaction.
   - `merchant_sku` (VARCHAR(100) NULL)
-  - `original_price` (DOUBLE PRECISION NULL)
+  - `original_price` (INTEGER NULL) -> Stored in integer cents.
   - `discount_label` (VARCHAR(255) NULL)
   - `discount_valid_until` (TIMESTAMP NULL)
   - `is_active` (BOOLEAN DEFAULT TRUE)
@@ -131,10 +132,10 @@ This document establishes the definitive **Reference Map** of all Firestore data
   - `storeName` (VARCHAR(255) NOT NULL)
   - `customerName` (VARCHAR(255) NOT NULL)
   - `customerEmail` (VARCHAR(255) NOT NULL)
-  - `subtotal` (DOUBLE PRECISION NOT NULL)
-  - `deliveryFee` (DOUBLE PRECISION DEFAULT 0.0)
-  - `tax` (DOUBLE PRECISION NOT NULL) -> Computed based on store province rates (e.g., HST/GST/PST).
-  - `total` (DOUBLE PRECISION NOT NULL)
+  - `subtotal` (INTEGER NOT NULL) -> Stored in integer cents.
+  - `deliveryFee` (INTEGER DEFAULT 0) -> Stored in integer cents.
+  - `tax` (INTEGER NOT NULL) -> Stored in integer cents. Computed based on store province rates (e.g., HST/GST/PST).
+  - `total` (INTEGER NOT NULL) -> Stored in integer cents.
   - `paymentMethod` (VARCHAR(50) DEFAULT 'card')
   - `paymentStatus` (ENUM('paid', 'pending', 'unpaid') DEFAULT 'unpaid')
   - `paymentIntentId` (VARCHAR(255) NULL) -> Checked for idempotency.
@@ -148,7 +149,7 @@ This document establishes the definitive **Reference Map** of all Firestore data
   - `createdAt` (TIMESTAMP DEFAULT NOW())
 * **Items Substructure**:
   - Firestore keeps point-in-time item data in a nested map array.
-  - Relational Mapping: Flattened into dedicated table `order_items` (columns: `id` (PK), `order_id` (FK), `master_product_id` (FK), `product_name`, `effective_price`, `quantity`, `substitution_group_id`, `taxable`).
+  - Relational Mapping: Flattened into dedicated table `order_items` (columns: `id` (PK), `order_id` (FK), `master_product_id` (FK), `product_name`, `effective_price` (INTEGER NOT NULL -> stored in cents), `quantity` (INTEGER NOT NULL), `substitution_group_id`, `taxable` (BOOLEAN)).
 
 ### 3.2 `audit_logs` & `audit_logs_meta` (Cryptographic Forensic Ledger)
 * **Firestore Location**: `/audit_logs/{txnId}` and `/audit_logs_meta/latest`
@@ -218,10 +219,14 @@ To ensure a smooth scratch rollout, the following 11 collections used in backend
   - `id` (PK), `merchant_id` (FK REFERENCES `stores.id` ON DELETE CASCADE), `flyer_url` (TEXT), `status` (ENUM('pending', 'processing', 'completed', 'failed') DEFAULT 'pending'), `log_content` (TEXT), `created_at` (TIMESTAMP).
 
 ### 5.6 `staff` (Admin Staff RBAC Profiles)
-* **Firestore Location**: `/staff/{uid}`
+* **Firestore Location**: `/staff/{email}`
 * **Relational Mapping**: Table `staff`
 * **Attributes**:
-  - `id` (PK -> Firebase UID), `email` (VARCHAR(255) UNIQUE NOT NULL), `name` (VARCHAR(255)), `role` (ENUM('admin', 'moderator') DEFAULT 'moderator'), `created_at` (TIMESTAMP).
+  - `email` (VARCHAR(255) PRIMARY KEY) -> Normalized lowercase email address.
+  - `name` (VARCHAR(255) NOT NULL)
+  - `role` (ENUM('SUPER_ADMIN', 'SUPPORT', 'MODERATOR', 'AUDITOR') NOT NULL)
+  - `status` (VARCHAR(50) DEFAULT 'active')
+  - `joined_at` (TIMESTAMP)
 
 ### 5.7 `mail` (Trigger Email Queue)
 * **Firestore Location**: `/mail/{mailId}`
@@ -239,7 +244,7 @@ To ensure a smooth scratch rollout, the following 11 collections used in backend
 * **Firestore Location**: `/billing_ledger/{ledgerId}`
 * **Relational Mapping**: Table `billing_ledger`
 * **Attributes**:
-  - `id` (PK), `store_id` (VARCHAR(128) REFERENCES `stores.id`), `store_name` (VARCHAR(255)), `user_id` (VARCHAR(128) REFERENCES `users.id`), `user_email` (VARCHAR(255)), `type` (VARCHAR(50)), `amount` (DOUBLE PRECISION), `tier` (VARCHAR(50)), `stripe_charge_id` (VARCHAR(255)), `stripe_invoice_id` (VARCHAR(255)), `billing_reason` (VARCHAR(100)), `timestamp` (TIMESTAMP), `status` (VARCHAR(50)), `description` (TEXT).
+  - `id` (PK), `store_id` (VARCHAR(128) REFERENCES `stores.id`), `store_name` (VARCHAR(255)), `user_id` (VARCHAR(128) REFERENCES `users.id`), `user_email` (VARCHAR(255)), `type` (VARCHAR(50)), `amount` (INTEGER), `tier` (VARCHAR(50)), `stripe_charge_id` (VARCHAR(255)), `stripe_invoice_id` (VARCHAR(255)), `billing_reason` (VARCHAR(100)), `timestamp` (TIMESTAMP), `status` (VARCHAR(50)), `description` (TEXT).
 
 ### 5.10 `smartcart_optimizer_cache` (Algolia Optimization Caching)
 * **Firestore Location**: `/smartcart_optimizer_cache/{cacheKey}`

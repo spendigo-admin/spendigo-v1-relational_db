@@ -5,6 +5,8 @@ import { checkRateLimit } from '../utils/rateLimiter';
 import { stripe } from '../config/stripe';
 import { logEvent } from '../utils/audit';
 import { toHttpsError } from '../utils/errors';
+import { getDb } from '../db/client';
+import * as schema from '../db/schema';
 
 const db = admin.firestore();
 
@@ -41,7 +43,7 @@ const filterActiveDeals = (deals: any[]): any[] => {
     });
 };
 
-export const placeOrder = functions.runWith({ timeoutSeconds: 120, memory: '256MB', secrets: ['STRIPE_SECRET_KEY'] }).https.onCall(async (data, context) => {
+export const placeOrder = functions.runWith({ timeoutSeconds: 120, memory: '256MB', secrets: ['STRIPE_SECRET_KEY', 'DATABASE_URL'] }).https.onCall(async (data, context) => {
     // 1. Security Check
     if (!context.app && process.env.FUNCTIONS_EMULATOR !== 'true') {
         throw new functions.https.HttpsError('failed-precondition', 'The function must be called from an App Check verified app.');
@@ -299,6 +301,53 @@ export const placeOrder = functions.runWith({ timeoutSeconds: 120, memory: '256M
                 });
             }
         });
+
+        // PHASE 4: DUAL-WRITE SECONDARY COMMIT (PostgreSQL)
+        // Ensure that a secondary database failure never blocks checkout or rolls back Firestore
+        try {
+            const sqlDb = getDb();
+            for (const orderData of ordersToProcess) {
+                // Determine order values
+                const oId = orderData.id || orderIds[ordersToProcess.indexOf(orderData)];
+                const paymentSucceeded = !!orderData._paymentSucceeded;
+                const pStatus = paymentSucceeded ? 'paid' : (orderData.paymentMethod === 'in_store' ? 'pending' : 'unpaid');
+
+                await sqlDb.insert(schema.orders).values({
+                    id: oId,
+                    customerId: userId,
+                    storeId: orderData.storeId,
+                    storeName: orderData.storeName,
+                    customerName: userName,
+                    customerEmail: userEmail,
+                    subtotal: Math.round(orderData._serverSubtotal * 100), // Convert to integer cents
+                    deliveryFee: Math.round(orderData._serverDeliveryFee * 100), // Convert to integer cents
+                    tax: Math.round(orderData._serverTax * 100), // Convert to integer cents
+                    total: Math.round(orderData._serverTotal * 100), // Convert to integer cents
+                    paymentMethod: orderData.paymentMethod || 'card',
+                    paymentStatus: pStatus,
+                    paymentIntentId: orderData.paymentIntentId || null,
+                    deliveryAddress: orderData.deliveryAddress || {},
+                    status: 'placed',
+                    createdAt: new Date(),
+                });
+
+                // Flatten and insert order items
+                const orderItemValues = orderData.items.map((item: any, idx: number) => ({
+                    id: `${oId}_item_${idx}`,
+                    orderId: oId,
+                    masterProductId: item.productId,
+                    productName: item.productName || 'Unknown Product',
+                    effectivePrice: Math.round(item.price * 100), // Convert to integer cents
+                    quantity: item.quantity || 1,
+                    taxable: item.taxable ?? true,
+                }));
+
+                await sqlDb.insert(schema.orderItems).values(orderItemValues);
+                functions.logger.info(`[Dual-Write] Successfully replicated order ${oId} to PostgreSQL.`);
+            }
+        } catch (pgError: any) {
+            functions.logger.error('[Dual-Write] PostgreSQL Replication failed:', pgError.message);
+        }
 
         // Audit logging runs after the transaction commits so logEvent's META_REF
         // read doesn't violate Firestore's "reads before writes" constraint.

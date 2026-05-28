@@ -763,7 +763,7 @@ const StoreDetail: React.FC = () => {
                         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center gap-4">
                             <span className="text-[10px] font-black text-gray-600 tracking-widest whitespace-nowrap">{t('storeFilterBy')}:</span>
                             <div className="overflow-x-auto scrollbar-hide flex gap-2 pb-1">
-                                {store.categories.map((cat: string) => (
+                                {['All', ...(store.categories || [])].map((cat: string) => (
                                     <button
                                         key={cat}
                                         onClick={() => setActiveCategory(cat)}

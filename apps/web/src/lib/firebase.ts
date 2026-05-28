@@ -21,14 +21,31 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 
 // Initialize App Check (production web only — ReCaptchaEnterprise throws in Capacitor WKWebView)
-if (typeof window !== 'undefined' && !import.meta.env.DEV && !Capacitor.isNativePlatform()) {
-    if (!import.meta.env.VITE_FIREBASE_APP_CHECK_KEY) {
-        throw new Error('[Spendigo] VITE_FIREBASE_APP_CHECK_KEY is required in production. Set it in apps/web/.env.local.');
+if (typeof window !== 'undefined' && !Capacitor.isNativePlatform()) {
+    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const isStaging = window.location.hostname.includes('staging') || window.location.hostname.includes('web.app') || window.location.hostname.includes('firebaseapp.com');
+
+    // On staging or localhost, use a static, pre-registered App Check debug token.
+    // This allows complete captcha-free testing across all 26+ backend functions without requiring
+    // developers to register individual browser-generated tokens in the console.
+    if (isLocalhost || isStaging) {
+        (window as any).FIREBASE_APPCHECK_DEBUG_TOKEN = '9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d';
+        console.info('[Spendigo] Static App Check Debug Token configured for captcha-free staging.');
     }
-    initializeAppCheck(app, {
-        provider: new ReCaptchaEnterpriseProvider(import.meta.env.VITE_FIREBASE_APP_CHECK_KEY),
-        isTokenAutoRefreshEnabled: true
-    });
+
+    // Initialize App Check in production or staging/dev environments
+    const shouldInitialize = !import.meta.env.DEV || isLocalhost || isStaging;
+
+    if (shouldInitialize) {
+        if (!import.meta.env.VITE_FIREBASE_APP_CHECK_KEY) {
+            throw new Error('[Spendigo] VITE_FIREBASE_APP_CHECK_KEY is required in production. Set it in apps/web/.env.local.');
+        }
+        initializeAppCheck(app, {
+            provider: new ReCaptchaEnterpriseProvider(import.meta.env.VITE_FIREBASE_APP_CHECK_KEY),
+            isTokenAutoRefreshEnabled: true
+        });
+        console.info('[Spendigo] App Check initialized.');
+    }
 }
 
 // Export Services

@@ -140,6 +140,23 @@ firebase use default      # Targets production
 5. Click **Create Instance** and wait for provisioning (5-10 minutes).
 6. Create the staging database: Click on your instance, select **Databases ➔ Create Database**, and name it `spendigo_staging`.
 
+> [!NOTE]
+> **Understanding Cloud SQL Database URLs**:
+> Google Cloud SQL does **not** provide a pre-built "Database URL" connection string like other platforms. You must construct it manually using the following standard format:
+>
+> `postgresql://postgres:YOUR_PASSWORD@YOUR_PUBLIC_IP:5432/spendigo_staging`
+>
+> Here is exactly how to find and configure each component:
+> 1. **User**: The default master user is `postgres`.
+> 2. **Password**: The password you specified in Step 4. If you forgot it, go to the **Users** tab on the left-hand navigation in your Cloud SQL instance, click the three dots next to the `postgres` user, and select **Change password**.
+> 3. **Public IP**: Go to the instance **Overview** page. In the **Connect to this instance** card on the right, copy the address listed under **Public IP address** (e.g., `35.244.x.x`).
+> 4. **Authorize Your Local Machine (Mandatory)**: By default, GCP blocks all direct external database connections. To connect from your terminal/scripts:
+>    - Go to **Connections ➔ Networking** tab.
+>    - Ensure **Public IP** checkbox is checked.
+>    - Under **Authorized networks**, click **Add network**.
+>    - Name it `My Local IP` and input your public IP address (run `curl ifconfig.me` in your local terminal to find it).
+>    - Append `/32` to your IP (e.g. `203.0.113.50/32`) and click **Save** at the bottom of the page.
+
 ### 2.4 Configure Cloud Secret Manager via Firebase CLI
 Sensitive production and staging keys must **never** be checked into your Git repository. Inject these keys directly into Google Cloud Secret Manager for your staging project using the Firebase CLI:
 
@@ -148,16 +165,16 @@ Sensitive production and staging keys must **never** be checked into your Git re
 firebase use staging
 
 # 1. Set Database URL (Replace variables with your Cloud SQL IP and Password)
-firebase secrets:set DATABASE_URL="postgresql://postgres:YOUR_STAGING_PASSWORD@YOUR_CLOUD_SQL_IP:5432/spendigo_staging"
+echo "postgresql://postgres:YOUR_STAGING_PASSWORD@YOUR_CLOUD_SQL_IP:5432/spendigo_staging" | firebase functions:secrets:set DATABASE_URL
 
 # 2. Set Stripe Test Mode API Secret Key
-firebase secrets:set STRIPE_SECRET_KEY="sk_test_51SjU..."
+echo "sk_test_51SjU..." | firebase functions:secrets:set STRIPE_SECRET_KEY
 
 # 3. Set Stripe Test Mode Webhook Signing Secret
-firebase secrets:set STRIPE_WEBHOOK_SECRET="whsec_..."
+echo "whsec_..." | firebase functions:secrets:set STRIPE_WEBHOOK_SECRET
 
 # 4. Set Algolia Admin API Key (For index building operations)
-firebase secrets:set ALGOLIA_API_KEY="your_staging_algolia_admin_write_key"
+echo "your_staging_algolia_admin_write_key" | firebase functions:secrets:set ALGOLIA_API_KEY
 ```
 
 ### 2.5 Configure Non-Sensitive Environment Variables
@@ -315,6 +332,9 @@ Open and inspect the generated JSON report at:
 `/Users/I501801/Documents/Projects/Spendigo-v1/services/api/pre_migration_audit_report.json`
 
 Check the following properties:
+* `staff.missingUserDoc`: Identifies staff records that do not possess a corresponding user profile in the main database.
+* `staff.roleMismatchWithUser`: Identifies role discrepancies between staff collection roles and user adminRole assignments.
+* `users.adminRoleMismatch`: Identifies users who are admins but missing sub-roles, or consumers holding admin roles.
 * `orphans.merchantProductsMissingStore`: Identifies merchant products that reference non-existent stores.
 * `orphans.merchantProductsMissingMaster`: Identifies merchant products referencing non-existent master products.
 * `orphans.ordersMissingCustomer` & `orphans.ordersMissingStore`: Identifies orders that reference deleted users or stores.
@@ -352,13 +372,16 @@ npx ts-node scripts/backfillMigration.ts
 ```
 
 Monitor the logs:
-1. **SSoT Reference Seeding**: Seeds the `ref_business_types` and `ref_categories` from frontend constants, and initializes enums.
-2. **Users Migration**: Watch for user records (with spend totals converted to integer cents).
-3. **Stores Migration**: Watch for store records (with fee variables converted to cents).
-4. **Master Products Migration**: Global catalog indexing and category linkages.
-5. **Circular Reference Updates**: Drizzle resolves store owner FKs in users.
-6. **Merchant Products Migration**: Compounds composite primary keys and sets pricing cents.
-7. **Orders & Order Items Migration**: Transacts checkout records and flattens items.
+1. **SSoT Reference Seeding**: Seeds the reference tables `ref_business_types`, `ref_categories`, `ref_order_statuses`, and `ref_payment_statuses` from frontend constants, and initializes enums.
+2. **Staff Migration**: Migrates the administrative staff pool from isolated Firestore documents.
+3. **Users Migration**: Transfers core users, converting spend totals to cents and attaching `adminRole` sub-roles.
+4. **Stores Migration**: Ingests store profiles, converting delivery fees and thresholds to cents.
+5. **Circular Reference Updates**: Resolves store owner FK constraint paths on user rows.
+6. **Master Products Migration**: Links global product catalogs and indexes category IDs.
+7. **Merchant Products Migration**: Configures compound unique indexes and pricing cents.
+8. **Orders & Order Items Migration**: Flatten and flat-maps checkout invoices and nested item arrays to cents.
+9. **Careers & Job Applications Migration**: Ingests postings and application states.
+10. **Ads, Surveys, & Responses Ingestion**: Backfills platform banners and survey response lists.
 
 ---
 

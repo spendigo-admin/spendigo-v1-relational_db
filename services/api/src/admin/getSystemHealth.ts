@@ -2,6 +2,8 @@ import * as functions from 'firebase-functions/v1';
 import * as admin from 'firebase-admin';
 import { MetricServiceClient } from '@google-cloud/monitoring';
 import { toHttpsError } from '../utils/errors';
+import { getDb } from '../db/client';
+import { sql } from 'drizzle-orm';
 
 const client = new MetricServiceClient();
 
@@ -11,7 +13,9 @@ const client = new MetricServiceClient();
  * 
  * Note: Metrics have a slight delay (typically 1-4 minutes) from Cloud Monitoring.
  */
-export const getSystemHealth = functions.https.onCall(async (data, context) => {
+export const getSystemHealth = functions
+    .runWith({ secrets: ['DATABASE_URL'] })
+    .https.onCall(async (data, context) => {
     // Auth Check: Admin only
     if (!context.app && process.env.FUNCTIONS_EMULATOR !== 'true') {
         throw new functions.https.HttpsError('failed-precondition', 'The function must be called from an App Check verified app.');
@@ -111,6 +115,73 @@ export const getSystemHealth = functions.https.onCall(async (data, context) => {
             fetchMetric('identitytoolkit.googleapis.com/active_users', 'identitytoolkit_project', true, false)
         ]);
 
+        let postgresStatus = {
+            configured: false,
+            connected: false,
+            stats: null as any,
+            perf: null as any,
+            error: null as string | null
+        };
+
+        const dbUrl = process.env.DATABASE_URL;
+        if (dbUrl) {
+            postgresStatus.configured = true;
+            try {
+                const sqlDb = getDb();
+                
+                // Query all table row counts in a single atomic database query
+                // to eliminate connection pool contention and prevent timeout limits.
+                const countQuery = await sqlDb.execute(sql`
+                    SELECT 
+                        (SELECT COUNT(*) FROM users) as users_count,
+                        (SELECT COUNT(*) FROM stores) as stores_count,
+                        (SELECT COUNT(*) FROM merchant_products) as merchant_products_count,
+                        (SELECT COUNT(*) FROM master_products) as master_products_count,
+                        (SELECT COUNT(*) FROM orders) as orders_count
+                `);
+
+                const perfQuery = await sqlDb.execute(sql`
+                    SELECT 
+                        pg_size_pretty(pg_database_size(current_database())) as db_size,
+                        (SELECT COUNT(*) FROM pg_stat_activity) as active_connections,
+                        (SELECT setting::int FROM pg_settings WHERE name = 'max_connections') as max_connections,
+                        COALESCE(ROUND((100.0 * blks_hit / NULLIF(blks_read + blks_hit, 0)), 2), 100.00) as cache_hit_ratio,
+                        (xact_commit + xact_rollback) as transactions_total
+                    FROM pg_stat_database 
+                    WHERE datname = current_database()
+                `);
+
+                postgresStatus.connected = true;
+                const row = countQuery.rows[0] || {};
+                postgresStatus.stats = {
+                    users: Number(row.users_count || 0),
+                    stores: Number(row.stores_count || 0),
+                    merchantProducts: Number(row.merchant_products_count || 0),
+                    masterProducts: Number(row.master_products_count || 0),
+                    orders: Number(row.orders_count || 0)
+                };
+
+                const perfRow = perfQuery.rows[0] || {};
+                postgresStatus.perf = {
+                    dbSize: String(perfRow.db_size || '0 bytes'),
+                    activeConnections: Number(perfRow.active_connections || 0),
+                    maxConnections: Number(perfRow.max_connections || 100),
+                    cacheHitRatio: Number(perfRow.cache_hit_ratio || 100.00),
+                    transactionsTotal: Number(perfRow.transactions_total || 0)
+                };
+            } catch (err: any) {
+                functions.logger.error("Failed to query PostgreSQL stats for system health:", err, {
+                    cause: err.cause ? {
+                        message: err.cause.message,
+                        code: err.cause.code,
+                        stack: err.cause.stack
+                    } : null
+                });
+                postgresStatus.connected = false;
+                postgresStatus.error = err.cause?.message || err.message || "Failed to query relational database.";
+            }
+        }
+
         return {
             success: true,
             categories: {
@@ -135,6 +206,7 @@ export const getSystemHealth = functions.https.onCall(async (data, context) => {
                     storage: { used: (hStorage / (1024 * 1024)), limit: 10240, unit: 'MB total' }
                 }
             },
+            postgres: postgresStatus,
             timestamp: new Date().toISOString()
         };
 

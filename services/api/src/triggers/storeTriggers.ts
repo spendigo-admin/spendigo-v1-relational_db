@@ -1,6 +1,114 @@
 import * as functions from 'firebase-functions/v1';
 import * as admin from 'firebase-admin';
 import { stripe } from '../config/stripe';
+import { getDb } from '../db/client';
+import * as schema from '../db/schema';
+import { eq } from 'drizzle-orm';
+
+/**
+ * Helper to replicate store updates directly to PostgreSQL.
+ */
+async function syncStoreToPostgres(storeId: string, data: any) {
+  const sqlDb = getDb();
+  
+  // Convert fees and thresholds to integer cents
+  const deliveryFeeCents = (() => {
+    const f = parseFloat(data.deliveryFee);
+    return isNaN(f) ? 0 : Math.round(f * 100);
+  })();
+  
+  const freeDeliveryThresholdCents = (() => {
+    if (data.freeDeliveryThreshold === undefined || data.freeDeliveryThreshold === null) return null;
+    const t = parseFloat(data.freeDeliveryThreshold);
+    return isNaN(t) ? null : Math.round(t * 100);
+  })();
+
+  const lat = data.location?.lat ?? data.latitude ?? data.coordinates?.lat ?? null;
+  const lng = data.location?.lng ?? data.longitude ?? data.coordinates?.lng ?? null;
+
+  try {
+    // If ownerId references a user that doesn't exist in PostgreSQL yet, 
+    // we must insert a minimal stub user profile to satisfy the foreign key constraint
+    if (data.ownerId) {
+      const userExists = await sqlDb.select()
+        .from(schema.users)
+        .where(eq(schema.users.id, data.ownerId))
+        .limit(1);
+
+      if (userExists.length === 0) {
+        functions.logger.info(`[Dual-Write] Store owner ${data.ownerId} not found in PostgreSQL. Creating stub user...`);
+        await sqlDb.insert(schema.users).values({
+          id: data.ownerId,
+          email: `${data.ownerId}@unknown.com`,
+          name: 'Merchant Owner',
+          role: 'merchant',
+          status: 'active',
+          createdAt: new Date(),
+          lastActive: new Date()
+        }).onConflictDoNothing();
+      }
+    }
+
+    await sqlDb.insert(schema.stores).values({
+      id: storeId,
+      name: data.name || 'Store Name',
+      logo: data.logo || data.logoUrl || null,
+      address: data.address || null,
+      province: data.province || 'ON',
+      postalCode: data.postalCode || null,
+      latitude: lat != null ? parseFloat(lat) : null,
+      longitude: lng != null ? parseFloat(lng) : null,
+      deliveryFee: deliveryFeeCents,
+      freeDeliveryThreshold: freeDeliveryThresholdCents,
+      pickupEnabled: data.pickupEnabled ?? true,
+      deliveryEnabled: data.deliveryEnabled ?? false,
+      maxDeliveryRadiusKm: data.maxDeliveryRadiusKm != null ? parseFloat(data.maxDeliveryRadiusKm) : 10.0,
+      subscriptionTier: data.subscriptionTier || 'starter',
+      status: ['active', 'pending', 'suspended', 'pending_deletion'].includes(data.status) ? data.status as any : 'pending',
+      ownerId: data.ownerId || null,
+      stripeAccountId: data.stripeAccountId || null,
+      stripeOnboardingStatus: data.stripeOnboardingStatus || null,
+      kybStatus: data.kybStatus || 'not_submitted',
+      kybDocuments: data.kybDocuments || [],
+      updatedAt: new Date(),
+    }).onConflictDoUpdate({
+      target: schema.stores.id,
+      set: {
+        name: data.name || 'Store Name',
+        logo: data.logo || data.logoUrl || null,
+        address: data.address || null,
+        province: data.province || 'ON',
+        postalCode: data.postalCode || null,
+        latitude: lat != null ? parseFloat(lat) : null,
+        longitude: lng != null ? parseFloat(lng) : null,
+        deliveryFee: deliveryFeeCents,
+        freeDeliveryThreshold: freeDeliveryThresholdCents,
+        pickupEnabled: data.pickupEnabled ?? true,
+        deliveryEnabled: data.deliveryEnabled ?? false,
+        maxDeliveryRadiusKm: data.maxDeliveryRadiusKm != null ? parseFloat(data.maxDeliveryRadiusKm) : 10.0,
+        subscriptionTier: data.subscriptionTier || 'starter',
+        status: ['active', 'pending', 'suspended', 'pending_deletion'].includes(data.status) ? data.status as any : 'pending',
+        ownerId: data.ownerId || null,
+        stripeAccountId: data.stripeAccountId || null,
+        stripeOnboardingStatus: data.stripeOnboardingStatus || null,
+        kybStatus: data.kybStatus || 'not_submitted',
+        kybDocuments: data.kybDocuments || [],
+        updatedAt: new Date(),
+      }
+    });
+
+    // Also update users.storeId if user exists
+    if (data.ownerId) {
+      await sqlDb.update(schema.users)
+        .set({ storeId: storeId })
+        .where(eq(schema.users.id, data.ownerId));
+    }
+
+    functions.logger.info(`[Dual-Write] Replicated store ${storeId} to PostgreSQL.`);
+  } catch (pgError: any) {
+    functions.logger.error(`[Dual-Write] PostgreSQL Store replication failed for ${storeId}:`, pgError.message);
+  }
+}
 
 /**
  * Safety-net trigger for direct store deletions (e.g., via Firebase console or Admin SDK).
@@ -8,18 +116,23 @@ import { stripe } from '../config/stripe';
  * This trigger fires only when a store document is hard-deleted without the grace period flow.
  */
 export const onStoreDelete = functions
-  .runWith({ secrets: ['STRIPE_SECRET_KEY'] })
+  .runWith({ secrets: ['STRIPE_SECRET_KEY', 'DATABASE_URL'] })
   .firestore
   .document('stores/{storeId}')
   .onDelete(async (snap, context) => {
     const storeId = context.params.storeId;
     const db = admin.firestore();
 
-    // Removed the guard that previously skipped cleanup for stores in 'pending_deletion' status.
-    // This ensures that even if a store was approved for deletion but deleted early/manually,
-    // the associated merchants are still correctly reverted to consumer status.
-
     functions.logger.warn(`[onStoreDelete] Deletion detected for store ${storeId} — running cleanup cascade.`);
+
+    // 0. Replicate deletion to PostgreSQL
+    try {
+      const sqlDb = getDb();
+      await sqlDb.delete(schema.stores).where(eq(schema.stores.id, storeId));
+      functions.logger.info(`[Dual-Write] Replicated deletion of store ${storeId} to PostgreSQL.`);
+    } catch (pgError: any) {
+      functions.logger.error(`[Dual-Write] PostgreSQL Store deletion failed for ${storeId}:`, pgError.message);
+    }
 
     try {
       // 1. Delete Merchant Products
@@ -93,10 +206,15 @@ export const onStoreDelete = functions
 /**
  * Automatically geocodes a store's address when it is created or the address changes.
  */
-export const onStoreCreate = functions.firestore
+export const onStoreCreate = functions.runWith({ secrets: ['DATABASE_URL'] }).firestore
   .document('stores/{storeId}')
   .onCreate(async (snap, context) => {
     const data = snap.data();
+    const storeId = context.params.storeId;
+
+    // Trigger replication
+    await syncStoreToPostgres(storeId, data);
+
     if (!data.address) return;
 
     const fullAddress = `${data.address}, ${data.city || ''}, ${data.province || ''}, ${data.postalCode || ''}, Canada`.replace(/,,/g, ',');
@@ -113,19 +231,22 @@ export const onStoreCreate = functions.firestore
             lng: parseFloat(lon)
           }
         });
-        functions.logger.info(`Automatically geocoded new store ${context.params.storeId}`);
+        functions.logger.info(`Automatically geocoded new store ${storeId}`);
       }
     } catch (err) {
-      functions.logger.error(`Failed to geocode new store ${context.params.storeId}:`, err);
+      functions.logger.error(`Failed to geocode new store ${storeId}:`, err);
     }
   });
 
-export const onStoreUpdate = functions.firestore
+export const onStoreUpdate = functions.runWith({ secrets: ['DATABASE_URL'] }).firestore
   .document('stores/{storeId}')
   .onUpdate(async (change, context) => {
     const before = change.before.data();
     const after = change.after.data();
     const storeId = context.params.storeId;
+
+    // Trigger replication
+    await syncStoreToPostgres(storeId, after);
 
     // Re-geocode when address parts change
     const addressChanged = before.address !== after.address ||

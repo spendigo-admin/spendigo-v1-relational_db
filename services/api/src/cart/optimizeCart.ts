@@ -3,7 +3,12 @@ import * as admin from 'firebase-admin';
 import { optimizeSmartCartService } from '../smartcart/optimizeSmartCart';
 import { SmartCartOptimizeRequestBody } from '../smartcart/types';
 
-const ALLOWED_ORIGINS = ['https://spendigo.ca', 'https://www.spendigo.ca'];
+const ALLOWED_ORIGINS = [
+    'https://spendigo.ca',
+    'https://www.spendigo.ca',
+    'https://spendigo-v1-staging.web.app',
+    'https://spendigo-v1-staging.firebaseapp.com'
+];
 
 function setCorsHeaders(req: functions.Request, res: functions.Response<any>) {
     const origin = req.headers.origin || '';
@@ -27,7 +32,8 @@ export const cartOptimize = functions.runWith({ timeoutSeconds: 120, memory: '51
         return;
     }
 
-    if (process.env.FUNCTIONS_EMULATOR !== 'true') {
+    const isStagingProject = process.env.GCLOUD_PROJECT === 'spendigo-v1-staging';
+    if (process.env.FUNCTIONS_EMULATOR !== 'true' && !isStagingProject) {
         const appCheckToken = req.header('X-Firebase-AppCheck');
         if (!appCheckToken) {
             res.status(401).json({ error: 'App Check token required.' });

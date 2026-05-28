@@ -220,7 +220,7 @@ async function createAuthUser(email: string, password: string) {
         console.log(`✅ Created Auth user: ${email}`);
         return userCredential.user.uid;
     } catch (error: any) {
-        if (error.code === 'auth/email-already-exists') {
+        if (error.code === 'auth/email-already-exists' || error.code === 'auth/email-already-in-use') {
             console.log(`⚠️  Auth user already exists: ${email}, signing in...`);
             const userCredential = await signInWithEmailAndPassword(auth, email, password);
             return userCredential.user.uid;
@@ -351,6 +351,10 @@ async function main() {
 
     try {
         await seedUsers();
+        
+        console.log('\n🔐 Signing in as admin for subsequent collection seeding...');
+        await signInWithEmailAndPassword(auth, 'admin@spendigo.ca', PASSWORD);
+
         await seedStores();
         await seedPlatformSettings();
         await seedSampleOrder();

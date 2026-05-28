@@ -9,6 +9,7 @@ const SystemHealth: React.FC = () => {
     const { addNotification } = useNotifications();
 
     const [systemHealth, setSystemHealth] = useState<any>(null);
+    const [postgresHealth, setPostgresHealth] = useState<any>(null);
     const [isLoadingHealth, setIsLoadingHealth] = useState(true);
     const [healthError, setHealthError] = useState<string | null>(null);
 
@@ -27,6 +28,7 @@ const SystemHealth: React.FC = () => {
             const data = result.data as any;
             if (data.success) {
                 setSystemHealth(data.categories);
+                setPostgresHealth(data.postgres || null);
             }
         } catch (err: any) {
             console.error("Failed to fetch real system health:", err);
@@ -102,6 +104,214 @@ const SystemHealth: React.FC = () => {
             </div>
 
             <div className="max-w-4xl">
+
+                {/* Database Connection & Relational Observability Panel */}
+                <div className="bg-white rounded-xl border border-[var(--glass-border)] p-6 shadow-sm mb-6">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
+                        <div>
+                            <h2 className="text-xl font-bold text-[var(--text-main)] flex items-center gap-2.5 mb-0">
+                                <svg className="w-6 h-6 text-[var(--brand-primary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
+                                </svg>
+                                Database Engine Observability
+                            </h2>
+                            <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-widest font-bold mt-1">Relational Schema Stats & Connection Parity</p>
+                        </div>
+                        <div>
+                            {postgresHealth ? (
+                                postgresHealth.connected ? (
+                                    <span className="flex items-center gap-2 text-xs font-bold px-3 py-1.5 rounded-full bg-green-50 text-green-700 border border-green-200 shadow-sm">
+                                        <span className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(52,199,89,0.7)] animate-pulse"></span>
+                                        PostgreSQL Connected
+                                    </span>
+                                ) : postgresHealth.configured ? (
+                                    <span className="flex items-center gap-2 text-xs font-bold px-3 py-1.5 rounded-full bg-red-50 text-red-700 border border-red-200 shadow-sm">
+                                        <span className="w-2 h-2 rounded-full bg-red-500 shadow-[0_0_8px_rgba(255,59,48,0.7)]"></span>
+                                        PostgreSQL Offline
+                                    </span>
+                                ) : (
+                                    <span className="flex items-center gap-2 text-xs font-bold px-3 py-1.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 shadow-sm">
+                                        <span className="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(0,122,255,0.7)]"></span>
+                                        Firestore-Only SSoT
+                                    </span>
+                                )
+                            ) : isLoadingHealth ? (
+                                <span className="text-xs text-[var(--text-muted)] animate-pulse">Detecting database...</span>
+                            ) : (
+                                <span className="flex items-center gap-2 text-xs font-bold px-3 py-1.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 shadow-sm">
+                                    <span className="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(0,122,255,0.7)]"></span>
+                                    Firestore-Only SSoT
+                                </span>
+                            )}
+                        </div>
+                    </div>
+
+                    {postgresHealth && postgresHealth.connected && postgresHealth.stats ? (
+                        <div className="space-y-6">
+                            {/* Relational Table Statistics Grid */}
+                            <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+                                {[
+                                    { 
+                                        label: 'Active Users', 
+                                        count: postgresHealth.stats.users, 
+                                        icon: (
+                                            <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                                            </svg>
+                                        ) 
+                                    },
+                                    { 
+                                        label: 'Stores / Shops', 
+                                        count: postgresHealth.stats.stores, 
+                                        icon: (
+                                            <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                                            </svg>
+                                        ) 
+                                    },
+                                    { 
+                                        label: 'Master Catalog', 
+                                        count: postgresHealth.stats.masterProducts, 
+                                        icon: (
+                                            <svg className="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                                            </svg>
+                                        ) 
+                                    },
+                                    { 
+                                        label: 'Merchant Products', 
+                                        count: postgresHealth.stats.merchantProducts, 
+                                        icon: (
+                                            <svg className="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                                            </svg>
+                                        ) 
+                                    },
+                                    { 
+                                        label: 'Orders Processed', 
+                                        count: postgresHealth.stats.orders, 
+                                        icon: (
+                                            <svg className="w-5 h-5 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                                            </svg>
+                                        ) 
+                                    }
+                                ].map((stat) => (
+                                    <div key={stat.label} className="bg-[var(--surface-1)] p-4 rounded-xl border border-[var(--glass-border)] flex flex-col justify-between hover:scale-[1.02] hover:shadow-md transition-all duration-300">
+                                        <div className="flex items-center justify-between mb-3">
+                                            <span className="p-1.5 bg-white rounded-lg border border-[var(--glass-border)] shadow-sm">
+                                                {stat.icon}
+                                            </span>
+                                        </div>
+                                        <div>
+                                            <p className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-wider">{stat.label}</p>
+                                            <p className="text-lg font-black text-[var(--text-main)] mt-0.5">{stat.count.toLocaleString()}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* PostgreSQL Engine Performance Observability Grid */}
+                            {postgresHealth.perf && (
+                                <div className="mt-6 pt-6 border-t border-[var(--glass-border)]">
+                                    <h3 className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-4 flex items-center gap-2">
+                                        <svg className="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                        </svg>
+                                        Engine Performance & Load Metrics
+                                    </h3>
+                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                                        {/* Storage Size Card */}
+                                        <div className="bg-[var(--surface-1)] p-4 rounded-xl border border-[var(--glass-border)] flex flex-col justify-between hover:scale-[1.02] hover:shadow-md transition-all duration-300">
+                                            <div className="flex items-center justify-between mb-3">
+                                                <span className="p-1.5 bg-white rounded-lg border border-[var(--glass-border)] shadow-sm text-indigo-500">
+                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                                                    </svg>
+                                                </span>
+                                            </div>
+                                            <div>
+                                                <p className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Database Size</p>
+                                                <p className="text-lg font-black text-[var(--text-main)] mt-0.5">{postgresHealth.perf.dbSize}</p>
+                                            </div>
+                                        </div>
+
+                                        {/* Cache Hit Rate Card */}
+                                        <div className="bg-[var(--surface-1)] p-4 rounded-xl border border-[var(--glass-border)] flex flex-col justify-between hover:scale-[1.02] hover:shadow-md transition-all duration-300">
+                                            <div className="flex items-center justify-between mb-3">
+                                                <span className="p-1.5 bg-white rounded-lg border border-[var(--glass-border)] shadow-sm text-emerald-500">
+                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                                                    </svg>
+                                                </span>
+                                                {postgresHealth.perf.cacheHitRatio >= 99 && (
+                                                    <span className="text-[8px] font-black text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-full uppercase tracking-wider scale-90 origin-right">Optimal</span>
+                                                )}
+                                            </div>
+                                            <div>
+                                                <p className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Cache Hit Rate</p>
+                                                <p className="text-lg font-black text-[var(--text-main)] mt-0.5">{postgresHealth.perf.cacheHitRatio.toFixed(2)}%</p>
+                                            </div>
+                                        </div>
+
+                                        {/* Connections Load Card */}
+                                        <div className="bg-[var(--surface-1)] p-4 rounded-xl border border-[var(--glass-border)] flex flex-col justify-between hover:scale-[1.02] hover:shadow-md transition-all duration-300">
+                                            <div className="flex items-center justify-between mb-3">
+                                                <span className="p-1.5 bg-white rounded-lg border border-[var(--glass-border)] shadow-sm text-blue-500">
+                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                                                    </svg>
+                                                </span>
+                                                <span className="text-[8px] font-black text-blue-600 bg-blue-50 border border-blue-100 px-2 py-0.5 rounded-full uppercase tracking-wider scale-90 origin-right">
+                                                    {((postgresHealth.perf.activeConnections / postgresHealth.perf.maxConnections) * 100).toFixed(1)}% Load
+                                                </span>
+                                            </div>
+                                            <div>
+                                                <p className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Active Pool Load</p>
+                                                <p className="text-lg font-black text-[var(--text-main)] mt-0.5">
+                                                    {postgresHealth.perf.activeConnections} <span className="text-xs font-normal text-[var(--text-muted)]">/ {postgresHealth.perf.maxConnections}</span>
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        {/* Transaction commits */}
+                                        <div className="bg-[var(--surface-1)] p-4 rounded-xl border border-[var(--glass-border)] flex flex-col justify-between hover:scale-[1.02] hover:shadow-md transition-all duration-300">
+                                            <div className="flex items-center justify-between mb-3">
+                                                <span className="p-1.5 bg-white rounded-lg border border-[var(--glass-border)] shadow-sm text-amber-500">
+                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                                    </svg>
+                                                </span>
+                                            </div>
+                                            <div>
+                                                <p className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Total Transactions</p>
+                                                <p className="text-lg font-black text-[var(--text-main)] mt-0.5">{postgresHealth.perf.transactionsTotal.toLocaleString()}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    ) : postgresHealth && postgresHealth.configured && postgresHealth.error ? (
+                        <div className="p-4 bg-red-50 rounded-xl border border-red-100 flex items-start gap-3">
+                            <span className="text-lg">⚠️</span>
+                            <div>
+                                <p className="text-xs font-bold text-red-800">PostgreSQL Connection Failure</p>
+                                <p className="text-[10px] text-red-600 mt-0.5 leading-relaxed">{postgresHealth.error}</p>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="p-4 bg-blue-50 rounded-xl border border-blue-100 flex items-start gap-3">
+                            <span className="text-lg">ℹ️</span>
+                            <div>
+                                <p className="text-xs font-bold text-blue-800">Firestore NoSQL Active (Single Source of Truth)</p>
+                                <p className="text-[10px] text-blue-600 mt-0.5 leading-relaxed">
+                                    Staging backend functions are currently executing directly on Cloud Firestore. Once connection parameters are established in service keys, PostgreSQL mirror replication will automatically activate.
+                                </p>
+                            </div>
+                        </div>
+                    )}
+                </div>
 
                     <div className="bg-white rounded-xl border border-[var(--glass-border)] p-6 shadow-sm">
                         <div className="flex items-center justify-between mb-6">

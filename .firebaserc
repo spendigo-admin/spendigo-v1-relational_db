@@ -1,5 +1,8 @@
 {
   "projects": {
-    "default": "spendigo-8540c"
-  }
+    "default": "spendigo-v1-staging",
+    "staging": "spendigo-v1-staging"
+  },
+  "targets": {},
+  "etags": {}
 }

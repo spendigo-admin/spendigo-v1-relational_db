@@ -146,24 +146,60 @@ async function checkStores() {
 
   for (const doc of storesSnapshot.docs) {
     const data = doc.data();
-    const category = data.businessType as string;
     
-    if (category && categoriesToUpdate[category]) {
+    // Determine category: use businessType, fallback to business_type, or infer from store name
+    let category = (data.businessType || data.business_type) as string;
+    if (!category && data.name) {
+      const nameLower = data.name.toLowerCase();
+      if (nameLower.includes('fresh') || nameLower.includes('metro') || nameLower.includes('costco') || nameLower.includes('market') || nameLower.includes('grocer')) {
+        category = 'Grocery Store';
+      } else if (nameLower.includes('pick') || nameLower.includes('corner') || nameLower.includes('mart') || nameLower.includes('convenience')) {
+        category = 'Convenience Store';
+      }
+    }
+    
+    // Default fallback if still unresolved
+    if (!category) {
+      category = 'Grocery Store';
+    }
+
+    if (categoriesToUpdate[category]) {
       const updates: any = {};
       const branding = categoriesToUpdate[category];
       const newLogo = branding.logo;
       const newCover = branding.cover;
 
-      // Only update if it looks like a default path (not a custom firebase storage URL)
-      if (data.logoUrl && data.logoUrl.includes('/defaults/branding/') && data.logoUrl !== newLogo) {
+      // Update logoUrl if it's missing, is an emoji, is a placeholder, or is not set to the new premium logo
+      const isDefaultLogo = !data.logoUrl || 
+                            (typeof data.logoUrl === 'string' && 
+                             (data.logoUrl.includes('/defaults/branding/') || 
+                              data.logoUrl.length <= 2 || 
+                              data.logoUrl.includes('placeholder') ||
+                              data.logoUrl === '🥬' || data.logoUrl === '🏪' || data.logoUrl === '🛒' || data.logoUrl === '📦'));
+      
+      // Update cover image if it's missing, is a placeholder, or is a legacy default
+      const isDefaultCover = !data.image || 
+                             (typeof data.image === 'string' && 
+                              (data.image.includes('/defaults/branding/') || 
+                               data.image.length <= 2 || 
+                               data.image.includes('placeholder')));
+
+      if (isDefaultLogo && data.logoUrl !== newLogo) {
         updates.logoUrl = newLogo;
+        updates.logo = newLogo; // Keep logo in sync
       }
-      if (data.image && data.image.includes('/defaults/branding/') && newCover && data.image !== newCover) {
+      if (isDefaultCover && newCover && data.image !== newCover) {
         updates.image = newCover;
+      }
+      
+      // Set the businessType if it was missing or misconfigured
+      if (!data.businessType) {
+        updates.businessType = category;
       }
 
       if (Object.keys(updates).length > 0) {
-        console.log(`Updating store ${doc.id} (${data.name}) - Category: ${category}`);
+        console.log(`Updating store ${doc.id} (${data.name}) - Resolved Category: ${category}`);
+        console.log(`  -> Updates:`, JSON.stringify(updates));
         await doc.ref.update(updates);
         updateCount++;
       }

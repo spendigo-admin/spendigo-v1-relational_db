@@ -9,6 +9,14 @@ enum UserRole {
   admin
 }
 
+enum AdminRole {
+  SUPER_ADMIN
+  SUPPORT
+  MODERATOR
+  AUDITOR
+}
+
+
 enum MerchantSubRole {
   OWNER
   MANAGER
@@ -69,6 +77,7 @@ type User @table(name: "users") {
   email: String! @unique
   name: String
   role: UserRole! @default(value: "consumer")
+  adminRole: AdminRole
   merchantRole: MerchantSubRole
   storeId: String @col(references: "Store")
   status: UserStatus! @default(value: "active")
@@ -208,4 +217,12 @@ type ConsentLog @table(name: "consent_logs") {
   acceptedAt: Timestamp! @default(expr: "now()")
   ipAddress: String!
   userAgent: String!
+}
+
+type Staff @table(name: "staff") {
+  email: String! @primaryKey
+  name: String!
+  role: AdminRole!
+  status: String! @default(value: "active")
+  joinedAt: Timestamp! @default(expr: "now()")
 }

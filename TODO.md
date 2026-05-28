@@ -123,3 +123,20 @@ AUDITOR:       ['admin:audit']                                      // unchanged
 ## 4. Backlog & Technical Investigations
 
 *No active backlog items.*
+
+---
+
+## 5. Sustainable FinOps & Responsible SpendOps (v1.2+)
+
+### Backend & Infrastructure
+- [ ] **Optimize Proximity Alerts (`priceHistoryTrigger.ts`)**: Migrate from full user scans to geospatial queries (using geohashes or SQL proximity calculations) to reduce database read costs and serverless carbon footprint.
+- [ ] **Global Outbound HTTP Call Timeout Rules**: Implement standard 5-second execution limits with `AbortController` on Nominatim and Stripe API integrations to prevent container hang billing.
+
+### Consumer SmartCart Optimization
+- [ ] **Integrate Real Logistics Math in `analyzeTripConsolidation.ts`**: Calculate physical driving distances using store coordinates, converting mileage into true fuel cost ($0.15/km) and estimated tailpipe carbon emissions (120g/km).
+- [ ] **Add "Eco-Choice" Option to SmartCart UI**: Implement a premium badge in the consumer checklist indicating the single-store consolidation option when travel costs cancel out multi-store savings.
+
+### Merchant Platform
+- [ ] **Zero-Waste Flash Deals Campaign Engine (`Deals.tsx`)**: Implement a "Green Deals" category for near-expiration grocery inventory, geofencing flash sale notifications to nearby users to mitigate local landfill organic waste.
+- [ ] **Digital Flyer Environmental Impact Ledger**: Add a paper and carbon savings calculator display in the merchant analytics dashboard, visualizing resources saved by publishing digital flyers instead of print.
+

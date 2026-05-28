@@ -35,6 +35,14 @@ enum UserRole {
   admin
 }
 
+enum AdminRole {
+  SUPER_ADMIN
+  SUPPORT
+  MODERATOR
+  AUDITOR
+}
+
+
 enum MerchantSubRole {
   OWNER
   MANAGER
@@ -95,6 +103,7 @@ type User @table(name: "users") {
   email: String! @unique
   name: String
   role: UserRole! @default(value: "consumer")
+  adminRole: AdminRole
   merchantRole: MerchantSubRole
   storeId: String @col(references: "Store")
   status: UserStatus! @default(value: "active")
@@ -233,6 +242,14 @@ type ConsentLog @table(name: "consent_logs") {
   ipAddress: String!
   userAgent: String!
 }
+
+type Staff @table(name: "staff") {
+  email: String! @primaryKey
+  name: String!
+  role: AdminRole!
+  status: String! @default(value: "active")
+  joinedAt: Timestamp! @default(expr: "now()")
+}
 ```
 
 ---
@@ -254,7 +271,8 @@ import {
   primaryKey, 
   uniqueIndex, 
   pgEnum, 
-  customType 
+  customType,
+  doublePrecision
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
@@ -275,7 +293,7 @@ export const storeStatusEnum = pgEnum('store_status', ['active', 'pending', 'sus
 export const jobStatusEnum = pgEnum('job_status', ['new', 'reviewed', 'interviewing', 'rejected', 'hired']);
 export const activeInactiveEnum = pgEnum('active_inactive_status', ['active', 'inactive']);
 export const ingestionStatusEnum = pgEnum('ingestion_status', ['pending', 'processing', 'completed', 'failed']);
-export const staffRoleEnum = pgEnum('staff_role', ['admin', 'moderator']);
+export const staffRoleEnum = pgEnum('staff_role', ['SUPER_ADMIN', 'SUPPORT', 'MODERATOR', 'AUDITOR']);
 
 // 1. SSoT REFERENCE TABLES
 export const refBusinessTypes = pgTable('ref_business_types', {
@@ -305,6 +323,7 @@ export const users = pgTable('users', {
   email: varchar('email', { length: 255 }).notNull().unique(),
   name: varchar('name', { length: 255 }),
   role: userRoleEnum('role').default('consumer').notNull(),
+  adminRole: staffRoleEnum('admin_role'),
   merchantRole: merchantSubRoleEnum('merchant_role'),
   storeId: varchar('store_id', { length: 128 }),
   status: userStatusEnum('status').default('active').notNull(),
@@ -456,7 +475,15 @@ export const consentLogs = pgTable('consent_logs', {
   userAgent: text('user_agent').notNull(),
 });
 
-// 6. ADVERTISING, SURVETS, & CAREERS PORTALS
+export const staff = pgTable('staff', {
+  email: varchar('email', { length: 255 }).primaryKey(),
+  name: varchar('name', { length: 255 }).notNull(),
+  role: staffRoleEnum('role').notNull(),
+  status: varchar('status', { length: 50 }).default('active').notNull(),
+  joinedAt: timestamp('joined_at').defaultNow().notNull(),
+});
+
+// 6. ADVERTISING, SURVEYS, & CAREERS PORTALS
 export const careers = pgTable('careers', {
   id: varchar('id', { length: 128 }).primaryKey(),
   title: varchar('title', { length: 255 }).notNull(),
@@ -734,12 +761,21 @@ import * as admin from 'firebase-admin';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
 import * as schema from '../src/db/schema';
+import * as fs from 'fs';
+import * as path from 'path';
 
 // Reference Constants imported directly for Database Seeding
 import { BUSINESS_TYPES } from '../../../apps/web/src/data/businessTypes';
 import { PRODUCT_CATEGORIES } from '../../../apps/web/src/data/categories';
 
-const serviceAccount = require('../../scripts/service-account.json');
+// Load service account relative to services/api/scripts/backfillMigration.ts
+const serviceAccountPath = path.join(__dirname, '../../../scripts/service-account.json');
+if (!fs.existsSync(serviceAccountPath)) {
+    console.error(`Error: Service account file not found at ${serviceAccountPath}`);
+    process.exit(1);
+}
+
+const serviceAccount = require(serviceAccountPath);
 if (!admin.apps.length) {
     admin.initializeApp({
         credential: admin.credential.cert(serviceAccount)
@@ -751,6 +787,31 @@ const pool = new Pool({
   connectionString: process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/spendigo_dev',
 });
 const db = drizzle(pool, { schema });
+
+// Helper to safely convert Firestore values to Javascript Date objects
+function safeDate(val: any): Date {
+    if (!val) return new Date();
+    if (val.toDate && typeof val.toDate === 'function') {
+        return val.toDate();
+    }
+    if (val.seconds) {
+        return new Date(val.seconds * 1000);
+    }
+    const d = new Date(val);
+    return isNaN(d.getTime()) ? new Date() : d;
+}
+
+function safeOptionalDate(val: any): Date | null {
+    if (!val) return null;
+    if (val.toDate && typeof val.toDate === 'function') {
+        return val.toDate();
+    }
+    if (val.seconds) {
+        return new Date(val.seconds * 1000);
+    }
+    const d = new Date(val);
+    return isNaN(d.getTime()) ? null : d;
+}
 
 async function migrate() {
     console.log("=== STARTING REFERENCE SEEDING & BACKFILL ===");
@@ -781,7 +842,27 @@ async function migrate() {
     const paymentStatuses = ['paid', 'pending', 'unpaid', 'refunding', 'refunded', 'partially_refunded'].map(id => ({ id }));
     await db.insert(schema.refPaymentStatuses).values(paymentStatuses).onConflictDoNothing();
 
-    // 2. Backfill Core Users
+    // 2. Backfill Staff
+    console.log("Backfilling staff...");
+    const staffSnap = await firestore.collection('staff').get();
+    const staffRecords: any[] = [];
+    staffSnap.forEach(doc => {
+        const data = doc.data();
+        const email = doc.id.toLowerCase();
+        staffRecords.push({
+            email: email,
+            name: data.name || 'Admin Staff',
+            role: ['SUPER_ADMIN', 'SUPPORT', 'MODERATOR', 'AUDITOR'].includes(data.role) ? data.role : 'SUPPORT',
+            status: data.status === 'inactive' ? 'inactive' : 'active',
+            joinedAt: safeDate(data.joinedAt)
+        });
+    });
+    if (staffRecords.length > 0) {
+        await db.insert(schema.staff).values(staffRecords).onConflictDoNothing();
+    }
+    console.log(`Successfully backfilled ${staffRecords.length} staff members.`);
+
+    // 3. Backfill Core Users
     console.log("Backfilling users...");
     const usersSnap = await firestore.collection('users').get();
     const userRecords: any[] = [];
@@ -792,15 +873,16 @@ async function migrate() {
             email: data.email || `${doc.id}@unknown.com`,
             name: data.name || null,
             role: ['admin', 'merchant', 'consumer'].includes(data.role) ? data.role : 'consumer',
+            adminRole: ['SUPER_ADMIN', 'SUPPORT', 'MODERATOR', 'AUDITOR'].includes(data.adminRole) ? data.adminRole : null,
             merchantRole: data.merchantRole || null,
             storeId: null, // Avoid circular key lock on insert
             status: data.status === 'pending_invite' ? 'pending_invite' : 'active',
             addresses: data.addresses || [],
             totalOrders: data.total_orders || 0,
             totalSpend: Math.round((data.total_spend || 0) * 100), // Dollar-to-Cent conversion
-            lastOrderDate: data.last_order_date ? new Date(data.last_order_date) : null,
-            createdAt: data.createdAt ? new Date(data.createdAt) : new Date(),
-            lastActive: data.last_active ? new Date(data.last_active) : new Date(),
+            lastOrderDate: safeOptionalDate(data.last_order_date),
+            createdAt: safeDate(data.createdAt),
+            lastActive: safeDate(data.last_active),
         });
     });
     if (userRecords.length > 0) {
@@ -808,7 +890,7 @@ async function migrate() {
     }
     console.log(`Successfully backfilled ${userRecords.length} users.`);
 
-    // 3. Backfill Stores
+    // 4. Backfill Stores
     console.log("Backfilling stores...");
     const storesSnap = await firestore.collection('stores').get();
     const storeRecords: any[] = [];
@@ -846,15 +928,19 @@ async function migrate() {
     }
     console.log(`Successfully backfilled ${storeRecords.length} stores.`);
 
-    // 4. Resolve User storeId circular FK locks
+    // 5. Resolve User storeId circular FK locks
     console.log("Resolving circular store reference paths in users...");
     for (const update of circularUpdates) {
-        await db.update(schema.users)
-          .set({ storeId: update.storeId })
-          .where(schema.users.id.eq(update.userId));
+        try {
+            await db.update(schema.users)
+              .set({ storeId: update.storeId })
+              .where(schema.users.id.eq(update.userId));
+        } catch (err: any) {
+            console.error(`Skipped circular reference update for user ${update.userId} and store ${update.storeId}:`, err.message);
+        }
     }
 
-    // 5. Backfill Catalog
+    // 6. Backfill Catalog
     console.log("Backfilling master products...");
     const mProdSnap = await firestore.collection('master_products').get();
     const masterProductRecords: any[] = [];
@@ -881,8 +967,9 @@ async function migrate() {
     if (masterProductRecords.length > 0) {
         await db.insert(schema.masterProducts).values(masterProductRecords).onConflictDoNothing();
     }
+    console.log(`Successfully backfilled ${masterProductRecords.length} master products.`);
 
-    // 6. Backfill Merchant Inventories
+    // 7. Backfill Merchant Inventories
     console.log("Backfilling merchant inventory products...");
     const merchantProductsSnap = await firestore.collection('merchant_products').get();
     const merchantProductRecords: any[] = [];
@@ -905,10 +992,12 @@ async function migrate() {
     if (merchantProductRecords.length > 0) {
         await db.insert(schema.merchantProducts).values(merchantProductRecords).onConflictDoNothing();
     }
+    console.log(`Successfully backfilled ${merchantProductRecords.length} merchant products.`);
 
-    // 7. Backfill Checkout Transactions
+    // 8. Backfill Checkout Transactions
     console.log("Backfilling orders & flattening order items...");
     const ordersSnap = await firestore.collection('orders').get();
+    let orderCount = 0;
     for (const doc of ordersSnap.docs) {
         const data = doc.data();
         try {
@@ -926,7 +1015,7 @@ async function migrate() {
                 paymentStatus: data.paymentStatus || 'unpaid',
                 status: data.status || 'placed',
                 deliveryAddress: data.deliveryAddress || {},
-                createdAt: data.createdAt ? new Date(data.createdAt.toDate()) : new Date(),
+                createdAt: safeDate(data.createdAt),
             });
 
             const items = data.items || [];
@@ -942,10 +1031,116 @@ async function migrate() {
                     taxable: item.taxable ?? true,
                 });
             }
+            orderCount++;
         } catch (err: any) {
             console.error(`Skipped order ${doc.id} due to constraint violation:`, err.message);
         }
     }
+    console.log(`Successfully backfilled ${orderCount} orders.`);
+
+    // 9. Backfill Careers & Applications
+    console.log("Backfilling careers...");
+    const careersSnap = await firestore.collection('careers').get();
+    const careerRecords: any[] = [];
+    careersSnap.forEach(doc => {
+        const data = doc.data();
+        careerRecords.push({
+            id: doc.id,
+            title: data.title || 'Untitled Role',
+            department: data.department || null,
+            location: data.location || null,
+            type: data.type || null,
+            description: data.description || null,
+            requirements: data.requirements || null,
+            createdAt: safeDate(data.createdAt)
+        });
+    });
+    if (careerRecords.length > 0) {
+        await db.insert(schema.careers).values(careerRecords).onConflictDoNothing();
+    }
+    console.log(`Successfully backfilled ${careerRecords.length} careers.`);
+
+    console.log("Backfilling job applications...");
+    const jobAppsSnap = await firestore.collection('job_applications').get();
+    const jobAppRecords: any[] = [];
+    jobAppsSnap.forEach(doc => {
+        const data = doc.data();
+        jobAppRecords.push({
+            id: doc.id,
+            jobId: data.jobId,
+            candidateName: data.candidateName || 'Unknown Candidate',
+            candidateEmail: data.candidateEmail || 'unknown@example.com',
+            resumeUrl: data.resumeUrl || null,
+            status: ['new', 'reviewed', 'interviewing', 'rejected', 'hired'].includes(data.status) ? data.status : 'new',
+            createdAt: safeDate(data.createdAt)
+        });
+    });
+    if (jobAppRecords.length > 0) {
+        await db.insert(schema.jobApplications).values(jobAppRecords).onConflictDoNothing();
+    }
+    console.log(`Successfully backfilled ${jobAppRecords.length} job applications.`);
+
+    // 10. Backfill Ads & Surveys
+    console.log("Backfilling ads...");
+    const adsSnap = await firestore.collection('ads').get();
+    const adRecords: any[] = [];
+    adsSnap.forEach(doc => {
+        const data = doc.data();
+        adRecords.push({
+            id: doc.id,
+            title: data.title || 'Untitled Ad',
+            imageUrl: data.imageUrl || '',
+            link: data.link || null,
+            priority: data.priority || 0,
+            status: data.status === 'inactive' ? 'inactive' : 'active',
+            storeId: data.storeId || null,
+            createdAt: safeDate(data.createdAt)
+        });
+    });
+    if (adRecords.length > 0) {
+        await db.insert(schema.ads).values(adRecords).onConflictDoNothing();
+    }
+    console.log(`Successfully backfilled ${adRecords.length} ads.`);
+
+    console.log("Backfilling surveys...");
+    const surveysSnap = await firestore.collection('surveys').get();
+    const surveyRecords: any[] = [];
+    surveysSnap.forEach(doc => {
+        const data = doc.data();
+        surveyRecords.push({
+            id: doc.id,
+            title: data.title || 'Untitled Survey',
+            description: data.description || null,
+            questions: data.questions || [],
+            status: data.status === 'inactive' ? 'inactive' : 'active',
+            createdAt: safeDate(data.createdAt)
+        });
+    });
+    if (surveyRecords.length > 0) {
+        await db.insert(schema.surveys).values(surveyRecords).onConflictDoNothing();
+    }
+    console.log(`Successfully backfilled ${surveyRecords.length} surveys.`);
+
+    console.log("Backfilling survey responses...");
+    const surveyResponsesSnap = await firestore.collectionGroup('responses').get();
+    const surveyResponseRecords: any[] = [];
+    surveyResponsesSnap.forEach(doc => {
+        const data = doc.data();
+        const surveyId = doc.ref.parent.parent?.id;
+        const userId = doc.id;
+        if (surveyId && userId) {
+            surveyResponseRecords.push({
+                surveyId: surveyId,
+                userId: userId,
+                answers: data.answers || {},
+                createdAt: safeDate(data.createdAt)
+            });
+        }
+    });
+    if (surveyResponseRecords.length > 0) {
+        await db.insert(schema.surveyResponses).values(surveyResponseRecords).onConflictDoNothing();
+    }
+    console.log(`Successfully backfilled ${surveyResponseRecords.length} survey responses.`);
 
     console.log("=== REFERENCE SEEDING & BACKFILL COMPLETED SUCCESSFULLY ===");
     await pool.end();
